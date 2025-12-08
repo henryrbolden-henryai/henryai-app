@@ -1,0 +1,73 @@
+┌─────────────────────────────────────────────────┐
+│  🎯 QUICK FIX CARD - 2 FILES, 25 MINUTES       │
+└─────────────────────────────────────────────────┘
+
+WHAT'S BROKEN (from your screenshots):
+❌ Tracking buttons (outreach.html)
+❌ Document downloads (documents.html)
+
+┌─────────────────────────────────────────────────┐
+│  FIX #1: TRACKING (10 min)                     │
+└─────────────────────────────────────────────────┘
+
+FILE: frontend/outreach.html
+
+STEPS:
+1. Open TRACKING_QUICK_SNIPPET.txt
+2. Copy/paste 5 code blocks into outreach.html:
+   - CSS (add to <style>)
+   - Top nav HTML (add after <body>)
+   - Track button HTML (replace action buttons)
+   - Delete old navigation
+   - JavaScript (add to <script>)
+3. Save
+
+RESULT:
+✅ "View My Tracker" in top-right
+✅ "Track This Application" button at bottom
+✅ One-click saves to tracker
+
+┌─────────────────────────────────────────────────┐
+│  FIX #2: DOCUMENTS (10 min)                    │
+└─────────────────────────────────────────────────┘
+
+FILE: frontend/documents.html
+
+STEPS:
+1. Open DOCUMENT_GENERATION_FIX.md
+2. Find downloadResume() function (around line 530)
+3. Replace entire function with new code
+4. Find downloadCoverLetter() function (around line 580)
+5. Replace entire function with new code
+6. Add helper functions at end of <script>:
+   - generateResumeContent()
+   - generateCoverLetterContent()
+7. Save
+
+RESULT:
+✅ "Download Resume" works
+✅ "Download Cover Letter" works
+✅ Proper .docx files with company name
+
+┌─────────────────────────────────────────────────┐
+│  TEST (5 min)                                   │
+└─────────────────────────────────────────────────┘
+
+1. Analyze one job
+2. Go to Documents → Download resume ✓
+3. Go to Outreach → Click "Track This Application" ✓
+4. Click "View My Tracker" → See application ✓
+
+┌─────────────────────────────────────────────────┐
+│  FILES YOU NEED                                 │
+└─────────────────────────────────────────────────┘
+
+1. TRACKING_QUICK_SNIPPET.txt
+2. DOCUMENT_GENERATION_FIX.md
+
+┌─────────────────────────────────────────────────┐
+│  DONE! 🚀                                       │
+└─────────────────────────────────────────────────┘
+
+Total time: 25 minutes
+Then: Ready for beta testing

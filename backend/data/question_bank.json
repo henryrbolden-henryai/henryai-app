@@ -1,0 +1,581 @@
+{
+  "version": "1.0",
+  "description": "Role-specific question bank with signal mappings for HenryAI Interview Intelligence",
+
+  "question_categories": {
+    "warm_start": {
+      "description": "Opening questions to build rapport",
+      "questions": [
+        {
+          "id": "ws_001",
+          "text": "Hi {name}, thank you for making time for this conversation. Before we dive in, I'd love to hear a quick overview of your background. Can you walk me through your career journey in about 60-90 seconds?",
+          "signals": ["communication_clarity", "functional_competency"],
+          "follow_up_triggers": ["vague_answer", "missing_metrics"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        },
+        {
+          "id": "ws_002",
+          "text": "What drew you to this role and this company specifically?",
+          "signals": ["strategic_thinking", "user_centricity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        }
+      ]
+    },
+
+    "recruiter_screen": {
+      "description": "Basic qualification and motivation questions",
+      "questions": [
+        {
+          "id": "rs_001",
+          "text": "What are you looking for in your next role?",
+          "signals": ["strategic_thinking", "ownership"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        },
+        {
+          "id": "rs_002",
+          "text": "Why are you considering leaving your current position?",
+          "signals": ["communication_clarity", "ownership"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        },
+        {
+          "id": "rs_003",
+          "text": "What's your timeline for making a move?",
+          "signals": ["communication_clarity"],
+          "follow_up_triggers": [],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        }
+      ]
+    },
+
+    "behavioral": {
+      "description": "Role-agnostic behavioral questions",
+      "questions": [
+        {
+          "id": "bh_001",
+          "text": "Tell me about a time you had to influence someone without direct authority.",
+          "signals": ["leadership", "stakeholder_management", "communication_clarity"],
+          "follow_up_triggers": ["no_conflict", "vague_answer", "missing_metrics"],
+          "target_levels": ["senior", "director", "executive"]
+        },
+        {
+          "id": "bh_002",
+          "text": "Describe a situation where you had to make a difficult decision with incomplete information.",
+          "signals": ["problem_solving", "ownership", "strategic_thinking"],
+          "follow_up_triggers": ["vague_answer", "no_strategy"],
+          "target_levels": ["senior", "director", "executive"]
+        },
+        {
+          "id": "bh_003",
+          "text": "Tell me about a time you failed or made a mistake. What happened and what did you learn?",
+          "signals": ["ownership", "problem_solving", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer", "missing_metrics"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        },
+        {
+          "id": "bh_004",
+          "text": "Describe a time you had to manage conflicting priorities from multiple stakeholders.",
+          "signals": ["stakeholder_management", "strategic_thinking", "communication_clarity"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["senior", "director", "executive"]
+        },
+        {
+          "id": "bh_005",
+          "text": "Tell me about a project you're most proud of. Walk me through it end-to-end.",
+          "signals": ["functional_competency", "ownership", "metrics_orientation"],
+          "follow_up_triggers": ["missing_metrics", "vague_answer"],
+          "target_levels": ["mid", "senior", "director", "executive"]
+        }
+      ]
+    }
+  },
+
+  "role_specific_questions": {
+    "product_manager": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "pm_hm_001",
+          "text": "Walk me through a feature you shipped end-to-end. What was your role and what was the impact?",
+          "signals": ["functional_competency", "ownership", "metrics_orientation"],
+          "follow_up_triggers": ["missing_metrics", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_hm_002",
+          "text": "How do you decide what to build when everything feels important?",
+          "signals": ["strategic_thinking", "problem_solving", "stakeholder_management"],
+          "follow_up_triggers": ["no_strategy", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_hm_003",
+          "text": "Tell me about a time engineering disagreed with your requirements. How did you handle it?",
+          "signals": ["collaboration", "stakeholder_management", "communication_clarity"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_hm_004",
+          "text": "How do you gather and incorporate user feedback into your product decisions?",
+          "signals": ["user_centricity", "functional_competency", "problem_solving"],
+          "follow_up_triggers": ["no_user_focus", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_hm_005",
+          "text": "Describe how you work with design and engineering to ship a product.",
+          "signals": ["collaboration", "stakeholder_management", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "pm_st_001",
+          "text": "If leadership cut 30% of your roadmap tomorrow, what stays and what goes? Walk me through your thinking.",
+          "signals": ["strategic_thinking", "problem_solving", "executive_presence"],
+          "follow_up_triggers": ["no_strategy", "vague_answer"],
+          "target_levels": ["senior", "director", "executive"]
+        },
+        {
+          "id": "pm_st_002",
+          "text": "What metrics matter most for evaluating your product? How did you arrive at those?",
+          "signals": ["metrics_orientation", "strategic_thinking", "functional_competency"],
+          "follow_up_triggers": ["missing_metrics", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_st_003",
+          "text": "How do you balance short-term wins with long-term product vision?",
+          "signals": ["strategic_thinking", "ownership", "executive_presence"],
+          "follow_up_triggers": ["no_strategy", "vague_answer"],
+          "target_levels": ["senior", "director", "executive"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "pm_bh_001",
+          "text": "Tell me about a time engineering pushed back on your roadmap. How did you handle it?",
+          "signals": ["stakeholder_management", "collaboration", "communication_clarity"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "pm_bh_002",
+          "text": "Describe a time you had to kill a feature or project. What was your process?",
+          "signals": ["ownership", "strategic_thinking", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer", "missing_metrics"],
+          "target_levels": ["senior", "director"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "What were the specific numbers or outcomes?",
+        "vague_answer": "Can you be more specific about your role and contribution?",
+        "no_conflict": "What tradeoffs were you balancing?",
+        "no_strategy": "What framework or criteria did you use to make that decision?"
+      }
+    },
+
+    "software_engineer": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "swe_hm_001",
+          "text": "Walk me through a system you architected. Why did you choose that approach?",
+          "signals": ["functional_competency", "problem_solving", "strategic_thinking"],
+          "follow_up_triggers": ["no_technical_depth", "vague_answer"],
+          "target_levels": ["senior", "director"]
+        },
+        {
+          "id": "swe_hm_002",
+          "text": "Describe a time you optimized performance or refactored code. What was the impact?",
+          "signals": ["functional_competency", "metrics_orientation", "problem_solving"],
+          "follow_up_triggers": ["missing_metrics", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "swe_hm_003",
+          "text": "Tell me about a technical decision you made that you later had to revisit. What would you do differently?",
+          "signals": ["ownership", "problem_solving", "functional_competency"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "swe_hm_004",
+          "text": "How do you approach code reviews? What do you look for?",
+          "signals": ["collaboration", "functional_competency", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "swe_st_001",
+          "text": "If you had to scale an API to handle 10x traffic, how would you approach it?",
+          "signals": ["functional_competency", "strategic_thinking", "problem_solving"],
+          "follow_up_triggers": ["no_technical_depth", "vague_answer"],
+          "target_levels": ["senior", "director"]
+        },
+        {
+          "id": "swe_st_002",
+          "text": "How would you debug an intermittent production issue with limited logs?",
+          "signals": ["problem_solving", "functional_competency", "ownership"],
+          "follow_up_triggers": ["no_technical_depth", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "swe_st_003",
+          "text": "How do you decide when to use a third-party library versus building something in-house?",
+          "signals": ["strategic_thinking", "problem_solving", "functional_competency"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "swe_bh_001",
+          "text": "Tell me about a technical disagreement you had with a teammate. How did you resolve it?",
+          "signals": ["collaboration", "communication_clarity", "ownership"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "swe_bh_002",
+          "text": "Describe a time you had to learn a new technology quickly under pressure.",
+          "signals": ["functional_competency", "ownership", "problem_solving"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "What were the specific performance improvements or results?",
+        "vague_answer": "Can you walk me through the technical details?",
+        "no_technical_depth": "What bottleneck did you identify and how?",
+        "no_conflict": "Were there any technical tradeoffs you had to consider?"
+      }
+    },
+
+    "ux_designer": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "ux_hm_001",
+          "text": "Walk me through a user insight that changed your design direction.",
+          "signals": ["user_centricity", "functional_competency", "problem_solving"],
+          "follow_up_triggers": ["no_user_focus", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ux_hm_002",
+          "text": "How do you approach research when time is tight?",
+          "signals": ["functional_competency", "strategic_thinking", "problem_solving"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ux_hm_003",
+          "text": "Tell me about a time you had to advocate for the user against business priorities.",
+          "signals": ["user_centricity", "stakeholder_management", "communication_clarity"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["senior", "director"]
+        },
+        {
+          "id": "ux_hm_004",
+          "text": "How do you validate your design decisions?",
+          "signals": ["functional_competency", "user_centricity", "metrics_orientation"],
+          "follow_up_triggers": ["vague_answer", "no_user_focus"],
+          "target_levels": ["mid", "senior"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "ux_st_001",
+          "text": "Describe how you would redesign an onboarding flow to reduce drop-offs.",
+          "signals": ["functional_competency", "strategic_thinking", "user_centricity"],
+          "follow_up_triggers": ["no_user_focus", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ux_st_002",
+          "text": "How do you balance user needs with technical constraints?",
+          "signals": ["collaboration", "strategic_thinking", "problem_solving"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "ux_bh_001",
+          "text": "Tell me about a time research changed your design direction significantly.",
+          "signals": ["user_centricity", "ownership", "functional_competency"],
+          "follow_up_triggers": ["no_user_focus", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ux_bh_002",
+          "text": "Describe a time you disagreed with a product manager about a design decision.",
+          "signals": ["stakeholder_management", "communication_clarity", "collaboration"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "What impact did this have on user behavior or business metrics?",
+        "vague_answer": "Can you be more specific about your process?",
+        "no_user_focus": "What user insight drove that decision?",
+        "no_conflict": "How did you get alignment with stakeholders?"
+      }
+    },
+
+    "ui_designer": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "ui_hm_001",
+          "text": "Explain your typography, spacing, and layout decisions on your last project.",
+          "signals": ["functional_competency", "communication_clarity", "user_centricity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ui_hm_002",
+          "text": "How do you ensure visual consistency across multiple surfaces?",
+          "signals": ["functional_competency", "strategic_thinking", "collaboration"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ui_hm_003",
+          "text": "Walk me through how you build and maintain a design system.",
+          "signals": ["functional_competency", "strategic_thinking", "ownership"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["senior", "director"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "ui_st_001",
+          "text": "How would you improve accessibility without impacting the visual brand?",
+          "signals": ["functional_competency", "user_centricity", "problem_solving"],
+          "follow_up_triggers": ["vague_answer", "no_user_focus"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ui_st_002",
+          "text": "How do you prioritize visual polish versus shipping speed?",
+          "signals": ["strategic_thinking", "collaboration", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "ui_bh_001",
+          "text": "Tell me about a time you had to defend a design decision to engineering.",
+          "signals": ["stakeholder_management", "communication_clarity", "functional_competency"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "How did you measure the impact of your design decisions?",
+        "vague_answer": "Can you walk me through your visual decision-making process?",
+        "no_user_focus": "How did accessibility requirements influence your design?",
+        "no_conflict": "What feedback did you incorporate?"
+      }
+    },
+
+    "talent_acquisition": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "ta_hm_001",
+          "text": "Walk me through how you source for hard-to-fill roles.",
+          "signals": ["functional_competency", "strategic_thinking", "problem_solving"],
+          "follow_up_triggers": ["vague_answer", "missing_metrics"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ta_hm_002",
+          "text": "How do you build relationships with hiring managers?",
+          "signals": ["stakeholder_management", "collaboration", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ta_hm_003",
+          "text": "Describe your approach to improving candidate experience.",
+          "signals": ["user_centricity", "ownership", "functional_competency"],
+          "follow_up_triggers": ["vague_answer", "no_user_focus"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "ta_st_001",
+          "text": "How do you prioritize when you have multiple urgent roles to fill?",
+          "signals": ["strategic_thinking", "problem_solving", "stakeholder_management"],
+          "follow_up_triggers": ["vague_answer", "no_strategy"],
+          "target_levels": ["mid", "senior", "director"]
+        },
+        {
+          "id": "ta_st_002",
+          "text": "What metrics do you use to measure recruiting success?",
+          "signals": ["metrics_orientation", "functional_competency", "strategic_thinking"],
+          "follow_up_triggers": ["missing_metrics", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "ta_bh_001",
+          "text": "Tell me about a time a hiring manager disagreed with your candidate recommendation.",
+          "signals": ["stakeholder_management", "communication_clarity", "ownership"],
+          "follow_up_triggers": ["no_conflict", "vague_answer"],
+          "target_levels": ["mid", "senior", "director"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "What were your specific hiring metrics and outcomes?",
+        "vague_answer": "Can you be more specific about your process and results?",
+        "no_user_focus": "How did you gather and act on candidate feedback?",
+        "no_conflict": "How did you navigate differing opinions on candidates?"
+      }
+    },
+
+    "general_leadership": {
+      "hiring_manager_deep_dive": [
+        {
+          "id": "gl_hm_001",
+          "text": "Tell me about your leadership philosophy. How do you approach building and managing teams?",
+          "signals": ["leadership", "communication_clarity", "ownership"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["director", "executive"]
+        },
+        {
+          "id": "gl_hm_002",
+          "text": "Describe how you've scaled a team or function during growth.",
+          "signals": ["leadership", "strategic_thinking", "ownership"],
+          "follow_up_triggers": ["vague_answer", "missing_metrics"],
+          "target_levels": ["director", "executive"]
+        },
+        {
+          "id": "gl_hm_003",
+          "text": "How do you handle underperformance on your team?",
+          "signals": ["leadership", "ownership", "communication_clarity"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["senior", "director", "executive"]
+        }
+      ],
+      "strategy": [
+        {
+          "id": "gl_st_001",
+          "text": "How do you align your team's work with company strategy?",
+          "signals": ["strategic_thinking", "leadership", "executive_presence"],
+          "follow_up_triggers": ["vague_answer", "no_strategy"],
+          "target_levels": ["director", "executive"]
+        },
+        {
+          "id": "gl_st_002",
+          "text": "Describe how you communicate up to executives and down to your team.",
+          "signals": ["communication_clarity", "executive_presence", "leadership"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["director", "executive"]
+        }
+      ],
+      "behavioral": [
+        {
+          "id": "gl_bh_001",
+          "text": "Tell me about a time you had to lead through significant organizational change.",
+          "signals": ["leadership", "communication_clarity", "executive_presence"],
+          "follow_up_triggers": ["vague_answer", "no_conflict"],
+          "target_levels": ["director", "executive"]
+        },
+        {
+          "id": "gl_bh_002",
+          "text": "Describe a difficult decision you made that was unpopular but right for the business.",
+          "signals": ["ownership", "strategic_thinking", "executive_presence"],
+          "follow_up_triggers": ["vague_answer"],
+          "target_levels": ["director", "executive"]
+        }
+      ],
+      "follow_ups": {
+        "missing_metrics": "What were the measurable outcomes?",
+        "vague_answer": "Can you be more specific about your approach and impact?",
+        "no_strategy": "How did this fit into the broader business context?",
+        "no_conflict": "What resistance did you face and how did you address it?"
+      }
+    }
+  },
+
+  "follow_up_triggers": {
+    "missing_metrics": {
+      "description": "Answer lacks numbers or measurable outcomes",
+      "detection_hints": ["no numbers", "no percentages", "vague impact", "didn't quantify"]
+    },
+    "vague_answer": {
+      "description": "Answer is too broad or lacks specifics",
+      "detection_hints": ["general statements", "no examples", "abstract", "hypothetical"]
+    },
+    "no_conflict": {
+      "description": "Answer doesn't mention challenges or pushback",
+      "detection_hints": ["everything went smoothly", "no disagreement", "easy collaboration"]
+    },
+    "no_strategy": {
+      "description": "Missing strategic framing or business context",
+      "detection_hints": ["no prioritization logic", "no tradeoffs", "tactical only"]
+    },
+    "no_user_focus": {
+      "description": "Answer doesn't reference user needs or feedback",
+      "detection_hints": ["no user mention", "no research", "no validation"]
+    },
+    "no_technical_depth": {
+      "description": "Answer lacks technical specificity",
+      "detection_hints": ["high level only", "no architecture", "no implementation details"]
+    }
+  },
+
+  "leveling_rubrics": {
+    "mid": {
+      "description": "Mid-level IC (IC2-IC3)",
+      "expected_signals": ["functional_competency", "communication_clarity", "collaboration"],
+      "minimum_signal_threshold": 0.5,
+      "characteristics": [
+        "Executes well-defined tasks independently",
+        "Communicates clearly within their team",
+        "Collaborates effectively with immediate peers"
+      ]
+    },
+    "senior": {
+      "description": "Senior IC (IC4-IC5)",
+      "expected_signals": ["functional_competency", "strategic_thinking", "problem_solving", "ownership"],
+      "minimum_signal_threshold": 0.6,
+      "characteristics": [
+        "Owns significant scope end-to-end",
+        "Makes sound technical/product decisions",
+        "Influences beyond immediate team",
+        "Mentors junior team members"
+      ]
+    },
+    "director": {
+      "description": "Director/Manager (M1-M2)",
+      "expected_signals": ["leadership", "stakeholder_management", "strategic_thinking", "executive_presence"],
+      "minimum_signal_threshold": 0.65,
+      "characteristics": [
+        "Leads a team or significant initiative",
+        "Manages cross-functional stakeholders",
+        "Translates strategy into execution",
+        "Develops team members"
+      ]
+    },
+    "executive": {
+      "description": "VP/C-level (VP+)",
+      "expected_signals": ["executive_presence", "strategic_thinking", "leadership", "stakeholder_management"],
+      "minimum_signal_threshold": 0.7,
+      "characteristics": [
+        "Sets organizational direction",
+        "Influences C-suite and board",
+        "Builds and scales organizations",
+        "Drives company-level outcomes"
+      ]
+    }
+  }
+}

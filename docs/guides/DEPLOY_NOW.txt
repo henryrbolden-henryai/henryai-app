@@ -1,0 +1,127 @@
+┌─────────────────────────────────────────────────┐
+│  🚀 DEPLOY LINKEDIN NETWORK CHECKER NOW         │
+└─────────────────────────────────────────────────┘
+
+WHAT YOU'RE DEPLOYING:
+LinkedIn connection checker that appears on Outreach page
+and shows warm intro opportunities at target companies.
+
+┌─────────────────────────────────────────────────┐
+│  STEP 1: DOWNLOAD FILES (30 seconds)            │
+└─────────────────────────────────────────────────┘
+
+Download these 3 files:
+
+1. **outreach.html** (REQUIRED)
+   → /mnt/user-data/outputs/outreach.html
+   → Updated with LinkedIn checker
+
+2. **linkedin_test.csv** (FOR TESTING)
+   → /mnt/user-data/outputs/linkedin_test.csv
+   → Sample CSV to test upload
+
+3. **LINKEDIN_DEPLOYED.txt** (REFERENCE)
+   → /mnt/user-data/outputs/LINKEDIN_DEPLOYED.txt
+   → Testing checklist + details
+
+┌─────────────────────────────────────────────────┐
+│  STEP 2: DEPLOY (30 seconds)                    │
+└─────────────────────────────────────────────────┘
+
+cd /path/to/project/frontend/
+cp outreach.html outreach.html.old  # Backup
+cp /path/to/downloads/outreach.html .
+
+Done! No backend changes needed.
+
+┌─────────────────────────────────────────────────┐
+│  STEP 3: TEST (2 minutes)                       │
+└─────────────────────────────────────────────────┘
+
+1. Analyze job (any company, e.g., ServiceNow)
+2. Go to Outreach page
+3. See prompt: "Hey Henry, I can check your LinkedIn network..."
+4. Click "How to Export" → See instructions
+5. Click "Maybe Later" → Prompt disappears
+6. Reload page → Prompt still hidden
+7. Analyze another job
+8. Upload linkedin_test.csv
+9. See: "🎯 Found 3 connections at ServiceNow"
+10. See connection details (Sarah Chen, etc.)
+
+┌─────────────────────────────────────────────────┐
+│  WHAT USERS WILL SEE                            │
+└─────────────────────────────────────────────────┘
+
+On Outreach page, top of page:
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🤝  Hey Henry, I can check your LinkedIn  ✕┃
+┃     network for you                         ┃
+┃                                             ┃
+┃  Upload your LinkedIn connections (CSV)    ┃
+┃  and I'll show you who you know at         ┃
+┃  ServiceNow. Warm intros get 3x higher     ┃
+┃  response rates than cold outreach.        ┃
+┃                                             ┃
+┃  [📤 Upload] [❓ Help] [Maybe Later]          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+After upload (with matches):
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ 🎯 Found 3 connections at ServiceNow       ┃
+┃                                             ┃
+┃ Sarah Chen                                  ┃
+┃ Senior Engineering Manager                  ┃
+┃ 📅 Connected: March 2019                   ┃
+┃                                             ┃
+┃ Suggested approach: Send personalized      ┃
+┃ message referencing your shared            ┃
+┃ background...                               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+After upload (no matches):
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ No direct connections found at ServiceNow  ┃
+┃                                             ┃
+┃ No problem! Cold outreach can still be     ┃
+┃ effective with the right positioning.      ┃
+┃ Use the templates above.                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+┌─────────────────────────────────────────────────┐
+│  VALUE PROPOSITION                              │
+└─────────────────────────────────────────────────┘
+
+✅ Warm intros = 3x higher response rates
+✅ Proactive value delivery (tool suggests it)
+✅ Personalized (uses their name + company)
+✅ Sticky (upload once, use forever)
+✅ Clear premium feature ($29-49/month)
+
+┌─────────────────────────────────────────────────┐
+│  PREMIUM TIER PATH                              │
+└─────────────────────────────────────────────────┘
+
+FREE:
+- Manual CSV upload
+- Direct connections (1st degree)
+- Basic suggested approach
+
+PAID ($29-49/month):
+- Direct LinkedIn API (no CSV)
+- 2nd degree connections
+- Introduction paths
+- Auto-drafted messages
+- Connection strength scoring
+
+┌─────────────────────────────────────────────────┐
+│  THAT'S IT!                                     │
+└─────────────────────────────────────────────────┘
+
+Total deployment time: 1 minute
+Total test time: 2 minutes
+
+Ready to ship! 🚀

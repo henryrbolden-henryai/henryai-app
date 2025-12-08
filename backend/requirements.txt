@@ -1,0 +1,17 @@
+# HenryAI 3-Screen MVP - Dependencies
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# AI
+anthropic>=0.39.0
+
+# Document Generation
+python-docx>=1.1.0
+
+# Validation
+pydantic>=2.5.0
+
+# Optional: Email (for future implementation)
+# aiosmtplib>=2.0.0

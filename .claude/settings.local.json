@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(curl:*)",
+      "Bash(xargs kill:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(unzip:*)",
+      "Bash(fold:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

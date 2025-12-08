@@ -1,0 +1,90 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ⚠️  ACTION REQUIRED — BACKEND NOT INTEGRATED YET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**What you're seeing:**
+✗ Generic positioning ("frame yourself strategically...")
+✗ Empty action plans
+✗ "Market data available" (no actual data)
+✗ Documents not loading
+✗ Fallback text everywhere
+
+**Why:**
+❌ Backend hasn't been updated with enhanced prompts yet
+❌ You only deployed frontend (Part 1)
+❌ Backend integration (Part 2) still needed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**WHAT TO DO RIGHT NOW:**
+
+1️⃣  Deploy Clean Overview (2 min)
+   - Replace overview.html with the fixed version
+   - Removes "Download All Documents" button
+   - Removes "Track" and "Tracker" buttons
+   - Clean, focused experience
+
+2️⃣  Integrate Backend Prompts (15 min)
+   - Follow: BACKEND_FIX_NOW.md
+   - Update Claude prompt in backend.py
+   - Restart backend
+   - Test with real job description
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**QUICK START:**
+
+Deploy Clean Overview:
+   cd frontend/
+   cp /path/to/downloads/overview.html .
+   # Refresh browser
+
+Integrate Backend:
+   1. Open backend.py
+   2. Search: "INTELLIGENCE LAYER"
+   3. Replace entire prompt (see BACKEND_FIX_NOW.md)
+   4. Save and restart:
+      pkill -f "uvicorn"
+      uvicorn backend:app --reload &
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**FILES TO USE:**
+
+Frontend:
+✓ overview.html (FIXED - no extra buttons)
+✓ positioning.html (already deployed)
+✓ documents.html (already deployed)
+✓ outreach.html (already deployed)
+✓ results.html (already deployed)
+
+Backend:
+✓ BACKEND_FIX_NOW.md (step-by-step guide)
+✓ BACKEND_INTEGRATION_GUIDE.md (full enhanced prompt)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**AFTER BACKEND INTEGRATION:**
+
+You'll see:
+✅ "Henry, frame yourself as a fintech recruiting leader..."
+✅ Action plan: "Apply via Coast ATS before end of day..."
+✅ Market data: "$180K-$230K in major metros, Glassdoor $195K median"
+✅ Documents load successfully
+✅ Download buttons work
+✅ Comprehensive, personalized content
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**TIMELINE:**
+
+Now: Deploy clean overview (2 min)
+Now: Integrate backend (15 min)
+Tonight: Test with 2-3 job descriptions
+Tomorrow: Beta testing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 **START HERE:** BACKEND_FIX_NOW.md
+
+This is the critical blocker. Everything else depends on this! 🚀

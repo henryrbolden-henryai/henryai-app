@@ -1,0 +1,202 @@
+{
+  "resume": {
+    "summary": "Results-driven Product Manager with 8+ years of experience leading cross-functional teams to deliver B2B SaaS products at scale. Proven track record of driving product strategy, stakeholder alignment, and data-driven decision making at companies including Spotify and Uber.",
+    "skills": [
+      "Product Strategy",
+      "Stakeholder Management",
+      "Agile Development",
+      "Data-Driven Decision Making",
+      "Cross-Functional Leadership",
+      "B2B SaaS",
+      "User Research",
+      "Roadmap Planning",
+      "A/B Testing",
+      "SQL",
+      "Product Analytics"
+    ],
+    "experience": [
+      {
+        "company": "Spotify",
+        "title": "Senior Product Manager",
+        "dates": "2020 - 2023",
+        "industry": "Technology / Music Streaming",
+        "bullets": [
+          "Led cross-functional team of 12 engineers and designers to launch premium podcast features, driving 25% increase in subscriber retention",
+          "Developed product roadmap aligned with company OKRs, prioritizing features based on user research and data analysis",
+          "Partnered with stakeholders across marketing, engineering, and design to deliver product initiatives on time and within scope",
+          "Implemented A/B testing framework that improved feature adoption by 40% across mobile platforms"
+        ]
+      },
+      {
+        "company": "Uber",
+        "title": "Product Manager",
+        "dates": "2017 - 2020",
+        "industry": "Technology / Transportation",
+        "bullets": [
+          "Owned B2B product strategy for Uber for Business, growing enterprise accounts by 150% year-over-year",
+          "Led stakeholder alignment across 5 teams to launch corporate travel dashboard used by 500+ enterprise clients",
+          "Drove data-driven decision making by establishing KPIs and building product analytics dashboards",
+          "Collaborated with engineering to reduce onboarding time by 60% through UX improvements"
+        ]
+      }
+    ]
+  },
+  "resume_output": {
+    "headline": "Senior Product Manager | B2B SaaS | Cross-Functional Leadership | Data-Driven Strategy",
+    "summary": "Results-driven Product Manager with 8+ years of experience leading cross-functional teams to deliver B2B SaaS products at scale. Proven track record of driving product strategy, stakeholder alignment, and data-driven decision making at Spotify and Uber. Passionate about building products that solve real customer problems and deliver measurable business impact.",
+    "key_qualifications": [
+      "8+ years of product management experience at high-growth tech companies (Spotify, Uber)",
+      "Proven track record leading cross-functional teams of 12+ engineers, designers, and marketers",
+      "Deep expertise in B2B SaaS product strategy with 150% YoY enterprise account growth",
+      "Strong data-driven decision making with SQL, A/B testing, and product analytics",
+      "Experience owning full product lifecycle from strategy through execution and iteration"
+    ],
+    "experience_sections": [
+      {
+        "company": "Spotify",
+        "title": "Senior Product Manager",
+        "location": "New York, NY",
+        "dates": "Jan 2020 – Dec 2023",
+        "bullets": [
+          "Led cross-functional team of 12 engineers and designers to launch premium podcast features, driving 25% increase in subscriber retention and contributing to $50M ARR growth",
+          "Developed and executed product roadmap aligned with company OKRs, prioritizing features based on user research, competitive analysis, and data-driven insights",
+          "Partnered with stakeholders across marketing, engineering, and design to deliver 6 major product initiatives on time and within scope over 3 years",
+          "Implemented A/B testing framework that improved feature adoption by 40% across iOS and Android platforms, establishing best practices adopted by 3 other product teams"
+        ]
+      },
+      {
+        "company": "Uber",
+        "title": "Product Manager",
+        "location": "San Francisco, CA",
+        "dates": "Mar 2017 – Dec 2019",
+        "bullets": [
+          "Owned end-to-end B2B product strategy for Uber for Business, growing enterprise accounts by 150% year-over-year from 200 to 500+ clients",
+          "Led stakeholder alignment across 5 cross-functional teams (Engineering, Design, Sales, Marketing, Legal) to launch corporate travel dashboard used by Fortune 500 clients",
+          "Established KPIs and built product analytics dashboards that drove data-driven decision making across the B2B organization",
+          "Collaborated with engineering to reduce enterprise onboarding time by 60% through UX improvements and process automation"
+        ]
+      },
+      {
+        "company": "Deloitte Consulting",
+        "title": "Business Analyst",
+        "location": "Chicago, IL",
+        "dates": "Jun 2015 – Feb 2017",
+        "bullets": [
+          "Supported product strategy engagements for Fortune 500 clients in financial services and healthcare sectors",
+          "Conducted market research and competitive analysis to inform product roadmap recommendations",
+          "Facilitated stakeholder workshops to gather requirements and align cross-functional teams on project priorities"
+        ]
+      }
+    ],
+    "skills": [
+      "Product Strategy & Roadmapping",
+      "Cross-Functional Leadership",
+      "Stakeholder Management",
+      "Agile/Scrum Methodologies",
+      "Data-Driven Decision Making",
+      "User Research & Customer Discovery",
+      "A/B Testing & Experimentation",
+      "Go-to-Market Strategy",
+      "B2B SaaS",
+      "Enterprise Product Management"
+    ],
+    "tools_technologies": [
+      "SQL",
+      "Tableau",
+      "Amplitude",
+      "Mixpanel",
+      "Jira",
+      "Confluence",
+      "Figma",
+      "Google Analytics",
+      "Looker",
+      "Optimizely"
+    ],
+    "education": [
+      {
+        "institution": "Northwestern University",
+        "degree": "Master of Business Administration (MBA)",
+        "details": "Kellogg School of Management, 2015 | Concentration in Strategy & Operations"
+      },
+      {
+        "institution": "University of Michigan",
+        "degree": "Bachelor of Science in Industrial Engineering",
+        "details": "Ann Arbor, MI | Graduated 2013 | Dean's List"
+      }
+    ],
+    "additional_sections": [
+      {
+        "label": "Certifications",
+        "items": [
+          "Certified Scrum Product Owner (CSPO)",
+          "Google Analytics Certified",
+          "Pragmatic Marketing Certified (PMC-III)"
+        ]
+      },
+      {
+        "label": "Languages",
+        "items": [
+          "English (Native)",
+          "Spanish (Professional Working Proficiency)"
+        ]
+      }
+    ],
+    "ats_keywords": [
+      "product strategy",
+      "stakeholder alignment",
+      "agile development",
+      "data-driven decision making",
+      "cross-functional leadership",
+      "B2B SaaS",
+      "product roadmap"
+    ]
+  },
+  "cover_letter": {
+    "greeting": "Dear Hiring Manager,",
+    "opening": "I am excited to apply for the Senior Product Manager role at Acme Corp. With over 8 years of experience driving product strategy at companies like Spotify and Uber, I have consistently delivered results by leading cross-functional teams to build products that customers love and that drive measurable business impact.",
+    "body": "At Spotify, I led a team of 12 engineers and designers to launch premium podcast features that drove a 25% increase in subscriber retention. I developed product roadmaps aligned with company OKRs and implemented A/B testing frameworks that improved feature adoption by 40%. This experience aligns directly with your need for someone who can own the product lifecycle from strategy through execution.\n\nAt Uber, I owned the B2B product strategy for Uber for Business, growing enterprise accounts by 150% year-over-year. I partnered with stakeholders across multiple teams to launch a corporate travel dashboard now used by over 500 enterprise clients. My experience driving stakeholder alignment and building data-driven products makes me well-suited to contribute to Acme Corp's growth objectives.",
+    "closing": "I am drawn to Acme Corp's mission to transform how businesses operate, and I am confident that my experience in B2B SaaS product management positions me to make an immediate impact. I would welcome the opportunity to discuss how my background aligns with your team's goals. Thank you for your consideration.",
+    "full_text": "Dear Hiring Manager,\n\nI am excited to apply for the Senior Product Manager role at Acme Corp. With over 8 years of experience driving product strategy at companies like Spotify and Uber, I have consistently delivered results by leading cross-functional teams to build products that customers love and that drive measurable business impact.\n\nAt Spotify, I led a team of 12 engineers and designers to launch premium podcast features that drove a 25% increase in subscriber retention. I developed product roadmaps aligned with company OKRs and implemented A/B testing frameworks that improved feature adoption by 40%. This experience aligns directly with your need for someone who can own the product lifecycle from strategy through execution.\n\nAt Uber, I owned the B2B product strategy for Uber for Business, growing enterprise accounts by 150% year-over-year. I partnered with stakeholders across multiple teams to launch a corporate travel dashboard now used by over 500 enterprise clients. My experience driving stakeholder alignment and building data-driven products makes me well-suited to contribute to Acme Corp's growth objectives.\n\nI am drawn to Acme Corp's mission to transform how businesses operate, and I am confident that my experience in B2B SaaS product management positions me to make an immediate impact. I would welcome the opportunity to discuss how my background aligns with your team's goals. Thank you for your consideration."
+  },
+  "changes_summary": {
+    "resume": {
+      "summary_rationale": "Rewrote to emphasize cross-functional leadership and B2B SaaS experience because that's what they're prioritizing in this role. Led with 'Results-driven Product Manager' to match their emphasis on measurable outcomes.",
+      "qualifications_rationale": "Pulled forward your Uber B2B product work (150% growth) and Spotify stakeholder management (team of 12). Collapsed the Deloitte role to 3 bullets since it's less relevant to the senior PM level they're hiring for.",
+      "ats_keywords": [
+        "product strategy",
+        "stakeholder alignment",
+        "agile development",
+        "data-driven decision making",
+        "cross-functional leadership",
+        "B2B SaaS",
+        "product roadmap"
+      ],
+      "positioning_statement": "This positions you as someone who can step into a Series B environment and own product strategy end-to-end, not just execute features handed down from leadership."
+    },
+    "cover_letter": {
+      "opening_rationale": "Led with your track record at Spotify and Uber because those brand-name companies immediately signal credibility and scale for a senior PM role.",
+      "body_rationale": "Emphasized cross-functional execution (team of 12), data-driven decision making (A/B testing, 40% improvement), and B2B enterprise experience (150% growth, 500+ clients). Avoided mentioning Deloitte consulting since it dilutes the product narrative.",
+      "close_rationale": "Confident but not pushy. Signals genuine interest in their mission without sounding desperate or generic.",
+      "positioning_statement": "This frames you as the senior PM who can step in and own product strategy from day one, backed by enterprise-scale experience at recognizable tech companies."
+    }
+  },
+  "interview_prep": {
+    "narrative": "I've spent the last 8 years building and scaling products at companies like Spotify and Uber, where I learned how to drive impact through cross-functional leadership and data-driven decision making. At Uber, I owned B2B product strategy and grew enterprise accounts by 150%, which taught me how to navigate complex stakeholder environments and enterprise sales cycles. At Spotify, I led a team of 12 to launch features that drove 25% retention improvement, honing my skills in experimentation and iterative development. I'm now looking to bring that experience to Acme Corp where I can own product strategy at a pivotal growth stage and help scale the B2B business.",
+    "talking_points": [
+      "B2B enterprise experience: Grew Uber for Business accounts by 150% YoY, launched dashboard used by 500+ Fortune 500 clients. Can speak to enterprise sales cycles, stakeholder complexity, and long-term roadmap planning.",
+      "Cross-functional leadership: Led team of 12 engineers and designers at Spotify, delivered 6 major product initiatives over 3 years. Comfortable owning the full product lifecycle and driving alignment across engineering, design, marketing, and sales.",
+      "Data-driven approach: Built A/B testing framework that improved feature adoption by 40%, established KPIs and analytics dashboards that drove org-wide decision making. Strong with SQL and product analytics tools.",
+      "Stakeholder management: Partnered across 5+ teams at Uber to align on product priorities and deliver complex initiatives. Experience presenting to executives and building consensus across competing priorities."
+    ],
+    "gap_mitigation": [
+      "If asked about industry experience: 'While I haven't worked in [specific industry], my experience scaling B2B products at Uber directly translates. Enterprise sales cycles, stakeholder complexity, and data-driven prioritization are universal skills that apply across verticals.'",
+      "If asked about team size or scope: 'I've led teams of 12 directly and influenced cross-functional groups of 30+. I'm comfortable scaling my leadership approach based on organizational needs and have experience building processes that work at different stages of company growth.'",
+      "If asked about specific technology stack: 'I'm a fast learner with strong technical intuition. At Spotify, I ramped up on podcast infrastructure in 3 weeks and was contributing to technical roadmap discussions within a month. I prioritize understanding the 'why' behind technical decisions so I can make informed tradeoffs.'"
+    ]
+  },
+  "outreach": {
+    "hiring_manager": "Hi, I recently applied for the Senior Product Manager role at Acme Corp and wanted to reach out directly. I've spent 8 years driving B2B product strategy at Spotify and Uber, including growing Uber for Business by 150% YoY and leading a team of 12 at Spotify to launch features that drove 25% retention improvement. I'm particularly excited about Acme's approach to enterprise product development, and I'd love to discuss how my experience could contribute to your team's goals.",
+    "recruiter": "Hi, I just submitted my application for the Senior Product Manager position at Acme Corp. With 8+ years of PM experience at companies like Spotify and Uber—including owning B2B strategy that grew enterprise accounts by 150%—I believe I'm a strong fit for what you're looking for. Happy to provide any additional context or jump on a quick call if helpful. Looking forward to connecting!",
+    "linkedin_help_text": "1) Search LinkedIn for 'Acme Corp' and filter by 'People', 2) Look for titles like 'VP Product', 'Director of Product', 'Head of Product', or 'Senior Product Manager' who might be the hiring manager, 3) Also search for 'Recruiter', 'Talent Acquisition', or 'People Operations' at Acme Corp, 4) Send a personalized connection request using the messages above—customize the company-specific detail based on what you learn from their profile, 5) If no direct matches, look for 'Product Manager' peers who might refer you internally or provide intel on the team."
+  }
+}

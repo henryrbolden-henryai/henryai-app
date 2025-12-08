@@ -1,0 +1,137 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 SHIP IT TONIGHT — QUICK START CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️  TOTAL TIME: 30 minutes
+📖 FULL GUIDE: SHIP_IT_TONIGHT.md
+✅ READY FOR: Beta testing tomorrow
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PART 1: FRONTEND (10 min)
+
+1️⃣  Backup (1 min)
+   cd frontend/
+   cp overview.html overview.html.backup
+   cp positioning.html positioning.html.backup
+   cp documents.html documents.html.backup
+   cp outreach.html outreach.html.backup
+   cp results.html results.html.backup
+
+2️⃣  Deploy (2 min)
+   cp /path/to/downloads/overview.html .
+   cp /path/to/downloads/positioning.html .
+   cp /path/to/downloads/documents.html .
+   cp /path/to/downloads/outreach.html .
+   cp /path/to/downloads/results.html .
+
+3️⃣  Test (5 min)
+   - Clear browser cache (Cmd+Shift+R)
+   - Complete analyze flow
+   - Check all 4 pages load
+   - Check downloads work
+   - Check side-by-side layout
+
+✅ Frontend Success:
+   - Navigation flows smoothly
+   - Documents load and download
+   - Outreach side-by-side works
+   - Company name auto-fills
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PART 2: BACKEND (20 min)
+
+1️⃣  Backup (30 sec)
+   cd backend/
+   cp backend.py backend.py.backup.$(date +%Y%m%d_%H%M)
+
+2️⃣  Find Prompt (2 min)
+   - Open backend.py
+   - Search: "INTELLIGENCE LAYER"
+   - Should be around line 1050-1100
+
+3️⃣  Replace Prompt (10 min)
+   - Select from "INTELLIGENCE LAYER" to closing """
+   - Delete old prompt
+   - Paste enhanced prompt from BACKEND_INTEGRATION_GUIDE.md
+   - Save file
+
+4️⃣  Restart (2 min)
+   pkill -f "uvicorn"
+   uvicorn backend:app --reload --host 0.0.0.0 --port 8000 &
+   sleep 5
+   curl http://localhost:8000/health
+
+5️⃣  Test (5 min)
+   - Run full analysis
+   - Check first name only
+   - Check company name filled
+   - Check action plan populated
+   - Check market data present
+
+✅ Backend Success:
+   - First name only ("Henry," not full)
+   - Company name throughout
+   - Action plans populated
+   - Market data present
+   - Content personalized
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ROLLBACK (if needed)
+
+Frontend (30 sec):
+   cp *.backup .
+
+Backend (30 sec):
+   pkill -f "uvicorn"
+   cp backend.py.backup.* backend.py
+   uvicorn backend:app --reload &
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VERIFICATION CHECKLIST
+
+□ All 4 pages load
+□ Navigation consistent
+□ Documents download
+□ First name only
+□ Company name filled
+□ Action plans populated
+□ Market data present
+□ No placeholders
+□ No em dashes
+□ Content personalized
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FILES YOU NEED
+
+Frontend (download from outputs/):
+✓ overview.html
+✓ positioning.html
+✓ documents.html
+✓ outreach.html
+✓ results.html
+
+Documentation:
+✓ SHIP_IT_TONIGHT.md (full guide)
+✓ BACKEND_INTEGRATION_GUIDE.md (prompt)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TOMORROW MORNING
+
+1. Final verification with fresh eyes
+2. Test 2-3 different job descriptions
+3. Verify mobile responsive
+4. Prepare beta tester list
+5. Send beta access
+6. Monitor initial feedback
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GOOD LUCK! 🚀💪
+
+For detailed steps, see: SHIP_IT_TONIGHT.md

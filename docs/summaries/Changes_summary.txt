@@ -1,0 +1,79 @@
+{
+  "resume_output": {
+    "summary": "...",
+    "key_qualifications": ["...", "...", "..."],
+    "ats_keywords": ["...", "...", "..."]
+  },
+  "changes_summary": {
+    "resume": {
+      "summary_rationale": "Rewrote to emphasize cross-functional leadership and growth-stage execution because that's what they're prioritizing in this role",
+      "qualifications_rationale": "Pulled forward your Spotify roadmap work and Uber metrics execution. Buried the National Grid utility background since it doesn't map to what they need",
+      "ats_keywords": ["product market fit", "stakeholder alignment", "agile development", "data driven decision making", "user centric design"],
+      "positioning_statement": "This positions you as someone who can scale consumer products in high-growth environments, not just manage features"
+    },
+    "cover_letter": {
+      "opening_rationale": "Led with your track record scaling consumer products at Spotify and Uber because that's the competency gap they're trying to fill",
+      "body_rationale": "Emphasized cross-functional execution, data-driven decision making, and launching under tight timelines. Avoided utility sector work since it dilutes the narrative",
+      "close_rationale": "Confident but not pushy. Signals interest without desperation",
+      "positioning_statement": "This frames you as the senior PM who can step in and own product strategy from day one"
+    }
+  }
+}
+```
+
+---
+
+### **Backend Logic Changes:**
+
+**1. When generating resume tailoring:**
+- Already generating: `summary`, `key_qualifications`, `ats_keywords`
+- Now also generate: `summary_rationale`, `qualifications_rationale`, `positioning_statement`
+
+**2. When generating cover letter:**
+- Already generating: full cover letter text
+- Now also generate: `opening_rationale`, `body_rationale`, `close_rationale`, `positioning_statement`
+
+**3. Response flow:**
+- Return the `changes_summary` object along with the tailored documents
+- Frontend displays the changes summary first
+- User can either request adjustments or proceed to download
+- Download buttons appear after the summary is shown
+
+---
+
+## **FRONTEND CHANGES NEEDED**
+
+Your frontend needs to:
+
+1. **Display the changes summary** before showing download buttons
+2. **Wait for user confirmation** ("Ready to download" or "adjust something")
+3. **Show download buttons** only after user confirms or after a timeout
+
+### **Example UI Flow:**
+```
+[Job analysis completes]
+
+┌─────────────────────────────────────────┐
+│ Alright, I've tailored your resume for  │
+│ this role. Here's what I changed:       │
+│                                         │
+│ Summary: Rewrote to emphasize...       │
+│ Key Qualifications: Pulled forward...  │
+│ ATS Keywords Added: [list]             │
+│                                         │
+│ This positions you as [framing].       │
+└─────────────────────────────────────────┘
+
+[User sees this first]
+
+┌─────────────────────────────────────────┐
+│ Ready to download, or want me to adjust │
+│ anything?                               │
+└─────────────────────────────────────────┘
+
+[Input box for adjustments OR download buttons appear]
+
+┌──────────────┐  ┌──────────────┐
+│ Download     │  │ Download     │
+│ Resume       │  │ Cover Letter │
+└──────────────┘  └──────────────┘

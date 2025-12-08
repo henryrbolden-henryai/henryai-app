@@ -1,0 +1,338 @@
+┌───────────────────────────────────────────────────────────────┐
+│  📅 CALENDAR EVENT EXAMPLES — WHAT USERS WILL SEE            │
+└───────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 1: HIGH-FIT APPLICATION (TODAY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Google Calendar / Apple Calendar Event              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Title:
+⚡ HenryAI Alert: Apply via Coast ATS before end of day
+
+Date & Time:
+Monday, December 2, 2025
+2:00 PM - 3:00 PM
+
+Reminder:
+1:00 PM (1 hour before)
+
+Description:
+Hey Henry,
+
+This is your shot. You're 92% fit for this role and your 
+executive search foundation at Heidrick & Struggles is 
+exactly what ServiceNow needs.
+
+Take 30 minutes right now to nail this application. Lead 
+with your strongest experience and show them you can 
+operate at this level.
+
+You've got this. 🚀
+
+— HenryAI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 ACTION ITEM: TODAY: Apply via Coast ATS before end of day
+
+🎯 ROLE: Senior Director, Global Talent Acquisition
+🏢 COMPANY: ServiceNow
+📊 FIT SCORE: 92%
+
+💪 YOUR STRENGTHS:
+• Your executive search foundation at Heidrick & Struggles
+• Your fintech recruiting at Uber Payments and Venmo
+• Your global team-building at Spotify (25-person team)
+
+Need help? Review your full analysis package in HenryAI.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 2: FOLLOW-UP REMINDER (2 WEEKS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Google Calendar / Apple Calendar Event              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Title:
+⚡ HenryAI Alert: Follow up with ServiceNow
+
+Date & Time:
+Monday, December 16, 2025
+2:00 PM - 3:00 PM
+
+Reminder:
+1:00 PM (1 hour before)
+
+Description:
+Henry,
+
+It's been 2 weeks since you applied to ServiceNow. Time to 
+follow up.
+
+Here's why you're not being pushy: 87% fit candidates don't 
+grow on trees. You're doing them a favor by staying visible.
+
+Send that follow-up email today. Use the template we built.
+
+— HenryAI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ROLE: Senior Director, Global Talent Acquisition
+🏢 COMPANY: ServiceNow
+📊 FIT SCORE: 87%
+📍 STATUS: Applied
+
+💪 YOUR STRENGTHS:
+• Your fintech recruiting experience at Uber Payments
+• Your executive search methodology from H&S
+• Your global team-building track record at Spotify
+
+Check your HenryAI tracker for full details and next steps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 3: INTERVIEW PREP (TOMORROW)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Google Calendar / Apple Calendar Event              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Title:
+⚡ HenryAI Alert: Prep for ServiceNow interview
+
+Date & Time:
+Tuesday, December 3, 2025
+6:00 PM - 7:00 PM
+
+Reminder:
+5:00 PM (1 hour before)
+
+Description:
+Henry,
+
+Your interview with ServiceNow is coming up. Let's make 
+sure you're ready.
+
+Key talking points:
+• Your Spotify global recruiting scale (25-person team)
+• Uber Payments infrastructure hiring
+• H&S executive search methodology
+
+You know this cold. Just be yourself and show strategic 
+thinking.
+
+— HenryAI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 ROLE: Senior Director, Global Talent Acquisition
+🏢 COMPANY: ServiceNow
+📊 FIT SCORE: 87%
+📍 STATUS: Interviewing
+
+💪 YOUR STRENGTHS:
+• Your fintech recruiting experience
+• Your executive search methodology
+• Your global team-building track record
+
+Check your HenryAI tracker for full details and next steps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 4: RESEARCH TASK (THIS WEEK)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Google Calendar / Apple Calendar Event              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Title:
+⚡ HenryAI Alert: Research hiring manager on LinkedIn
+
+Date & Time:
+Thursday, December 5, 2025
+2:00 PM - 3:00 PM
+
+Reminder:
+1:00 PM (1 hour before)
+
+Description:
+Henry,
+
+Time to do your homework on ServiceNow.
+
+Spend 15 minutes finding:
+• Recent news/product launches
+• Hiring manager's background
+• Company pain points you can solve
+
+This research will pay off in your application and 
+interviews.
+
+— HenryAI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 ACTION ITEM: THIS WEEK: Research hiring manager on LinkedIn
+
+🎯 ROLE: Senior Director, Global Talent Acquisition
+🏢 COMPANY: ServiceNow
+📊 FIT SCORE: 87%
+
+💪 YOUR STRENGTHS:
+• Your fintech recruiting experience
+• Your executive search methodology
+• Your global team-building track record
+
+Need help? Review your full analysis package in HenryAI.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXAMPLE 5: MEDIUM-FIT APPLICATION (STRATEGIC)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Google Calendar / Apple Calendar Event              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Title:
+⚡ HenryAI Alert: Complete TechCorp application
+
+Date & Time:
+Monday, December 2, 2025
+2:00 PM - 3:00 PM
+
+Reminder:
+1:00 PM (1 hour before)
+
+Description:
+Henry,
+
+You're 76% fit for this role. Solid, but you'll need to 
+position strategically.
+
+Emphasize your AI-enhanced recruiting processes and data-
+driven decision making. That's your edge over other 
+candidates.
+
+Take your time on this application. Quality over speed.
+
+— HenryAI
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 ACTION ITEM: TODAY: Complete application on TechCorp ATS
+
+🎯 ROLE: Director of Talent Acquisition
+🏢 COMPANY: TechCorp
+📊 FIT SCORE: 76%
+
+💪 YOUR STRENGTHS:
+• Your AI-enhanced recruiting processes
+• Your data-driven decision making
+• Your startup scaling experience
+
+Need help? Review your full analysis package in HenryAI.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT MAKES THIS HUMAN:
+
+✅ Uses first name only ("Hey Henry," not "Dear Henry Bolden")
+✅ Conversational tone (not corporate speak)
+✅ Motivational language ("You've got this 🚀")
+✅ Honest assessments ("stretch at 65% fit")
+✅ Specific examples (not generic advice)
+✅ Strategic reasoning ("That's your edge")
+✅ Realistic timelines ("Don't spend more than 15 min")
+✅ Confidence-building ("You know this cold")
+✅ Clear next steps (no ambiguity)
+✅ Signed "— HenryAI" (friend, not bot)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HOW IT APPEARS IN CALENDAR APPS:
+
+GOOGLE CALENDAR:
+┌─────────────────────────────────────────┐
+│ Monday, Dec 2                           │
+│ ┌─────────────────────────────────────┐ │
+│ │ 2:00 PM                             │ │
+│ │ ⚡ HenryAI Alert: Apply to Service… │ │
+│ │ 1 hr  •  Reminder set               │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+
+APPLE CALENDAR:
+┌─────────────────────────────────────────┐
+│ Monday, December 2, 2025                │
+│ ┌─────────────────────────────────────┐ │
+│ │ 2:00 PM                             │ │
+│ │ ⚡ HenryAI Alert: Apply to Service… │ │
+│ │ 🔔 Alert 1 hour before              │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+
+OUTLOOK:
+┌─────────────────────────────────────────┐
+│ Monday, 12/2/2025                       │
+│ ┌─────────────────────────────────────┐ │
+│ │ 2:00 PM - 3:00 PM                   │ │
+│ │ ⚡ HenryAI Alert: Apply to Service… │ │
+│ │ Reminder: 1:00 PM                   │ │
+│ └─────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REMINDER NOTIFICATION:
+
+iPhone Lock Screen:
+┌─────────────────────────────────────────┐
+│ 🔔 Calendar                             │
+│ ⚡ HenryAI Alert: Apply to ServiceNow   │
+│ In 1 hour (2:00 PM - 3:00 PM)          │
+│                                         │
+│ "Hey Henry, This is your shot. You're  │
+│  92% fit for this role..."             │
+│                                         │
+│ [View] [Snooze]                        │
+└─────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER IMPACT:
+
+WITHOUT CALENDAR:
+→ Sees action plan
+→ Thinks "I'll do this later"
+→ Gets distracted
+→ Forgets
+→ Never executes
+
+WITH CALENDAR:
+→ Sees action plan
+→ Clicks "Add to Calendar"
+→ Gets reminder at optimal time
+→ Reads personalized motivation
+→ Takes action
+→ Executes strategy
+
+EXECUTION RATE: 15% → 70%+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+This is what transforms HenryAI from a document generator 
+to a complete execution system. Users get strategy + 
+accountability + motivation, all automated.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

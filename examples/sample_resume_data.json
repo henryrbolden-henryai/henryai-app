@@ -1,0 +1,59 @@
+{
+  "candidate": {
+    "name": "Henry R. Bolden III",
+    "tagline": "Recruiting Operations Lead | Process Optimization | Systems Integration",
+    "contact": {
+      "phone": "+16466487744",
+      "email": "henry.r.bolden@gmail.com",
+      "linkedin": "linkedin.com/in/henrybolden",
+      "location": "New York, NY"
+    }
+  },
+  "summary": "Recruiting Operations Leader with 10+ years optimizing global hiring systems, managing coordination teams, and driving operational excellence across high-growth and enterprise organizations. Deep hands-on expertise in ATS administration (Greenhouse, Workday), interview scheduling optimization, compliance management, and analytics infrastructure. Proven ability to scale recruiting operations while maintaining data integrity, process rigor, and an exceptional candidate experience. Track record includes 3x recruiter productivity gains, 30% reduction in time-to-offer, and $1M in operational savings.",
+  "competencies": [
+    "High-Volume Interview Coordination & Scheduling Optimization",
+    "ATS Administration & Data Integrity Management",
+    "Recruiting Metrics & Dashboard Development",
+    "Process Documentation, Compliance (EEOC/OFCCP), & Workflow Automation",
+    "Vendor Management & Technology Integration",
+    "Recruiting Coordinator Training & Team Development"
+  ],
+  "experience": [
+    {
+      "company": "National Grid",
+      "title": "Director & Global Head of Talent Acquisition",
+      "location": "New York, NY",
+      "dates": "2023 - 2025",
+      "overview": "Multinational electricity & gas utility with 30,000 employees; $27B revenue.",
+      "bullets": [
+        "Led global talent acquisition and recruiting operations across the US and UK for seven corporate functions. Managed daily recruiting logistics, ATS configuration, and compliance audits.",
+        "Led team of recruiting coordinators, establishing scheduling protocols, conducting performance reviews, and training on Workday administration and calendar management.",
+        "Overhauled interview scheduling workflows, introducing structured calendar templates and same-day turnaround SLAs. Reduced coordinator workload by 40% and scheduling errors by 25%."
+      ]
+    },
+    {
+      "company": "Spotify",
+      "title": "Senior Technical Recruiter",
+      "location": "New York, NY",
+      "dates": "2019 - 2023",
+      "overview": "Global audio streaming platform with 6,000+ employees.",
+      "bullets": [
+        "Partnered with engineering leadership to fill 50+ technical roles annually across multiple product teams.",
+        "Implemented structured interview processes that improved offer acceptance rates by 15%.",
+        "Mentored junior recruiters on sourcing strategies and candidate experience best practices."
+      ]
+    }
+  ],
+  "skills": {
+    "Systems & Tools": ["Greenhouse", "Workday", "GoodTime", "Gem", "SQL", "Tableau", "Excel", "ATS Integrations", "TA Analytics", "CRM Workflows"],
+    "Competencies": ["Recruiting Operations", "Process Optimization", "Team Leadership", "Vendor Management", "Compliance"]
+  },
+  "education": {
+    "school": "New York University",
+    "degree": "B.A., Social Sciences",
+    "details": [
+      "Concentration: Organizational Behavior & Change",
+      "Focus: Leadership & Organizational Strategy"
+    ]
+  }
+}

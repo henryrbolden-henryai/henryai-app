@@ -1,0 +1,110 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🔍 QUICK DIAGNOSTIC - DO THIS FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**What I see in your screenshots:**
+✅ Backend IS generating content (I see real company names)
+❌ Frontend not displaying it properly
+❌ Documents not downloading
+❌ No auto-tracking
+
+**Root cause:** Data structure mismatch or backend not fully returning data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**STEP 1: DEPLOY DEBUG VERSION (2 min)**
+
+1. Download: positioning_debug.html
+2. Replace your positioning.html with it:
+   
+   cd frontend/
+   mv positioning.html positioning.html.backup
+   cp /path/to/downloads/positioning_debug.html positioning.html
+
+3. Run a test job analysis
+4. Go to positioning page
+5. Press F12 (open browser console)
+6. Look for red debug panel at top of page
+7. Check console output
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**STEP 2: TELL ME WHAT YOU SEE**
+
+In the browser console (F12), you'll see:
+
+=== POSITIONING PAGE DEBUG ===
+✅ Parsed analysis object: {....}
+📍 positioning_strategy: {....}
+📅 action_plan: {....}
+💰 salary_strategy: {....}
+
+**Copy this output and send it to me.**
+
+I need to see:
+1. Are the arrays populated? (emphasize, de_emphasize, today, tomorrow, etc.)
+2. What are the actual values?
+3. Are they null, undefined, or empty?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**LIKELY SCENARIOS:**
+
+**Scenario A: Arrays are populated**
+→ Frontend loading logic needs adjustment
+→ I'll fix positioning.html
+
+**Scenario B: Arrays are empty []**
+→ Backend prompt not being followed
+→ Claude API not returning data properly
+→ Need to check backend logs
+
+**Scenario C: Fields are missing entirely**
+→ Backend response structure wrong
+→ Need to fix backend parsing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**STEP 3: CHECK BACKEND RESPONSE (Optional)**
+
+If you have access to backend logs:
+
+tail -100 logs/backend.log | grep "positioning_strategy"
+
+Or check the API response directly:
+
+curl -X POST http://localhost:8000/api/jd/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company": "TestCo",
+    "role_title": "Test Role",
+    "job_description": "Test JD",
+    "resume": {"full_name": "Test User"}
+  }'
+
+Look for the positioning_strategy, action_plan, salary_strategy fields.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**WHAT HAPPENS NEXT:**
+
+Once you send me the console output, I'll:
+1. See exactly what backend is returning
+2. Create precise fixes for data loading
+3. Fix document generation
+4. Add auto-tracking
+5. Package everything for final deployment
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**DO THIS NOW:**
+
+1. Deploy positioning_debug.html (2 min)
+2. Run one test analysis
+3. Check browser console (F12)
+4. Copy the debug output
+5. Send it to me
+
+Then I can create the exact fixes you need! 🚀
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
