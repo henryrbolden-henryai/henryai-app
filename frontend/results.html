@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results — HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* BACK LINK */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        /* VIEW TOGGLE */
+        .view-toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .view-toggle {
+            display: inline-flex;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .view-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn:hover {
+            color: var(--color-text);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--color-accent);
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* QUICK VIEW */
+        .quick-view {
+            max-width: 560px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .quick-view .fit-score-section {
+            margin-bottom: 24px;
+        }
+
+        .quick-view .recommendation {
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .quick-move {
+            background: rgba(0, 255, 157, 0.08);
+            border-left: 3px solid #00ff9d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        .quick-move-label {
+            font-weight: 600;
+            color: #00ff9d;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .quick-move-text {
+            color: var(--color-text);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .quick-view .button-group {
+            justify-content: center;
+        }
+
+        /* FULL VIEW */
+        .full-view {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        @media (max-width: 800px) {
+            .full-view {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* FIT SCORE */
+        .fit-score-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .fit-score {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 15vw, 6rem);
+            font-weight: 400;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .fit-score.high {
+            color: var(--color-success);
+        }
+
+        .fit-score.medium {
+            color: var(--color-warning);
+        }
+
+        .fit-score.low {
+            color: var(--color-error);
+        }
+
+        .fit-label {
+            font-size: 1.1rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* SECTIONS */
+        .section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .section-text {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--color-text);
+        }
+
+        /* MARKET CONTEXT - HORIZONTAL BAR */
+        .market-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1px;
+            background: var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .market-item {
+            text-align: center;
+            padding: 16px 12px;
+            background: var(--color-bg);
+        }
+
+        .market-item:first-child {
+            border-radius: 8px 0 0 8px;
+        }
+
+        .market-item:last-child {
+            border-radius: 0 8px 8px 0;
+        }
+
+        .market-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .market-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text);
+            line-height: 1.3;
+            display: block;
+        }
+
+        /* Stack vertically on mobile */
+        @media (max-width: 640px) {
+            .market-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .market-item:first-child {
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .market-item:last-child {
+                border-radius: 0 0 8px 8px;
+            }
+        }
+
+        /* BULLETS */
+        .bullets {
+            list-style: none;
+            padding: 0;
+        }
+
+        .bullets li {
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .bullets li:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .bullets li:first-child {
+            padding-top: 0;
+        }
+
+        .bullets.strengths li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--color-success);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .bullets.gaps li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--color-warning);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .bullets.red-flags li::before {
+            content: "⚠️";
+            position: absolute;
+            left: 0;
+            font-size: 0.9rem;
+        }
+
+        .bullets.red-flags li {
+            color: var(--color-warning);
+        }
+
+        /* REALITY CHECK STATS */
+        .reality-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .reality-stat {
+            background: var(--color-surface-elevated);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--color-border);
+        }
+
+        .reality-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .reality-stat-value.warning {
+            color: var(--color-warning);
+        }
+
+        .reality-stat-value.danger {
+            color: var(--color-error);
+        }
+
+        .reality-stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .reality-context {
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+        }
+
+        .reality-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            border-left: 3px solid var(--color-warning);
+        }
+
+        .reality-item.positive {
+            border-left-color: var(--color-success);
+        }
+
+        .reality-item.warning {
+            border-left-color: var(--color-warning);
+        }
+
+        .reality-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            line-height: 1.6;
+        }
+
+        .reality-item.positive .reality-icon {
+            color: var(--color-success);
+        }
+
+        .reality-text {
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        .reality-action {
+            background: rgba(0, 255, 157, 0.08);
+            border-left: 3px solid #00ff9d;
+            border-radius: 4px;
+            padding: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .reality-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* RECOMMENDATION */
+        .recommendation {
+            background: var(--color-text);
+            color: var(--color-bg);
+            border-radius: 16px;
+            padding: 28px;
+            margin: 24px 0;
+        }
+
+        .recommendation.apply {
+            background: linear-gradient(135deg, var(--color-success) 0%, #22c55e 100%);
+        }
+
+        .recommendation.caution {
+            background: linear-gradient(135deg, var(--color-warning) 0%, #f59e0b 100%);
+        }
+
+        .recommendation.donotapply {
+            background: linear-gradient(135deg, var(--color-error) 0%, #ef4444 100%);
+        }
+
+        .recommendation-label {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .recommendation-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            margin-bottom: 16px;
+        }
+
+        .positioning-strategy {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.15);
+            opacity: 0.85;
+        }
+
+        /* HELPER TEXT */
+        .helper-text {
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 24px 0;
+            line-height: 1.6;
+        }
+
+        /* BUTTONS */
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        button {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.25s var(--ease-out);
+        }
+
+        .btn-primary {
+            background: var(--color-text);
+            color: var(--color-bg);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(34, 211, 238, 0.25);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-surface);
+            border-color: var(--color-text-secondary);
+        }
+
+        /* TWO-COLUMN LAYOUT (DESKTOP) */
+        .results-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .primary-column, .details-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* RESPONSIVE - TWO COLUMNS ON DESKTOP */
+        @media (min-width: 768px) {
+            .results-layout {
+                display: grid;
+                grid-template-columns: 1.2fr 1fr;
+                gap: 32px;
+                align-items: start;
+            }
+
+            .primary-column {
+                position: sticky;
+                top: 40px;
+            }
+
+            .button-group {
+                flex-direction: row;
+            }
+
+            button {
+                flex: 1;
+            }
+        }
+
+        /* PASS MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .modal-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .modal h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 16px;
+        }
+
+        .modal p {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        .modal-btn {
+            display: inline-block;
+            background: var(--color-accent);
+            color: #000;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 32px;
+        }
+
+        header .header-container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent);
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="analyze.html" class="back-link">← Analyze Another Role</a>
+
+        <!-- VIEW TOGGLE (centered, outside results-layout) -->
+        <div class="view-toggle-container">
+            <div class="view-toggle">
+                <button class="view-toggle-btn active" id="quickViewBtn">Quick View</button>
+                <button class="view-toggle-btn" id="fullViewBtn">Full Analysis</button>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- QUICK VIEW (default) -->
+        <!-- ============================================ -->
+        <div class="quick-view" id="quickView">
+            <!-- Fit Score -->
+            <div class="fit-score-section">
+                <div class="fit-score" id="fitScoreQuick">—%</div>
+                <div class="fit-label">fit for this role</div>
+            </div>
+
+            <!-- Recommendation -->
+            <div class="recommendation" id="recommendationQuick">
+                <div class="recommendation-label" id="recommendationLabelQuick">—</div>
+                <div class="recommendation-text"><span id="candidateNameQuick"></span><span id="recommendationTextQuick">—</span></div>
+            </div>
+
+            <!-- Your Move (condensed) -->
+            <div class="quick-move" id="quickMove">
+                <div class="quick-move-label">Your Move</div>
+                <p class="quick-move-text" id="quickMoveText">—</p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button class="btn-primary" id="getPackageBtnQuick">Build My Application</button>
+                <button class="btn-secondary" id="skipBtnQuick">Pass on This Role</button>
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- FULL ANALYSIS VIEW -->
+        <!-- ============================================ -->
+        <div class="results-layout full-view" id="fullView" style="display: none;">
+                <!-- PRIMARY COLUMN: Decision-focused -->
+                <div class="primary-column">
+                    <!-- 1. FIT SCORE -->
+                    <div class="fit-score-section">
+                        <div class="fit-score" id="fitScore">—%</div>
+                        <div class="fit-label">fit for this role</div>
+                    </div>
+
+                    <!-- 2. YOUR STRENGTHS -->
+                    <div class="section" id="strengthsSection">
+                        <div class="section-title">Your Strengths</div>
+                        <ul class="bullets strengths" id="strengths"></ul>
+                    </div>
+
+                    <!-- 3. RECOMMENDATION (with candidate name) -->
+                    <div class="recommendation" id="recommendation">
+                        <div class="recommendation-label" id="recommendationLabel">—</div>
+                        <div class="recommendation-text"><span id="candidateName"></span><span id="recommendationText">—</span></div>
+                    </div>
+
+                    <!-- 4. HELPER TEXT + BUTTONS -->
+                    <p class="helper-text">
+                        <strong>I've done the heavy lifting.</strong> Just review, personalize if needed, and submit.<br>
+                        <span style="font-size: 0.85rem; opacity: 0.8;">Package includes: tailored resume, cover letter, outreach templates, and interview prep.</span>
+                    </p>
+
+                    <div class="button-group">
+                        <button class="btn-primary" id="getPackageBtn">Build My Application</button>
+                        <button class="btn-secondary" id="skipBtn">Pass on This Role</button>
+                    </div>
+                </div>
+
+                <!-- DETAILS COLUMN: Context -->
+                <div class="details-column">
+                    <!-- 1. THE OPPORTUNITY -->
+                    <div class="section" id="roleSummarySection">
+                        <div class="section-title">The Opportunity</div>
+                        <p class="section-text" id="roleSummary">Loading...</p>
+                    </div>
+
+                    <!-- 2. MARKET CONTEXT -->
+                    <div class="section" id="marketContextSection">
+                        <div class="section-title">Market Context</div>
+                        <div class="market-grid">
+                            <div class="market-item">
+                                <span class="market-label">Demand</span>
+                                <span class="market-value" id="marketCompetitiveness">—</span>
+                            </div>
+                            <div class="market-item">
+                                <span class="market-label">Salary</span>
+                                <span class="market-value" id="marketSalary">—</span>
+                            </div>
+                            <div class="market-item">
+                                <span class="market-label">Action</span>
+                                <span class="market-value" id="marketTiming">—</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. REALITY CHECK -->
+                    <div class="section" id="realityCheckSection">
+                        <div class="section-title">Reality Check</div>
+                        
+                        <!-- Key Stats Row -->
+                        <div class="reality-stats" id="realityStats" style="display: none;">
+                            <div class="reality-stat">
+                                <div class="reality-stat-value" id="realityApplicants">—</div>
+                                <div class="reality-stat-label">Expected Applicants</div>
+                            </div>
+                            <div class="reality-stat">
+                                <div class="reality-stat-value" id="realityResponseRate">—</div>
+                                <div class="reality-stat-label">Response Rate</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Personal Context -->
+                        <div class="reality-context" id="realityContext" style="margin-top: 16px;">
+                            <p class="section-text" id="realityCheck" style="white-space: pre-line;">Loading...</p>
+                        </div>
+                        
+                        <!-- Action Box -->
+                        <div class="reality-action" id="realityAction" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0, 255, 157, 0.1); border-left: 3px solid #00ff9d; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #00ff9d; margin-bottom: 8px;">Your Move</div>
+                            <p class="section-text" id="realityActionText" style="margin: 0;"></p>
+                        </div>
+                    </div>
+
+                    <!-- 4. RED FLAGS (hidden by default) -->
+                    <div class="section" id="redFlagsSection" style="display: none;">
+                        <div class="section-title">Red Flags</div>
+                        <ul class="bullets red-flags" id="redFlags"></ul>
+                    </div>
+
+                    <!-- 5. GAPS TO ADDRESS -->
+                    <div class="section" id="gapsSection">
+                        <div class="section-title">Gaps to Address</div>
+                        <ul class="bullets gaps" id="gaps"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PASS MODAL -->
+    <div class="modal-overlay" id="passModal">
+        <div class="modal">
+            <div class="modal-icon">✨</div>
+            <h2>Good call.</h2>
+            <p>Passing on a weak fit is a smart move. In this market, your energy is better spent on roles where you are 75% or higher aligned. Focus beats volume every time.</p>
+            <a href="analyze.html" class="modal-btn" id="passModalBtn">Find the Right Role</a>
+        </div>
+    </div>
+
+    <script>
+        // Load analysis data from sessionStorage
+        const data = JSON.parse(sessionStorage.getItem('analysisData'));
+
+        // Redirect if no data
+        if (!data) {
+            window.location.href = 'analyze.html';
+        }
+
+        console.log('Results page data:', data);
+
+        // =====================================================================
+        // VIEW TOGGLE LOGIC
+        // =====================================================================
+        const quickViewBtn = document.getElementById('quickViewBtn');
+        const fullViewBtn = document.getElementById('fullViewBtn');
+        const quickView = document.getElementById('quickView');
+        const fullView = document.getElementById('fullView');
+
+        quickViewBtn.addEventListener('click', () => {
+            quickViewBtn.classList.add('active');
+            fullViewBtn.classList.remove('active');
+            quickView.style.display = 'block';
+            fullView.style.display = 'none';
+        });
+
+        fullViewBtn.addEventListener('click', () => {
+            fullViewBtn.classList.add('active');
+            quickViewBtn.classList.remove('active');
+            fullView.style.display = 'grid';
+            quickView.style.display = 'none';
+        });
+
+        // =====================================================================
+        // HELPER: Truncate text to N sentences
+        // =====================================================================
+        function truncateText(text, maxSentences = 2) {
+            if (!text) return '';
+            
+            // Split by sentence endings (., !, ?)
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            
+            // Take only first N sentences
+            const truncated = sentences.slice(0, maxSentences).join(' ').trim();
+            
+            return truncated;
+        }
+
+        // =====================================================================
+        // HELPER: Infer fit score from recommendation if score is 0/null
+        // =====================================================================
+        function inferFitScore(data) {
+            let score = data.fit_score;
+            
+            // If we have a valid score, use it
+            if (score && score > 0) {
+                return score;
+            }
+            
+            // Otherwise, infer from recommendation
+            let recommendation = '';
+            if (data.intelligence_layer?.apply_decision?.recommendation) {
+                recommendation = data.intelligence_layer.apply_decision.recommendation.toLowerCase();
+            } else if (data.intelligence_layer?.job_quality_score) {
+                recommendation = data.intelligence_layer.job_quality_score.toLowerCase();
+            }
+            
+            console.log('Inferring fit score from recommendation:', recommendation);
+            
+            if (recommendation.includes('skip') || recommendation.includes('do not')) {
+                return 35;
+            } else if (recommendation.includes('caution') || recommendation.includes('conditional')) {
+                return 58;
+            } else if (recommendation.includes('strongly')) {
+                return 82;
+            } else if (recommendation.includes('apply')) {
+                return 72;
+            }
+            
+            // Default fallback
+            return 50;
+        }
+
+        // =====================================================================
+        // POPULATE: Role Summary (TRUNCATED TO 2 SENTENCES)
+        // =====================================================================
+        const roleSummaryEl = document.getElementById('roleSummary');
+        let roleSummary = data.job_description_summary || 
+                          data.role_overview ||
+                          data.intelligence_layer?.job_summary ||
+                          data.role_summary ||
+                          data.company_context ||
+                          null;
+        
+        // Combine role_overview and company_context for a fuller picture
+        if (data.role_overview && data.company_context) {
+            roleSummary = data.company_context + ' ' + data.role_overview;
+        }
+        
+        if (roleSummary) {
+            roleSummaryEl.textContent = truncateText(roleSummary, 2);
+        } else {
+            // Hide section if no summary available
+            document.getElementById('roleSummarySection').style.display = 'none';
+        }
+
+        // =====================================================================
+        // POPULATE: Fit Score (both views)
+        // =====================================================================
+        const fitScore = inferFitScore(data);
+        const fitScoreEl = document.getElementById('fitScore');
+        const fitScoreQuickEl = document.getElementById('fitScoreQuick');
+        
+        fitScoreEl.textContent = `${fitScore}%`;
+        fitScoreQuickEl.textContent = `${fitScore}%`;
+
+        // Color based on score
+        if (fitScore >= 70) {
+            fitScoreEl.classList.add('high');
+            fitScoreQuickEl.classList.add('high');
+        } else if (fitScore >= 50) {
+            fitScoreEl.classList.add('medium');
+            fitScoreQuickEl.classList.add('medium');
+        } else {
+            fitScoreEl.classList.add('low');
+            fitScoreQuickEl.classList.add('low');
+        }
+
+        // =====================================================================
+        // HELPERS: Extract short labels for Market Context
+        // =====================================================================
+        function extractCompetitionLabel(text) {
+            if (!text) return 'Moderate';
+            const lower = text.toLowerCase();
+            
+            if (lower.includes('tight') || lower.includes('very competitive') || lower.includes('high demand')) return 'Tight';
+            if (lower.includes('competitive') || lower.includes('strong')) return 'Competitive';
+            if (lower.includes('moderate') || lower.includes('average')) return 'Moderate';
+            if (lower.includes('light') || lower.includes('low') || lower.includes('limited')) return 'Light';
+            
+            return 'Moderate';
+        }
+
+        function extractSalaryRange(text) {
+            if (!text) return '—';
+            
+            // Try to extract dollar range pattern
+            const match = text.match(/\$[\d,]+K?(?:\s*[-–to]+\s*\$[\d,]+K?)?/i);
+            if (match) return match[0].replace(/\s+/g, '');
+            
+            // If it's already short, return as-is
+            if (text.length < 15) return text;
+            
+            return '—';
+        }
+
+        function extractTimingLabel(text) {
+            if (!text) return 'Standard';
+            const lower = text.toLowerCase();
+            
+            // Map timing signals to clear actions
+            if (lower.includes('immediate') || lower.includes('1-2 day') || lower.includes('24 hour') || lower.includes('asap')) return 'Apply today';
+            if (lower.includes('24-48') || lower.includes('2-3 day') || lower.includes('this week')) return 'Apply this week';
+            if (lower.includes('week') || lower.includes('soon')) return 'Apply soon';
+            if (lower.includes('ghost') || lower.includes('old') || lower.includes('stale')) return 'Likely stale';
+            if (lower.includes('skip') || lower.includes('don\'t') || lower.includes('pass')) return 'Skip this one';
+            
+            return 'Standard timing';
+        }
+
+        // =====================================================================
+        // POPULATE: Market Context (ULTRA-CONCISE)
+        // =====================================================================
+        const marketCompEl = document.getElementById('marketCompetitiveness');
+        const marketSalaryEl = document.getElementById('marketSalary');
+        const marketTimingEl = document.getElementById('marketTiming');
+
+        let hasMarketData = false;
+
+        // Competition/Demand - extract short label
+        let competitiveness = data.market_competitiveness ||
+                             data.intelligence_layer?.salary_market_context?.market_competitiveness ||
+                             data.intelligence_layer?.market_competitiveness ||
+                             null;
+        if (competitiveness) {
+            marketCompEl.textContent = extractCompetitionLabel(competitiveness);
+            hasMarketData = true;
+        }
+
+        // Salary - extract just the range
+        let salary = data.salary_typical_range ||
+                    data.intelligence_layer?.salary_market_context?.typical_range ||
+                    data.intelligence_layer?.salary_typical_range ||
+                    data.posted_compensation ||
+                    data.salary_info ||
+                    null;
+        if (salary) {
+            marketSalaryEl.textContent = extractSalaryRange(salary);
+            hasMarketData = true;
+        }
+
+        // Timing - extract short label
+        let timing = data.timing_guidance ||
+                    data.intelligence_layer?.apply_decision?.timing_guidance ||
+                    data.intelligence_layer?.timing_guidance ||
+                    null;
+        if (timing) {
+            marketTimingEl.textContent = extractTimingLabel(timing);
+            hasMarketData = true;
+        }
+
+        // Hide market section if no data
+        if (!hasMarketData) {
+            document.getElementById('marketContextSection').style.display = 'none';
+        }
+
+        // =====================================================================
+        // HELPER: Generate default reality check based on fit score
+        // Reflects brutal 2024-2025 job market reality WITH actionable strategy
+        // =====================================================================
+        function generateDefaultRealityCheck(fitScore, competition, candidateName) {
+            const name = candidateName || 'there';
+            const competitionLower = (competition || '').toLowerCase();
+            
+            if (fitScore >= 75) {
+                if (competitionLower.includes('tight') || competitionLower.includes('competitive')) {
+                    return `${name}, you're a strong fit—but so are 300-500 other people who applied in the first 48 hours. Cold response rate is 3-5% right now.\n\nThe ATS isn't your friend. Find the hiring manager on LinkedIn and reach out directly.`;
+                }
+                return `${name}, you're well-positioned here. Expect 200-400 applicants. Cold response rate: 5-8%.\n\nApply immediately, then find someone at the company to message. A warm intro changes everything.`;
+            } else if (fitScore >= 60) {
+                return `${name}, you can compete here, but you're not the obvious choice. 300+ candidates have more direct experience. Cold response rate: 2-4%.\n\nDon't just apply and hope. Find someone at the company to vouch for you, or this goes nowhere.`;
+            } else {
+                return `${name}, I'll be straight with you—this is a stretch. 300+ better-matched candidates means your cold application has under 2% chance of a response.\n\nOnly pursue if you have a direct connection. Otherwise, spend your energy on roles where you're 70%+ fit.`;
+            }
+        }
+
+        // =====================================================================
+        // POPULATE: Reality Check (Feature 4 - Data-Driven Market Context)
+        // =====================================================================
+        const realityCheckEl = document.getElementById('realityCheck');
+        const realityStatsEl = document.getElementById('realityStats');
+        const realityActionEl = document.getElementById('realityAction');
+        const realityActionTextEl = document.getElementById('realityActionText');
+        const realityCheckData = data.reality_check || null;
+        
+        // Get candidate's first name for personal tone
+        const candidateFirstName = (data._profile?.name || data.candidate_name || '').split(' ')[0] || 'there';
+        
+        if (realityCheckData && realityCheckData.expected_applicants) {
+            // Show stats row
+            realityStatsEl.style.display = 'grid';
+            
+            // Populate stat boxes
+            document.getElementById('realityApplicants').textContent = realityCheckData.expected_applicants;
+            document.getElementById('realityResponseRate').textContent = realityCheckData.response_rate || '3-5%';
+            
+            // Build context HTML with visual indicators
+            let contextHTML = '';
+            
+            // Function-specific reality (layoff data) - warning indicator
+            if (realityCheckData.function_context) {
+                contextHTML += `<div class="reality-item warning">
+                    <span class="reality-icon">⚠️</span>
+                    <span class="reality-text">${realityCheckData.function_context}</span>
+                </div>`;
+            }
+            
+            // Industry context - can be positive or warning depending on content
+            if (realityCheckData.industry_context) {
+                const isPositive = realityCheckData.industry_context.toLowerCase().includes('insulated') ||
+                                   realityCheckData.industry_context.toLowerCase().includes('still hiring') ||
+                                   realityCheckData.industry_context.toLowerCase().includes('strong funding') ||
+                                   realityCheckData.industry_context.toLowerCase().includes('demand');
+                const icon = isPositive ? '✓' : '⚠️';
+                const itemClass = isPositive ? 'positive' : 'warning';
+                contextHTML += `<div class="reality-item ${itemClass}">
+                    <span class="reality-icon">${icon}</span>
+                    <span class="reality-text">${realityCheckData.industry_context}</span>
+                </div>`;
+            }
+            
+            realityCheckEl.innerHTML = contextHTML;
+            
+            // Show action box with strategic move
+            if (realityCheckData.strategic_action) {
+                realityActionEl.style.display = 'block';
+                realityActionTextEl.textContent = realityCheckData.strategic_action;
+            }
+        } else {
+            // Fallback to legacy formats or generated default
+            const legacyRealityCheck = data.response_likelihood || 
+                                data.intelligence_layer?.market_reality ||
+                                data.intelligence_layer?.reality_check ||
+                                data.worth_your_time_guidance ||
+                                null;
+            
+            if (legacyRealityCheck) {
+                realityCheckEl.textContent = legacyRealityCheck;
+            } else {
+                // Generate default based on fit score and competition
+                realityCheckEl.textContent = generateDefaultRealityCheck(fitScore, competitiveness, candidateFirstName);
+            }
+        }
+
+        // =====================================================================
+        // POPULATE: Red Flags (Feature 4)
+        // =====================================================================
+        const redFlags = data.red_flags || 
+                        data.intelligence_layer?.red_flags || 
+                        [];
+        
+        if (redFlags && redFlags.length > 0) {
+            const redFlagsList = document.getElementById('redFlags');
+            
+            redFlags.forEach(flag => {
+                const li = document.createElement('li');
+                li.textContent = flag;
+                redFlagsList.appendChild(li);
+            });
+            
+            // Show the section
+            document.getElementById('redFlagsSection').style.display = 'block';
+        }
+
+        // =====================================================================
+        // POPULATE: Strengths
+        // =====================================================================
+        const strengthsList = document.getElementById('strengths');
+        let strengths = data.strengths || [];
+        
+        // Also check intelligence_layer.strategic_positioning.lead_with_strengths
+        if (strengths.length === 0 && data.intelligence_layer?.strategic_positioning?.lead_with_strengths) {
+            strengths = data.intelligence_layer.strategic_positioning.lead_with_strengths;
+        }
+        
+        strengths.slice(0, 4).forEach(strength => {
+            const li = document.createElement('li');
+            li.textContent = strength;
+            strengthsList.appendChild(li);
+        });
+
+        // =====================================================================
+        // POPULATE: Gaps (with mitigation advice if available)
+        // =====================================================================
+        const gapsList = document.getElementById('gaps');
+        let gaps = data.gaps || [];
+        
+        // Check for gaps_and_mitigation which includes advice
+        let gapsWithMitigation = data.intelligence_layer?.strategic_positioning?.gaps_and_mitigation || [];
+        
+        if (gapsWithMitigation.length > 0) {
+            gapsWithMitigation.slice(0, 4).forEach(gap => {
+                const li = document.createElement('li');
+                li.textContent = gap;
+                gapsList.appendChild(li);
+            });
+        } else if (gaps.length > 0) {
+            gaps.slice(0, 4).forEach(gap => {
+                const li = document.createElement('li');
+                li.textContent = gap;
+                gapsList.appendChild(li);
+            });
+        }
+
+        // =====================================================================
+        // POPULATE: Recommendation with Candidate Name
+        // =====================================================================
+        const recommendationEl = document.getElementById('recommendation');
+        let recommendationLabel = 'Apply';
+        let recommendationText = '';
+
+        // Get candidate name
+        const candidateName = data._candidate_name || '';
+
+        // Try intelligence_layer first
+        if (data.intelligence_layer) {
+            const il = data.intelligence_layer;
+            
+            // Get recommendation label
+            if (il.apply_decision?.recommendation) {
+                recommendationLabel = il.apply_decision.recommendation;
+            } else if (il.job_quality_score) {
+                recommendationLabel = il.job_quality_score;
+            }
+            
+            // Get recommendation text
+            if (il.apply_decision?.reasoning) {
+                recommendationText = il.apply_decision.reasoning;
+            } else if (il.quality_explanation) {
+                recommendationText = il.quality_explanation;
+            }
+        }
+
+        // Fallback to top-level if not found
+        if (!recommendationText && data.recommendation) {
+            recommendationText = data.recommendation;
+        }
+
+        // Populate Full View recommendation
+        document.getElementById('recommendationLabel').textContent = recommendationLabel;
+        
+        // Populate Quick View recommendation
+        document.getElementById('recommendationLabelQuick').textContent = recommendationLabel;
+        
+        // Add candidate name personalization
+        const candidateNameEl = document.getElementById('candidateName');
+        const candidateNameQuickEl = document.getElementById('candidateNameQuick');
+        if (candidateName && candidateName !== 'Candidate') {
+            // Extract first name only and ensure title case (not ALL CAPS)
+            let firstName = candidateName.split(' ')[0];
+            // Convert to title case if all caps
+            if (firstName === firstName.toUpperCase()) {
+                firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            }
+            candidateNameEl.textContent = firstName + ', ';
+            candidateNameQuickEl.textContent = firstName + ', ';
+        }
+        
+        // TRUNCATE TO 2 SENTENCES for scannability, lowercase first letter if we have name
+        let truncatedText = truncateText(recommendationText, 2);
+        if (candidateName && candidateName !== 'Candidate' && truncatedText) {
+            // Lowercase first letter since name provides the capital
+            truncatedText = truncatedText.charAt(0).toLowerCase() + truncatedText.slice(1);
+        }
+        document.getElementById('recommendationText').textContent = truncatedText;
+        document.getElementById('recommendationTextQuick').textContent = truncatedText;
+
+        // Color recommendation based on label (both views)
+        const recommendationQuickEl = document.getElementById('recommendationQuick');
+        const labelLower = recommendationLabel.toLowerCase();
+        if (labelLower.includes('skip') || labelLower.includes('do not') || labelLower.includes('don\'t') || labelLower.includes('pass')) {
+            recommendationEl.classList.add('donotapply');
+            recommendationQuickEl.classList.add('donotapply');
+        } else if (labelLower.includes('caution') || labelLower.includes('conditional')) {
+            recommendationEl.classList.add('caution');
+            recommendationQuickEl.classList.add('caution');
+        } else {
+            recommendationEl.classList.add('apply');
+            recommendationQuickEl.classList.add('apply');
+        }
+
+        // =====================================================================
+        // POPULATE: Quick View "Your Move" section
+        // =====================================================================
+        const quickMoveText = document.getElementById('quickMoveText');
+        // realityCheckData already declared above
+        
+        if (realityCheckData && realityCheckData.strategic_action) {
+            quickMoveText.textContent = realityCheckData.strategic_action;
+        } else {
+            // Generate a default quick move based on fit score
+            if (fitScore >= 70) {
+                quickMoveText.textContent = 'Apply within 24 hours and find the hiring manager on LinkedIn. Your fit score gives you an edge, but speed matters in this market.';
+            } else if (fitScore >= 50) {
+                quickMoveText.textContent = 'Apply, but pair it with direct outreach. Find someone at the company who can refer you internally.';
+            } else {
+                quickMoveText.textContent = 'This is a stretch. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit.';
+            }
+        }
+
+        // =====================================================================
+        // NAVIGATION BUTTONS (both views)
+        // =====================================================================
+
+        // Generate documents before navigating to overview
+        async function generateDocumentsAndNavigate() {
+            const btn = event.target;
+            const originalText = btn.textContent;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'Generating your documents...';
+
+                // Prepare request payload for /api/documents/generate
+                const requestPayload = {
+                    resume: data._resume_json || {},
+                    jd_analysis: {
+                        role_title: data.role_title || data._role || '',
+                        company_name: data._company_name || data._company || '',
+                        job_description: data._jd_text || '',
+                        fit_score: data.fit_score || fitScore,
+                        strengths: data.strengths || [],
+                        gaps: data.gaps || [],
+                        intelligence_layer: data.intelligence_layer || {}
+                    },
+                    preferences: data._profile || {}
+                };
+
+                console.log('Generating documents with payload:', requestPayload);
+
+                const response = await fetch('http://localhost:8000/api/documents/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestPayload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Document generation failed (${response.status})`);
+                }
+
+                const documentsData = await response.json();
+                console.log('Documents generated:', documentsData);
+
+                // Store documents data in sessionStorage
+                sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+                // Navigate to overview
+                window.location.href = 'overview.html';
+
+            } catch (error) {
+                console.error('Error generating documents:', error);
+                alert('Error generating documents: ' + error.message + '\n\nYou can still view the overview, but documents may not be available.');
+                btn.disabled = false;
+                btn.textContent = originalText;
+                // Still navigate even if document generation fails
+                window.location.href = 'overview.html';
+            }
+        }
+
+        document.getElementById('getPackageBtn').addEventListener('click', generateDocumentsAndNavigate);
+        document.getElementById('getPackageBtnQuick').addEventListener('click', generateDocumentsAndNavigate);
+
+        document.getElementById('skipBtn').addEventListener('click', () => {
+            document.getElementById('passModal').classList.add('show');
+        });
+
+        document.getElementById('skipBtnQuick').addEventListener('click', () => {
+            document.getElementById('passModal').classList.add('show');
+        });
+
+        // Modal button clears data and redirects
+        document.getElementById('passModalBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('analysisData');
+            window.location.href = 'analyze.html';
+        });
+
+        // Close modal if clicking outside
+        document.getElementById('passModal').addEventListener('click', (e) => {
+            if (e.target.id === 'passModal') {
+                document.getElementById('passModal').classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Intelligence - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        /* Main Tabs - Two tabs only */
+        .main-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .main-tab {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1rem;
+            padding: 16px 32px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .main-tab:hover {
+            color: #ffffff;
+        }
+
+        .main-tab.active {
+            color: #22d3ee;
+        }
+
+        .main-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #22d3ee;
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Hero Card - Mock Interview */
+        .hero-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1a2e44 100%);
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .hero-card h2 {
+            font-size: 1.8rem;
+            color: #ffffff;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .hero-card p {
+            color: #9ca3af;
+            font-size: 1.05rem;
+            margin-bottom: 24px;
+        }
+
+        .hero-btn {
+            background: #22d3ee;
+            color: #000000;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hero-btn:hover {
+            background: #06b6d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
+        }
+
+        /* Practice Cards Grid */
+        .practice-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .practice-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .practice-card:hover {
+            border-color: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .practice-card .card-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+
+        .practice-card h3 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+
+        .practice-card p {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Footer text */
+        .footer-hint {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9rem;
+            padding: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        .footer-hint a {
+            color: #22d3ee;
+            text-decoration: none;
+        }
+
+        .footer-hint a:hover {
+            text-decoration: underline;
+        }
+
+        /* Upcoming Interviews Tab */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #ffffff;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            margin-bottom: 24px;
+        }
+
+        .add-interview-btn {
+            background: #22d3ee;
+            color: #000000;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .add-interview-btn:hover {
+            background: #06b6d4;
+        }
+
+        /* Interview Cards */
+        .interview-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .interview-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .interview-card .company-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .interview-card .interview-info {
+            flex: 1;
+        }
+
+        .interview-card .company-name {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .interview-card .interview-details {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .open-prep-btn {
+            background: transparent;
+            border: 1px solid #22d3ee;
+            color: #22d3ee;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .open-prep-btn:hover {
+            background: #22d3ee;
+            color: #000000;
+        }
+
+        /* Add Interview Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            color: #ffffff;
+            font-size: 1.4rem;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #d1d5db;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #22d3ee;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 14px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            border: 1px solid #374151;
+            color: #9ca3af;
+        }
+
+        .btn-cancel:hover {
+            border-color: #4b5563;
+            color: #ffffff;
+        }
+
+        .btn-save {
+            background: #22d3ee;
+            border: none;
+            color: #000000;
+            font-weight: 600;
+        }
+
+        .btn-save:hover {
+            background: #06b6d4;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #22d3ee;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .practice-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-tab {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .hero-card {
+                padding: 30px 20px;
+            }
+
+            .interview-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .interview-card .interview-info {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
+
+        <h1>Interview Intelligence</h1>
+        <p class="subtitle">Practice like a real candidate. Prepare for real interviews.</p>
+
+        <!-- Main Tabs: Practice | Upcoming Interviews -->
+        <div class="main-tabs">
+            <button class="main-tab active" onclick="switchMainTab('practice')">Practice</button>
+            <button class="main-tab" onclick="switchMainTab('upcoming')">Upcoming Interviews</button>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- PRACTICE TAB -->
+        <!-- ============================================ -->
+        <div id="practiceTab" class="tab-content active">
+            <!-- Hero: Mock Interview Simulator -->
+            <div class="hero-card">
+                <h2><span>🎤</span> Mock Interview Simulator</h2>
+                <p>Practice a live, adaptive interview tailored to your role.</p>
+                <button class="hero-btn" onclick="startMockInterview()">Start Mock Interview</button>
+            </div>
+
+            <!-- Practice Categories Grid -->
+            <div class="practice-grid">
+                <div class="practice-card" onclick="openPractice('intro-sell')">
+                    <div class="card-icon">🎯</div>
+                    <h3>Intro Sell Practice</h3>
+                    <p>Practice your 60–90 second opener. Make a strong first impression.</p>
+                </div>
+
+                <div class="practice-card" onclick="openPractice('behavioral')">
+                    <div class="card-icon">📖</div>
+                    <h3>Behavioral Drills</h3>
+                    <p>Strengthen your STAR/SCQA stories with targeted practice.</p>
+                </div>
+
+                <div class="practice-card" onclick="openPractice('strategy')">
+                    <div class="card-icon">🧩</div>
+                    <h3>Strategy Drills</h3>
+                    <p>Practice structured problem-solving and strategic thinking.</p>
+                </div>
+
+                <div class="practice-card" onclick="openPractice('role-based')">
+                    <div class="card-icon">💼</div>
+                    <h3>Role-Based Drills</h3>
+                    <p>PM, SWE, UX, UI, TA, and Leadership specific drills.</p>
+                </div>
+            </div>
+
+            <!-- Footer hint -->
+            <div class="footer-hint">
+                Have an interview coming up? <a href="#" onclick="switchMainTab('upcoming'); return false;">Add it</a> to unlock customized prep.
+            </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- UPCOMING INTERVIEWS TAB -->
+        <!-- ============================================ -->
+        <div id="upcomingTab" class="tab-content">
+            <!-- Empty State (shown when no interviews) -->
+            <div id="emptyState" class="empty-state">
+                <div class="icon">📅</div>
+                <h3>No upcoming interviews yet</h3>
+                <p>Add an interview to unlock customized prep guides.</p>
+                <button class="add-interview-btn" onclick="openAddInterviewModal()">Add Interview</button>
+            </div>
+
+            <!-- Interview List (shown when interviews exist) -->
+            <div id="interviewList" class="interview-list" style="display: none;">
+                <!-- Interviews will be dynamically added here -->
+            </div>
+
+            <!-- Add Interview Button (shown when interviews exist) -->
+            <div id="addMoreSection" style="display: none; text-align: center; margin-top: 24px;">
+                <button class="add-interview-btn" onclick="openAddInterviewModal()">+ Add Another Interview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Interview Modal -->
+    <div class="modal-overlay" id="addInterviewModal">
+        <div class="modal">
+            <h2>Add Upcoming Interview</h2>
+            <form id="addInterviewForm" onsubmit="saveInterview(event)">
+                <div class="form-group">
+                    <label for="interviewCompany">Company *</label>
+                    <input type="text" id="interviewCompany" required placeholder="e.g., Stripe">
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewRole">Role *</label>
+                    <input type="text" id="interviewRole" required placeholder="e.g., Senior Product Manager">
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewType">Interview Type *</label>
+                    <select id="interviewType" required>
+                        <option value="">Select type...</option>
+                        <option value="recruiter_screen">Recruiter Screen</option>
+                        <option value="hiring_manager">Hiring Manager</option>
+                        <option value="technical">Technical</option>
+                        <option value="panel">Panel / Final</option>
+                        <option value="executive">Executive</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewDate">Date & Time *</label>
+                    <input type="datetime-local" id="interviewDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewerName">Interviewer Name (optional)</label>
+                    <input type="text" id="interviewerName" placeholder="e.g., Sarah Chen">
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewerTitle">Interviewer Title (optional)</label>
+                    <input type="text" id="interviewerTitle" placeholder="e.g., Director of Product">
+                </div>
+
+                <div class="form-group">
+                    <label for="interviewJD">Job Description (optional)</label>
+                    <textarea id="interviewJD" placeholder="Paste the job description for more personalized prep..."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddInterviewModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Interview</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // STATE
+        // ============================================================================
+        let upcomingInterviews = [];
+        let analysisData = null;
+        let resumeData = null;
+
+        // Load data from sessionStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load analysis data
+            const storedAnalysis = sessionStorage.getItem('analysisData');
+            if (storedAnalysis) {
+                try {
+                    analysisData = JSON.parse(storedAnalysis);
+                    console.log('Analysis data loaded:', analysisData);
+                } catch (e) {
+                    console.error('Error parsing analysis data:', e);
+                }
+            }
+
+            // Load resume data
+            const storedResume = sessionStorage.getItem('resumeData');
+            if (storedResume) {
+                try {
+                    resumeData = JSON.parse(storedResume);
+                    console.log('Resume data loaded');
+                } catch (e) {
+                    console.error('Error parsing resume data:', e);
+                }
+            }
+
+            // Load upcoming interviews from localStorage
+            const storedInterviews = localStorage.getItem('upcomingInterviews');
+            if (storedInterviews) {
+                try {
+                    upcomingInterviews = JSON.parse(storedInterviews);
+                    renderInterviewList();
+                } catch (e) {
+                    console.error('Error parsing interviews:', e);
+                }
+            }
+
+            // Set default date/time for form
+            const dateInput = document.getElementById('interviewDate');
+            if (dateInput) {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                dateInput.value = now.toISOString().slice(0, 16);
+            }
+        });
+
+        // ============================================================================
+        // TAB SWITCHING
+        // ============================================================================
+        function switchMainTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.main-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected tab
+            if (tabName === 'practice') {
+                document.getElementById('practiceTab').classList.add('active');
+            } else if (tabName === 'upcoming') {
+                document.getElementById('upcomingTab').classList.add('active');
+            }
+        }
+
+        // ============================================================================
+        // PRACTICE FUNCTIONS
+        // ============================================================================
+        function startMockInterview() {
+            // Navigate to mock interview page
+            window.location.href = 'mock-interview.html';
+        }
+
+        function openPractice(type) {
+            // Navigate to specific practice page
+            if (type === 'intro-sell') {
+                window.location.href = 'practice-intro.html';
+            } else if (type === 'behavioral') {
+                window.location.href = 'practice-drills.html?type=behavioral';
+            } else if (type === 'strategy') {
+                window.location.href = 'practice-drills.html?type=strategy';
+            } else if (type === 'role-based') {
+                window.location.href = 'practice-drills.html?type=role';
+            }
+        }
+
+        // ============================================================================
+        // INTERVIEW MANAGEMENT
+        // ============================================================================
+        function openAddInterviewModal() {
+            document.getElementById('addInterviewModal').classList.add('active');
+        }
+
+        function closeAddInterviewModal() {
+            document.getElementById('addInterviewModal').classList.remove('active');
+            document.getElementById('addInterviewForm').reset();
+        }
+
+        function saveInterview(event) {
+            event.preventDefault();
+
+            const interview = {
+                id: Date.now().toString(),
+                company: document.getElementById('interviewCompany').value,
+                role: document.getElementById('interviewRole').value,
+                type: document.getElementById('interviewType').value,
+                date: document.getElementById('interviewDate').value,
+                interviewerName: document.getElementById('interviewerName').value,
+                interviewerTitle: document.getElementById('interviewerTitle').value,
+                jobDescription: document.getElementById('interviewJD').value,
+                createdAt: new Date().toISOString()
+            };
+
+            upcomingInterviews.push(interview);
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            closeAddInterviewModal();
+            renderInterviewList();
+        }
+
+        function renderInterviewList() {
+            const emptyState = document.getElementById('emptyState');
+            const interviewList = document.getElementById('interviewList');
+            const addMoreSection = document.getElementById('addMoreSection');
+
+            if (upcomingInterviews.length === 0) {
+                emptyState.style.display = 'block';
+                interviewList.style.display = 'none';
+                addMoreSection.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            interviewList.style.display = 'flex';
+            addMoreSection.style.display = 'block';
+
+            // Sort by date (soonest first)
+            const sorted = [...upcomingInterviews].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // Map interview type to readable label
+            const typeLabels = {
+                'recruiter_screen': 'Recruiter Screen',
+                'hiring_manager': 'Hiring Manager',
+                'technical': 'Technical',
+                'panel': 'Panel / Final',
+                'executive': 'Executive'
+            };
+
+            interviewList.innerHTML = sorted.map(interview => {
+                const date = new Date(interview.date);
+                const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const initial = interview.company.charAt(0).toUpperCase();
+
+                return `
+                    <div class="interview-card">
+                        <div class="company-avatar">${initial}</div>
+                        <div class="interview-info">
+                            <div class="company-name">${interview.company}</div>
+                            <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr} @ ${timeStr}</div>
+                        </div>
+                        <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Open Prep Guide</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openPrepGuide(interviewId) {
+            // Store the interview ID and navigate to prep guide page
+            sessionStorage.setItem('currentInterviewId', interviewId);
+            window.location.href = 'prep-guide.html';
+        }
+
+        function deleteInterview(interviewId) {
+            if (confirm('Are you sure you want to delete this interview?')) {
+                upcomingInterviews = upcomingInterviews.filter(i => i.id !== interviewId);
+                localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+                renderInterviewList();
+            }
+        }
+
+        // Close modal on outside click
+        document.getElementById('addInterviewModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAddInterviewModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAddInterviewModal();
+            }
+        });
+    </script>
+</body>
+</html>

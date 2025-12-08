@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Prep Guide - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 24px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .breadcrumb {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .breadcrumb .company {
+            color: #22d3ee;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .interview-meta {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        /* Sections */
+        .section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-toggle {
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+
+        .section.collapsed .section-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .section.collapsed .section-body {
+            display: none;
+        }
+
+        .section-body {
+            padding: 0 24px 24px;
+        }
+
+        /* Content List */
+        .content-list {
+            list-style: none;
+        }
+
+        .content-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #374151;
+            color: #d1d5db;
+        }
+
+        .content-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Intro Card */
+        .intro-card {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .intro-card p {
+            color: #d1d5db;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .intro-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #374151;
+        }
+
+        .word-count {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .btn-regenerate {
+            background: transparent;
+            border: 1px solid #374151;
+            color: #9ca3af;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-regenerate:hover {
+            border-color: #22d3ee;
+            color: #22d3ee;
+        }
+
+        /* Expandable Questions */
+        .question-item {
+            border-bottom: 1px solid #374151;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-header {
+            padding: 16px 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .question-header:hover .question-text {
+            color: #22d3ee;
+        }
+
+        .question-text {
+            color: #d1d5db;
+            transition: color 0.2s;
+        }
+
+        .question-toggle {
+            color: #6b7280;
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+        }
+
+        .question-item.collapsed .question-toggle {
+            transform: rotate(-90deg);
+        }
+
+        .question-item.collapsed .question-answer {
+            display: none;
+        }
+
+        .question-answer {
+            padding: 0 0 16px 16px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+            border-left: 2px solid #374151;
+            margin-left: 8px;
+        }
+
+        /* Story Cards */
+        .story-card {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .story-header {
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .story-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .story-title {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .story-tag {
+            background: #374151;
+            color: #9ca3af;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .story-card.collapsed .story-body {
+            display: none;
+        }
+
+        .story-body {
+            padding: 0 16px 16px;
+        }
+
+        .story-section {
+            margin-bottom: 12px;
+        }
+
+        .story-section-label {
+            color: #22d3ee;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .story-section p {
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+
+        /* Red Flags */
+        .red-flag-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+        }
+
+        .red-flag-item:last-child {
+            border-bottom: none;
+        }
+
+        .red-flag-icon {
+            color: #f59e0b;
+        }
+
+        .red-flag-text {
+            color: #d1d5db;
+        }
+
+        /* Drill Cards */
+        .drill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .drill-card {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drill-card:hover {
+            border-color: #22d3ee;
+            transform: translateY(-2px);
+        }
+
+        .drill-card .drill-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .drill-card .drill-name {
+            color: #d1d5db;
+            font-size: 0.85rem;
+        }
+
+        /* CTA Button */
+        .cta-section {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .cta-btn {
+            background: #22d3ee;
+            color: #000000;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cta-btn:hover {
+            background: #06b6d4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #22d3ee;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .error-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .error-state h3 {
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+
+        .error-state p {
+            color: #9ca3af;
+            margin-bottom: 24px;
+        }
+
+        .error-state a {
+            color: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="loading">
+            <div class="loading-spinner"></div>
+            <div>Generating your personalized prep guide...</div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="error-state" style="display: none;">
+            <div class="icon">⚠️</div>
+            <h3>Interview not found</h3>
+            <p>Please <a href="interview-intelligence.html">go back</a> and select an interview.</p>
+        </div>
+
+        <!-- Prep Guide Content -->
+        <div id="prepContent" style="display: none;">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <span class="company" id="companyName">Company</span> → <span id="interviewTypeBreadcrumb">Interview Type</span> Prep
+                </div>
+                <h1 id="pageTitle">Interview Prep Guide</h1>
+                <div class="interview-meta" id="interviewMeta"></div>
+            </div>
+
+            <!-- Section 1: What They Evaluate -->
+            <div class="section" id="evaluateSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>🎯</span> What They're Evaluating</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <ul class="content-list" id="evaluateList"></ul>
+                </div>
+            </div>
+
+            <!-- Section 2: Your 60-90 Second Intro -->
+            <div class="section" id="introSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>🗣️</span> Your 60–90 Second Intro</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="intro-card">
+                        <p id="introText"></p>
+                        <div class="intro-meta">
+                            <span class="word-count" id="introWordCount"></span>
+                            <button class="btn-regenerate" onclick="regenerateIntro()">Regenerate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Likely Questions -->
+            <div class="section" id="questionsSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>❓</span> Likely Questions</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div id="questionsList"></div>
+                </div>
+            </div>
+
+            <!-- Section 4: High-Impact Stories -->
+            <div class="section" id="storiesSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>📖</span> Your High-Impact Stories</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div id="storiesList"></div>
+                </div>
+            </div>
+
+            <!-- Section 5: Red Flags to Avoid -->
+            <div class="section" id="redFlagsSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>⚠️</span> Red Flags to Avoid</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div id="redFlagsList"></div>
+                </div>
+            </div>
+
+            <!-- Section 6: Strategy Scenarios (for HM/Technical only) -->
+            <div class="section" id="strategySection" style="display: none;">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>🧩</span> Strategy Scenarios</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div id="strategyList"></div>
+                </div>
+            </div>
+
+            <!-- Section 7: Recommended Drills -->
+            <div class="section" id="drillsSection">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>🏋️</span> Recommended Drills</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <div class="drill-grid" id="drillsGrid"></div>
+                </div>
+            </div>
+
+            <!-- CTA: Start Mock Interview -->
+            <div class="cta-section">
+                <button class="cta-btn" onclick="startStageMockInterview()">
+                    🎤 Start <span id="stageSpecificMock">Mock Interview</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentInterview = null;
+        let prepData = null;
+        let resumeData = null;
+
+        // Interview type labels
+        const typeLabels = {
+            'recruiter_screen': 'Recruiter Screen',
+            'hiring_manager': 'Hiring Manager',
+            'technical': 'Technical',
+            'panel': 'Panel / Final',
+            'executive': 'Executive'
+        };
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get interview ID from session storage
+            const interviewId = sessionStorage.getItem('currentInterviewId');
+
+            if (!interviewId) {
+                showError();
+                return;
+            }
+
+            // Get interviews from localStorage
+            const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            currentInterview = interviews.find(i => i.id === interviewId);
+
+            if (!currentInterview) {
+                showError();
+                return;
+            }
+
+            // Load resume data
+            const storedResume = sessionStorage.getItem('resumeData');
+            if (storedResume) {
+                try {
+                    resumeData = JSON.parse(storedResume);
+                } catch (e) {
+                    console.error('Error parsing resume:', e);
+                }
+            }
+
+            // Generate prep guide
+            await generatePrepGuide();
+        });
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+
+        async function generatePrepGuide() {
+            try {
+                // Show loading
+                document.getElementById('loadingState').style.display = 'flex';
+
+                // Call API to generate prep guide
+                const response = await fetch('http://localhost:8000/api/prep-guide/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company: currentInterview.company,
+                        role_title: currentInterview.role,
+                        interview_type: currentInterview.type,
+                        job_description: currentInterview.jobDescription || '',
+                        interviewer_name: currentInterview.interviewerName || '',
+                        interviewer_title: currentInterview.interviewerTitle || '',
+                        resume_json: resumeData || {}
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate prep guide');
+                }
+
+                prepData = await response.json();
+                renderPrepGuide();
+
+            } catch (error) {
+                console.error('Error generating prep guide:', error);
+                // Show error or fallback content
+                showFallbackContent();
+            }
+        }
+
+        function showFallbackContent() {
+            // Hide loading, show content with placeholder data
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('prepContent').style.display = 'block';
+
+            // Set header
+            document.getElementById('companyName').textContent = currentInterview.company;
+            document.getElementById('interviewTypeBreadcrumb').textContent = typeLabels[currentInterview.type] || currentInterview.type;
+            document.getElementById('pageTitle').textContent = `${typeLabels[currentInterview.type] || currentInterview.type} Prep`;
+
+            const date = new Date(currentInterview.date);
+            const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('interviewMeta').textContent = `${dateStr} at ${timeStr}${currentInterview.interviewerName ? ' with ' + currentInterview.interviewerName : ''}`;
+
+            // Set mock interview button
+            document.getElementById('stageSpecificMock').textContent = `${typeLabels[currentInterview.type] || ''} Mock Interview`;
+
+            // Show fallback message
+            document.getElementById('evaluateList').innerHTML = '<li style="color: #9ca3af;">Unable to generate prep. Please check your connection and try again.</li>';
+        }
+
+        function renderPrepGuide() {
+            // Hide loading, show content
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('prepContent').style.display = 'block';
+
+            // Set header
+            document.getElementById('companyName').textContent = currentInterview.company;
+            document.getElementById('interviewTypeBreadcrumb').textContent = typeLabels[currentInterview.type] || currentInterview.type;
+            document.getElementById('pageTitle').textContent = `${typeLabels[currentInterview.type] || currentInterview.type} Prep`;
+
+            const date = new Date(currentInterview.date);
+            const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('interviewMeta').textContent = `${dateStr} at ${timeStr}${currentInterview.interviewerName ? ' with ' + currentInterview.interviewerName : ''}`;
+
+            // Set mock interview button
+            document.getElementById('stageSpecificMock').textContent = `${typeLabels[currentInterview.type] || ''} Mock Interview`;
+
+            // Section 1: What They Evaluate
+            const evaluateList = document.getElementById('evaluateList');
+            evaluateList.innerHTML = (prepData.what_they_evaluate || []).map(item => `<li>${item}</li>`).join('');
+
+            // Section 2: Intro
+            const introText = document.getElementById('introText');
+            introText.textContent = prepData.intro_pitch || 'Loading...';
+            const wordCount = (prepData.intro_pitch || '').split(/\s+/).length;
+            document.getElementById('introWordCount').textContent = `${wordCount} words`;
+
+            // Section 3: Likely Questions
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = (prepData.likely_questions || []).map((q, i) => `
+                <div class="question-item collapsed">
+                    <div class="question-header" onclick="toggleQuestion(this)">
+                        <span class="question-text">${q.question}</span>
+                        <span class="question-toggle">▼</span>
+                    </div>
+                    <div class="question-answer">${q.guidance || 'Focus on specific examples from your experience.'}</div>
+                </div>
+            `).join('');
+
+            // Section 4: Stories
+            const storiesList = document.getElementById('storiesList');
+            storiesList.innerHTML = (prepData.stories || []).map(story => `
+                <div class="story-card collapsed">
+                    <div class="story-header" onclick="toggleStory(this)">
+                        <span class="story-title">${story.title}</span>
+                        <span class="story-tag">${story.competency || 'General'}</span>
+                    </div>
+                    <div class="story-body">
+                        <div class="story-section">
+                            <div class="story-section-label">SITUATION</div>
+                            <p>${story.situation || ''}</p>
+                        </div>
+                        <div class="story-section">
+                            <div class="story-section-label">TASK</div>
+                            <p>${story.task || ''}</p>
+                        </div>
+                        <div class="story-section">
+                            <div class="story-section-label">ACTION</div>
+                            <p>${story.action || ''}</p>
+                        </div>
+                        <div class="story-section">
+                            <div class="story-section-label">RESULT</div>
+                            <p>${story.result || ''}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Section 5: Red Flags
+            const redFlagsList = document.getElementById('redFlagsList');
+            redFlagsList.innerHTML = (prepData.red_flags || []).map(flag => `
+                <div class="red-flag-item">
+                    <span class="red-flag-icon">⚠️</span>
+                    <span class="red-flag-text">${flag}</span>
+                </div>
+            `).join('');
+
+            // Section 6: Strategy (only for HM/Technical)
+            if (currentInterview.type === 'hiring_manager' || currentInterview.type === 'technical') {
+                document.getElementById('strategySection').style.display = 'block';
+                const strategyList = document.getElementById('strategyList');
+                strategyList.innerHTML = (prepData.strategy_scenarios || []).map((scenario, i) => `
+                    <div class="question-item collapsed">
+                        <div class="question-header" onclick="toggleQuestion(this)">
+                            <span class="question-text">${scenario.scenario}</span>
+                            <span class="question-toggle">▼</span>
+                        </div>
+                        <div class="question-answer">${scenario.approach || ''}</div>
+                    </div>
+                `).join('');
+            }
+
+            // Section 7: Recommended Drills
+            const drillsGrid = document.getElementById('drillsGrid');
+            const drills = [
+                { icon: '🎯', name: 'Intro Practice', type: 'intro' },
+                { icon: '📖', name: 'Behavioral', type: 'behavioral' },
+                { icon: '🧩', name: 'Strategy', type: 'strategy' },
+                { icon: '🎤', name: 'Mock Interview', type: 'mock' }
+            ];
+            drillsGrid.innerHTML = drills.map(d => `
+                <div class="drill-card" onclick="openDrill('${d.type}')">
+                    <div class="drill-icon">${d.icon}</div>
+                    <div class="drill-name">${d.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle section expand/collapse
+        function toggleSection(header) {
+            const section = header.closest('.section');
+            section.classList.toggle('collapsed');
+        }
+
+        // Toggle question expand/collapse
+        function toggleQuestion(header) {
+            const item = header.closest('.question-item');
+            item.classList.toggle('collapsed');
+        }
+
+        // Toggle story expand/collapse
+        function toggleStory(header) {
+            const card = header.closest('.story-card');
+            card.classList.toggle('collapsed');
+        }
+
+        // Regenerate intro
+        async function regenerateIntro() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            try {
+                const response = await fetch('http://localhost:8000/api/prep-guide/regenerate-intro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company: currentInterview.company,
+                        role_title: currentInterview.role,
+                        interview_type: currentInterview.type,
+                        job_description: currentInterview.jobDescription || '',
+                        resume_json: resumeData || {}
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('introText').textContent = data.intro_pitch;
+                    const wordCount = data.intro_pitch.split(/\s+/).length;
+                    document.getElementById('introWordCount').textContent = `${wordCount} words`;
+                }
+            } catch (error) {
+                console.error('Error regenerating intro:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Regenerate';
+            }
+        }
+
+        // Open drill
+        function openDrill(type) {
+            if (type === 'mock') {
+                startStageMockInterview();
+            } else if (type === 'intro') {
+                window.location.href = 'practice-intro.html';
+            } else {
+                window.location.href = `practice-drills.html?type=${type}`;
+            }
+        }
+
+        // Start stage-specific mock interview
+        function startStageMockInterview() {
+            // Store current interview context for mock interview
+            sessionStorage.setItem('mockInterviewContext', JSON.stringify({
+                company: currentInterview.company,
+                role: currentInterview.role,
+                type: currentInterview.type,
+                jobDescription: currentInterview.jobDescription
+            }));
+            window.location.href = 'mock-interview.html';
+        }
+    </script>
+</body>
+</html>

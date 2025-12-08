@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Get Started — HenryAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --color-bg: #0a0a0b;
+      --color-surface: #141416;
+      --color-surface-elevated: #1c1c1f;
+      --color-border: rgba(255, 255, 255, 0.08);
+      --color-border-hover: rgba(255, 255, 255, 0.15);
+      --color-text: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-accent: #22d3ee;
+      --color-accent-muted: rgba(34, 211, 238, 0.15);
+      --color-success: #4ade80;
+      --color-warning: #fbbf24;
+      --color-error: #f87171;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'DM Sans', -apple-system, sans-serif;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--color-text);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 32px;
+    }
+
+    .logo em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+
+    .page-header h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 5vw, 2.25rem);
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+
+    .page-header p {
+      color: var(--color-text-secondary);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-icon {
+      font-size: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .section-subtitle {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-group > label {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--color-text);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+
+    /* File Upload */
+    .file-upload {
+      border: 2px dashed var(--color-border);
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-upload:hover {
+      border-color: var(--color-accent);
+      background: var(--color-accent-muted);
+    }
+
+    .file-upload.has-file {
+      border-color: var(--color-success);
+      background: rgba(74, 222, 128, 0.1);
+    }
+
+    .file-upload input {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .upload-text {
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .upload-text span {
+      color: var(--color-accent);
+      text-decoration: underline;
+    }
+
+    .file-name {
+      display: none;
+      margin-top: 12px;
+      color: var(--color-success);
+      font-size: 0.9rem;
+    }
+
+    .file-name.show {
+      display: block;
+    }
+
+    .parsing-status {
+      display: none;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+    }
+
+    .parsing-status.show {
+      display: block;
+    }
+
+    .parsing-status.success {
+      color: var(--color-success);
+    }
+
+    .parsing-status.error {
+      color: var(--color-error);
+    }
+
+    /* Radio Options */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .radio-option:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .radio-option.selected {
+      border-color: var(--color-accent);
+      background: var(--color-accent-muted);
+    }
+
+    .radio-option input {
+      display: none;
+    }
+
+    .radio-circle {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .radio-option.selected .radio-circle {
+      border-color: var(--color-accent);
+    }
+
+    .radio-circle::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .radio-option.selected .radio-circle::after {
+      opacity: 1;
+    }
+
+    .radio-label {
+      font-size: 0.95rem;
+      color: var(--color-text);
+    }
+
+    /* Checkbox Options */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .checkbox-option:hover {
+      border-color: var(--color-border-hover);
+    }
+
+    .checkbox-option.selected {
+      border-color: var(--color-accent);
+      background: var(--color-accent-muted);
+    }
+
+    .checkbox-option input {
+      display: none;
+    }
+
+    .checkbox-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--color-border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .checkbox-option.selected .checkbox-box {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+    }
+
+    .checkbox-box::after {
+      content: '✓';
+      font-size: 12px;
+      color: var(--color-bg);
+      opacity: 0;
+    }
+
+    .checkbox-option.selected .checkbox-box::after {
+      opacity: 1;
+    }
+
+    /* Compensation Grid */
+    .comp-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .comp-grid .form-group {
+      margin-bottom: 0;
+    }
+
+    .comp-grid label {
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
+
+    /* Location Tags */
+    .location-input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .location-input-row input {
+      flex: 1;
+    }
+
+    .location-input-row button {
+      padding: 14px 20px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      color: var(--color-text);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .location-input-row button:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .location-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .location-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--color-accent-muted);
+      border: 1px solid var(--color-accent);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--color-accent);
+    }
+
+    .location-tag button {
+      background: none;
+      border: none;
+      color: var(--color-accent);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      padding: 0;
+    }
+
+    /* Primary Button */
+    .btn-primary {
+      width: 100%;
+      padding: 18px 28px;
+      background: var(--color-accent);
+      color: #0a0a0b;
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+      margin-top: 12px;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .helper-text {
+      text-align: center;
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      margin-top: 12px;
+    }
+
+    .helper-text.hidden {
+      display: none;
+    }
+
+    /* Messages */
+    .error-message {
+      display: none;
+      padding: 14px 18px;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      border-radius: 10px;
+      color: var(--color-error);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .comp-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .checkbox-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="page-header">
+      <a href="index.html" class="logo"><em>Henry</em>AI</a>
+      <h1>Let's get to know each other</h1>
+      <p>Tell me about yourself and where you're at. The more I understand your situation, the better I can help you figure out which roles are actually worth your time.</p>
+    </div>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <!-- Section 1: Resume -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">📄</span>
+        <span class="section-title">Your Resume</span>
+      </div>
+      <p class="section-subtitle">Upload once, use for every job. I'll pull out the details so you don't have to re-enter anything.</p>
+      
+      <label class="file-upload" id="fileUpload">
+        <input type="file" id="resumeFile" accept=".pdf,.docx,.doc,.txt">
+        <div class="upload-icon">📎</div>
+        <div class="upload-text">Drop your resume here or <span>browse</span></div>
+        <div class="file-name" id="fileName"></div>
+      </label>
+      <div class="parsing-status" id="parsingStatus"></div>
+    </div>
+
+    <!-- Section 2: Where You're At -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">💭</span>
+        <span class="section-title">Where you're at</span>
+      </div>
+      <p class="section-subtitle">Job searching is hard. Be honest. This helps me calibrate my advice to your actual situation, not some generic best-case scenario.</p>
+
+      <div class="form-group">
+        <label>How are you holding up?</label>
+        <div class="radio-group" id="holdingUpGroup">
+          <label class="radio-option" data-value="doing_well">
+            <input type="radio" name="holdingUp" value="doing_well">
+            <span class="radio-circle"></span>
+            <span class="radio-label">I'm good. Exploring opportunistically.</span>
+          </label>
+          <label class="radio-option" data-value="stressed_but_managing">
+            <input type="radio" name="holdingUp" value="stressed_but_managing">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Stressed but managing</span>
+          </label>
+          <label class="radio-option" data-value="struggling">
+            <input type="radio" name="holdingUp" value="struggling">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Struggling, honestly</span>
+          </label>
+          <label class="radio-option" data-value="rather_not_say">
+            <input type="radio" name="holdingUp" value="rather_not_say">
+            <span class="radio-circle"></span>
+            <span class="radio-label">I'd rather not say</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>What's your timeline?</label>
+        <div class="radio-group" id="timelineGroup">
+          <label class="radio-option" data-value="no_rush">
+            <input type="radio" name="timeline" value="no_rush">
+            <span class="radio-circle"></span>
+            <span class="radio-label">No rush. Waiting for the right thing.</span>
+          </label>
+          <label class="radio-option" data-value="actively_looking">
+            <input type="radio" name="timeline" value="actively_looking">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Actively looking (1-3 months)</span>
+          </label>
+          <label class="radio-option" data-value="soon">
+            <input type="radio" name="timeline" value="soon">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Need something soon (under a month)</span>
+          </label>
+          <label class="radio-option" data-value="urgent">
+            <input type="radio" name="timeline" value="urgent">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Urgent. Financial pressure.</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>How's your confidence right now?</label>
+        <div class="radio-group" id="confidenceGroup">
+          <label class="radio-option" data-value="strong">
+            <input type="radio" name="confidence" value="strong">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Feeling strong. I know what I bring.</span>
+          </label>
+          <label class="radio-option" data-value="shaky">
+            <input type="radio" name="confidence" value="shaky">
+            <span class="radio-circle"></span>
+            <span class="radio-label">A bit shaky after some rejections</span>
+          </label>
+          <label class="radio-option" data-value="low">
+            <input type="radio" name="confidence" value="low">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Pretty low. Hard to stay motivated.</span>
+          </label>
+          <label class="radio-option" data-value="need_validation">
+            <input type="radio" name="confidence" value="need_validation">
+            <span class="radio-circle"></span>
+            <span class="radio-label">I just need someone to tell me I'm not crazy</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>What kind of move is this?</label>
+        <div class="radio-group" id="moveTypeGroup">
+          <label class="radio-option" data-value="lateral">
+            <input type="radio" name="moveType" value="lateral">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Same role, different company</span>
+          </label>
+          <label class="radio-option" data-value="step_up">
+            <input type="radio" name="moveType" value="step_up">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Stepping up (promotion-level move)</span>
+          </label>
+          <label class="radio-option" data-value="pivot">
+            <input type="radio" name="moveType" value="pivot">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Trying something new (pivot)</span>
+          </label>
+          <label class="radio-option" data-value="returning">
+            <input type="radio" name="moveType" value="returning">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Getting back in after a gap</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Work Arrangement -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">🏠</span>
+        <span class="section-title">Work Arrangement</span>
+      </div>
+      <p class="section-subtitle">What setups work for you? Select all that apply.</p>
+      
+      <div class="checkbox-group" id="workArrangementGroup">
+        <label class="checkbox-option" data-value="remote">
+          <input type="checkbox" name="workArrangement" value="remote">
+          <span class="checkbox-box"></span>
+          <span>Remote</span>
+        </label>
+        <label class="checkbox-option" data-value="hybrid">
+          <input type="checkbox" name="workArrangement" value="hybrid">
+          <span class="checkbox-box"></span>
+          <span>Hybrid</span>
+        </label>
+        <label class="checkbox-option" data-value="onsite">
+          <input type="checkbox" name="workArrangement" value="onsite">
+          <span class="checkbox-box"></span>
+          <span>On-site</span>
+        </label>
+        <label class="checkbox-option" data-value="flexible">
+          <input type="checkbox" name="workArrangement" value="flexible">
+          <span class="checkbox-box"></span>
+          <span>Flexible / Depends</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Section 4: Location -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">📍</span>
+        <span class="section-title">Location</span>
+      </div>
+      
+      <div class="form-group">
+        <label>Where are you based?</label>
+        <input type="text" id="currentLocation" placeholder="e.g., New York, NY">
+      </div>
+
+      <div class="form-group">
+        <label>Open to relocating?</label>
+        <div class="radio-group" id="relocateGroup">
+          <label class="radio-option" data-value="yes">
+            <input type="radio" name="relocate" value="yes">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Yes</span>
+          </label>
+          <label class="radio-option" data-value="maybe">
+            <input type="radio" name="relocate" value="maybe">
+            <span class="radio-circle"></span>
+            <span class="radio-label">Maybe, for the right role</span>
+          </label>
+          <label class="radio-option" data-value="no">
+            <input type="radio" name="relocate" value="no">
+            <span class="radio-circle"></span>
+            <span class="radio-label">No</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" id="relocateLocationsGroup" style="display: none;">
+        <label>Where would you consider? (optional)</label>
+        <div class="location-input-row">
+          <input type="text" id="relocateLocationInput" placeholder="e.g., Austin, Seattle, Denver">
+          <button type="button" id="addRelocateLocationBtn">Add</button>
+        </div>
+        <div class="location-tags" id="relocateLocationTags"></div>
+      </div>
+    </div>
+
+    <!-- Section 5: Compensation -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">💰</span>
+        <span class="section-title">Compensation</span>
+      </div>
+      <p class="section-subtitle">This helps me flag roles that might waste your time. All numbers are optional.</p>
+      
+      <div class="comp-grid">
+        <div class="form-group">
+          <label>Minimum ($)</label>
+          <input type="number" id="compMin" placeholder="e.g., 120000">
+        </div>
+        <div class="form-group">
+          <label>Target ($)</label>
+          <input type="number" id="compTarget" placeholder="e.g., 150000">
+        </div>
+        <div class="form-group">
+          <label>Stretch ($)</label>
+          <input type="number" id="compStretch" placeholder="e.g., 180000">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: Pronouns -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-icon">👤</span>
+        <span class="section-title">One more thing</span>
+      </div>
+      
+      <div class="form-group">
+        <label>Pronouns (optional, for personalized messaging)</label>
+        <input type="text" id="pronouns" placeholder="e.g., she/her, he/him, they/them">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="saveBtn" disabled>Let's go →</button>
+    <p class="helper-text" id="helperText">Upload your resume and answer "What's your timeline?" to continue</p>
+  </div>
+
+  <script>
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : '';
+    
+    // State
+    let parsedResume = null;
+    let relocateLocations = [];
+    let workArrangements = [];
+
+    // Check if profile already exists
+    const existingProfile = localStorage.getItem('userProfile');
+    if (existingProfile) {
+      window.location.href = 'analyze.html';
+    }
+
+    // Elements
+    const fileUpload = document.getElementById('fileUpload');
+    const resumeFile = document.getElementById('resumeFile');
+    const fileName = document.getElementById('fileName');
+    const parsingStatus = document.getElementById('parsingStatus');
+    const saveBtn = document.getElementById('saveBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // ========================================================================
+    // FILE UPLOAD
+    // ========================================================================
+    resumeFile.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      fileName.textContent = `📎 ${file.name}`;
+      fileName.classList.add('show');
+      fileUpload.classList.add('has-file');
+
+      parsingStatus.textContent = 'Parsing resume...';
+      parsingStatus.className = 'parsing-status show';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE}/api/resume/parse`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to parse resume');
+        }
+
+        parsedResume = await response.json();
+        const name = parsedResume.contact?.full_name || parsedResume.full_name || 'Unknown';
+        const firstName = name.split(' ')[0];
+        parsingStatus.textContent = `✓ Got it, ${firstName}!`;
+        parsingStatus.className = 'parsing-status show success';
+        updateSaveButton();
+
+      } catch (error) {
+        console.error('Parse error:', error);
+        parsingStatus.textContent = '✗ Couldn\'t parse that file. Try another format?';
+        parsingStatus.className = 'parsing-status show error';
+        parsedResume = null;
+        updateSaveButton();
+      }
+    });
+
+    // Drag and drop
+    fileUpload.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileUpload.style.borderColor = 'var(--color-accent)';
+      fileUpload.style.background = 'var(--color-accent-muted)';
+    });
+
+    fileUpload.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      if (!fileUpload.classList.contains('has-file')) {
+        fileUpload.style.borderColor = '';
+        fileUpload.style.background = '';
+      }
+    });
+
+    fileUpload.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        resumeFile.files = e.dataTransfer.files;
+        resumeFile.dispatchEvent(new Event('change'));
+      }
+    });
+
+    // ========================================================================
+    // RADIO/CHECKBOX HANDLERS
+    // ========================================================================
+    document.querySelectorAll('.radio-group').forEach(group => {
+      group.querySelectorAll('.radio-option').forEach(option => {
+        option.addEventListener('click', () => {
+          // Deselect all in group
+          group.querySelectorAll('.radio-option').forEach(o => o.classList.remove('selected'));
+          // Select this one
+          option.classList.add('selected');
+          option.querySelector('input').checked = true;
+
+          // Show/hide relocate locations based on answer
+          if (group.id === 'relocateGroup') {
+            const value = option.dataset.value;
+            const relocateLocationsGroup = document.getElementById('relocateLocationsGroup');
+            relocateLocationsGroup.style.display = (value === 'yes' || value === 'maybe') ? 'block' : 'none';
+          }
+
+          updateSaveButton();
+        });
+      });
+    });
+
+    document.querySelectorAll('.checkbox-option').forEach(option => {
+      option.addEventListener('click', () => {
+        option.classList.toggle('selected');
+        option.querySelector('input').checked = option.classList.contains('selected');
+        
+        // Update workArrangements array
+        workArrangements = Array.from(document.querySelectorAll('.checkbox-option.selected'))
+          .map(o => o.dataset.value);
+        
+        updateSaveButton();
+      });
+    });
+
+    // ========================================================================
+    // RELOCATE LOCATIONS
+    // ========================================================================
+    const relocateLocationInput = document.getElementById('relocateLocationInput');
+    const addRelocateLocationBtn = document.getElementById('addRelocateLocationBtn');
+    const relocateLocationTags = document.getElementById('relocateLocationTags');
+
+    addRelocateLocationBtn.addEventListener('click', () => {
+      const location = relocateLocationInput.value.trim();
+      if (location && !relocateLocations.includes(location)) {
+        relocateLocations.push(location);
+        renderRelocateLocations();
+        relocateLocationInput.value = '';
+      }
+    });
+
+    relocateLocationInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addRelocateLocationBtn.click();
+      }
+    });
+
+    function renderRelocateLocations() {
+      relocateLocationTags.innerHTML = relocateLocations.map((loc, index) => `
+        <span class="location-tag">
+          ${loc}
+          <button type="button" onclick="removeRelocateLocation(${index})">×</button>
+        </span>
+      `).join('');
+    }
+
+    function removeRelocateLocation(index) {
+      relocateLocations.splice(index, 1);
+      renderRelocateLocations();
+    }
+    window.removeRelocateLocation = removeRelocateLocation;
+
+    // ========================================================================
+    // SAVE BUTTON
+    // ========================================================================
+    function updateSaveButton() {
+      // Minimum requirements: resume parsed + timeline answered
+      const hasResume = parsedResume !== null;
+      const hasTimeline = document.querySelector('#timelineGroup .radio-option.selected') !== null;
+      
+      saveBtn.disabled = !(hasResume && hasTimeline);
+      
+      // Update helper text
+      const helperText = document.getElementById('helperText');
+      if (hasResume && hasTimeline) {
+        helperText.classList.add('hidden');
+      } else if (!hasResume && !hasTimeline) {
+        helperText.textContent = 'Upload your resume and answer "What\'s your timeline?" to continue';
+        helperText.classList.remove('hidden');
+      } else if (!hasResume) {
+        helperText.textContent = 'Upload your resume to continue';
+        helperText.classList.remove('hidden');
+      } else {
+        helperText.textContent = 'Answer "What\'s your timeline?" to continue';
+        helperText.classList.remove('hidden');
+      }
+    }
+
+    function getSelectedRadioValue(groupId) {
+      const selected = document.querySelector(`#${groupId} .radio-option.selected`);
+      return selected ? selected.dataset.value : null;
+    }
+
+    saveBtn.addEventListener('click', () => {
+      if (!parsedResume) {
+        showError('Please upload your resume first.');
+        return;
+      }
+
+      // Build profile object with new schema
+      const profile = {
+        resume: parsedResume,
+        situation: {
+          holding_up: getSelectedRadioValue('holdingUpGroup'),
+          timeline: getSelectedRadioValue('timelineGroup'),
+          confidence: getSelectedRadioValue('confidenceGroup'),
+          move_type: getSelectedRadioValue('moveTypeGroup')
+        },
+        work_arrangement: workArrangements,
+        location: {
+          current: document.getElementById('currentLocation').value.trim(),
+          open_to_relocate: getSelectedRadioValue('relocateGroup'),
+          relocate_to: relocateLocations
+        },
+        compensation: {
+          min: parseInt(document.getElementById('compMin').value) || null,
+          target: parseInt(document.getElementById('compTarget').value) || null,
+          stretch: parseInt(document.getElementById('compStretch').value) || null
+        },
+        pronouns: document.getElementById('pronouns').value.trim() || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Save to localStorage
+      localStorage.setItem('userProfile', JSON.stringify(profile));
+      
+      // Initialize empty tracked applications
+      if (!localStorage.getItem('trackedApplications')) {
+        localStorage.setItem('trackedApplications', JSON.stringify([]));
+      }
+
+      // Redirect to analyze page
+      window.location.href = 'analyze.html';
+    });
+
+    function showError(message) {
+      errorMessage.textContent = message;
+      errorMessage.classList.add('show');
+      setTimeout(() => errorMessage.classList.remove('show'), 5000);
+    }
+  </script>
+</body>
+</html>

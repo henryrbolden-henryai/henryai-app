@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Drills - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .back-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        /* Setup Screen */
+        .setup-screen {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .setup-screen h1 {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .setup-subtitle {
+            color: #9ca3af;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        /* Drill Type Cards */
+        .drill-type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .drill-type-card {
+            background: #1f2937;
+            border: 2px solid #374151;
+            border-radius: 16px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .drill-type-card:hover {
+            border-color: #22d3ee;
+            transform: translateY(-2px);
+        }
+
+        .drill-type-card.selected {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        .drill-type-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .drill-type-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .drill-type-desc {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* Role Selection */
+        .role-section {
+            display: none;
+            margin-bottom: 32px;
+        }
+
+        .role-section.visible {
+            display: block;
+        }
+
+        .section-label {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .role-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .role-card:hover {
+            border-color: #4b5563;
+        }
+
+        .role-card.selected {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        .role-icon {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .role-name {
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+
+        /* Start Button */
+        .start-section {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .btn-start {
+            background: #22d3ee;
+            color: #000;
+            border: none;
+            padding: 16px 48px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start:hover {
+            background: #06b6d4;
+            transform: translateY(-2px);
+        }
+
+        .btn-start:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Chat Screen */
+        .chat-screen {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .chat-screen.active {
+            display: flex;
+        }
+
+        .chat-header {
+            background: rgba(15, 15, 15, 0.98);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .chat-header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-title-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .chat-title-text h2 {
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .chat-title-text p {
+            color: #9ca3af;
+            font-size: 0.8rem;
+        }
+
+        .question-counter {
+            background: rgba(34, 211, 238, 0.1);
+            color: #22d3ee;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .end-btn {
+            background: transparent;
+            border: 1px solid #374151;
+            color: #9ca3af;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .end-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        /* Chat Messages */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 100px 20px 200px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .message.coach .message-avatar {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+
+        .message.user .message-avatar {
+            background: #374151;
+        }
+
+        .message-content {
+            flex: 1;
+            max-width: 600px;
+        }
+
+        .message-sender {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+
+        .message-bubble {
+            background: #1f2937;
+            border-radius: 16px;
+            padding: 16px 20px;
+            color: #e5e7eb;
+            line-height: 1.6;
+        }
+
+        .message.coach .message-bubble {
+            border: 1px solid #374151;
+        }
+
+        .message.user .message-bubble {
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #6b7280;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Feedback in Chat */
+        .feedback-bubble {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .feedback-score {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .score-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .score-badge.high { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .score-badge.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .score-badge.low { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        .score-text h4 {
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        .score-text p {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .feedback-section {
+            margin-bottom: 16px;
+        }
+
+        .feedback-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .feedback-label {
+            color: #22d3ee;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .feedback-list {
+            list-style: none;
+        }
+
+        .feedback-list li {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .feedback-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #6b7280;
+        }
+
+        .coaching-box {
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .coaching-box p {
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+
+        .rewrite-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .rewrite-box h5 {
+            color: #a78bfa;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .rewrite-box p {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(10, 10, 10, 0.95) 20%);
+            padding: 20px;
+        }
+
+        .chat-input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .chat-input-box {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input-box textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1rem;
+            resize: none;
+            min-height: 24px;
+            max-height: 150px;
+            line-height: 1.5;
+        }
+
+        .chat-input-box textarea:focus {
+            outline: none;
+        }
+
+        .chat-input-box textarea::placeholder {
+            color: #6b7280;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-voice {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-voice:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-voice.recording {
+            background: #ef4444;
+            color: #fff;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .btn-send {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #22d3ee;
+            color: #000;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-send:hover {
+            background: #06b6d4;
+        }
+
+        .btn-send:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        /* Continue Button */
+        .continue-btn {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .continue-btn.visible {
+            display: block;
+        }
+
+        .btn-continue {
+            background: transparent;
+            border: 1px solid #22d3ee;
+            color: #22d3ee;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-continue:hover {
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        /* Summary Screen */
+        .summary-screen {
+            display: none;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 100px 20px 40px;
+        }
+
+        .summary-screen.active {
+            display: block;
+        }
+
+        .summary-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .summary-header h1 {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .summary-header p {
+            color: #9ca3af;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-value.high { color: #4ade80; }
+        .stat-value.medium { color: #f59e0b; }
+        .stat-value.low { color: #ef4444; }
+
+        .stat-label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .summary-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn-again {
+            background: #22d3ee;
+            color: #000;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-again:hover {
+            background: #06b6d4;
+        }
+
+        .btn-back {
+            background: transparent;
+            border: 1px solid #374151;
+            color: #9ca3af;
+            padding: 14px 32px;
+            font-size: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            border-color: #4b5563;
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .drill-type-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .role-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .summary-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SETUP SCREEN -->
+    <div class="setup-screen" id="setupScreen">
+        <header>
+            <div class="header-container">
+                <a href="index.html" class="logo"><em>Henry</em>AI</a>
+                <a href="interview-intelligence.html" class="back-link">← Back to Practice</a>
+            </div>
+        </header>
+
+        <h1>Practice Drills</h1>
+        <p class="setup-subtitle">Choose a drill type to strengthen specific interview skills</p>
+
+        <div class="drill-type-grid" id="drillTypeGrid">
+            <div class="drill-type-card" data-type="behavioral" onclick="selectDrillType('behavioral')">
+                <div class="drill-type-icon">📖</div>
+                <div class="drill-type-name">Behavioral</div>
+                <div class="drill-type-desc">STAR stories with impact</div>
+            </div>
+            <div class="drill-type-card" data-type="strategy" onclick="selectDrillType('strategy')">
+                <div class="drill-type-icon">🧩</div>
+                <div class="drill-type-name">Strategy</div>
+                <div class="drill-type-desc">Structured problem-solving</div>
+            </div>
+            <div class="drill-type-card" data-type="metrics" onclick="selectDrillType('metrics')">
+                <div class="drill-type-icon">📊</div>
+                <div class="drill-type-name">Metrics</div>
+                <div class="drill-type-desc">Numbers and outcomes</div>
+            </div>
+            <div class="drill-type-card" data-type="ownership" onclick="selectDrillType('ownership')">
+                <div class="drill-type-icon">💪</div>
+                <div class="drill-type-name">Ownership</div>
+                <div class="drill-type-desc">Personal accountability</div>
+            </div>
+            <div class="drill-type-card" data-type="communication" onclick="selectDrillType('communication')">
+                <div class="drill-type-icon">🗣️</div>
+                <div class="drill-type-name">Communication</div>
+                <div class="drill-type-desc">Clear, concise delivery</div>
+            </div>
+            <div class="drill-type-card" data-type="role" onclick="selectDrillType('role')">
+                <div class="drill-type-icon">💼</div>
+                <div class="drill-type-name">Role-Based</div>
+                <div class="drill-type-desc">Job-specific questions</div>
+            </div>
+        </div>
+
+        <div class="role-section" id="roleSection">
+            <div class="section-label">Select your target role:</div>
+            <div class="role-grid" id="roleGrid">
+                <div class="role-card" data-role="pm" onclick="selectRole('pm')">
+                    <div class="role-icon">📦</div>
+                    <div class="role-name">Product Manager</div>
+                </div>
+                <div class="role-card" data-role="swe" onclick="selectRole('swe')">
+                    <div class="role-icon">💻</div>
+                    <div class="role-name">Software Engineer</div>
+                </div>
+                <div class="role-card" data-role="ux" onclick="selectRole('ux')">
+                    <div class="role-icon">🎨</div>
+                    <div class="role-name">UX Designer</div>
+                </div>
+                <div class="role-card" data-role="ui" onclick="selectRole('ui')">
+                    <div class="role-icon">✨</div>
+                    <div class="role-name">UI Designer</div>
+                </div>
+                <div class="role-card" data-role="ta" onclick="selectRole('ta')">
+                    <div class="role-icon">👥</div>
+                    <div class="role-name">Talent Acquisition</div>
+                </div>
+                <div class="role-card" data-role="leadership" onclick="selectRole('leadership')">
+                    <div class="role-icon">🎯</div>
+                    <div class="role-name">Leadership</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="start-section">
+            <button class="btn-start" id="startBtn" onclick="startDrill()" disabled>Start Practice</button>
+        </div>
+    </div>
+
+    <!-- CHAT SCREEN -->
+    <div class="chat-screen" id="chatScreen">
+        <div class="chat-header">
+            <div class="chat-header-content">
+                <div class="chat-title">
+                    <div class="chat-title-icon" id="chatIcon">📖</div>
+                    <div class="chat-title-text">
+                        <h2 id="chatTitle">Behavioral Drill</h2>
+                        <p id="chatSubtitle">Practice with AI coaching</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <span class="question-counter" id="questionCounter">Question 1</span>
+                    <button class="end-btn" onclick="endDrill()">End Practice</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <div class="chat-input-box">
+                    <textarea
+                        id="userInput"
+                        placeholder="Type your response..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <div class="input-actions">
+                        <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+                        <button class="btn-send" id="sendBtn" onclick="sendResponse()">➤</button>
+                    </div>
+                </div>
+                <div class="input-hint">Press Enter to send, Shift+Enter for new line</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUMMARY SCREEN -->
+    <div class="summary-screen" id="summaryScreen">
+        <div class="summary-header">
+            <h1>Practice Complete! 🎉</h1>
+            <p>Here's how you did in this session</p>
+        </div>
+
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="avgScore">-</div>
+                <div class="stat-label">Average Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="questionsCompleted">0</div>
+                <div class="stat-label">Questions Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="topSignal">-</div>
+                <div class="stat-label">Strongest Signal</div>
+            </div>
+        </div>
+
+        <div class="summary-actions">
+            <button class="btn-again" onclick="restartDrill()">Practice Again</button>
+            <button class="btn-back" onclick="goBack()">Back to Practice</button>
+        </div>
+    </div>
+
+    <script>
+        // Drill configurations
+        const drillConfig = {
+            behavioral: {
+                icon: '📖',
+                title: 'Behavioral Drill',
+                signal: 'communication_clarity',
+                questions: [
+                    "Tell me about a time you had to influence someone without direct authority.",
+                    "Describe a situation where you failed. What did you learn?",
+                    "Tell me about a time you had to make a difficult decision with incomplete information.",
+                    "Describe a conflict you had with a colleague. How did you resolve it?",
+                    "Tell me about a project you're most proud of. Walk me through it.",
+                    "Describe a time you had to adapt to a significant change quickly."
+                ]
+            },
+            strategy: {
+                icon: '🧩',
+                title: 'Strategy Drill',
+                signal: 'strategic_thinking',
+                questions: [
+                    "How would you prioritize if you could only complete 1 of 3 important projects?",
+                    "Describe a decision you made. Walk through the tradeoffs you considered.",
+                    "If leadership cut 30% of your roadmap, what stays and why?",
+                    "How do you decide when to push back vs. align with leadership?",
+                    "Explain your framework for saying no to requests.",
+                    "How do you balance short-term wins with long-term strategy?"
+                ]
+            },
+            metrics: {
+                icon: '📊',
+                title: 'Metrics Drill',
+                signal: 'metrics_orientation',
+                questions: [
+                    "Think of a project you led. Describe the outcome with at least 3 specific numbers.",
+                    "Describe a time you improved a process. What were the before/after metrics?",
+                    "Tell me about a successful project. What KPIs did you track?",
+                    "How would you quantify the impact of your most recent work?",
+                    "Describe a goal you set. How did you measure progress?",
+                    "Tell me about a time you used data to make a decision."
+                ]
+            },
+            ownership: {
+                icon: '💪',
+                title: 'Ownership Drill',
+                signal: 'ownership',
+                questions: [
+                    "Rewrite: 'Our team launched a feature.' What did YOU specifically do?",
+                    "Tell me about a mistake you made. How did YOU fix it?",
+                    "Describe a time you took initiative without being asked.",
+                    "Walk me through a project where you were the primary driver.",
+                    "Tell me about a time you went above and beyond your role.",
+                    "Describe how you handled a project that was going off track."
+                ]
+            },
+            communication: {
+                icon: '🗣️',
+                title: 'Communication Drill',
+                signal: 'communication_clarity',
+                questions: [
+                    "Tell me about a challenging project using strict STAR format (2-3 sentences each).",
+                    "Explain a complex concept from your work as if I'm non-technical.",
+                    "Summarize your biggest accomplishment in exactly 3 sentences.",
+                    "Describe a time you had to deliver difficult feedback.",
+                    "How would you explain your role to someone outside your industry?",
+                    "Tell me about a time you had to simplify a complex message."
+                ]
+            },
+            role: {
+                icon: '💼',
+                title: 'Role-Based Drill',
+                signal: 'functional_competency',
+                roleQuestions: {
+                    pm: [
+                        "Walk me through a feature you shipped end-to-end.",
+                        "How do you decide what to build when everything feels important?",
+                        "Tell me about a time engineering disagreed with your requirements.",
+                        "How do you gather and incorporate user feedback?",
+                        "What metrics matter most for your product? Why?"
+                    ],
+                    swe: [
+                        "Walk me through a system you architected. Why that approach?",
+                        "Describe a time you optimized performance. What was the impact?",
+                        "How would you scale an API to handle 10x traffic?",
+                        "Tell me about a technical disagreement with a teammate.",
+                        "How do you approach debugging an intermittent production issue?"
+                    ],
+                    ux: [
+                        "Walk me through a user insight that changed your design direction.",
+                        "How do you approach research when time is tight?",
+                        "Tell me about a time you advocated for the user against business priorities.",
+                        "Describe how you would redesign an onboarding flow.",
+                        "How do you validate your design decisions?"
+                    ],
+                    ui: [
+                        "Explain your typography, spacing, and layout decisions on a recent project.",
+                        "How do you ensure visual consistency across surfaces?",
+                        "How would you improve accessibility without impacting the brand?",
+                        "Tell me about building or maintaining a design system.",
+                        "How do you prioritize visual polish vs. shipping speed?"
+                    ],
+                    ta: [
+                        "Walk me through how you source for hard-to-fill roles.",
+                        "How do you build relationships with hiring managers?",
+                        "Describe your approach to improving candidate experience.",
+                        "How do you prioritize multiple urgent roles?",
+                        "What metrics do you use to measure recruiting success?"
+                    ],
+                    leadership: [
+                        "Tell me about your leadership philosophy.",
+                        "How have you scaled a team or function during growth?",
+                        "How do you handle underperformance on your team?",
+                        "How do you align your team's work with company strategy?",
+                        "Tell me about a time you led through organizational change."
+                    ]
+                }
+            }
+        };
+
+        // State
+        let selectedType = null;
+        let selectedRole = null;
+        let currentQuestion = '';
+        let questionNumber = 0;
+        let scores = [];
+        let askedQuestions = [];
+        let isRecording = false;
+        let mediaRecorder = null;
+        let awaitingResponse = false;
+
+        // Select drill type
+        function selectDrillType(type) {
+            selectedType = type;
+
+            // Update UI
+            document.querySelectorAll('.drill-type-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.type === type);
+            });
+
+            // Show/hide role selection
+            const roleSection = document.getElementById('roleSection');
+            if (type === 'role') {
+                roleSection.classList.add('visible');
+                selectedRole = null;
+                document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
+                document.getElementById('startBtn').disabled = true;
+            } else {
+                roleSection.classList.remove('visible');
+                selectedRole = null;
+                document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        // Select role
+        function selectRole(role) {
+            selectedRole = role;
+
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.role === role);
+            });
+
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        // Start drill
+        function startDrill() {
+            if (!selectedType) return;
+            if (selectedType === 'role' && !selectedRole) return;
+
+            // Reset state
+            questionNumber = 0;
+            scores = [];
+            askedQuestions = [];
+
+            // Update chat header
+            const config = drillConfig[selectedType];
+            document.getElementById('chatIcon').textContent = config.icon;
+            document.getElementById('chatTitle').textContent = config.title;
+            document.getElementById('chatSubtitle').textContent = 'Practice with AI coaching';
+
+            // Switch screens
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('chatScreen').classList.add('active');
+
+            // Clear messages and ask first question
+            document.getElementById('chatMessages').innerHTML = '';
+            askNextQuestion();
+        }
+
+        // Ask next question
+        function askNextQuestion() {
+            questionNumber++;
+            document.getElementById('questionCounter').textContent = `Question ${questionNumber}`;
+
+            const config = drillConfig[selectedType];
+            let questions = config.questions;
+
+            if (selectedType === 'role' && selectedRole) {
+                questions = config.roleQuestions[selectedRole];
+            }
+
+            // Filter out asked questions
+            const available = questions.filter(q => !askedQuestions.includes(q));
+            if (available.length === 0) {
+                endDrill();
+                return;
+            }
+
+            currentQuestion = available[Math.floor(Math.random() * available.length)];
+            askedQuestions.push(currentQuestion);
+
+            // Add coach message with question
+            addMessage('coach', currentQuestion);
+
+            // Speak the question
+            speakText(currentQuestion);
+
+            awaitingResponse = true;
+        }
+
+        // Text-to-speech function
+        let currentAudio = null;
+
+        async function speakText(text) {
+            // Stop any currently playing audio
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
+            try {
+                // Try OpenAI TTS via backend first
+                const response = await fetch('http://localhost:8000/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, voice: 'alloy' })
+                });
+
+                if (response.ok) {
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    currentAudio = new Audio(audioUrl);
+                    currentAudio.play();
+                    return;
+                }
+            } catch (error) {
+                console.log('TTS API not available, falling back to browser TTS');
+            }
+
+            // Fallback to browser's built-in speech synthesis
+            if ('speechSynthesis' in window) {
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                utterance.pitch = 1;
+
+                // Try to get a good voice
+                const voices = speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v =>
+                    v.name.includes('Samantha') ||
+                    v.name.includes('Google') ||
+                    v.name.includes('English')
+                );
+                if (preferredVoice) {
+                    utterance.voice = preferredVoice;
+                }
+
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Stop speech when ending drill
+        function stopSpeech() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            if ('speechSynthesis' in window) {
+                speechSynthesis.cancel();
+            }
+        }
+
+        // Add message to chat
+        function addMessage(type, content, isFeedback = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+
+            const avatar = type === 'coach' ? '🎯' : '👤';
+            const sender = type === 'coach' ? 'Interview Coach' : 'You';
+
+            let bubbleContent = '';
+            if (isFeedback && typeof content === 'object') {
+                bubbleContent = renderFeedback(content);
+            } else {
+                bubbleContent = `<div class="message-bubble">${content}</div>`;
+            }
+
+            message.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div class="message-sender">${sender}</div>
+                    ${bubbleContent}
+                    ${isFeedback ? '<div class="continue-btn visible"><button class="btn-continue" onclick="askNextQuestion()">Next Question →</button></div>' : ''}
+                </div>
+            `;
+
+            messagesContainer.appendChild(message);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Add typing indicator
+        function addTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typing = document.createElement('div');
+            typing.className = 'message coach';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `
+                <div class="message-avatar">🎯</div>
+                <div class="message-content">
+                    <div class="message-sender">Interview Coach</div>
+                    <div class="message-bubble">
+                        <div class="typing-indicator">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(typing);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        // Render feedback bubble
+        function renderFeedback(data) {
+            const scoreClass = data.score >= 7 ? 'high' : data.score >= 5 ? 'medium' : 'low';
+            const scoreLabel = data.score >= 7 ? 'Great response!' : data.score >= 5 ? 'Good progress' : 'Keep practicing';
+
+            let html = `
+                <div class="feedback-bubble">
+                    <div class="feedback-score">
+                        <div class="score-badge ${scoreClass}">${data.score}</div>
+                        <div class="score-text">
+                            <h4>${scoreLabel}</h4>
+                            <p>Signal: ${drillConfig[selectedType].title.replace(' Drill', '')}</p>
+                        </div>
+                    </div>
+            `;
+
+            if (data.strengths && data.strengths.length > 0) {
+                html += `
+                    <div class="feedback-section">
+                        <div class="feedback-label">💪 Strengths</div>
+                        <ul class="feedback-list">
+                            ${data.strengths.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (data.improvements && data.improvements.length > 0) {
+                html += `
+                    <div class="feedback-section">
+                        <div class="feedback-label">📈 Areas to Improve</div>
+                        <ul class="feedback-list">
+                            ${data.improvements.map(i => `<li>${i}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            if (data.coaching_tip) {
+                html += `
+                    <div class="coaching-box">
+                        <div class="feedback-label">💡 Coaching Tip</div>
+                        <p>${data.coaching_tip}</p>
+                    </div>
+                `;
+            }
+
+            if (data.rewritten_example) {
+                html += `
+                    <div class="rewrite-box">
+                        <h5>Example Rewrite</h5>
+                        <p>${data.rewritten_example}</p>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // Send user response
+        async function sendResponse() {
+            const input = document.getElementById('userInput');
+            const response = input.value.trim();
+
+            if (!response || !awaitingResponse) return;
+
+            // Add user message
+            addMessage('user', response);
+            input.value = '';
+            autoResize(input);
+            awaitingResponse = false;
+
+            // Show typing indicator
+            addTypingIndicator();
+
+            try {
+                const config = drillConfig[selectedType];
+                const apiResponse = await fetch('http://localhost:8000/api/drill/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        drill_type: selectedType,
+                        signal_focus: config.signal,
+                        question: currentQuestion,
+                        response: response
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!apiResponse.ok) throw new Error('Failed to get feedback');
+
+                const data = await apiResponse.json();
+                scores.push(data.score);
+
+                // Add feedback message
+                addMessage('coach', data, true);
+
+            } catch (error) {
+                console.error('Error:', error);
+                removeTypingIndicator();
+
+                // Mock feedback for demo
+                const mockFeedback = {
+                    score: Math.floor(Math.random() * 3) + 6,
+                    strengths: ['Good structure', 'Clear explanation'],
+                    improvements: ['Add more specific metrics', 'Strengthen the result'],
+                    coaching_tip: 'Try to quantify your impact with numbers whenever possible.',
+                    rewritten_example: 'Here\'s how you could strengthen your answer...'
+                };
+                scores.push(mockFeedback.score);
+                addMessage('coach', mockFeedback, true);
+            }
+        }
+
+        // Handle keyboard
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendResponse();
+            }
+        }
+
+        // Auto-resize textarea
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+        }
+
+        // Voice recording
+        async function toggleVoice() {
+            const btn = document.getElementById('voiceBtn');
+
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.classList.remove('recording');
+                btn.textContent = '🎤';
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    let chunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(chunks, { type: 'audio/webm' });
+                        stream.getTracks().forEach(t => t.stop());
+
+                        // Transcribe
+                        try {
+                            const formData = new FormData();
+                            formData.append('audio', blob);
+                            const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+                            if (res.ok) {
+                                const data = await res.json();
+                                document.getElementById('userInput').value = data.transcription;
+                                autoResize(document.getElementById('userInput'));
+                            }
+                        } catch (e) {
+                            console.error('Transcription error:', e);
+                        }
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('recording');
+                    btn.textContent = '⏹';
+                } catch (error) {
+                    console.error('Microphone error:', error);
+                    alert('Could not access microphone');
+                }
+            }
+        }
+
+        // End drill
+        function endDrill() {
+            stopSpeech();
+            document.getElementById('chatScreen').classList.remove('active');
+            document.getElementById('summaryScreen').classList.add('active');
+
+            // Calculate stats
+            const avgScore = scores.length > 0
+                ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
+                : '-';
+
+            const avgEl = document.getElementById('avgScore');
+            avgEl.textContent = avgScore;
+            avgEl.className = 'stat-value ' + (avgScore >= 7 ? 'high' : avgScore >= 5 ? 'medium' : 'low');
+
+            document.getElementById('questionsCompleted').textContent = scores.length;
+            document.getElementById('topSignal').textContent = drillConfig[selectedType].title.replace(' Drill', '');
+        }
+
+        // Restart drill
+        function restartDrill() {
+            document.getElementById('summaryScreen').classList.remove('active');
+            startDrill();
+        }
+
+        // Go back
+        function goBack() {
+            window.location.href = 'interview-intelligence.html';
+        }
+
+        // Initialize from URL params
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const type = params.get('type');
+            if (type && drillConfig[type]) {
+                selectDrillType(type);
+            }
+        });
+    </script>
+</body>
+</html>

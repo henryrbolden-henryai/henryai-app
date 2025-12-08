@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Application Strategy Overview - HenryAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 60px;
+            font-size: 1.2rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .nav-card {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 40px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #60a5fa, #3b82f6);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-8px);
+            border-color: #60a5fa;
+            box-shadow: 0 20px 40px rgba(96, 165, 250, 0.2);
+        }
+
+        .nav-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        /* Coming Soon Cards */
+        .nav-card.coming-soon {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .nav-card.coming-soon:hover {
+            transform: none;
+            border-color: #374151;
+            box-shadow: none;
+        }
+
+        .nav-card.coming-soon:hover::before {
+            transform: scaleX(0);
+        }
+
+        .coming-soon-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .beta-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #8b5cf6, #6d28d9);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+
+        .nav-card.coming-soon .card-cta {
+            color: #6b7280;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .card-subtitle {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-bottom: 20px;
+        }
+
+        .card-description {
+            color: #d1d5db;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+        }
+
+        .card-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #60a5fa;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: gap 0.2s ease;
+        }
+
+        .nav-card:hover .card-cta {
+            gap: 12px;
+        }
+
+        .analyze-another {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid #374151;
+        }
+
+        .analyze-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .analyze-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+            border-color: #60a5fa;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-card {
+                padding: 30px;
+            }
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 32px;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="results.html" class="back-link">← Back to Analysis</a>
+
+        <h1>Your Application Strategy Overview</h1>
+        <p class="subtitle">Everything you need to apply for this role, tailored to stand out.</p>
+
+        <div class="cards-grid">
+            <!-- Card 1: Positioning Strategy -->
+            <a href="positioning.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">📍</span>
+                <h2 class="card-title">Your Positioning Strategy</h2>
+                <p class="card-subtitle">Strategic framing and key decisions</p>
+                <p class="card-description">
+                    How to position yourself for this role. Includes what to emphasize, 
+                    what to avoid, key positioning decisions, and how to handle concerns.
+                </p>
+                <div class="card-cta">
+                    View Strategy <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 2: Tailored Documents -->
+            <a href="documents.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">📄</span>
+                <h2 class="card-title">Your Tailored Documents</h2>
+                <p class="card-subtitle">Resume and cover letter with explanations</p>
+                <p class="card-description">
+                    ATS-optimized resume and custom cover letter tailored for this role. 
+                    See exactly what changed and why, then download both documents.
+                </p>
+                <div class="card-cta">
+                    Review & Download <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 3: Network Intelligence -->
+            <a href="outreach.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">🤝</span>
+                <h2 class="card-title">Network Intelligence & Outreach</h2>
+                <p class="card-subtitle">Who to contact and what to say</p>
+                <p class="card-description">
+                    Identify the hiring manager and recruiter, get strategic guidance on outreach timing, 
+                    and use proven templates that sell your candidacy.
+                </p>
+                <div class="card-cta">
+                    View Strategy <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 4: Interview Intelligence -->
+            <a href="interview-intelligence.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">🎯</span>
+                <h2 class="card-title">Interview Intelligence</h2>
+                <p class="card-subtitle">Practice, prep, and interview coaching</p>
+                <p class="card-description">
+                    Mock interviews with AI feedback. Practice drills for behavioral, strategy, and role-specific questions.
+                    Log upcoming interviews for customized prep guides.
+                </p>
+                <div class="card-cta">
+                    Start Practicing <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 5: Offer Negotiation (Coming Soon) -->
+            <div class="nav-card coming-soon">
+                <span class="coming-soon-badge">Coming Soon</span>
+                <span class="card-icon">💰</span>
+                <h2 class="card-title">Offer Negotiation</h2>
+                <p class="card-subtitle">Salary strategy and negotiation tactics</p>
+                <p class="card-description">
+                    Market-based compensation data, your target range, and strategic guidance 
+                    on timing, comp mix, and how to frame your ask based on your unique value.
+                </p>
+                <div class="card-cta">
+                    Coming in Phase 2
+                </div>
+            </div>
+        </div>
+
+        <!-- Analyze Another Role -->
+        <div class="analyze-another">
+            <a href="analyze.html" class="analyze-link">
+                <span>🔍</span> Analyze Another Role
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Verify we have analysis data
+        window.addEventListener('DOMContentLoaded', () => {
+            const data = sessionStorage.getItem('analysisData');
+            if (!data) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Positioning Strategy - HenryAI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 24px;
+            font-size: 1.1rem;
+        }
+
+        /* Personalized Intro Message */
+        .intro-message {
+            background: rgba(34, 211, 238, 0.08);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 12px;
+            padding: 28px 32px;
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: #d1d5db;
+        }
+
+        .intro-name {
+            color: #22d3ee;
+            font-weight: 600;
+        }
+
+        .section {
+            background: #1f2937;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #374151;
+            overflow: hidden;
+        }
+
+        .section.hero {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 100%);
+            border: 2px solid #3b82f6;
+        }
+
+        /* Accordion Header */
+        .section-toggle {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 30px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .section-toggle:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .section-toggle-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-header {
+            font-size: 1.3rem;
+            margin: 0;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-summary {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+
+        .section-toggle-icon {
+            color: #60a5fa;
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .section.open .section-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Accordion Content */
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 30px;
+        }
+
+        .section.open .section-content {
+            max-height: 2000px;
+            padding: 0 30px 30px 30px;
+        }
+
+        .framing-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #60a5fa;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .framing-box .first-name {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 25px;
+        }
+
+        .column-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .column-header.emphasize {
+            color: #34d399;
+        }
+
+        .column-header.de-emphasize {
+            color: #fbbf24;
+        }
+
+        .list-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            line-height: 1.7;
+            border-left: 3px solid #374151;
+        }
+
+        .emphasize-list .list-item {
+            border-left-color: #34d399;
+        }
+
+        .de-emphasize-list .list-item {
+            border-left-color: #fbbf24;
+        }
+
+        .empty-state {
+            color: #6b7280;
+            font-style: italic;
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        .action-section {
+            margin-top: 30px;
+        }
+
+        .action-group {
+            margin-bottom: 25px;
+        }
+
+        .action-group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #60a5fa;
+        }
+
+        .action-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .action-item:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .action-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #60a5fa;
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .action-item.completed .action-checkbox {
+            background: #60a5fa;
+        }
+
+        .action-item.completed .action-checkbox::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .action-item.completed .action-text {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .action-text {
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .action-calendar-btn {
+            padding: 6px 12px;
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 6px;
+            color: #60a5fa;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .action-calendar-btn:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+        }
+
+        .action-calendar-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Section description */
+        .section-description {
+            color: #9ca3af;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        /* Positioning Decisions */
+        .decisions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .decision-item {
+            background: rgba(96, 165, 250, 0.08);
+            border-left: 3px solid #60a5fa;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+
+        .decision-item strong {
+            color: #60a5fa;
+        }
+
+        /* Concerns List */
+        .concerns-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .concern-item {
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .concern-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #fbbf24;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .concern-text {
+            color: #d1d5db;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .concern-response {
+            color: #4ade80;
+            padding-left: 16px;
+            border-left: 2px solid #4ade80;
+            line-height: 1.6;
+        }
+
+        .concern-response::before {
+            content: "→ ";
+            font-weight: 600;
+        }
+
+        .salary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .salary-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+        }
+
+        .salary-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .salary-value {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .negotiation-box {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid #60a5fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .negotiation-header {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #60a5fa;
+        }
+
+        .talking-points {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .talking-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+
+        .talking-point-icon {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #60a5fa;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .two-column, .salary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navigation {
+                flex-direction: column-reverse;
+                gap: 15px;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 32px;
+        }
+
+        header .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
+
+        <h1>
+            <span>📍</span> Positioning Strategy for <span id="roleTitle">This Role</span>
+        </h1>
+
+        <!-- Personalized Intro -->
+        <div class="intro-message" id="introMessage">
+            <span class="intro-name" id="introName">Hey</span>, I want you to show up as the best version of yourself for this role. Below is your customized positioning strategy, including the specific framing, talking points, and tactical moves that will help you stand out. Use this as your playbook: what to emphasize, what to downplay, and exactly how to handle any concerns that come up.
+        </div>
+
+        <!-- Strategic Framing (collapsible) -->
+        <div class="section hero" id="framingSection">
+            <button class="section-toggle" onclick="toggleSection('framingSection')">
+                <div class="section-toggle-left">
+                    <h2 class="section-header">Strategic Framing</h2>
+                    <span class="section-summary" id="framingSummary">Your core positioning</span>
+                </div>
+                <span class="section-toggle-icon">▼</span>
+            </button>
+            <div class="section-content">
+                <div class="framing-box" id="framingBox">
+                    <span class="first-name" id="firstName">Loading</span>, <span id="framingText">frame yourself strategically for this role based on your experience and the company's needs.</span>
+                </div>
+
+                <div class="two-column">
+                    <div>
+                        <div class="column-header emphasize">✓ EMPHASIZE</div>
+                        <div class="emphasize-list" id="emphasizeList"></div>
+                    </div>
+                    <div>
+                        <div class="column-header de-emphasize">⊝ DE-EMPHASIZE</div>
+                        <div class="de-emphasize-list" id="deEmphasizeList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Positioning Decisions (collapsed by default) -->
+        <div class="section" id="decisionsSection">
+            <button class="section-toggle" onclick="toggleSection('decisionsSection')">
+                <div class="section-toggle-left">
+                    <h2 class="section-header">🎯 Why I Positioned You This Way</h2>
+                    <span class="section-summary" id="decisionsSummary"></span>
+                </div>
+                <span class="section-toggle-icon">▼</span>
+            </button>
+            <div class="section-content">
+                <p class="section-description">The strategic choices behind your framing for this specific role.</p>
+                <div class="decisions-list" id="positioningDecisions"></div>
+            </div>
+        </div>
+
+        <!-- How to Handle Concerns (collapsed by default) -->
+        <div class="section" id="concernsSection">
+            <button class="section-toggle" onclick="toggleSection('concernsSection')">
+                <div class="section-toggle-left">
+                    <h2 class="section-header">🛡️ How to Handle Concerns</h2>
+                    <span class="section-summary" id="concernsSummary"></span>
+                </div>
+                <span class="section-toggle-icon">▼</span>
+            </button>
+            <div class="section-content">
+                <p class="section-description">If they raise these objections, here's how to pivot.</p>
+                <div class="concerns-list" id="concernsList"></div>
+            </div>
+        </div>
+
+        <!-- Action Plan (collapsed by default) -->
+        <div class="section" id="actionSection">
+            <button class="section-toggle" onclick="toggleSection('actionSection')">
+                <div class="section-toggle-left">
+                    <h2 class="section-header">📅 Your Action Plan</h2>
+                    <span class="section-summary" id="actionSummary"></span>
+                </div>
+                <span class="section-toggle-icon">▼</span>
+            </button>
+            <div class="section-content">
+                <div class="action-section">
+                    <div class="action-group">
+                        <div class="action-group-header">🎯 TODAY</div>
+                        <div id="todayActions"></div>
+                    </div>
+
+                    <div class="action-group">
+                        <div class="action-group-header">📤 TOMORROW</div>
+                        <div id="tomorrowActions"></div>
+                    </div>
+
+                    <div class="action-group">
+                        <div class="action-group-header">📆 THIS WEEK</div>
+                        <div id="thisWeekActions"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <a href="overview.html" class="btn btn-secondary">← Back to Strategic Overview</a>
+            <a href="documents.html" class="btn btn-primary">Continue to Documents →</a>
+        </div>
+    </div>
+
+    <script>
+        // Toggle accordion section
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('open');
+        }
+
+        // Extract first name from full name
+        function extractFirstName(fullName) {
+            if (!fullName || fullName === 'undefined') return 'you';
+            const parts = fullName.trim().split(' ');
+            return parts[0] || 'you';
+        }
+
+        // Create action item with checkbox
+        function createActionItem(text, timing = 'today') {
+            const item = document.createElement('div');
+            item.className = 'action-item';
+            item.innerHTML = `
+                <div class="action-checkbox"></div>
+                <div class="action-text">${text}</div>
+                <button class="action-calendar-btn" onclick="event.stopPropagation(); addActionToCalendar('${timing.toUpperCase()}: ${text.replace(/'/g, "\\'")}', '${timing}')">
+                    📅 Add to Calendar
+                </button>
+            `;
+            
+            // Only toggle checkbox on item click, not button click
+            item.addEventListener('click', (e) => {
+                if (!e.target.classList.contains('action-calendar-btn')) {
+                    item.classList.toggle('completed');
+                }
+            });
+            
+            return item;
+        }
+
+        // Load data from sessionStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const data = sessionStorage.getItem('analysisData');
+            
+            if (!data) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const analysis = JSON.parse(data);
+            
+            // Extract first name
+            const candidateName = analysis._candidate_name || analysis.candidate_name || '';
+            const firstName = extractFirstName(candidateName);
+            document.getElementById('firstName').textContent = firstName;
+            document.getElementById('introName').textContent = firstName;
+
+            // Set role title
+            const roleTitle = analysis.role_title || analysis._role_title || 'This Role';
+            document.getElementById('roleTitle').textContent = roleTitle;
+
+            // Get intelligence layer data
+            const intelligenceLayer = analysis.intelligence_layer || {};
+            const strategicPositioning = intelligenceLayer.strategic_positioning || {};
+
+            // Strategic Framing - use positioning_strategy from strategic_positioning or top level
+            const framingText = strategicPositioning.positioning_strategy || analysis.strategic_positioning || 'Frame yourself strategically for this role based on your experience and the company\'s needs.';
+            // Remove first name if it's in the framing text (we already show it separately)
+            const cleanFraming = framingText.replace(new RegExp(`^${firstName},?\\s*`, 'i'), '');
+            document.getElementById('framingText').textContent = cleanFraming;
+
+            // Emphasize list - read from intelligence_layer.strategic_positioning.emphasis_points
+            const emphasizeList = document.getElementById('emphasizeList');
+            const emphasizeItems = strategicPositioning.emphasis_points || analysis.strengths || [];
+            if (emphasizeItems.length === 0) {
+                emphasizeList.innerHTML = '<div class="empty-state">Strategic emphasis points will be generated based on your background and the role requirements.</div>';
+            } else {
+                emphasizeItems.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.textContent = item;
+                    emphasizeList.appendChild(div);
+                });
+            }
+
+            // De-emphasize list - read from intelligence_layer.strategic_positioning.avoid_points
+            const deEmphasizeList = document.getElementById('deEmphasizeList');
+            const deEmphasizeItems = strategicPositioning.avoid_points || analysis.gaps || [];
+            if (deEmphasizeItems.length === 0) {
+                deEmphasizeList.innerHTML = '<div class="empty-state">Strategic de-emphasis points will be generated to help you navigate potential concerns.</div>';
+            } else {
+                deEmphasizeItems.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.textContent = item;
+                    deEmphasizeList.appendChild(div);
+                });
+            }
+
+            // Action Plan - generate from reality_check strategic_action if available
+            const realityCheck = analysis.reality_check || {};
+            const applyDecision = intelligenceLayer.apply_decision || {};
+            
+            // Generate action items based on available data
+            const todayContainer = document.getElementById('todayActions');
+            const tomorrowContainer = document.getElementById('tomorrowActions');
+            const thisWeekContainer = document.getElementById('thisWeekActions');
+            
+            // Build action items from strategic guidance
+            const companyName = analysis._company_name || analysis.company || 'the company';
+            const roleTitleForActions = analysis.role_title || 'this role';
+            
+            // TODAY actions
+            const todayActions = [];
+            if (realityCheck.strategic_action) {
+                // Extract key action from strategic_action
+                todayActions.push('Submit your application within 24 hours');
+            }
+            if (analysis.outreach && analysis.outreach.linkedin_help_text) {
+                todayActions.push(`Find the hiring manager for ${roleTitleForActions} on LinkedIn`);
+            }
+            todayActions.push(`Review and customize your tailored resume for ${companyName}`);
+            
+            if (todayActions.length === 0) {
+                todayContainer.innerHTML = '<div class="empty-state">Action items will be generated based on your timeline and the role requirements.</div>';
+            } else {
+                todayActions.forEach(action => {
+                    todayContainer.appendChild(createActionItem(action, 'today'));
+                });
+            }
+
+            // TOMORROW actions
+            const tomorrowActions = [];
+            tomorrowActions.push('Send personalized outreach to hiring manager or recruiter');
+            tomorrowActions.push('Research recent news about ' + companyName);
+            
+            if (tomorrowActions.length === 0) {
+                tomorrowContainer.innerHTML = '<div class="empty-state">Follow-up actions will be generated.</div>';
+            } else {
+                tomorrowActions.forEach(action => {
+                    tomorrowContainer.appendChild(createActionItem(action, 'tomorrow'));
+                });
+            }
+
+            // THIS WEEK actions
+            const thisWeekActions = [];
+            thisWeekActions.push('Follow up if no response within 5 business days');
+            thisWeekActions.push('Prepare for potential recruiter screen using talking points');
+            if (strategicPositioning.gaps_and_mitigation && strategicPositioning.gaps_and_mitigation.length > 0) {
+                thisWeekActions.push('Prepare responses for potential gap questions');
+            }
+            
+            if (thisWeekActions.length === 0) {
+                thisWeekContainer.innerHTML = '<div class="empty-state">Weekly action items will be generated.</div>';
+            } else {
+                thisWeekActions.forEach(action => {
+                    thisWeekContainer.appendChild(createActionItem(action, 'thisweek'));
+                });
+            }
+
+            // Key Positioning Decisions - show the WHY behind our choices
+            const decisionsContainer = document.getElementById('positioningDecisions');
+            const positioningRationale = strategicPositioning.positioning_rationale || [];
+
+            if (positioningRationale.length === 0) {
+                decisionsContainer.innerHTML = '<div class="empty-state">Strategic reasoning will be generated based on your background and the role requirements.</div>';
+            } else {
+                positioningRationale.forEach(rationale => {
+                    const div = document.createElement('div');
+                    div.className = 'decision-item';
+                    div.textContent = rationale;
+                    decisionsContainer.appendChild(div);
+                });
+            }
+
+            // How to Handle Concerns - from gaps_and_mitigation
+            const concernsContainer = document.getElementById('concernsList');
+            const gapsAndMitigation = strategicPositioning.gaps_and_mitigation || [];
+            const interviewPrep = analysis.interview_prep || {};
+            const gapMitigation = interviewPrep.gap_mitigation || [];
+            
+            // Combine both sources
+            const allConcerns = [...gapsAndMitigation, ...gapMitigation];
+            
+            if (allConcerns.length === 0) {
+                concernsContainer.innerHTML = '<div class="empty-state">Concern handling strategies will be generated based on potential gaps.</div>';
+            } else {
+                allConcerns.forEach((concern, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'concern-item';
+                    
+                    // Try to split into concern + response if it has a colon or dash pattern
+                    let concernText = concern;
+                    let responseText = '';
+                    
+                    // Check for patterns like "If they ask about X: respond with Y" or "Gap: mitigation"
+                    const splitPatterns = [': ', ' - ', ' → '];
+                    for (const pattern of splitPatterns) {
+                        if (concern.includes(pattern)) {
+                            const parts = concern.split(pattern);
+                            concernText = parts[0];
+                            responseText = parts.slice(1).join(pattern);
+                            break;
+                        }
+                    }
+                    
+                    if (responseText) {
+                        div.innerHTML = `
+                            <div class="concern-label">Potential Concern ${index + 1}</div>
+                            <div class="concern-text">${concernText}</div>
+                            <div class="concern-response">${responseText}</div>
+                        `;
+                    } else {
+                        div.innerHTML = `
+                            <div class="concern-label">Potential Concern ${index + 1}</div>
+                            <div class="concern-text">${concernText}</div>
+                        `;
+                    }
+                    
+                    concernsContainer.appendChild(div);
+                });
+            }
+
+            // Update section summaries for collapsed view
+            document.getElementById('decisionsSummary').textContent =
+                positioningRationale.length > 0 ? `${positioningRationale.length} strategic decisions` : '';
+            
+            document.getElementById('concernsSummary').textContent = 
+                allConcerns.length > 0 ? `${allConcerns.length} potential objections addressed` : '';
+            
+            const totalActions = todayActions.length + tomorrowActions.length + thisWeekActions.length;
+            document.getElementById('actionSummary').textContent = 
+                totalActions > 0 ? `${totalActions} action items` : '';
+        });
+
+        // ============================================================================
+        // CALENDAR INTEGRATION
+        // ============================================================================
+
+        /**
+         * Generate personalized message based on context
+         */
+        function generatePersonalizedMessage(context) {
+            const {
+                firstName = 'Hey',
+                company = 'this company',
+                role = 'this role',
+                fitScore = 0,
+                actionType = 'apply',
+                strengths = []
+            } = context;
+
+            const greeting = `${firstName},\n\n`;
+            let message = '';
+
+            if (actionType === 'apply') {
+                if (fitScore >= 85) {
+                    message = `This is your shot. You're ${fitScore}% fit for this role and ${strengths[0] || 'your background'} is exactly what ${company} needs.\n\nTake 30 minutes right now to nail this application. Lead with your strongest experience and show them you can operate at this level.\n\nYou've got this. 🚀`;
+                } else if (fitScore >= 70) {
+                    message = `You're ${fitScore}% fit for this role. Solid, but you'll need to position strategically.\n\nEmphasize ${strengths[0] || 'your unique experience'}. That's your edge over other candidates.\n\nTake your time on this application. Quality over speed.`;
+                } else {
+                    message = `This one's a stretch at ${fitScore}% fit, but here's why you should still apply:\n\n${strengths[0] || 'Your experience'} gives you an angle most candidates don't have. Play that up in your cover letter.\n\nDon't spend more than 15 minutes on this. It's a numbers game at this level.`;
+                }
+            } else if (actionType === 'follow-up') {
+                message = `It's been 2 weeks since you applied to ${company}. Time to follow up.\n\nHere's why you're not being pushy: ${fitScore}% fit candidates don't grow on trees. You're doing them a favor by staying visible.\n\nSend that follow-up email today. Use the template we built.`;
+            } else if (actionType === 'interview') {
+                message = `Your interview with ${company} is coming up. Let's make sure you're ready.\n\nKey talking points:\n${strengths.slice(0, 3).map(s => `• ${s}`).join('\n')}\n\nYou know this cold. Just be yourself and show strategic thinking.`;
+            } else if (actionType === 'research') {
+                message = `Time to do your homework on ${company}.\n\nSpend 15 minutes finding:\n• Recent news/product launches\n• Hiring manager's background\n• Company pain points you can solve\n\nThis research will pay off in your application and interviews.`;
+            } else {
+                message = `Time to take action on your ${company} application.\n\n${fitScore}% fit. ${strengths[0] || 'Your background is strong'}. You can do this.`;
+            }
+
+            return greeting + message + '\n\n— HenryAI';
+        }
+
+        /**
+         * Generate .ics calendar file content
+         */
+        function generateICSFile(eventData) {
+            const {
+                title,
+                description,
+                startTime,
+                endTime,
+                location = '',
+                reminder = 60
+            } = eventData;
+
+            const formatICSDate = (date) => {
+                const pad = (n) => n.toString().padStart(2, '0');
+                const year = date.getUTCFullYear();
+                const month = pad(date.getUTCMonth() + 1);
+                const day = pad(date.getUTCDate());
+                const hour = pad(date.getUTCHours());
+                const minute = pad(date.getUTCMinutes());
+                const second = pad(date.getUTCSeconds());
+                return `${year}${month}${day}T${hour}${minute}${second}Z`;
+            };
+
+            const now = new Date();
+            const dtstamp = formatICSDate(now);
+            const dtstart = formatICSDate(startTime);
+            const dtend = formatICSDate(endTime);
+            const uid = `henryai-${Date.now()}@henryai.app`;
+
+            const escapeICS = (str) => {
+                return str.replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+            };
+
+            const icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//HenryAI//Job Search Assistant//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH',
+                'BEGIN:VEVENT',
+                `UID:${uid}`,
+                `DTSTAMP:${dtstamp}`,
+                `DTSTART:${dtstart}`,
+                `DTEND:${dtend}`,
+                `SUMMARY:${escapeICS(title)}`,
+                `DESCRIPTION:${escapeICS(description)}`,
+                location ? `LOCATION:${escapeICS(location)}` : '',
+                'STATUS:CONFIRMED',
+                'SEQUENCE:0',
+                'BEGIN:VALARM',
+                'TRIGGER:-PT' + reminder + 'M',
+                'ACTION:DISPLAY',
+                `DESCRIPTION:${escapeICS(title)}`,
+                'END:VALARM',
+                'END:VEVENT',
+                'END:VCALENDAR'
+            ].filter(line => line).join('\r\n');
+
+            return icsContent;
+        }
+
+        /**
+         * Download ICS file
+         */
+        function downloadICS(icsContent, filename) {
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        /**
+         * Parse timing text to Date object
+         */
+        function parseTimingToDate(timing) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0);
+            
+            if (timing.toLowerCase().includes('today')) {
+                return today;
+            } else if (timing.toLowerCase().includes('tomorrow')) {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return tomorrow;
+            } else if (timing.toLowerCase().includes('this week') || timing.toLowerCase().includes('thisweek')) {
+                const thisWeek = new Date(today);
+                thisWeek.setDate(thisWeek.getDate() + 3);
+                return thisWeek;
+            } else {
+                return today;
+            }
+        }
+
+        /**
+         * Add action item to calendar
+         */
+        function addActionToCalendar(actionItem, timing) {
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const firstName = analysisData._candidate_first_name || 'Hey';
+            const company = analysisData._company_name || 'Company';
+            const role = analysisData.role_title || 'Role';
+            const fitScore = analysisData.fit_score || 0;
+            const strengths = analysisData.positioning_strategy?.emphasize || [];
+
+            // Determine action type
+            let actionType = 'apply';
+            if (actionItem.toLowerCase().includes('follow up') || actionItem.toLowerCase().includes('follow-up')) {
+                actionType = 'follow-up';
+            } else if (actionItem.toLowerCase().includes('research') || actionItem.toLowerCase().includes('find')) {
+                actionType = 'research';
+            } else if (actionItem.toLowerCase().includes('interview') || actionItem.toLowerCase().includes('prep')) {
+                actionType = 'interview';
+            }
+
+            // Generate personalized message
+            const personalizedNote = generatePersonalizedMessage({
+                firstName,
+                company,
+                role,
+                fitScore,
+                actionType,
+                strengths
+            });
+
+            // Parse timing
+            const startTime = parseTimingToDate(timing);
+            const endTime = new Date(startTime);
+            endTime.setHours(endTime.getHours() + 1);
+
+            // Build event title
+            const actionText = actionItem.replace(/^(TODAY|TOMORROW|THIS WEEK):\s*/i, '').substring(0, 60);
+            const title = `⚡ HenryAI Alert: ${actionText}`;
+
+            // Build description
+            const description = [
+                personalizedNote,
+                '',
+                '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+                '',
+                `📋 ACTION ITEM: ${actionItem}`,
+                '',
+                `🎯 ROLE: ${role}`,
+                `🏢 COMPANY: ${company}`,
+                `📊 FIT SCORE: ${fitScore}%`,
+                '',
+                strengths.length > 0 ? '💪 YOUR STRENGTHS:' : '',
+                ...strengths.slice(0, 3).map(s => `• ${s}`),
+                '',
+                'Need help? Review your full analysis package in HenryAI.'
+            ].filter(line => line !== null && line !== undefined).join('\n');
+
+            // Generate ICS file
+            const eventData = {
+                title,
+                description,
+                startTime,
+                endTime,
+                location: '',
+                reminder: 60
+            };
+
+            const icsContent = generateICSFile(eventData);
+            const filename = `HenryAI_${company.replace(/\s+/g, '_')}_${timing}.ics`;
+            downloadICS(icsContent, filename);
+        }
+    </script>
+</body>
+</html>

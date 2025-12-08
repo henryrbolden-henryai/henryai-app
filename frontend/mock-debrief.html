@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Debrief - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 32px;
+        }
+
+        /* Score Card */
+        .score-card {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1a2e44 100%);
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #22d3ee;
+        }
+
+        .score-value.green { color: #4ade80; }
+        .score-value.yellow { color: #f59e0b; }
+        .score-value.red { color: #ef4444; }
+
+        .score-label {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        /* Sections */
+        .section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: #ffffff;
+        }
+
+        .section-body {
+            padding: 0 24px 24px;
+        }
+
+        /* Tags */
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .tag.green {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .tag.yellow {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Content List */
+        .content-list {
+            list-style: none;
+        }
+
+        .content-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+            color: #d1d5db;
+        }
+
+        .content-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Level Estimate */
+        .level-card {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: capitalize;
+        }
+
+        .level-description {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        /* Drill Cards */
+        .drill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .drill-card {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .drill-card:hover {
+            border-color: #22d3ee;
+            transform: translateY(-2px);
+        }
+
+        .drill-card .drill-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .drill-card .drill-name {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .drill-card .drill-reason {
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+
+        /* Question Summaries */
+        .question-summary {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .question-summary-header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .question-summary-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .question-text {
+            color: #d1d5db;
+            flex: 1;
+        }
+
+        .question-score {
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .question-score.high { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+        .question-score.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .question-score.low { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        .question-summary.collapsed .question-body {
+            display: none;
+        }
+
+        .question-body {
+            padding: 0 16px 16px;
+            border-top: 1px solid #374151;
+        }
+
+        .question-feedback {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .cta-btn {
+            background: #22d3ee;
+            color: #000000;
+            border: none;
+            padding: 16px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cta-btn:hover {
+            background: #06b6d4;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .score-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+
+        <h1>🏆 Interview Complete!</h1>
+        <p class="subtitle">Here's your performance breakdown and personalized coaching.</p>
+
+        <!-- Score Card -->
+        <div class="score-card">
+            <div class="score-grid">
+                <div class="score-item">
+                    <div class="score-value" id="overallScore">-</div>
+                    <div class="score-label">Overall Score</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" id="questionsCompleted">-</div>
+                    <div class="score-label">Questions</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-value" id="readinessScore">-</div>
+                    <div class="score-label">Readiness</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strengths -->
+        <div class="section">
+            <div class="section-header">
+                <span>💪</span>
+                <h3 class="section-title">Strengths</h3>
+            </div>
+            <div class="section-body">
+                <div class="tag-list" id="strengthsList"></div>
+            </div>
+        </div>
+
+        <!-- Weak Signals -->
+        <div class="section">
+            <div class="section-header">
+                <span>📈</span>
+                <h3 class="section-title">Areas for Improvement</h3>
+            </div>
+            <div class="section-body">
+                <div class="tag-list" id="weakSignalsList"></div>
+            </div>
+        </div>
+
+        <!-- Opportunities -->
+        <div class="section">
+            <div class="section-header">
+                <span>🎯</span>
+                <h3 class="section-title">Opportunities</h3>
+            </div>
+            <div class="section-body">
+                <ul class="content-list" id="opportunitiesList"></ul>
+            </div>
+        </div>
+
+        <!-- Level Estimate -->
+        <div class="section">
+            <div class="section-header">
+                <span>📊</span>
+                <h3 class="section-title">Level Estimate</h3>
+            </div>
+            <div class="section-body">
+                <div class="level-card">
+                    <div class="level-badge" id="levelBadge">Senior</div>
+                    <div class="level-description" id="levelDescription">
+                        Based on your responses, you demonstrated senior-level competencies.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommended Drills -->
+        <div class="section">
+            <div class="section-header">
+                <span>🏋️</span>
+                <h3 class="section-title">Recommended Drills</h3>
+            </div>
+            <div class="section-body">
+                <div class="drill-grid" id="drillsGrid"></div>
+            </div>
+        </div>
+
+        <!-- Question Summaries -->
+        <div class="section">
+            <div class="section-header">
+                <span>📝</span>
+                <h3 class="section-title">Question-by-Question Breakdown</h3>
+            </div>
+            <div class="section-body">
+                <div id="questionSummaries"></div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cta-section">
+            <button class="cta-btn" onclick="practiceAgain()">🎤 Practice Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Load debrief data
+        document.addEventListener('DOMContentLoaded', () => {
+            const debriefData = sessionStorage.getItem('debriefData');
+
+            if (!debriefData) {
+                window.location.href = 'interview-intelligence.html';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(debriefData);
+                renderDebrief(data);
+            } catch (e) {
+                console.error('Error parsing debrief data:', e);
+                window.location.href = 'interview-intelligence.html';
+            }
+        });
+
+        function renderDebrief(data) {
+            // Score card
+            const score = data.overall_score || 0;
+            const scoreEl = document.getElementById('overallScore');
+            scoreEl.textContent = score.toFixed(1);
+            scoreEl.className = 'score-value ' + (score >= 7 ? 'green' : score >= 5 ? 'yellow' : 'red');
+
+            document.getElementById('questionsCompleted').textContent = data.questions_completed || 0;
+
+            const readiness = data.session_feedback?.readiness_score || 'Unknown';
+            const readinessEl = document.getElementById('readinessScore');
+            readinessEl.textContent = readiness;
+            readinessEl.className = 'score-value ' + (readiness === 'Ready' ? 'green' : readiness === 'Almost Ready' ? 'yellow' : 'red');
+
+            // Strengths
+            const strengths = data.session_feedback?.key_strengths || [];
+            document.getElementById('strengthsList').innerHTML = strengths.map(s =>
+                `<span class="tag green">${s}</span>`
+            ).join('');
+
+            // Weak signals / Areas to improve
+            const weakAreas = data.session_feedback?.areas_to_improve || [];
+            document.getElementById('weakSignalsList').innerHTML = weakAreas.map(w =>
+                `<span class="tag yellow">${w}</span>`
+            ).join('');
+
+            // Opportunities (coaching priorities)
+            const priorities = data.session_feedback?.coaching_priorities || [];
+            document.getElementById('opportunitiesList').innerHTML = priorities.map(p =>
+                `<li>${p}</li>`
+            ).join('');
+
+            // Level estimate
+            const level = data.session_feedback?.level_estimate || 'mid';
+            document.getElementById('levelBadge').textContent = level;
+
+            const levelDescriptions = {
+                'mid': 'You demonstrated mid-level competencies. Focus on adding more metrics and ownership to your answers.',
+                'senior': 'You demonstrated senior-level competencies. Great use of specific examples and impact.',
+                'director': 'You demonstrated director-level competencies. Strong strategic thinking and leadership signals.',
+                'executive': 'You demonstrated executive-level competencies. Excellent strategic vision and influence.'
+            };
+            document.getElementById('levelDescription').textContent = levelDescriptions[level] || '';
+
+            // Recommended drills
+            const drills = data.session_feedback?.recommended_drills || [];
+            const drillIcons = {
+                'metrics': '📊',
+                'ownership': '💪',
+                'strategy': '🎯',
+                'stakeholder': '🤝',
+                'communication': '🗣️',
+                'problem': '🧩'
+            };
+
+            if (drills.length > 0) {
+                document.getElementById('drillsGrid').innerHTML = drills.map(d => {
+                    const icon = Object.entries(drillIcons).find(([key]) => d.toLowerCase().includes(key))?.[1] || '🏋️';
+                    return `
+                        <div class="drill-card" onclick="openDrill('${d}')">
+                            <div class="drill-icon">${icon}</div>
+                            <div class="drill-name">${d}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                document.getElementById('drillsGrid').innerHTML = `
+                    <div class="drill-card" onclick="openDrill('behavioral')">
+                        <div class="drill-icon">📖</div>
+                        <div class="drill-name">Behavioral Drills</div>
+                    </div>
+                    <div class="drill-card" onclick="openDrill('strategy')">
+                        <div class="drill-icon">🧩</div>
+                        <div class="drill-name">Strategy Drills</div>
+                    </div>
+                `;
+            }
+
+            // Question summaries
+            const questions = data.question_summaries || [];
+            document.getElementById('questionSummaries').innerHTML = questions.map((q, i) => {
+                const scoreClass = q.score >= 7 ? 'high' : q.score >= 5 ? 'medium' : 'low';
+                return `
+                    <div class="question-summary collapsed">
+                        <div class="question-summary-header" onclick="toggleQuestion(this)">
+                            <span class="question-text">Q${q.question_number}: ${q.question_text}</span>
+                            <span class="question-score ${scoreClass}">${q.score}/10</span>
+                        </div>
+                        <div class="question-body">
+                            <div class="question-feedback">${q.brief_feedback || 'No specific feedback available.'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleQuestion(header) {
+            const summary = header.closest('.question-summary');
+            summary.classList.toggle('collapsed');
+        }
+
+        function openDrill(type) {
+            window.location.href = `practice-drills.html?type=${type}`;
+        }
+
+        function practiceAgain() {
+            sessionStorage.removeItem('debriefData');
+            window.location.href = 'mock-interview.html';
+        }
+    </script>
+</body>
+</html>

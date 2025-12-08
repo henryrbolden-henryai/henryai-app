@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Tailored Documents - HenryAI</title>
+    <!-- docx.js for client-side DOCX generation -->
+    <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
+    <!-- FileSaver.js for downloading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .disclaimer {
+            color: #6b7280;
+            font-size: 0.85rem;
+            font-style: italic;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #374151;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: #e0e0e0;
+        }
+
+        .tab.active {
+            color: #60a5fa;
+            border-bottom-color: #60a5fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .document-section {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #374151;
+        }
+
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .document-title {
+            font-size: 1.5rem;
+            color: #60a5fa;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-download {
+            padding: 12px 24px;
+            background: #60a5fa;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-download:hover {
+            background: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .btn-download:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .keywords-section {
+            margin-bottom: 25px;
+        }
+
+        .keywords-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .keyword-tag {
+            padding: 6px 14px;
+            background: rgba(96, 165, 250, 0.2);
+            border: 1px solid #60a5fa;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #60a5fa;
+        }
+
+        .document-preview {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 40px;
+            max-height: 600px;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .document-preview::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .document-preview::-webkit-scrollbar-track {
+            background: #f3f4f6;
+        }
+
+        .document-preview::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 4px;
+        }
+
+        .document-text {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #1f2937;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 13px;
+            line-height: 1.7;
+            resize: vertical;
+            min-height: 500px;
+        }
+
+        .document-text:focus {
+            outline: none;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            border: 3px solid #374151;
+            border-top: 3px solid #60a5fa;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .success-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #f87171;
+        }
+
+        .error-state p {
+            margin-bottom: 20px;
+        }
+
+        .error-state a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .error-state a:hover {
+            text-decoration: underline;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid #374151;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #60a5fa;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid #4b5563;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .document-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+
+            .btn-download {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .navigation {
+                flex-direction: column-reverse;
+                gap: 15px;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* HEADER */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 32px;
+        }
+
+        header .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
+
+        <h1>
+            <span>📄</span> Your Tailored Documents
+        </h1>
+        <p class="subtitle">ATS-optimized resume and custom cover letter for this role</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('resume')">Resume</button>
+            <button class="tab" onclick="switchTab('coverLetter')">Cover Letter</button>
+        </div>
+
+        <!-- Resume Tab -->
+        <div id="resumeTab" class="tab-content active">
+            <div class="document-section">
+                <div class="document-header">
+                    <div class="document-title">
+                        <span>📝</span> Tailored Resume
+                    </div>
+                    <button class="btn-download" id="downloadResumeBtn" onclick="downloadResume()">
+                        <span>↓</span> Download Resume
+                    </button>
+                </div>
+
+                <div class="keywords-section">
+                    <div class="keywords-label">ATS Keywords Incorporated</div>
+                    <div class="keywords" id="resumeKeywords">
+                        <!-- Keywords will be inserted here -->
+                    </div>
+                </div>
+
+                <div class="document-preview">
+                    <div id="resumeLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading resume...</div>
+                    </div>
+                    <textarea class="document-text" id="resumeText" style="display: none;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cover Letter Tab -->
+        <div id="coverLetterTab" class="tab-content">
+            <div class="document-section">
+                <div class="document-header">
+                    <div class="document-title">
+                        <span>✉️</span> Cover Letter
+                    </div>
+                    <button class="btn-download" id="downloadCoverLetterBtn" onclick="downloadCoverLetter()">
+                        <span>↓</span> Download Cover Letter
+                    </button>
+                </div>
+
+                <div class="document-preview">
+                    <div id="coverLetterLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <div>Loading cover letter...</div>
+                    </div>
+                    <textarea class="document-text" id="coverLetterText" style="display: none;"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <p class="disclaimer">* Preview formatting may differ from downloaded document. We strongly encourage proofreading before submitting.</p>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <a href="positioning.html" class="btn btn-secondary">← Back to Positioning</a>
+            <a href="outreach.html" class="btn btn-primary">Continue to Network Intelligence →</a>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage">Downloaded Successfully ✓</div>
+
+    <script>
+        // Get the docx library from the global scope
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
+
+        let documentsData = null;
+        let analysisData = null;
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            if (tabName === 'resume') {
+                document.getElementById('resumeTab').classList.add('active');
+            } else {
+                document.getElementById('coverLetterTab').classList.add('active');
+            }
+        }
+
+        // Show success message
+        function showSuccess() {
+            const msg = document.getElementById('successMessage');
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 3000);
+        }
+
+        // Create a DOCX document from text
+        function createDocxFromText(text, title) {
+            const paragraphs = text.split('\n').map(line => {
+                // Check if it's a section header (ALL CAPS or ends with colon)
+                const isHeader = /^[A-Z\s&]+$/.test(line.trim()) ||
+                                 (line.trim().endsWith(':') && line.trim().length < 50);
+
+                // Check if it's a bullet point
+                const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+
+                if (isHeader && line.trim().length > 0) {
+                    return new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: line.trim(),
+                                bold: true,
+                                size: 24 // 12pt
+                            })
+                        ],
+                        spacing: { before: 240, after: 120 }
+                    });
+                } else if (isBullet) {
+                    return new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: line.trim(),
+                                size: 22 // 11pt
+                            })
+                        ],
+                        spacing: { after: 60 },
+                        indent: { left: 360 }
+                    });
+                } else {
+                    return new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: line,
+                                size: 22 // 11pt
+                            })
+                        ],
+                        spacing: { after: 120 }
+                    });
+                }
+            });
+
+            return new Document({
+                sections: [{
+                    properties: {},
+                    children: paragraphs
+                }]
+            });
+        }
+
+        // Download resume as DOCX (using server-side professional formatter)
+        async function downloadResume() {
+            if (!documentsData || !documentsData.resume_output) {
+                alert('Resume not available. Please go back and regenerate.');
+                return;
+            }
+
+            const btn = document.getElementById('downloadResumeBtn');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> Generating...';
+
+                // Get candidate data from multiple possible sources
+                const candidateName = analysisData?._candidate_name ||
+                                     analysisData?._profile?.full_name ||
+                                     analysisData?._resume_json?.candidate?.name ||
+                                     'Candidate';
+                const resumeData = analysisData?._resume_json || {};
+                const profile = analysisData?._profile || {};
+
+                console.log('Building resume with data:', { candidateName, resumeData, profile, analysisData });
+
+                // Normalize skills to Dict[str, List[str]] format
+                let normalizedSkills = {};
+                const skillsSource = resumeData.skills || profile.skills;
+                if (skillsSource) {
+                    if (Array.isArray(skillsSource)) {
+                        // If skills is an array, convert to object
+                        normalizedSkills = { "Skills": skillsSource };
+                    } else if (typeof skillsSource === 'object') {
+                        // Ensure each value is an array
+                        for (const [key, value] of Object.entries(skillsSource)) {
+                            normalizedSkills[key] = Array.isArray(value) ? value : [value];
+                        }
+                    }
+                }
+
+                // Normalize education to proper format
+                let normalizedEducation = {};
+                const eduSource = resumeData.education || profile.education || analysisData?._profile?.education;
+                if (eduSource) {
+                    if (Array.isArray(eduSource) && eduSource.length > 0) {
+                        const edu = eduSource[0];
+                        normalizedEducation = {
+                            school: edu.school || edu.institution || edu.university || edu.name || '',
+                            degree: edu.degree || edu.qualification || edu.field_of_study ||
+                                    (edu.degree_name ? `${edu.degree_name}${edu.field_of_study ? ', ' + edu.field_of_study : ''}` : ''),
+                            details: edu.details || edu.highlights || edu.activities || []
+                        };
+                    } else if (typeof eduSource === 'object' && !Array.isArray(eduSource)) {
+                        normalizedEducation = {
+                            school: eduSource.school || eduSource.institution || eduSource.university || eduSource.name || '',
+                            degree: eduSource.degree || eduSource.qualification || eduSource.field_of_study || '',
+                            details: eduSource.details || eduSource.highlights || []
+                        };
+                    } else if (typeof eduSource === 'string') {
+                        // If education is just a string, try to parse school and degree
+                        // Common format: "School Name, Degree" or "Degree - School"
+                        const parts = eduSource.split(/[,\-–]/).map(p => p.trim());
+                        if (parts.length >= 2) {
+                            // Try to identify which is school vs degree
+                            const degreeKeywords = ['bachelor', 'master', 'phd', 'b.a.', 'b.s.', 'm.a.', 'm.s.', 'mba', 'degree'];
+                            const firstIsDegree = degreeKeywords.some(kw => parts[0].toLowerCase().includes(kw));
+                            if (firstIsDegree) {
+                                normalizedEducation = { school: parts.slice(1).join(', '), degree: parts[0], details: [] };
+                            } else {
+                                normalizedEducation = { school: parts[0], degree: parts.slice(1).join(', '), details: [] };
+                            }
+                        } else {
+                            normalizedEducation = { school: '', degree: eduSource, details: [] };
+                        }
+                    }
+                }
+
+                // Helper to safely extract string value
+                const safeString = (val) => {
+                    if (val === null || val === undefined) return '';
+                    if (typeof val === 'string') return val;
+                    if (typeof val === 'object') {
+                        // Try common location object patterns
+                        if (val.city && val.state) return `${val.city}, ${val.state}`;
+                        if (val.location) return String(val.location);
+                        if (val.name) return String(val.name);
+                        return '';
+                    }
+                    return String(val);
+                };
+
+                // Extract contact info carefully
+                const contactPhone = safeString(profile.phone || resumeData.contact?.phone || resumeData.candidate?.contact?.phone);
+                const contactEmail = safeString(profile.email || resumeData.contact?.email || resumeData.candidate?.contact?.email);
+                const contactLinkedin = safeString(profile.linkedin || resumeData.contact?.linkedin || resumeData.candidate?.contact?.linkedin);
+                // Try multiple sources for location - profile, contact, job posting location, first experience location
+                let contactLocation = safeString(profile.location || resumeData.contact?.location || resumeData.candidate?.contact?.location);
+                if (!contactLocation) {
+                    // Try to get from job posting or first experience
+                    contactLocation = safeString(analysisData?.job_location ||
+                                                 analysisData?._profile?.location ||
+                                                 resumeData.experience?.[0]?.location);
+                }
+
+                // Get the tailored experience from documentsData if available
+                const tailoredExperience = documentsData.resume_output?.experience || [];
+                const baseExperience = Array.isArray(resumeData.experience) ? resumeData.experience : [];
+
+                // Merge tailored bullets with base experience data
+                const mergedExperience = baseExperience.map((job, index) => {
+                    const tailoredJob = tailoredExperience[index] || {};
+                    return {
+                        company: safeString(job.company || job.organization || ''),
+                        title: safeString(tailoredJob.title || job.title || job.role || ''),
+                        location: safeString(job.location || ''),
+                        dates: safeString(job.dates || `${job.start_date || ''} - ${job.end_date || 'Present'}`),
+                        overview: safeString(job.company_overview || job.overview || job.description || ''),
+                        bullets: tailoredJob.bullets || job.bullets || job.achievements || []
+                    };
+                });
+
+                // Build tagline from target role and competencies (like package.html does)
+                let tagline = safeString(profile.tagline || resumeData.tagline || profile.current_title || '');
+                if (!tagline) {
+                    // Build from role and competencies
+                    const targetRole = analysisData?._role || analysisData?.role_title || '';
+                    const apiHeadline = analysisData?.resume_output?.headline || documentsData?.resume_output?.headline || '';
+
+                    if (apiHeadline && apiHeadline.includes('|')) {
+                        // Use the API-provided headline
+                        tagline = apiHeadline;
+                    } else if (targetRole) {
+                        // Build from role + competencies
+                        const competencies = resumeData.core_competencies || profile.core_competencies ||
+                                            analysisData?.required_skills || analysisData?.ats_keywords || [];
+                        const topCompetencies = competencies.slice(0, 3).map(c => {
+                            // Clean and title case
+                            return String(c).trim().split(' ')
+                                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                                .join(' ');
+                        });
+                        if (topCompetencies.length > 0) {
+                            tagline = targetRole + ' | ' + topCompetencies.join(' | ');
+                        } else {
+                            tagline = targetRole;
+                        }
+                    }
+                }
+
+                // Get tailored competencies from API response (priority) or fall back to resume data
+                const tailoredCompetencies = documentsData.resume_output?.core_competencies ||
+                                            documentsData.resume_output?.competencies ||
+                                            analysisData?.core_competencies ||
+                                            resumeData.core_competencies ||
+                                            profile.core_competencies ||
+                                            [];
+
+                // Get tailored skills from API response
+                let tailoredSkills = normalizedSkills;
+                const apiSkills = documentsData.resume_output?.skills || analysisData?.skills;
+                if (apiSkills) {
+                    if (typeof apiSkills === 'object' && !Array.isArray(apiSkills)) {
+                        // Already in correct format
+                        tailoredSkills = {};
+                        for (const [key, value] of Object.entries(apiSkills)) {
+                            tailoredSkills[key] = Array.isArray(value) ? value : [value];
+                        }
+                    } else if (Array.isArray(apiSkills)) {
+                        tailoredSkills = { "Skills": apiSkills };
+                    }
+                }
+
+                // Build request payload for professional formatter
+                const requestPayload = {
+                    candidate_name: candidateName,
+                    tagline: tagline,
+                    contact: {
+                        phone: contactPhone,
+                        email: contactEmail,
+                        linkedin: contactLinkedin,
+                        location: contactLocation
+                    },
+                    summary: safeString(documentsData.resume_output?.summary || resumeData.summary || ''),
+                    competencies: Array.isArray(tailoredCompetencies) ? tailoredCompetencies : [],
+                    experience: mergedExperience,
+                    skills: tailoredSkills,
+                    education: normalizedEducation
+                };
+
+                console.log('Resume download payload:', requestPayload);
+
+                const response = await fetch('http://localhost:8000/api/download/resume', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestPayload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Server error details:', errorData);
+                    throw new Error(`Failed to generate resume: ${response.status} - ${JSON.stringify(errorData.detail || errorData)}`);
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const filename = `${candidateName.replace(/\s+/g, '_')}_Resume.docx`;
+                saveAs(blob, filename);
+                showSuccess();
+
+            } catch (error) {
+                console.error('Error downloading resume:', error);
+                alert('Error downloading resume: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Download cover letter as DOCX (using server-side professional formatter)
+        async function downloadCoverLetter() {
+            if (!documentsData || !documentsData.cover_letter) {
+                alert('Cover letter not available. Please go back and regenerate.');
+                return;
+            }
+
+            const btn = document.getElementById('downloadCoverLetterBtn');
+            const originalText = btn.innerHTML;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span>⏳</span> Generating...';
+
+                const candidateName = analysisData?._candidate_name ||
+                                     analysisData?._profile?.full_name ||
+                                     analysisData?._resume_json?.candidate?.name ||
+                                     'Candidate';
+                const resumeData = analysisData?._resume_json || {};
+                const profile = analysisData?._profile || {};
+
+                // Helper to safely extract string value
+                const safeString = (val) => {
+                    if (val === null || val === undefined) return '';
+                    if (typeof val === 'string') return val;
+                    if (typeof val === 'object') {
+                        if (val.city && val.state) return `${val.city}, ${val.state}`;
+                        if (val.location) return String(val.location);
+                        if (val.name) return String(val.name);
+                        return '';
+                    }
+                    return String(val);
+                };
+
+                // Build tagline - prioritize API headline from job analysis
+                const apiHeadline = documentsData?.resume_output?.headline ||
+                                   analysisData?.resume_output?.headline ||
+                                   analysisData?.headline || '';
+                const targetRole = analysisData?._role || analysisData?.role_title || '';
+
+                let tagline = '';
+
+                // Priority 1: API-generated headline (most accurate to job description)
+                if (apiHeadline) {
+                    tagline = apiHeadline;
+                }
+                // Priority 2: Profile/resume tagline
+                else if (profile.tagline || resumeData.tagline || profile.current_title) {
+                    tagline = safeString(profile.tagline || resumeData.tagline || profile.current_title);
+                }
+                // Priority 3: Build from job role + competencies
+                else if (targetRole) {
+                    const competencies = resumeData.core_competencies || profile.core_competencies ||
+                                        analysisData?.required_skills || analysisData?.ats_keywords || [];
+                    const topCompetencies = competencies.slice(0, 3).map(c => {
+                        return String(c).trim().split(' ')
+                            .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                            .join(' ');
+                    });
+                    if (topCompetencies.length > 0) {
+                        tagline = targetRole + ' | ' + topCompetencies.join(' | ');
+                    } else {
+                        tagline = targetRole;
+                    }
+                }
+
+                console.log('Tagline sources:', { apiHeadline, targetRole, profileTagline: profile.tagline, tagline });
+
+                // Extract contact info
+                const contactPhone = safeString(profile.phone || resumeData.contact?.phone || resumeData.candidate?.contact?.phone);
+                const contactEmail = safeString(profile.email || resumeData.contact?.email || resumeData.candidate?.contact?.email);
+                const contactLinkedin = safeString(profile.linkedin || resumeData.contact?.linkedin || resumeData.candidate?.contact?.linkedin);
+                let contactLocation = safeString(profile.location || resumeData.contact?.location || resumeData.candidate?.contact?.location);
+                if (!contactLocation) {
+                    contactLocation = safeString(analysisData?.job_location ||
+                                                 analysisData?._profile?.location ||
+                                                 resumeData.experience?.[0]?.location);
+                }
+
+                // Split cover letter into paragraphs
+                const coverLetterText = documentsData.cover_letter?.full_text || '';
+                const paragraphs = coverLetterText
+                    .split(/\n\n+/)
+                    .map(p => p.trim())
+                    .filter(p => p.length > 0 && !p.toLowerCase().startsWith('dear') && !p.toLowerCase().startsWith('sincerely'));
+
+                // Build request payload for professional formatter
+                const requestPayload = {
+                    candidate_name: String(candidateName),
+                    tagline: tagline,
+                    contact: {
+                        phone: contactPhone,
+                        email: contactEmail,
+                        linkedin: contactLinkedin,
+                        location: contactLocation
+                    },
+                    recipient_name: null,
+                    paragraphs: paragraphs.map(p => String(p))
+                };
+
+                console.log('Cover letter download payload:', requestPayload);
+
+                const response = await fetch('http://localhost:8000/api/download/cover-letter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestPayload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Failed to generate cover letter: ${response.status}`);
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const filename = `${candidateName.replace(/\s+/g, '_')}_Cover_Letter.docx`;
+                saveAs(blob, filename);
+                showSuccess();
+
+            } catch (error) {
+                console.error('Error downloading cover letter:', error);
+                alert('Error downloading cover letter: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Show error state
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = `
+                <div class="error-state">
+                    <p>${message}</p>
+                    <a href="results.html">← Go back and try again</a>
+                </div>
+            `;
+        }
+
+        // Load documents on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Get analysis data for candidate name
+            const analysisDataStr = sessionStorage.getItem('analysisData');
+            if (!analysisDataStr) {
+                window.location.href = 'index.html';
+                return;
+            }
+            analysisData = JSON.parse(analysisDataStr);
+
+            // Get documents data
+            const documentsDataStr = sessionStorage.getItem('documentsData');
+            if (!documentsDataStr) {
+                showError('resumeLoading', 'Documents not generated. Please go back to results and click "Build My Application".');
+                showError('coverLetterLoading', 'Documents not generated. Please go back to results and click "Build My Application".');
+                document.getElementById('downloadResumeBtn').disabled = true;
+                document.getElementById('downloadCoverLetterBtn').disabled = true;
+                return;
+            }
+
+            try {
+                documentsData = JSON.parse(documentsDataStr);
+                console.log('Documents data loaded:', documentsData);
+            } catch (e) {
+                console.error('Error parsing documents data:', e);
+                showError('resumeLoading', 'Error loading documents. Please go back and regenerate.');
+                showError('coverLetterLoading', 'Error loading documents. Please go back and regenerate.');
+                return;
+            }
+
+            // ATS Keywords
+            const keywordsContainer = document.getElementById('resumeKeywords');
+            const changesSummary = documentsData.changes_summary || {};
+            const resumeChanges = changesSummary.resume || {};
+            const keywords = resumeChanges.ats_keywords ||
+                            documentsData.resume_output?.ats_keywords ||
+                            [];
+
+            if (keywords.length === 0) {
+                keywordsContainer.innerHTML = '<span style="color: #9ca3af; font-style: italic;">Keywords extracted from job description</span>';
+            } else {
+                keywords.forEach(keyword => {
+                    const tag = document.createElement('div');
+                    tag.className = 'keyword-tag';
+                    tag.textContent = keyword;
+                    keywordsContainer.appendChild(tag);
+                });
+            }
+
+            // Helper to safely extract string value
+            const safeStr = (val) => {
+                if (val === null || val === undefined) return '';
+                if (typeof val === 'string') return val;
+                if (typeof val === 'object') {
+                    if (val.city && val.state) return `${val.city}, ${val.state}`;
+                    if (val.location) return String(val.location);
+                    if (val.name) return String(val.name);
+                    return '';
+                }
+                return String(val);
+            };
+
+            // Get candidate info for header
+            const candidateName = analysisData?._candidate_name ||
+                                 analysisData?._profile?.full_name ||
+                                 analysisData?._resume_json?.candidate?.name ||
+                                 'Candidate';
+            const resumeData = analysisData?._resume_json || {};
+            const profile = analysisData?._profile || {};
+
+            // Build tagline - prioritize API headline from job analysis
+            const apiHeadline = documentsData?.resume_output?.headline ||
+                               analysisData?.resume_output?.headline ||
+                               analysisData?.headline || '';
+            const targetRole = analysisData?._role || analysisData?.role_title || '';
+
+            let tagline = '';
+            if (apiHeadline) {
+                tagline = apiHeadline;
+            } else if (profile.tagline || resumeData.tagline || profile.current_title) {
+                tagline = safeStr(profile.tagline || resumeData.tagline || profile.current_title);
+            } else if (targetRole) {
+                tagline = targetRole;
+            }
+
+            const contact = resumeData.contact || {};
+            const phone = safeStr(profile.phone || contact.phone);
+            const email = safeStr(profile.email || contact.email);
+            const linkedin = safeStr(profile.linkedin || contact.linkedin);
+            const location = safeStr(profile.location || contact.location);
+
+            // Build contact line
+            const contactParts = [phone, email, linkedin, location].filter(p => p);
+            const contactLine = contactParts.join(' | ');
+
+            // Build resume header
+            const resumeHeader = `${candidateName.toUpperCase()}
+${tagline}
+${contactLine}
+
+${'─'.repeat(60)}
+
+`;
+
+            // Resume preview with header
+            const resumeBody = documentsData.resume_output?.full_text ||
+                              documentsData.resume?.full_text ||
+                              'Resume content not available.';
+            const resumeText = resumeHeader + resumeBody;
+
+            document.getElementById('resumeLoading').style.display = 'none';
+            document.getElementById('resumeText').style.display = 'block';
+            document.getElementById('resumeText').value = resumeText;
+            document.getElementById('downloadResumeBtn').disabled = false;
+
+            // Build cover letter header (same format)
+            const coverLetterHeader = `${candidateName.toUpperCase()}
+${tagline}
+${contactLine}
+
+${'─'.repeat(60)}
+
+COVER LETTER
+
+`;
+
+            // Cover letter preview with header
+            const coverLetterBody = documentsData.cover_letter?.full_text ||
+                                   'Cover letter content not available.';
+            const coverLetterText = coverLetterHeader + coverLetterBody;
+
+            document.getElementById('coverLetterLoading').style.display = 'none';
+            document.getElementById('coverLetterText').style.display = 'block';
+            document.getElementById('coverLetterText').value = coverLetterText;
+            document.getElementById('downloadCoverLetterBtn').disabled = false;
+        });
+    </script>
+</body>
+</html>

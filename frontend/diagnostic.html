@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SessionStorage Diagnostic</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #f5f5f5;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #60a5fa;
+        }
+        .section {
+            background: #161616;
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .label {
+            color: #10b981;
+            font-weight: bold;
+            margin-top: 12px;
+        }
+        .value {
+            color: #f5f5f5;
+            margin-left: 20px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .missing {
+            color: #ef4444;
+        }
+        .button {
+            background: #60a5fa;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 SessionStorage Diagnostic Tool</h1>
+    
+    <button class="button" onclick="checkData()">🔄 Refresh Check</button>
+    <button class="button" onclick="clearData()">🗑️ Clear SessionStorage</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function checkData() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            // Check for analysisData
+            const analysisData = sessionStorage.getItem('analysisData');
+            
+            const section = document.createElement('div');
+            section.className = 'section';
+            
+            if (!analysisData) {
+                section.innerHTML = `
+                    <div class="label missing">❌ NO ANALYSISDATA FOUND</div>
+                    <div class="value">SessionStorage is empty or doesn't contain 'analysisData'</div>
+                    <div class="value" style="margin-top: 20px;">
+                        <strong>Solution:</strong> Go back to the analyze page and run a job analysis.
+                    </div>
+                `;
+            } else {
+                try {
+                    const parsed = JSON.parse(analysisData);
+                    
+                    section.innerHTML = `
+                        <div class="label">✅ ANALYSISDATA FOUND</div>
+                        <div class="value">Size: ${analysisData.length} characters</div>
+                        
+                        <div class="label">Company Name:</div>
+                        <div class="value">${parsed._company_name || parsed.company_name || '<span class="missing">Missing</span>'}</div>
+                        
+                        <div class="label">Role Title:</div>
+                        <div class="value">${parsed.role_title || '<span class="missing">Missing</span>'}</div>
+                        
+                        <div class="label">Candidate Name:</div>
+                        <div class="value">${parsed._candidate_name || parsed.candidate_name || '<span class="missing">Missing</span>'}</div>
+                        
+                        <div class="label">Fit Score:</div>
+                        <div class="value">${parsed.fit_score || '<span class="missing">Missing</span>'}%</div>
+                        
+                        <div class="label">Positioning Strategy:</div>
+                        <div class="value">${parsed.positioning_strategy ? '✅ Present' : '<span class="missing">❌ Missing</span>'}</div>
+                        
+                        <div class="label">Framing Text:</div>
+                        <div class="value">${parsed.positioning_strategy?.framing || '<span class="missing">Missing</span>'}</div>
+                        
+                        <div class="label">Emphasize List:</div>
+                        <div class="value">${parsed.positioning_strategy?.emphasize?.length || 0} items</div>
+                        ${parsed.positioning_strategy?.emphasize ? parsed.positioning_strategy.emphasize.map((item, i) => `<div class="value">  ${i + 1}. ${item}</div>`).join('') : ''}
+                        
+                        <div class="label">De-Emphasize List:</div>
+                        <div class="value">${parsed.positioning_strategy?.de_emphasize?.length || 0} items</div>
+                        ${parsed.positioning_strategy?.de_emphasize ? parsed.positioning_strategy.de_emphasize.map((item, i) => `<div class="value">  ${i + 1}. ${item}</div>`).join('') : ''}
+                        
+                        <div class="label">Action Plan:</div>
+                        <div class="value">${parsed.action_plan ? '✅ Present' : '<span class="missing">❌ Missing</span>'}</div>
+                        
+                        <div class="label">TODAY Actions:</div>
+                        <div class="value">${parsed.action_plan?.today?.length || 0} items</div>
+                        ${parsed.action_plan?.today ? parsed.action_plan.today.map((item, i) => `<div class="value">  ${i + 1}. ${item}</div>`).join('') : ''}
+                        
+                        <div class="label">TOMORROW Actions:</div>
+                        <div class="value">${parsed.action_plan?.tomorrow?.length || 0} items</div>
+                        ${parsed.action_plan?.tomorrow ? parsed.action_plan.tomorrow.map((item, i) => `<div class="value">  ${i + 1}. ${item}</div>`).join('') : ''}
+                        
+                        <div class="label">THIS WEEK Actions:</div>
+                        <div class="value">${parsed.action_plan?.this_week?.length || 0} items</div>
+                        ${parsed.action_plan?.this_week ? parsed.action_plan.this_week.map((item, i) => `<div class="value">  ${i + 1}. ${item}</div>`).join('') : ''}
+                        
+                        <div class="label">Salary Strategy:</div>
+                        <div class="value">${parsed.salary_strategy ? '✅ Present' : '<span class="missing">❌ Missing</span>'}</div>
+                        
+                        <div class="label">Full Data (Raw JSON):</div>
+                        <div class="value" style="max-height: 400px; overflow-y: auto; background: #0a0a0a; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                            ${JSON.stringify(parsed, null, 2)}
+                        </div>
+                    `;
+                    
+                } catch (e) {
+                    section.innerHTML = `
+                        <div class="label missing">❌ INVALID JSON</div>
+                        <div class="value">Error: ${e.message}</div>
+                        <div class="value" style="margin-top: 20px;">
+                            <strong>Raw Data:</strong><br>
+                            ${analysisData.substring(0, 500)}...
+                        </div>
+                    `;
+                }
+            }
+            
+            results.appendChild(section);
+        }
+        
+        function clearData() {
+            if (confirm('Are you sure you want to clear sessionStorage? This will remove all analysis data.')) {
+                sessionStorage.clear();
+                checkData();
+                alert('SessionStorage cleared! Please re-analyze a job.');
+            }
+        }
+        
+        // Auto-check on load
+        checkData();
+    </script>
+</body>
+</html>

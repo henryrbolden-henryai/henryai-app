@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Positioning Strategy - HenryAI</title>
+    <style>
+        /* Keep all existing CSS from positioning.html */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .debug-panel {
+            background: #1a1a1a;
+            border: 2px solid #ef4444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .debug-title {
+            color: #ef4444;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .debug-content {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Copy rest of CSS from positioning.html */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Debug Panel -->
+        <div class="debug-panel">
+            <div class="debug-title">🔍 DEBUG DATA (Check Console F12 for full output)</div>
+            <div class="debug-content" id="debugOutput">Loading...</div>
+        </div>
+
+        <!-- Rest of page content same as positioning.html -->
+        <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
+        
+        <h1>
+            <span>📍</span>
+            Your Positioning Strategy
+        </h1>
+        <p class="subtitle">Strategic framing and execution plan for this application</p>
+
+        <!-- Strategic Framing Section -->
+        <div class="section">
+            <h2>Strategic Framing</h2>
+            <div class="framing-box">
+                <strong><span id="firstName">Loading</span>,</strong> <span id="framingText">Loading strategic framing...</span>
+            </div>
+
+            <div class="positioning-grid">
+                <div class="positioning-column">
+                    <h3>✓ EMPHASIZE</h3>
+                    <div id="emphasizeList" class="list-container">
+                        <div class="empty-state">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="positioning-column">
+                    <h3>⊖ DE-EMPHASIZE</h3>
+                    <div id="deEmphasizeList" class="list-container">
+                        <div class="empty-state">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Plan Section -->
+        <div class="section">
+            <h2>📅 Your Action Plan</h2>
+            
+            <div class="action-section">
+                <h3>🎯 TODAY</h3>
+                <div id="todayActions" class="action-items">
+                    <div class="empty-state">Loading...</div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h3>📬 TOMORROW</h3>
+                <div id="tomorrowActions" class="action-items">
+                    <div class="empty-state">Loading...</div>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h3>📆 THIS WEEK</h3>
+                <div id="thisWeekActions" class="action-items">
+                    <div class="empty-state">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary Strategy Section -->
+        <div class="section">
+            <h2>💰 Salary Strategy</h2>
+            
+            <div class="salary-grid">
+                <div class="salary-box">
+                    <div class="salary-label">THEIR RANGE</div>
+                    <div class="salary-value" id="theirRange">Loading...</div>
+                </div>
+                
+                <div class="salary-box">
+                    <div class="salary-label">YOUR TARGET</div>
+                    <div class="salary-value" id="yourTarget">Loading...</div>
+                </div>
+                
+                <div class="salary-box">
+                    <div class="salary-label">MARKET DATA</div>
+                    <div class="salary-value" id="marketData">Loading...</div>
+                </div>
+            </div>
+
+            <div class="negotiation-box">
+                <h3>Negotiation Approach</h3>
+                <p id="negotiationApproach">Loading...</p>
+            </div>
+
+            <div class="talking-points-section">
+                <h3>Key Talking Points</h3>
+                <div id="talkingPoints" class="talking-points-container">
+                    <div class="empty-state">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation-footer">
+            <a href="overview.html" class="nav-button secondary">← Back to Strategic Overview</a>
+        </div>
+    </div>
+
+    <script>
+        function extractFirstName(fullName) {
+            if (!fullName) return 'you';
+            const parts = fullName.trim().split(/\s+/);
+            return parts[0] || 'you';
+        }
+
+        function createActionItem(text) {
+            const item = document.createElement('div');
+            item.className = 'action-item';
+            item.innerHTML = `
+                <input type="checkbox" class="action-checkbox">
+                <span>${text}</span>
+            `;
+            item.querySelector('.action-checkbox').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+            });
+            return item;
+        }
+
+        // Load data from sessionStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const data = sessionStorage.getItem('analysisData');
+            
+            console.log('=== POSITIONING PAGE DEBUG ===');
+            console.log('Raw data from sessionStorage:', data);
+            
+            if (!data) {
+                console.error('❌ No analysisData in sessionStorage');
+                document.getElementById('debugOutput').textContent = 'ERROR: No data in sessionStorage';
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const analysis = JSON.parse(data);
+            
+            // COMPREHENSIVE DEBUG OUTPUT
+            console.log('✅ Parsed analysis object:', analysis);
+            console.log('📍 positioning_strategy:', analysis.positioning_strategy);
+            console.log('📅 action_plan:', analysis.action_plan);
+            console.log('💰 salary_strategy:', analysis.salary_strategy);
+            console.log('📝 changes_summary:', analysis.changes_summary);
+            console.log('🏢 _company_name:', analysis._company_name);
+            console.log('👤 _candidate_name:', analysis._candidate_name);
+            console.log('👤 _candidate_first_name:', analysis._candidate_first_name);
+            
+            // Show in debug panel
+            const debugInfo = `
+Company: ${analysis._company_name || analysis.company || 'MISSING'}
+Candidate: ${analysis._candidate_name || 'MISSING'}
+First Name: ${analysis._candidate_first_name || 'MISSING'}
+
+POSITIONING STRATEGY:
+- emphasize: ${JSON.stringify(analysis.positioning_strategy?.emphasize || 'MISSING', null, 2)}
+- de_emphasize: ${JSON.stringify(analysis.positioning_strategy?.de_emphasize || 'MISSING', null, 2)}
+- framing: ${analysis.positioning_strategy?.framing || 'MISSING'}
+
+ACTION PLAN:
+- today: ${JSON.stringify(analysis.action_plan?.today || 'MISSING', null, 2)}
+- tomorrow: ${JSON.stringify(analysis.action_plan?.tomorrow || 'MISSING', null, 2)}
+- this_week: ${JSON.stringify(analysis.action_plan?.this_week || 'MISSING', null, 2)}
+
+SALARY STRATEGY:
+- their_range: ${analysis.salary_strategy?.their_range || 'MISSING'}
+- your_target: ${analysis.salary_strategy?.your_target || 'MISSING'}
+- market_data: ${analysis.salary_strategy?.market_data || 'MISSING'}
+- talking_points: ${JSON.stringify(analysis.salary_strategy?.talking_points || 'MISSING', null, 2)}
+
+Check browser console (F12) for full data structure.
+            `.trim();
+            
+            document.getElementById('debugOutput').textContent = debugInfo;
+            
+            // Extract first name
+            const candidateName = analysis._candidate_first_name || 
+                                 analysis._candidate_name || 
+                                 analysis.candidate_name || '';
+            const firstName = extractFirstName(candidateName);
+            document.getElementById('firstName').textContent = firstName;
+            console.log('👤 Using first name:', firstName);
+
+            // Strategic Framing
+            const positioningStrategy = analysis.positioning_strategy || {};
+            const framingText = positioningStrategy.framing || 'Frame yourself strategically for this role based on your experience and the company\'s needs.';
+            const cleanFraming = framingText.replace(new RegExp(`^${firstName},?\\s*`, 'i'), '');
+            document.getElementById('framingText').textContent = cleanFraming;
+            console.log('📍 Framing text:', cleanFraming);
+
+            // Emphasize list
+            const emphasizeList = document.getElementById('emphasizeList');
+            const emphasizeItems = positioningStrategy.emphasize || [];
+            console.log('📍 Emphasize items count:', emphasizeItems.length);
+            
+            if (emphasizeItems.length === 0) {
+                emphasizeList.innerHTML = '<div class="empty-state">⚠️ No emphasize items from backend</div>';
+            } else {
+                emphasizeList.innerHTML = '';
+                emphasizeItems.forEach((item, index) => {
+                    console.log(`  - Emphasize ${index + 1}:`, item);
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.textContent = item;
+                    emphasizeList.appendChild(div);
+                });
+            }
+
+            // De-emphasize list
+            const deEmphasizeList = document.getElementById('deEmphasizeList');
+            const deEmphasizeItems = positioningStrategy.de_emphasize || [];
+            console.log('📍 De-emphasize items count:', deEmphasizeItems.length);
+            
+            if (deEmphasizeItems.length === 0) {
+                deEmphasizeList.innerHTML = '<div class="empty-state">⚠️ No de-emphasize items from backend</div>';
+            } else {
+                deEmphasizeList.innerHTML = '';
+                deEmphasizeItems.forEach((item, index) => {
+                    console.log(`  - De-emphasize ${index + 1}:`, item);
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.textContent = item;
+                    deEmphasizeList.appendChild(div);
+                });
+            }
+
+            // Action Plan
+            const actionPlan = analysis.action_plan || {};
+            console.log('📅 Action plan object:', actionPlan);
+            
+            const todayContainer = document.getElementById('todayActions');
+            const todayActions = actionPlan.today || [];
+            console.log('📅 Today actions count:', todayActions.length);
+            
+            if (todayActions.length === 0) {
+                todayContainer.innerHTML = '<div class="empty-state">⚠️ No today actions from backend</div>';
+            } else {
+                todayContainer.innerHTML = '';
+                todayActions.forEach((action, index) => {
+                    console.log(`  - Today ${index + 1}:`, action);
+                    todayContainer.appendChild(createActionItem(action));
+                });
+            }
+
+            const tomorrowContainer = document.getElementById('tomorrowActions');
+            const tomorrowActions = actionPlan.tomorrow || [];
+            console.log('📅 Tomorrow actions count:', tomorrowActions.length);
+            
+            if (tomorrowActions.length === 0) {
+                tomorrowContainer.innerHTML = '<div class="empty-state">⚠️ No tomorrow actions from backend</div>';
+            } else {
+                tomorrowContainer.innerHTML = '';
+                tomorrowActions.forEach((action, index) => {
+                    console.log(`  - Tomorrow ${index + 1}:`, action);
+                    tomorrowContainer.appendChild(createActionItem(action));
+                });
+            }
+
+            const thisWeekContainer = document.getElementById('thisWeekActions');
+            const thisWeekActions = actionPlan.this_week || [];
+            console.log('📅 This week actions count:', thisWeekActions.length);
+            
+            if (thisWeekActions.length === 0) {
+                thisWeekContainer.innerHTML = '<div class="empty-state">⚠️ No this week actions from backend</div>';
+            } else {
+                thisWeekContainer.innerHTML = '';
+                thisWeekActions.forEach((action, index) => {
+                    console.log(`  - This week ${index + 1}:`, action);
+                    thisWeekContainer.appendChild(createActionItem(action));
+                });
+            }
+
+            // Salary Strategy
+            const salaryStrategy = analysis.salary_strategy || {};
+            console.log('💰 Salary strategy object:', salaryStrategy);
+            
+            document.getElementById('theirRange').textContent = 
+                salaryStrategy.their_range || '⚠️ Not provided by backend';
+            
+            document.getElementById('yourTarget').textContent = 
+                salaryStrategy.your_target || '⚠️ Not provided by backend';
+            
+            document.getElementById('marketData').textContent = 
+                salaryStrategy.market_data || '⚠️ Not provided by backend';
+            
+            document.getElementById('negotiationApproach').textContent = 
+                salaryStrategy.approach || '⚠️ Not provided by backend';
+
+            // Talking Points
+            const talkingPointsContainer = document.getElementById('talkingPoints');
+            const talkingPoints = salaryStrategy.talking_points || [];
+            console.log('💰 Talking points count:', talkingPoints.length);
+            
+            if (talkingPoints.length === 0) {
+                talkingPointsContainer.innerHTML = '<div class="empty-state">⚠️ No talking points from backend</div>';
+            } else {
+                talkingPointsContainer.innerHTML = '';
+                talkingPoints.forEach((point, index) => {
+                    console.log(`  - Talking point ${index + 1}:`, point);
+                    const div = document.createElement('div');
+                    div.className = 'talking-point';
+                    div.innerHTML = `
+                        <div class="talking-point-icon">💰</div>
+                        <div>${point}</div>
+                    `;
+                    talkingPointsContainer.appendChild(div);
+                });
+            }
+
+            console.log('=== END POSITIONING PAGE DEBUG ===');
+        });
+    </script>
+</body>
+</html>
