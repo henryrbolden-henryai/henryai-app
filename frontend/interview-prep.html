@@ -1585,6 +1585,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // State
         let currentStage = 'recruiter_screen';
         let analysisData = null;
@@ -1696,7 +1699,7 @@
             loadingEl.style.display = 'block';
 
             try {
-                const response = await fetch('http://localhost:8000/api/interview-prep/generate', {
+                const response = await fetch(`${API_BASE}/api/interview-prep/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1908,7 +1911,7 @@
             contentEl.style.display = 'none';
 
             try {
-                const response = await fetch('http://localhost:8000/api/interview-prep/intro-sell/generate', {
+                const response = await fetch(`${API_BASE}/api/interview-prep/intro-sell/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1963,7 +1966,7 @@
             btn.textContent = 'Analyzing...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/interview-prep/intro-sell/feedback', {
+                const response = await fetch(`${API_BASE}/api/interview-prep/intro-sell/feedback`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2099,7 +2102,7 @@
             messagesEl.innerHTML = '<div class="chat-message assistant"><div class="content">Analyzing your interview transcript...</div></div>';
 
             try {
-                const response = await fetch('http://localhost:8000/api/debrief/chat', {
+                const response = await fetch(`${API_BASE}/api/debrief/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2159,7 +2162,7 @@
             messagesEl.scrollTop = messagesEl.scrollHeight;
 
             try {
-                const response = await fetch('http://localhost:8000/api/debrief/chat', {
+                const response = await fetch(`${API_BASE}/api/debrief/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2274,7 +2277,7 @@
                     .split('\n').filter(a => a.trim());
                 const transcript = document.getElementById('interviewTranscript').value.trim();
 
-                const response = await fetch('http://localhost:8000/api/interview-prep/debrief', {
+                const response = await fetch(`${API_BASE}/api/interview-prep/debrief`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2497,7 +2500,7 @@
             document.getElementById('mockLoadingText').textContent = 'Generating your first question...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/start', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2574,7 +2577,7 @@
             document.getElementById('mockLoadingText').textContent = 'Analyzing your response...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/respond', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/respond`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2649,7 +2652,7 @@
 
             try {
                 const response = await fetch(
-                    `http://localhost:8000/api/mock-interview/question-feedback/${mockSession.currentQuestionId}`
+                    `${API_BASE}/api/mock-interview/question-feedback/${mockSession.currentQuestionId}`
                 );
 
                 if (!response.ok) throw new Error('Failed to get feedback');
@@ -2694,7 +2697,7 @@
             document.getElementById('mockLoadingText').textContent = 'Generating next question...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/next-question', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/next-question`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2735,7 +2738,7 @@
             document.getElementById('mockLoadingText').textContent = 'Generating session results...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/end', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/end`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2950,7 +2953,7 @@
                 const config = drillConfig[currentDrill];
 
                 // Call the drill feedback API
-                const apiResponse = await fetch('http://localhost:8000/api/drill/feedback', {
+                const apiResponse = await fetch(`${API_BASE}/api/drill/feedback`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3202,7 +3205,7 @@
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'recording.webm');
 
-                const response = await fetch('http://localhost:8000/api/transcribe', {
+                const response = await fetch(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
                     body: formData
                 });
@@ -3444,7 +3447,7 @@
                 try {
                     // Use Echo voice - warm, conversational with personality and energy
                     console.log('🎙️ Using AI voice: echo');
-                    const response = await fetch('http://localhost:8000/api/tts', {
+                    const response = await fetch(`${API_BASE}/api/tts`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

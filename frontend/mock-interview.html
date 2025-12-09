@@ -512,6 +512,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // State
         let session = {
             id: null,
@@ -564,7 +567,7 @@
             showLoading('Starting your interview...');
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/start', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/start`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -626,7 +629,7 @@
             showTyping();
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/respond', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/respond`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -675,7 +678,7 @@
             showTyping();
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/next-question', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/next-question`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -719,7 +722,7 @@
             showLoading('Generating your debrief...');
 
             try {
-                const response = await fetch('http://localhost:8000/api/mock-interview/end', {
+                const response = await fetch(`${API_BASE}/api/mock-interview/end`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -856,7 +859,7 @@
                 const formData = new FormData();
                 formData.append('audio', blob, 'recording.webm');
 
-                const response = await fetch('http://localhost:8000/api/transcribe', {
+                const response = await fetch(`${API_BASE}/api/transcribe`, {
                     method: 'POST',
                     body: formData
                 });
@@ -876,7 +879,7 @@
         // TTS
         async function speakText(text) {
             try {
-                const response = await fetch('http://localhost:8000/api/tts', {
+                const response = await fetch(`${API_BASE}/api/tts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, voice: 'echo' })

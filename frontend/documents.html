@@ -483,6 +483,9 @@
     <div class="success-message" id="successMessage">Downloaded Successfully ✓</div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // Get the docx library from the global scope
         const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
 
@@ -754,7 +757,7 @@
 
                 console.log('Resume download payload:', requestPayload);
 
-                const response = await fetch('http://localhost:8000/api/download/resume', {
+                const response = await fetch(`${API_BASE}/api/download/resume`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -885,7 +888,7 @@
 
                 console.log('Cover letter download payload:', requestPayload);
 
-                const response = await fetch('http://localhost:8000/api/download/cover-letter', {
+                const response = await fetch(`${API_BASE}/api/download/cover-letter`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

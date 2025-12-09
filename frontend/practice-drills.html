@@ -898,6 +898,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // Drill configurations
         const drillConfig = {
             behavioral: {
@@ -1129,7 +1132,7 @@
 
             try {
                 // Try OpenAI TTS via backend first
-                const response = await fetch('http://localhost:8000/api/tts', {
+                const response = await fetch(`${API_BASE}/api/tts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, voice: 'alloy' })
@@ -1315,7 +1318,7 @@
 
             try {
                 const config = drillConfig[selectedType];
-                const apiResponse = await fetch('http://localhost:8000/api/drill/feedback', {
+                const apiResponse = await fetch(`${API_BASE}/api/drill/feedback`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

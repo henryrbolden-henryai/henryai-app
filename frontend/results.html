@@ -823,6 +823,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // Load analysis data from sessionStorage
         const data = JSON.parse(sessionStorage.getItem('analysisData'));
 
@@ -1312,7 +1315,7 @@
 
                 console.log('Generating documents with payload:', requestPayload);
 
-                const response = await fetch('http://localhost:8000/api/documents/generate', {
+                const response = await fetch(`${API_BASE}/api/documents/generate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
