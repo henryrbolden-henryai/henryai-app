@@ -921,6 +921,375 @@
             color: var(--color-hot);
         }
 
+        /* Desperation Intervention Modal */
+        .intervention-modal {
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .intervention-modal .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .intervention-modal .modal-header-icon {
+            font-size: 1.5rem;
+        }
+
+        .intervention-modal .modal-header-text h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .intervention-modal .modal-header-text .severity {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .intervention-modal .modal-header-text .severity.high { color: var(--color-dead); }
+        .intervention-modal .modal-header-text .severity.critical { color: #dc2626; }
+        .intervention-modal .modal-header-text .severity.medium { color: var(--color-hot); }
+
+        .intervention-intro {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .intervention-intro strong {
+            color: var(--color-text);
+        }
+
+        .intervention-stats {
+            background: var(--color-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .intervention-stats-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .intervention-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .intervention-stat {
+            text-align: center;
+        }
+
+        .intervention-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .intervention-stat-value.bad { color: var(--color-dead); }
+        .intervention-stat-value.warn { color: var(--color-hot); }
+        .intervention-stat-value.neutral { color: var(--color-text-secondary); }
+
+        .intervention-stat-label {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .intervention-diagnosis {
+            margin-bottom: 20px;
+        }
+
+        .intervention-diagnosis-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 12px;
+        }
+
+        .intervention-diagnosis-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .intervention-diagnosis-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .diagnosis-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .diagnosis-content {
+            flex: 1;
+        }
+
+        .diagnosis-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .diagnosis-detail {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .intervention-action-plan {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(34, 211, 238, 0.03) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .intervention-action-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .intervention-action-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .intervention-action-list li {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            border-bottom: 1px solid rgba(34, 211, 238, 0.1);
+        }
+
+        .intervention-action-list li:last-child {
+            border-bottom: none;
+        }
+
+        .intervention-action-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        .intervention-insight {
+            background: var(--color-surface-elevated);
+            border-left: 3px solid var(--color-accent);
+            padding: 14px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 24px;
+        }
+
+        .intervention-insight-text {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .intervention-choice {
+            margin-bottom: 20px;
+        }
+
+        .intervention-choice-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .intervention-choice-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .intervention-choice-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .intervention-choice-option:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .intervention-choice-option.selected {
+            border-color: var(--color-accent);
+            background: var(--color-accent-muted);
+        }
+
+        .intervention-choice-option.recommended {
+            border-color: var(--color-active);
+        }
+
+        .intervention-choice-option input[type="radio"] {
+            display: none;
+        }
+
+        .intervention-radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--color-border);
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .intervention-choice-option.selected .intervention-radio {
+            border-color: var(--color-accent);
+        }
+
+        .intervention-choice-option.selected .intervention-radio::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 8px;
+            height: 8px;
+            background: var(--color-accent);
+            border-radius: 50%;
+        }
+
+        .intervention-choice-text {
+            flex: 1;
+        }
+
+        .intervention-choice-text strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .intervention-choice-text span {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .intervention-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .intervention-badge.recommended {
+            background: var(--color-active-muted);
+            color: var(--color-active);
+        }
+
+        .intervention-badge.not-recommended {
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+        }
+
+        .intervention-modal .modal-actions {
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .intervention-modal .modal-btn {
+            flex: 1;
+        }
+
+        .intervention-modal .modal-btn.primary {
+            background: var(--color-accent);
+            color: #000;
+        }
+
+        /* Low-fit application samples */
+        .sample-applications {
+            margin-bottom: 16px;
+        }
+
+        .sample-applications-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .sample-app {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--color-bg);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .sample-app:last-child {
+            margin-bottom: 0;
+        }
+
+        .sample-app-role {
+            color: var(--color-text);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sample-app-fit {
+            font-weight: 600;
+            margin-left: 12px;
+        }
+
+        .sample-app-fit.low { color: var(--color-dead); }
+        .sample-app-fit.medium { color: var(--color-hot); }
+
+        .sample-app-note {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            margin-left: 8px;
+        }
+
         .interview-date {
             font-size: 0.8rem;
             color: var(--color-text-muted);
@@ -1252,6 +1621,13 @@
                 <button class="modal-btn secondary" onclick="closeDeleteModal()">Cancel</button>
                 <button class="modal-btn danger" id="confirmDeleteBtn">Archive</button>
             </div>
+        </div>
+    </div>
+
+    <!-- DESPERATION INTERVENTION MODAL -->
+    <div class="modal-overlay" id="interventionModal">
+        <div class="modal intervention-modal" id="interventionContent">
+            <!-- Dynamically populated -->
         </div>
     </div>
 
@@ -1753,6 +2129,416 @@
                 recommendations: recommendations.slice(0, 3)
             };
         }
+
+        // ========================================================================
+        // DESPERATION DETECTION SYSTEM
+        // ========================================================================
+
+        // Check if intervention was recently acknowledged (don't nag)
+        function getInterventionState() {
+            const state = JSON.parse(localStorage.getItem('interventionState') || '{}');
+            return state;
+        }
+
+        function saveInterventionState(state) {
+            localStorage.setItem('interventionState', JSON.stringify(state));
+        }
+
+        function detectDesperationPattern(apps, timeframeDays = 14) {
+            const now = new Date();
+            const cutoff = new Date(now - timeframeDays * 24 * 60 * 60 * 1000);
+
+            // Get recent applications
+            const recentApps = apps.filter(app => {
+                const addedDate = new Date(app.dateAdded);
+                return addedDate >= cutoff;
+            });
+
+            if (recentApps.length < 5) return null; // Not enough data
+
+            // Calculate metrics
+            const avgFit = recentApps.reduce((sum, a) => sum + (a.fitScore || 50), 0) / recentApps.length;
+            const lowFitCount = recentApps.filter(a => (a.fitScore || 50) < 65).length;
+            const interviewCount = apps.filter(a =>
+                ['Response Received', 'Recruiter Screen', 'Hiring Manager', 'Technical Round',
+                 'Panel Interview', 'Final Round', 'Executive Interview', 'Interviewed', 'Offer Received'].includes(a.status)
+            ).length;
+            const interviewRate = recentApps.length > 0 ? (interviewCount / apps.filter(a => !['Preparing', 'To Apply'].includes(a.status)).length) : 0;
+
+            // Extract role types (simplified categorization)
+            const roleTypes = new Set();
+            recentApps.forEach(app => {
+                const role = (app.role || '').toLowerCase();
+                if (role.includes('product manager') || role.includes('pm')) roleTypes.add('Product Manager');
+                else if (role.includes('engineer') || role.includes('developer')) roleTypes.add('Engineering');
+                else if (role.includes('design')) roleTypes.add('Design');
+                else if (role.includes('marketing')) roleTypes.add('Marketing');
+                else if (role.includes('sales')) roleTypes.add('Sales');
+                else if (role.includes('operations') || role.includes('ops')) roleTypes.add('Operations');
+                else if (role.includes('data')) roleTypes.add('Data');
+                else roleTypes.add('Other');
+            });
+
+            // Check weekly fit trajectory
+            const weeklyFits = [];
+            for (let w = 0; w < 3; w++) {
+                const weekStart = new Date(now - (w + 1) * 7 * 24 * 60 * 60 * 1000);
+                const weekEnd = new Date(now - w * 7 * 24 * 60 * 60 * 1000);
+                const weekApps = apps.filter(a => {
+                    const d = new Date(a.dateAdded);
+                    return d >= weekStart && d < weekEnd;
+                });
+                if (weekApps.length > 0) {
+                    weeklyFits.push(weekApps.reduce((sum, a) => sum + (a.fitScore || 50), 0) / weekApps.length);
+                }
+            }
+
+            // Detect declining trajectory
+            const isDecliningSpiralPattern = weeklyFits.length >= 2 &&
+                weeklyFits[0] < weeklyFits[1] - 10;
+
+            // ─────────────────────────────────────────────────────────────────
+            // PATTERN 1: Volume Over Quality (High Severity)
+            // ─────────────────────────────────────────────────────────────────
+            if (recentApps.length >= 10 && avgFit < 65 && lowFitCount >= 7) {
+                return {
+                    pattern: 'volume_over_quality',
+                    severity: 'high',
+                    trigger: `${recentApps.length} applications in ${timeframeDays} days, avg fit ${Math.round(avgFit)}%`,
+                    stats: {
+                        totalApps: recentApps.length,
+                        avgFit: Math.round(avgFit),
+                        lowFitCount,
+                        interviewRate: Math.round(interviewRate * 100)
+                    },
+                    lowFitSamples: recentApps.filter(a => (a.fitScore || 50) < 65).slice(0, 4),
+                    diagnosis: [
+                        {
+                            title: 'Low Fit Targeting',
+                            detail: `You're applying below your capability. ${lowFitCount} of ${recentApps.length} applications are under 65% fit.`
+                        },
+                        {
+                            title: 'Volume Trap',
+                            detail: `More volume won't fix a targeting problem. Low-fit apps = low interview rates = more rejection = more desperation.`
+                        }
+                    ],
+                    actions: [
+                        'Pause new applications for 48 hours',
+                        'Run a fit audit on your last 15 applications',
+                        'Identify your 75%+ fit zone (role, level, industry)',
+                        'Apply ONLY to 70%+ fit roles going forward'
+                    ],
+                    insight: `I get it. The market is brutal, and you need momentum. But you're applying to roles where you're not competitive. This is a spiral, not a strategy. Quality beats volume. Always.`
+                };
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // PATTERN 2: Desperation Spiral (High Severity)
+            // ─────────────────────────────────────────────────────────────────
+            if (isDecliningSpiralPattern && weeklyFits.length >= 2) {
+                return {
+                    pattern: 'desperation_spiral',
+                    severity: 'high',
+                    trigger: `Fit scores declining: ${weeklyFits.map(f => Math.round(f) + '%').reverse().join(' → ')}`,
+                    stats: {
+                        totalApps: recentApps.length,
+                        avgFit: Math.round(avgFit),
+                        weeklyTrend: weeklyFits.reverse().map(f => Math.round(f)),
+                        interviewRate: Math.round(interviewRate * 100)
+                    },
+                    diagnosis: [
+                        {
+                            title: 'Declining Standards',
+                            detail: `Your fit scores dropped from ${Math.round(weeklyFits[0])}% to ${Math.round(weeklyFits[weeklyFits.length - 1])}% week over week. This is panic, not strategy.`
+                        },
+                        {
+                            title: 'Confidence Spiral',
+                            detail: `Rejections pile up → confidence tanks → you apply lower → more rejections. This is a spiral.`
+                        }
+                    ],
+                    actions: [
+                        'Stop applying for 48 hours',
+                        'Review your Week 1 applications (highest fit)',
+                        'Double down on that profile, not below it',
+                        'Get warm intros for high-fit roles (bypass volume)'
+                    ],
+                    insight: `You started with a clear strategy. You're applying down now. This happens when rejections pile up and timeline pressure increases. I get it—but applying to roles you're not competitive for won't speed things up. It'll just add more rejections.`
+                };
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // PATTERN 3: Scattered/Unfocused (Medium Severity)
+            // ─────────────────────────────────────────────────────────────────
+            if (roleTypes.size >= 4 && recentApps.length >= 8) {
+                return {
+                    pattern: 'scattered_unfocused',
+                    severity: 'medium',
+                    trigger: `Applying across ${roleTypes.size} different role types`,
+                    stats: {
+                        totalApps: recentApps.length,
+                        avgFit: Math.round(avgFit),
+                        roleTypes: Array.from(roleTypes),
+                        interviewRate: Math.round(interviewRate * 100)
+                    },
+                    diagnosis: [
+                        {
+                            title: 'Scattered Focus',
+                            detail: `You've applied to ${Array.from(roleTypes).join(', ')} roles. Generalists lose to specialists in resume screening.`
+                        },
+                        {
+                            title: 'Diluted Positioning',
+                            detail: `Your resume can't optimize for every role type. Recruiters see "unfocused" or "desperate."`
+                        }
+                    ],
+                    actions: [
+                        'Pick ONE role type to focus on for the next 2 weeks',
+                        'Tailor your resume specifically for that role',
+                        'Build targeted outreach for that function',
+                        'Deprioritize roles outside your focus area'
+                    ],
+                    insight: `Focus wins. Scatter loses. Based on your applications, identify where you have the highest fit scores and double down there. Trying to be everything makes you nothing to recruiters.`
+                };
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // PATTERN 4: Volume Without Results (Critical Severity)
+            // ─────────────────────────────────────────────────────────────────
+            if (recentApps.length >= 15 && interviewRate === 0) {
+                const noOutreachCount = recentApps.filter(a => !a.dateReachedOut).length;
+
+                return {
+                    pattern: 'volume_no_results',
+                    severity: 'critical',
+                    trigger: `${recentApps.length} applications, 0 interviews`,
+                    stats: {
+                        totalApps: recentApps.length,
+                        avgFit: Math.round(avgFit),
+                        interviewCount: 0,
+                        noOutreachCount
+                    },
+                    lowFitSamples: recentApps.filter(a => (a.fitScore || 50) < 70).slice(0, 4),
+                    diagnosis: [
+                        {
+                            title: 'Strategy Failure',
+                            detail: `${recentApps.length} applications with zero interviews means something is systematically wrong.`
+                        },
+                        {
+                            title: 'ATS or Targeting Issue',
+                            detail: `Your resume may not be passing ATS filters, or you're targeting roles where you're not competitive.`
+                        },
+                        {
+                            title: 'No Outreach',
+                            detail: `${noOutreachCount} of ${recentApps.length} applications had no direct networking. Cold applications have ~2% response rates.`
+                        }
+                    ],
+                    actions: [
+                        'STOP applying. Fix the foundation first.',
+                        'Run your resume through an ATS checker',
+                        'Adjust targeting to 75%+ fit roles only',
+                        'Pair EVERY application with direct outreach'
+                    ],
+                    insight: `This isn't working. More volume won't fix it—strategy will. You're qualified, but something in your approach has systemic issues. Let's diagnose and fix before you burn more energy.`
+                };
+            }
+
+            return null;
+        }
+
+        function shouldShowIntervention(apps) {
+            const state = getInterventionState();
+
+            // Don't intervene if they acknowledged within 7 days
+            if (state.lastAcknowledged) {
+                const daysSince = getDaysSince(state.lastAcknowledged);
+                if (daysSince < 7) return null;
+            }
+
+            // Check for exception: high volume but good interview rate
+            const totalApps = apps.length;
+            const interviewedApps = apps.filter(a =>
+                ['Response Received', 'Recruiter Screen', 'Hiring Manager', 'Technical Round',
+                 'Panel Interview', 'Final Round', 'Executive Interview', 'Interviewed', 'Offer Received'].includes(a.status)
+            ).length;
+
+            if (totalApps >= 20 && (interviewedApps / totalApps) >= 0.20) {
+                // They're doing fine despite volume - don't intervene
+                return null;
+            }
+
+            return detectDesperationPattern(apps);
+        }
+
+        function renderInterventionModal(pattern) {
+            const modal = document.getElementById('interventionContent');
+
+            const severityLabels = {
+                critical: 'Strategic Intervention Required',
+                high: 'Strategic Pause Recommended',
+                medium: 'Focus Needed'
+            };
+
+            const severityIcons = {
+                critical: '🛑',
+                high: '⚠️',
+                medium: '🤔'
+            };
+
+            let samplesHtml = '';
+            if (pattern.lowFitSamples && pattern.lowFitSamples.length > 0) {
+                samplesHtml = `
+                    <div class="sample-applications">
+                        <div class="sample-applications-title">Recent Low-Fit Applications</div>
+                        ${pattern.lowFitSamples.map(app => `
+                            <div class="sample-app">
+                                <span class="sample-app-role">${app.role}, ${app.company}</span>
+                                <span class="sample-app-fit ${app.fitScore < 60 ? 'low' : 'medium'}">${app.fitScore}%</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <span class="modal-header-icon">${severityIcons[pattern.severity]}</span>
+                    <div class="modal-header-text">
+                        <h2>${severityLabels[pattern.severity]}</h2>
+                        <div class="severity ${pattern.severity}">${pattern.trigger}</div>
+                    </div>
+                </div>
+
+                <div class="intervention-intro">
+                    <strong>I get it. The market is brutal, and you need momentum.</strong><br>
+                    But here's what's happening:
+                </div>
+
+                <div class="intervention-stats">
+                    <div class="intervention-stats-title">What the Data Shows</div>
+                    <div class="intervention-stats-grid">
+                        <div class="intervention-stat">
+                            <div class="intervention-stat-value ${pattern.stats.avgFit < 65 ? 'bad' : pattern.stats.avgFit < 75 ? 'warn' : 'neutral'}">${pattern.stats.avgFit}%</div>
+                            <div class="intervention-stat-label">Avg Fit Score</div>
+                        </div>
+                        <div class="intervention-stat">
+                            <div class="intervention-stat-value neutral">${pattern.stats.totalApps}</div>
+                            <div class="intervention-stat-label">Recent Applications</div>
+                        </div>
+                        ${pattern.stats.interviewRate !== undefined ? `
+                        <div class="intervention-stat">
+                            <div class="intervention-stat-value ${pattern.stats.interviewRate === 0 ? 'bad' : pattern.stats.interviewRate < 10 ? 'warn' : 'neutral'}">${pattern.stats.interviewRate}%</div>
+                            <div class="intervention-stat-label">Interview Rate</div>
+                        </div>
+                        ` : ''}
+                        ${pattern.stats.lowFitCount !== undefined ? `
+                        <div class="intervention-stat">
+                            <div class="intervention-stat-value bad">${pattern.stats.lowFitCount}</div>
+                            <div class="intervention-stat-label">Below 65% Fit</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${samplesHtml}
+
+                <div class="intervention-diagnosis">
+                    <div class="intervention-diagnosis-title">Diagnosis</div>
+                    ${pattern.diagnosis.map((d, i) => `
+                        <div class="intervention-diagnosis-item">
+                            <div class="diagnosis-number">${i + 1}</div>
+                            <div class="diagnosis-content">
+                                <div class="diagnosis-title">${d.title}</div>
+                                <div class="diagnosis-detail">${d.detail}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="intervention-action-plan">
+                    <div class="intervention-action-title">
+                        <span>💡</span> Here's What To Do
+                    </div>
+                    <ul class="intervention-action-list">
+                        ${pattern.actions.map(a => `<li>${a}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="intervention-insight">
+                    <div class="intervention-insight-text">${pattern.insight}</div>
+                </div>
+
+                <div class="intervention-choice">
+                    <div class="intervention-choice-label">I understand the warning and want to:</div>
+                    <div class="intervention-choice-options">
+                        <label class="intervention-choice-option recommended selected" onclick="selectInterventionChoice('pause')">
+                            <input type="radio" name="intervention-choice" value="pause" checked>
+                            <div class="intervention-radio"></div>
+                            <div class="intervention-choice-text">
+                                <strong>Pause and adjust my strategy</strong>
+                                <span>Take 48 hours to audit and refocus</span>
+                            </div>
+                            <span class="intervention-badge recommended">Recommended</span>
+                        </label>
+                        <label class="intervention-choice-option" onclick="selectInterventionChoice('continue')">
+                            <input type="radio" name="intervention-choice" value="continue">
+                            <div class="intervention-radio"></div>
+                            <div class="intervention-choice-text">
+                                <strong>Continue with current approach</strong>
+                                <span>I understand the risks</span>
+                            </div>
+                            <span class="intervention-badge not-recommended">Not Recommended</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="confirmInterventionChoice()">Confirm Choice</button>
+                </div>
+            `;
+
+            document.getElementById('interventionModal').classList.add('show');
+        }
+
+        let selectedInterventionChoice = 'pause';
+
+        function selectInterventionChoice(choice) {
+            selectedInterventionChoice = choice;
+            document.querySelectorAll('.intervention-choice-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.querySelector(`input[value="${choice}"]`)) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+
+        function confirmInterventionChoice() {
+            const state = getInterventionState();
+            state.lastAcknowledged = new Date().toISOString();
+            state.choice = selectedInterventionChoice;
+            saveInterventionState(state);
+
+            document.getElementById('interventionModal').classList.remove('show');
+
+            if (selectedInterventionChoice === 'pause') {
+                // Could navigate to a fit audit page or show inline guidance
+                // For now, just close and let them reflect
+            }
+        }
+
+        function closeInterventionModal() {
+            document.getElementById('interventionModal').classList.remove('show');
+        }
+
+        // Close modal on background click
+        document.getElementById('interventionModal')?.addEventListener('click', (e) => {
+            // Don't allow dismissing without acknowledging - they need to make a choice
+            // Only close if clicking outside modal content AND they've seen it before
+            if (e.target.id === 'interventionModal') {
+                const state = getInterventionState();
+                if (state.lastAcknowledged) {
+                    closeInterventionModal();
+                }
+            }
+        });
 
         // ========================================================================
         // PIPELINE METRICS
@@ -2356,6 +3142,16 @@
             renderStrategicPriorities(priorities);
             renderPatternAlert(apps);
             renderApplications(apps);
+
+            // Check for desperation pattern
+            checkDesperationIntervention(apps);
+        }
+
+        function checkDesperationIntervention(apps) {
+            const pattern = shouldShowIntervention(apps);
+            if (pattern) {
+                renderInterventionModal(pattern);
+            }
         }
 
         // ========================================================================
