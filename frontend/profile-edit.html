@@ -753,19 +753,19 @@
                 Compensation Expectations
             </div>
             <div class="form-group">
-                <label>What are you looking for? <span class="label-hint">(annual, USD)</span></label>
+                <label>What are you looking for? <span class="label-hint">(annual base salary, USD)</span></label>
                 <div class="comp-grid">
                     <div>
                         <label>Minimum</label>
-                        <input type="number" id="compMin" placeholder="120000">
+                        <input type="text" id="compMin" placeholder="$120,000" inputmode="numeric">
                     </div>
                     <div>
                         <label>Target</label>
-                        <input type="number" id="compTarget" placeholder="150000">
+                        <input type="text" id="compTarget" placeholder="$150,000" inputmode="numeric">
                     </div>
                     <div>
                         <label>Stretch</label>
-                        <input type="number" id="compStretch" placeholder="180000">
+                        <input type="text" id="compStretch" placeholder="$180,000" inputmode="numeric">
                     </div>
                 </div>
             </div>
@@ -936,6 +936,59 @@
         // Determine if this is new profile or edit
         let isNewProfile = false;
 
+        // Currency formatting helpers
+        function formatCurrency(value) {
+            if (!value && value !== 0) return '';
+            const num = typeof value === 'string' ? parseInt(value.replace(/[^0-9]/g, '')) : value;
+            if (isNaN(num)) return '';
+            return '$' + num.toLocaleString('en-US');
+        }
+
+        function parseCurrency(formattedValue) {
+            if (!formattedValue) return null;
+            const num = parseInt(formattedValue.replace(/[^0-9]/g, ''));
+            return isNaN(num) ? null : num;
+        }
+
+        // Set up currency input formatting
+        function setupCurrencyInput(inputId) {
+            const input = document.getElementById(inputId);
+            input.addEventListener('input', function(e) {
+                const cursorPos = e.target.selectionStart;
+                const oldValue = e.target.value;
+                const oldLength = oldValue.length;
+
+                // Get raw number
+                const rawNum = oldValue.replace(/[^0-9]/g, '');
+                if (!rawNum) {
+                    e.target.value = '';
+                    return;
+                }
+
+                // Format with $ and commas
+                const formatted = formatCurrency(rawNum);
+                e.target.value = formatted;
+
+                // Adjust cursor position
+                const newLength = formatted.length;
+                const diff = newLength - oldLength;
+                const newPos = Math.max(1, cursorPos + diff); // Keep cursor after $
+                e.target.setSelectionRange(newPos, newPos);
+            });
+
+            // Format on blur if just a number was entered
+            input.addEventListener('blur', function(e) {
+                if (e.target.value && !e.target.value.startsWith('$')) {
+                    e.target.value = formatCurrency(e.target.value);
+                }
+            });
+        }
+
+        // Initialize currency inputs
+        setupCurrencyInput('compMin');
+        setupCurrencyInput('compTarget');
+        setupCurrencyInput('compStretch');
+
         // Load existing profile
         function loadProfile() {
             const stored = localStorage.getItem('userProfile');
@@ -989,11 +1042,11 @@
                 resumeMeta.textContent = `${expCount} roles · ${skillCount} skills`;
             }
 
-            // Compensation
+            // Compensation (format as currency)
             if (profile.compensation) {
-                document.getElementById('compMin').value = profile.compensation.min || '';
-                document.getElementById('compTarget').value = profile.compensation.target || '';
-                document.getElementById('compStretch').value = profile.compensation.stretch || '';
+                document.getElementById('compMin').value = formatCurrency(profile.compensation.min);
+                document.getElementById('compTarget').value = formatCurrency(profile.compensation.target);
+                document.getElementById('compStretch').value = formatCurrency(profile.compensation.stretch);
             }
 
             // Work arrangement
@@ -1251,9 +1304,9 @@
                 if (!profile) profile = {};
                 
                 profile.compensation = {
-                    min: parseInt(document.getElementById('compMin').value) || null,
-                    target: parseInt(document.getElementById('compTarget').value) || null,
-                    stretch: parseInt(document.getElementById('compStretch').value) || null
+                    min: parseCurrency(document.getElementById('compMin').value),
+                    target: parseCurrency(document.getElementById('compTarget').value),
+                    stretch: parseCurrency(document.getElementById('compStretch').value)
                 };
                 
                 profile.work_arrangement = workArrangements;
