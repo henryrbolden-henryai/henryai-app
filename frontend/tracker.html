@@ -770,6 +770,157 @@
             padding: 16px;
         }
 
+        /* Pre-Interview Rejection Debrief */
+        .rejection-debrief {
+            margin: 0 24px 16px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(229, 115, 115, 0.08) 0%, rgba(229, 115, 115, 0.03) 100%);
+            border: 1px solid rgba(229, 115, 115, 0.2);
+            border-radius: 12px;
+        }
+
+        .debrief-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .debrief-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .debrief-subtitle {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .debrief-factors {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .debrief-factor {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-bg);
+            border-radius: 8px;
+        }
+
+        .factor-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .factor-indicator.high { background: var(--color-dead); }
+        .factor-indicator.medium { background: var(--color-hot); }
+        .factor-indicator.low { background: var(--color-cooling); }
+
+        .factor-content {
+            flex: 1;
+        }
+
+        .factor-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .factor-explanation {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .debrief-insight {
+            margin-top: 16px;
+            padding: 14px;
+            background: var(--color-surface);
+            border-radius: 8px;
+            border-left: 3px solid var(--color-accent);
+        }
+
+        .insight-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-accent);
+            margin-bottom: 6px;
+        }
+
+        .insight-text {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        /* Pattern Alert */
+        .pattern-alert {
+            margin: 0 24px 16px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15) 0%, rgba(255, 107, 53, 0.05) 100%);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+            border-radius: 12px;
+        }
+
+        .pattern-alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .pattern-alert-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-hot);
+        }
+
+        .pattern-alert-content {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .pattern-recommendations {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 107, 53, 0.2);
+        }
+
+        .pattern-recommendations ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .pattern-recommendations li {
+            font-size: 0.8rem;
+            color: var(--color-text);
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .pattern-recommendations li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--color-hot);
+        }
+
         .interview-date {
             font-size: 0.8rem;
             color: var(--color-text-muted);
@@ -1387,6 +1538,223 @@
         }
 
         // ========================================================================
+        // PRE-INTERVIEW REJECTION DEBRIEF
+        // ========================================================================
+        function isPreInterviewRejection(app) {
+            // Check if rejected without ever getting an interview
+            if (app.status !== 'Rejected') return false;
+
+            // Never had an interview if no interview date and highest stage was Applied/Screening
+            const hasInterviewed = app.dateInterviewed ||
+                ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                 'Final Round', 'Executive Interview', 'Interviewed', 'Offer Received'].some(
+                    stage => app.statusHistory?.includes(stage)
+                );
+
+            return !hasInterviewed;
+        }
+
+        function getPreInterviewRejectionCount(apps) {
+            return apps.filter(isPreInterviewRejection).length;
+        }
+
+        function generatePreInterviewRejectionDebrief(app, allApps) {
+            const factors = [];
+            const preInterviewRejections = getPreInterviewRejectionCount(allApps);
+
+            // Factor 1: Fit Score Gaps
+            if (app.fitScore) {
+                if (app.fitScore < 60) {
+                    factors.push({
+                        severity: 'high',
+                        title: 'Significant Fit Gap',
+                        explanation: `Your fit score was ${app.fitScore}%. When fit is below 60%, applications are often filtered out early. The ATS may have flagged missing must-have requirements.`
+                    });
+                } else if (app.fitScore < 75) {
+                    factors.push({
+                        severity: 'medium',
+                        title: 'Moderate Fit Gap',
+                        explanation: `Your fit score was ${app.fitScore}%. In competitive roles, candidates above 75% typically advance. You may have been edged out by candidates with closer matches.`
+                    });
+                }
+            }
+
+            // Factor 2: Gaps analysis (if available)
+            if (app.gaps && app.gaps.length > 0) {
+                const criticalGaps = app.gaps.filter(g =>
+                    g.toLowerCase().includes('required') ||
+                    g.toLowerCase().includes('must') ||
+                    g.toLowerCase().includes('years') ||
+                    g.toLowerCase().includes('experience')
+                );
+
+                if (criticalGaps.length > 0) {
+                    factors.push({
+                        severity: 'high',
+                        title: 'Hard Requirements Mismatch',
+                        explanation: `Key gaps identified: ${criticalGaps.slice(0, 2).join('; ')}. These are often non-negotiable filters that eliminate candidates before human review.`
+                    });
+                } else if (app.gaps.length >= 3) {
+                    factors.push({
+                        severity: 'medium',
+                        title: 'Multiple Skill Gaps',
+                        explanation: `${app.gaps.length} gaps were identified. While individually addressable, multiple gaps can create a cumulative concern for hiring teams.`
+                    });
+                }
+            }
+
+            // Factor 3: Time since application (proxy for competition/volume)
+            const daysToReject = getDaysSince(app.dateApplied || app.dateAdded) - getDaysSince(app.lastUpdated);
+            if (app.dateApplied) {
+                const daysSinceApply = getDaysSince(app.dateApplied);
+                if (daysSinceApply <= 3) {
+                    factors.push({
+                        severity: 'medium',
+                        title: 'High-Volume Role',
+                        explanation: `Rejected within ${daysSinceApply} day(s) of applying. Fast rejections often indicate high applicant volume or strict ATS filtering—not necessarily a reflection of your qualifications.`
+                    });
+                } else if (daysSinceApply > 21) {
+                    factors.push({
+                        severity: 'low',
+                        title: 'Extended Timeline',
+                        explanation: `${daysSinceApply} days between application and rejection. This often means you were in consideration but ultimately passed over—possibly due to internal candidates or budget changes.`
+                    });
+                }
+            }
+
+            // Factor 4: Overqualification check
+            if (app.fitScore >= 80 && app.gaps?.length === 0) {
+                factors.push({
+                    severity: 'medium',
+                    title: 'Possible Overqualification',
+                    explanation: `High fit (${app.fitScore}%) but no interview suggests concern about seniority match. Companies sometimes worry experienced candidates will leave quickly or want higher comp than budgeted.`
+                });
+            }
+
+            // Factor 5: Career transition signal
+            const hasCareerTransition = app.positioningStrategy?.toLowerCase().includes('transition') ||
+                app.positioningStrategy?.toLowerCase().includes('pivot') ||
+                app.positioningStrategy?.toLowerCase().includes('different');
+            if (hasCareerTransition) {
+                factors.push({
+                    severity: 'medium',
+                    title: 'Career Transition Pattern',
+                    explanation: `Your positioning suggests a career shift. Transitioning candidates face higher scrutiny—direct experience often wins at the resume screen stage.`
+                });
+            }
+
+            // Factor 6: No outreach signal
+            if (!app.dateReachedOut) {
+                factors.push({
+                    severity: 'low',
+                    title: 'Application-Only Approach',
+                    explanation: `No outreach was logged. Applications without networking have significantly lower success rates. Direct contact can bypass ATS filters entirely.`
+                });
+            }
+
+            // Generate emotionally intelligent insight based on rejection count
+            let insight = '';
+            if (preInterviewRejections === 1) {
+                insight = `One silent rejection is data, not a verdict. This market is brutal—companies ghost even strong candidates. Use this analysis to refine your approach, not to question your worth.`;
+            } else if (preInterviewRejections <= 3) {
+                insight = `${preInterviewRejections} rejections without interviews is frustrating, but it's still within normal range for this market. Focus on roles where your fit score is 75%+ and always pair applications with direct outreach.`;
+            } else if (preInterviewRejections <= 5) {
+                insight = `You've had ${preInterviewRejections} rejections without interviews. Time to audit your approach. Are you applying to roles that match your profile? Is your resume making it past ATS filters? Consider getting a resume review.`;
+            } else {
+                insight = `${preInterviewRejections} rejections without interviews signals a pattern that needs attention. This isn't about your abilities—it's about matching your profile to the right opportunities. Let's look at common threads across these rejections.`;
+            }
+
+            // If no factors identified, provide a default
+            if (factors.length === 0) {
+                factors.push({
+                    severity: 'low',
+                    title: 'Limited Data Available',
+                    explanation: `We don't have enough information to pinpoint specific factors. This rejection may have been due to internal candidates, budget changes, or simply high competition.`
+                });
+            }
+
+            return { factors, insight, preInterviewRejections };
+        }
+
+        function detectRejectionPattern(apps) {
+            const preInterviewRejections = apps.filter(isPreInterviewRejection);
+
+            if (preInterviewRejections.length < 3) return null;
+
+            // Analyze patterns across rejections
+            const patterns = {
+                lowFitCommon: 0,
+                noOutreachCommon: 0,
+                quickRejects: 0,
+                gapsCommon: []
+            };
+
+            preInterviewRejections.forEach(app => {
+                if (app.fitScore < 70) patterns.lowFitCommon++;
+                if (!app.dateReachedOut) patterns.noOutreachCommon++;
+
+                const daysSinceApply = getDaysSince(app.dateApplied || app.dateAdded);
+                if (daysSinceApply <= 5) patterns.quickRejects++;
+
+                if (app.gaps) {
+                    app.gaps.forEach(gap => {
+                        const existing = patterns.gapsCommon.find(g =>
+                            g.gap.toLowerCase().includes(gap.toLowerCase().split(' ')[0])
+                        );
+                        if (existing) existing.count++;
+                        else patterns.gapsCommon.push({ gap, count: 1 });
+                    });
+                }
+            });
+
+            // Generate pattern analysis
+            const total = preInterviewRejections.length;
+            const recommendations = [];
+            let primaryPattern = '';
+
+            if (patterns.lowFitCommon >= total * 0.6) {
+                primaryPattern = `${Math.round(patterns.lowFitCommon/total*100)}% of your pre-interview rejections were for roles with fit scores below 70%.`;
+                recommendations.push('Focus on roles where your fit score is 75% or higher');
+                recommendations.push('Review job descriptions more carefully before applying');
+            }
+
+            if (patterns.noOutreachCommon >= total * 0.7) {
+                if (!primaryPattern) {
+                    primaryPattern = `${Math.round(patterns.noOutreachCommon/total*100)}% of these applications had no direct outreach.`;
+                }
+                recommendations.push('Pair every application with LinkedIn outreach to the hiring manager');
+                recommendations.push('A personal connection can bypass ATS filters entirely');
+            }
+
+            if (patterns.quickRejects >= total * 0.5) {
+                if (!primaryPattern) {
+                    primaryPattern = `${Math.round(patterns.quickRejects/total*100)}% of rejections came within 5 days—suggesting ATS filtering.`;
+                }
+                recommendations.push('Run your resume through an ATS checker');
+                recommendations.push('Ensure key terms from job descriptions appear in your resume');
+            }
+
+            // Find recurring gaps
+            const recurringGaps = patterns.gapsCommon.filter(g => g.count >= 2).sort((a, b) => b.count - a.count);
+            if (recurringGaps.length > 0 && !primaryPattern) {
+                primaryPattern = `"${recurringGaps[0].gap}" appeared as a gap in ${recurringGaps[0].count} rejected applications.`;
+                recommendations.push(`Address the "${recurringGaps[0].gap}" gap through projects, courses, or reframing`);
+            }
+
+            if (!primaryPattern) {
+                primaryPattern = `No single factor dominates—rejections may be due to high competition or internal candidates.`;
+                recommendations.push('Continue applying but diversify your target companies');
+                recommendations.push('Consider roles at smaller companies with less competition');
+            }
+
+            return {
+                count: total,
+                primaryPattern,
+                recommendations: recommendations.slice(0, 3)
+            };
+        }
+
+        // ========================================================================
         // PIPELINE METRICS
         // ========================================================================
         function calculatePipelineMetrics(apps) {
@@ -1676,6 +2044,8 @@
                         <div class="next-action-cta">→ ${action.action}</div>
                     </div>
 
+                    ${renderRejectionDebrief(app)}
+
                     <div class="timeline-section">
                         <div class="timeline-bar">
                             ${[0,1,2,3,4].map(i => `
@@ -1772,6 +2142,41 @@
                         </ul>
                     </div>
                 ` : ''}
+            `;
+        }
+
+        function renderRejectionDebrief(app) {
+            // Only show for pre-interview rejections
+            if (!isPreInterviewRejection(app)) return '';
+
+            const allApps = getApplications();
+            const debrief = generatePreInterviewRejectionDebrief(app, allApps);
+
+            return `
+                <div class="rejection-debrief">
+                    <div class="debrief-header">
+                        <span>🔍</span>
+                        <span class="debrief-title">Why This Happened</span>
+                    </div>
+                    <div class="debrief-subtitle">
+                        No interview means no feedback—so <em style="color: #22d3ee;">Henry</em> analyzed what we know to help you learn from this.
+                    </div>
+                    <div class="debrief-factors">
+                        ${debrief.factors.map(factor => `
+                            <div class="debrief-factor">
+                                <div class="factor-indicator ${factor.severity}"></div>
+                                <div class="factor-content">
+                                    <div class="factor-title">${factor.title}</div>
+                                    <div class="factor-explanation">${factor.explanation}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="debrief-insight">
+                        <div class="insight-label">Henry's Take</div>
+                        <div class="insight-text">${debrief.insight}</div>
+                    </div>
+                </div>
             `;
         }
 
@@ -1900,6 +2305,47 @@
         document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
 
         // ========================================================================
+        // PATTERN ALERT RENDERING
+        // ========================================================================
+        function renderPatternAlert(apps) {
+            const pattern = detectRejectionPattern(apps);
+            const existingAlert = document.getElementById('patternAlert');
+
+            // Remove existing alert if present
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Only show if pattern detected (3+ pre-interview rejections)
+            if (!pattern) return;
+
+            const alertHtml = `
+                <div class="pattern-alert" id="patternAlert">
+                    <div class="pattern-alert-header">
+                        <span>⚠️</span>
+                        <span class="pattern-alert-title">Pattern Detected: ${pattern.count} Pre-Interview Rejections</span>
+                    </div>
+                    <div class="pattern-alert-content">
+                        ${pattern.primaryPattern}
+                    </div>
+                    <div class="pattern-recommendations">
+                        <ul>
+                            ${pattern.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            // Insert after strategic priorities or after pipeline dashboard
+            const priorities = document.getElementById('strategicPriorities');
+            if (priorities.style.display !== 'none') {
+                priorities.insertAdjacentHTML('afterend', alertHtml);
+            } else {
+                document.getElementById('pipelineDashboard').insertAdjacentHTML('afterend', alertHtml);
+            }
+        }
+
+        // ========================================================================
         // RENDER ALL
         // ========================================================================
         function renderAll(apps) {
@@ -1908,6 +2354,7 @@
 
             renderPipelineMetrics(metrics);
             renderStrategicPriorities(priorities);
+            renderPatternAlert(apps);
             renderApplications(apps);
         }
 
