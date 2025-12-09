@@ -1144,8 +1144,8 @@
         // Check network for connections at target company
         function checkLinkedInNetwork(connections) {
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-            const targetCompany = analysisData._company_name || '';
-            
+            const targetCompany = analysisData._company_name || analysisData.company || analysisData._company || '';
+
             if (!targetCompany) {
                 alert('No target company found. Please analyze a job first.');
                 return;

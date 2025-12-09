@@ -939,8 +939,8 @@
             // Get documents data
             const documentsDataStr = sessionStorage.getItem('documentsData');
             if (!documentsDataStr) {
-                showError('resumeLoading', 'Documents not generated. Please go back to results and click "Build My Application".');
-                showError('coverLetterLoading', 'Documents not generated. Please go back to results and click "Build My Application".');
+                showError('resumeLoading', 'Documents not generated. Please go back to results and click "Apply".');
+                showError('coverLetterLoading', 'Documents not generated. Please go back to results and click "Apply".');
                 document.getElementById('downloadResumeBtn').disabled = true;
                 document.getElementById('downloadCoverLetterBtn').disabled = true;
                 return;
