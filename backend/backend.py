@@ -12,6 +12,11 @@ import random
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+# Fix Python import paths so we can import document_generator from Docker
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))     # /app/backend
+ROOT_DIR = os.path.dirname(BACKEND_DIR)                      # /app
+sys.path.insert(0, ROOT_DIR)
+
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -20,6 +25,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import anthropic
 
+from document_generator import ResumeFormatter, CoverLetterFormatter
 # document_generator temporarily disabled for deployment
 # sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # from document_generator import ResumeFormatter, CoverLetterFormatter
