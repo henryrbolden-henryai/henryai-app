@@ -118,8 +118,8 @@
         }
 
         .page-header h1 {
-            font-size: 1.75rem;
-            font-weight: 600;
+            font-size: 2.25rem;
+            font-weight: 700;
             letter-spacing: -0.02em;
         }
 
@@ -172,42 +172,43 @@
         .metric-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 10px;
+            padding: 14px 12px;
             text-align: center;
         }
 
         .metric-card.highlight {
-            border-color: var(--color-leverage);
-            background: var(--color-leverage-muted);
+            border-color: rgba(212, 175, 55, 0.3);
+            background: rgba(212, 175, 55, 0.08);
         }
 
         .metric-value {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 600;
             font-variant-numeric: tabular-nums;
             line-height: 1.2;
+            color: var(--color-text);
         }
 
         .metric-value.green { color: var(--color-active); }
         .metric-value.amber { color: var(--color-hot); }
         .metric-value.gold { color: var(--color-leverage); }
         .metric-value.blue { color: var(--color-accent); }
-        .metric-value.gray { color: var(--color-cooling); }
+        .metric-value.gray { color: var(--color-text-secondary); }
         .metric-value.red { color: var(--color-dead); }
 
         .metric-label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--color-text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .metric-sublabel {
-            font-size: 0.7rem;
+            font-size: 0.6rem;
             color: var(--color-text-muted);
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         /* STRATEGIC PRIORITIES */
@@ -342,6 +343,51 @@
             color: var(--color-text-muted);
         }
 
+        /* VIEW TOGGLE */
+        .view-toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .view-toggle-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-toggle-btn:hover {
+            color: var(--color-text);
+        }
+
+        .view-toggle-btn.active {
+            background: var(--color-accent);
+            color: #000;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
         /* FILTERS BAR */
         .filters-bar {
             display: flex;
@@ -381,34 +427,6 @@
             border-color: var(--color-accent);
         }
 
-        .view-toggle {
-            display: flex;
-            margin-left: auto;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .view-btn {
-            padding: 8px 16px;
-            border: none;
-            background: transparent;
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .view-btn:hover {
-            color: var(--color-text);
-        }
-
-        .view-btn.active {
-            background: var(--color-accent);
-            color: #000;
-        }
-
         /* APPLICATION CARDS */
         .applications-grid {
             display: flex;
@@ -429,8 +447,8 @@
         }
 
         .app-card.hot {
-            border-color: var(--color-hot);
-            box-shadow: 0 0 20px var(--color-hot-muted);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
         }
 
         .app-card.inactive {
@@ -2023,7 +2041,7 @@
                 <p class="subtitle">Your strategic view of every opportunity in play</p>
             </div>
             <div class="header-actions">
-                <a href="analyze.html" class="header-btn primary">+ Analyze New Role</a>
+                <a href="analyze.html" class="header-btn primary" style="text-decoration: none;">Analyze New Role</a>
             </div>
         </div>
 
@@ -2056,20 +2074,32 @@
             </div>
         </div>
 
-        <!-- STRATEGIC PRIORITIES -->
-        <div class="strategic-priorities" id="strategicPriorities" style="display: none;">
-            <div class="priorities-header">
-                <div class="priorities-title">
-                    <span>🎯</span> Strategic Priorities
-                </div>
-            </div>
-            <div id="prioritiesContent">
-                <!-- Dynamically populated -->
+        <!-- VIEW TOGGLE -->
+        <div class="view-toggle-container" id="viewToggleContainer" style="display: none;">
+            <div class="view-toggle">
+                <button class="view-toggle-btn active" data-view="priorities" onclick="switchView('priorities')">Priorities</button>
+                <button class="view-toggle-btn" data-view="details" onclick="switchView('details')">All Applications</button>
             </div>
         </div>
 
-        <!-- FILTERS BAR -->
-        <div class="filters-bar" id="filtersBar" style="display: none;">
+        <!-- PRIORITIES VIEW -->
+        <div class="view-section active" id="prioritiesView">
+            <div class="strategic-priorities" id="strategicPriorities" style="display: none;">
+                <div class="priorities-header">
+                    <div class="priorities-title">
+                        <span>🎯</span> Strategic Priorities
+                    </div>
+                </div>
+                <div id="prioritiesContent">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAILS VIEW -->
+        <div class="view-section" id="detailsView">
+            <!-- FILTERS BAR -->
+            <div class="filters-bar" id="filtersBar" style="display: none;">
             <div class="filter-group">
                 <span class="filter-label">Status:</span>
                 <select class="filter-select" id="filterStatus">
@@ -2105,7 +2135,7 @@
         <div id="applicationsContainer">
             <!-- Dynamically populated -->
         </div>
-    </div>
+        </div>
 
     <!-- DELETE MODAL -->
     <div class="modal-overlay" id="deleteModal">
@@ -4136,23 +4166,18 @@
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
+                actions.push({ label: '📝 Add Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
                 if (statusDef.awaiting) {
-                    actions.push({ label: '📧 Send Thank-You', action: `sendThankYou(${app.id})`, primary: true });
                     actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
                 } else {
-                    actions.push({ label: '📝 Capture Notes Now', action: `toggleSection(${app.id}, 'notes')`, primary: true });
                     actions.push({ label: '📋 View Prep', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
                 }
             }
             // Final stages
             else if (['Final Round', 'Executive Interview', 'Awaiting Decision', 'Interviewed'].includes(status)) {
-                if (statusDef.awaiting || status === 'Interviewed') {
-                    actions.push({ label: '📧 Send Thank-You', action: `sendThankYou(${app.id})`, primary: true });
-                    if (daysSince >= 3) {
-                        actions.push({ label: '📞 Request Timeline Update', action: `scheduleFollowUp(${app.id})` });
-                    }
-                } else {
-                    actions.push({ label: '📝 Capture Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                actions.push({ label: '📝 Add Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                if ((statusDef.awaiting || status === 'Interviewed') && daysSince >= 3) {
+                    actions.push({ label: '📞 Request Timeline Update', action: `scheduleFollowUp(${app.id})` });
                 }
                 actions.push({ label: '💰 Research Comp', action: `navigateWithAnalysis(${app.id}, 'overview.html')` });
             }
@@ -4208,14 +4233,6 @@
             date.setDate(date.getDate() + 1);
             const dateStr = date.toISOString().replace(/-|:|\.\d\d\d/g, '').slice(0, 15);
             window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}`, '_blank');
-        }
-
-        function sendThankYou(appId) {
-            const app = getApplications().find(a => a.id === appId);
-            if (!app) return;
-            const subject = encodeURIComponent(`Thank you - ${app.role} Interview`);
-            const body = encodeURIComponent(`Hi [Interviewer Name],\n\nThank you for taking the time to speak with me about the ${app.role} position at ${app.company}.\n\n[Add specific detail from the conversation]\n\nI'm very excited about the opportunity and look forward to hearing about next steps.\n\nBest regards`);
-            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
         }
 
         function requestFeedback(appId) {
@@ -4636,6 +4653,23 @@
         });
 
         // ========================================================================
+        // VIEW TOGGLE
+        // ========================================================================
+        function switchView(view) {
+            // Update button states
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.view === view) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show/hide view sections
+            document.getElementById('prioritiesView').classList.toggle('active', view === 'priorities');
+            document.getElementById('detailsView').classList.toggle('active', view === 'details');
+        }
+
+        // ========================================================================
         // FILTER HANDLERS
         // ========================================================================
         document.getElementById('filterStatus').addEventListener('change', (e) => {
@@ -4707,6 +4741,10 @@
             renderStrategicPriorities(priorities);
             renderPatternAlert(apps);
             renderApplications(apps);
+
+            // Show/hide view toggle based on whether there are applications
+            const viewToggleContainer = document.getElementById('viewToggleContainer');
+            viewToggleContainer.style.display = apps.length > 0 ? 'flex' : 'none';
 
             // Check for desperation pattern
             checkDesperationIntervention(apps);

@@ -384,6 +384,115 @@
         return context;
     }
 
+    // Get pipeline data from localStorage (for tracker page context)
+    function getPipelineData() {
+        try {
+            const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            if (apps.length === 0) return null;
+
+            // Calculate metrics
+            const activeApps = apps.filter(a => {
+                const activeStatuses = ['Preparing', 'To Apply', 'Applied', 'Reached Out', 'Response Received',
+                    'Recruiter Screen', 'Awaiting Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                    'Awaiting Next Round', 'Final Round', 'Executive Interview', 'Awaiting Decision', 'Interviewed', 'Offer Received'];
+                return activeStatuses.includes(a.status);
+            });
+
+            const interviewingApps = apps.filter(a =>
+                ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                 'Final Round', 'Executive Interview', 'Interviewed', 'Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
+            );
+
+            const appliedApps = apps.filter(a => !['Preparing', 'To Apply'].includes(a.status));
+            const respondedApps = apps.filter(a =>
+                ['Response Received', 'Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                 'Final Round', 'Executive Interview', 'Interviewed', 'Offer Received', 'Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
+            );
+
+            const rejectedApps = apps.filter(a => a.status === 'Rejected');
+            const ghostedApps = apps.filter(a => a.status === 'No Response' ||
+                (a.status === 'Applied' && getDaysSinceDate(a.dateApplied) > 14));
+
+            // Get high priority apps (hot/active with high fit)
+            const hotApps = activeApps.filter(a => {
+                const daysSince = getDaysSinceDate(a.lastUpdated || a.dateAdded);
+                const isInterviewing = ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                    'Final Round', 'Executive Interview'].includes(a.status);
+                return isInterviewing || (daysSince <= 3 && a.fitScore >= 70);
+            });
+
+            // Average fit score
+            const avgFit = activeApps.length > 0
+                ? Math.round(activeApps.reduce((sum, a) => sum + (a.fitScore || 50), 0) / activeApps.length)
+                : 0;
+
+            // Interview rate
+            const interviewRate = appliedApps.length > 0
+                ? Math.round((respondedApps.length / appliedApps.length) * 100)
+                : 0;
+
+            return {
+                total: apps.length,
+                active: activeApps.length,
+                interviewing: interviewingApps.length,
+                applied: appliedApps.length,
+                rejected: rejectedApps.length,
+                ghosted: ghostedApps.length,
+                hot: hotApps.length,
+                avgFitScore: avgFit,
+                interviewRate: interviewRate,
+                // Include details of top apps for context
+                topApps: activeApps.slice(0, 5).map(a => ({
+                    company: a.company,
+                    role: a.role,
+                    status: a.status,
+                    fitScore: a.fitScore,
+                    daysSinceUpdate: getDaysSinceDate(a.lastUpdated || a.dateAdded)
+                })),
+                // Summary for the AI
+                summary: generatePipelineSummary(activeApps, interviewingApps, appliedApps, respondedApps, rejectedApps, ghostedApps, avgFit, interviewRate)
+            };
+        } catch (e) {
+            console.error('Error getting pipeline data:', e);
+            return null;
+        }
+    }
+
+    function getDaysSinceDate(dateString) {
+        if (!dateString) return 0;
+        const date = new Date(dateString);
+        const now = new Date();
+        return Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    }
+
+    function generatePipelineSummary(activeApps, interviewingApps, appliedApps, respondedApps, rejectedApps, ghostedApps, avgFit, interviewRate) {
+        const parts = [];
+
+        parts.push(`${activeApps.length} active application${activeApps.length !== 1 ? 's' : ''}`);
+
+        if (interviewingApps.length > 0) {
+            parts.push(`${interviewingApps.length} in interview stages`);
+        }
+
+        if (appliedApps.length > 0) {
+            parts.push(`${interviewRate}% interview rate`);
+        }
+
+        if (avgFit > 0) {
+            parts.push(`${avgFit}% average fit score`);
+        }
+
+        if (rejectedApps.length > 0) {
+            parts.push(`${rejectedApps.length} rejected`);
+        }
+
+        if (ghostedApps.length > 0) {
+            parts.push(`${ghostedApps.length} likely ghosted`);
+        }
+
+        return parts.join(', ');
+    }
+
     // Get contextual suggestions based on current page
     function getContextualSuggestions() {
         const path = window.location.pathname;
@@ -574,6 +683,8 @@
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
             const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const pipelineData = getPipelineData();
+            const userName = getUserName();
 
             const response = await fetch(`${API_BASE}/api/ask-henry`, {
                 method: 'POST',
@@ -587,11 +698,14 @@
                         company: analysisData._company_name || analysisData.company || null,
                         role: analysisData.role_title || analysisData.role || null,
                         has_analysis: !!analysisData._company_name,
-                        has_resume: !!resumeData.name
+                        has_resume: !!resumeData.name,
+                        has_pipeline: !!pipelineData,
+                        user_name: userName
                     },
                     analysis_data: analysisData,
                     resume_data: resumeData,
-                    user_profile: userProfile
+                    user_profile: userProfile,
+                    pipeline_data: pipelineData
                 })
             });
 

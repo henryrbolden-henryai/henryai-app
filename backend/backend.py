@@ -6262,6 +6262,8 @@ class AskHenryContext(BaseModel):
     role: Optional[str] = None
     has_analysis: bool = False
     has_resume: bool = False
+    has_pipeline: bool = False
+    user_name: Optional[str] = None
 
 
 class AskHenryMessage(BaseModel):
@@ -6278,6 +6280,7 @@ class AskHenryRequest(BaseModel):
     analysis_data: Optional[Dict[str, Any]] = None
     resume_data: Optional[Dict[str, Any]] = None
     user_profile: Optional[Dict[str, Any]] = None  # Includes emotional state/situation
+    pipeline_data: Optional[Dict[str, Any]] = None  # Application pipeline metrics and apps
 
 
 class AskHenryResponse(BaseModel):
@@ -6287,14 +6290,20 @@ class AskHenryResponse(BaseModel):
 
 ASK_HENRY_SYSTEM_PROMPT = """You are Henry, an expert career coach built into HenryAI. You're warm, empathetic, direct, and strategic. You help job seekers with their applications, positioning, interview prep, and career strategy.
 
+USER INFO:
+- Name: {user_name}
+
 CURRENT CONTEXT:
 - User is on: {current_page} ({page_description})
 - Target Company: {company}
 - Target Role: {role}
 - Has job analysis: {has_analysis}
 - Has resume uploaded: {has_resume}
+- Has pipeline data: {has_pipeline}
 
 {analysis_context}
+
+{pipeline_context}
 
 {emotional_context}
 
@@ -6303,14 +6312,17 @@ YOUR PERSONALITY:
 - Warm but direct - no fluff, but always human
 - Strategic thinker - tie advice to their specific situation
 - Encouraging but honest - if something needs work, say so kindly
+- PERSONALIZED - always use the user's name when starting responses. Begin with something like "[Name], that's a great question..." or "[Name], I can see your pipeline..." Don't just say "Hey" or start without acknowledging them.
 
 RESPONSE GUIDELINES:
-1. BE CONCISE - 2-3 short sentences max for simple questions. Even complex answers should be under 100 words.
-2. Empathy before advice - If someone shares something difficult (job loss, long unemployment, rejection), acknowledge it genuinely first. Don't immediately launch into solutions.
-3. One thing at a time - ask ONE follow-up question, not multiple
-4. Skip the bullet lists unless truly needed - conversational tone is better
-5. No sales pitches - don't list all your features. Help with what they're asking.
-6. Reference their specific situation naturally when relevant
+1. PERSONALIZE - Start responses with the user's name and acknowledge their specific question before answering.
+2. USE THE DATA - If you have pipeline data, reference it specifically. Don't ask questions you already have answers to.
+3. BE CONCISE - 2-3 short sentences max for simple questions. Even complex answers should be under 100 words.
+4. Empathy before advice - If someone shares something difficult (job loss, long unemployment, rejection), acknowledge it genuinely first. Don't immediately launch into solutions.
+5. One thing at a time - ask ONE follow-up question, not multiple
+6. Skip the bullet lists unless truly needed - conversational tone is better
+7. No sales pitches - don't list all your features. Help with what they're asking.
+8. Reference their specific situation and data naturally
 
 FORMATTING RULES (STRICT):
 - Use proper grammar and punctuation. Write in complete sentences.
@@ -6320,11 +6332,11 @@ FORMATTING RULES (STRICT):
 - Write like you're texting a friend, not formatting a document.
 
 EXAMPLES OF GOOD RESPONSES:
-"A year is tough. That takes a real toll. What kind of roles are you targeting?"
-"Got it. Let me take a look at that job posting. What stands out to you about it?"
-"That's a solid background for this role. Your main gap is the enterprise experience. Want to talk through how to address that?"
+"Sarah, that's a great question. Looking at your pipeline, you've got 4 active applications with 1 in interviews. Your Trade Desk role is the hottest right now. I'd focus your energy there while keeping the others warm."
+"Mike, I can see why you're wondering. With a 0% interview rate so far, the focus should be on your outreach strategy. Have you tried reaching out directly to hiring managers?"
+"Jen, your pipeline looks healthy. You've got good momentum with 2 in interview stages. The MongoDB one at 26 days without response might be ghosted, but The Trade Desk is moving. Keep that one priority."
 
-You're available as a floating chat on every page. Be contextually aware but conversational, like a smart friend who happens to be a career expert."""
+You're available as a floating chat on every page. Be contextually aware, use the data you have, and be conversational like a smart friend who happens to be a career expert."""
 
 
 @app.post("/api/ask-henry", response_model=AskHenryResponse)
@@ -6336,6 +6348,7 @@ async def ask_henry(request: AskHenryRequest):
     - Current page/section the user is viewing
     - Their job analysis data (if available)
     - Their resume data (if available)
+    - Their pipeline data (if available)
     - Conversation history for continuity
     """
     print(f"💬 Ask Henry: {request.context.current_page} - {request.message[:50]}...")
@@ -6358,6 +6371,29 @@ RESUME DATA:
 - Candidate Name: {request.resume_data.get('name', 'Unknown')}
 - Current/Recent Role: {request.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if request.resume_data.get('experience') else 'Unknown'}
 """
+
+    # Build pipeline context from pipeline data
+    pipeline_context = ""
+    if request.pipeline_data and request.context.has_pipeline:
+        pd = request.pipeline_data
+        pipeline_context = f"""
+PIPELINE DATA (USE THIS TO GIVE SPECIFIC, INFORMED ANSWERS):
+- Total Applications: {pd.get('total', 0)}
+- Active Applications: {pd.get('active', 0)}
+- In Interview Stages: {pd.get('interviewing', 0)}
+- Applied (waiting for response): {pd.get('applied', 0)}
+- Rejected: {pd.get('rejected', 0)}
+- Likely Ghosted: {pd.get('ghosted', 0)}
+- Hot/Priority: {pd.get('hot', 0)}
+- Average Fit Score: {pd.get('avgFitScore', 0)}%
+- Interview Rate: {pd.get('interviewRate', 0)}%
+- Summary: {pd.get('summary', 'No summary available')}
+
+TOP APPLICATIONS IN PIPELINE:
+"""
+        top_apps = pd.get('topApps', [])
+        for app in top_apps:
+            pipeline_context += f"- {app.get('role', 'Unknown')} at {app.get('company', 'Unknown')}: {app.get('status', 'Unknown')} ({app.get('fitScore', 'N/A')}% fit, {app.get('daysSinceUpdate', 0)}d since update)\n"
 
     # Build emotional context from user profile
     emotional_context = ""
@@ -6393,13 +6429,16 @@ RESUME DATA:
 
     # Format system prompt
     system_prompt = ASK_HENRY_SYSTEM_PROMPT.format(
+        user_name=request.context.user_name or "there",
         current_page=request.context.current_page,
         page_description=request.context.page_description,
         company=request.context.company or "Not specified",
         role=request.context.role or "Not specified",
         has_analysis="Yes" if request.context.has_analysis else "No",
         has_resume="Yes" if request.context.has_resume else "No",
+        has_pipeline="Yes" if request.context.has_pipeline else "No",
         analysis_context=analysis_context,
+        pipeline_context=pipeline_context,
         emotional_context=emotional_context
     )
 
