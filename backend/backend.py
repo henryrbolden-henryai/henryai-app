@@ -163,6 +163,132 @@ def get_question_from_bank(role_type: str, category: str, asked_questions: List[
     # Return a random question from filtered pool
     return random.choice(filtered_questions)
 
+
+def get_next_question_category_based_on_signals(session_id: str, role_type: str, target_level: str) -> str:
+    """
+    Determine the next question category based on signal gaps from previous responses.
+    Implements fluid stage transitions by targeting weak areas.
+    """
+    session = mock_interview_sessions.get(session_id)
+    if not session:
+        return "behavioral"  # Default fallback
+
+    # Aggregate signals from all questions in this session
+    signal_totals = {}
+    signal_counts = {}
+
+    for qid in session.get("question_ids", []):
+        analysis = mock_interview_analyses.get(qid, {})
+        signals = analysis.get("signals", {})
+        for signal_name, signal_value in signals.items():
+            if signal_value is not None:
+                signal_totals[signal_name] = signal_totals.get(signal_name, 0) + signal_value
+                signal_counts[signal_name] = signal_counts.get(signal_name, 0) + 1
+
+    # Calculate average signals
+    avg_signals = {}
+    for signal_name in signal_totals:
+        if signal_counts[signal_name] > 0:
+            avg_signals[signal_name] = signal_totals[signal_name] / signal_counts[signal_name]
+
+    if not avg_signals:
+        # No signal data yet - start with warm_start or behavioral
+        question_number = len(session.get("question_ids", [])) + 1
+        if question_number == 1:
+            return "warm_start"
+        elif question_number == 2:
+            return "behavioral"
+        else:
+            return "hiring_manager_deep_dive"
+
+    # Get the rubric for target level to know which signals matter most
+    rubric = get_leveling_rubric(target_level)
+    expected_signals = rubric.get("expected_signals", ["functional_competency", "communication_clarity"])
+    min_threshold = rubric.get("minimum_signal_threshold", 0.5)
+
+    # Find signal gaps (signals below threshold that are expected for this level)
+    signal_gaps = []
+    for signal in expected_signals:
+        if signal in avg_signals and avg_signals[signal] < min_threshold:
+            signal_gaps.append((signal, avg_signals[signal]))
+
+    # Map signals to question categories
+    signal_to_category = {
+        "functional_competency": "hiring_manager_deep_dive",
+        "leadership": "behavioral",
+        "collaboration": "behavioral",
+        "ownership": "behavioral",
+        "strategic_thinking": "strategy",
+        "problem_solving": "strategy",
+        "communication_clarity": "behavioral",
+        "metrics_orientation": "hiring_manager_deep_dive",
+        "stakeholder_management": "behavioral",
+        "executive_presence": "strategy",
+        "user_centricity": "hiring_manager_deep_dive"
+    }
+
+    if signal_gaps:
+        # Sort gaps by severity (lowest score first)
+        signal_gaps.sort(key=lambda x: x[1])
+        weakest_signal = signal_gaps[0][0]
+        return signal_to_category.get(weakest_signal, "behavioral")
+
+    # No major gaps - vary question types
+    question_count = len(session.get("question_ids", []))
+    categories = ["behavioral", "hiring_manager_deep_dive", "strategy", "behavioral", "strategy"]
+    return categories[question_count % len(categories)]
+
+
+def get_leveling_rubric(target_level: str) -> Dict[str, Any]:
+    """
+    Get the leveling rubric for a specific level from the question bank.
+    Returns rubric info including expected signals and characteristics.
+    """
+    if not QUESTION_BANK:
+        # Default rubrics if question bank not loaded
+        default_rubrics = {
+            "mid": {
+                "description": "Mid-level IC (IC2-IC3)",
+                "expected_signals": ["functional_competency", "communication_clarity", "collaboration"],
+                "minimum_signal_threshold": 0.5,
+                "characteristics": [
+                    "Executes well-defined tasks independently",
+                    "Communicates clearly within their team"
+                ]
+            },
+            "senior": {
+                "description": "Senior IC (IC4-IC5)",
+                "expected_signals": ["functional_competency", "strategic_thinking", "problem_solving", "ownership"],
+                "minimum_signal_threshold": 0.6,
+                "characteristics": [
+                    "Owns significant scope end-to-end",
+                    "Makes sound technical/product decisions"
+                ]
+            },
+            "director": {
+                "description": "Director/Manager (M1-M2)",
+                "expected_signals": ["leadership", "stakeholder_management", "strategic_thinking", "executive_presence"],
+                "minimum_signal_threshold": 0.65,
+                "characteristics": [
+                    "Leads a team or significant initiative",
+                    "Manages cross-functional stakeholders"
+                ]
+            },
+            "executive": {
+                "description": "VP/C-level (VP+)",
+                "expected_signals": ["executive_presence", "strategic_thinking", "leadership", "stakeholder_management"],
+                "minimum_signal_threshold": 0.7,
+                "characteristics": [
+                    "Sets organizational direction",
+                    "Drives company-level outcomes"
+                ]
+            }
+        }
+        return default_rubrics.get(target_level, default_rubrics["mid"])
+
+    rubrics = QUESTION_BANK.get("leveling_rubrics", {})
+    return rubrics.get(target_level, rubrics.get("mid", {}))
+
 # ============================================================================
 # PYDANTIC MODELS
 # ============================================================================
@@ -4037,6 +4163,23 @@ class DebriefChatResponse(BaseModel):
     response: str
 
 
+# Practice Drills models
+class DrillFeedbackRequest(BaseModel):
+    """Request for drill feedback."""
+    drill_type: str  # metrics, ownership, strategy, stakeholder, communication, problem_solving
+    signal_focus: str  # The signal being trained
+    question: str
+    response: str
+
+class DrillFeedbackResponse(BaseModel):
+    """Response with drill feedback."""
+    score: int  # 1-10
+    strengths: List[str]
+    improvements: List[str]
+    coaching_tip: str
+    rewritten_example: Optional[str] = None
+
+
 DEBRIEF_SYSTEM_PROMPT_WITH_TRANSCRIPT = """You are an expert interview coach having a warm, supportive conversation with a candidate who just completed an interview. You're like a trusted mentor who gives honest, actionable feedback while being encouraging.
 
 INTERVIEW CONTEXT:
@@ -4225,6 +4368,99 @@ async def debrief_chat(request: DebriefChatRequest):
     except Exception as e:
         print(f"🔥 Debrief chat error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
+
+
+# ============================================================================
+# INTERVIEW INTELLIGENCE: PRACTICE DRILLS
+# ============================================================================
+
+DRILL_FEEDBACK_PROMPT = """Analyze this candidate's response to a practice drill focused on {signal_focus}.
+
+DRILL TYPE: {drill_type}
+DRILL QUESTION: {question}
+
+CANDIDATE RESPONSE:
+{response}
+
+Evaluate how well the response demonstrates {signal_focus}. Be constructive and coaching-oriented.
+
+SIGNAL-SPECIFIC CRITERIA:
+- metrics_orientation: Look for specific numbers, percentages, timelines, team sizes, revenue/cost impact
+- ownership: Look for "I" statements, personal accountability, specific actions taken by the candidate
+- strategic_thinking: Look for business context, tradeoffs, prioritization framework, long-term vision
+- stakeholder_management: Look for cross-functional influence, managing competing interests, alignment techniques
+- communication_clarity: Look for STAR structure, concise language, clear flow, actionable takeaways
+- problem_solving: Look for step-by-step reasoning, root cause analysis, decision framework
+
+OUTPUT FORMAT:
+Return JSON:
+{{
+    "score": integer (1-10, where 7+ is good, 5-6 is developing, 1-4 needs significant work),
+    "strengths": ["2-3 specific things they did well"],
+    "improvements": ["2-3 specific areas to improve"],
+    "coaching_tip": "One actionable tip to practice for next time",
+    "rewritten_example": "Optional: A stronger version of their answer showing the improvement (only if score < 7)"
+}}
+
+COACHING TONE:
+- Be encouraging but honest
+- Give specific, actionable feedback
+- For rewritten_example, keep the same content but demonstrate better {signal_focus}
+- If the response is already strong (7+), skip rewritten_example
+
+No markdown, no preamble."""
+
+
+@app.post("/api/drill/feedback", response_model=DrillFeedbackResponse)
+async def get_drill_feedback(request: DrillFeedbackRequest):
+    """
+    INTERVIEW INTELLIGENCE: Practice drill feedback.
+
+    Provides targeted feedback on a single drill response,
+    focused on strengthening a specific interview signal.
+    """
+    print(f"🏋️ Drill feedback request: {request.drill_type} ({request.signal_focus})")
+
+    # Map signal names to readable labels
+    signal_labels = {
+        "metrics_orientation": "Metrics Orientation (using specific numbers and outcomes)",
+        "ownership": "Ownership & Accountability (using 'I' statements and personal actions)",
+        "strategic_thinking": "Strategic Thinking (providing business context and tradeoffs)",
+        "stakeholder_management": "Stakeholder Management (influencing and aligning others)",
+        "communication_clarity": "Communication Clarity (clear STAR structure and concise language)",
+        "problem_solving": "Problem Solving (step-by-step reasoning and frameworks)"
+    }
+
+    signal_label = signal_labels.get(request.signal_focus, request.signal_focus)
+
+    prompt = DRILL_FEEDBACK_PROMPT.format(
+        drill_type=request.drill_type,
+        signal_focus=signal_label,
+        question=request.question,
+        response=request.response
+    )
+
+    try:
+        response = call_claude(
+            "You are an expert interview coach providing feedback on a practice drill. Return only valid JSON.",
+            prompt,
+            max_tokens=1500
+        )
+        cleaned = clean_claude_json(response)
+        feedback_data = json.loads(cleaned)
+    except Exception as e:
+        print(f"🔥 Drill feedback error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate feedback: {str(e)}")
+
+    print(f"✅ Drill feedback generated: score={feedback_data.get('score', 0)}")
+
+    return DrillFeedbackResponse(
+        score=feedback_data.get("score", 5),
+        strengths=feedback_data.get("strengths", []),
+        improvements=feedback_data.get("improvements", []),
+        coaching_tip=feedback_data.get("coaching_tip", ""),
+        rewritten_example=feedback_data.get("rewritten_example")
+    )
 
 
 # ============================================================================
@@ -4580,43 +4816,81 @@ async def get_next_mock_question(request: NextQuestionRequest):
     full_name = session["resume_json"].get("name") or session["resume_json"].get("full_name") or session["resume_json"].get("candidate_name") or ""
     candidate_name = full_name.split()[0] if full_name else "there"
 
-    # Build prompt for next question
-    prompt = MOCK_GENERATE_QUESTION_PROMPT.format(
-        interview_stage=session["interview_stage"],
-        candidate_name=candidate_name,
-        resume_text=resume_text,
-        company=session["company"],
-        role_title=session["role_title"],
-        job_description=session["job_description"],
-        difficulty=session["difficulty_level"],
-        asked_questions=asked_questions_text,
-        competency_area=competency
-    )
+    # Detect role type for question bank lookup
+    role_type = detect_role_type(session.get("job_description", ""), session.get("role_title", ""))
 
-    # Call Claude to generate question
-    try:
-        response = call_claude(
-            "You are generating interview questions for a mock interview practice session. Return only valid JSON.",
-            prompt,
-            max_tokens=1000
+    # Determine target level based on difficulty
+    difficulty_to_level = {
+        "easy": "mid",
+        "medium": "senior",
+        "hard": "director"
+    }
+    target_level = difficulty_to_level.get(session.get("difficulty_level", "medium"), "senior")
+
+    # Use signal-based fluid stage transitions to determine question category
+    # This targets weak areas identified from previous responses
+    question_category = get_next_question_category_based_on_signals(
+        request.session_id, role_type, target_level
+    )
+    print(f"📊 Signal-based category selection: {question_category} (role: {role_type}, level: {target_level})")
+
+    # Try to get question from bank first
+    bank_question = get_question_from_bank(role_type, question_category, asked_questions, target_level)
+
+    if bank_question:
+        # Use question from bank - personalize with candidate name
+        question_text = bank_question.get("text", "").replace("{name}", candidate_name)
+        question_data = {
+            "question_text": question_text,
+            "competency_tested": bank_question.get("signals", [competency])[0] if bank_question.get("signals") else competency,
+            "difficulty": session.get("difficulty_level", "medium"),
+            "signals": bank_question.get("signals", []),
+            "follow_up_triggers": bank_question.get("follow_up_triggers", []),
+            "bank_id": bank_question.get("id")
+        }
+        print(f"📚 Using question from bank: {bank_question.get('id')}")
+    else:
+        # Fallback to Claude generation
+        print(f"💭 Generating question with Claude (no suitable bank question)")
+        prompt = MOCK_GENERATE_QUESTION_PROMPT.format(
+            interview_stage=session["interview_stage"],
+            candidate_name=candidate_name,
+            resume_text=resume_text,
+            company=session["company"],
+            role_title=session["role_title"],
+            job_description=session["job_description"],
+            difficulty=session["difficulty_level"],
+            asked_questions=asked_questions_text,
+            competency_area=competency
         )
-        cleaned = clean_claude_json(response)
-        question_data = json.loads(cleaned)
-    except Exception as e:
-        print(f"🔥 Failed to generate question: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate question: {str(e)}")
+
+        # Call Claude to generate question
+        try:
+            response = call_claude(
+                "You are generating interview questions for a mock interview practice session. Return only valid JSON.",
+                prompt,
+                max_tokens=1000
+            )
+            cleaned = clean_claude_json(response)
+            question_data = json.loads(cleaned)
+        except Exception as e:
+            print(f"🔥 Failed to generate question: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to generate question: {str(e)}")
 
     # Generate question ID
     question_id = str(uuid.uuid4())
 
-    # Store question
+    # Store question with signal metadata
     mock_interview_questions[question_id] = {
         "id": question_id,
         "session_id": request.session_id,
         "question_number": next_question_number,
         "question_text": question_data["question_text"],
         "competency_tested": question_data["competency_tested"],
-        "difficulty": question_data["difficulty"],
+        "difficulty": question_data.get("difficulty", session.get("difficulty_level", "medium")),
+        "expected_signals": question_data.get("signals", []),
+        "follow_up_triggers": question_data.get("follow_up_triggers", []),
+        "bank_id": question_data.get("bank_id"),
         "asked_at": datetime.now().isoformat()
     }
 
@@ -5739,6 +6013,272 @@ async def download_documents_legacy(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate download: {str(e)}")
+
+
+# ============================================================================
+# PREP GUIDE & INTRO FEEDBACK ENDPOINTS
+# ============================================================================
+
+# Pydantic models for Prep Guide
+class PrepGuideRequest(BaseModel):
+    company: str
+    role_title: str
+    interview_type: str  # recruiter_screen, hiring_manager, technical, final_round
+    job_description: Optional[str] = None
+    resume_json: Optional[Dict[str, Any]] = None
+
+class PrepGuideResponse(BaseModel):
+    company: str
+    interview_type: str
+    what_they_evaluate: List[str]
+    intro_sell: str
+    intro_word_count: int
+    likely_questions: List[Dict[str, str]]
+    high_impact_stories: List[Dict[str, Any]]
+    red_flags: List[str]
+    strategy_scenarios: Optional[List[Dict[str, str]]] = None
+    recommended_drills: List[str]
+
+class RegenerateIntroRequest(BaseModel):
+    company: str
+    role_title: str
+    interview_type: str
+    resume_json: Optional[Dict[str, Any]] = None
+    feedback: Optional[str] = None
+
+class RegenerateIntroResponse(BaseModel):
+    intro_sell: str
+    word_count: int
+
+class IntroFeedbackRequest(BaseModel):
+    intro: str
+    target_company: Optional[str] = None
+    target_role: str
+
+class IntroFeedbackResponse(BaseModel):
+    score: int
+    summary: str
+    strengths: List[str]
+    improvements: List[str]
+    rewritten_intro: str
+    coaching_tips: str
+
+
+PREP_GUIDE_PROMPT = """You are an expert interview coach creating a comprehensive prep guide for a candidate.
+
+Company: {company}
+Role: {role_title}
+Interview Type: {interview_type}
+Job Description: {job_description}
+Candidate Resume: {resume_context}
+
+Generate a prep guide with the following JSON structure:
+{{
+    "what_they_evaluate": ["4-6 evaluation criteria specific to this interview type"],
+    "intro_sell": "A tailored 60-90 second intro (120-180 words) the candidate should deliver",
+    "likely_questions": [
+        {{"question": "Question text", "category": "behavioral|technical|situational", "tip": "Brief answer strategy"}}
+    ],
+    "high_impact_stories": [
+        {{
+            "title": "Story title",
+            "situation": "Brief situation",
+            "task": "What was required",
+            "action": "What the candidate did",
+            "result": "Outcome with metrics if possible",
+            "best_for": ["question types this story answers well"]
+        }}
+    ],
+    "red_flags": ["3-5 things to avoid in this interview"],
+    "strategy_scenarios": [
+        {{"scenario": "Strategy or case scenario", "approach": "How to approach it"}}
+    ],
+    "recommended_drills": ["drill types to practice: behavioral, strategy, metrics, communication"]
+}}
+
+Important:
+- For recruiter_screen: focus on intro, fit questions, red flags. Skip strategy_scenarios.
+- For hiring_manager: include behavioral, situational, and some strategy questions.
+- For technical: include technical questions and strategy_scenarios.
+- For final_round: include leadership, culture fit, and big-picture strategy.
+- high_impact_stories should be derived from the resume if provided.
+- likely_questions should be 8-12 questions.
+- intro_sell must be specific to the company and role.
+
+Return ONLY valid JSON."""
+
+
+INTRO_FEEDBACK_PROMPT = """You are an expert interview coach evaluating a candidate's intro/elevator pitch.
+
+Target Company: {company}
+Target Role: {role}
+Candidate's Intro:
+"{intro}"
+
+Evaluate this intro and provide feedback in the following JSON format:
+{{
+    "score": <50-100 integer score>,
+    "summary": "One sentence summary of the intro quality",
+    "strengths": ["3-4 specific things done well"],
+    "improvements": ["3-4 specific areas to improve"],
+    "rewritten_intro": "A rewritten version of their intro that addresses the improvements while keeping their authentic voice and content. Should be 120-180 words.",
+    "coaching_tips": "2-3 sentences of actionable coaching advice for delivery and content."
+}}
+
+Evaluation criteria:
+- Length: Should be 60-90 seconds (120-180 words)
+- Structure: Current role → Key achievements → Why this company
+- Specificity: Uses metrics and concrete examples
+- Company connection: Shows genuine interest in target company
+- Impact: Leads with most impressive accomplishments
+- Flow: Sounds natural, not rehearsed
+
+Return ONLY valid JSON."""
+
+
+@app.post("/api/prep-guide/generate", response_model=PrepGuideResponse)
+async def generate_prep_guide(request: PrepGuideRequest):
+    """Generate a comprehensive interview prep guide for a logged interview."""
+    try:
+        print(f"📋 Generating prep guide for {request.company} - {request.interview_type}")
+
+        # Build resume context
+        resume_context = "No resume provided"
+        if request.resume_json:
+            resume_context = json.dumps(request.resume_json, indent=2)[:3000]
+
+        # Build job description context
+        jd_context = request.job_description[:2000] if request.job_description else "No job description provided"
+
+        system_prompt = PREP_GUIDE_PROMPT.format(
+            company=request.company,
+            role_title=request.role_title,
+            interview_type=request.interview_type,
+            job_description=jd_context,
+            resume_context=resume_context
+        )
+
+        response = call_claude(system_prompt, "Generate the prep guide now.", max_tokens=4096)
+
+        # Parse response
+        cleaned = clean_claude_json(response)
+        parsed = json.loads(cleaned)
+
+        # Calculate intro word count
+        intro = parsed.get("intro_sell", "")
+        word_count = len(intro.split()) if intro else 0
+
+        # For recruiter screens, ensure no strategy scenarios
+        strategy_scenarios = None
+        if request.interview_type in ["hiring_manager", "technical", "final_round"]:
+            strategy_scenarios = parsed.get("strategy_scenarios", [])
+
+        return PrepGuideResponse(
+            company=request.company,
+            interview_type=request.interview_type,
+            what_they_evaluate=parsed.get("what_they_evaluate", []),
+            intro_sell=intro,
+            intro_word_count=word_count,
+            likely_questions=parsed.get("likely_questions", []),
+            high_impact_stories=parsed.get("high_impact_stories", []),
+            red_flags=parsed.get("red_flags", []),
+            strategy_scenarios=strategy_scenarios,
+            recommended_drills=parsed.get("recommended_drills", ["behavioral", "communication"])
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 PREP GUIDE JSON ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse prep guide: {str(e)}")
+    except Exception as e:
+        print(f"🔥 PREP GUIDE ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating prep guide: {str(e)}")
+
+
+@app.post("/api/prep-guide/regenerate-intro", response_model=RegenerateIntroResponse)
+async def regenerate_intro(request: RegenerateIntroRequest):
+    """Regenerate the intro sell with optional feedback incorporation."""
+    try:
+        print(f"🔄 Regenerating intro for {request.company}")
+
+        resume_context = "No resume provided"
+        if request.resume_json:
+            resume_context = json.dumps(request.resume_json, indent=2)[:2000]
+
+        feedback_text = ""
+        if request.feedback:
+            feedback_text = f"\n\nUser feedback to incorporate: {request.feedback}"
+
+        system_prompt = f"""You are an expert interview coach writing a 60-90 second intro/elevator pitch.
+
+Company: {request.company}
+Role: {request.role_title}
+Interview Type: {request.interview_type}
+Candidate Resume: {resume_context}
+{feedback_text}
+
+Write a compelling 120-180 word intro that:
+1. Opens with current role and company
+2. Highlights 2-3 key achievements with metrics
+3. Connects experience to the target role
+4. Ends with genuine interest in this specific company
+
+Return ONLY the intro text, no JSON or formatting."""
+
+        response = call_claude(system_prompt, "Write the intro now.", max_tokens=500)
+
+        # Clean up response
+        intro = response.strip().strip('"').strip()
+        word_count = len(intro.split())
+
+        return RegenerateIntroResponse(
+            intro_sell=intro,
+            word_count=word_count
+        )
+
+    except Exception as e:
+        print(f"🔥 REGENERATE INTRO ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Error regenerating intro: {str(e)}")
+
+
+@app.post("/api/intro-feedback", response_model=IntroFeedbackResponse)
+async def get_intro_feedback(request: IntroFeedbackRequest):
+    """Get AI feedback on a candidate's intro/elevator pitch."""
+    try:
+        print(f"📝 Getting intro feedback for {request.target_role}")
+
+        company = request.target_company or "target company"
+
+        system_prompt = INTRO_FEEDBACK_PROMPT.format(
+            company=company,
+            role=request.target_role,
+            intro=request.intro
+        )
+
+        response = call_claude(system_prompt, "Evaluate the intro now.", max_tokens=2048)
+
+        # Parse response
+        cleaned = clean_claude_json(response)
+        parsed = json.loads(cleaned)
+
+        return IntroFeedbackResponse(
+            score=parsed.get("score", 70),
+            summary=parsed.get("summary", "Your intro shows potential with room for improvement."),
+            strengths=parsed.get("strengths", []),
+            improvements=parsed.get("improvements", []),
+            rewritten_intro=parsed.get("rewritten_intro", request.intro),
+            coaching_tips=parsed.get("coaching_tips", "Practice delivering your intro naturally.")
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 INTRO FEEDBACK JSON ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse feedback: {str(e)}")
+    except Exception as e:
+        print(f"🔥 INTRO FEEDBACK ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error getting intro feedback: {str(e)}")
 
 
 # ============================================================================
