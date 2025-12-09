@@ -880,6 +880,38 @@
                             <span class="strategy-label">ATS Keywords:</span>
                             <span id="atsKeywordsText" class="ats-keywords"></span>
                         </div>
+                        <!-- Enhanced Keyword Analysis Section -->
+                        <div id="keywordAnalysisSection" style="display: none; margin-top: 16px; padding: 16px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                                <span style="font-size: 1.1rem;">📊</span>
+                                <span style="font-weight: 600; color: #10b981;">ATS Keyword Coverage</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; font-size: 0.85rem;">
+                                <div>
+                                    <div style="color: #9ca3af; margin-bottom: 4px;">Tier 1 (Critical)</div>
+                                    <div id="tier1Keywords" style="color: #ffffff;"></div>
+                                    <div id="tier1Count" style="color: #10b981; font-size: 0.8rem; margin-top: 2px;"></div>
+                                </div>
+                                <div>
+                                    <div style="color: #9ca3af; margin-bottom: 4px;">Tier 2 (Important)</div>
+                                    <div id="tier2Keywords" style="color: #ffffff;"></div>
+                                    <div id="tier2Count" style="color: #10b981; font-size: 0.8rem; margin-top: 2px;"></div>
+                                </div>
+                                <div>
+                                    <div style="color: #9ca3af; margin-bottom: 4px;">Tier 3 (Nice-to-have)</div>
+                                    <div id="tier3Keywords" style="color: #ffffff;"></div>
+                                    <div id="tier3Count" style="color: #10b981; font-size: 0.8rem; margin-top: 2px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Positioning Strategy Section -->
+                        <div id="positioningStrategySection" style="display: none; margin-top: 12px; padding: 12px; background: rgba(96, 165, 250, 0.08); border: 1px solid rgba(96, 165, 250, 0.2); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="font-size: 1rem;">🎯</span>
+                                <span style="font-weight: 600; color: #60a5fa;">Positioning Strategy</span>
+                            </div>
+                            <div id="positioningDetails" style="font-size: 0.85rem; color: #d1d5db;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2212,21 +2244,61 @@
                 if (resumeResponse.ok) {
                     const resumeData = await resumeResponse.json();
                     console.log('✅ Resume API success');
+                    console.log('📊 Resume data:', resumeData);
                     resumeEditor.value = resumeData.tailored_resume_text || 'Resume generation failed';
-                    
+
                     // Update "What Changed" section with resume rationale
                     if (resumeData.changes_summary) {
                         const cs = resumeData.changes_summary;
                         let resumeRationale = '';
                         if (cs.summary_rationale) resumeRationale += cs.summary_rationale;
-                        if (cs.qualifications_rationale) resumeRationale += ' ' + cs.qualifications_rationale;
+                        if (cs.experience_rationale) resumeRationale += ' ' + cs.experience_rationale;
+                        else if (cs.qualifications_rationale) resumeRationale += ' ' + cs.qualifications_rationale;
                         if (resumeRationale) {
                             document.getElementById('resumeRationaleText').textContent = resumeRationale;
                         }
+                        // Legacy ATS keywords support
                         if (cs.ats_keywords && cs.ats_keywords.length > 0) {
                             document.getElementById('atsKeywordsSection').style.display = 'block';
                             document.getElementById('atsKeywordsText').textContent = cs.ats_keywords.join(' • ');
                         }
+                    }
+
+                    // Display enhanced keyword analysis
+                    if (resumeData.keyword_analysis) {
+                        const ka = resumeData.keyword_analysis;
+                        document.getElementById('keywordAnalysisSection').style.display = 'block';
+
+                        if (ka.tier_1_keywords && ka.tier_1_keywords.length > 0) {
+                            document.getElementById('tier1Keywords').textContent = ka.tier_1_keywords.slice(0, 4).join(', ');
+                            document.getElementById('tier1Count').textContent = `${ka.tier_1_placements || 0} placements`;
+                        }
+                        if (ka.tier_2_keywords && ka.tier_2_keywords.length > 0) {
+                            document.getElementById('tier2Keywords').textContent = ka.tier_2_keywords.slice(0, 4).join(', ');
+                            document.getElementById('tier2Count').textContent = `${ka.tier_2_placements || 0} placements`;
+                        }
+                        if (ka.tier_3_keywords && ka.tier_3_keywords.length > 0) {
+                            document.getElementById('tier3Keywords').textContent = ka.tier_3_keywords.slice(0, 3).join(', ');
+                            document.getElementById('tier3Count').textContent = `${ka.tier_3_placements || 0} placements`;
+                        }
+                    }
+
+                    // Display positioning strategy
+                    if (resumeData.positioning_strategy) {
+                        const ps = resumeData.positioning_strategy;
+                        document.getElementById('positioningStrategySection').style.display = 'block';
+
+                        let positioningHtml = '';
+                        if (ps.company_stage_detected) {
+                            positioningHtml += `<div style="margin-bottom: 6px;"><strong>Company Stage:</strong> ${ps.company_stage_detected}</div>`;
+                        }
+                        if (ps.lead_with) {
+                            positioningHtml += `<div style="margin-bottom: 6px;"><strong>Leading with:</strong> ${ps.lead_with}</div>`;
+                        }
+                        if (ps.de_emphasize) {
+                            positioningHtml += `<div><strong>De-emphasizing:</strong> ${ps.de_emphasize}</div>`;
+                        }
+                        document.getElementById('positioningDetails').innerHTML = positioningHtml;
                     }
                 } else {
                     const errorText = await resumeResponse.text();
