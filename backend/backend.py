@@ -575,6 +575,59 @@ class ReanalyzeWithSupplementsResponse(BaseModel):
     summary: str  # Brief explanation of changes
 
 # ============================================================================
+# PREP GUIDE MODELS
+# ============================================================================
+
+class PrepGuideLikelyQuestion(BaseModel):
+    """A likely interview question with guidance"""
+    question: str
+    guidance: str  # Suggested answer approach based on candidate's experience
+
+class PrepGuideStory(BaseModel):
+    """A STAR story for the candidate"""
+    title: str
+    competency: str  # e.g., "Leadership", "Problem-solving"
+    situation: str
+    task: str
+    action: str
+    result: str
+
+class PrepGuideStrategyScenario(BaseModel):
+    """A strategy/case scenario for HM/Technical interviews"""
+    scenario: str
+    approach: str
+
+class PrepGuideRequest(BaseModel):
+    """Request to generate an interview prep guide"""
+    company: str
+    role_title: str
+    interview_type: str  # recruiter_screen, hiring_manager, technical, panel, executive
+    job_description: str = ""
+    interviewer_name: str = ""
+    interviewer_title: str = ""
+    resume_json: Dict[str, Any] = {}
+
+class PrepGuideResponse(BaseModel):
+    """Response containing the full prep guide"""
+    what_they_evaluate: List[str]
+    intro_pitch: str
+    likely_questions: List[PrepGuideLikelyQuestion]
+    stories: List[PrepGuideStory]
+    red_flags: List[str]
+    strategy_scenarios: Optional[List[PrepGuideStrategyScenario]] = None
+
+class RegenerateIntroRequest(BaseModel):
+    """Request to regenerate just the intro pitch"""
+    company: str
+    role_title: str
+    interview_type: str
+    resume_json: Dict[str, Any] = {}
+
+class RegenerateIntroResponse(BaseModel):
+    """Response with new intro pitch"""
+    intro_pitch: str
+
+# ============================================================================
 # MOCK INTERVIEW MODELS
 # ============================================================================
 
@@ -1496,7 +1549,9 @@ async def root():
             "/api/network/recommend",
             "/api/interview/parse",
             "/api/interview/feedback",
-            "/api/interview/thank_you"
+            "/api/interview/thank_you",
+            "/api/prep-guide/generate",
+            "/api/prep-guide/regenerate-intro"
         ]
     }
 
@@ -5733,6 +5788,172 @@ async def download_documents_legacy(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to generate download: {str(e)}")
+
+
+# ============================================================================
+# PREP GUIDE ENDPOINTS
+# ============================================================================
+
+@app.post("/api/prep-guide/generate", response_model=PrepGuideResponse)
+async def generate_prep_guide(request: PrepGuideRequest):
+    """Generate a personalized interview prep guide"""
+    try:
+        print(f"📋 Generating prep guide for {request.company} - {request.role_title} ({request.interview_type})")
+
+        # Build resume context
+        resume_text = ""
+        if request.resume_json:
+            experiences = request.resume_json.get("experience", [])
+            for exp in experiences:
+                resume_text += f"- {exp.get('title', '')} at {exp.get('company', '')}\n"
+                for bullet in exp.get("bullets", []):
+                    resume_text += f"  • {bullet}\n"
+
+            skills = request.resume_json.get("skills", [])
+            if skills:
+                resume_text += f"\nSkills: {', '.join(skills)}\n"
+
+        # Interview type context
+        interview_contexts = {
+            "recruiter_screen": "initial phone screen focused on culture fit, basic qualifications, and motivation",
+            "hiring_manager": "deep-dive on functional expertise, leadership style, and problem-solving approach",
+            "technical": "technical depth, case studies, and hands-on problem solving",
+            "panel": "multiple perspectives, cross-functional collaboration, and executive presence",
+            "executive": "strategic vision, leadership philosophy, and cultural alignment at senior level"
+        }
+
+        interview_context = interview_contexts.get(request.interview_type, "general interview")
+
+        prompt = f"""Generate a comprehensive interview prep guide for a candidate.
+
+INTERVIEW DETAILS:
+- Company: {request.company}
+- Role: {request.role_title}
+- Interview Type: {request.interview_type} ({interview_context})
+- Interviewer: {request.interviewer_name or 'Unknown'} ({request.interviewer_title or 'Unknown title'})
+
+JOB DESCRIPTION:
+{request.job_description or 'Not provided'}
+
+CANDIDATE BACKGROUND:
+{resume_text or 'Not provided'}
+
+Generate a prep guide with these sections:
+
+1. WHAT THEY EVALUATE (5-7 bullet points of what interviewers assess in this type of interview)
+
+2. INTRO PITCH (A 60-90 second "tell me about yourself" script that:
+   - Opens with current role and key accomplishment
+   - Bridges to relevant experience for this role
+   - Closes with why this opportunity excites them
+   - Is conversational, not robotic
+   - Around 150-200 words)
+
+3. LIKELY QUESTIONS (8-12 questions they'll probably ask, with personalized guidance on how to answer based on their specific experience. Each question should have a "guidance" field with 2-3 sentences of specific advice referencing their background.)
+
+4. HIGH-IMPACT STORIES (3-4 STAR format stories from their experience that they should prepare. Pull from actual experience in their resume. Each story should have: title, competency it demonstrates, situation, task, action, result)
+
+5. RED FLAGS TO AVOID (4-6 things that could hurt them in this interview)
+
+{"6. STRATEGY SCENARIOS (3-4 case/scenario questions with suggested approaches - ONLY for hiring_manager or technical interviews)" if request.interview_type in ["hiring_manager", "technical"] else ""}
+
+Return valid JSON matching this structure:
+{{
+    "what_they_evaluate": ["item1", "item2", ...],
+    "intro_pitch": "The full 60-90 second intro script...",
+    "likely_questions": [
+        {{"question": "Question text", "guidance": "Personalized guidance on how to answer..."}},
+        ...
+    ],
+    "stories": [
+        {{
+            "title": "Story title",
+            "competency": "Leadership/Problem-solving/etc",
+            "situation": "Context...",
+            "task": "Challenge...",
+            "action": "What they did...",
+            "result": "Outcome with metrics..."
+        }},
+        ...
+    ],
+    "red_flags": ["Red flag 1", "Red flag 2", ...],
+    {"'strategy_scenarios': [{'scenario': 'Scenario description', 'approach': 'How to approach it'}, ...]" if request.interview_type in ["hiring_manager", "technical"] else "'strategy_scenarios': null"}
+}}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text
+
+        # Extract JSON from response
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            prep_data = json.loads(json_match.group())
+        else:
+            raise ValueError("Could not parse JSON from response")
+
+        print(f"✅ Prep guide generated successfully")
+        return PrepGuideResponse(**prep_data)
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parse error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse prep guide response")
+    except Exception as e:
+        print(f"🔥 Prep guide error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate prep guide: {str(e)}")
+
+
+@app.post("/api/prep-guide/regenerate-intro", response_model=RegenerateIntroResponse)
+async def regenerate_intro(request: RegenerateIntroRequest):
+    """Regenerate just the intro pitch with a fresh take"""
+    try:
+        print(f"🔄 Regenerating intro for {request.company} - {request.role_title}")
+
+        # Build resume context
+        resume_text = ""
+        if request.resume_json:
+            experiences = request.resume_json.get("experience", [])
+            for exp in experiences[:3]:  # Top 3 experiences
+                resume_text += f"- {exp.get('title', '')} at {exp.get('company', '')}\n"
+
+        prompt = f"""Generate a fresh 60-90 second "tell me about yourself" intro for an interview.
+
+Company: {request.company}
+Role: {request.role_title}
+Interview Type: {request.interview_type}
+
+Candidate's recent experience:
+{resume_text or 'Not provided'}
+
+Create a conversational, engaging intro (150-200 words) that:
+- Opens with their current role and a key accomplishment
+- Bridges to why their experience is relevant for this role
+- Closes with genuine enthusiasm for this opportunity
+- Sounds natural, not scripted
+- Is different from typical generic intros
+
+Return ONLY the intro text, no JSON or formatting."""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        intro_pitch = response.content[0].text.strip()
+        print(f"✅ Intro regenerated: {len(intro_pitch)} chars")
+
+        return RegenerateIntroResponse(intro_pitch=intro_pitch)
+
+    except Exception as e:
+        print(f"🔥 Regenerate intro error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to regenerate intro: {str(e)}")
 
 
 # ============================================================================

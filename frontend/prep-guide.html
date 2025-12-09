@@ -586,6 +586,9 @@
     </div>
 
     <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
         // State
         let currentInterview = null;
         let prepData = null;
@@ -644,7 +647,7 @@
                 document.getElementById('loadingState').style.display = 'flex';
 
                 // Call API to generate prep guide
-                const response = await fetch('http://localhost:8000/api/prep-guide/generate', {
+                const response = await fetch(`${API_BASE}/api/prep-guide/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -828,7 +831,7 @@
             btn.textContent = 'Generating...';
 
             try {
-                const response = await fetch('http://localhost:8000/api/prep-guide/regenerate-intro', {
+                const response = await fetch(`${API_BASE}/api/prep-guide/regenerate-intro`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

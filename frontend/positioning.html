@@ -1039,9 +1039,9 @@
          */
         function addActionToCalendar(actionItem, timing) {
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-            const firstName = analysisData._candidate_first_name || 'Hey';
-            const company = analysisData._company_name || 'Company';
-            const role = analysisData.role_title || 'Role';
+            const firstName = analysisData._candidate_first_name || analysisData._candidate_name?.split(' ')[0] || 'Hey';
+            const company = analysisData._company_name || analysisData._company || 'Company';
+            const role = analysisData.role_title || analysisData._role || 'Role';
             const fitScore = analysisData.fit_score || 0;
             const strengths = analysisData.positioning_strategy?.emphasize || [];
 

@@ -10,6 +10,12 @@ anthropic>=0.39.0
 # Document Generation
 python-docx>=1.1.0
 
+# PDF Parsing
+PyMuPDF>=1.23.0
+
+# File uploads
+python-multipart>=0.0.6
+
 # Validation
 pydantic>=2.5.0
 
