@@ -6243,6 +6243,141 @@ Format as plain text, preserving the structure. Be thorough - capture every piec
 
 
 # ============================================================================
+# ASK HENRY - FLOATING CHAT ASSISTANT
+# ============================================================================
+
+class AskHenryContext(BaseModel):
+    """Context about where the user is in the app."""
+    current_page: str
+    page_description: str
+    company: Optional[str] = None
+    role: Optional[str] = None
+    has_analysis: bool = False
+    has_resume: bool = False
+
+
+class AskHenryMessage(BaseModel):
+    """A single message in the conversation."""
+    role: str  # 'user' or 'assistant'
+    content: str
+
+
+class AskHenryRequest(BaseModel):
+    """Request for Ask Henry chat."""
+    message: str
+    conversation_history: List[AskHenryMessage] = []
+    context: AskHenryContext
+    analysis_data: Optional[Dict[str, Any]] = None
+    resume_data: Optional[Dict[str, Any]] = None
+
+
+class AskHenryResponse(BaseModel):
+    """Response from Ask Henry."""
+    response: str
+
+
+ASK_HENRY_SYSTEM_PROMPT = """You are Henry, an expert AI career coach built into HenryAI. You're warm, direct, and strategic. You help job seekers with their applications, positioning, interview prep, and career strategy.
+
+CURRENT CONTEXT:
+- User is on: {current_page} ({page_description})
+- Target Company: {company}
+- Target Role: {role}
+- Has job analysis: {has_analysis}
+- Has resume uploaded: {has_resume}
+
+{analysis_context}
+
+YOUR PERSONALITY:
+- Warm but direct - no fluff, get to actionable advice
+- Strategic thinker - always tie advice back to their specific situation
+- Encouraging but honest - if something needs work, say so kindly
+- Concise - keep responses focused and scannable (2-4 short paragraphs max)
+
+RESPONSE GUIDELINES:
+1. Reference their specific situation (company, role, page they're on)
+2. Give concrete, actionable advice
+3. Use bullet points for lists
+4. Bold key takeaways with **text**
+5. If they ask about something on another page, briefly help but suggest they go there
+6. Keep responses under 200 words unless they need detailed guidance
+
+You're available as a floating chat on every page, so be contextually aware of what they're likely working on."""
+
+
+@app.post("/api/ask-henry", response_model=AskHenryResponse)
+async def ask_henry(request: AskHenryRequest):
+    """
+    ASK HENRY: Contextual AI assistant available from any page.
+
+    Provides strategic career coaching based on:
+    - Current page/section the user is viewing
+    - Their job analysis data (if available)
+    - Their resume data (if available)
+    - Conversation history for continuity
+    """
+    print(f"💬 Ask Henry: {request.context.current_page} - {request.message[:50]}...")
+
+    # Build analysis context string
+    analysis_context = ""
+    if request.analysis_data and request.context.has_analysis:
+        analysis_context = f"""
+ANALYSIS DATA AVAILABLE:
+- Company: {request.analysis_data.get('_company_name', 'Unknown')}
+- Role: {request.analysis_data.get('role_title', 'Unknown')}
+- Fit Score: {request.analysis_data.get('fit_score', 'N/A')}
+- Key Strengths: {', '.join(request.analysis_data.get('strengths', [])[:3])}
+- Key Gaps: {', '.join(request.analysis_data.get('gaps', [])[:3])}
+"""
+
+    if request.resume_data and request.context.has_resume:
+        analysis_context += f"""
+RESUME DATA:
+- Candidate Name: {request.resume_data.get('name', 'Unknown')}
+- Current/Recent Role: {request.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if request.resume_data.get('experience') else 'Unknown'}
+"""
+
+    # Format system prompt
+    system_prompt = ASK_HENRY_SYSTEM_PROMPT.format(
+        current_page=request.context.current_page,
+        page_description=request.context.page_description,
+        company=request.context.company or "Not specified",
+        role=request.context.role or "Not specified",
+        has_analysis="Yes" if request.context.has_analysis else "No",
+        has_resume="Yes" if request.context.has_resume else "No",
+        analysis_context=analysis_context
+    )
+
+    # Build messages
+    messages = []
+    for msg in request.conversation_history:
+        messages.append({
+            "role": msg.role,
+            "content": msg.content
+        })
+    messages.append({
+        "role": "user",
+        "content": request.message
+    })
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            system=system_prompt,
+            messages=messages
+        )
+
+        assistant_response = response.content[0].text
+        print(f"✅ Ask Henry response: {len(assistant_response)} chars")
+
+        return AskHenryResponse(response=assistant_response)
+
+    except Exception as e:
+        print(f"🔥 Ask Henry error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get response: {str(e)}")
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 
