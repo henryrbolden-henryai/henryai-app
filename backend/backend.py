@@ -20,9 +20,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import anthropic
 
-# Add parent directory to path for document_generator import
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from document_generator import ResumeFormatter, CoverLetterFormatter
+# document_generator temporarily disabled for deployment
+# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# from document_generator import ResumeFormatter, CoverLetterFormatter
 
 # Initialize FastAPI app
 app = FastAPI(
