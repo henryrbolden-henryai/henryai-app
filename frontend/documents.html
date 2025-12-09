@@ -939,11 +939,28 @@
             }
             analysisData = JSON.parse(analysisDataStr);
 
-            // Get documents data
-            const documentsDataStr = sessionStorage.getItem('documentsData');
+            // Get documents data - try sessionStorage first, then localStorage fallback
+            let documentsDataStr = sessionStorage.getItem('documentsData');
+
+            // If not in sessionStorage, try to load from localStorage using company/role key
             if (!documentsDataStr) {
-                showError('resumeLoading', 'Documents not generated. Please go back to results and click "Apply".');
-                showError('coverLetterLoading', 'Documents not generated. Please go back to results and click "Apply".');
+                const company = analysisData._company || analysisData.company_name || '';
+                const role = analysisData._role || analysisData.role_title || '';
+                if (company && role) {
+                    const documentsKey = `documents_${company}_${role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                    documentsDataStr = localStorage.getItem(documentsKey);
+                    console.log('Loaded documents from localStorage:', documentsKey, !!documentsDataStr);
+
+                    // Also restore to sessionStorage for consistency
+                    if (documentsDataStr) {
+                        sessionStorage.setItem('documentsData', documentsDataStr);
+                    }
+                }
+            }
+
+            if (!documentsDataStr) {
+                showError('resumeLoading', 'Documents not generated yet. Please go to the <a href="package.html">Documents page</a> to generate your tailored resume and cover letter.');
+                showError('coverLetterLoading', 'Documents not generated yet. Please go to the <a href="package.html">Documents page</a> to generate your tailored resume and cover letter.');
                 document.getElementById('downloadResumeBtn').disabled = true;
                 document.getElementById('downloadCoverLetterBtn').disabled = true;
                 return;

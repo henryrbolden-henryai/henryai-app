@@ -4328,25 +4328,38 @@
                 if (analysisData) {
                     sessionStorage.setItem('analysisData', analysisData);
                     console.log('Loaded analysis data for:', app.company, app.role);
-                    window.location.href = targetPage;
-                    return;
                 }
             }
 
-            // Fallback: create minimal analysis data from app info
-            const minimalAnalysis = {
-                _company_name: app.company,
-                _company: app.company,
-                role_title: app.role,
-                _role: app.role,
-                fit_score: app.fitScore,
-                strengths: app.strengths || [],
-                gaps: app.gaps || [],
-                strategic_positioning: app.positioningStrategy || '',
-                salary_info: app.salary || 'Not specified'
-            };
-            sessionStorage.setItem('analysisData', JSON.stringify(minimalAnalysis));
-            console.log('Created minimal analysis data for:', app.company, app.role);
+            // If no analysis data loaded, create minimal analysis data from app info
+            if (!sessionStorage.getItem('analysisData') || !app.analysisKey) {
+                const minimalAnalysis = {
+                    _company_name: app.company,
+                    _company: app.company,
+                    role_title: app.role,
+                    _role: app.role,
+                    fit_score: app.fitScore,
+                    strengths: app.strengths || [],
+                    gaps: app.gaps || [],
+                    strategic_positioning: app.positioningStrategy || '',
+                    salary_info: app.salary || 'Not specified'
+                };
+                sessionStorage.setItem('analysisData', JSON.stringify(minimalAnalysis));
+                console.log('Created minimal analysis data for:', app.company, app.role);
+            }
+
+            // Try to load stored documents data
+            const documentsKey = `documents_${app.company}_${app.role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+            const documentsData = localStorage.getItem(documentsKey);
+            if (documentsData) {
+                sessionStorage.setItem('documentsData', documentsData);
+                console.log('Loaded documents data for:', app.company, app.role);
+            } else {
+                // Clear any stale documents data from a different application
+                sessionStorage.removeItem('documentsData');
+                console.log('No documents found for:', app.company, app.role);
+            }
+
             window.location.href = targetPage;
         }
 

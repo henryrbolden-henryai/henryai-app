@@ -1391,8 +1391,20 @@
                 const documentsData = await response.json();
                 console.log('Documents generated:', documentsData);
 
-                // Store documents data in sessionStorage
+                // Store documents data in sessionStorage for immediate use
                 sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+                // Also persist to localStorage keyed by company/role for later access
+                const companyName = analysisData._company_name || analysisData._company || analysisData.company || 'Unknown';
+                const roleTitle = analysisData.role_title || analysisData._role || 'Unknown';
+                const documentsKey = `documents_${companyName}_${roleTitle}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                localStorage.setItem(documentsKey, JSON.stringify({
+                    ...documentsData,
+                    _company: companyName,
+                    _role: roleTitle,
+                    _generatedAt: new Date().toISOString()
+                }));
+                console.log('Documents persisted to localStorage with key:', documentsKey);
 
                 // Navigate to overview
                 window.location.href = 'overview.html';
