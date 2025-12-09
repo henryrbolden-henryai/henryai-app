@@ -841,13 +841,18 @@
         };
 
         // Call /api/jd/analyze endpoint
+        const payloadJson = JSON.stringify(requestPayload);
+        console.log('📤 Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
+        console.log('📦 Payload size:', Math.round(payloadJson.length / 1024), 'KB');
+
         const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(requestPayload)
+          body: payloadJson
         });
+        console.log('📥 Response received:', analyzeResponse.status, analyzeResponse.statusText);
 
         if (!analyzeResponse.ok) {
           const errorData = await analyzeResponse.json().catch(() => ({}));
@@ -903,7 +908,23 @@
 
       } catch (error) {
         console.error('Analysis error:', error);
-        showError(error.message || 'Something went wrong. Please try again.');
+
+        // Provide more specific error messages
+        let errorMessage = 'Something went wrong. Please try again.';
+
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+          // Network error - could be CORS, timeout, or server down
+          errorMessage = 'Unable to connect to the server. This could be a temporary issue - please try again in a moment. If the problem persists, check your internet connection.';
+          console.error('Network error details:', {
+            apiUrl: API_BASE_URL,
+            error: error,
+            stack: error.stack
+          });
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        showError(errorMessage);
         analyzeBtn.disabled = false;
         document.getElementById('loading').classList.remove('active');
       }
