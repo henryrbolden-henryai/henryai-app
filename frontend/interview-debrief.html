@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Debrief - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: #22d3ee;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px 120px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 24px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .breadcrumb {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .breadcrumb .company {
+            color: #f59e0b;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .interview-meta {
+            color: #9ca3af;
+            font-size: 0.95rem;
+        }
+
+        /* Initial Setup Section */
+        .setup-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .setup-section h2 {
+            color: #ffffff;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .setup-section .subtitle {
+            color: #9ca3af;
+            margin-bottom: 24px;
+        }
+
+        /* Feeling Selector */
+        .feeling-section {
+            margin-bottom: 24px;
+        }
+
+        .feeling-label {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .feeling-scale {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .feeling-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            background: #111827;
+            color: #9ca3af;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feeling-btn:hover {
+            border-color: #f59e0b;
+            color: #ffffff;
+        }
+
+        .feeling-btn.selected {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: #000000;
+        }
+
+        .feeling-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        /* Transcript Upload */
+        .transcript-section {
+            margin-bottom: 24px;
+        }
+
+        .transcript-label {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .transcript-hint {
+            color: #6b7280;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .upload-zone {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px dashed #374151;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .upload-zone .upload-icon {
+            font-size: 1.8rem;
+        }
+
+        .upload-zone .upload-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .upload-zone .upload-primary {
+            color: #ffffff;
+            font-size: 0.95rem;
+        }
+
+        .upload-zone .upload-secondary {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .uploaded-file {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 8px;
+            color: #f59e0b;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .uploaded-file .remove-file {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .uploaded-file .remove-file:hover {
+            opacity: 1;
+        }
+
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .or-divider::before,
+        .or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #374151;
+        }
+
+        .paste-toggle {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .paste-toggle:hover {
+            color: #f59e0b;
+        }
+
+        .transcript-textarea {
+            width: 100%;
+            min-height: 150px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 16px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            resize: vertical;
+            margin-top: 12px;
+        }
+
+        .transcript-textarea:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .transcript-textarea::placeholder {
+            color: #6b7280;
+        }
+
+        /* Start Button */
+        .start-debrief-btn {
+            width: 100%;
+            padding: 16px;
+            background: #f59e0b;
+            border: none;
+            border-radius: 10px;
+            color: #000000;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .start-debrief-btn:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .start-debrief-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Chat Section */
+        .chat-section {
+            display: none;
+        }
+
+        .chat-section.active {
+            display: block;
+        }
+
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 90%;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .message-content {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 16px 20px;
+            line-height: 1.7;
+        }
+
+        .message.user .message-content {
+            background: #1e3a5f;
+            border-color: #2563eb40;
+        }
+
+        .message-content p {
+            margin-bottom: 12px;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 12px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin-bottom: 8px;
+        }
+
+        .message-content strong {
+            color: #f59e0b;
+        }
+
+        .message-content h3, .message-content h4 {
+            color: #ffffff;
+            margin: 16px 0 8px 0;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            width: fit-content;
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f59e0b;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator .dot:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* Chat Input */
+        .chat-input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #0a0a0a 0%, rgba(10, 10, 10, 0.95) 80%, transparent 100%);
+            padding: 20px;
+        }
+
+        .chat-input-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 14px 18px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .chat-input::placeholder {
+            color: #6b7280;
+        }
+
+        .send-btn {
+            background: #f59e0b;
+            border: none;
+            border-radius: 12px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #d97706;
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #000000;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .quick-action-btn {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: #f59e0b;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: #f59e0b;
+        }
+
+        /* Loading state */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #f59e0b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .feeling-scale {
+                justify-content: center;
+            }
+
+            .feeling-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 0.9rem;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .quick-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="profile-edit.html" class="nav-link">Edit Profile</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+
+        <div class="page-header">
+            <div class="breadcrumb"><span class="company" id="companyName">Company</span> &middot; <span id="interviewType">Interview</span></div>
+            <h1>Interview Debrief</h1>
+            <p class="interview-meta" id="interviewMeta">Let's reflect on how it went</p>
+        </div>
+
+        <!-- Initial Setup -->
+        <div class="setup-section" id="setupSection">
+            <h2>How did the interview go?</h2>
+            <p class="subtitle">Share your thoughts and any notes to get personalized coaching.</p>
+
+            <!-- Feeling Scale -->
+            <div class="feeling-section">
+                <div class="feeling-label">How do you feel it went? (1 = terrible, 10 = nailed it)</div>
+                <div class="feeling-scale" id="feelingScale">
+                    <button class="feeling-btn" data-value="1">1</button>
+                    <button class="feeling-btn" data-value="2">2</button>
+                    <button class="feeling-btn" data-value="3">3</button>
+                    <button class="feeling-btn" data-value="4">4</button>
+                    <button class="feeling-btn" data-value="5">5</button>
+                    <button class="feeling-btn" data-value="6">6</button>
+                    <button class="feeling-btn" data-value="7">7</button>
+                    <button class="feeling-btn" data-value="8">8</button>
+                    <button class="feeling-btn" data-value="9">9</button>
+                    <button class="feeling-btn" data-value="10">10</button>
+                </div>
+                <div class="feeling-labels">
+                    <span>Rough</span>
+                    <span>Nailed it</span>
+                </div>
+            </div>
+
+            <!-- Transcript Upload -->
+            <div class="transcript-section">
+                <div class="transcript-label">Interview transcript or notes (optional)</div>
+                <div class="transcript-hint">Upload a transcript, recording notes, or paste what you remember. This helps provide more specific feedback.</div>
+
+                <div class="upload-zone" id="uploadZone" onclick="document.getElementById('transcriptFile').click()">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <span class="upload-primary">Upload transcript file</span>
+                        <span class="upload-secondary">.txt, .pdf, or .docx</span>
+                    </div>
+                    <input type="file" id="transcriptFile" accept=".txt,.pdf,.docx,text/*" onchange="handleTranscriptUpload(event)">
+                </div>
+                <div id="uploadedFile" class="uploaded-file" style="display: none;"></div>
+
+                <div class="or-divider">or</div>
+
+                <div class="paste-toggle" onclick="togglePasteSection()">Paste notes or transcript manually ▼</div>
+                <div id="pasteSection" style="display: none;">
+                    <textarea
+                        class="transcript-textarea"
+                        id="transcriptText"
+                        placeholder="Paste your interview notes, transcript, or anything you remember from the conversation...
+
+Examples of helpful info:
+- Questions they asked
+- Your answers (rough summaries are fine)
+- Topics that came up
+- Things you wish you'd said differently"
+                    ></textarea>
+                </div>
+            </div>
+
+            <button class="start-debrief-btn" id="startDebriefBtn" onclick="startDebrief()">
+                Start Debrief Conversation
+            </button>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="chat-section" id="chatSection">
+            <div class="quick-actions" id="quickActions">
+                <button class="quick-action-btn" onclick="sendQuickAction('What should I have said differently?')">What should I have said differently?</button>
+                <button class="quick-action-btn" onclick="sendQuickAction('Help me write a thank-you email')">Write thank-you email</button>
+                <button class="quick-action-btn" onclick="sendQuickAction('How should I prepare for the next round?')">Prep for next round</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Input (fixed at bottom) -->
+    <div class="chat-input-container" id="chatInputContainer" style="display: none;">
+        <div class="chat-input-wrapper">
+            <textarea
+                class="chat-input"
+                id="chatInput"
+                placeholder="Ask a follow-up question..."
+                rows="1"
+                onkeydown="handleKeyDown(event)"
+            ></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // STATE
+        // ============================================================================
+        let currentInterview = null;
+        let resumeData = null;
+        let analysisData = null;
+        let conversationHistory = [];
+        let transcriptText = '';
+        let transcriptFileData = null;
+        let selectedFeeling = null;
+        let isLoading = false;
+
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : 'https://henryai-production.up.railway.app';
+
+        // ============================================================================
+        // INITIALIZATION
+        // ============================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load interview
+            const interviewId = sessionStorage.getItem('currentInterviewId');
+            const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            currentInterview = interviews.find(i => i.id === interviewId);
+
+            if (!currentInterview) {
+                alert('Interview not found. Returning to Interview Intelligence.');
+                window.location.href = 'interview-intelligence.html';
+                return;
+            }
+
+            // Load resume and analysis data
+            const storedResume = sessionStorage.getItem('resumeData');
+            if (storedResume) {
+                try {
+                    resumeData = JSON.parse(storedResume);
+                } catch (e) {
+                    console.error('Error parsing resume data:', e);
+                }
+            }
+
+            const storedAnalysis = sessionStorage.getItem('analysisData');
+            if (storedAnalysis) {
+                try {
+                    analysisData = JSON.parse(storedAnalysis);
+                } catch (e) {
+                    console.error('Error parsing analysis data:', e);
+                }
+            }
+
+            // Update UI with interview info
+            updateInterviewInfo();
+
+            // Setup feeling buttons
+            setupFeelingButtons();
+
+            // Setup drag and drop
+            setupDragAndDrop();
+        });
+
+        function updateInterviewInfo() {
+            document.getElementById('companyName').textContent = currentInterview.company;
+            document.getElementById('interviewType').textContent = currentInterview.type;
+
+            const date = new Date(currentInterview.date);
+            const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+            const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+            let metaText = `${dateStr} at ${timeStr}`;
+            if (currentInterview.interviewerName) {
+                metaText += ` with ${currentInterview.interviewerName}`;
+                if (currentInterview.interviewerTitle) {
+                    metaText += ` (${currentInterview.interviewerTitle})`;
+                }
+            }
+            document.getElementById('interviewMeta').textContent = metaText;
+
+            document.title = `Debrief: ${currentInterview.company} - HenryAI`;
+        }
+
+        function setupFeelingButtons() {
+            const buttons = document.querySelectorAll('.feeling-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedFeeling = btn.dataset.value;
+                });
+            });
+        }
+
+        // ============================================================================
+        // FILE UPLOAD
+        // ============================================================================
+        function handleTranscriptUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            transcriptFileData = file;
+
+            const uploadedFileEl = document.getElementById('uploadedFile');
+            uploadedFileEl.innerHTML = `
+                <span>📄 ${file.name}</span>
+                <span class="remove-file" onclick="removeTranscriptFile(event)">✕</span>
+            `;
+            uploadedFileEl.style.display = 'flex';
+            document.getElementById('uploadZone').style.display = 'none';
+        }
+
+        function removeTranscriptFile(event) {
+            event.stopPropagation();
+            transcriptFileData = null;
+            document.getElementById('transcriptFile').value = '';
+            document.getElementById('uploadedFile').style.display = 'none';
+            document.getElementById('uploadZone').style.display = 'flex';
+        }
+
+        function togglePasteSection() {
+            const section = document.getElementById('pasteSection');
+            const toggle = document.querySelector('.paste-toggle');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                toggle.textContent = 'Hide paste option ▲';
+            } else {
+                section.style.display = 'none';
+                toggle.textContent = 'Paste notes or transcript manually ▼';
+            }
+        }
+
+        function setupDragAndDrop() {
+            const uploadZone = document.getElementById('uploadZone');
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = '#f59e0b';
+                uploadZone.style.background = 'rgba(245, 158, 11, 0.1)';
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.style.borderColor = '#374151';
+                uploadZone.style.background = 'rgba(255, 255, 255, 0.03)';
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.style.borderColor = '#374151';
+                uploadZone.style.background = 'rgba(255, 255, 255, 0.03)';
+
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    document.getElementById('transcriptFile').files = e.dataTransfer.files;
+                    handleTranscriptUpload({ target: { files: [file] } });
+                }
+            });
+        }
+
+        // ============================================================================
+        // DEBRIEF FLOW
+        // ============================================================================
+        async function startDebrief() {
+            const btn = document.getElementById('startDebriefBtn');
+            btn.disabled = true;
+            btn.textContent = 'Starting debrief...';
+
+            // Get transcript from file or text
+            if (transcriptFileData) {
+                try {
+                    transcriptText = await readFileAsText(transcriptFileData);
+                } catch (e) {
+                    console.error('Error reading file:', e);
+                }
+            } else {
+                transcriptText = document.getElementById('transcriptText').value.trim();
+            }
+
+            // Hide setup, show chat
+            document.getElementById('setupSection').style.display = 'none';
+            document.getElementById('chatSection').classList.add('active');
+            document.getElementById('chatInputContainer').style.display = 'block';
+
+            // Start the conversation
+            await sendInitialMessage();
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+
+                if (file.type === 'application/pdf') {
+                    // For PDF, we'd need to extract text - for now just read as text
+                    reader.readAsText(file);
+                } else {
+                    reader.readAsText(file);
+                }
+            });
+        }
+
+        async function sendInitialMessage() {
+            setLoading(true);
+            addTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/debrief/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_json: resumeData || {},
+                        job_description: currentInterview.jobDescription || analysisData?._jd_text || '',
+                        context: {
+                            interviewerName: currentInterview.interviewerName || 'the interviewer',
+                            interviewerTitle: currentInterview.interviewerTitle || null,
+                            interviewDate: currentInterview.date,
+                            interviewStage: currentInterview.type,
+                            feeling: selectedFeeling,
+                            company: currentInterview.company,
+                            roleTitle: currentInterview.role,
+                            candidateName: resumeData?.name || 'there'
+                        },
+                        transcript: transcriptText || null,
+                        conversation_history: [],
+                        user_message: null  // null triggers initial analysis
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error('Failed to start debrief');
+                }
+
+                const data = await response.json();
+
+                // Add assistant response to chat
+                addMessage('assistant', data.response);
+                conversationHistory.push({ role: 'assistant', content: data.response });
+
+            } catch (error) {
+                console.error('Debrief error:', error);
+                removeTypingIndicator();
+                addMessage('assistant', "I apologize, but I'm having trouble connecting. Let's try a simpler approach - tell me about how the interview went, and I'll help you debrief.");
+            }
+
+            setLoading(false);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message || isLoading) return;
+
+            // Add user message
+            addMessage('user', message);
+            conversationHistory.push({ role: 'user', content: message });
+            input.value = '';
+
+            // Send to API
+            await sendToAPI(message);
+        }
+
+        async function sendQuickAction(message) {
+            if (isLoading) return;
+
+            addMessage('user', message);
+            conversationHistory.push({ role: 'user', content: message });
+
+            await sendToAPI(message);
+        }
+
+        async function sendToAPI(userMessage) {
+            setLoading(true);
+            addTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/debrief/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_json: resumeData || {},
+                        job_description: currentInterview.jobDescription || analysisData?._jd_text || '',
+                        context: {
+                            interviewerName: currentInterview.interviewerName || 'the interviewer',
+                            interviewerTitle: currentInterview.interviewerTitle || null,
+                            interviewDate: currentInterview.date,
+                            interviewStage: currentInterview.type,
+                            feeling: selectedFeeling,
+                            company: currentInterview.company,
+                            roleTitle: currentInterview.role,
+                            candidateName: resumeData?.name || 'there'
+                        },
+                        transcript: transcriptText || null,
+                        conversation_history: conversationHistory.slice(0, -1), // Exclude the message we just added
+                        user_message: userMessage
+                    })
+                });
+
+                removeTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+
+                const data = await response.json();
+
+                addMessage('assistant', data.response);
+                conversationHistory.push({ role: 'assistant', content: data.response });
+
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+                addMessage('assistant', "I'm sorry, I had trouble processing that. Could you try rephrasing your question?");
+            }
+
+            setLoading(false);
+        }
+
+        // ============================================================================
+        // UI HELPERS
+        // ============================================================================
+        function addMessage(role, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const avatar = role === 'assistant' ? '🎯' : '👤';
+
+            // Convert markdown-like formatting to HTML
+            const formattedContent = formatMessageContent(content);
+
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+            messageEl.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${formattedContent}</div>
+            `;
+
+            messagesContainer.appendChild(messageEl);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatMessageContent(content) {
+            // Basic markdown conversion
+            return content
+                .split('\n\n').map(para => {
+                    // Handle headers
+                    if (para.startsWith('### ')) {
+                        return `<h4>${para.slice(4)}</h4>`;
+                    }
+                    if (para.startsWith('## ')) {
+                        return `<h3>${para.slice(3)}</h3>`;
+                    }
+
+                    // Handle lists
+                    if (para.match(/^[-•]\s/m)) {
+                        const items = para.split('\n')
+                            .filter(line => line.trim())
+                            .map(line => `<li>${line.replace(/^[-•]\s*/, '')}</li>`)
+                            .join('');
+                        return `<ul>${items}</ul>`;
+                    }
+
+                    // Handle numbered lists
+                    if (para.match(/^\d+\.\s/m)) {
+                        const items = para.split('\n')
+                            .filter(line => line.trim())
+                            .map(line => `<li>${line.replace(/^\d+\.\s*/, '')}</li>`)
+                            .join('');
+                        return `<ol>${items}</ol>`;
+                    }
+
+                    // Regular paragraph with bold/italic
+                    return `<p>${para
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    }</p>`;
+                })
+                .join('');
+        }
+
+        function addTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const indicator = document.createElement('div');
+            indicator.className = 'message assistant';
+            indicator.id = 'typingIndicator';
+            indicator.innerHTML = `
+                <div class="message-avatar">🎯</div>
+                <div class="typing-indicator">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(indicator);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+            document.getElementById('sendBtn').disabled = loading;
+            document.getElementById('chatInput').disabled = loading;
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Auto-resize textarea
+        document.getElementById('chatInput')?.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+    </script>
+</body>
+</html>

@@ -333,6 +333,12 @@
             font-size: 0.9rem;
         }
 
+        .interview-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
         .open-prep-btn {
             background: transparent;
             border: 1px solid #22d3ee;
@@ -347,6 +353,23 @@
 
         .open-prep-btn:hover {
             background: #22d3ee;
+            color: #000000;
+        }
+
+        .open-debrief-btn {
+            background: transparent;
+            border: 1px solid #f59e0b;
+            color: #f59e0b;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .open-debrief-btn:hover {
+            background: #f59e0b;
             color: #000000;
         }
 
@@ -630,6 +653,15 @@
 
             .interview-card .interview-info {
                 text-align: center;
+            }
+
+            .interview-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .interview-actions button {
+                width: 100%;
             }
         }
     </style>
@@ -1053,7 +1085,10 @@
                             <div class="company-name">${interview.company}</div>
                             <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr} @ ${timeStr}</div>
                         </div>
-                        <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Open Prep Guide</button>
+                        <div class="interview-actions">
+                            <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Prep Guide</button>
+                            <button class="open-debrief-btn" onclick="openDebrief('${interview.id}')">Debrief</button>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1063,6 +1098,12 @@
             // Store the interview ID and navigate to prep guide page
             sessionStorage.setItem('currentInterviewId', interviewId);
             window.location.href = 'prep-guide.html';
+        }
+
+        function openDebrief(interviewId) {
+            // Store the interview ID and navigate to debrief page
+            sessionStorage.setItem('currentInterviewId', interviewId);
+            window.location.href = 'interview-debrief.html';
         }
 
         function deleteInterview(interviewId) {
