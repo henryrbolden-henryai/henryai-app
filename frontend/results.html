@@ -700,8 +700,8 @@
 
             <!-- Buttons -->
             <div class="button-group">
-                <button class="btn-primary" id="getPackageBtnQuick">Build My Application</button>
-                <button class="btn-secondary" id="skipBtnQuick">Pass on This Role</button>
+                <button class="btn-primary" id="getPackageBtnQuick">Apply</button>
+                <button class="btn-secondary" id="skipBtnQuick">Pass</button>
             </div>
         </div>
 
@@ -732,12 +732,12 @@
                     <!-- 4. HELPER TEXT + BUTTONS -->
                     <p class="helper-text">
                         <strong>I've done the heavy lifting.</strong> Just review, personalize if needed, and submit.<br>
-                        <span style="font-size: 0.85rem; opacity: 0.8;">Package includes: tailored resume, cover letter, outreach templates, and interview prep.</span>
+                        <span style="font-size: 0.85rem; opacity: 0.8;">Includes tailored resume, cover letter, outreach templates, and interview prep.</span>
                     </p>
 
                     <div class="button-group">
-                        <button class="btn-primary" id="getPackageBtn">Build My Application</button>
-                        <button class="btn-secondary" id="skipBtn">Pass on This Role</button>
+                        <button class="btn-primary" id="getPackageBtn">Apply</button>
+                        <button class="btn-secondary" id="skipBtn">Pass</button>
                     </div>
                 </div>
 
@@ -1345,7 +1345,7 @@
 
             try {
                 btn.disabled = true;
-                btn.textContent = 'Generating your documents...';
+                btn.textContent = 'Preparing your application...';
 
                 // Auto-add to tracker when user commits to building application
                 addToTrackerAutomatically();
