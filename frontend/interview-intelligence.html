@@ -754,6 +754,22 @@
         // INTERVIEW MANAGEMENT
         // ============================================================================
         function openAddInterviewModal() {
+            // Pre-populate from analysis data if available
+            if (analysisData) {
+                const companyField = document.getElementById('interviewCompany');
+                const roleField = document.getElementById('interviewRole');
+                const jdField = document.getElementById('interviewJD');
+
+                if (companyField && !companyField.value) {
+                    companyField.value = analysisData._company_name || analysisData._company || '';
+                }
+                if (roleField && !roleField.value) {
+                    roleField.value = analysisData.role_title || analysisData._role || '';
+                }
+                if (jdField && !jdField.value) {
+                    jdField.value = analysisData._jd_text || '';
+                }
+            }
             document.getElementById('addInterviewModal').classList.add('active');
         }
 
