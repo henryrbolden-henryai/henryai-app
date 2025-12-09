@@ -801,133 +801,52 @@
         return;
       }
 
-      // Show loading state
-      const analyzeBtn = document.getElementById('analyzeBtn');
-      analyzeBtn.disabled = true;
-      document.getElementById('loading').classList.add('active');
+      // Extract company and role from JD
+      const { company, role } = extractCompanyAndRole(jobDescription);
+      const candidateName = resumeJson.contact?.full_name || 'Candidate';
 
-      try {
-        // Extract company and role from JD
-        const { company, role } = extractCompanyAndRole(jobDescription);
-        const candidateName = resumeJson.contact?.full_name || 'Candidate';
+      console.log('Analyzing for:', candidateName, '|', company, '|', role);
 
-        console.log('Analyzing for:', candidateName, '|', company, '|', role);
-
-        // Build request payload using new accuracy pipeline structure
-        const requestPayload = {
-          company: company,
-          role_title: role,
-          job_description: jobDescription,
-          resume: {
-            ...resumeJson,
-            resume_text: buildResumeTextFromJson(resumeJson),
-            full_name: candidateName
-          },
-          preferences: {
-            compensation: userProfile.compensation,
-            location: userProfile.location,
-            pronouns: userProfile.pronouns,
-            situation: userProfile.situation  // For tone calibration
-          },
-          profile: {
-            compensation: userProfile.compensation,
-            location: userProfile.location,
-            pronouns: userProfile.pronouns,
-            urgency: userProfile.urgency,
-            employment_status: userProfile.employment_status,
-            risk_tolerance: userProfile.risk_tolerance,
-            career_stage: userProfile.career_stage
-          }
-        };
-
-        // Call /api/jd/analyze endpoint
-        const payloadJson = JSON.stringify(requestPayload);
-        console.log('📤 Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
-        console.log('📦 Payload size:', Math.round(payloadJson.length / 1024), 'KB');
-
-        const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: payloadJson
-        });
-        console.log('📥 Response received:', analyzeResponse.status, analyzeResponse.statusText);
-
-        if (!analyzeResponse.ok) {
-          const errorData = await analyzeResponse.json().catch(() => ({}));
-          throw new Error(errorData.detail || `Analysis failed (${analyzeResponse.status})`);
+      // Build request payload using new accuracy pipeline structure
+      const requestPayload = {
+        company: company,
+        role_title: role,
+        job_description: jobDescription,
+        resume: {
+          ...resumeJson,
+          resume_text: buildResumeTextFromJson(resumeJson),
+          full_name: candidateName
+        },
+        preferences: {
+          compensation: userProfile.compensation,
+          location: userProfile.location,
+          pronouns: userProfile.pronouns,
+          situation: userProfile.situation  // For tone calibration
+        },
+        profile: {
+          compensation: userProfile.compensation,
+          location: userProfile.location,
+          pronouns: userProfile.pronouns,
+          urgency: userProfile.urgency,
+          employment_status: userProfile.employment_status,
+          risk_tolerance: userProfile.risk_tolerance,
+          career_stage: userProfile.career_stage
         }
+      };
 
-        const analysisData = await analyzeResponse.json();
-        console.log('Analysis response:', analysisData);
+      // Store data for the analyzing page to use
+      const pendingData = {
+        requestPayload,
+        resumeJson,
+        candidateName,
+        company,
+        role,
+        jobDescription
+      };
+      sessionStorage.setItem('pendingAnalysis', JSON.stringify(pendingData));
 
-        // Store analysis data for results page
-        const fullData = {
-          ...analysisData,
-          _resume_json: resumeJson,
-          _candidate_name: candidateName,
-          _company: company,
-          _role: role,
-          _jd_text: jobDescription,
-          _profile: userProfile
-        };
-
-        // Check if there are gaps that warrant clarifying questions
-        const gaps = analysisData.gaps || [];
-        const fitScore = analysisData.fit_score || 50;
-
-        // Show clarifying questions if:
-        // 1. There are gaps identified AND
-        // 2. Fit score is below 75% (could be improved)
-        if (gaps.length > 0 && fitScore < 75) {
-          console.log('Gaps detected, fetching clarifying questions...');
-
-          // Store the initial analysis data for later use
-          window.pendingAnalysisData = fullData;
-          window.pendingRequestContext = {
-            resumeJson,
-            jobDescription,
-            company,
-            role,
-            gaps,
-            fitScore
-          };
-
-          // Fetch clarifying questions
-          await fetchAndShowClarifyingQuestions(resumeJson, jobDescription, company, role, gaps, fitScore);
-
-          // Hide loading (modal will handle the rest)
-          analyzeBtn.disabled = false;
-          document.getElementById('loading').classList.remove('active');
-        } else {
-          // No gaps or high fit score - proceed directly to results
-          sessionStorage.setItem('analysisData', JSON.stringify(fullData));
-          window.location.href = 'results.html';
-        }
-
-      } catch (error) {
-        console.error('Analysis error:', error);
-
-        // Provide more specific error messages
-        let errorMessage = 'Something went wrong. Please try again.';
-
-        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-          // Network error - could be CORS, timeout, or server down
-          errorMessage = 'Unable to connect to the server. This could be a temporary issue - please try again in a moment. If the problem persists, check your internet connection.';
-          console.error('Network error details:', {
-            apiUrl: API_BASE_URL,
-            error: error,
-            stack: error.stack
-          });
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-
-        showError(errorMessage);
-        analyzeBtn.disabled = false;
-        document.getElementById('loading').classList.remove('active');
-      }
+      // Navigate to the analyzing page with animated logo
+      window.location.href = 'analyzing.html';
     });
 
     // ========================================================================
