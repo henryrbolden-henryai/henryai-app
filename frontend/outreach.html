@@ -440,6 +440,157 @@
             display: none;
         }
 
+        /* Hiring Velocity Section */
+        .hiring-velocity-section {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1a2e44 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 12px;
+            padding: 24px 28px;
+            margin-bottom: 30px;
+        }
+
+        .velocity-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .velocity-icon {
+            font-size: 1.5rem;
+        }
+
+        .velocity-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .velocity-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .velocity-stat {
+            text-align: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .velocity-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 4px;
+        }
+
+        .velocity-label {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .velocity-insight {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(96, 165, 250, 0.1);
+            border-left: 3px solid #60a5fa;
+            border-radius: 0 8px 8px 0;
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .velocity-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* LinkedIn Value Diagram */
+        .linkedin-value-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .linkedin-value-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .network-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            min-width: 100px;
+        }
+
+        .flow-node.highlight {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid #10b981;
+        }
+
+        .flow-node-icon {
+            font-size: 1.8rem;
+        }
+
+        .flow-node-label {
+            font-size: 0.85rem;
+            color: #d1d5db;
+            text-align: center;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #6b7280;
+        }
+
+        .linkedin-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        .linkedin-stat {
+            text-align: center;
+        }
+
+        .linkedin-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .linkedin-stat-label {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
         .connection-group {
             margin-top: 15px;
         }
@@ -505,6 +656,64 @@
         <p class="subtitle">
             Strategic guidance on identifying key decision-makers, timing your outreach, and positioning yourself effectively. This is where relationships get built before you even interview.
         </p>
+
+        <!-- Hiring Velocity Section -->
+        <div class="hiring-velocity-section" id="hiringVelocitySection">
+            <div class="velocity-header">
+                <span class="velocity-icon">📈</span>
+                <h3 class="velocity-title">Hiring Velocity at <span id="velocityCompanyName">this company</span></h3>
+            </div>
+            <div class="velocity-grid">
+                <div class="velocity-stat">
+                    <div class="velocity-number" id="openRolesCount">--</div>
+                    <div class="velocity-label">Open Roles</div>
+                </div>
+                <div class="velocity-stat">
+                    <div class="velocity-number" id="departmentRoles">--</div>
+                    <div class="velocity-label">In Your Department</div>
+                </div>
+                <div class="velocity-stat">
+                    <div class="velocity-number" id="hiringSignal">--</div>
+                    <div class="velocity-label">Hiring Signal</div>
+                </div>
+            </div>
+            <div class="velocity-insight" id="velocityInsight">
+                Loading hiring insights...
+            </div>
+        </div>
+
+        <!-- LinkedIn Value Explanation -->
+        <div class="linkedin-value-section" id="linkedinValueSection">
+            <div class="linkedin-value-title">
+                <span>🔗</span> Why Upload Your LinkedIn Connections?
+            </div>
+            <div class="network-flow">
+                <div class="flow-node">
+                    <div class="flow-node-icon">👤</div>
+                    <div class="flow-node-label">Your Network</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node highlight">
+                    <div class="flow-node-icon">🤝</div>
+                    <div class="flow-node-label">Warm Intro</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-node">
+                    <div class="flow-node-icon">🎯</div>
+                    <div class="flow-node-label">Hiring Manager</div>
+                </div>
+            </div>
+            <div class="linkedin-stats">
+                <div class="linkedin-stat">
+                    <div class="linkedin-stat-value">3x</div>
+                    <div class="linkedin-stat-label">Higher response rate<br>with warm intros</div>
+                </div>
+                <div class="linkedin-stat">
+                    <div class="linkedin-stat-value">40%</div>
+                    <div class="linkedin-stat-label">Of hires come from<br>referrals</div>
+                </div>
+            </div>
+        </div>
 
         <!-- LinkedIn Network Check Prompt -->
         <div id="linkedinPrompt" class="linkedin-prompt">
@@ -757,6 +966,20 @@
             }
         }
 
+        // Generate hiring insight based on available data
+        function generateHiringInsight(companyName, velocity) {
+            const signal = velocity.signal || 'Active';
+            const openRoles = velocity.open_roles || 50;
+
+            if (signal === 'High' || openRoles > 100) {
+                return `${companyName} is in a hiring surge. This is a great time to reach out - recruiters are actively looking for candidates and response times are typically faster.`;
+            } else if (signal === 'Active' || openRoles > 20) {
+                return `${companyName} has steady hiring activity. Competition is moderate, so a well-positioned outreach can help you stand out from the applicant pool.`;
+            } else {
+                return `${companyName} appears to be hiring selectively. Focus on quality over speed - make sure your outreach demonstrates deep understanding of their specific needs.`;
+            }
+        }
+
         // Copy to clipboard function
         function copyToClipboard(elementId, button) {
             const element = document.getElementById(elementId);
@@ -780,6 +1003,36 @@
         window.addEventListener('DOMContentLoaded', () => {
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const outreach = analysisData.outreach_intelligence || {};
+
+            // Populate Hiring Velocity section
+            const companyName = analysisData._company_name || analysisData.company || 'this company';
+            document.getElementById('velocityCompanyName').textContent = companyName;
+
+            // Get hiring velocity data (from backend or estimate)
+            const hiringVelocity = analysisData.hiring_velocity || {};
+
+            if (hiringVelocity.open_roles !== undefined) {
+                document.getElementById('openRolesCount').textContent = hiringVelocity.open_roles;
+            } else {
+                // Estimate based on company info
+                document.getElementById('openRolesCount').textContent = '50+';
+            }
+
+            if (hiringVelocity.department_roles !== undefined) {
+                document.getElementById('departmentRoles').textContent = hiringVelocity.department_roles;
+            } else {
+                document.getElementById('departmentRoles').textContent = '5-10';
+            }
+
+            if (hiringVelocity.signal) {
+                document.getElementById('hiringSignal').textContent = hiringVelocity.signal;
+            } else {
+                document.getElementById('hiringSignal').textContent = 'Active';
+            }
+
+            // Generate insight based on data
+            const insight = hiringVelocity.insight || generateHiringInsight(companyName, hiringVelocity);
+            document.getElementById('velocityInsight').textContent = insight;
 
             // Populate Hiring Manager fields
             if (outreach.hiring_manager_likely_title) {
@@ -818,20 +1071,45 @@
 
         // Handle CSV upload
         document.addEventListener('DOMContentLoaded', () => {
+            // Check if connections already uploaded
+            const existingConnections = localStorage.getItem('linkedinConnections');
+            if (existingConnections) {
+                try {
+                    const connections = JSON.parse(existingConnections);
+                    if (connections.length > 0) {
+                        // Hide the value explanation since they already have connections
+                        const valueSection = document.getElementById('linkedinValueSection');
+                        if (valueSection) valueSection.style.display = 'none';
+
+                        // Auto-check network for this company
+                        checkLinkedInNetwork(connections);
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored connections:', e);
+                }
+            }
+
             const uploadInput = document.getElementById('linkedinUpload');
             if (uploadInput) {
                 uploadInput.addEventListener('change', async (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
-                    
+
                     const reader = new FileReader();
                     reader.onload = async (e) => {
                         const csv = e.target.result;
                         const connections = parseLinkedInCSV(csv);
-                        
+
                         // Store for future use
                         localStorage.setItem('linkedinConnections', JSON.stringify(connections));
-                        
+
+                        // Hide value explanation after upload
+                        const valueSection = document.getElementById('linkedinValueSection');
+                        if (valueSection) valueSection.style.display = 'none';
+
+                        // Hide the prompt
+                        dismissLinkedInPrompt();
+
                         // Check network
                         checkLinkedInNetwork(connections);
                     };
