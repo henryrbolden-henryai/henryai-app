@@ -5957,6 +5957,292 @@ Return ONLY the intro text, no JSON or formatting."""
 
 
 # ============================================================================
+# INTERVIEWER INTELLIGENCE
+# ============================================================================
+
+class InterviewerRisk(BaseModel):
+    """A risk area to prepare for"""
+    risk: str
+    defense: str
+
+class InterviewerStrength(BaseModel):
+    """A strength to highlight based on interviewer alignment"""
+    strength: str
+    why_relevant: str
+
+class TailoredStory(BaseModel):
+    """A story recommendation tailored to the interviewer"""
+    story_title: str
+    competency: str
+    why_this_story: str
+
+class QuestionToAsk(BaseModel):
+    """A customized question for the candidate to ask the interviewer"""
+    question: str
+    rationale: str
+
+class InterviewerIntelRequest(BaseModel):
+    """Request to analyze an interviewer's profile"""
+    linkedin_profile_text: str  # Can be from PDF extraction, pasted text, or OCR from image
+    company: str
+    role_title: str
+    interview_type: str
+    interviewer_name: str = ""
+    interviewer_title: str = ""
+    candidate_resume_json: Dict[str, Any] = {}
+    job_description: str = ""
+
+class InterviewerIntelResponse(BaseModel):
+    """Complete interviewer intelligence report"""
+    # Interviewer Summary
+    interviewer_name: str
+    interviewer_title: str
+    current_company: str
+    tenure: str
+    summary: str  # Who they are and what they care about
+
+    # Analysis
+    likely_evaluation_focus: List[str]  # What they likely evaluate
+    predicted_question_themes: List[str]  # Question themes based on background
+    communication_style: str  # How to communicate with this person
+
+    # Strategy
+    risks: List[InterviewerRisk]  # Risk areas and defenses
+    strengths_to_highlight: List[InterviewerStrength]  # Strengths to emphasize
+    tailored_stories: List[TailoredStory]  # Story recommendations
+    questions_to_ask: List[QuestionToAsk]  # Customized questions
+
+    # Debrief insights (if available)
+    debrief_insights: Optional[str] = None
+
+
+@app.post("/api/interviewer-intelligence/analyze", response_model=InterviewerIntelResponse)
+async def analyze_interviewer(request: InterviewerIntelRequest):
+    """
+    Analyze an interviewer's LinkedIn profile and generate strategic intelligence.
+    This creates recruiter-grade coaching tailored to the specific interviewer.
+    """
+    try:
+        print(f"🔍 Analyzing interviewer profile for {request.company} - {request.role_title}")
+        print(f"   Profile text length: {len(request.linkedin_profile_text)} chars")
+
+        # Build candidate context
+        candidate_context = ""
+        if request.candidate_resume_json:
+            experiences = request.candidate_resume_json.get("experience", [])
+            for exp in experiences[:4]:
+                candidate_context += f"- {exp.get('title', '')} at {exp.get('company', '')}: {exp.get('description', '')[:200]}\n"
+            skills = request.candidate_resume_json.get("skills", [])
+            if skills:
+                candidate_context += f"Skills: {', '.join(skills[:15])}\n"
+
+        prompt = f"""You are an elite executive recruiter providing strategic interview coaching. Analyze this LinkedIn profile and create a comprehensive interviewer intelligence report.
+
+INTERVIEWER'S LINKEDIN PROFILE:
+{request.linkedin_profile_text}
+
+INTERVIEW CONTEXT:
+- Company: {request.company}
+- Role the candidate is interviewing for: {request.role_title}
+- Interview Type: {request.interview_type}
+- Job Description: {request.job_description[:1000] if request.job_description else 'Not provided'}
+
+CANDIDATE'S BACKGROUND:
+{candidate_context if candidate_context else 'Not provided'}
+
+Based on the interviewer's profile, generate a strategic intelligence report. Your analysis must be:
+- Specific to THIS interviewer (not generic)
+- Based on signals from their background, career path, and experience
+- Actionable and practical for interview preparation
+
+Return a JSON object with this exact structure:
+{{
+    "interviewer_name": "Their full name from profile",
+    "interviewer_title": "Their current title",
+    "current_company": "Their current company",
+    "tenure": "How long they've been at current company (e.g., '3 years')",
+    "summary": "2-3 sentence summary of who they are professionally and what they likely care about based on their career trajectory",
+
+    "likely_evaluation_focus": [
+        "What they'll likely probe based on their background (e.g., 'Execution rigor - they built teams at high-growth startups')",
+        "Second focus area",
+        "Third focus area",
+        "Fourth focus area"
+    ],
+
+    "predicted_question_themes": [
+        "Specific question theme they'll likely ask about based on their experience",
+        "Second theme",
+        "Third theme",
+        "Fourth theme"
+    ],
+
+    "communication_style": "How to communicate with this person based on their background. Be specific about pace, level of detail, what to emphasize.",
+
+    "risks": [
+        {{
+            "risk": "A specific risk area the candidate should prepare for",
+            "defense": "How to address or mitigate this risk"
+        }},
+        {{
+            "risk": "Second risk",
+            "defense": "How to address it"
+        }}
+    ],
+
+    "strengths_to_highlight": [
+        {{
+            "strength": "A strength the candidate should emphasize",
+            "why_relevant": "Why this matters to this specific interviewer"
+        }},
+        {{
+            "strength": "Second strength",
+            "why_relevant": "Why it matters"
+        }}
+    ],
+
+    "tailored_stories": [
+        {{
+            "story_title": "Title of a STAR story to prepare",
+            "competency": "What competency it demonstrates",
+            "why_this_story": "Why this story will resonate with this interviewer"
+        }},
+        {{
+            "story_title": "Second story",
+            "competency": "Competency",
+            "why_this_story": "Why it resonates"
+        }}
+    ],
+
+    "questions_to_ask": [
+        {{
+            "question": "A thoughtful question tailored to this interviewer's background",
+            "rationale": "Why this question will resonate with them"
+        }},
+        {{
+            "question": "Second question",
+            "rationale": "Why it resonates"
+        }},
+        {{
+            "question": "Third question",
+            "rationale": "Why it resonates"
+        }}
+    ],
+
+    "debrief_insights": null
+}}
+
+Return ONLY the JSON object, no additional text."""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        result_text = response.content[0].text.strip()
+
+        # Parse JSON response
+        if result_text.startswith("```"):
+            result_text = result_text.split("```")[1]
+            if result_text.startswith("json"):
+                result_text = result_text[4:]
+
+        intel_data = json.loads(result_text)
+
+        print(f"✅ Interviewer intelligence generated for {intel_data.get('interviewer_name', 'Unknown')}")
+
+        return InterviewerIntelResponse(**intel_data)
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parse error: {e}")
+        print(f"   Raw response: {result_text[:500]}")
+        raise HTTPException(status_code=500, detail="Failed to parse interviewer analysis")
+    except Exception as e:
+        print(f"🔥 Interviewer analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze interviewer: {str(e)}")
+
+
+@app.post("/api/interviewer-intelligence/extract-text")
+async def extract_linkedin_text(file: UploadFile = File(...)):
+    """
+    Extract text from an uploaded LinkedIn PDF or image.
+    For PDFs, uses PyMuPDF. For images, returns base64 for Claude vision.
+    """
+    try:
+        content = await file.read()
+        filename = file.filename.lower()
+
+        if filename.endswith('.pdf'):
+            # Extract text from PDF using PyMuPDF
+            import fitz  # PyMuPDF
+
+            pdf_doc = fitz.open(stream=content, filetype="pdf")
+            text = ""
+            for page in pdf_doc:
+                text += page.get_text()
+            pdf_doc.close()
+
+            print(f"✅ Extracted {len(text)} chars from PDF")
+            return {"text": text, "type": "pdf"}
+
+        elif any(filename.endswith(ext) for ext in ['.png', '.jpg', '.jpeg', '.webp']):
+            # For images, we'll use Claude's vision capability
+            import base64
+            base64_image = base64.b64encode(content).decode('utf-8')
+
+            # Determine media type
+            if filename.endswith('.png'):
+                media_type = "image/png"
+            elif filename.endswith('.webp'):
+                media_type = "image/webp"
+            else:
+                media_type = "image/jpeg"
+
+            # Use Claude to extract text from image
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=4000,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": base64_image
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": """Extract ALL text from this LinkedIn profile screenshot. Include:
+- Name and headline
+- About section (full text)
+- Experience section (all roles, companies, dates, descriptions)
+- Education
+- Skills
+- Any other visible information
+
+Format as plain text, preserving the structure. Be thorough - capture every piece of text visible."""
+                        }
+                    ]
+                }]
+            )
+
+            extracted_text = response.content[0].text
+            print(f"✅ Extracted {len(extracted_text)} chars from image via vision")
+            return {"text": extracted_text, "type": "image"}
+
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF or image.")
+
+    except Exception as e:
+        print(f"🔥 Text extraction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to extract text: {str(e)}")
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 
