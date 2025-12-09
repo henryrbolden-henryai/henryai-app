@@ -207,6 +207,12 @@ class JDAnalysis(BaseModel):
     strategic_positioning: str
     salary_info: Optional[str] = None
 
+class SupplementAnswer(BaseModel):
+    """A user-provided answer to a clarifying question about a gap"""
+    gap_area: str
+    question: str
+    answer: str
+
 class DocumentsGenerateRequest(BaseModel):
     resume: Dict[str, Any]
     jd_analysis: Dict[str, Any]
@@ -232,12 +238,6 @@ class GeneratedDocuments(BaseModel):
 # ============================================================================
 # TAILORED DOCUMENT GENERATION MODELS
 # ============================================================================
-
-class SupplementAnswer(BaseModel):
-    """A user-provided answer to a clarifying question about a gap"""
-    gap_area: str
-    question: str
-    answer: str
 
 class ResumeCustomizeRequest(BaseModel):
     resume_text: Optional[str] = None
