@@ -1299,6 +1299,12 @@
                 return;
             }
 
+            // Create a unique key for storing analysis data
+            const analysisKey = `analysis_${companyName.toLowerCase().replace(/\s+/g, '_')}_${(roleTitle || 'role').toLowerCase().replace(/\s+/g, '_')}`;
+
+            // Store the full analysis data for this application
+            localStorage.setItem(analysisKey, JSON.stringify(data));
+
             // Create application object (matching tracker.html structure)
             const application = {
                 id: Date.now(),
@@ -1312,7 +1318,8 @@
                 notes: '',
                 strengths: data.strengths || [],
                 gaps: data.gaps || [],
-                positioningStrategy: data.strategic_positioning || ''
+                positioningStrategy: data.strategic_positioning || '',
+                analysisKey: analysisKey  // Reference to stored analysis data
             };
 
             // Get existing applications
@@ -1325,9 +1332,10 @@
             );
 
             if (existingIndex !== -1) {
-                // Already tracked - update lastUpdated but keep existing status/notes
+                // Already tracked - update lastUpdated and analysisKey but keep existing status/notes
                 applications[existingIndex].lastUpdated = new Date().toISOString();
-                console.log('Application already tracked, updated timestamp');
+                applications[existingIndex].analysisKey = analysisKey;
+                console.log('Application already tracked, updated timestamp and analysis data');
             } else {
                 // Add new application
                 applications.push(application);

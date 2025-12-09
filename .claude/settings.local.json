@@ -7,7 +7,16 @@
       "Bash(do if ! grep -q \"Instrument\" \"$f\")",
       "Bash(then echo \"Missing Instrument Serif: $f\" fi done)",
       "Bash(xargs -I{} sh -c 'grep -q \"\"\"\"Instrument\"\"\"\" {} || echo \"\"\"\"Missing: {}\"\"\"\"')",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nUX improvements: standardize logo, simplify greetings, fix timeline and debrief\n\n- Standardize HenryAI logo font (Instrument Serif) across all pages\n- Simplify Ask Henry chat greetings to a single friendly message\n- Fix tracker timeline to show correct stage for \"Awaiting Next Round\"\n- Remove redundant \"Analyze a Role\" nav link and \"Track Application\" button\n- Fix Avg Time to Screen calculation\n- Increase API timeout and transcript limit for interview debrief\n- Add better error handling for long transcripts\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

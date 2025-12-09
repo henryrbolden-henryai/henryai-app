@@ -462,6 +462,11 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: color 0.2s;
+        }
+
+        .card-title:hover {
+            color: var(--color-accent);
         }
 
         .leverage-badge {
@@ -3939,7 +3944,7 @@
                 <div class="app-card ${statusLabel === 'hot' ? 'hot' : ''} ${isInactive ? 'inactive' : ''} ${isGhostRisk ? 'ghost-risk' : ''}" data-id="${app.id}">
                     <div class="card-header">
                         <div class="card-title-section">
-                            <div class="card-title">
+                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" title="View application strategy">
                                 ${app.role}
                                 ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
                             </div>
@@ -4111,12 +4116,12 @@
                 if (!app.dateApplied) {
                     actions.push({ label: '📤 Submit Application', action: `markAction(${app.id}, 'dateApplied')`, primary: true });
                 }
-                actions.push({ label: '📝 Review Materials', action: `window.location.href='documents.html'` });
+                actions.push({ label: '📝 Review Materials', action: `navigateWithAnalysis(${app.id}, 'documents.html')` });
             }
             // Just Applied - waiting for response
             else if (['Applied', 'Reached Out'].includes(status)) {
                 if (daysSince >= 5 && daysSince <= 10) {
-                    actions.push({ label: '📧 Send Follow-Up', action: `window.location.href='outreach.html'`, primary: true });
+                    actions.push({ label: '📧 Send Follow-Up', action: `navigateWithAnalysis(${app.id}, 'outreach.html')`, primary: true });
                 } else if (daysSince > 10) {
                     actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp(${app.id})`, primary: true });
                 }
@@ -4127,7 +4132,7 @@
             // Screen scheduled/awaiting
             else if (['Response Received', 'Recruiter Screen', 'Awaiting Screen'].includes(status)) {
                 actions.push({ label: '📅 Schedule Prep Time', action: `schedulePrepTime(${app.id})`, primary: true });
-                actions.push({ label: '📋 Review Prep Guide', action: `window.location.href='interview-intelligence.html'` });
+                actions.push({ label: '📋 Review Prep Guide', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
@@ -4136,7 +4141,7 @@
                     actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
                 } else {
                     actions.push({ label: '📝 Capture Notes Now', action: `toggleSection(${app.id}, 'notes')`, primary: true });
-                    actions.push({ label: '📋 View Prep', action: `window.location.href='interview-intelligence.html'` });
+                    actions.push({ label: '📋 View Prep', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
                 }
             }
             // Final stages
@@ -4149,11 +4154,11 @@
                 } else {
                     actions.push({ label: '📝 Capture Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
                 }
-                actions.push({ label: '💰 Research Comp', action: `window.location.href='overview.html'` });
+                actions.push({ label: '💰 Research Comp', action: `navigateWithAnalysis(${app.id}, 'overview.html')` });
             }
             // Offer stage
             else if (status === 'Offer Received') {
-                actions.push({ label: '💰 Prep Negotiation', action: `window.location.href='overview.html'`, primary: true });
+                actions.push({ label: '💰 Prep Negotiation', action: `navigateWithAnalysis(${app.id}, 'overview.html')`, primary: true });
                 actions.push({ label: '📊 Compare Offers', action: `compareOffers(${app.id})` });
             }
             // Inactive states
@@ -4223,6 +4228,46 @@
 
         function compareOffers(appId) {
             alert('Offer comparison feature coming soon!');
+        }
+
+        /**
+         * Navigate to a page with the application's analysis data loaded
+         * This ensures overview, documents, outreach, etc. have the context they need
+         */
+        function navigateWithAnalysis(appId, targetPage) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) {
+                console.error('Application not found:', appId);
+                window.location.href = targetPage;
+                return;
+            }
+
+            // Try to load stored analysis data
+            if (app.analysisKey) {
+                const analysisData = localStorage.getItem(app.analysisKey);
+                if (analysisData) {
+                    sessionStorage.setItem('analysisData', analysisData);
+                    console.log('Loaded analysis data for:', app.company, app.role);
+                    window.location.href = targetPage;
+                    return;
+                }
+            }
+
+            // Fallback: create minimal analysis data from app info
+            const minimalAnalysis = {
+                _company_name: app.company,
+                _company: app.company,
+                role_title: app.role,
+                _role: app.role,
+                fit_score: app.fitScore,
+                strengths: app.strengths || [],
+                gaps: app.gaps || [],
+                strategic_positioning: app.positioningStrategy || '',
+                salary_info: app.salary || 'Not specified'
+            };
+            sessionStorage.setItem('analysisData', JSON.stringify(minimalAnalysis));
+            console.log('Created minimal analysis data for:', app.company, app.role);
+            window.location.href = targetPage;
         }
 
         function renderRejectionDebrief(app) {
