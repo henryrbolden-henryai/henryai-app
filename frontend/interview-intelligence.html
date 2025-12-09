@@ -618,11 +618,12 @@
                     <label for="interviewType">Interview Type *</label>
                     <select id="interviewType" required>
                         <option value="">Select type...</option>
-                        <option value="recruiter_screen">Recruiter Screen</option>
-                        <option value="hiring_manager">Hiring Manager</option>
-                        <option value="technical">Technical</option>
-                        <option value="panel">Panel / Final</option>
-                        <option value="executive">Executive</option>
+                        <option value="Recruiter Screen">Recruiter Screen</option>
+                        <option value="Hiring Manager">Hiring Manager Interview</option>
+                        <option value="Technical Round">Technical Round</option>
+                        <option value="Panel Interview">Panel Interview</option>
+                        <option value="Final Round">Final Round</option>
+                        <option value="Executive Interview">Executive Interview</option>
                     </select>
                 </div>
 
@@ -796,8 +797,52 @@
             upcomingInterviews.push(interview);
             localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
 
+            // Sync to tracker - update or create application
+            syncInterviewToTracker(interview);
+
             closeAddInterviewModal();
             renderInterviewList();
+        }
+
+        function syncInterviewToTracker(interview) {
+            // Get tracked applications from localStorage
+            let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+
+            // Check if this company/role combo already exists
+            const existingAppIndex = trackedApps.findIndex(app =>
+                app.company.toLowerCase() === interview.company.toLowerCase() &&
+                app.role.toLowerCase() === interview.role.toLowerCase()
+            );
+
+            if (existingAppIndex !== -1) {
+                // Update existing application status to the interview stage
+                trackedApps[existingAppIndex].status = interview.type;
+                trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
+                trackedApps[existingAppIndex].interviewDate = interview.date;
+                trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
+                trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
+            } else {
+                // Create new tracked application
+                const newApp = {
+                    id: Date.now(),
+                    company: interview.company,
+                    role: interview.role,
+                    status: interview.type, // Use interview type as status
+                    fitScore: analysisData?.overall_match_score || 75, // Use analysis score if available
+                    salary: analysisData?.salary_info || 'Not specified',
+                    dateAdded: new Date().toISOString(),
+                    dateApplied: new Date().toISOString(), // Assume applied if interviewing
+                    interviewDate: interview.date,
+                    interviewerName: interview.interviewerName,
+                    interviewerTitle: interview.interviewerTitle,
+                    notes: interview.jobDescription ? `Job Description:\n${interview.jobDescription}` : ''
+                };
+                trackedApps.push(newApp);
+            }
+
+            // Save back to localStorage
+            localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+            console.log('Interview synced to tracker:', interview.company, interview.role, interview.type);
         }
 
         function renderInterviewList() {
@@ -819,8 +864,15 @@
             // Sort by date (soonest first)
             const sorted = [...upcomingInterviews].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Map interview type to readable label
+            // Map interview type to readable label (now uses same values as display)
             const typeLabels = {
+                'Recruiter Screen': 'Recruiter Screen',
+                'Hiring Manager': 'Hiring Manager',
+                'Technical Round': 'Technical Round',
+                'Panel Interview': 'Panel Interview',
+                'Final Round': 'Final Round',
+                'Executive Interview': 'Executive Interview',
+                // Legacy mappings for backwards compatibility
                 'recruiter_screen': 'Recruiter Screen',
                 'hiring_manager': 'Hiring Manager',
                 'technical': 'Technical',
