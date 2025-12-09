@@ -607,6 +607,7 @@
             const context = getPageContext();
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
 
             const response = await fetch(`${API_BASE}/api/ask-henry`, {
                 method: 'POST',
@@ -623,7 +624,8 @@
                         has_resume: !!resumeData.name
                     },
                     analysis_data: analysisData,
-                    resume_data: resumeData
+                    resume_data: resumeData,
+                    user_profile: userProfile
                 })
             });
 

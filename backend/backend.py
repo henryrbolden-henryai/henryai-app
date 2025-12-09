@@ -6269,6 +6269,7 @@ class AskHenryRequest(BaseModel):
     context: AskHenryContext
     analysis_data: Optional[Dict[str, Any]] = None
     resume_data: Optional[Dict[str, Any]] = None
+    user_profile: Optional[Dict[str, Any]] = None  # Includes emotional state/situation
 
 
 class AskHenryResponse(BaseModel):
@@ -6286,6 +6287,8 @@ CURRENT CONTEXT:
 - Has resume uploaded: {has_resume}
 
 {analysis_context}
+
+{emotional_context}
 
 YOUR PERSONALITY:
 - Empathetic first - acknowledge emotions and difficult situations before jumping to solutions
@@ -6348,6 +6351,38 @@ RESUME DATA:
 - Current/Recent Role: {request.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if request.resume_data.get('experience') else 'Unknown'}
 """
 
+    # Build emotional context from user profile
+    emotional_context = ""
+    if request.user_profile:
+        situation = request.user_profile.get('situation', {})
+        holding_up = situation.get('holding_up')
+        timeline = situation.get('timeline')
+        confidence = situation.get('confidence')
+
+        if holding_up or timeline or confidence:
+            emotional_context = "USER'S EMOTIONAL STATE (adjust your tone accordingly):\n"
+
+            if holding_up == 'struggling':
+                emotional_context += "- They're struggling emotionally. Be extra gentle and encouraging. Don't be pushy.\n"
+            elif holding_up == 'hanging_in':
+                emotional_context += "- They're hanging in there but it's hard. Be supportive but action-oriented.\n"
+            elif holding_up == 'doing_okay':
+                emotional_context += "- They're doing okay. You can be more direct and strategic.\n"
+
+            if timeline == 'urgent':
+                emotional_context += "- URGENT financial pressure. Prioritize speed but don't let them take bad roles out of desperation.\n"
+            elif timeline == 'actively_looking':
+                emotional_context += "- Actively looking with some runway. Balance speed with quality.\n"
+            elif timeline == 'exploring':
+                emotional_context += "- Just exploring, no rush. Can be more strategic and selective.\n"
+
+            if confidence == 'low':
+                emotional_context += "- Low confidence right now. Be encouraging. Remind them it's the market, not them. Build them up.\n"
+            elif confidence == 'building':
+                emotional_context += "- Confidence is building. Reinforce wins and progress.\n"
+            elif confidence == 'confident':
+                emotional_context += "- They're feeling confident. Match their energy, be direct and strategic.\n"
+
     # Format system prompt
     system_prompt = ASK_HENRY_SYSTEM_PROMPT.format(
         current_page=request.context.current_page,
@@ -6356,7 +6391,8 @@ RESUME DATA:
         role=request.context.role or "Not specified",
         has_analysis="Yes" if request.context.has_analysis else "No",
         has_resume="Yes" if request.context.has_resume else "No",
-        analysis_context=analysis_context
+        analysis_context=analysis_context,
+        emotional_context=emotional_context
     )
 
     # Build messages
