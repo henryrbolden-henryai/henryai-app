@@ -320,22 +320,15 @@
                     _profile: userProfile
                 };
 
-                // Check if there are gaps that warrant clarifying questions
-                const gaps = analysisData.gaps || [];
-                const fitScore = analysisData.fit_score || 50;
-
                 // Store analysis data
                 sessionStorage.setItem('analysisData', JSON.stringify(fullData));
 
                 // Clear pending data
                 sessionStorage.removeItem('pendingAnalysis');
 
-                // Show clarifying questions if gaps exist and fit score is below 75
-                if (gaps.length > 0 && fitScore < 75) {
-                    window.location.href = 'strengthen.html';
-                } else {
-                    window.location.href = 'results.html';
-                }
+                // Always go to results page first (fit score + strategy overview)
+                // User will then click "Generate Documents" which routes through strengthen if needed
+                window.location.href = 'results.html';
 
             } catch (error) {
                 console.error('Analysis error:', error);
