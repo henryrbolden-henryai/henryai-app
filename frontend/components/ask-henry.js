@@ -378,8 +378,20 @@
     function getContextualSuggestions() {
         const path = window.location.pathname;
         const page = path.split('/').pop().replace('.html', '') || 'index';
+        const userName = getUserName();
+
+        // For first-time visitors on home page, don't show suggestions
+        // Let the greeting speak for itself
+        if (page === 'index' && !userName) {
+            return [];
+        }
 
         const suggestions = {
+            'index': [
+                'Analyze a job for me',
+                'Help me update my resume',
+                'What should I work on?'
+            ],
             'positioning': [
                 'Why this positioning?',
                 'What if they ask about gaps?',
