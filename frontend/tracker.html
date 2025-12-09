@@ -161,6 +161,32 @@
             opacity: 0.9;
         }
 
+        /* BOTTOM CTA */
+        .bottom-cta {
+            display: flex;
+            justify-content: center;
+            padding: 40px 0;
+            margin-top: 20px;
+        }
+
+        .analyze-btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            text-decoration: none;
+        }
+
+        .analyze-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
         /* PIPELINE INTELLIGENCE DASHBOARD */
         .pipeline-dashboard {
             display: grid;
@@ -310,6 +336,15 @@
             font-weight: 600;
             font-size: 0.95rem;
             margin-bottom: 4px;
+        }
+
+        .priority-role.clickable-title {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .priority-role.clickable-title:hover {
+            color: var(--color-accent);
         }
 
         .priority-company {
@@ -500,6 +535,32 @@
         .card-subtitle {
             color: var(--color-text-secondary);
             font-size: 0.9rem;
+        }
+
+        .editable-company {
+            cursor: pointer;
+            padding: 2px 4px;
+            margin: -2px -4px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .editable-company:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .company-edit-input {
+            background: var(--color-surface);
+            border: 1px solid var(--color-accent);
+            border-radius: 4px;
+            padding: 4px 8px;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            min-width: 150px;
+        }
+
+        .company-edit-input:focus {
+            outline: none;
         }
 
         .card-meta {
@@ -2040,9 +2101,6 @@
                 <h1>Pipeline Command Center</h1>
                 <p class="subtitle">Your strategic view of every opportunity in play</p>
             </div>
-            <div class="header-actions">
-                <a href="analyze.html" class="header-btn primary" style="text-decoration: none;">Analyze New Role</a>
-            </div>
         </div>
 
         <!-- PIPELINE INTELLIGENCE DASHBOARD -->
@@ -2134,6 +2192,11 @@
         <!-- APPLICATIONS -->
         <div id="applicationsContainer">
             <!-- Dynamically populated -->
+        </div>
+
+        <!-- ANALYZE NEW ROLE BUTTON -->
+        <div class="bottom-cta">
+            <a href="analyze.html" class="analyze-btn">Analyze New Role</a>
         </div>
         </div>
 
@@ -3891,7 +3954,7 @@
                     <div class="priority-item ${statusLabel}">
                         <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
                         <div class="priority-content">
-                            <div class="priority-role">${app.role}</div>
+                            <div class="priority-role clickable-title" onclick="navigateWithAnalysis(${app.id}, 'overview.html')">${app.role}</div>
                             <div class="priority-company">${app.company} • ${app.status}</div>
                             <div class="priority-action">→ ${action.action}</div>
                         </div>
@@ -3979,7 +4042,7 @@
                                 ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
                             </div>
                             <div class="card-subtitle">
-                                ${app.company}${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
+                                <span class="editable-company" onclick="editCompanyName(${app.id}, event)" title="Click to edit company name">${app.company}</span>${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
                             </div>
                         </div>
                         <div class="card-meta">
@@ -4390,6 +4453,51 @@
         function toggleStatusDropdown(appId) {
             document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
             document.getElementById(`dropdown-${appId}`).classList.toggle('show');
+        }
+
+        function editCompanyName(appId, event) {
+            event.stopPropagation();
+            const span = event.target;
+            const currentName = span.textContent;
+
+            // Create input element
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'company-edit-input';
+
+            // Replace span with input
+            span.replaceWith(input);
+            input.focus();
+            input.select();
+
+            // Save on blur or enter
+            const saveEdit = () => {
+                const newName = input.value.trim() || currentName;
+
+                // Update in localStorage
+                const apps = getApplications();
+                const idx = apps.findIndex(a => a.id === appId);
+                if (idx !== -1 && newName !== apps[idx].company) {
+                    apps[idx].company = newName;
+                    apps[idx].lastUpdated = new Date().toISOString();
+                    saveApplications(apps);
+                }
+
+                // Re-render
+                renderAll(getApplications());
+            };
+
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    input.blur();
+                } else if (e.key === 'Escape') {
+                    input.value = currentName;
+                    input.blur();
+                }
+            });
         }
 
         function updateStatus(appId, newStatus) {

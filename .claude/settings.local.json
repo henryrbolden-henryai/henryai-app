@@ -16,7 +16,8 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(git stash pop:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []

@@ -28,12 +28,17 @@
             margin: 0 auto;
         }
 
+        .nav-links {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
         .back-link {
             display: inline-flex;
             align-items: center;
             color: #60a5fa;
             text-decoration: none;
-            margin-bottom: 30px;
             font-size: 14px;
             transition: color 0.2s;
         }
@@ -283,7 +288,10 @@
     </header>
 
     <div class="container">
-        <a href="results.html" class="back-link">← Back to Analysis</a>
+        <div class="nav-links">
+            <a href="tracker.html" class="back-link">← Back to Tracker</a>
+            <a href="results.html" class="back-link" style="margin-left: auto;">View Full Analysis →</a>
+        </div>
 
         <h1>Your Application Strategy Overview</h1>
         <p class="subtitle">Everything you need to apply for this role, tailored to stand out.</p>
