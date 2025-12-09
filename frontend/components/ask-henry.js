@@ -432,56 +432,12 @@
         return suggestions[page] || suggestions['default'];
     }
 
-    // Generate personalized greeting based on context
+    // Generate personalized greeting
     function getPersonalizedGreeting(userName, context) {
-        const name = userName || '';
-
-        // Varied, natural greetings for each page
-        const greetings = {
-            'index': name
-                ? `${name}! Back for more. What are we working on today?`
-                : `Sick of applying to jobs and hearing nothing back? It's exhausting, right? Well, you've come to the right place. I'm Henry. Tell me what you're looking for and I'll help you actually land it. I'm also here to answer any questions you may have. So, what's up?`,
-            'analyze': name
-                ? `${name}, paste that job description and I'll tell you if it's worth pursuing.`
-                : `Got a role you're considering? Paste the job description and I'll break it down for you.`,
-            'results': name
-                ? `Alright ${name}, here's what I found. Anything you want me to dig into?`
-                : `Here's my take on this role. What questions do you have?`,
-            'overview': name
-                ? `${name}, this is your game plan. Which area do you want to tackle first?`
-                : `Here's everything you need for this application. Where should we start?`,
-            'positioning': name
-                ? `This is how I'd position you, ${name}. Want to talk through any of it?`
-                : `Here's my recommended positioning. Let me know if anything feels off.`,
-            'documents': name
-                ? `${name}, I've customized these for the role. Questions about any changes I made?`
-                : `Your tailored resume and cover letter are ready. Curious why I changed something?`,
-            'outreach': name
-                ? `Let's get you connected, ${name}. Who do you want to reach out to first?`
-                : `Networking time. I can help you find the right people and craft your message.`,
-            'interview-intelligence': name
-                ? `Interview coming up, ${name}? Tell me about it and I'll help you prep.`
-                : `Which interview are you getting ready for? I'll help you walk in prepared.`,
-            'prep-guide': name
-                ? `Let's get you ready, ${name}. What are you most nervous about?`
-                : `Time to prep. What do you want to focus on for this interview?`,
-            'interview-debrief': name
-                ? `How'd it go, ${name}? Walk me through it.`
-                : `Fresh out of the interview? Tell me how it went.`,
-            'mock-interview': name
-                ? `Ready to practice, ${name}? I won't go easy on you.`
-                : `Let's run through some questions. I'll give you real feedback.`,
-            'tracker': name
-                ? `${name}, here's where things stand. Need help prioritizing?`
-                : `Your applications at a glance. What needs attention?`,
-            'profile-edit': name
-                ? `Updating your profile, ${name}? This info powers everything I do for you.`
-                : `Your profile is the foundation. Let me know if you need help with any section.`
-        };
-
-        return greetings[context.page] || (name
-            ? `Hey ${name}, what's on your mind?`
-            : `What can I help you with?`);
+        if (userName) {
+            return `Hey ${userName}! How can I help you?`;
+        }
+        return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
     }
 
     // Create widget HTML

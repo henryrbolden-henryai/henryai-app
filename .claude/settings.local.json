@@ -1,24 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pip3 install:*)",
-      "Bash(python3:*)",
-      "Bash(lsof:*)",
-      "Bash(kill:*)",
-      "Bash(curl:*)",
-      "Bash(xargs kill:*)",
-      "Bash(find:*)",
-      "Bash(cat:*)",
-      "Bash(unzip:*)",
-      "Bash(fold:*)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git checkout:*)",
-      "Bash(git pull:*)",
-      "Bash(git merge:*)",
-      "Bash(git fetch:*)",
-      "Bash(diagnose what's happening. Let's fix that.\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(gh pr create:*)",
+      "Bash(done)",
+      "Bash(while read f)",
+      "Bash(do if ! grep -q \"Instrument\" \"$f\")",
+      "Bash(then echo \"Missing Instrument Serif: $f\" fi done)",
+      "Bash(xargs -I{} sh -c 'grep -q \"\"\"\"Instrument\"\"\"\" {} || echo \"\"\"\"Missing: {}\"\"\"\"')",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

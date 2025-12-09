@@ -56,7 +56,7 @@ API_KEY = os.getenv("ANTHROPIC_API_KEY")
 if not API_KEY:
     raise ValueError("ANTHROPIC_API_KEY environment variable must be set")
 
-client = anthropic.Anthropic(api_key=API_KEY)
+client = anthropic.Anthropic(api_key=API_KEY, timeout=120.0)  # 2 min timeout for long transcripts
 
 # OpenAI API key for TTS (optional - for natural AI voice)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -4205,6 +4205,14 @@ async def debrief_chat(request: DebriefChatRequest):
     # Choose prompt based on whether transcript is provided
     has_transcript = bool(request.transcript and request.transcript.strip())
 
+    # Truncate extremely long transcripts to stay within Claude's context window
+    # Claude Sonnet can handle ~200k tokens, so 400k chars is a safe limit (~100k tokens)
+    transcript_text = request.transcript or ""
+    MAX_TRANSCRIPT_CHARS = 400000
+    if len(transcript_text) > MAX_TRANSCRIPT_CHARS:
+        print(f"⚠️ Truncating very long transcript from {len(transcript_text)} to {MAX_TRANSCRIPT_CHARS} chars")
+        transcript_text = transcript_text[:MAX_TRANSCRIPT_CHARS] + "\n\n[... transcript truncated for length ...]"
+
     if has_transcript:
         system_prompt = DEBRIEF_SYSTEM_PROMPT_WITH_TRANSCRIPT.format(
             company=request.context.company,
@@ -4215,7 +4223,7 @@ async def debrief_chat(request: DebriefChatRequest):
             feeling=feeling,
             resume_text=resume_text,
             job_description=request.job_description,
-            transcript=request.transcript
+            transcript=transcript_text
         )
     else:
         system_prompt = DEBRIEF_SYSTEM_PROMPT_NO_TRANSCRIPT.format(

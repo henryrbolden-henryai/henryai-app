@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Network Intelligence & Strategic Outreach - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -36,14 +39,15 @@
         }
 
         .logo {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #60a5fa;
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
             text-decoration: none;
         }
 
-        .logo span {
-            color: #ffffff;
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
         }
 
         .header-nav {
@@ -299,46 +303,6 @@
             line-height: 1.6;
         }
 
-        .track-section {
-            background: #1f2937;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            border: 1px solid #374151;
-        }
-
-        .track-btn {
-            padding: 16px 40px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .track-btn:hover:not(:disabled) {
-            background: #059669;
-            transform: translateY(-2px);
-        }
-
-        .track-btn:disabled {
-            background: #6b7280;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .track-message {
-            margin-top: 15px;
-            color: #10b981;
-            font-weight: 500;
-            display: none;
-        }
 
         .linkedin-prompt {
             background: rgba(245, 158, 11, 0.1);
@@ -639,7 +603,7 @@
     <div class="container">
         <!-- Header Navigation -->
         <div class="header">
-            <a href="index.html" class="logo">Henry<span>AI</span></a>
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
                 <a href="tracker.html">My Applications</a>
                 <a href="index.html">Edit Profile</a>
@@ -910,13 +874,6 @@
             </div>
         </div>
 
-        <!-- Track Application Button (Always Visible) -->
-        <div class="track-section">
-            <button class="track-btn" id="trackBtn" onclick="trackThisApplication()">
-                <span>✓</span> Track This Application
-            </button>
-            <div class="track-message" id="trackMessage"></div>
-        </div>
     </div>
 
     <script>
@@ -1235,119 +1192,6 @@ The CSV includes: Name, Company, Position, Connected Date`);
             }
         }
 
-        // Track Application Function
-        function trackThisApplication() {
-            console.log('Track button clicked');
-            const analysisDataStr = sessionStorage.getItem('analysisData');
-            console.log('Analysis data string:', analysisDataStr);
-            
-            if (!analysisDataStr) {
-                alert('No analysis data found. Please analyze a job first.');
-                return;
-            }
-            
-            const analysisData = JSON.parse(analysisDataStr);
-            console.log('Parsed analysis data:', analysisData);
-            
-            const companyName = analysisData._company_name || analysisData.company;
-            const roleTitle = analysisData.role_title || analysisData.role;
-            
-            if (!companyName) {
-                alert('No company name found in analysis data. Please analyze a job first.');
-                return;
-            }
-
-            // Create application object (matching tracker.html structure)
-            const application = {
-                id: Date.now(),
-                company: companyName,
-                role: roleTitle || 'Unknown Role',
-                fitScore: analysisData.fit_score || 0,
-                status: 'To Apply',
-                salary: analysisData.intelligence_layer?.salary_market_context?.typical_range || analysisData.salary_info || 'Not specified',
-                dateAdded: new Date().toISOString(),
-                lastUpdated: new Date().toISOString(),
-                notes: '',
-                // Store key analysis data for reference
-                strengths: analysisData.strengths || [],
-                gaps: analysisData.gaps || [],
-                positioningStrategy: analysisData.strategic_positioning || ''
-            };
-            
-            console.log('Created application object:', application);
-
-            // Get existing applications (using correct key)
-            let applications = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
-            console.log('Existing applications:', applications);
-
-            // Check for duplicates (same company + role within 1 minute)
-            const oneMinuteAgo = Date.now() - 60000;
-            const isDuplicate = applications.some(app => 
-                app.company === application.company && 
-                app.role === application.role && 
-                app.id > oneMinuteAgo
-            );
-            
-            console.log('Is duplicate?', isDuplicate);
-
-            if (isDuplicate) {
-                // Update existing instead of creating duplicate
-                const index = applications.findIndex(app => 
-                    app.company === application.company && 
-                    app.role === application.role
-                );
-                if (index !== -1) {
-                    applications[index] = { ...applications[index], ...application, id: applications[index].id };
-                }
-            } else {
-                // Add new application
-                applications.push(application);
-            }
-
-            // Save to localStorage (using correct key)
-            localStorage.setItem('trackedApplications', JSON.stringify(applications));
-            console.log('Saved to localStorage, total applications:', applications.length);
-
-            // Update UI
-            const button = document.getElementById('trackBtn');
-            const message = document.getElementById('trackMessage');
-            
-            button.disabled = true;
-            button.innerHTML = '<span>✓</span> Tracked';
-            message.innerHTML = `✓ Application tracked! <a href="tracker.html" style="color: #60a5fa; text-decoration: underline; margin-left: 10px;">View in Tracker →</a>`;
-            message.style.display = 'block';
-            console.log('UI updated');
-        }
-
-        // Check if already tracked on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-            const applications = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
-            
-            const companyName = analysisData._company_name || analysisData.company;
-            const roleTitle = analysisData.role_title || analysisData.role;
-            
-            if (companyName && roleTitle) {
-                const isTracked = applications.some(app => 
-                    app.company === companyName && 
-                    app.role === roleTitle
-                );
-                
-                if (isTracked) {
-                    const button = document.getElementById('trackBtn');
-                    const message = document.getElementById('trackMessage');
-                    
-                    if (button) {
-                        button.disabled = true;
-                        button.innerHTML = '<span>✓</span> Already Tracked';
-                    }
-                    if (message) {
-                        message.innerHTML = `✓ This application is already in your tracker. <a href="tracker.html" style="color: #60a5fa; text-decoration: underline; margin-left: 10px;">View Tracker →</a>`;
-                        message.style.display = 'block';
-                    }
-                }
-            }
-        });
     </script>
 <script src="components/ask-henry.js"></script>
 </body>

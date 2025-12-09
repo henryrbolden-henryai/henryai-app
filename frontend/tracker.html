@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipeline Command Center | HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
         :root {
             /* Core Colors */
@@ -71,15 +74,15 @@
         }
 
         .logo {
-            font-family: 'Georgia', serif;
+            font-family: 'Instrument Serif', Georgia, serif;
             font-size: 1.5rem;
-            color: var(--color-text);
+            color: #ffffff;
             text-decoration: none;
         }
 
         .logo em {
             font-style: italic;
-            color: var(--color-accent);
+            color: #22d3ee;
         }
 
         .header-nav {
@@ -2002,7 +2005,6 @@
         <div class="header-container">
             <a href="index.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
-                <a href="index.html" class="nav-link">Analyze a Role</a>
                 <a href="profile-edit.html" class="nav-link">Edit Profile</a>
             </nav>
         </div>
@@ -2199,6 +2201,47 @@
             if (!salaryStr) return 0;
             const match = salaryStr.match(/\$?([\d,]+)/);
             return match ? parseInt(match[1].replace(/,/g, '')) : 0;
+        }
+
+        /**
+         * Calculate the accurate timeline stage for an app
+         * For "Awaiting" statuses, use the last completed interview round, not a fixed stage
+         * Timeline stages: 0=Preparing, 1=Applied, 2=Screen, 3=Interview, 4=Final/Offer
+         */
+        function getTimelineStageForApp(app) {
+            const status = STATUSES[app.status] || { stage: -1, awaiting: false };
+
+            // If it's an awaiting status, find the last completed interview stage
+            if (app.status === 'Awaiting Next Round') {
+                // Check statusHistory or interviewRounds to determine where they actually are
+                const screenStatuses = ['Recruiter Screen', 'Awaiting Screen', 'Response Received'];
+                const interviewStatuses = ['Hiring Manager', 'Technical Round', 'Panel Interview'];
+                const finalStatuses = ['Final Round', 'Executive Interview'];
+
+                let maxStage = 2; // Default to Screen (after recruiter screen)
+
+                if (app.statusHistory) {
+                    app.statusHistory.forEach(s => {
+                        if (finalStatuses.includes(s)) maxStage = Math.max(maxStage, 4);
+                        else if (interviewStatuses.includes(s)) maxStage = Math.max(maxStage, 3);
+                        else if (screenStatuses.includes(s)) maxStage = Math.max(maxStage, 2);
+                    });
+                }
+
+                // Also check interviewRounds count
+                const rounds = app.interviewRounds || 0;
+                if (rounds >= 4) maxStage = Math.max(maxStage, 4);
+                else if (rounds >= 2) maxStage = Math.max(maxStage, 3);
+                else if (rounds >= 1) maxStage = Math.max(maxStage, 2);
+
+                return { stage: maxStage, isAwaiting: true };
+            }
+
+            // For other statuses, use the defined stage
+            return {
+                stage: status.stage >= 0 ? Math.min(4, status.stage) : -1,
+                isAwaiting: status.awaiting || false
+            };
         }
 
         // ========================================================================
@@ -3647,12 +3690,19 @@
                 leverageScore = (finalStageApps.length * avgFit) / activeCount / 10;
             }
 
-            // Average time to screen
-            const withScreen = allApps.filter(a => a.dateApplied && a.dateResponseReceived);
+            // Average time to screen - use either dateResponseReceived OR dateInterviewed
+            const withScreen = allApps.filter(a => {
+                const hasApplied = a.dateApplied;
+                const hasResponse = a.dateResponseReceived || a.dateInterviewed;
+                return hasApplied && hasResponse;
+            });
             let avgTimeToScreen = null;
             if (withScreen.length > 0) {
                 const total = withScreen.reduce((sum, a) => {
-                    return sum + getDaysSince(a.dateApplied) - getDaysSince(a.dateResponseReceived);
+                    const responseDate = a.dateResponseReceived || a.dateInterviewed;
+                    const applied = new Date(a.dateApplied);
+                    const responded = new Date(responseDate);
+                    return sum + Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
                 }, 0);
                 avgTimeToScreen = Math.round(total / withScreen.length * 10) / 10;
             }
@@ -3868,9 +3918,10 @@
             if (app.fitScore >= 80) fitClass = 'high';
             else if (app.fitScore < 60) fitClass = 'low';
 
-            // Timeline stage - use actual stage from status definition (0-5)
-            const timelineStage = status.stage >= 0 ? Math.min(4, status.stage) : -1;
-            const isAwaiting = status.awaiting || false;
+            // Timeline stage - use accurate stage based on actual interview history
+            const timelineInfo = getTimelineStageForApp(app);
+            const timelineStage = timelineInfo.stage;
+            const isAwaiting = timelineInfo.isAwaiting;
 
             // Check if high leverage (final stages + high fit)
             const isLeverage = status.stageWeight >= 50 && app.fitScore >= 75;
@@ -3961,11 +4012,11 @@
                                 <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? (isAwaiting ? 'current awaiting' : 'current') : ''}"></div>
                             `).join('')}
                         </div>
-                        ${isAwaiting && timelineStage >= 0 ? `<div class="you-are-here">↑ AWAITING NEXT STEPS</div>` : ''}
+                        ${isAwaiting && timelineStage >= 0 ? `<div class="you-are-here">↑ AWAITING NEXT STEPS${timelineStage === 2 ? ' (post-screen)' : timelineStage === 3 ? ' (mid-interviews)' : timelineStage === 4 ? ' (final rounds)' : ''}</div>` : ''}
                         <div class="timeline-labels">
                             <span>Applied</span>
                             <span>Screen</span>
-                            <span>Interview</span>
+                            <span>${(app.interviewRounds || 0) > 1 ? 'Round ' + (app.interviewRounds || 1) : 'Interview'}</span>
                             <span>Final</span>
                             <span>Offer</span>
                         </div>

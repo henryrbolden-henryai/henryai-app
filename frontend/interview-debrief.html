@@ -722,7 +722,7 @@ Examples of helpful info:
 
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'http://localhost:8000'
-            : 'https://henryai-production.up.railway.app';
+            : 'https://henryai-app-production.up.railway.app';
 
         // ============================================================================
         // INITIALIZATION
@@ -937,7 +937,9 @@ Examples of helpful info:
                 removeTypingIndicator();
 
                 if (!response.ok) {
-                    throw new Error('Failed to start debrief');
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Debrief API error:', response.status, errorData);
+                    throw new Error(errorData.detail || 'Failed to start debrief');
                 }
 
                 const data = await response.json();
@@ -949,7 +951,14 @@ Examples of helpful info:
             } catch (error) {
                 console.error('Debrief error:', error);
                 removeTypingIndicator();
-                addMessage('assistant', "I apologize, but I'm having trouble connecting. Let's try a simpler approach - tell me about how the interview went, and I'll help you debrief.");
+
+                // Clear transcript and offer to continue without it
+                if (transcriptText) {
+                    transcriptText = null;
+                    addMessage('assistant', "I had trouble processing that transcript - it may be too long or in an unsupported format. No worries though! Tell me about how the interview went, and I'll help you debrief just the same.");
+                } else {
+                    addMessage('assistant', "I'm having trouble connecting right now. Let's try again - tell me about how the interview went.");
+                }
             }
 
             setLoading(false);
