@@ -428,7 +428,7 @@
         const greetings = {
             'index': name
                 ? `${name}! Back for more. What are we working on today?`
-                : `Tired of spray-and-pray applications? I'm Henry. Tell me what kind of role you're after and I'll help you actually land it.`,
+                : `Sick of applying to jobs and hearing nothing back? I'm Henry. Tell me what you're looking for and I'll help you actually land it.`,
             'analyze': name
                 ? `${name}, paste that job description and I'll tell you if it's worth pursuing.`
                 : `Got a role you're considering? Paste the job description and I'll break it down for you.`,
