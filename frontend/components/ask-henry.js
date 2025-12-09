@@ -253,11 +253,12 @@
 
         /* Input Area */
         .ask-henry-input-area {
-            padding: 12px 16px;
+            padding: 16px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
             background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            align-items: flex-end;
         }
 
         .ask-henry-input {
@@ -265,11 +266,13 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 10px 14px;
+            padding: 14px 16px;
             color: #ffffff;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            line-height: 1.4;
             resize: none;
-            max-height: 100px;
+            min-height: 48px;
+            max-height: 120px;
         }
 
         .ask-henry-input:focus {
@@ -286,8 +289,9 @@
             background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
