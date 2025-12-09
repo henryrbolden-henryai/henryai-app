@@ -959,8 +959,9 @@
             }
 
             if (!documentsDataStr) {
-                showError('resumeLoading', 'Documents not generated yet. Please go to the <a href="package.html">Documents page</a> to generate your tailored resume and cover letter.');
-                showError('coverLetterLoading', 'Documents not generated yet. Please go to the <a href="package.html">Documents page</a> to generate your tailored resume and cover letter.');
+                console.error('No documents data found in sessionStorage or localStorage');
+                showError('resumeLoading', 'Documents not generated yet. Please go back to <a href="results.html">Results</a> and click "Build my application" to generate your tailored documents.');
+                showError('coverLetterLoading', 'Documents not generated yet. Please go back to <a href="results.html">Results</a> and click "Build my application" to generate your tailored documents.');
                 document.getElementById('downloadResumeBtn').disabled = true;
                 document.getElementById('downloadCoverLetterBtn').disabled = true;
                 return;
