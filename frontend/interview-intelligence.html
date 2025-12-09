@@ -420,6 +420,133 @@
             resize: vertical;
         }
 
+        /* LinkedIn Upload Section */
+        .interviewer-intel-section {
+            background: rgba(34, 211, 238, 0.05);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 8px;
+        }
+
+        .intel-upload-hint {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .linkedin-upload-zone {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 2px dashed #374151;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .linkedin-upload-zone:hover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        .linkedin-upload-zone .upload-icon {
+            font-size: 1.5rem;
+        }
+
+        .linkedin-upload-zone .upload-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .linkedin-upload-zone .upload-primary {
+            color: #ffffff;
+            font-size: 0.9rem;
+        }
+
+        .linkedin-upload-zone .upload-secondary {
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+
+        .linkedin-upload-zone input[type="file"] {
+            display: none;
+        }
+
+        .linkedin-file-name {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: rgba(34, 211, 238, 0.1);
+            border-radius: 6px;
+            color: #22d3ee;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .linkedin-file-name .remove-file {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .linkedin-file-name .remove-file:hover {
+            opacity: 1;
+        }
+
+        .paste-toggle {
+            color: #6b7280;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: color 0.2s;
+        }
+
+        .paste-toggle:hover {
+            color: #9ca3af;
+        }
+
+        .linkedin-paste-section {
+            margin-top: 12px;
+        }
+
+        .linkedin-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffffff;
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .linkedin-textarea:focus {
+            outline: none;
+            border-color: #22d3ee;
+        }
+
+        .linkedin-textarea::placeholder {
+            color: #6b7280;
+        }
+
+        .linkedin-reassurance {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+
+        .linkedin-reassurance .lock-icon {
+            color: #10b981;
+        }
+
         .modal-actions {
             display: flex;
             gap: 12px;
@@ -640,6 +767,39 @@
                 <div class="form-group">
                     <label for="interviewerTitle">Interviewer Title (optional)</label>
                     <input type="text" id="interviewerTitle" placeholder="e.g., Director of Product">
+                </div>
+
+                <!-- Interviewer LinkedIn Upload -->
+                <div class="form-group interviewer-intel-section">
+                    <label>Interviewer LinkedIn Profile (for personalized prep)</label>
+                    <div class="intel-upload-hint">
+                        Upload their LinkedIn profile to get tailored coaching on how to connect with this specific interviewer.
+                    </div>
+                    <div class="linkedin-upload-zone" id="linkedinUploadZone" onclick="document.getElementById('linkedinFile').click()">
+                        <div class="upload-icon">📄</div>
+                        <div class="upload-text">
+                            <span class="upload-primary">Upload PDF or Screenshot</span>
+                            <span class="upload-secondary">Include About & Experience sections</span>
+                        </div>
+                        <input type="file" id="linkedinFile" accept=".pdf,image/*" onchange="handleLinkedInUpload(event)">
+                    </div>
+                    <div id="linkedinFileName" class="linkedin-file-name" style="display: none;"></div>
+
+                    <div class="paste-toggle" onclick="toggleLinkedInPaste()">
+                        Or paste profile text instead ▼
+                    </div>
+                    <div id="linkedinPasteSection" class="linkedin-paste-section" style="display: none;">
+                        <textarea
+                            id="linkedinText"
+                            class="linkedin-textarea"
+                            placeholder="Paste the interviewer's LinkedIn profile content here..."
+                        ></textarea>
+                    </div>
+
+                    <div class="linkedin-reassurance">
+                        <span class="lock-icon">🔒</span>
+                        <span>We don't scrape LinkedIn. You're sharing info you already have access to.</span>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -924,6 +1084,148 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeAddInterviewModal();
+            }
+        });
+
+        // ============================================================================
+        // LINKEDIN UPLOAD HANDLING
+        // ============================================================================
+        let linkedInFileData = null;
+
+        function handleLinkedInUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Store file data
+            linkedInFileData = file;
+
+            // Show file name
+            const fileNameEl = document.getElementById('linkedinFileName');
+            fileNameEl.innerHTML = `
+                <span>📄 ${file.name}</span>
+                <span class="remove-file" onclick="removeLinkedInFile(event)">✕</span>
+            `;
+            fileNameEl.style.display = 'flex';
+
+            // Hide upload zone
+            document.getElementById('linkedinUploadZone').style.display = 'none';
+        }
+
+        function removeLinkedInFile(event) {
+            event.stopPropagation();
+            linkedInFileData = null;
+            document.getElementById('linkedinFile').value = '';
+            document.getElementById('linkedinFileName').style.display = 'none';
+            document.getElementById('linkedinUploadZone').style.display = 'flex';
+        }
+
+        function toggleLinkedInPaste() {
+            const pasteSection = document.getElementById('linkedinPasteSection');
+            const toggle = document.querySelector('.paste-toggle');
+            if (pasteSection.style.display === 'none') {
+                pasteSection.style.display = 'block';
+                toggle.textContent = 'Hide paste option ▲';
+            } else {
+                pasteSection.style.display = 'none';
+                toggle.textContent = 'Or paste profile text instead ▼';
+            }
+        }
+
+        // Convert file to base64 for storage/transmission
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Modified saveInterview to include LinkedIn data
+        const originalSaveInterview = saveInterview;
+        saveInterview = async function(event) {
+            event.preventDefault();
+
+            // Gather LinkedIn data
+            let linkedInData = null;
+            const linkedInText = document.getElementById('linkedinText').value.trim();
+
+            if (linkedInFileData) {
+                try {
+                    const base64 = await fileToBase64(linkedInFileData);
+                    linkedInData = {
+                        type: 'file',
+                        fileName: linkedInFileData.name,
+                        fileType: linkedInFileData.type,
+                        data: base64
+                    };
+                } catch (e) {
+                    console.error('Error reading file:', e);
+                }
+            } else if (linkedInText) {
+                linkedInData = {
+                    type: 'text',
+                    data: linkedInText
+                };
+            }
+
+            const interview = {
+                id: Date.now().toString(),
+                company: document.getElementById('interviewCompany').value,
+                role: document.getElementById('interviewRole').value,
+                type: document.getElementById('interviewType').value,
+                date: document.getElementById('interviewDate').value,
+                interviewerName: document.getElementById('interviewerName').value,
+                interviewerTitle: document.getElementById('interviewerTitle').value,
+                jobDescription: document.getElementById('interviewJD').value,
+                linkedInProfile: linkedInData,
+                createdAt: new Date().toISOString()
+            };
+
+            upcomingInterviews.push(interview);
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Sync to tracker
+            syncInterviewToTracker(interview);
+
+            // Reset LinkedIn upload state
+            linkedInFileData = null;
+            document.getElementById('linkedinFile').value = '';
+            document.getElementById('linkedinFileName').style.display = 'none';
+            document.getElementById('linkedinUploadZone').style.display = 'flex';
+            document.getElementById('linkedinText').value = '';
+            document.getElementById('linkedinPasteSection').style.display = 'none';
+
+            closeAddInterviewModal();
+            renderInterviewList();
+        };
+
+        // Setup drag and drop for LinkedIn upload
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadZone = document.getElementById('linkedinUploadZone');
+            if (uploadZone) {
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadZone.style.borderColor = '#22d3ee';
+                    uploadZone.style.background = 'rgba(34, 211, 238, 0.1)';
+                });
+
+                uploadZone.addEventListener('dragleave', () => {
+                    uploadZone.style.borderColor = '#374151';
+                    uploadZone.style.background = 'rgba(255, 255, 255, 0.03)';
+                });
+
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.style.borderColor = '#374151';
+                    uploadZone.style.background = 'rgba(255, 255, 255, 0.03)';
+
+                    const file = e.dataTransfer.files[0];
+                    if (file && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
+                        document.getElementById('linkedinFile').files = e.dataTransfer.files;
+                        handleLinkedInUpload({ target: { files: [file] } });
+                    }
+                });
             }
         });
     </script>
