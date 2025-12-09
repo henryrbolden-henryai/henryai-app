@@ -810,6 +810,7 @@
             <select class="filter-select" id="filterStatus">
                 <option value="all">All Statuses</option>
                 <option value="active">Active Only</option>
+                <option value="Preparing">Preparing</option>
                 <option value="To Apply">To Apply</option>
                 <option value="Applied">Applied</option>
                 <option value="Reached Out">Reached Out</option>
@@ -863,6 +864,17 @@
         // APPLICATION STATUS DEFINITIONS
         // ========================================================================
         const STATUSES = {
+            'Preparing': {
+                label: 'Preparing',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'default',
+                        context: `You're preparing your application materials for this role.`,
+                        action: `Finish reviewing your tailored documents, then submit your application.`
+                    };
+                }
+            },
             'To Apply': {
                 label: 'To Apply',
                 active: true,
@@ -1183,7 +1195,7 @@
             if (activeApps.length < 2) return null;
 
             // Count by status
-            const toApply = activeApps.filter(a => a.status === 'To Apply').length;
+            const toApply = activeApps.filter(a => ['Preparing', 'To Apply'].includes(a.status)).length;
             const waiting = activeApps.filter(a => ['Applied', 'Reached Out'].includes(a.status)).length;
             const interviewing = activeApps.filter(a => ['Response Received', 'Interview Scheduled', 'Interviewed'].includes(a.status)).length;
 
@@ -1216,7 +1228,7 @@
             const total = apps.length;
             const active = apps.filter(a => STATUSES[a.status]?.active).length;
             const responses = apps.filter(a => ['Response Received', 'Interview Scheduled', 'Interviewed', 'Offer Received'].includes(a.status)).length;
-            const applied = apps.filter(a => a.status !== 'To Apply').length;
+            const applied = apps.filter(a => !['Preparing', 'To Apply'].includes(a.status)).length;
             const responseRate = applied > 0 ? Math.round((responses / applied) * 100) : 0;
 
             document.getElementById('statTotal').textContent = total;
@@ -1421,9 +1433,9 @@
                 apps[appIndex][dateField] = new Date().toISOString();
                 
                 // Auto-update status
-                if (dateField === 'dateApplied' && apps[appIndex].status === 'To Apply') {
+                if (dateField === 'dateApplied' && ['Preparing', 'To Apply'].includes(apps[appIndex].status)) {
                     apps[appIndex].status = 'Applied';
-                } else if (dateField === 'dateReachedOut' && ['To Apply', 'Applied'].includes(apps[appIndex].status)) {
+                } else if (dateField === 'dateReachedOut' && ['Preparing', 'To Apply', 'Applied'].includes(apps[appIndex].status)) {
                     apps[appIndex].status = 'Reached Out';
                 } else if (dateField === 'dateInterviewed') {
                     apps[appIndex].status = 'Interviewed';
@@ -1489,7 +1501,7 @@
             let reminderDate = new Date();
             
             // Set reminder timing based on status
-            if (app.status === 'To Apply') {
+            if (app.status === 'Preparing' || app.status === 'To Apply') {
                 // Apply within 24-48 hours
                 reminderDate.setDate(reminderDate.getDate() + 1);
                 reminderDate.setHours(9, 0, 0, 0); // 9 AM tomorrow

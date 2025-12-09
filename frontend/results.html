@@ -1289,6 +1289,55 @@
         // NAVIGATION BUTTONS (both views)
         // =====================================================================
 
+        // Auto-add to tracker when user commits to applying
+        function addToTrackerAutomatically() {
+            const companyName = data._company_name || data._company;
+            const roleTitle = data.role_title || data._role;
+
+            if (!companyName) {
+                console.log('No company name found, skipping auto-track');
+                return;
+            }
+
+            // Create application object (matching tracker.html structure)
+            const application = {
+                id: Date.now(),
+                company: companyName,
+                role: roleTitle || 'Unknown Role',
+                fitScore: data.fit_score || fitScore,
+                status: 'Preparing',  // They're generating docs, so "Preparing" to apply
+                salary: data.intelligence_layer?.salary_market_context?.typical_range || data.salary_info || 'Not specified',
+                dateAdded: new Date().toISOString(),
+                lastUpdated: new Date().toISOString(),
+                notes: '',
+                strengths: data.strengths || [],
+                gaps: data.gaps || [],
+                positioningStrategy: data.strategic_positioning || ''
+            };
+
+            // Get existing applications
+            let applications = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+
+            // Check if already tracked (same company + role)
+            const existingIndex = applications.findIndex(app =>
+                app.company.toLowerCase() === application.company.toLowerCase() &&
+                app.role.toLowerCase() === application.role.toLowerCase()
+            );
+
+            if (existingIndex !== -1) {
+                // Already tracked - update lastUpdated but keep existing status/notes
+                applications[existingIndex].lastUpdated = new Date().toISOString();
+                console.log('Application already tracked, updated timestamp');
+            } else {
+                // Add new application
+                applications.push(application);
+                console.log('Auto-added application to tracker:', companyName, roleTitle);
+            }
+
+            // Save to localStorage
+            localStorage.setItem('trackedApplications', JSON.stringify(applications));
+        }
+
         // Generate documents before navigating to overview
         async function generateDocumentsAndNavigate() {
             const btn = event.target;
@@ -1297,6 +1346,9 @@
             try {
                 btn.disabled = true;
                 btn.textContent = 'Generating your documents...';
+
+                // Auto-add to tracker when user commits to building application
+                addToTrackerAutomatically();
 
                 // Prepare request payload for /api/documents/generate
                 const requestPayload = {
