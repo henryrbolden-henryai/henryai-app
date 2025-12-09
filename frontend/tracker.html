@@ -814,11 +814,17 @@
                 <option value="Applied">Applied</option>
                 <option value="Reached Out">Reached Out</option>
                 <option value="Response Received">Response Received</option>
-                <option value="Interview Scheduled">Interview Scheduled</option>
+                <option value="Recruiter Screen">Recruiter Screen</option>
+                <option value="Hiring Manager">Hiring Manager</option>
+                <option value="Technical Round">Technical Round</option>
+                <option value="Panel Interview">Panel Interview</option>
+                <option value="Final Round">Final Round</option>
+                <option value="Executive Interview">Executive Interview</option>
                 <option value="Interviewed">Interviewed</option>
                 <option value="Offer Received">Offer Received</option>
                 <option value="No Response">No Response</option>
                 <option value="Rejected">Rejected</option>
+                <option value="Withdrawn">Withdrawn</option>
             </select>
             <select class="filter-select" id="filterFit">
                 <option value="all">All Fit Scores</option>
@@ -945,14 +951,69 @@
                     };
                 }
             },
-            'Interview Scheduled': {
-                label: 'Interview Scheduled',
+            'Recruiter Screen': {
+                label: 'Recruiter Screen',
                 active: true,
                 nextAction: (app) => {
                     return {
                         type: 'positive',
-                        context: `Interview scheduled. Time to prepare.`,
-                        action: `Research the company's recent news. Prepare 3 to 5 questions to ask. Practice your STAR stories for behavioral questions. Test your tech setup if it is virtual.`
+                        context: `Recruiter screen scheduled. This is your first impression.`,
+                        action: `Prepare your 60-second intro, know why you want this role, and have 2-3 questions ready. Be ready to discuss salary expectations.`
+                    };
+                }
+            },
+            'Hiring Manager': {
+                label: 'Hiring Manager',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'positive',
+                        context: `Hiring manager interview. This is where fit is really evaluated.`,
+                        action: `Research the manager on LinkedIn. Prepare specific examples of your work. Have questions about team structure, challenges, and success metrics.`
+                    };
+                }
+            },
+            'Technical Round': {
+                label: 'Technical Round',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'positive',
+                        context: `Technical interview. Time to demonstrate your skills.`,
+                        action: `Review the job requirements. Prepare examples of technical work. Practice explaining your thought process out loud.`
+                    };
+                }
+            },
+            'Panel Interview': {
+                label: 'Panel Interview',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'positive',
+                        context: `Panel interview. Multiple perspectives evaluating you.`,
+                        action: `Address all panelists, make eye contact with each. Prepare diverse examples that showcase different skills. Follow up with each interviewer.`
+                    };
+                }
+            },
+            'Final Round': {
+                label: 'Final Round',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'positive',
+                        context: `Final round. You're in the top candidates.`,
+                        action: `This is often about cultural fit and executive buy-in. Be authentic, show enthusiasm, and have thoughtful questions about company vision.`
+                    };
+                }
+            },
+            'Executive Interview': {
+                label: 'Executive Interview',
+                active: true,
+                nextAction: (app) => {
+                    return {
+                        type: 'positive',
+                        context: `Executive interview. High-level alignment check.`,
+                        action: `Focus on strategic impact and vision. Show you understand the business, not just the role. Keep answers concise and high-level.`
                     };
                 }
             },
