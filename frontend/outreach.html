@@ -404,6 +404,19 @@
             display: none;
         }
 
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Hiring Velocity Section */
         .hiring-velocity-section {
             background: linear-gradient(135deg, #1e3a5f 0%, #1a2e44 100%);
@@ -877,6 +890,11 @@
     </div>
 
     <script>
+        // API Configuration
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : 'https://henryai-app-production.up.railway.app';
+
         // Check for analysis data on page load - redirect if missing
         (function checkAnalysisData() {
             const analysisDataStr = sessionStorage.getItem('analysisData');
@@ -1038,6 +1056,10 @@
                         const valueSection = document.getElementById('linkedinValueSection');
                         if (valueSection) valueSection.style.display = 'none';
 
+                        // Hide the upload prompt since they already have connections
+                        const promptSection = document.getElementById('linkedinPrompt');
+                        if (promptSection) promptSection.style.display = 'none';
+
                         // Auto-check network for this company
                         checkLinkedInNetwork(connections);
                     }
@@ -1099,23 +1121,150 @@
         }
 
         // Check network for connections at target company
-        function checkLinkedInNetwork(connections) {
+        async function checkLinkedInNetwork(connections) {
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const targetCompany = analysisData._company_name || analysisData.company || analysisData._company || '';
+            const roleTitle = analysisData.role_title || analysisData._role || '';
 
             if (!targetCompany) {
                 alert('No target company found. Please analyze a job first.');
                 return;
             }
-            
-            // Filter connections at target company
+
+            // Show loading state
+            const resultsContainer = document.getElementById('linkedinResults');
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="loading-spinner"></div>
+                        <span>Analyzing your network for relevant connections...</span>
+                    </div>
+                `;
+                resultsContainer.style.display = 'block';
+            }
+
+            // First check for direct connections at target company
             const directConnections = connections.filter(conn => {
                 const company = conn['Company'] || conn['company'] || '';
                 return company.toLowerCase().includes(targetCompany.toLowerCase());
             });
-            
-            // Display results
-            displayLinkedInResults(directConnections, [], targetCompany);
+
+            // Format connections for API call (sample up to 100 to avoid huge payloads)
+            const formattedContacts = connections.slice(0, 100).map(conn => ({
+                name: `${conn['First Name'] || ''} ${conn['Last Name'] || ''}`.trim(),
+                company: conn['Company'] || conn['company'] || '',
+                title: conn['Position'] || conn['position'] || '',
+                relationship: 'linkedin_connection'
+            })).filter(c => c.name && c.company);
+
+            try {
+                // Call the network recommendation API for smart matching
+                const response = await fetch(`${API_BASE}/api/network/recommend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company: targetCompany,
+                        role_title: roleTitle,
+                        contacts: formattedContacts
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayNetworkRecommendations(data.recommendations, directConnections, targetCompany);
+                } else {
+                    // Fallback to simple display
+                    displayLinkedInResults(directConnections, [], targetCompany);
+                }
+            } catch (error) {
+                console.error('Network recommendation error:', error);
+                // Fallback to simple display
+                displayLinkedInResults(directConnections, [], targetCompany);
+            }
+        }
+
+        // Display AI-powered network recommendations
+        function displayNetworkRecommendations(recommendations, directConnections, company) {
+            const resultsContainer = document.getElementById('linkedinResults');
+            if (!resultsContainer) return;
+
+            if (recommendations.length === 0 && directConnections.length === 0) {
+                resultsContainer.innerHTML = `
+                    <h4>No relevant connections found for ${company}</h4>
+                    <p style="color: #9ca3af; margin-top: 8px;">
+                        No problem! Cold outreach can still be effective with the right positioning.
+                        Use the templates above and reference your relevant experience.
+                    </p>
+                `;
+                resultsContainer.style.display = 'block';
+                return;
+            }
+
+            let html = '';
+
+            // Show direct connections first
+            if (directConnections.length > 0) {
+                html += `<h4 style="margin-bottom: 16px;">🎯 Found ${directConnections.length} connection(s) at ${company}</h4>`;
+                html += `<div class="connection-group" style="margin-bottom: 24px;">`;
+                directConnections.forEach(conn => {
+                    const name = `${conn['First Name'] || ''} ${conn['Last Name'] || ''}`.trim();
+                    const title = conn['Position'] || 'Position not available';
+                    html += `
+                        <div class="connection-item" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div class="connection-name" style="font-weight: 600; font-size: 1.05rem;">${name}</div>
+                            <div class="connection-title" style="color: #9ca3af; margin-top: 4px;">${title} at ${company}</div>
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; font-size: 0.9rem;">
+                                <strong>🔥 Direct connection!</strong> Reach out for a referral or insider info on the role.
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            // Show AI recommendations for relevant connections
+            if (recommendations.length > 0) {
+                html += `<h4 style="margin-bottom: 16px;">💡 Recommended Outreach (${recommendations.length} relevant connections)</h4>`;
+                html += `<div class="recommendations-list">`;
+
+                recommendations.forEach((rec, idx) => {
+                    const priorityColors = {
+                        1: '#10b981',  // green - high priority
+                        2: '#f59e0b',  // amber - medium
+                        3: '#6b7280'   // gray - lower
+                    };
+                    const priorityLabels = {
+                        1: 'High Priority',
+                        2: 'Worth Reaching Out',
+                        3: 'Consider'
+                    };
+                    const color = priorityColors[rec.priority] || '#6b7280';
+                    const label = priorityLabels[rec.priority] || 'Consider';
+
+                    html += `
+                        <div class="recommendation-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid ${color}40; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 1.05rem;">${rec.name}</div>
+                                    <div style="color: #9ca3af; margin-top: 4px;">${rec.title} at ${rec.company}</div>
+                                </div>
+                                <span style="background: ${color}20; color: ${color}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${label}</span>
+                            </div>
+                            <div style="margin-top: 12px; color: #e0e0e0; font-size: 0.9rem;">
+                                <strong>Why:</strong> ${rec.reason}
+                            </div>
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(96, 165, 250, 0.1); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #60a5fa;">
+                                <strong>Message idea:</strong> ${rec.suggested_message_stub}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            }
+
+            resultsContainer.innerHTML = html;
+            resultsContainer.style.display = 'block';
         }
 
         // Display results
