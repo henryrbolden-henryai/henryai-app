@@ -427,8 +427,8 @@
         // Varied, natural greetings for each page
         const greetings = {
             'index': name
-                ? `${name}! Good to see you. Ready to find your next opportunity?`
-                : `Welcome! I'm Henry. Let's find you a role worth your time.`,
+                ? `${name}! Back for more. What are we working on today?`
+                : `Tired of spray-and-pray applications? I'm Henry. Tell me what kind of role you're after and I'll help you actually land it.`,
             'analyze': name
                 ? `${name}, paste that job description and I'll tell you if it's worth pursuing.`
                 : `Got a role you're considering? Paste the job description and I'll break it down for you.`,
