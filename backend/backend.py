@@ -2383,10 +2383,17 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
       "concern + mitigation strategy 3 (if applicable)"
     ]
   },
-  "outreach": {
-    "hiring_manager": "3-5 sentence personalized message to hiring manager",
-    "recruiter": "3-5 sentence professional message to recruiter",
-    "linkedin_help_text": "Step-by-step instructions for finding the right people on LinkedIn"
+  "outreach_intelligence": {
+    "hiring_manager_likely_title": "The likely title of the hiring manager (e.g., 'VP of Talent Acquisition', 'Director of Engineering'). Infer from role level and department.",
+    "hiring_manager_why_matters": "1-2 sentences explaining why reaching out to the hiring manager is valuable for THIS specific role.",
+    "hiring_manager_linkedin_query": "A specific LinkedIn search query to find the hiring manager. Format: 'COMPANY_NAME AND (title1 OR title2) AND (keyword1 OR keyword2)'. Use the ACTUAL company name from the JD.",
+    "hiring_manager_filter_instructions": "Specific instructions for filtering LinkedIn results (e.g., 'Filter by: Current employees only, Director level or above, recent activity').",
+    "hiring_manager_outreach_template": "3-5 sentence personalized message to the hiring manager. MUST reference the ACTUAL role title, ACTUAL company name, and candidate's SPECIFIC experience.",
+    "recruiter_likely_title": "The likely title of the recruiter (e.g., 'Technical Recruiter', 'Senior Talent Partner'). Match to role type.",
+    "recruiter_why_matters": "1-2 sentences explaining why building a recruiter relationship matters for THIS role.",
+    "recruiter_linkedin_query": "A specific LinkedIn search query to find recruiters. Format: 'COMPANY_NAME AND (recruiter OR talent acquisition OR people operations)'. Use the ACTUAL company name.",
+    "recruiter_filter_instructions": "Specific instructions for filtering recruiter search results.",
+    "recruiter_outreach_template": "3-5 sentence professional message to the recruiter. MUST reference the ACTUAL role title, ACTUAL company name, and candidate's relevant qualifications."
   },
 
 CRITICAL OUTREACH TEMPLATE RULES (MANDATORY - NON-NEGOTIABLE):
@@ -2506,29 +2513,29 @@ Role: {request.role_title}
             response = response.strip()
         
         parsed_data = json.loads(response)
-        
+
         # Validate and cleanup outreach templates if present
-        if "outreach" in parsed_data:
-            outreach = parsed_data["outreach"]
-            
+        if "outreach_intelligence" in parsed_data:
+            outreach = parsed_data["outreach_intelligence"]
+
             # Validate hiring manager template
-            if "hiring_manager" in outreach:
-                hm_template = outreach["hiring_manager"]
+            if "hiring_manager_outreach_template" in outreach:
+                hm_template = outreach["hiring_manager_outreach_template"]
                 is_valid, errors = validate_outreach_template(hm_template, "hiring_manager")
                 if not is_valid:
                     print(f"\n⚠️  JD Analysis - Hiring manager outreach has quality issues: {errors}")
                     # Cleanup common issues
-                    outreach["hiring_manager"] = cleanup_outreach_template(hm_template)
-            
+                    outreach["hiring_manager_outreach_template"] = cleanup_outreach_template(hm_template)
+
             # Validate recruiter template
-            if "recruiter" in outreach:
-                rec_template = outreach["recruiter"]
+            if "recruiter_outreach_template" in outreach:
+                rec_template = outreach["recruiter_outreach_template"]
                 is_valid, errors = validate_outreach_template(rec_template, "recruiter")
                 if not is_valid:
                     print(f"\n⚠️  JD Analysis - Recruiter outreach has quality issues: {errors}")
                     # Cleanup common issues
-                    outreach["recruiter"] = cleanup_outreach_template(rec_template)
-        
+                    outreach["recruiter_outreach_template"] = cleanup_outreach_template(rec_template)
+
         return parsed_data
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse Claude response: {str(e)}")

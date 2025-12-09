@@ -343,6 +343,36 @@
     let isLoading = false;
     let conversationHistory = [];
 
+    // Load conversation history from sessionStorage (persists across page navigation)
+    function loadConversationHistory() {
+        try {
+            const saved = sessionStorage.getItem('askHenryConversation');
+            if (saved) {
+                conversationHistory = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error loading conversation history:', e);
+            conversationHistory = [];
+        }
+    }
+
+    // Save conversation history to sessionStorage
+    function saveConversationHistory() {
+        try {
+            // Keep last 20 messages to avoid storage limits
+            const toSave = conversationHistory.slice(-20);
+            sessionStorage.setItem('askHenryConversation', JSON.stringify(toSave));
+        } catch (e) {
+            console.error('Error saving conversation history:', e);
+        }
+    }
+
+    // Clear conversation history (for starting fresh)
+    function clearConversationHistory() {
+        conversationHistory = [];
+        sessionStorage.removeItem('askHenryConversation');
+    }
+
     // Get user's first name from profile
     function getUserName() {
         try {
@@ -618,6 +648,38 @@
 
         document.body.appendChild(widget);
 
+        // Load previous conversation history
+        loadConversationHistory();
+
+        // If there's existing conversation, restore the messages
+        if (conversationHistory.length > 0) {
+            const messagesContainer = document.getElementById('askHenryMessages');
+            // Clear the default greeting
+            messagesContainer.innerHTML = '';
+
+            // Add a "conversation continued" indicator
+            messagesContainer.innerHTML = `
+                <div class="ask-henry-message assistant" style="font-size: 0.85rem; opacity: 0.8;">
+                    <em>Continuing our conversation...</em>
+                </div>
+            `;
+
+            // Restore previous messages
+            conversationHistory.forEach(msg => {
+                const formattedContent = formatMessage(msg.content);
+                const messageEl = document.createElement('div');
+                messageEl.className = `ask-henry-message ${msg.role}`;
+                messageEl.innerHTML = formattedContent;
+                messagesContainer.appendChild(messageEl);
+            });
+
+            // Hide suggestions since conversation is ongoing
+            document.getElementById('askHenrySuggestions').style.display = 'none';
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
         // Bind events
         document.getElementById('askHenryFab').addEventListener('click', toggleDrawer);
         document.getElementById('askHenryClose').addEventListener('click', closeDrawer);
@@ -671,6 +733,7 @@
         // Add user message to UI
         addMessage('user', message);
         conversationHistory.push({ role: 'user', content: message });
+        saveConversationHistory();
         input.value = '';
         input.style.height = 'auto';
 
@@ -722,6 +785,7 @@
             const data = await response.json();
             addMessage('assistant', data.response);
             conversationHistory.push({ role: 'assistant', content: data.response });
+            saveConversationHistory();
 
         } catch (error) {
             console.error('Ask Henry error:', error);

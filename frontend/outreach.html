@@ -397,10 +397,11 @@
 
         #linkedinResults {
             margin-top: 20px;
-            padding: 20px;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid #10b981;
-            border-radius: 8px;
+            margin-bottom: 40px;
+            padding: 24px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             display: none;
         }
 
@@ -1188,13 +1189,25 @@
             const resultsContainer = document.getElementById('linkedinResults');
             if (!resultsContainer) return;
 
-            if (recommendations.length === 0 && directConnections.length === 0) {
+            // No direct connections found - show helpful guidance
+            if (directConnections.length === 0 && recommendations.length === 0) {
                 resultsContainer.innerHTML = `
-                    <h4>No relevant connections found for ${company}</h4>
-                    <p style="color: #9ca3af; margin-top: 8px;">
-                        No problem! Cold outreach can still be effective with the right positioning.
-                        Use the templates above and reference your relevant experience.
-                    </p>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
+                        <h4 style="color: #ffffff; margin-bottom: 12px;">No 1st-Degree Connections at ${company}</h4>
+                        <p style="color: #9ca3af; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            We can only see your direct (1st-degree) LinkedIn connections. You may have 2nd or 3rd-degree connections
+                            who could provide warm introductions—check LinkedIn directly for "People who work at ${company}."
+                        </p>
+                        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 16px; text-align: left; max-width: 500px; margin: 0 auto;">
+                            <div style="font-weight: 600; color: #ffffff; margin-bottom: 8px;">📋 Next Steps</div>
+                            <ul style="color: #d1d5db; margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.8;">
+                                <li>Search LinkedIn for 2nd-degree connections at ${company}</li>
+                                <li>Ask mutual connections for introductions</li>
+                                <li>Use the <strong>Hiring Manager</strong> and <strong>Recruiter</strong> outreach templates below for cold outreach</li>
+                            </ul>
+                        </div>
+                    </div>
                 `;
                 resultsContainer.style.display = 'block';
                 return;
@@ -1204,17 +1217,28 @@
 
             // Show direct connections first
             if (directConnections.length > 0) {
-                html += `<h4 style="margin-bottom: 16px;">🎯 Found ${directConnections.length} connection(s) at ${company}</h4>`;
+                html += `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                        <span style="font-size: 1.5rem;">🎯</span>
+                        <h4 style="margin: 0; color: #ffffff;">Direct Connections at ${company}</h4>
+                        <span style="background: #10b981; color: #ffffff; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">${directConnections.length} found</span>
+                    </div>
+                `;
                 html += `<div class="connection-group" style="margin-bottom: 24px;">`;
                 directConnections.forEach(conn => {
                     const name = `${conn['First Name'] || ''} ${conn['Last Name'] || ''}`.trim();
-                    const title = conn['Position'] || 'Position not available';
+                    const title = conn['Position'] || 'Position not listed';
                     html += `
-                        <div class="connection-item" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
-                            <div class="connection-name" style="font-weight: 600; font-size: 1.05rem;">${name}</div>
-                            <div class="connection-title" style="color: #9ca3af; margin-top: 4px;">${title} at ${company}</div>
-                            <div style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; font-size: 0.9rem;">
-                                <strong>🔥 Direct connection!</strong> Reach out for a referral or insider info on the role.
+                        <div class="connection-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${name}</div>
+                                    <div style="color: #9ca3af; margin-top: 4px;">${title} at ${company}</div>
+                                </div>
+                                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">1st Degree</span>
+                            </div>
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #10b981;">
+                                <strong style="color: #10b981;">Best approach:</strong> <span style="color: #d1d5db;">Send a personalized message asking for insights on the role or a referral. Mention how you're connected and why you're excited about this opportunity.</span>
                             </div>
                         </div>
                     `;
@@ -1222,96 +1246,134 @@
                 html += `</div>`;
             }
 
-            // Show AI recommendations for relevant connections
+            // Show AI recommendations for relevant connections (from other companies who might help)
             if (recommendations.length > 0) {
-                html += `<h4 style="margin-bottom: 16px;">💡 Recommended Outreach (${recommendations.length} relevant connections)</h4>`;
+                html += `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                        <span style="font-size: 1.5rem;">💡</span>
+                        <h4 style="margin: 0; color: #ffffff;">Other Relevant Connections</h4>
+                    </div>
+                    <p style="color: #9ca3af; margin-bottom: 16px; font-size: 0.9rem;">
+                        These connections may have industry insights or 2nd-degree paths to ${company}.
+                    </p>
+                `;
                 html += `<div class="recommendations-list">`;
 
                 recommendations.forEach((rec, idx) => {
                     const priorityColors = {
-                        1: '#10b981',  // green - high priority
-                        2: '#f59e0b',  // amber - medium
-                        3: '#6b7280'   // gray - lower
+                        1: '#ffffff',  // white - high priority
+                        2: '#d1d5db',  // light gray - medium
+                        3: '#9ca3af'   // gray - lower
                     };
                     const priorityLabels = {
                         1: 'High Priority',
                         2: 'Worth Reaching Out',
                         3: 'Consider'
                     };
-                    const color = priorityColors[rec.priority] || '#6b7280';
+                    const color = priorityColors[rec.priority] || '#9ca3af';
                     const label = priorityLabels[rec.priority] || 'Consider';
 
                     html += `
-                        <div class="recommendation-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid ${color}40; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                        <div class="recommendation-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div>
-                                    <div style="font-weight: 600; font-size: 1.05rem;">${rec.name}</div>
+                                    <div style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${rec.name}</div>
                                     <div style="color: #9ca3af; margin-top: 4px;">${rec.title} at ${rec.company}</div>
                                 </div>
-                                <span style="background: ${color}20; color: ${color}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${label}</span>
+                                <span style="background: rgba(255, 255, 255, 0.1); color: ${color}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">${label}</span>
                             </div>
-                            <div style="margin-top: 12px; color: #e0e0e0; font-size: 0.9rem;">
-                                <strong>Why:</strong> ${rec.reason}
+                            <div style="margin-top: 12px; color: #d1d5db; font-size: 0.9rem;">
+                                <strong style="color: #9ca3af;">Why:</strong> ${rec.reason}
                             </div>
-                            <div style="margin-top: 12px; padding: 12px; background: rgba(96, 165, 250, 0.1); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #60a5fa;">
-                                <strong>Message idea:</strong> ${rec.suggested_message_stub}
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid rgba(255, 255, 255, 0.2);">
+                                <strong style="color: #9ca3af;">Message idea:</strong> <span style="color: #d1d5db;">${rec.suggested_message_stub}</span>
                             </div>
                         </div>
                     `;
                 });
 
                 html += `</div>`;
+            }
+
+            // Add note about cold outreach at the bottom
+            if (directConnections.length === 0) {
+                html += `
+                    <div style="margin-top: 24px; padding: 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; text-align: center;">
+                        <p style="color: #9ca3af; margin: 0; font-size: 0.9rem;">
+                            No direct connections? Use the <strong style="color: #ffffff;">Hiring Manager</strong> and <strong style="color: #ffffff;">Recruiter</strong> templates below for effective cold outreach.
+                        </p>
+                    </div>
+                `;
             }
 
             resultsContainer.innerHTML = html;
             resultsContainer.style.display = 'block';
         }
 
-        // Display results
+        // Display results (fallback when API fails)
         function displayLinkedInResults(directConnections, secondDegreeConnections, company) {
             const resultsContainer = document.getElementById('linkedinResults');
             if (!resultsContainer) return;
-            
+
             if (directConnections.length === 0 && secondDegreeConnections.length === 0) {
                 resultsContainer.innerHTML = `
-                    <h4>No direct connections found at ${company}</h4>
-                    <p style="color: #9ca3af; margin-top: 8px;">
-                        No problem! Cold outreach can still be effective with the right positioning. 
-                        Use the templates above and reference your relevant experience.
-                    </p>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
+                        <h4 style="color: #ffffff; margin-bottom: 12px;">No 1st-Degree Connections at ${company}</h4>
+                        <p style="color: #9ca3af; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                            We can only see your direct (1st-degree) LinkedIn connections. You may have 2nd or 3rd-degree connections
+                            who could provide warm introductions—check LinkedIn directly for "People who work at ${company}."
+                        </p>
+                        <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 16px; text-align: left; max-width: 500px; margin: 0 auto;">
+                            <div style="font-weight: 600; color: #ffffff; margin-bottom: 8px;">📋 Next Steps</div>
+                            <ul style="color: #d1d5db; margin: 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.8;">
+                                <li>Search LinkedIn for 2nd-degree connections at ${company}</li>
+                                <li>Ask mutual connections for introductions</li>
+                                <li>Use the <strong>Hiring Manager</strong> and <strong>Recruiter</strong> outreach templates below for cold outreach</li>
+                            </ul>
+                        </div>
+                    </div>
                 `;
                 resultsContainer.style.display = 'block';
                 return;
             }
-            
-            let html = `<h4>🎯 Found ${directConnections.length} connection(s) at ${company}</h4>`;
-            
+
+            let html = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <span style="font-size: 1.5rem;">🎯</span>
+                    <h4 style="margin: 0; color: #ffffff;">Direct Connections at ${company}</h4>
+                    <span style="background: #10b981; color: #ffffff; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">${directConnections.length} found</span>
+                </div>
+            `;
+
             if (directConnections.length > 0) {
                 html += `<div class="connection-group">`;
-                html += `<h5>Direct Connections (1st Degree)</h5>`;
-                
+
                 directConnections.forEach(conn => {
-                    const name = conn['First Name'] + ' ' + conn['Last Name'];
-                    const title = conn['Position'] || 'Position not available';
-                    const connectedDate = conn['Connected On'] || 'Unknown';
-                    
+                    const name = `${conn['First Name'] || ''} ${conn['Last Name'] || ''}`.trim();
+                    const title = conn['Position'] || 'Position not listed';
+                    const connectedDate = conn['Connected On'] || '';
+
                     html += `
-                        <div class="connection-item">
-                            <div class="connection-name">${name}</div>
-                            <div class="connection-title">${title}</div>
-                            <div class="connection-meta">
-                                <span>📅 Connected: ${connectedDate}</span>
+                        <div class="connection-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${name}</div>
+                                    <div style="color: #9ca3af; margin-top: 4px;">${title} at ${company}</div>
+                                    ${connectedDate ? `<div style="color: #6b7280; font-size: 0.8rem; margin-top: 4px;">Connected: ${connectedDate}</div>` : ''}
+                                </div>
+                                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">1st Degree</span>
                             </div>
-                            <div style="margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 6px; font-size: 0.9rem;">
-                                <strong>Suggested approach:</strong> Send a personalized message referencing your shared background and expressing interest in the role. Mention specific projects or achievements that align with ${company}'s needs.
+                            <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #10b981;">
+                                <strong style="color: #10b981;">Best approach:</strong> <span style="color: #d1d5db;">Send a personalized message asking for insights on the role or a referral. Mention how you're connected and why you're excited about this opportunity.</span>
                             </div>
                         </div>
                     `;
                 });
-                
+
                 html += `</div>`;
             }
-            
+
             resultsContainer.innerHTML = html;
             resultsContainer.style.display = 'block';
         }
