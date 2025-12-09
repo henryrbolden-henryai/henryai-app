@@ -2541,6 +2541,310 @@
         });
 
         // ========================================================================
+        // CLOSE-BUT-NOT-CLOSING DETECTION
+        // ========================================================================
+
+        const LATE_STAGE_STATUSES = ['Final Round', 'Executive Interview', 'Panel Interview'];
+        const INTERVIEW_STATUSES = ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Interviewed'];
+
+        function detectCloseButNotClosing(apps) {
+            // Get applications that reached late stages
+            const lateStageApps = apps.filter(app => {
+                // Check if they reached a late stage (either current status or in history)
+                const reachedLateStage = LATE_STAGE_STATUSES.includes(app.status) ||
+                    app.statusHistory?.some(s => LATE_STAGE_STATUSES.includes(s)) ||
+                    (app.status === 'Rejected' && app.statusHistory?.some(s => LATE_STAGE_STATUSES.includes(s)));
+
+                // Also count applications that were rejected after being interviewed
+                const rejectedAfterInterview = app.status === 'Rejected' && app.dateInterviewed;
+
+                return reachedLateStage || rejectedAfterInterview;
+            });
+
+            // Count offers
+            const offers = apps.filter(a => a.status === 'Offer Received').length;
+
+            // Check for interview notes/transcripts
+            const appsWithNotes = lateStageApps.filter(a => a.interviewNotes || a.interviewTranscript || (a.notes && a.notes.length > 100)).length;
+
+            // ─────────────────────────────────────────────────────────────────
+            // CRITICAL: 3+ late-stage interviews, 0 offers, no diagnostic data
+            // ─────────────────────────────────────────────────────────────────
+            if (lateStageApps.length >= 3 && offers === 0) {
+                // No data to diagnose with
+                if (appsWithNotes < 2) {
+                    return {
+                        pattern: 'close_not_closing_no_data',
+                        severity: 'critical',
+                        trigger: `${lateStageApps.length} final rounds, 0 offers, no interview data captured`,
+                        stats: {
+                            lateStageCount: lateStageApps.length,
+                            offerCount: 0,
+                            notesCount: appsWithNotes
+                        },
+                        lateStageApps: lateStageApps.slice(0, 4),
+                        diagnosis: [
+                            {
+                                title: 'Pattern Detected',
+                                detail: `You're reaching final rounds but not converting. Something systemic is costing you offers at the final stage.`
+                            },
+                            {
+                                title: 'No Diagnostic Data',
+                                detail: `Without interview transcripts or detailed notes, we can't diagnose what's happening in those final conversations.`
+                            }
+                        ],
+                        possibleCauses: [
+                            'Technical depth questions falling flat',
+                            'Executive presence mismatch to role level',
+                            'Compensation expectations misaligned',
+                            'Gap mitigation unconvincing',
+                            'References not backing up your narrative',
+                            'Culture fit concerns not addressed'
+                        ],
+                        actions: [
+                            'Record your next interview (Grain, Otter.ai, or voice memo)',
+                            'Capture detailed notes immediately after each interview',
+                            'Note: What questions stumped you? What answers felt weak?',
+                            'Run a mock final-round interview to identify gaps'
+                        ],
+                        insight: `You're doing the hard part—getting there. But something systemic is costing you offers. Without interview data, we can't diagnose what's happening. Let's fix that.`
+                    };
+                }
+
+                // Has some data - coaching intervention
+                return {
+                    pattern: 'close_not_closing_with_data',
+                    severity: 'high',
+                    trigger: `${lateStageApps.length} final rounds, 0 offers`,
+                    stats: {
+                        lateStageCount: lateStageApps.length,
+                        offerCount: 0,
+                        notesCount: appsWithNotes
+                    },
+                    lateStageApps: lateStageApps.slice(0, 4),
+                    diagnosis: [
+                        {
+                            title: 'Conversion Problem',
+                            detail: `You're reaching final rounds but not closing. This is more frustrating than not getting interviews at all.`
+                        },
+                        {
+                            title: 'Data Available',
+                            detail: `You have some interview notes. Let's analyze them to find patterns.`
+                        }
+                    ],
+                    actions: [
+                        'Review notes from all final rounds - look for common themes',
+                        'Identify questions that tripped you up repeatedly',
+                        'Practice your weak areas with mock interviews',
+                        'Consider: Are references backing up your narrative?'
+                    ],
+                    insight: `You've captured some data. Now let's analyze: What questions come up repeatedly? What answers feel weak? Where do interviewers seem to cool off? The pattern is in the details.`
+                };
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // EARLY WARNING: 2 late-stage losses
+            // ─────────────────────────────────────────────────────────────────
+            if (lateStageApps.length === 2 && offers === 0) {
+                const rejectedLateStage = lateStageApps.filter(a => a.status === 'Rejected').length;
+                if (rejectedLateStage >= 2) {
+                    return {
+                        pattern: 'potential_close_pattern',
+                        severity: 'medium',
+                        trigger: '2 final rounds without conversion',
+                        stats: {
+                            lateStageCount: 2,
+                            offerCount: 0
+                        },
+                        lateStageApps: lateStageApps,
+                        diagnosis: [
+                            {
+                                title: 'Pattern Forming',
+                                detail: `You've reached final rounds at 2 companies without offers. This might be coincidence, or it might be a pattern.`
+                            }
+                        ],
+                        actions: [
+                            'For your next final-round: record it or take detailed notes',
+                            'This gives us data to diagnose if the pattern continues'
+                        ],
+                        insight: `If you convert your next final round? Great—ignore this. If you don't? We'll have the intel to figure out why.`
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        function shouldShowCloseButNotClosingIntervention(apps) {
+            const state = getInterventionState();
+
+            // Check if this specific pattern was recently acknowledged
+            if (state.closePatternAcknowledged) {
+                const daysSince = getDaysSince(state.closePatternAcknowledged);
+                if (daysSince < 14) return null; // 14-day cooldown for this pattern
+            }
+
+            return detectCloseButNotClosing(apps);
+        }
+
+        function renderCloseButNotClosingModal(pattern) {
+            const modal = document.getElementById('interventionContent');
+
+            const severityLabels = {
+                critical: 'Critical Pattern Detected',
+                high: 'Coaching Opportunity',
+                medium: 'Pattern Forming'
+            };
+
+            const severityIcons = {
+                critical: '🔍',
+                high: '📊',
+                medium: '🤔'
+            };
+
+            // Build late-stage apps list
+            let appsHtml = '';
+            if (pattern.lateStageApps && pattern.lateStageApps.length > 0) {
+                appsHtml = `
+                    <div class="sample-applications">
+                        <div class="sample-applications-title">Final Round Applications</div>
+                        ${pattern.lateStageApps.map(app => `
+                            <div class="sample-app">
+                                <span class="sample-app-role">${app.role}, ${app.company}</span>
+                                <span class="sample-app-fit ${app.status === 'Rejected' ? 'low' : 'medium'}">${app.status === 'Rejected' ? 'Rejected' : app.status}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Build possible causes section (for no-data version)
+            let causesHtml = '';
+            if (pattern.possibleCauses) {
+                causesHtml = `
+                    <div class="intervention-diagnosis" style="margin-bottom: 16px;">
+                        <div class="intervention-diagnosis-title">It could be:</div>
+                        <ul class="intervention-action-list" style="background: var(--color-bg); padding: 16px; border-radius: 8px; margin: 0;">
+                            ${pattern.possibleCauses.map(c => `<li style="color: var(--color-text-secondary);">${c}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div style="text-align: center; color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 20px;">
+                        We need data to figure out which one.
+                    </div>
+                `;
+            }
+
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <span class="modal-header-icon">${severityIcons[pattern.severity]}</span>
+                    <div class="modal-header-text">
+                        <h2>${severityLabels[pattern.severity]}</h2>
+                        <div class="severity ${pattern.severity}">${pattern.trigger}</div>
+                    </div>
+                </div>
+
+                ${appsHtml}
+
+                <div class="intervention-intro">
+                    <strong>You're doing the hard part—getting to final rounds.</strong><br>
+                    But something is costing you offers at the last stage.
+                </div>
+
+                <div class="intervention-diagnosis">
+                    <div class="intervention-diagnosis-title">The Problem</div>
+                    ${pattern.diagnosis.map((d, i) => `
+                        <div class="intervention-diagnosis-item">
+                            <div class="diagnosis-number">${i + 1}</div>
+                            <div class="diagnosis-content">
+                                <div class="diagnosis-title">${d.title}</div>
+                                <div class="diagnosis-detail">${d.detail}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                ${causesHtml}
+
+                <div class="intervention-action-plan">
+                    <div class="intervention-action-title">
+                        <span>💡</span> What To Do Next
+                    </div>
+                    <ul class="intervention-action-list">
+                        ${pattern.actions.map(a => `<li>${a}</li>`).join('')}
+                    </ul>
+                </div>
+
+                <div class="intervention-insight">
+                    <div class="intervention-insight-text">${pattern.insight}</div>
+                </div>
+
+                ${pattern.severity === 'critical' ? `
+                <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="font-size: 0.85rem; font-weight: 600; color: var(--color-text); margin-bottom: 12px;">
+                        📱 How to Record Your Interviews
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-secondary); line-height: 1.6;">
+                        <strong>Best option:</strong> Use Grain, Otter.ai, or Fireflies.ai to auto-join your video calls.<br><br>
+                        <strong>Alternative:</strong> Use your phone's voice recorder and transcribe later.<br><br>
+                        <strong>Always ask:</strong> "Do you mind if I record for my notes? It helps me stay present."<br>
+                        95% of interviewers say yes.
+                    </div>
+                </div>
+                ` : ''}
+
+                <div class="intervention-choice">
+                    <div class="intervention-choice-label">I understand and will:</div>
+                    <div class="intervention-choice-options">
+                        <label class="intervention-choice-option recommended selected" onclick="selectClosePatternChoice('capture')">
+                            <input type="radio" name="close-pattern-choice" value="capture" checked>
+                            <div class="intervention-radio"></div>
+                            <div class="intervention-choice-text">
+                                <strong>Start capturing interview data</strong>
+                                <span>Record or take detailed notes for my next interview</span>
+                            </div>
+                            <span class="intervention-badge recommended">Recommended</span>
+                        </label>
+                        <label class="intervention-choice-option" onclick="selectClosePatternChoice('dismiss')">
+                            <input type="radio" name="close-pattern-choice" value="dismiss">
+                            <div class="intervention-radio"></div>
+                            <div class="intervention-choice-text">
+                                <strong>I'll figure it out myself</strong>
+                                <span>Don't show this again for 2 weeks</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn primary" onclick="confirmClosePatternChoice()">Got It</button>
+                </div>
+            `;
+
+            document.getElementById('interventionModal').classList.add('show');
+        }
+
+        let selectedClosePatternChoice = 'capture';
+
+        function selectClosePatternChoice(choice) {
+            selectedClosePatternChoice = choice;
+            document.querySelectorAll('.intervention-choice-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (opt.querySelector(`input[value="${choice}"]`)) {
+                    opt.classList.add('selected');
+                }
+            });
+        }
+
+        function confirmClosePatternChoice() {
+            const state = getInterventionState();
+            state.closePatternAcknowledged = new Date().toISOString();
+            state.closePatternChoice = selectedClosePatternChoice;
+            saveInterventionState(state);
+
+            document.getElementById('interventionModal').classList.remove('show');
+        }
+
+        // ========================================================================
         // PIPELINE METRICS
         // ========================================================================
         function calculatePipelineMetrics(apps) {
@@ -3148,6 +3452,14 @@
         }
 
         function checkDesperationIntervention(apps) {
+            // First check for close-but-not-closing pattern (takes priority if detected)
+            const closePattern = shouldShowCloseButNotClosingIntervention(apps);
+            if (closePattern) {
+                renderCloseButNotClosingModal(closePattern);
+                return;
+            }
+
+            // Then check for desperation patterns
             const pattern = shouldShowIntervention(apps);
             if (pattern) {
                 renderInterventionModal(pattern);
