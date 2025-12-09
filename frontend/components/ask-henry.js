@@ -422,25 +422,54 @@
 
     // Generate personalized greeting based on context
     function getPersonalizedGreeting(userName, context) {
-        const name = userName ? `, ${userName}` : '';
+        const name = userName || '';
 
-        // Page-specific greetings that feel natural
+        // Varied, natural greetings for each page
         const greetings = {
-            'analyze': `Hey${name}! Ready to check out a new opportunity? Paste the job description and I'll help you figure out if it's worth your time.`,
-            'results': `Hey${name}! I just finished looking at this role. Let me know if you want me to dig deeper into any part of the analysis.`,
-            'overview': `Hey${name}! Here's your game plan for this application. Need help with any of these areas?`,
-            'positioning': `Hey${name}! This is how I'd recommend positioning yourself. Want to talk through any of these decisions?`,
-            'documents': `Hey${name}! I've tailored your resume and cover letter for this role. Questions about any of the changes?`,
-            'outreach': `Hey${name}! Let's figure out who to reach out to and how. I can help you craft the right message.`,
-            'interview-intelligence': `Hey${name}! What interview are you prepping for? I can help you get ready.`,
-            'prep-guide': `Hey${name}! Let's make sure you're ready for this interview. What do you want to work on?`,
-            'interview-debrief': `Hey${name}! How'd it go? I'm here to help you process and figure out next steps.`,
-            'mock-interview': `Hey${name}! Ready to practice? I'll give you honest feedback to sharpen your responses.`,
-            'tracker': `Hey${name}! I see your applications. Want help prioritizing or strategizing on any of them?`,
-            'profile-edit': `Hey${name}! Your profile powers everything I do for you. Let me know if you need help with any section.`
+            'index': name
+                ? `${name}! Good to see you. Ready to find your next opportunity?`
+                : `Welcome! I'm Henry. Let's find you a role worth your time.`,
+            'analyze': name
+                ? `${name}, paste that job description and I'll tell you if it's worth pursuing.`
+                : `Got a role you're considering? Paste the job description and I'll break it down for you.`,
+            'results': name
+                ? `Alright ${name}, here's what I found. Anything you want me to dig into?`
+                : `Here's my take on this role. What questions do you have?`,
+            'overview': name
+                ? `${name}, this is your game plan. Which area do you want to tackle first?`
+                : `Here's everything you need for this application. Where should we start?`,
+            'positioning': name
+                ? `This is how I'd position you, ${name}. Want to talk through any of it?`
+                : `Here's my recommended positioning. Let me know if anything feels off.`,
+            'documents': name
+                ? `${name}, I've customized these for the role. Questions about any changes I made?`
+                : `Your tailored resume and cover letter are ready. Curious why I changed something?`,
+            'outreach': name
+                ? `Let's get you connected, ${name}. Who do you want to reach out to first?`
+                : `Networking time. I can help you find the right people and craft your message.`,
+            'interview-intelligence': name
+                ? `Interview coming up, ${name}? Tell me about it and I'll help you prep.`
+                : `Which interview are you getting ready for? I'll help you walk in prepared.`,
+            'prep-guide': name
+                ? `Let's get you ready, ${name}. What are you most nervous about?`
+                : `Time to prep. What do you want to focus on for this interview?`,
+            'interview-debrief': name
+                ? `How'd it go, ${name}? Walk me through it.`
+                : `Fresh out of the interview? Tell me how it went.`,
+            'mock-interview': name
+                ? `Ready to practice, ${name}? I won't go easy on you.`
+                : `Let's run through some questions. I'll give you real feedback.`,
+            'tracker': name
+                ? `${name}, here's where things stand. Need help prioritizing?`
+                : `Your applications at a glance. What needs attention?`,
+            'profile-edit': name
+                ? `Updating your profile, ${name}? This info powers everything I do for you.`
+                : `Your profile is the foundation. Let me know if you need help with any section.`
         };
 
-        return greetings[context.page] || `Hey${name}! I'm here to help with your job search. What's on your mind?`;
+        return greetings[context.page] || (name
+            ? `Hey ${name}, what's on your mind?`
+            : `What can I help you with?`);
     }
 
     // Create widget HTML
