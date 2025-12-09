@@ -3,23 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Tracker | HenryAI</title>
+    <title>Pipeline Command Center | HenryAI</title>
     <style>
         :root {
-            --color-bg: #0a0a0a;
-            --color-surface: #161616;
-            --color-surface-hover: #1e1e1e;
-            --color-border: #2a2a2a;
-            --color-text: #f5f5f5;
-            --color-text-secondary: #888;
-            --color-accent: #4ade80;
-            --color-accent-muted: rgba(74, 222, 128, 0.1);
-            --color-warning: #fbbf24;
-            --color-warning-muted: rgba(251, 191, 36, 0.1);
-            --color-danger: #ef4444;
-            --color-danger-muted: rgba(239, 68, 68, 0.1);
-            --color-info: #60a5fa;
-            --color-info-muted: rgba(96, 165, 250, 0.1);
+            /* Core Colors */
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #71717a;
+            --color-text-muted: #52525b;
+
+            /* Status Colors */
+            --color-hot: #FF6B35;
+            --color-hot-muted: rgba(255, 107, 53, 0.15);
+            --color-active: #4CAF50;
+            --color-active-muted: rgba(76, 175, 80, 0.15);
+            --color-cooling: #546E7A;
+            --color-cooling-muted: rgba(84, 110, 122, 0.15);
+            --color-dead: #E57373;
+            --color-dead-muted: rgba(229, 115, 115, 0.15);
+            --color-leverage: #FFD700;
+            --color-leverage-muted: rgba(255, 215, 0, 0.15);
+
+            /* Accent */
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+
+            /* Typography */
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         * {
@@ -29,87 +44,302 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: var(--font-body);
             background: var(--color-bg);
             color: var(--color-text);
             min-height: 100vh;
-            padding: 40px 20px;
             line-height: 1.6;
         }
 
-        .container {
-            max-width: 900px;
+        /* HEADER */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
             margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .back-link {
-            color: var(--color-text-secondary);
+        .logo {
+            font-family: 'Georgia', serif;
+            font-size: 1.5rem;
+            color: var(--color-text);
             text-decoration: none;
-            font-size: 0.9rem;
-            display: inline-block;
-            margin-bottom: 24px;
         }
 
-        .back-link:hover {
+        .logo em {
+            font-style: italic;
             color: var(--color-accent);
         }
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 300;
-            margin-bottom: 8px;
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
         }
 
-        /* Personalized Intro */
-        .intro-box {
+        .nav-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent);
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* PAGE HEADER */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .header-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .header-btn:hover {
+            border-color: var(--color-border-hover);
+            background: var(--color-surface-elevated);
+        }
+
+        .header-btn.primary {
+            background: var(--color-accent);
+            color: #000;
+            border-color: var(--color-accent);
+        }
+
+        .header-btn.primary:hover {
+            opacity: 0.9;
+        }
+
+        /* PIPELINE INTELLIGENCE DASHBOARD */
+        .pipeline-dashboard {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 12px;
             padding: 20px;
-            margin-bottom: 32px;
-            line-height: 1.7;
-        }
-
-        .intro-box p {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .intro-box p:first-child {
-            color: var(--color-text);
-        }
-
-        /* Stats Bar */
-        .stats-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-item {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 16px;
             text-align: center;
         }
 
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--color-accent);
+        .metric-card.highlight {
+            border-color: var(--color-leverage);
+            background: var(--color-leverage-muted);
         }
 
-        .stat-label {
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+
+        .metric-value.green { color: var(--color-active); }
+        .metric-value.amber { color: var(--color-hot); }
+        .metric-value.gold { color: var(--color-leverage); }
+        .metric-value.blue { color: var(--color-accent); }
+        .metric-value.gray { color: var(--color-cooling); }
+        .metric-value.red { color: var(--color-dead); }
+
+        .metric-label {
             font-size: 0.75rem;
             color: var(--color-text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-top: 6px;
+        }
+
+        .metric-sublabel {
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
             margin-top: 4px;
         }
 
-        /* Filters */
+        /* STRATEGIC PRIORITIES */
+        .strategic-priorities {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .priorities-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .priorities-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .priority-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px;
+            background: var(--color-bg);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .priority-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .priority-item:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .priority-item.hot {
+            border-left-color: var(--color-hot);
+        }
+
+        .priority-item.active {
+            border-left-color: var(--color-active);
+        }
+
+        .priority-item.cooling {
+            border-left-color: var(--color-cooling);
+        }
+
+        .priority-item.leverage {
+            border-left-color: var(--color-leverage);
+        }
+
+        .priority-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .priority-badge.hot {
+            background: var(--color-hot-muted);
+            color: var(--color-hot);
+        }
+
+        .priority-badge.active {
+            background: var(--color-active-muted);
+            color: var(--color-active);
+        }
+
+        .priority-badge.cooling {
+            background: var(--color-cooling-muted);
+            color: var(--color-cooling);
+        }
+
+        .priority-badge.leverage {
+            background: var(--color-leverage-muted);
+            color: var(--color-leverage);
+        }
+
+        .priority-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .priority-role {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+        }
+
+        .priority-company {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .priority-action {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            margin-top: 8px;
+            padding-left: 12px;
+            border-left: 2px solid var(--color-border);
+        }
+
+        .priority-meta {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .priority-fit {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-active);
+        }
+
+        .priority-days {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        /* FILTERS BAR */
         .filters-bar {
             display: flex;
             gap: 12px;
@@ -118,9 +348,15 @@
             align-items: center;
         }
 
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .filter-label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
         }
 
         .filter-select {
@@ -134,7 +370,7 @@
         }
 
         .filter-select:hover {
-            border-color: var(--color-text-secondary);
+            border-color: var(--color-border-hover);
         }
 
         .filter-select:focus {
@@ -142,54 +378,36 @@
             border-color: var(--color-accent);
         }
 
-        .sort-toggle {
+        .view-toggle {
+            display: flex;
+            margin-left: auto;
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            color: var(--color-text-secondary);
-            padding: 8px 12px;
             border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-secondary);
             font-size: 0.85rem;
             cursor: pointer;
-            margin-left: auto;
+            transition: all 0.2s;
         }
 
-        .sort-toggle:hover {
+        .view-btn:hover {
             color: var(--color-text);
-            border-color: var(--color-text-secondary);
         }
 
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-        }
-
-        .empty-state h2 {
-            font-size: 1.25rem;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            color: var(--color-text-secondary);
-            margin-bottom: 24px;
-        }
-
-        .empty-state a {
-            display: inline-block;
+        .view-btn.active {
             background: var(--color-accent);
             color: #000;
-            padding: 12px 24px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
         }
 
-        /* Application Cards */
-        .applications-list {
+        /* APPLICATION CARDS */
+        .applications-grid {
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -199,66 +417,249 @@
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
-            padding: 24px;
-            transition: border-color 0.2s;
+            overflow: hidden;
+            transition: all 0.2s;
         }
 
         .app-card:hover {
-            border-color: var(--color-text-secondary);
+            border-color: var(--color-border-hover);
+        }
+
+        .app-card.hot {
+            border-color: var(--color-hot);
+            box-shadow: 0 0 20px var(--color-hot-muted);
         }
 
         .app-card.inactive {
             opacity: 0.6;
         }
 
-        .app-card-header {
+        /* Card Header */
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 16px;
+            padding: 20px 24px 16px;
         }
 
-        .app-card-title {
+        .card-title-section {
             flex: 1;
+            min-width: 0;
         }
 
-        .app-card-title h3 {
+        .card-title {
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .app-card-title .company {
+        .leverage-badge {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 6px;
+            border-radius: 4px;
+            background: var(--color-leverage-muted);
+            color: var(--color-leverage);
+        }
+
+        .card-subtitle {
             color: var(--color-text-secondary);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
-        .app-card-meta {
+        .card-meta {
             display: flex;
             gap: 12px;
             align-items: center;
         }
 
         .fit-badge {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        .fit-badge.high {
+            background: var(--color-active-muted);
+            color: var(--color-active);
+        }
+
+        .fit-badge.medium {
+            background: var(--color-hot-muted);
+            color: var(--color-hot);
+        }
+
+        .fit-badge.low {
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+        }
+
+        /* Next Action Section */
+        .next-action {
+            margin: 0 24px 16px;
+            padding: 16px;
+            background: var(--color-bg);
+            border-radius: 12px;
+            border-left: 3px solid var(--color-accent);
+        }
+
+        .next-action.urgent {
+            border-left-color: var(--color-hot);
+            background: var(--color-hot-muted);
+        }
+
+        .next-action.positive {
+            border-left-color: var(--color-active);
+            background: var(--color-active-muted);
+        }
+
+        .next-action.dead {
+            border-left-color: var(--color-dead);
+            background: var(--color-dead-muted);
+        }
+
+        .next-action-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .next-action.urgent .next-action-label { color: var(--color-hot); }
+        .next-action.positive .next-action-label { color: var(--color-active); }
+        .next-action.dead .next-action-label { color: var(--color-dead); }
+
+        .next-action-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+
+        .next-action-cta {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        /* Timeline Section */
+        .timeline-section {
+            padding: 0 24px 16px;
+        }
+
+        .timeline-bar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .timeline-stage {
+            flex: 1;
+            height: 6px;
+            background: var(--color-border);
+            border-radius: 3px;
+            position: relative;
+        }
+
+        .timeline-stage.completed {
+            background: var(--color-active);
+        }
+
+        .timeline-stage.current {
+            background: linear-gradient(90deg, var(--color-active) 50%, var(--color-border) 50%);
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+        }
+
+        /* Card Stats Grid */
+        .card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--color-border);
+            margin: 0 24px 16px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .card-stat {
+            background: var(--color-bg);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .card-stat-value {
             font-size: 0.85rem;
             font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 6px;
         }
 
-        .fit-high {
-            background: var(--color-accent-muted);
-            color: var(--color-accent);
+        .card-stat-value.fast { color: var(--color-active); }
+        .card-stat-value.medium { color: var(--color-hot); }
+        .card-stat-value.slow { color: var(--color-cooling); }
+
+        .card-stat-label {
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
         }
 
-        .fit-medium {
-            background: var(--color-warning-muted);
-            color: var(--color-warning);
+        /* Card Actions */
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            padding: 16px 24px;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg);
         }
 
-        .fit-low {
-            background: var(--color-danger-muted);
-            color: var(--color-danger);
+        .card-action-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+        }
+
+        .card-action-btn:hover {
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+        }
+
+        .card-action-btn.primary {
+            background: var(--color-accent);
+            color: #000;
+            border-color: var(--color-accent);
+        }
+
+        .card-action-btn.done {
+            color: var(--color-active);
+            border-color: var(--color-active-muted);
+        }
+
+        .card-action-btn.danger:hover {
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+            border-color: var(--color-dead);
         }
 
         /* Status Selector */
@@ -267,20 +668,20 @@
         }
 
         .status-btn {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            color: var(--color-text);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 0.85rem;
             cursor: pointer;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
         .status-btn:hover {
-            background: var(--color-surface-hover);
+            border-color: var(--color-border-hover);
         }
 
         .status-dropdown {
@@ -290,11 +691,12 @@
             margin-top: 4px;
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 8px;
             z-index: 100;
-            min-width: 180px;
+            min-width: 200px;
             display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
         .status-dropdown.show {
@@ -302,185 +704,47 @@
         }
 
         .status-option {
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 10px 12px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.85rem;
+            transition: background 0.15s;
         }
 
         .status-option:hover {
-            background: var(--color-surface-hover);
+            background: var(--color-surface-elevated);
         }
 
-        /* Action Box - Clear visual hierarchy */
-        .action-box {
-            background: #1a1a2e;
-            border: 1px solid #2d2d44;
-            border-radius: 12px;
-            padding: 16px;
+        /* Expandable Sections */
+        .expandable-section {
+            padding: 0 24px;
             margin-bottom: 16px;
         }
 
-        .action-box.urgent {
-            background: #2d2416;
-            border-color: rgba(251, 191, 36, 0.4);
-        }
-
-        .action-box.dead {
-            background: #2d1a1a;
-            border-color: rgba(239, 68, 68, 0.4);
-        }
-
-        .action-box.positive {
-            background: #1a2d1a;
-            border-color: rgba(74, 222, 128, 0.4);
-        }
-
-        .action-header {
+        .expandable-toggle {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .action-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #8b8ba7;
-            font-weight: 600;
-        }
-
-        .calendar-btn {
-            padding: 6px 12px;
-            background: rgba(96, 165, 250, 0.15);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            border-radius: 6px;
-            color: #60a5fa;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-
-        .calendar-btn:hover {
-            background: rgba(96, 165, 250, 0.25);
-            border-color: #60a5fa;
-            transform: translateY(-1px);
-        }
-
-        .action-box.urgent .action-label {
-            color: var(--color-warning);
-        }
-
-        .action-box.dead .action-label {
-            color: var(--color-danger);
-        }
-
-        .action-box.positive .action-label {
-            color: var(--color-accent);
-        }
-
-        .action-text {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: var(--color-text);
-        }
-
-        .action-item {
-            display: block;
-            margin-top: 12px;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            font-weight: 500;
-            color: var(--color-text);
-        }
-
-        .action-box.urgent .action-item {
-            background: rgba(251, 191, 36, 0.15);
-            color: var(--color-warning);
-        }
-
-        .action-box.positive .action-item {
-            background: rgba(74, 222, 128, 0.15);
-            color: var(--color-accent);
-        }
-
-        .action-box.dead .action-item {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--color-text-secondary);
-        }
-
-        /* History Timeline */
-        .history-section {
-            margin-bottom: 16px;
-        }
-
-        .history-toggle {
+            gap: 8px;
             color: var(--color-text-secondary);
             font-size: 0.85rem;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .history-toggle:hover {
-            color: var(--color-text);
-        }
-
-        .history-content {
-            display: none;
-            margin-top: 12px;
-            padding-left: 16px;
-            border-left: 2px solid var(--color-border);
-        }
-
-        .history-content.show {
-            display: block;
-        }
-
-        .history-item {
             padding: 8px 0;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
         }
 
-        .history-item .date {
+        .expandable-toggle:hover {
             color: var(--color-text);
-            font-weight: 500;
+        }
+
+        .expandable-content {
+            display: none;
+            padding: 12px 0;
+        }
+
+        .expandable-content.show {
+            display: block;
         }
 
         /* Notes */
-        .notes-section {
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--color-border);
-        }
-
-        .notes-toggle {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .notes-toggle:hover {
-            color: var(--color-text);
-        }
-
-        .notes-content {
-            display: none;
-            margin-top: 12px;
-        }
-
-        .notes-content.show {
-            display: block;
-        }
-
         .notes-textarea {
             width: 100%;
             background: var(--color-bg);
@@ -499,46 +763,98 @@
             border-color: var(--color-accent);
         }
 
-        /* Card Actions */
-        .card-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--color-border);
-            flex-wrap: wrap;
+        /* Interview Notes */
+        .interview-notes {
+            background: var(--color-bg);
+            border-radius: 8px;
+            padding: 16px;
         }
 
-        .card-action-btn {
-            background: none;
-            border: none;
-            color: var(--color-text-secondary);
+        .interview-date {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .interview-section {
+            margin-bottom: 12px;
+        }
+
+        .interview-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .interview-section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .interview-section-label.nailed { color: var(--color-active); }
+        .interview-section-label.fumbled { color: var(--color-hot); }
+        .interview-section-label.signals { color: var(--color-accent); }
+
+        .interview-bullets {
+            list-style: none;
             font-size: 0.85rem;
-            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .interview-bullets li {
             padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
         }
 
-        .card-action-btn:hover {
-            color: var(--color-text);
+        .interview-bullets li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
         }
 
-        .card-action-btn.danger:hover {
-            color: var(--color-danger);
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
         }
 
-        .card-action-btn.done {
-            color: var(--color-accent);
-            cursor: default;
+        .empty-state h2 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
-        /* Modal */
+        .empty-state p {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .empty-state a {
+            display: inline-block;
+            background: var(--color-accent);
+            color: #000;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Modals */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             display: none;
             align-items: center;
             justify-content: center;
@@ -561,12 +877,13 @@
 
         .modal h2 {
             font-size: 1.25rem;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .modal p {
             color: var(--color-text-secondary);
             margin-bottom: 24px;
+            line-height: 1.6;
         }
 
         .modal-actions {
@@ -576,133 +893,60 @@
         }
 
         .modal-btn {
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: 8px;
             font-size: 0.9rem;
+            font-weight: 500;
             cursor: pointer;
             border: none;
+            transition: all 0.2s;
         }
 
         .modal-btn.secondary {
-            background: var(--color-surface-hover);
+            background: var(--color-surface-elevated);
             color: var(--color-text);
+        }
+
+        .modal-btn.secondary:hover {
+            background: var(--color-border);
         }
 
         .modal-btn.danger {
-            background: var(--color-danger);
+            background: var(--color-dead);
             color: white;
         }
 
-        /* Calendar Modal */
-        .calendar-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .calendar-modal.show {
-            opacity: 1;
-        }
-
-        .calendar-modal-content {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .calendar-modal-content h3 {
-            font-size: 1.25rem;
-            margin-bottom: 8px;
-        }
-
-        .calendar-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .calendar-option-btn {
-            padding: 14px 20px;
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.3);
-            border-radius: 8px;
-            color: #60a5fa;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-            text-align: left;
-        }
-
-        .calendar-option-btn:hover {
-            background: rgba(96, 165, 250, 0.2);
-            border-color: #60a5fa;
-            transform: translateY(-2px);
-        }
-
-        .calendar-close-btn {
-            width: 100%;
-            padding: 10px 20px;
-            background: var(--color-surface-hover);
-            border: 1px solid var(--color-border);
-            border-radius: 8px;
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .calendar-close-btn:hover {
-            background: var(--color-surface);
-            color: var(--color-text);
-        }
-
-        /* Comparison Insight */
-        .comparison-insight {
-            background: var(--color-accent-muted);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .comparison-insight.show {
-            display: block;
-        }
-
-        .comparison-insight p {
-            font-size: 0.95rem;
-            line-height: 1.6;
+        .modal-btn.danger:hover {
+            opacity: 0.9;
         }
 
         /* Responsive */
+        @media (max-width: 900px) {
+            .pipeline-dashboard {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         @media (max-width: 640px) {
-            .stats-bar {
+            .container {
+                padding: 20px 16px;
+            }
+
+            .pipeline-dashboard {
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .app-card-header {
+            .page-header {
                 flex-direction: column;
-                gap: 12px;
+                gap: 16px;
             }
 
-            .app-card-meta {
+            .header-actions {
                 width: 100%;
-                justify-content: space-between;
+            }
+
+            .header-btn {
+                flex: 1;
             }
 
             .filters-bar {
@@ -710,54 +954,37 @@
                 align-items: stretch;
             }
 
-            .sort-toggle {
+            .view-toggle {
                 margin-left: 0;
             }
-        }
 
-        /* HEADER */
-        header {
-            padding: 24px 0;
-            border-bottom: 1px solid var(--color-border);
-            margin-bottom: 32px;
-        }
+            .card-header {
+                flex-direction: column;
+                gap: 12px;
+            }
 
-        header .header-container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 0 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+            .card-meta {
+                width: 100%;
+                justify-content: space-between;
+            }
 
-        .logo {
-            font-family: 'Georgia', serif;
-            font-size: 1.5rem;
-            color: var(--color-text);
-            text-decoration: none;
-        }
+            .card-stats {
+                grid-template-columns: 1fr;
+            }
 
-        .logo em {
-            font-style: italic;
-            color: #22d3ee;
-        }
+            .card-actions {
+                flex-wrap: wrap;
+            }
 
-        .header-nav {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-        }
+            .priority-item {
+                flex-direction: column;
+                gap: 12px;
+            }
 
-        .nav-link {
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--color-accent);
+            .priority-meta {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
@@ -774,339 +1001,141 @@
     </header>
 
     <div class="container">
-        <a href="outreach.html" class="back-link">← Return to Network Intelligence & Strategic Outreach</a>
-
-        <h1>Your Applications</h1>
-
-        <!-- Personalized Intro -->
-        <div class="intro-box" id="introBox">
-            <p>This isn't another spreadsheet you'll abandon in two weeks.</p>
-            <p style="margin-top: 12px;">Every role here comes with context: your fit score, what you emphasized, what gaps to address. When you update a status, I'll tell you exactly what to do next and when it's time to move on. No false hope, no busywork.</p>
-        </div>
-
-        <!-- Stats Bar -->
-        <div class="stats-bar" id="statsBar">
-            <div class="stat-item">
-                <div class="stat-number" id="statTotal">0</div>
-                <div class="stat-label">Total</div>
+        <!-- PAGE HEADER -->
+        <div class="page-header">
+            <div>
+                <h1>Pipeline Command Center</h1>
+                <p class="subtitle">Your strategic view of every opportunity in play</p>
             </div>
-            <div class="stat-item">
-                <div class="stat-number" id="statActive">0</div>
-                <div class="stat-label">Active</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="statResponses">0</div>
-                <div class="stat-label">Responses</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number" id="statResponseRate">0%</div>
-                <div class="stat-label">Response Rate</div>
+            <div class="header-actions">
+                <a href="analyze.html" class="header-btn primary">+ Analyze New Role</a>
             </div>
         </div>
 
-        <!-- Filters -->
+        <!-- PIPELINE INTELLIGENCE DASHBOARD -->
+        <div class="pipeline-dashboard" id="pipelineDashboard">
+            <div class="metric-card">
+                <div class="metric-value green" id="metricActive">0</div>
+                <div class="metric-label">Active</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="metricMomentum">--</div>
+                <div class="metric-label">Momentum</div>
+                <div class="metric-sublabel" id="metricMomentumDetail">High: 0 | Med: 0</div>
+            </div>
+            <div class="metric-card highlight">
+                <div class="metric-value gold" id="metricLeverage">--</div>
+                <div class="metric-label">Leverage</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value blue" id="metricTimeToScreen">--</div>
+                <div class="metric-label">Avg Time to Screen</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value green" id="metricConversion">0%</div>
+                <div class="metric-label">Interview Rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value gray" id="metricGhost">0%</div>
+                <div class="metric-label">Ghost Rate</div>
+            </div>
+        </div>
+
+        <!-- STRATEGIC PRIORITIES -->
+        <div class="strategic-priorities" id="strategicPriorities" style="display: none;">
+            <div class="priorities-header">
+                <div class="priorities-title">
+                    <span>🎯</span> Strategic Priorities
+                </div>
+            </div>
+            <div id="prioritiesContent">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- FILTERS BAR -->
         <div class="filters-bar" id="filtersBar" style="display: none;">
-            <span class="filter-label">Filter:</span>
-            <select class="filter-select" id="filterStatus">
-                <option value="all">All Statuses</option>
-                <option value="active">Active Only</option>
-                <option value="Preparing">Preparing</option>
-                <option value="To Apply">To Apply</option>
-                <option value="Applied">Applied</option>
-                <option value="Reached Out">Reached Out</option>
-                <option value="Response Received">Response Received</option>
-                <option value="Recruiter Screen">Recruiter Screen</option>
-                <option value="Hiring Manager">Hiring Manager</option>
-                <option value="Technical Round">Technical Round</option>
-                <option value="Panel Interview">Panel Interview</option>
-                <option value="Final Round">Final Round</option>
-                <option value="Executive Interview">Executive Interview</option>
-                <option value="Interviewed">Interviewed</option>
-                <option value="Offer Received">Offer Received</option>
-                <option value="No Response">No Response</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Withdrawn">Withdrawn</option>
-            </select>
-            <select class="filter-select" id="filterFit">
-                <option value="all">All Fit Scores</option>
-                <option value="high">75%+ (Strong)</option>
-                <option value="medium">60-74% (Decent)</option>
-                <option value="low">Below 60%</option>
-            </select>
-            <button class="sort-toggle" id="sortToggle">Sort: Newest ↓</button>
+            <div class="filter-group">
+                <span class="filter-label">Status:</span>
+                <select class="filter-select" id="filterStatus">
+                    <option value="all">All</option>
+                    <option value="active">Active Only</option>
+                    <option value="hot">🔥 Hot</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="stale">Stale</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Fit:</span>
+                <select class="filter-select" id="filterFit">
+                    <option value="all">All</option>
+                    <option value="high">80%+ Strong</option>
+                    <option value="medium">60-79%</option>
+                    <option value="low">Below 60%</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Sort:</span>
+                <select class="filter-select" id="sortBy">
+                    <option value="urgency">Urgency</option>
+                    <option value="fit">Fit Score</option>
+                    <option value="recent">Most Recent</option>
+                    <option value="timeline">Timeline</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Comparison Insight -->
-        <div class="comparison-insight" id="comparisonInsight">
-            <p id="comparisonText"></p>
-        </div>
-
-        <!-- Applications List -->
+        <!-- APPLICATIONS -->
         <div id="applicationsContainer">
-            <!-- Populated by JavaScript -->
+            <!-- Dynamically populated -->
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- DELETE MODAL -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
-            <h2>Remove this application?</h2>
-            <p>This will permanently remove this role from your tracker. You can always add it back later by analyzing the job again.</p>
+            <h2>Archive this application?</h2>
+            <p>This will move the role out of your active pipeline. You can always add it back by analyzing the job again.</p>
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="modal-btn danger" id="confirmDeleteBtn">Remove</button>
+                <button class="modal-btn danger" id="confirmDeleteBtn">Archive</button>
             </div>
         </div>
     </div>
 
     <script>
         // ========================================================================
-        // APPLICATION STATUS DEFINITIONS
+        // STATUS DEFINITIONS WITH STAGE WEIGHTS
         // ========================================================================
         const STATUSES = {
-            'Preparing': {
-                label: 'Preparing',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'default',
-                        context: `You're preparing your application materials for this role.`,
-                        action: `Finish reviewing your tailored documents, then submit your application.`
-                    };
-                }
-            },
-            'To Apply': {
-                label: 'To Apply',
-                active: true,
-                nextAction: (app) => {
-                    const daysSinceAdded = getDaysSince(app.dateAdded);
-                    if (daysSinceAdded > 3) {
-                        return {
-                            type: 'urgent',
-                            context: `You added this ${daysSinceAdded} days ago but haven't applied. Roles get 300+ applicants in 48 hours.`,
-                            action: `Apply today or remove it and focus elsewhere.`
-                        };
-                    }
-                    return {
-                        type: 'default',
-                        context: `Best chances come from applying within 24 to 48 hours of posting.`,
-                        action: `Submit your application, then update your status here.`
-                    };
-                }
-            },
-            'Applied': {
-                label: 'Applied',
-                active: true,
-                nextAction: (app) => {
-                    const daysSinceApplied = getDaysSince(app.dateApplied || app.dateAdded);
-                    if (daysSinceApplied < 3) {
-                        return {
-                            type: 'default',
-                            context: `Applied ${daysSinceApplied === 0 ? 'today' : daysSinceApplied + ' days ago'}. The ATS is a black hole. Direct outreach is how you get seen.`,
-                            action: `Find the hiring manager on LinkedIn and send a personalized message. Use the outreach template from your download.`
-                        };
-                    } else if (daysSinceApplied < 7) {
-                        return {
-                            type: 'default',
-                            context: `It has been ${daysSinceApplied} days since you applied.`,
-                            action: `If you haven't reached out directly, now is the time. Find someone at the company on LinkedIn and send a personalized message.`
-                        };
-                    } else if (daysSinceApplied < 14) {
-                        return {
-                            type: 'urgent',
-                            context: `${daysSinceApplied} days with no response.`,
-                            action: `Send a follow-up: "Hi [Name], I applied for [Role] last week and wanted to reiterate my interest. Would love to connect if there is a fit."`
-                        };
-                    } else {
-                        return {
-                            type: 'dead',
-                            context: `It has been ${daysSinceApplied} days. In this market, no response after 2 weeks usually means it is not moving forward.`,
-                            action: `Send one final follow-up if you want, but mentally move on. Focus energy on newer opportunities.`
-                        };
-                    }
-                }
-            },
-            'Reached Out': {
-                label: 'Reached Out',
-                active: true,
-                nextAction: (app) => {
-                    const daysSinceReached = getDaysSince(app.dateReachedOut || app.dateApplied || app.dateAdded);
-                    if (daysSinceReached < 5) {
-                        return {
-                            type: 'default',
-                            context: `Outreach sent ${daysSinceReached === 0 ? 'today' : daysSinceReached + ' days ago'}. Give them 3 to 5 business days to respond.`,
-                            action: `Keep applying to other roles. Never wait on one opportunity.`
-                        };
-                    } else if (daysSinceReached < 10) {
-                        return {
-                            type: 'urgent',
-                            context: `No response to your outreach after ${daysSinceReached} days.`,
-                            action: `Send a brief follow-up: "Hi [Name], circling back on my note about the [Role] position. Still very interested. Let me know if there is a better time to connect."`
-                        };
-                    } else {
-                        return {
-                            type: 'dead',
-                            context: `${daysSinceReached} days since outreach with no response. This one is likely cold.`,
-                            action: `Mark it as "No Response" and redirect your energy. Not personal. Hiring managers are overwhelmed.`
-                        };
-                    }
-                }
-            },
-            'Response Received': {
-                label: 'Response Received',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Great news. You got a response. Speed signals interest.`,
-                        action: `Respond within 24 hours. Be flexible on scheduling, prepare your "tell me about yourself" story, and research the interviewer on LinkedIn.`
-                    };
-                }
-            },
-            'Recruiter Screen': {
-                label: 'Recruiter Screen',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Recruiter screen scheduled. This is your first impression.`,
-                        action: `Prepare your 60-second intro, know why you want this role, and have 2-3 questions ready. Be ready to discuss salary expectations.`
-                    };
-                }
-            },
-            'Hiring Manager': {
-                label: 'Hiring Manager',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Hiring manager interview. This is where fit is really evaluated.`,
-                        action: `Research the manager on LinkedIn. Prepare specific examples of your work. Have questions about team structure, challenges, and success metrics.`
-                    };
-                }
-            },
-            'Technical Round': {
-                label: 'Technical Round',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Technical interview. Time to demonstrate your skills.`,
-                        action: `Review the job requirements. Prepare examples of technical work. Practice explaining your thought process out loud.`
-                    };
-                }
-            },
-            'Panel Interview': {
-                label: 'Panel Interview',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Panel interview. Multiple perspectives evaluating you.`,
-                        action: `Address all panelists, make eye contact with each. Prepare diverse examples that showcase different skills. Follow up with each interviewer.`
-                    };
-                }
-            },
-            'Final Round': {
-                label: 'Final Round',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Final round. You're in the top candidates.`,
-                        action: `This is often about cultural fit and executive buy-in. Be authentic, show enthusiasm, and have thoughtful questions about company vision.`
-                    };
-                }
-            },
-            'Executive Interview': {
-                label: 'Executive Interview',
-                active: true,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Executive interview. High-level alignment check.`,
-                        action: `Focus on strategic impact and vision. Show you understand the business, not just the role. Keep answers concise and high-level.`
-                    };
-                }
-            },
-            'Interviewed': {
-                label: 'Interviewed',
-                active: true,
-                nextAction: (app) => {
-                    const daysSinceInterview = getDaysSince(app.dateInterviewed || app.dateAdded);
-                    if (daysSinceInterview < 1) {
-                        return {
-                            type: 'default',
-                            context: `Interview complete. The follow-up matters.`,
-                            action: `Send a thank-you email within 24 hours. Keep it brief: thank them for their time, reference one specific thing you discussed, reiterate your interest.`
-                        };
-                    } else if (daysSinceInterview < 7) {
-                        return {
-                            type: 'default',
-                            context: `Thank-you sent. Now wait.`,
-                            action: `If they gave you a timeline, respect it. If not, follow up after 5 to 7 business days if you have not heard back.`
-                        };
-                    } else {
-                        return {
-                            type: 'urgent',
-                            context: `It has been ${daysSinceInterview} days since your interview.`,
-                            action: `Send a follow-up: "Hi [Name], I wanted to check in on the timeline for [Role]. I remain very interested and happy to provide any additional information."`
-                        };
-                    }
-                }
-            },
-            'Offer Received': {
-                label: 'Offer Received',
-                active: false,
-                nextAction: (app) => {
-                    return {
-                        type: 'positive',
-                        context: `Congratulations. Take 24 to 48 hours to review carefully. It is expected that you will take time.`,
-                        action: `Research market rates. Consider the full package, not just salary. Prepare your negotiation points before responding.`
-                    };
-                }
-            },
-            'No Response': {
-                label: 'No Response',
-                active: false,
-                nextAction: (app) => {
-                    return {
-                        type: 'dead',
-                        context: `This one did not work out. That is the reality of this market. Even great candidates get ghosted.`,
-                        action: `Archive it mentally and keep moving. Every silence gets you closer to the right opportunity.`
-                    };
-                }
-            },
-            'Rejected': {
-                label: 'Rejected',
-                active: false,
-                nextAction: (app) => {
-                    return {
-                        type: 'dead',
-                        context: `Rejection stings, but it is better than ghosting. At least you know.`,
-                        action: `If they offered feedback, take it seriously. If not, do not read too much into it. The right role is still out there.`
-                    };
-                }
-            },
-            'Withdrawn': {
-                label: 'Withdrawn',
-                active: false,
-                nextAction: (app) => {
-                    return {
-                        type: 'default',
-                        context: `You withdrew from this one.`,
-                        action: `Smart to know when a role is not right. Keep that clarity as you evaluate other opportunities.`
-                    };
-                }
-            }
+            'Preparing': { label: 'Preparing', active: true, stage: 0, stageWeight: 5 },
+            'To Apply': { label: 'To Apply', active: true, stage: 0, stageWeight: 10 },
+            'Applied': { label: 'Applied', active: true, stage: 1, stageWeight: 15 },
+            'Reached Out': { label: 'Reached Out', active: true, stage: 1, stageWeight: 20 },
+            'Response Received': { label: 'Response Received', active: true, stage: 2, stageWeight: 25 },
+            'Recruiter Screen': { label: 'Recruiter Screen', active: true, stage: 2, stageWeight: 30 },
+            'Hiring Manager': { label: 'Hiring Manager', active: true, stage: 3, stageWeight: 40 },
+            'Technical Round': { label: 'Technical Round', active: true, stage: 3, stageWeight: 45 },
+            'Panel Interview': { label: 'Panel Interview', active: true, stage: 3, stageWeight: 50 },
+            'Final Round': { label: 'Final Round', active: true, stage: 4, stageWeight: 55 },
+            'Executive Interview': { label: 'Executive Interview', active: true, stage: 4, stageWeight: 60 },
+            'Interviewed': { label: 'Interviewed', active: true, stage: 4, stageWeight: 50 },
+            'Offer Received': { label: 'Offer Received', active: false, stage: 5, stageWeight: 70 },
+            'No Response': { label: 'No Response', active: false, stage: -1, stageWeight: 0 },
+            'Rejected': { label: 'Rejected', active: false, stage: -1, stageWeight: 0 },
+            'Withdrawn': { label: 'Withdrawn', active: false, stage: -1, stageWeight: 0 }
         };
+
+        // Interview stages for timeline
+        const INTERVIEW_STAGES = ['Applied', 'Screen', 'Interview', 'Final', 'Offer'];
 
         // ========================================================================
         // STATE
         // ========================================================================
-        let currentFilter = 'all';
+        let currentStatusFilter = 'all';
         let currentFitFilter = 'all';
-        let sortNewestFirst = true;
+        let currentSort = 'urgency';
 
         // ========================================================================
         // HELPER FUNCTIONS
@@ -1115,21 +1144,12 @@
             if (!dateString) return 0;
             const date = new Date(dateString);
             const now = new Date();
-            const diffTime = Math.abs(now - date);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays;
+            return Math.floor((now - date) / (1000 * 60 * 60 * 24));
         }
 
         function formatDate(dateString) {
             if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }
-
-        function formatDateTime(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
         function getApplications() {
@@ -1143,10 +1163,310 @@
         function parseSalary(salaryStr) {
             if (!salaryStr) return 0;
             const match = salaryStr.match(/\$?([\d,]+)/);
-            if (match) {
-                return parseInt(match[1].replace(/,/g, ''));
+            return match ? parseInt(match[1].replace(/,/g, '')) : 0;
+        }
+
+        // ========================================================================
+        // MOMENTUM CALCULATION
+        // ========================================================================
+        function getMomentum(app) {
+            const daysSinceContact = getDaysSince(app.lastUpdated || app.dateAdded);
+            if (daysSinceContact <= 3) return 'fast';
+            if (daysSinceContact <= 7) return 'medium';
+            if (daysSinceContact <= 14) return 'slow';
+            return 'stalled';
+        }
+
+        function getMomentumLabel(momentum) {
+            const labels = { fast: 'Fast', medium: 'Medium', slow: 'Slow', stalled: 'Stalled' };
+            return labels[momentum] || 'Unknown';
+        }
+
+        // ========================================================================
+        // STATUS LABEL (Hot, Active, Cooling, Dead)
+        // ========================================================================
+        function getStatusLabel(app) {
+            const status = STATUSES[app.status];
+            if (!status || !status.active) return 'dead';
+
+            const daysSinceContact = getDaysSince(app.lastUpdated || app.dateAdded);
+            const isInterviewing = ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(app.status);
+
+            // Hot: Interview stage OR offer expected soon OR urgent follow-up
+            if (isInterviewing || app.status === 'Offer Received') return 'hot';
+            if (daysSinceContact <= 3 && status.stageWeight >= 20) return 'hot';
+
+            // Active: Movement within 7 days
+            if (daysSinceContact <= 7) return 'active';
+
+            // Cooling: No activity 8-13 days
+            if (daysSinceContact <= 13) return 'cooling';
+
+            // Stagnant/Dead: 14+ days
+            return 'dead';
+        }
+
+        // ========================================================================
+        // URGENCY SCORE (for sorting and prioritization)
+        // ========================================================================
+        function calculateUrgencyScore(app) {
+            const status = STATUSES[app.status] || {};
+            const daysSinceContact = getDaysSince(app.lastUpdated || app.dateAdded);
+            const fitScore = app.fitScore || 50;
+
+            // Base urgency from stage weight
+            let urgency = status.stageWeight || 0;
+
+            // Add fit score bonus (max 100)
+            urgency += fitScore;
+
+            // Recency bonus (inverse of days, max 50)
+            urgency += Math.max(0, 50 - (daysSinceContact * 3));
+
+            // Network leverage bonus
+            if (app.networkLeverage === '1st_degree') urgency += 20;
+            else if (app.networkLeverage === '2nd_degree') urgency += 10;
+            else if (app.networkLeverage === 'referral') urgency += 15;
+
+            // Penalize inactive
+            if (!status.active) urgency = -100;
+
+            return urgency;
+        }
+
+        // ========================================================================
+        // NEXT ACTION ENGINE
+        // ========================================================================
+        function generateNextAction(app) {
+            const status = app.status;
+            const daysSinceContact = getDaysSince(app.lastUpdated || app.dateAdded);
+            const daysSinceApplied = getDaysSince(app.dateApplied);
+            const daysSinceInterview = getDaysSince(app.dateInterviewed);
+
+            // Preparing
+            if (status === 'Preparing') {
+                return {
+                    type: 'default',
+                    context: "You're building your application materials.",
+                    action: "Review your tailored documents and submit your application."
+                };
             }
-            return 0;
+
+            // To Apply
+            if (status === 'To Apply') {
+                if (daysSinceContact > 3) {
+                    return {
+                        type: 'urgent',
+                        context: `Added ${daysSinceContact} days ago. Roles get 300+ applicants in 48 hours.`,
+                        action: "Apply today or archive it and focus elsewhere."
+                    };
+                }
+                return {
+                    type: 'default',
+                    context: "Best results come from applying within 24-48 hours of posting.",
+                    action: "Submit your application, then reach out directly on LinkedIn."
+                };
+            }
+
+            // Applied
+            if (status === 'Applied') {
+                if (daysSinceApplied < 3) {
+                    return {
+                        type: 'default',
+                        context: `Applied ${daysSinceApplied === 0 ? 'today' : daysSinceApplied + ' days ago'}. The ATS is a black hole.`,
+                        action: "Find the hiring manager on LinkedIn and send a personalized message."
+                    };
+                } else if (daysSinceApplied < 7) {
+                    return {
+                        type: 'default',
+                        context: `${daysSinceApplied} days since you applied.`,
+                        action: "If you haven't reached out directly, now's the time. Find someone at the company."
+                    };
+                } else if (daysSinceApplied < 14) {
+                    return {
+                        type: 'urgent',
+                        context: `${daysSinceApplied} days with no response.`,
+                        action: "Send a follow-up or move on. In this market, silence usually means no."
+                    };
+                } else {
+                    return {
+                        type: 'dead',
+                        context: `${daysSinceApplied} days since applying. Likely ghosted.`,
+                        action: "Archive and focus on active opportunities. Not personal—this market is brutal."
+                    };
+                }
+            }
+
+            // Reached Out
+            if (status === 'Reached Out') {
+                if (daysSinceContact < 5) {
+                    return {
+                        type: 'default',
+                        context: `Outreach sent ${daysSinceContact === 0 ? 'today' : daysSinceContact + ' days ago'}. Give them 3-5 business days.`,
+                        action: "Keep applying to other roles. Never wait on one opportunity."
+                    };
+                } else if (daysSinceContact < 10) {
+                    return {
+                        type: 'urgent',
+                        context: `No response to outreach after ${daysSinceContact} days.`,
+                        action: "Send a brief follow-up: 'Circling back on my note about [Role]. Still very interested.'"
+                    };
+                } else {
+                    return {
+                        type: 'dead',
+                        context: `${daysSinceContact} days since outreach. This one's cold.`,
+                        action: "Mark as 'No Response' and redirect your energy."
+                    };
+                }
+            }
+
+            // Response Received
+            if (status === 'Response Received') {
+                return {
+                    type: 'positive',
+                    context: "You got a response. Speed signals interest.",
+                    action: "Respond within 24 hours. Be flexible on scheduling. Research the interviewer."
+                };
+            }
+
+            // Interview stages
+            if (['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(status)) {
+                return {
+                    type: 'positive',
+                    context: `${status} scheduled. You're in the running.`,
+                    action: "Prep your stories, research your interviewers, have questions ready."
+                };
+            }
+
+            // Interviewed
+            if (status === 'Interviewed') {
+                if (daysSinceInterview < 1) {
+                    return {
+                        type: 'default',
+                        context: "Interview complete. The follow-up matters.",
+                        action: "Send a thank-you within 24 hours. Keep it brief but specific."
+                    };
+                } else if (daysSinceInterview < 7) {
+                    return {
+                        type: 'default',
+                        context: "Thank-you sent. Now wait.",
+                        action: "Follow up after 5-7 business days if you haven't heard back."
+                    };
+                } else {
+                    return {
+                        type: 'urgent',
+                        context: `${daysSinceInterview} days since your interview.`,
+                        action: "Send a check-in: 'Wanted to follow up on the timeline for [Role].'"
+                    };
+                }
+            }
+
+            // Offer
+            if (status === 'Offer Received') {
+                return {
+                    type: 'positive',
+                    context: "Congratulations. Take 24-48 hours to review carefully.",
+                    action: "Research market rates. Prepare negotiation points. Consider the full package."
+                };
+            }
+
+            // Inactive statuses
+            if (['No Response', 'Rejected', 'Withdrawn'].includes(status)) {
+                return {
+                    type: 'dead',
+                    context: status === 'Rejected' ? "This one didn't work out." : status === 'Withdrawn' ? "You withdrew from this one." : "No response received.",
+                    action: "Archive it mentally and keep moving. Every silence gets you closer to the right fit."
+                };
+            }
+
+            return {
+                type: 'default',
+                context: "Keep this one moving.",
+                action: "Check for any pending follow-ups."
+            };
+        }
+
+        // ========================================================================
+        // PIPELINE METRICS
+        // ========================================================================
+        function calculatePipelineMetrics(apps) {
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+            const allApps = apps;
+
+            // Active count
+            const activeCount = activeApps.length;
+
+            // Momentum distribution
+            let momentumHigh = 0, momentumMed = 0;
+            activeApps.forEach(app => {
+                const m = getMomentum(app);
+                if (m === 'fast') momentumHigh++;
+                else if (m === 'medium') momentumMed++;
+            });
+
+            // Leverage score: (final-stage interviews * avg fit) / total active
+            const finalStageApps = activeApps.filter(a =>
+                ['Final Round', 'Executive Interview', 'Offer Received'].includes(a.status)
+            );
+            let leverageScore = 0;
+            if (activeCount > 0 && finalStageApps.length > 0) {
+                const avgFit = finalStageApps.reduce((sum, a) => sum + (a.fitScore || 50), 0) / finalStageApps.length;
+                leverageScore = (finalStageApps.length * avgFit) / activeCount / 10;
+            }
+
+            // Average time to screen
+            const withScreen = allApps.filter(a => a.dateApplied && a.dateResponseReceived);
+            let avgTimeToScreen = null;
+            if (withScreen.length > 0) {
+                const total = withScreen.reduce((sum, a) => {
+                    return sum + getDaysSince(a.dateApplied) - getDaysSince(a.dateResponseReceived);
+                }, 0);
+                avgTimeToScreen = Math.round(total / withScreen.length * 10) / 10;
+            }
+
+            // Interview conversion rate
+            const applied = allApps.filter(a => !['Preparing', 'To Apply'].includes(a.status)).length;
+            const interviewed = allApps.filter(a =>
+                ['Response Received', 'Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Interviewed', 'Offer Received'].includes(a.status)
+            ).length;
+            const conversionRate = applied > 0 ? Math.round((interviewed / applied) * 100) : 0;
+
+            // Ghost rate
+            const ghosted = allApps.filter(a => {
+                const days = getDaysSince(a.dateApplied || a.dateAdded);
+                return a.status === 'Applied' && days > 14;
+            }).length;
+            const ghostRate = applied > 0 ? Math.round((ghosted / applied) * 100) : 0;
+
+            return {
+                activeCount,
+                momentumHigh,
+                momentumMed,
+                leverageScore,
+                avgTimeToScreen,
+                conversionRate,
+                ghostRate
+            };
+        }
+
+        // ========================================================================
+        // STRATEGIC PRIORITIES
+        // ========================================================================
+        function getStrategicPriorities(apps) {
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+
+            // Calculate urgency for each and sort
+            const withUrgency = activeApps.map(app => ({
+                ...app,
+                urgencyScore: calculateUrgencyScore(app),
+                statusLabel: getStatusLabel(app),
+                momentum: getMomentum(app)
+            }));
+
+            withUrgency.sort((a, b) => b.urgencyScore - a.urgencyScore);
+
+            // Return top 3-5
+            return withUrgency.slice(0, Math.min(5, withUrgency.length));
         }
 
         // ========================================================================
@@ -1154,16 +1474,26 @@
         // ========================================================================
         function filterApplications(apps) {
             return apps.filter(app => {
+                const status = STATUSES[app.status];
+                const statusLabel = getStatusLabel(app);
+
                 // Status filter
-                if (currentFilter === 'active') {
-                    if (!STATUSES[app.status]?.active) return false;
-                } else if (currentFilter !== 'all') {
-                    if (app.status !== currentFilter) return false;
+                if (currentStatusFilter === 'active' && !status?.active) return false;
+                if (currentStatusFilter === 'hot' && statusLabel !== 'hot') return false;
+                if (currentStatusFilter === 'interviewing') {
+                    const interviewStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'];
+                    if (!interviewStatuses.includes(app.status)) return false;
+                }
+                if (currentStatusFilter === 'waiting') {
+                    if (!['Applied', 'Reached Out', 'Interviewed'].includes(app.status)) return false;
+                }
+                if (currentStatusFilter === 'stale') {
+                    if (statusLabel !== 'cooling' && statusLabel !== 'dead') return false;
                 }
 
                 // Fit filter
-                if (currentFitFilter === 'high' && app.fitScore < 75) return false;
-                if (currentFitFilter === 'medium' && (app.fitScore < 60 || app.fitScore >= 75)) return false;
+                if (currentFitFilter === 'high' && app.fitScore < 80) return false;
+                if (currentFitFilter === 'medium' && (app.fitScore < 60 || app.fitScore >= 80)) return false;
                 if (currentFitFilter === 'low' && app.fitScore >= 60) return false;
 
                 return true;
@@ -1178,76 +1508,82 @@
                 if (aActive && !bActive) return -1;
                 if (!aActive && bActive) return 1;
 
-                // Then by date
-                const dateA = new Date(a.dateAdded);
-                const dateB = new Date(b.dateAdded);
-                return sortNewestFirst ? dateB - dateA : dateA - dateB;
+                // Sort by selected criteria
+                if (currentSort === 'urgency') {
+                    return calculateUrgencyScore(b) - calculateUrgencyScore(a);
+                }
+                if (currentSort === 'fit') {
+                    return (b.fitScore || 0) - (a.fitScore || 0);
+                }
+                if (currentSort === 'recent') {
+                    return new Date(b.lastUpdated || b.dateAdded) - new Date(a.lastUpdated || a.dateAdded);
+                }
+                if (currentSort === 'timeline') {
+                    return (STATUSES[b.status]?.stageWeight || 0) - (STATUSES[a.status]?.stageWeight || 0);
+                }
+                return 0;
             });
-        }
-
-        // ========================================================================
-        // COMPARISON INSIGHTS
-        // ========================================================================
-        function generateComparisonInsight(apps) {
-            if (apps.length < 2) return null;
-
-            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
-            if (activeApps.length < 2) return null;
-
-            // Count by status
-            const toApply = activeApps.filter(a => ['Preparing', 'To Apply'].includes(a.status)).length;
-            const waiting = activeApps.filter(a => ['Applied', 'Reached Out'].includes(a.status)).length;
-            const interviewing = activeApps.filter(a => ['Response Received', 'Interview Scheduled', 'Interviewed'].includes(a.status)).length;
-
-            // Find highest fit
-            const highestFit = activeApps.reduce((max, app) => app.fitScore > max.fitScore ? app : max, activeApps[0]);
-            
-            // Find highest salary
-            const withSalary = activeApps.filter(a => a.salary && a.salary !== 'Not specified');
-            let highestSalary = null;
-            if (withSalary.length > 1) {
-                highestSalary = withSalary.reduce((max, app) => parseSalary(app.salary) > parseSalary(max.salary) ? app : max, withSalary[0]);
-            }
-
-            // Generate insight
-            if (interviewing > 0) {
-                return `You have ${interviewing} role${interviewing > 1 ? 's' : ''} in the interview stage. Focus your energy there.${toApply > 0 ? ` The ${toApply} in "To Apply" can wait, or remove them to reduce noise.` : ''}`;
-            } else if (waiting > 3 && toApply > 0) {
-                return `You have ${waiting} applications waiting for responses and ${toApply} more to apply to. In this market, keep the pipeline moving. Apply to those ${toApply} roles today while you wait.`;
-            } else if (highestFit && highestSalary && highestFit.id !== highestSalary.id && parseSalary(highestSalary.salary) > parseSalary(highestFit.salary || '0')) {
-                return `Your strongest fit is ${highestFit.role} at ${highestFit.company} (${highestFit.fitScore}%), but ${highestSalary.role} at ${highestSalary.company} has the highest comp (${highestSalary.salary}). Worth considering which matters more for this search.`;
-            }
-
-            return null;
         }
 
         // ========================================================================
         // RENDER FUNCTIONS
         // ========================================================================
-        function renderStats(apps) {
-            const total = apps.length;
-            const active = apps.filter(a => STATUSES[a.status]?.active).length;
-            const responses = apps.filter(a => ['Response Received', 'Interview Scheduled', 'Interviewed', 'Offer Received'].includes(a.status)).length;
-            const applied = apps.filter(a => !['Preparing', 'To Apply'].includes(a.status)).length;
-            const responseRate = applied > 0 ? Math.round((responses / applied) * 100) : 0;
+        function renderPipelineMetrics(metrics) {
+            document.getElementById('metricActive').textContent = metrics.activeCount;
+            document.getElementById('metricActive').className = 'metric-value ' + (metrics.activeCount > 0 ? 'green' : 'gray');
 
-            document.getElementById('statTotal').textContent = total;
-            document.getElementById('statActive').textContent = active;
-            document.getElementById('statResponses').textContent = responses;
-            document.getElementById('statResponseRate').textContent = responseRate + '%';
+            // Momentum
+            const totalMomentum = metrics.momentumHigh + metrics.momentumMed;
+            document.getElementById('metricMomentum').textContent = totalMomentum > 0 ? (metrics.momentumHigh > metrics.momentumMed ? 'High' : 'Med') : '--';
+            document.getElementById('metricMomentum').className = 'metric-value ' + (metrics.momentumHigh > 0 ? 'green' : metrics.momentumMed > 0 ? 'amber' : 'gray');
+            document.getElementById('metricMomentumDetail').textContent = `High: ${metrics.momentumHigh} | Med: ${metrics.momentumMed}`;
+
+            // Leverage
+            document.getElementById('metricLeverage').textContent = metrics.leverageScore > 0 ? metrics.leverageScore.toFixed(1) + 'x' : '--';
+
+            // Time to screen
+            document.getElementById('metricTimeToScreen').textContent = metrics.avgTimeToScreen ? metrics.avgTimeToScreen + ' days' : '--';
+
+            // Conversion
+            document.getElementById('metricConversion').textContent = metrics.conversionRate + '%';
+            document.getElementById('metricConversion').className = 'metric-value ' + (metrics.conversionRate >= 20 ? 'green' : metrics.conversionRate >= 10 ? 'amber' : 'gray');
+
+            // Ghost rate
+            document.getElementById('metricGhost').textContent = metrics.ghostRate + '%';
+            document.getElementById('metricGhost').className = 'metric-value ' + (metrics.ghostRate <= 30 ? 'gray' : 'red');
         }
 
-        function renderComparison(apps) {
-            const insight = generateComparisonInsight(apps);
-            const container = document.getElementById('comparisonInsight');
-            const text = document.getElementById('comparisonText');
+        function renderStrategicPriorities(priorities) {
+            const container = document.getElementById('strategicPriorities');
+            const content = document.getElementById('prioritiesContent');
 
-            if (insight) {
-                text.textContent = insight;
-                container.classList.add('show');
-            } else {
-                container.classList.remove('show');
+            if (priorities.length === 0) {
+                container.style.display = 'none';
+                return;
             }
+
+            container.style.display = 'block';
+
+            content.innerHTML = priorities.map(app => {
+                const action = generateNextAction(app);
+                const statusLabel = app.statusLabel;
+                const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
+
+                return `
+                    <div class="priority-item ${statusLabel}">
+                        <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
+                        <div class="priority-content">
+                            <div class="priority-role">${app.role}</div>
+                            <div class="priority-company">${app.company} • ${app.status}</div>
+                            <div class="priority-action">→ ${action.action}</div>
+                        </div>
+                        <div class="priority-meta">
+                            <span class="priority-fit">${app.fitScore}%</span>
+                            <span class="priority-days">${daysSince === 0 ? 'Today' : daysSince + 'd ago'}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderApplications(apps) {
@@ -1255,15 +1591,15 @@
             const filtered = filterApplications(apps);
             const sorted = sortApplications(filtered);
 
-            // Show/hide filters based on app count
+            // Show/hide filters
             document.getElementById('filtersBar').style.display = apps.length > 0 ? 'flex' : 'none';
 
             if (apps.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h2>No applications yet</h2>
-                        <p>Start by analyzing a job description. When you click "Track This Application," it'll show up here with your fit score, strategy, and next steps.</p>
-                        <a href="index.html">Analyze a Role</a>
+                        <h2>Your command center is ready.</h2>
+                        <p>Analyze your first role to start building your strategic pipeline.</p>
+                        <a href="analyze.html">Analyze First Role</a>
                     </div>
                 `;
                 return;
@@ -1273,119 +1609,169 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <h2>No matches</h2>
-                        <p>No applications match your current filters. Try adjusting them above.</p>
+                        <p>No applications match your current filters.</p>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = `
-                <div class="applications-list">
+                <div class="applications-grid">
                     ${sorted.map(app => renderAppCard(app)).join('')}
                 </div>
             `;
-
-            attachCardListeners();
         }
 
         function renderAppCard(app) {
-            const statusConfig = STATUSES[app.status] || STATUSES['To Apply'];
-            const action = statusConfig.nextAction(app);
-            const isInactive = !statusConfig.active;
-            
+            const status = STATUSES[app.status] || {};
+            const statusLabel = getStatusLabel(app);
+            const momentum = getMomentum(app);
+            const action = generateNextAction(app);
+            const isInactive = !status.active;
+            const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
+
             // Fit badge class
-            let fitClass = 'fit-medium';
-            if (app.fitScore >= 75) fitClass = 'fit-high';
-            else if (app.fitScore < 60) fitClass = 'fit-low';
+            let fitClass = 'medium';
+            if (app.fitScore >= 80) fitClass = 'high';
+            else if (app.fitScore < 60) fitClass = 'low';
 
-            // Build history
-            const history = [];
-            if (app.dateAdded) history.push({ action: 'Added', date: app.dateAdded });
-            if (app.dateApplied) history.push({ action: 'Applied', date: app.dateApplied });
-            if (app.dateReachedOut) history.push({ action: 'Reached out', date: app.dateReachedOut });
-            if (app.dateResponseReceived) history.push({ action: 'Response received', date: app.dateResponseReceived });
-            if (app.dateInterviewed) history.push({ action: 'Interviewed', date: app.dateInterviewed });
-            history.sort((a, b) => new Date(a.date) - new Date(b.date));
+            // Timeline stage (0-4)
+            const timelineStage = Math.min(4, Math.floor((status.stageWeight || 0) / 15));
 
-            // Action button states
-            const appliedDone = !!app.dateApplied;
-            const reachedOutDone = !!app.dateReachedOut;
-            const interviewedDone = !!app.dateInterviewed;
+            // Check if high leverage (final stages + high fit)
+            const isLeverage = status.stageWeight >= 50 && app.fitScore >= 75;
 
             return `
-                <div class="app-card ${isInactive ? 'inactive' : ''}" data-id="${app.id}">
-                    <div class="app-card-header">
-                        <div class="app-card-title">
-                            <h3>${app.role}</h3>
-                            <div class="company">${app.company}${app.salary && app.salary !== 'Not specified' ? ' · ' + app.salary : ''}</div>
+                <div class="app-card ${statusLabel === 'hot' ? 'hot' : ''} ${isInactive ? 'inactive' : ''}" data-id="${app.id}">
+                    <div class="card-header">
+                        <div class="card-title-section">
+                            <div class="card-title">
+                                ${app.role}
+                                ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
+                            </div>
+                            <div class="card-subtitle">
+                                ${app.company}${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
+                            </div>
                         </div>
-                        <div class="app-card-meta">
+                        <div class="card-meta">
                             <span class="fit-badge ${fitClass}">${app.fitScore}% fit</span>
                             <div class="status-selector">
                                 <button class="status-btn" onclick="toggleStatusDropdown(${app.id})">
-                                    ${app.status} <span style="font-size: 0.7rem;">▼</span>
+                                    ${app.status} <span style="opacity: 0.5;">▼</span>
                                 </button>
                                 <div class="status-dropdown" id="dropdown-${app.id}">
-                                    ${Object.keys(STATUSES).map(status => `
-                                        <div class="status-option" onclick="updateStatus(${app.id}, '${status}')">${status}</div>
+                                    ${Object.keys(STATUSES).map(s => `
+                                        <div class="status-option" onclick="updateStatus(${app.id}, '${s}')">${s}</div>
                                     `).join('')}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="action-box ${action.type}">
-                        <div class="action-header">
-                            <div class="action-label">What to do next</div>
-                            <button class="calendar-btn" onclick="addToCalendar(${app.id})" title="Add reminder to calendar">
-                                📅 Add Reminder
-                            </button>
+                    <div class="next-action ${action.type}">
+                        <div class="next-action-label">
+                            <span>⚡</span> Next Action
                         </div>
-                        <div class="action-text">${action.context}</div>
-                        <div class="action-item">→ ${action.action}</div>
+                        <div class="next-action-text">${action.context}</div>
+                        <div class="next-action-cta">→ ${action.action}</div>
                     </div>
 
-                    ${history.length > 1 ? `
-                    <div class="history-section">
-                        <div class="history-toggle" onclick="toggleHistory(${app.id})">
-                            📅 History (${history.length} events)
-                        </div>
-                        <div class="history-content" id="history-${app.id}">
-                            ${history.map(h => `
-                                <div class="history-item">
-                                    <span class="date">${formatDateTime(h.date)}</span> - ${h.action}
-                                </div>
+                    <div class="timeline-section">
+                        <div class="timeline-bar">
+                            ${[0,1,2,3,4].map(i => `
+                                <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? 'current' : ''}"></div>
                             `).join('')}
+                        </div>
+                        <div class="timeline-labels">
+                            <span>Applied</span>
+                            <span>Screen</span>
+                            <span>Interview</span>
+                            <span>Final</span>
+                            <span>Offer</span>
+                        </div>
+                    </div>
+
+                    <div class="card-stats">
+                        <div class="card-stat">
+                            <div class="card-stat-value ${momentum}">${getMomentumLabel(momentum)}</div>
+                            <div class="card-stat-label">Momentum</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value">${daysSince === 0 ? 'Today' : daysSince + 'd'}</div>
+                            <div class="card-stat-label">Last Activity</div>
+                        </div>
+                        <div class="card-stat">
+                            <div class="card-stat-value">${app.networkLeverage ? '✓' : '—'}</div>
+                            <div class="card-stat-label">Network</div>
+                        </div>
+                    </div>
+
+                    <div class="expandable-section">
+                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'notes')">
+                            📝 Notes ${app.notes ? '(has notes)' : ''}
+                        </div>
+                        <div class="expandable-content" id="notes-content-${app.id}">
+                            <textarea class="notes-textarea" placeholder="Add notes: contacts, interview details, reminders..." onblur="saveNotes(${app.id}, this.value)">${app.notes || ''}</textarea>
+                        </div>
+                    </div>
+
+                    ${app.interviewNotes ? `
+                    <div class="expandable-section">
+                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'interview')">
+                            🎤 Interview Notes
+                        </div>
+                        <div class="expandable-content" id="interview-content-${app.id}">
+                            <div class="interview-notes">
+                                ${renderInterviewNotes(app.interviewNotes)}
+                            </div>
                         </div>
                     </div>
                     ` : ''}
 
-                    <div class="notes-section">
-                        <div class="notes-toggle" onclick="toggleNotes(${app.id})">
-                            📝 Notes ${app.notes ? '(has notes)' : ''}
-                        </div>
-                        <div class="notes-content" id="notes-${app.id}">
-                            <textarea 
-                                class="notes-textarea" 
-                                placeholder="Add notes: contacts, interview details, follow-up reminders..."
-                                onblur="saveNotes(${app.id}, this.value)"
-                            >${app.notes || ''}</textarea>
-                        </div>
-                    </div>
-
                     <div class="card-actions">
-                        <button class="card-action-btn ${appliedDone ? 'done' : ''}" onclick="${appliedDone ? '' : `markDateAction(${app.id}, 'dateApplied')`}">
-                            ${appliedDone ? '✓ Applied' : '📤 Mark Applied'}
+                        <button class="card-action-btn ${app.dateApplied ? 'done' : ''}" onclick="${app.dateApplied ? '' : `markAction(${app.id}, 'dateApplied')`}">
+                            ${app.dateApplied ? '✓ Applied' : '📤 Mark Applied'}
                         </button>
-                        <button class="card-action-btn ${reachedOutDone ? 'done' : ''}" onclick="${reachedOutDone ? '' : `markDateAction(${app.id}, 'dateReachedOut')`}">
-                            ${reachedOutDone ? '✓ Reached Out' : '💬 Mark Reached Out'}
+                        <button class="card-action-btn ${app.dateReachedOut ? 'done' : ''}" onclick="${app.dateReachedOut ? '' : `markAction(${app.id}, 'dateReachedOut')`}">
+                            ${app.dateReachedOut ? '✓ Reached Out' : '💬 Reach Out'}
                         </button>
-                        <button class="card-action-btn ${interviewedDone ? 'done' : ''}" onclick="${interviewedDone ? '' : `markDateAction(${app.id}, 'dateInterviewed')`}">
-                            ${interviewedDone ? '✓ Interviewed' : '🎤 Mark Interviewed'}
+                        <button class="card-action-btn ${app.dateInterviewed ? 'done' : ''}" onclick="${app.dateInterviewed ? '' : `markAction(${app.id}, 'dateInterviewed')`}">
+                            ${app.dateInterviewed ? '✓ Interviewed' : '🎤 Interviewed'}
                         </button>
-                        <button class="card-action-btn danger" onclick="showDeleteModal(${app.id})">Remove</button>
+                        <button class="card-action-btn danger" onclick="showDeleteModal(${app.id})">Archive</button>
                     </div>
                 </div>
+            `;
+        }
+
+        function renderInterviewNotes(notes) {
+            if (!notes) return '';
+            return `
+                <div class="interview-date">${formatDate(notes.date)}</div>
+                ${notes.nailed?.length ? `
+                    <div class="interview-section">
+                        <div class="interview-section-label nailed">What You Nailed</div>
+                        <ul class="interview-bullets">
+                            ${notes.nailed.map(n => `<li>${n}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${notes.fumbled?.length ? `
+                    <div class="interview-section">
+                        <div class="interview-section-label fumbled">What to Improve</div>
+                        <ul class="interview-bullets">
+                            ${notes.fumbled.map(f => `<li>${f}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${notes.signals?.length ? `
+                    <div class="interview-section">
+                        <div class="interview-section-label signals">Signals</div>
+                        <ul class="interview-bullets">
+                            ${notes.signals.map(s => `<li>${s}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
             `;
         }
 
@@ -1394,74 +1780,73 @@
         // ========================================================================
         function toggleStatusDropdown(appId) {
             document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
-            const dropdown = document.getElementById(`dropdown-${appId}`);
-            dropdown.classList.toggle('show');
+            document.getElementById(`dropdown-${appId}`).classList.toggle('show');
         }
 
         function updateStatus(appId, newStatus) {
             const apps = getApplications();
-            const appIndex = apps.findIndex(a => a.id === appId);
-            
-            if (appIndex !== -1) {
-                apps[appIndex].status = newStatus;
-                apps[appIndex].lastUpdated = new Date().toISOString();
-                
-                // Auto-set date fields based on status (only if not already set)
-                if (newStatus === 'Applied' && !apps[appIndex].dateApplied) {
-                    apps[appIndex].dateApplied = new Date().toISOString();
+            const idx = apps.findIndex(a => a.id === appId);
+
+            if (idx !== -1) {
+                apps[idx].status = newStatus;
+                apps[idx].lastUpdated = new Date().toISOString();
+
+                // Auto-set dates
+                if (newStatus === 'Applied' && !apps[idx].dateApplied) {
+                    apps[idx].dateApplied = new Date().toISOString();
                 }
-                if (newStatus === 'Reached Out' && !apps[appIndex].dateReachedOut) {
-                    apps[appIndex].dateReachedOut = new Date().toISOString();
+                if (newStatus === 'Reached Out' && !apps[idx].dateReachedOut) {
+                    apps[idx].dateReachedOut = new Date().toISOString();
                 }
-                if (newStatus === 'Response Received' && !apps[appIndex].dateResponseReceived) {
-                    apps[appIndex].dateResponseReceived = new Date().toISOString();
+                if (newStatus === 'Response Received' && !apps[idx].dateResponseReceived) {
+                    apps[idx].dateResponseReceived = new Date().toISOString();
                 }
-                if (newStatus === 'Interviewed' && !apps[appIndex].dateInterviewed) {
-                    apps[appIndex].dateInterviewed = new Date().toISOString();
+                if (['Interviewed', 'Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(newStatus) && !apps[idx].dateInterviewed) {
+                    apps[idx].dateInterviewed = new Date().toISOString();
                 }
-                
+
                 saveApplications(apps);
                 renderAll(apps);
             }
+
+            document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
         }
 
-        function markDateAction(appId, dateField) {
+        function markAction(appId, dateField) {
             const apps = getApplications();
-            const appIndex = apps.findIndex(a => a.id === appId);
-            
-            if (appIndex !== -1 && !apps[appIndex][dateField]) {
-                apps[appIndex][dateField] = new Date().toISOString();
-                
+            const idx = apps.findIndex(a => a.id === appId);
+
+            if (idx !== -1 && !apps[idx][dateField]) {
+                apps[idx][dateField] = new Date().toISOString();
+                apps[idx].lastUpdated = new Date().toISOString();
+
                 // Auto-update status
-                if (dateField === 'dateApplied' && ['Preparing', 'To Apply'].includes(apps[appIndex].status)) {
-                    apps[appIndex].status = 'Applied';
-                } else if (dateField === 'dateReachedOut' && ['Preparing', 'To Apply', 'Applied'].includes(apps[appIndex].status)) {
-                    apps[appIndex].status = 'Reached Out';
-                } else if (dateField === 'dateInterviewed') {
-                    apps[appIndex].status = 'Interviewed';
+                if (dateField === 'dateApplied' && ['Preparing', 'To Apply'].includes(apps[idx].status)) {
+                    apps[idx].status = 'Applied';
                 }
-                
+                if (dateField === 'dateReachedOut' && ['Preparing', 'To Apply', 'Applied'].includes(apps[idx].status)) {
+                    apps[idx].status = 'Reached Out';
+                }
+                if (dateField === 'dateInterviewed' && !['Interviewed', 'Offer Received', 'No Response', 'Rejected', 'Withdrawn'].includes(apps[idx].status)) {
+                    apps[idx].status = 'Interviewed';
+                }
+
                 saveApplications(apps);
                 renderAll(apps);
             }
         }
 
-        function toggleHistory(appId) {
-            const content = document.getElementById(`history-${appId}`);
+        function toggleSection(appId, section) {
+            const content = document.getElementById(`${section}-content-${appId}`);
             content.classList.toggle('show');
-        }
-
-        function toggleNotes(appId) {
-            const notesContent = document.getElementById(`notes-${appId}`);
-            notesContent.classList.toggle('show');
         }
 
         function saveNotes(appId, notes) {
             const apps = getApplications();
-            const appIndex = apps.findIndex(a => a.id === appId);
-            
-            if (appIndex !== -1) {
-                apps[appIndex].notes = notes;
+            const idx = apps.findIndex(a => a.id === appId);
+
+            if (idx !== -1) {
+                apps[idx].notes = notes;
                 saveApplications(apps);
             }
         }
@@ -1487,150 +1872,18 @@
             }
         }
 
-        // ========================================================================
-        // CALENDAR INTEGRATION
-        // ========================================================================
-        function addToCalendar(appId) {
-            const apps = getApplications();
-            const app = apps.find(a => a.id === appId);
-            
-            if (!app) return;
-
-            // Determine when to set the reminder based on status and action
-            const action = STATUSES[app.status] || STATUSES['To Apply'];
-            let reminderDate = new Date();
-            
-            // Set reminder timing based on status
-            if (app.status === 'Preparing' || app.status === 'To Apply') {
-                // Apply within 24-48 hours
-                reminderDate.setDate(reminderDate.getDate() + 1);
-                reminderDate.setHours(9, 0, 0, 0); // 9 AM tomorrow
-            } else if (app.status === 'Applied') {
-                // Follow up in 5-7 days
-                reminderDate.setDate(reminderDate.getDate() + 5);
-                reminderDate.setHours(9, 0, 0, 0);
-            } else if (app.status === 'Phone Screen') {
-                // Prepare and send thank you within 24 hours
-                reminderDate.setDate(reminderDate.getDate() + 1);
-                reminderDate.setHours(14, 0, 0, 0); // 2 PM tomorrow
-            } else if (app.status === 'Onsite') {
-                // Send thank you within 24 hours
-                reminderDate.setDate(reminderDate.getDate() + 1);
-                reminderDate.setHours(14, 0, 0, 0);
-            } else {
-                // Default: tomorrow at 9 AM
-                reminderDate.setDate(reminderDate.getDate() + 1);
-                reminderDate.setHours(9, 0, 0, 0);
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.status-selector')) {
+                document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
             }
-
-            // Format dates for calendar
-            const startDate = formatDateForCalendar(reminderDate);
-            const endDate = formatDateForCalendar(new Date(reminderDate.getTime() + 30 * 60000)); // 30 min later
-
-            // Build event details
-            const title = `Follow up: ${app.company} - ${app.role}`;
-            const description = `${action.context}\n\n→ ${action.action}\n\nFit Score: ${app.fitScore}%\n${app.salary && app.salary !== 'Not specified' ? 'Salary: ' + app.salary : ''}`;
-            const location = ''; // Could add job URL if we had it
-
-            // Show calendar options modal
-            showCalendarOptions(title, description, startDate, endDate, location);
-        }
-
-        function formatDateForCalendar(date) {
-            // Format: YYYYMMDDTHHMMSSZ
-            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        }
-
-        function showCalendarOptions(title, description, startDate, endDate, location) {
-            const modal = document.createElement('div');
-            modal.className = 'calendar-modal';
-            modal.innerHTML = `
-                <div class="calendar-modal-content">
-                    <h3>Add Reminder to Calendar</h3>
-                    <p style="color: #888; margin-bottom: 20px;">Choose your calendar app:</p>
-                    <div class="calendar-buttons">
-                        <button class="calendar-option-btn" onclick="addToGoogleCalendar('${encodeURIComponent(title)}', '${encodeURIComponent(description)}', '${startDate}', '${endDate}', '${location}')">
-                            📅 Google Calendar
-                        </button>
-                        <button class="calendar-option-btn" onclick="downloadICS('${encodeURIComponent(title)}', '${encodeURIComponent(description)}', '${startDate}', '${endDate}', '${location}')">
-                            📥 Apple/Outlook (.ics)
-                        </button>
-                    </div>
-                    <button class="calendar-close-btn" onclick="closeCalendarModal()">Cancel</button>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            setTimeout(() => modal.classList.add('show'), 10);
-        }
-
-        function closeCalendarModal() {
-            const modal = document.querySelector('.calendar-modal');
-            if (modal) {
-                modal.classList.remove('show');
-                setTimeout(() => modal.remove(), 300);
-            }
-        }
-
-        function addToGoogleCalendar(title, description, startDate, endDate, location) {
-            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${description}&dates=${startDate}/${endDate}&location=${location}`;
-            window.open(url, '_blank');
-            closeCalendarModal();
-        }
-
-        function downloadICS(title, description, startDate, endDate, location) {
-            // Convert from URL encoding
-            title = decodeURIComponent(title);
-            description = decodeURIComponent(description);
-            location = decodeURIComponent(location);
-
-            // Create ICS file content
-            const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//HenryAI//Job Application Tracker//EN
-BEGIN:VEVENT
-UID:${Date.now()}@henryai.com
-DTSTAMP:${startDate}
-DTSTART:${startDate}
-DTEND:${endDate}
-SUMMARY:${title}
-DESCRIPTION:${description.replace(/\n/g, '\\n')}
-LOCATION:${location}
-STATUS:CONFIRMED
-SEQUENCE:0
-BEGIN:VALARM
-TRIGGER:-PT30M
-ACTION:DISPLAY
-DESCRIPTION:Reminder
-END:VALARM
-END:VEVENT
-END:VCALENDAR`;
-
-            // Create blob and download
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.download = `henryai-reminder-${Date.now()}.ics`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            closeCalendarModal();
-        }
-
-        function attachCardListeners() {
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.status-selector')) {
-                    document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
-                }
-            });
-        }
+        });
 
         // ========================================================================
         // FILTER HANDLERS
         // ========================================================================
         document.getElementById('filterStatus').addEventListener('change', (e) => {
-            currentFilter = e.target.value;
+            currentStatusFilter = e.target.value;
             renderApplications(getApplications());
         });
 
@@ -1639,9 +1892,8 @@ END:VCALENDAR`;
             renderApplications(getApplications());
         });
 
-        document.getElementById('sortToggle').addEventListener('click', () => {
-            sortNewestFirst = !sortNewestFirst;
-            document.getElementById('sortToggle').textContent = sortNewestFirst ? 'Sort: Newest ↓' : 'Sort: Oldest ↑';
+        document.getElementById('sortBy').addEventListener('change', (e) => {
+            currentSort = e.target.value;
             renderApplications(getApplications());
         });
 
@@ -1651,8 +1903,11 @@ END:VCALENDAR`;
         // RENDER ALL
         // ========================================================================
         function renderAll(apps) {
-            renderStats(apps);
-            renderComparison(apps);
+            const metrics = calculatePipelineMetrics(apps);
+            const priorities = getStrategicPriorities(apps);
+
+            renderPipelineMetrics(metrics);
+            renderStrategicPriorities(priorities);
             renderApplications(apps);
         }
 
