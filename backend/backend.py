@@ -211,6 +211,7 @@ class DocumentsGenerateRequest(BaseModel):
     resume: Dict[str, Any]
     jd_analysis: Dict[str, Any]
     preferences: Optional[Dict[str, Any]] = None
+    supplements: Optional[List[SupplementAnswer]] = None  # User-provided answers from Strengthen page
 
 class ResumeContent(BaseModel):
     summary: str
@@ -2949,7 +2950,19 @@ JOB DESCRIPTION ANALYSIS:
     
     if request.preferences:
         user_message += f"\n\nCANDIDATE PREFERENCES:\n{json.dumps(request.preferences, indent=2)}"
-    
+
+    # Add supplemental information from Strengthen Your Candidacy page
+    if request.supplements and len(request.supplements) > 0:
+        user_message += "\n\n=== ADDITIONAL CANDIDATE CONTEXT (from Strengthen Your Candidacy) ===\n"
+        user_message += "The candidate provided the following additional context to address gaps in their application.\n"
+        user_message += "INCORPORATE this information into the resume and cover letter where appropriate:\n\n"
+        for supp in request.supplements:
+            user_message += f"**Gap Area: {supp.gap_area}**\n"
+            user_message += f"Question: {supp.question}\n"
+            user_message += f"Candidate's Answer: {supp.answer}\n\n"
+        user_message += "Use this information to strengthen the resume summary, relevant experience bullets, and cover letter body.\n"
+        user_message += "Do NOT fabricate beyond what the candidate stated, but DO weave in this context naturally.\n"
+
     user_message += """
 
 REQUIREMENTS:
@@ -2960,6 +2973,7 @@ REQUIREMENTS:
 5. Cover letter should be professional, concise, and ready to send
 6. Interview prep should give actionable guidance
 7. Outreach messages should be ready to copy/paste
+8. If supplements were provided, incorporate that context into the resume and cover letter
 
 Generate the complete JSON response with ALL required fields populated."""
     
