@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+            background: #000000;
             min-height: 100vh;
             color: #e0e0e0;
         }
@@ -222,6 +222,59 @@
         .context-field select option {
             background: #1a1a3e;
             color: #fff;
+        }
+
+        /* Seniority Hint */
+        .seniority-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: #a0a0a0;
+            line-height: 1.5;
+        }
+
+        .hint-icon {
+            flex-shrink: 0;
+        }
+
+        /* Pre-populated hint */
+        .prepopulated-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #10b981;
+            line-height: 1.5;
+        }
+
+        .prepopulated-hint span:nth-child(2) {
+            flex: 1;
+        }
+
+        .clear-hint-btn {
+            background: none;
+            border: none;
+            color: #10b981;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .clear-hint-btn:hover {
+            opacity: 1;
         }
 
         /* Intro Textarea */
@@ -635,11 +688,11 @@
                 </div>
                 <div class="tip-item">
                     <span class="tip-icon">✓</span>
-                    <span>End with why this company</span>
+                    <span>Sound natural, not rehearsed</span>
                 </div>
                 <div class="tip-item">
                     <span class="tip-icon">✓</span>
-                    <span>Sound natural, not rehearsed</span>
+                    <span>Match expectations to your level</span>
                 </div>
             </div>
         </div>
@@ -652,23 +705,26 @@
 
             <div class="context-grid">
                 <div class="context-field">
-                    <label>Target Company (optional)</label>
-                    <input type="text" id="targetCompany" placeholder="e.g., Stripe, Google, Airbnb">
+                    <label>Target Role (optional)</label>
+                    <input type="text" id="targetRole" placeholder="e.g., Product Manager, Software Engineer, Marketing Manager">
                 </div>
                 <div class="context-field">
-                    <label>Target Role</label>
-                    <select id="targetRole">
-                        <option value="pm">Product Manager</option>
-                        <option value="swe">Software Engineer</option>
-                        <option value="ux">UX Designer</option>
-                        <option value="ui">UI Designer</option>
-                        <option value="ta">Technical Account Manager</option>
-                        <option value="leadership">Leadership / Management</option>
-                        <option value="data">Data Analyst / Scientist</option>
-                        <option value="other">Other</option>
+                    <label>Seniority Level</label>
+                    <select id="seniorityLevel">
+                        <option value="entry">Entry Level / Junior (0-2 years)</option>
+                        <option value="mid" selected>Mid Level (3-5 years)</option>
+                        <option value="senior">Senior (6-10 years)</option>
+                        <option value="staff">Staff / Principal (10+ years)</option>
+                        <option value="director">Director / VP</option>
+                        <option value="executive">Executive (C-Suite)</option>
                     </select>
                 </div>
             </div>
+
+            <p class="seniority-hint" id="seniorityHint">
+                <span class="hint-icon">💡</span>
+                <span id="hintText">At mid level, highlight 1-2 significant projects with measurable impact and growth trajectory.</span>
+            </p>
 
             <textarea
                 id="introText"
@@ -761,6 +817,24 @@ Example structure:
         const timerText = document.getElementById('timerText');
         const feedbackSection = document.getElementById('feedbackSection');
         const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Seniority level hints
+        const seniorityHints = {
+            entry: "At entry level, focus on relevant education, internships, and transferable skills. Show eagerness to learn and grow.",
+            mid: "At mid level, highlight 1-2 significant projects with measurable impact and your growth trajectory.",
+            senior: "At senior level, emphasize leadership of complex initiatives, mentoring others, and strategic impact with quantified results.",
+            staff: "At staff/principal level, demonstrate cross-team influence, technical vision, and organization-wide impact.",
+            director: "At director level, showcase P&L responsibility, team building, strategic decisions, and business outcomes.",
+            executive: "At executive level, emphasize company-wide transformation, board-level communication, and industry thought leadership."
+        };
+
+        // Seniority level change handler
+        const seniorityLevel = document.getElementById('seniorityLevel');
+        const hintText = document.getElementById('hintText');
+
+        seniorityLevel.addEventListener('change', function() {
+            hintText.textContent = seniorityHints[this.value];
+        });
 
         // Word count tracking
         introText.addEventListener('input', updateWordCount);
@@ -891,16 +965,16 @@ Example structure:
             document.querySelector('.loading-text').textContent = 'Analyzing your intro...';
 
             try {
-                const company = document.getElementById('targetCompany').value.trim();
-                const role = document.getElementById('targetRole').value;
+                const role = document.getElementById('targetRole').value.trim();
+                const seniority = document.getElementById('seniorityLevel').value;
 
                 const response = await fetch('/api/intro-feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         intro,
-                        target_company: company || null,
-                        target_role: role
+                        target_role: role || null,
+                        seniority_level: seniority
                     })
                 });
 
@@ -958,6 +1032,7 @@ Example structure:
 
         function generateMockFeedback() {
             const wordCount = introText.value.trim().split(/\s+/).length;
+            const seniority = document.getElementById('seniorityLevel').value;
             let score = 70;
 
             if (wordCount >= 120 && wordCount <= 180) score += 10;
@@ -966,21 +1041,71 @@ Example structure:
                 introText.value.toLowerCase().includes('built') ||
                 introText.value.toLowerCase().includes('grew')) score += 5;
 
+            // Seniority-specific feedback
+            const seniorityFeedback = {
+                entry: {
+                    improvements: [
+                        'Highlight relevant coursework, projects, or internships',
+                        'Show enthusiasm and eagerness to learn',
+                        'Connect transferable skills to the target role'
+                    ],
+                    tips: 'At entry level, focus on demonstrating potential and a growth mindset. Highlight any relevant projects, coursework, or internships. Show enthusiasm for learning and explain why you\'re drawn to this field.'
+                },
+                mid: {
+                    improvements: [
+                        'Add 1-2 specific metrics or achievements',
+                        'Show progression and growth in your career',
+                        'Highlight a key project that demonstrates your capabilities'
+                    ],
+                    tips: 'At mid level, interviewers want to see tangible impact. Include specific metrics (%, $, time saved) and demonstrate ownership of meaningful projects. Show you\'re ready for increased responsibility.'
+                },
+                senior: {
+                    improvements: [
+                        'Emphasize leadership and mentoring of others',
+                        'Highlight strategic impact, not just execution',
+                        'Show cross-functional influence and collaboration'
+                    ],
+                    tips: 'At senior level, you\'re expected to have led complex initiatives. Emphasize how you\'ve mentored others, driven strategy, and influenced beyond your immediate team. Quantify your impact at scale.'
+                },
+                staff: {
+                    improvements: [
+                        'Demonstrate organization-wide technical influence',
+                        'Show how you\'ve shaped technical vision or strategy',
+                        'Highlight your role as a force multiplier for the team'
+                    ],
+                    tips: 'At staff/principal level, you should demonstrate broad technical leadership. Show how you\'ve influenced architecture decisions, mentored senior engineers, and driven initiatives that affected multiple teams.'
+                },
+                director: {
+                    improvements: [
+                        'Include P&L or budget responsibility metrics',
+                        'Highlight team building and organizational design',
+                        'Show strategic business impact, not just operational'
+                    ],
+                    tips: 'At director level, focus on business outcomes and team leadership. Include metrics around team growth, budget management, and strategic initiatives. Show how you\'ve built high-performing organizations.'
+                },
+                executive: {
+                    improvements: [
+                        'Lead with company-wide transformation or impact',
+                        'Include board-level metrics and outcomes',
+                        'Demonstrate thought leadership in your industry'
+                    ],
+                    tips: 'At executive level, your intro should convey company-wide vision and transformation. Lead with your most significant business outcomes and demonstrate strategic thinking that transcends functional boundaries.'
+                }
+            };
+
+            const feedback = seniorityFeedback[seniority] || seniorityFeedback.mid;
+
             return {
                 score: Math.min(score, 95),
-                summary: 'Your intro has a solid foundation. Focus on adding more specific metrics and a stronger company connection.',
+                summary: `Your intro has a solid foundation for ${seniority === 'entry' ? 'an entry-level' : seniority === 'mid' ? 'a mid-level' : seniority === 'senior' ? 'a senior' : seniority === 'staff' ? 'a staff/principal' : seniority === 'director' ? 'a director' : 'an executive'} candidate. Here\'s how to strengthen it further.`,
                 strengths: [
                     'Clear explanation of current role',
                     'Good narrative flow',
                     wordCount >= 100 ? 'Appropriate length' : 'Concise delivery'
                 ],
-                improvements: [
-                    'Add 2-3 specific metrics or achievements',
-                    'Include a stronger "why this company" closing',
-                    'Consider leading with your most impressive accomplishment'
-                ],
-                rewritten_intro: 'I\'m currently a [Role] at [Company], where I\'ve [key achievement with metric]. Before that, I [relevant experience]. What excites me about [Target Company] is [specific reason tied to their mission/product]. I\'m looking to bring my experience in [skill] to help [specific value you can add].',
-                coaching_tips: 'Practice delivering your intro in under 90 seconds while maintaining a natural pace. Record yourself and listen back—you want to sound conversational, not rehearsed. Lead with impact: your most impressive achievement should come early to hook the interviewer\'s attention.'
+                improvements: feedback.improvements,
+                rewritten_intro: 'I\'m currently a [Role] at [Company], where I\'ve [key achievement with metric]. Before that, I [relevant experience]. I\'m looking to bring my experience in [skill] to help [specific value you can add].',
+                coaching_tips: feedback.tips
             };
         }
 
@@ -997,8 +1122,43 @@ Example structure:
             });
         }
 
+        // Pre-populate from session data if available
+        function initializeFromSession() {
+            try {
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                const prepGuideData = JSON.parse(sessionStorage.getItem('prepGuideData') || '{}');
+
+                // Pre-populate target role from analysis
+                if (analysisData.role_title) {
+                    document.getElementById('targetRole').value = analysisData.role_title;
+                }
+
+                // Pre-populate intro pitch from prep guide if available
+                if (prepGuideData.intro_pitch) {
+                    introText.value = prepGuideData.intro_pitch;
+                    updateWordCount();
+                    showPrePopulatedHint();
+                }
+            } catch (e) {
+                console.log('No session data available');
+            }
+        }
+
+        function showPrePopulatedHint() {
+            // Add a hint above the textarea that this was pre-populated
+            const hint = document.createElement('div');
+            hint.className = 'prepopulated-hint';
+            hint.innerHTML = `
+                <span class="hint-icon">✨</span>
+                <span>We've pre-loaded your AI-generated intro pitch. Practice saying it out loud, then edit it to sound natural in your own voice.</span>
+                <button class="clear-hint-btn" onclick="this.parentElement.remove()">×</button>
+            `;
+            introText.parentElement.insertBefore(hint, introText);
+        }
+
         // Initialize
         updateWordCount();
+        initializeFromSession();
     </script>
 </body>
 </html>
