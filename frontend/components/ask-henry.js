@@ -20,10 +20,10 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%);
-            border: none;
+            background: linear-gradient(145deg, #3a3a3a 0%, #1a1a1a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             z-index: 9998;
             display: flex;
             align-items: center;
@@ -33,7 +33,8 @@
 
         .ask-henry-fab:hover {
             transform: scale(1.1);
-            box-shadow: 0 6px 30px rgba(34, 211, 238, 0.5);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            background: linear-gradient(145deg, #4a4a4a 0%, #2a2a2a 100%);
         }
 
         .ask-henry-fab.hidden {
@@ -51,12 +52,12 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: rgba(34, 211, 238, 0.4);
+            background: rgba(255, 255, 255, 0.1);
             animation: pulse 2s ease-out infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.5; }
+            0% { transform: scale(1); opacity: 0.3; }
             100% { transform: scale(1.5); opacity: 0; }
         }
 
@@ -69,10 +70,10 @@
             max-width: calc(100vw - 48px);
             height: 520px;
             max-height: calc(100vh - 100px);
-            background: #111827;
-            border: 1px solid #374151;
-            border-radius: 16px;
-            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -81,6 +82,7 @@
             pointer-events: none;
             transition: all 0.3s ease;
             transform-origin: bottom right;
+            overflow: hidden;
         }
 
         .ask-henry-drawer.open {
@@ -91,10 +93,9 @@
 
         /* Drawer Header */
         .ask-henry-header {
-            padding: 16px 20px;
-            background: linear-gradient(135deg, #1e3a5f 0%, #1a2e44 100%);
-            border-bottom: 1px solid #374151;
-            border-radius: 16px 16px 0 0;
+            padding: 18px 20px;
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -144,27 +145,31 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            background: linear-gradient(180deg, #0d0d0d 0%, #000000 100%);
         }
 
         .ask-henry-message {
             max-width: 85%;
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: 16px;
             font-size: 0.9rem;
             line-height: 1.5;
         }
 
         .ask-henry-message.assistant {
             align-self: flex-start;
-            background: #1f2937;
-            border: 1px solid #374151;
-            color: #e0e0e0;
+            background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #e5e5e5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .ask-henry-message.user {
             align-self: flex-end;
-            background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%);
-            color: #000000;
+            background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .ask-henry-message p {
@@ -185,11 +190,11 @@
         }
 
         .ask-henry-message strong {
-            color: #22d3ee;
+            color: #ffffff;
         }
 
         .ask-henry-message.user strong {
-            color: #000000;
+            color: #ffffff;
         }
 
         /* Typing Indicator */
@@ -197,9 +202,9 @@
             display: flex;
             gap: 4px;
             padding: 12px 16px;
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 12px;
+            background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
             width: fit-content;
         }
 
@@ -207,7 +212,7 @@
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #22d3ee;
+            background: #888888;
             animation: typing-bounce 1.4s infinite ease-in-out;
         }
 
@@ -226,37 +231,40 @@
             flex-wrap: wrap;
             gap: 8px;
             padding: 0 16px 12px;
+            background: transparent;
         }
 
         .ask-henry-suggestion {
-            background: rgba(34, 211, 238, 0.1);
-            border: 1px solid rgba(34, 211, 238, 0.3);
-            border-radius: 16px;
-            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 6px 14px;
             font-size: 0.8rem;
-            color: #22d3ee;
+            color: #a0a0a0;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .ask-henry-suggestion:hover {
-            background: rgba(34, 211, 238, 0.2);
-            border-color: #22d3ee;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
         }
 
         /* Input Area */
         .ask-henry-input-area {
             padding: 12px 16px;
-            border-top: 1px solid #374151;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
             display: flex;
             gap: 10px;
         }
 
         .ask-henry-input {
             flex: 1;
-            background: #1f2937;
-            border: 1px solid #374151;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             padding: 10px 14px;
             color: #ffffff;
             font-size: 0.9rem;
@@ -266,17 +274,18 @@
 
         .ask-henry-input:focus {
             outline: none;
-            border-color: #22d3ee;
+            border-color: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .ask-henry-input::placeholder {
-            color: #6b7280;
+            color: #666666;
         }
 
         .ask-henry-send {
-            background: #22d3ee;
-            border: none;
-            border-radius: 8px;
+            background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             width: 40px;
             height: 40px;
             display: flex;
@@ -287,18 +296,19 @@
         }
 
         .ask-henry-send:hover {
-            background: #06b6d4;
+            background: linear-gradient(145deg, #5a5a5a 0%, #444444 100%);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .ask-henry-send:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
         }
 
         .ask-henry-send svg {
             width: 18px;
             height: 18px;
-            fill: #000000;
+            fill: #ffffff;
         }
 
         /* Mobile Responsive */
@@ -309,7 +319,7 @@
                 width: 100%;
                 max-width: 100%;
                 height: 70vh;
-                border-radius: 16px 16px 0 0;
+                border-radius: 20px 20px 0 0;
             }
 
             .ask-henry-fab {
