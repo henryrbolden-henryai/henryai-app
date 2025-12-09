@@ -2198,22 +2198,34 @@
             // Get situation from profile for tone calibration
             const situation = analysisData._profile?.situation || null;
 
+            // Check for supplements from strengthen page
+            const supplementsStr = sessionStorage.getItem('supplements');
+            const supplements = supplementsStr ? JSON.parse(supplementsStr) : [];
+            if (supplements.length > 0) {
+                console.log('📝 Found supplements from strengthen page:', supplements);
+                // Clear after use
+                sessionStorage.removeItem('supplements');
+                sessionStorage.removeItem('originalGaps');
+            }
+
             // Build smaller payloads - don't send entire analysisData
             const resumePayload = {
                 resume_json: resumeJson,
                 job_description: jobDescription,
                 target_role: targetRole,
                 target_company: targetCompany,
-                situation: situation
+                situation: situation,
+                supplements: supplements.length > 0 ? supplements : undefined
             };
-            
+
             const coverLetterPayload = {
                 resume_json: resumeJson,
                 job_description: jobDescription,
                 target_role: targetRole,
                 target_company: targetCompany,
                 strengths: strengths,
-                situation: situation
+                situation: situation,
+                supplements: supplements.length > 0 ? supplements : undefined
             };
 
             console.log('📤 Resume payload size:', JSON.stringify(resumePayload).length, 'bytes');

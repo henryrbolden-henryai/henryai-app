@@ -232,6 +232,12 @@ class GeneratedDocuments(BaseModel):
 # TAILORED DOCUMENT GENERATION MODELS
 # ============================================================================
 
+class SupplementAnswer(BaseModel):
+    """A user-provided answer to a clarifying question about a gap"""
+    gap_area: str
+    question: str
+    answer: str
+
 class ResumeCustomizeRequest(BaseModel):
     resume_text: Optional[str] = None
     resume_json: Optional[Dict[str, Any]] = None
@@ -240,6 +246,7 @@ class ResumeCustomizeRequest(BaseModel):
     target_company: str
     jd_analysis: Optional[Dict[str, Any]] = None
     situation: Optional[Dict[str, Any]] = None  # Candidate emotional/situational state
+    supplements: Optional[List[SupplementAnswer]] = None  # User-provided gap-filling info
 
 class CoverLetterGenerateRequest(BaseModel):
     resume_text: Optional[str] = None
@@ -250,6 +257,7 @@ class CoverLetterGenerateRequest(BaseModel):
     strengths: Optional[List[str]] = None
     jd_analysis: Optional[Dict[str, Any]] = None
     situation: Optional[Dict[str, Any]] = None  # Candidate emotional/situational state
+    supplements: Optional[List[SupplementAnswer]] = None  # User-provided gap-filling info
 
 # ============================================================================
 # MVP+1 FEATURE MODELS
@@ -2003,10 +2011,19 @@ CANDIDATE RESUME DATA:
     if request.jd_analysis:
         user_message += f"\n\nJD ANALYSIS (use for tailoring):\n{json.dumps(request.jd_analysis, indent=2)}"
 
+    # Add supplemental information from candidate if provided
+    if request.supplements and len(request.supplements) > 0:
+        user_message += "\n\n=== ADDITIONAL CANDIDATE CONTEXT ===\n"
+        user_message += "The candidate provided the following additional context to address gaps. INCORPORATE this information into the resume where appropriate (but do NOT fabricate beyond what they stated):\n\n"
+        for supp in request.supplements:
+            user_message += f"**Gap Area: {supp.gap_area}**\n"
+            user_message += f"Question: {supp.question}\n"
+            user_message += f"Candidate's Answer: {supp.answer}\n\n"
+
     user_message += """
 
 Generate the tailored resume following the exact format in the system instructions.
-Remember: NO fabrication - only use information from the candidate's actual resume."""
+Remember: NO fabrication - only use information from the candidate's actual resume AND the additional context provided above."""
 
     try:
         response = call_claude(system_prompt, user_message, max_tokens=4000)
@@ -2143,6 +2160,14 @@ CANDIDATE RESUME DATA:
 
     if request.jd_analysis:
         user_message += f"\n\nJD ANALYSIS (use for tailoring):\n{json.dumps(request.jd_analysis, indent=2)}"
+
+    # Add supplemental information from candidate if provided
+    if request.supplements and len(request.supplements) > 0:
+        user_message += "\n\n=== ADDITIONAL CANDIDATE CONTEXT ===\n"
+        user_message += "The candidate provided the following additional context to address gaps. WEAVE this into the cover letter naturally to strengthen their narrative:\n\n"
+        for supp in request.supplements:
+            user_message += f"**Gap Area: {supp.gap_area}**\n"
+            user_message += f"Context: {supp.answer}\n\n"
 
     user_message += """
 

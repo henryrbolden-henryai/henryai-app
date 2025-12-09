@@ -1351,12 +1351,20 @@
             const btn = event.target;
             const originalText = btn.textContent;
 
+            // Auto-add to tracker when user commits to building application
+            addToTrackerAutomatically();
+
+            // Check if there are gaps to address - redirect to strengthen page
+            const gaps = data.gaps || [];
+            if (gaps.length > 0) {
+                // Go to strengthen page first to collect additional context
+                window.location.href = 'strengthen.html';
+                return;
+            }
+
             try {
                 btn.disabled = true;
                 btn.textContent = 'Preparing your application...';
-
-                // Auto-add to tracker when user commits to building application
-                addToTrackerAutomatically();
 
                 // Prepare request payload for /api/documents/generate
                 const requestPayload = {

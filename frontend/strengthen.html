@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strengthen Your Candidacy — HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* BACK LINK */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 5vw, 2.25rem);
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+            max-width: 500px;
+            margin: 0 auto 16px;
+        }
+
+        .intro-message {
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            font-size: 0.95rem;
+            color: var(--color-text);
+            text-align: left;
+            margin-bottom: 32px;
+        }
+
+        /* PROGRESS */
+        .progress-container {
+            margin-bottom: 32px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: var(--color-surface-elevated);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--color-accent);
+            border-radius: 2px;
+            transition: width 0.3s var(--ease-out);
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* QUESTION CARD */
+        .question-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s ease;
+        }
+
+        .question-card:focus-within {
+            border-color: var(--color-accent);
+        }
+
+        .question-card.answered {
+            border-color: var(--color-success);
+        }
+
+        .question-card.skipped {
+            opacity: 0.6;
+        }
+
+        .gap-badge {
+            display: inline-block;
+            background: var(--color-warning);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .why-matters {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            padding-left: 12px;
+            border-left: 2px solid var(--color-border);
+        }
+
+        .answer-input {
+            width: 100%;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--color-text);
+            resize: vertical;
+            min-height: 100px;
+            transition: border-color 0.2s ease;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .answer-input::placeholder {
+            color: var(--color-text-secondary);
+            opacity: 0.6;
+        }
+
+        .example-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            transition: color 0.2s ease;
+        }
+
+        .example-toggle:hover {
+            color: var(--color-accent);
+        }
+
+        .example-content {
+            display: none;
+            margin-top: 12px;
+            padding: 14px 16px;
+            background: rgba(34, 211, 238, 0.05);
+            border: 1px solid rgba(34, 211, 238, 0.15);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .example-content.show {
+            display: block;
+        }
+
+        .skip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 0;
+            transition: color 0.2s ease;
+        }
+
+        .skip-btn:hover {
+            color: var(--color-error);
+        }
+
+        /* LOADING STATE */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-surface-elevated);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--color-text-secondary);
+        }
+
+        /* BUTTONS */
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #5eead4;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border-color: var(--color-border-hover);
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            padding: 14px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-link:hover {
+            color: var(--color-text);
+        }
+
+        /* NO GAPS STATE */
+        .no-gaps-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .no-gaps-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .no-gaps-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .no-gaps-text {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* SCORE PREVIEW */
+        .score-preview {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .current-score {
+            text-align: center;
+        }
+
+        .score-value {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+
+        .score-value.high { color: var(--color-success); }
+        .score-value.medium { color: var(--color-warning); }
+        .score-value.low { color: var(--color-error); }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .score-divider {
+            width: 1px;
+            height: 50px;
+            background: var(--color-border);
+        }
+
+        .gaps-summary {
+            flex: 1;
+        }
+
+        .gaps-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .gaps-list {
+            font-size: 0.9rem;
+            color: var(--color-text);
+        }
+
+        @media (max-width: 600px) {
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .score-preview {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .score-divider {
+                width: 100%;
+                height: 1px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="results.html" class="back-link">← Back to Results</a>
+
+        <div class="header">
+            <h1>Strengthen Your Candidacy</h1>
+            <p class="subtitle">Answer a few quick questions to help us better highlight your relevant experience.</p>
+        </div>
+
+        <!-- Score Preview -->
+        <div class="score-preview" id="scorePreview" style="display: none;">
+            <div class="current-score">
+                <div class="score-value" id="currentScore">--</div>
+                <div class="score-label">Current Fit</div>
+            </div>
+            <div class="score-divider"></div>
+            <div class="gaps-summary">
+                <div class="gaps-title">Areas to Address</div>
+                <div class="gaps-list" id="gapsList">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Intro Message -->
+        <div class="intro-message" id="introMessage" style="display: none;"></div>
+
+        <!-- Progress -->
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-text">
+                <span id="progressLabel">Question 1 of 3</span>
+                <span id="answeredCount">0 answered</span>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Analyzing your profile for improvement opportunities...</div>
+        </div>
+
+        <!-- No Gaps State -->
+        <div class="no-gaps-state" id="noGapsState" style="display: none;">
+            <div class="no-gaps-icon">✨</div>
+            <div class="no-gaps-title">You're in great shape!</div>
+            <p class="no-gaps-text">Your profile already matches well with this role. Let's generate your documents.</p>
+            <button class="btn btn-primary" onclick="continueToDocuments()">Continue to Documents →</button>
+        </div>
+
+        <!-- Questions Container -->
+        <div id="questionsContainer"></div>
+
+        <!-- Button Group -->
+        <div class="button-group" id="buttonGroup" style="display: none;">
+            <button class="btn btn-link" onclick="skipAll()">Skip and continue without</button>
+            <button class="btn btn-primary" id="continueBtn" onclick="submitAndContinue()">
+                Continue to Documents →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        let analysisData = null;
+        let questions = [];
+        let answers = {}; // { gap_area: { question, answer } }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Get analysis data
+            const analysisDataStr = sessionStorage.getItem('analysisData');
+            if (!analysisDataStr) {
+                window.location.href = 'index.html';
+                return;
+            }
+            analysisData = JSON.parse(analysisDataStr);
+
+            // Check if we have gaps to address
+            const gaps = analysisData.gaps || [];
+            if (gaps.length === 0) {
+                // No gaps - show success state and auto-continue
+                showNoGapsState();
+                return;
+            }
+
+            // Show score preview
+            showScorePreview(analysisData.fit_score, gaps);
+
+            // Fetch clarifying questions
+            await fetchClarifyingQuestions(gaps);
+        });
+
+        function showScorePreview(score, gaps) {
+            const scorePreview = document.getElementById('scorePreview');
+            const currentScore = document.getElementById('currentScore');
+            const gapsList = document.getElementById('gapsList');
+
+            currentScore.textContent = score + '%';
+            currentScore.className = 'score-value ' + getScoreClass(score);
+
+            // Format gaps as a readable list
+            const gapsText = gaps.slice(0, 3).map(g => '• ' + g).join('<br>');
+            gapsList.innerHTML = gapsText || 'None identified';
+
+            scorePreview.style.display = 'flex';
+        }
+
+        function getScoreClass(score) {
+            if (score >= 75) return 'high';
+            if (score >= 50) return 'medium';
+            return 'low';
+        }
+
+        function showNoGapsState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('noGapsState').style.display = 'block';
+        }
+
+        async function fetchClarifyingQuestions(gaps) {
+            try {
+                const response = await fetch(`${API_BASE}/api/experience/clarifying-questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_json: analysisData._resume_json || {},
+                        job_description: analysisData._jd || '',
+                        company: analysisData._company || analysisData.company_name || '',
+                        role_title: analysisData._role || analysisData.role_title || '',
+                        gaps: gaps,
+                        fit_score: analysisData.fit_score || 0
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch questions');
+                }
+
+                const data = await response.json();
+                questions = data.questions || [];
+
+                // Show intro message
+                if (data.intro_message) {
+                    document.getElementById('introMessage').textContent = data.intro_message;
+                    document.getElementById('introMessage').style.display = 'block';
+                }
+
+                // Hide loading, show questions
+                document.getElementById('loadingState').style.display = 'none';
+
+                if (questions.length === 0) {
+                    showNoGapsState();
+                    return;
+                }
+
+                renderQuestions();
+                updateProgress();
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('buttonGroup').style.display = 'flex';
+
+            } catch (error) {
+                console.error('Error fetching questions:', error);
+                // On error, just continue to documents
+                continueToDocuments();
+            }
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            questions.forEach((q, index) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+                card.id = `question-${index}`;
+                card.innerHTML = `
+                    <div class="gap-badge">${q.gap_area}</div>
+                    <div class="question-text">${q.question}</div>
+                    <div class="why-matters">${q.why_it_matters}</div>
+                    <textarea
+                        class="answer-input"
+                        placeholder="Share your relevant experience here..."
+                        data-index="${index}"
+                        data-gap="${q.gap_area}"
+                        oninput="handleInput(this)"
+                    ></textarea>
+                    <button class="example-toggle" onclick="toggleExample(${index})">
+                        <span>💡</span> See example answer
+                    </button>
+                    <div class="example-content" id="example-${index}">${q.example_answer}</div>
+                    <button class="skip-btn" onclick="skipQuestion(${index})">
+                        <span>↷</span> Skip this question
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function handleInput(textarea) {
+            const index = textarea.dataset.index;
+            const gapArea = textarea.dataset.gap;
+            const value = textarea.value.trim();
+            const card = document.getElementById(`question-${index}`);
+
+            if (value) {
+                answers[gapArea] = {
+                    question: questions[index].question,
+                    answer: value
+                };
+                card.classList.add('answered');
+                card.classList.remove('skipped');
+            } else {
+                delete answers[gapArea];
+                card.classList.remove('answered');
+            }
+
+            updateProgress();
+        }
+
+        function toggleExample(index) {
+            const example = document.getElementById(`example-${index}`);
+            example.classList.toggle('show');
+        }
+
+        function skipQuestion(index) {
+            const card = document.getElementById(`question-${index}`);
+            const textarea = card.querySelector('textarea');
+            const gapArea = textarea.dataset.gap;
+
+            // Clear any answer
+            textarea.value = '';
+            delete answers[gapArea];
+
+            // Mark as skipped
+            card.classList.add('skipped');
+            card.classList.remove('answered');
+
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = questions.length;
+            const answered = Object.keys(answers).length;
+            const progress = total > 0 ? (answered / total) * 100 : 0;
+
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressLabel').textContent = `${total} question${total !== 1 ? 's' : ''}`;
+            document.getElementById('answeredCount').textContent = `${answered} answered`;
+
+            // Update continue button
+            const btn = document.getElementById('continueBtn');
+            if (answered > 0) {
+                btn.textContent = `Continue with ${answered} answer${answered !== 1 ? 's' : ''} →`;
+            } else {
+                btn.textContent = 'Continue to Documents →';
+            }
+        }
+
+        function skipAll() {
+            continueToDocuments();
+        }
+
+        async function submitAndContinue() {
+            const btn = document.getElementById('continueBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            // Store supplements in sessionStorage
+            const supplements = Object.entries(answers).map(([gap_area, data]) => ({
+                gap_area,
+                question: data.question,
+                answer: data.answer
+            }));
+
+            if (supplements.length > 0) {
+                sessionStorage.setItem('supplements', JSON.stringify(supplements));
+                sessionStorage.setItem('originalGaps', JSON.stringify(analysisData.gaps || []));
+            }
+
+            // Continue to documents
+            continueToDocuments();
+        }
+
+        function continueToDocuments() {
+            window.location.href = 'package.html';
+        }
+    </script>
+    <script src="components/ask-henry.js"></script>
+</body>
+</html>
