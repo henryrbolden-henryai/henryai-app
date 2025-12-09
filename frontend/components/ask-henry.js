@@ -329,6 +329,25 @@
     let isLoading = false;
     let conversationHistory = [];
 
+    // Get user's first name from profile
+    function getUserName() {
+        try {
+            // Check resumeData in sessionStorage first (most recent)
+            const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
+            if (resumeData.name) {
+                return resumeData.name.split(' ')[0];
+            }
+            // Check localStorage for saved profile
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            if (profile.name) {
+                return profile.name.split(' ')[0];
+            }
+        } catch (e) {
+            console.error('Error getting user name:', e);
+        }
+        return null;
+    }
+
     // Get current page context
     function getPageContext() {
         const path = window.location.pathname;
@@ -350,7 +369,9 @@
             'profile-edit': { name: 'Profile', description: 'Editing your profile' }
         };
 
-        return contexts[page] || { name: 'HenryAI', description: 'Your AI career coach' };
+        const context = contexts[page] || { name: 'HenryAI', description: 'Your personal job search guide' };
+        context.page = page; // Include the page key for greeting lookup
+        return context;
     }
 
     // Get contextual suggestions based on current page
@@ -399,10 +420,35 @@
         return suggestions[page] || suggestions['default'];
     }
 
+    // Generate personalized greeting based on context
+    function getPersonalizedGreeting(userName, context) {
+        const name = userName ? `, ${userName}` : '';
+
+        // Page-specific greetings that feel natural
+        const greetings = {
+            'analyze': `Hey${name}! Ready to check out a new opportunity? Paste the job description and I'll help you figure out if it's worth your time.`,
+            'results': `Hey${name}! I just finished looking at this role. Let me know if you want me to dig deeper into any part of the analysis.`,
+            'overview': `Hey${name}! Here's your game plan for this application. Need help with any of these areas?`,
+            'positioning': `Hey${name}! This is how I'd recommend positioning yourself. Want to talk through any of these decisions?`,
+            'documents': `Hey${name}! I've tailored your resume and cover letter for this role. Questions about any of the changes?`,
+            'outreach': `Hey${name}! Let's figure out who to reach out to and how. I can help you craft the right message.`,
+            'interview-intelligence': `Hey${name}! What interview are you prepping for? I can help you get ready.`,
+            'prep-guide': `Hey${name}! Let's make sure you're ready for this interview. What do you want to work on?`,
+            'interview-debrief': `Hey${name}! How'd it go? I'm here to help you process and figure out next steps.`,
+            'mock-interview': `Hey${name}! Ready to practice? I'll give you honest feedback to sharpen your responses.`,
+            'tracker': `Hey${name}! I see your applications. Want help prioritizing or strategizing on any of them?`,
+            'profile-edit': `Hey${name}! Your profile powers everything I do for you. Let me know if you need help with any section.`
+        };
+
+        return greetings[context.page] || `Hey${name}! I'm here to help with your job search. What's on your mind?`;
+    }
+
     // Create widget HTML
     function createWidget() {
         const context = getPageContext();
         const suggestions = getContextualSuggestions();
+        const userName = getUserName();
+        const greeting = getPersonalizedGreeting(userName, context);
 
         const widget = document.createElement('div');
         widget.id = 'ask-henry-widget';
@@ -428,7 +474,7 @@
 
                 <div class="ask-henry-messages" id="askHenryMessages">
                     <div class="ask-henry-message assistant">
-                        Hey! I'm Henry, your AI career coach. I can see you're on the <strong>${context.name}</strong> page. How can I help you right now?
+                        ${greeting}
                     </div>
                 </div>
 
