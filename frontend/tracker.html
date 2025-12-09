@@ -576,7 +576,41 @@
         }
 
         .timeline-stage.current {
-            background: linear-gradient(90deg, var(--color-active) 50%, var(--color-border) 50%);
+            background: var(--color-active);
+            position: relative;
+        }
+
+        .timeline-stage.current::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 14px;
+            background: var(--color-active);
+            border: 2px solid var(--color-bg);
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px var(--color-active);
+        }
+
+        .timeline-stage.awaiting {
+            background: var(--color-hot);
+            animation: pulse-awaiting 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-awaiting {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .you-are-here {
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--color-active);
+            font-weight: 600;
+            margin-top: 4px;
+            letter-spacing: 0.5px;
         }
 
         .timeline-labels {
@@ -1708,51 +1742,6 @@
             color: var(--color-hot);
         }
 
-        /* Questions to Ask Section */
-        .questions-section {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-
-        .questions-title {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--color-text);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .question-item {
-            padding: 12px;
-            background: var(--color-bg);
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .question-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .question-text {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--color-text);
-            margin-bottom: 6px;
-        }
-
-        .question-reveals {
-            font-size: 0.8rem;
-            color: var(--color-text-secondary);
-        }
-
-        .question-reveals strong {
-            color: var(--color-accent);
-        }
     </style>
 </head>
 <body>
@@ -1883,22 +1872,25 @@
         // STATUS DEFINITIONS WITH STAGE WEIGHTS
         // ========================================================================
         const STATUSES = {
-            'Preparing': { label: 'Preparing', active: true, stage: 0, stageWeight: 5 },
-            'To Apply': { label: 'To Apply', active: true, stage: 0, stageWeight: 10 },
-            'Applied': { label: 'Applied', active: true, stage: 1, stageWeight: 15 },
-            'Reached Out': { label: 'Reached Out', active: true, stage: 1, stageWeight: 20 },
-            'Response Received': { label: 'Response Received', active: true, stage: 2, stageWeight: 25 },
-            'Recruiter Screen': { label: 'Recruiter Screen', active: true, stage: 2, stageWeight: 30 },
-            'Hiring Manager': { label: 'Hiring Manager', active: true, stage: 3, stageWeight: 40 },
-            'Technical Round': { label: 'Technical Round', active: true, stage: 3, stageWeight: 45 },
-            'Panel Interview': { label: 'Panel Interview', active: true, stage: 3, stageWeight: 50 },
-            'Final Round': { label: 'Final Round', active: true, stage: 4, stageWeight: 55 },
-            'Executive Interview': { label: 'Executive Interview', active: true, stage: 4, stageWeight: 60 },
-            'Interviewed': { label: 'Interviewed', active: true, stage: 4, stageWeight: 50 },
-            'Offer Received': { label: 'Offer Received', active: false, stage: 5, stageWeight: 70 },
-            'No Response': { label: 'No Response', active: false, stage: -1, stageWeight: 0 },
-            'Rejected': { label: 'Rejected', active: false, stage: -1, stageWeight: 0 },
-            'Withdrawn': { label: 'Withdrawn', active: false, stage: -1, stageWeight: 0 }
+            'Preparing': { label: 'Preparing', active: true, stage: 0, stageWeight: 5, awaiting: false },
+            'To Apply': { label: 'To Apply', active: true, stage: 0, stageWeight: 10, awaiting: false },
+            'Applied': { label: 'Applied', active: true, stage: 1, stageWeight: 15, awaiting: true },
+            'Reached Out': { label: 'Reached Out', active: true, stage: 1, stageWeight: 20, awaiting: true },
+            'Response Received': { label: 'Response Received', active: true, stage: 2, stageWeight: 25, awaiting: false },
+            'Recruiter Screen': { label: 'Recruiter Screen', active: true, stage: 2, stageWeight: 30, awaiting: false },
+            'Awaiting Screen': { label: 'Awaiting Screen', active: true, stage: 2, stageWeight: 28, awaiting: true },
+            'Hiring Manager': { label: 'Hiring Manager', active: true, stage: 3, stageWeight: 40, awaiting: false },
+            'Technical Round': { label: 'Technical Round', active: true, stage: 3, stageWeight: 45, awaiting: false },
+            'Panel Interview': { label: 'Panel Interview', active: true, stage: 3, stageWeight: 50, awaiting: false },
+            'Awaiting Next Round': { label: 'Awaiting Next Round', active: true, stage: 3, stageWeight: 48, awaiting: true },
+            'Final Round': { label: 'Final Round', active: true, stage: 4, stageWeight: 55, awaiting: false },
+            'Executive Interview': { label: 'Executive Interview', active: true, stage: 4, stageWeight: 60, awaiting: false },
+            'Awaiting Decision': { label: 'Awaiting Decision', active: true, stage: 4, stageWeight: 58, awaiting: true },
+            'Interviewed': { label: 'Interviewed', active: true, stage: 4, stageWeight: 50, awaiting: true },
+            'Offer Received': { label: 'Offer Received', active: false, stage: 5, stageWeight: 70, awaiting: false },
+            'No Response': { label: 'No Response', active: false, stage: -1, stageWeight: 0, awaiting: false },
+            'Rejected': { label: 'Rejected', active: false, stage: -1, stageWeight: 0, awaiting: false },
+            'Withdrawn': { label: 'Withdrawn', active: false, stage: -1, stageWeight: 0, awaiting: false }
         };
 
         // Interview stages for timeline
@@ -1988,24 +1980,51 @@
             const daysSinceContact = getDaysSince(app.lastUpdated || app.dateAdded);
             const fitScore = app.fitScore || 50;
 
-            // Base urgency from stage weight
-            let urgency = status.stageWeight || 0;
+            // Penalize inactive early
+            if (!status.active) return -100;
 
-            // Add fit score bonus (max 100)
-            urgency += fitScore;
+            let urgency = 0;
 
-            // Recency bonus (inverse of days, max 50)
-            urgency += Math.max(0, 50 - (daysSinceContact * 3));
+            // 1. Stage progression multiplier (interview stages get big boost)
+            // Stage 0 (Preparing): 1x, Stage 1 (Applied): 1.2x, Stage 2 (Screen): 1.5x
+            // Stage 3 (Interview): 2x, Stage 4 (Final): 2.5x
+            const stageMultiplier = [1, 1.2, 1.5, 2, 2.5][status.stage] || 1;
 
-            // Network leverage bonus
+            // 2. Base score from fit (0-100)
+            urgency += fitScore * stageMultiplier;
+
+            // 3. Awaiting status bonus (need to follow up!)
+            if (status.awaiting) {
+                // More urgent if awaiting for longer, but caps out
+                const awaitingBonus = Math.min(40, daysSinceContact * 5);
+                urgency += awaitingBonus;
+            }
+
+            // 4. Recency bonus for active interview stages
+            if (status.stage >= 2 && daysSinceContact <= 3) {
+                urgency += 30; // Hot interview needs attention now
+            }
+
+            // 5. Follow-up window detection (5-10 days post-contact is prime time)
+            if (['Applied', 'Reached Out'].includes(app.status)) {
+                if (daysSinceContact >= 5 && daysSinceContact <= 10) {
+                    urgency += 25; // Prime follow-up window
+                } else if (daysSinceContact > 10) {
+                    urgency -= 10; // Getting stale
+                }
+            }
+
+            // 6. Network leverage bonus
             if (app.networkLeverage === '1st_degree') urgency += 20;
             else if (app.networkLeverage === '2nd_degree') urgency += 10;
             else if (app.networkLeverage === 'referral') urgency += 15;
 
-            // Penalize inactive
-            if (!status.active) urgency = -100;
+            // 7. High-fit + late-stage = leverage opportunity
+            if (fitScore >= 75 && status.stage >= 3) {
+                urgency += 35; // Leverage play - don't lose these!
+            }
 
-            return urgency;
+            return Math.round(urgency);
         }
 
         // ========================================================================
@@ -3312,45 +3331,6 @@
         }
 
         /**
-         * Questions to ask in interviews to evaluate the company
-         */
-        function getQuestionsToAsk(app) {
-            const questions = [];
-            const experience = calculateCandidateExperienceScore(app);
-            const rounds = app.interviewRounds || countInterviewRounds(app);
-
-            // Base questions everyone should ask
-            questions.push({
-                text: '"How many interview rounds should I expect, and who\'s the final decision-maker?"',
-                reveals: 'Process clarity, decision structure',
-                redFlag: 'Vague answer or "we\'re still figuring it out"'
-            });
-
-            questions.push({
-                text: '"What\'s your typical timeline from final round to decision?"',
-                reveals: 'How fast they move, decision-making speed',
-                redFlag: '"It varies" or timeline >2 weeks'
-            });
-
-            questions.push({
-                text: '"If I\'m not selected, will I receive feedback on why?"',
-                reveals: 'Transparency, candidate respect',
-                redFlag: '"We don\'t typically provide feedback"'
-            });
-
-            // Conditional questions based on signals
-            if (rounds >= 4) {
-                questions.unshift({
-                    text: `"I've noticed this is the ${rounds}th round. Can you help me understand your decision-making process?"`,
-                    reveals: 'Whether this is intentional rigor or dysfunction',
-                    redFlag: 'No clear answer or deflection'
-                });
-            }
-
-            return questions;
-        }
-
-        /**
          * Render excessive interview rounds warning if detected
          */
         function renderRoundsWarning(app) {
@@ -3619,8 +3599,9 @@
             if (app.fitScore >= 80) fitClass = 'high';
             else if (app.fitScore < 60) fitClass = 'low';
 
-            // Timeline stage (0-4)
-            const timelineStage = Math.min(4, Math.floor((status.stageWeight || 0) / 15));
+            // Timeline stage - use actual stage from status definition (0-5)
+            const timelineStage = status.stage >= 0 ? Math.min(4, status.stage) : -1;
+            const isAwaiting = status.awaiting || false;
 
             // Check if high leverage (final stages + high fit)
             const isLeverage = status.stageWeight >= 50 && app.fitScore >= 75;
@@ -3669,14 +3650,14 @@
 
                     ${renderRejectionDebrief(app)}
                     ${renderCompanyBehaviorAnalysis(app)}
-                    ${renderQuestionsToAsk(app)}
 
                     <div class="timeline-section">
                         <div class="timeline-bar">
                             ${[0,1,2,3,4].map(i => `
-                                <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? 'current' : ''}"></div>
+                                <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? (isAwaiting ? 'current awaiting' : 'current') : ''}"></div>
                             `).join('')}
                         </div>
+                        ${isAwaiting && timelineStage >= 0 ? `<div class="you-are-here">↑ AWAITING NEXT STEPS</div>` : ''}
                         <div class="timeline-labels">
                             <span>Applied</span>
                             <span>Screen</span>
@@ -3724,16 +3705,7 @@
                     ` : ''}
 
                     <div class="card-actions">
-                        <button class="card-action-btn ${app.dateApplied ? 'done' : ''}" onclick="${app.dateApplied ? '' : `markAction(${app.id}, 'dateApplied')`}">
-                            ${app.dateApplied ? '✓ Applied' : '📤 Mark Applied'}
-                        </button>
-                        <button class="card-action-btn ${app.dateReachedOut ? 'done' : ''}" onclick="${app.dateReachedOut ? '' : `markAction(${app.id}, 'dateReachedOut')`}">
-                            ${app.dateReachedOut ? '✓ Reached Out' : '💬 Reach Out'}
-                        </button>
-                        <button class="card-action-btn ${app.dateInterviewed ? 'done' : ''}" onclick="${app.dateInterviewed ? '' : `markAction(${app.id}, 'dateInterviewed')`}">
-                            ${app.dateInterviewed ? '✓ Interviewed' : '🎤 Interviewed'}
-                        </button>
-                        <button class="card-action-btn danger" onclick="showDeleteModal(${app.id})">Archive</button>
+                        ${renderContextualActions(app)}
                     </div>
                 </div>
             `;
@@ -3768,6 +3740,134 @@
                     </div>
                 ` : ''}
             `;
+        }
+
+        // ========================================================================
+        // CONTEXT-AWARE ACTION BUTTONS
+        // ========================================================================
+        function getContextualActions(app) {
+            const status = app.status;
+            const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
+            const statusDef = STATUSES[status] || {};
+            const actions = [];
+
+            // Pre-Apply stages
+            if (['Preparing', 'To Apply'].includes(status)) {
+                if (!app.dateApplied) {
+                    actions.push({ label: '📤 Submit Application', action: `markAction(${app.id}, 'dateApplied')`, primary: true });
+                }
+                actions.push({ label: '📝 Review Materials', action: `window.location.href='documents.html'` });
+            }
+            // Just Applied - waiting for response
+            else if (['Applied', 'Reached Out'].includes(status)) {
+                if (daysSince >= 5 && daysSince <= 10) {
+                    actions.push({ label: '📧 Send Follow-Up', action: `window.location.href='outreach.html'`, primary: true });
+                } else if (daysSince > 10) {
+                    actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp(${app.id})`, primary: true });
+                }
+                if (!app.dateReachedOut) {
+                    actions.push({ label: '💬 Reach Out', action: `markAction(${app.id}, 'dateReachedOut')` });
+                }
+            }
+            // Screen scheduled/awaiting
+            else if (['Response Received', 'Recruiter Screen', 'Awaiting Screen'].includes(status)) {
+                actions.push({ label: '📅 Schedule Prep Time', action: `schedulePrepTime(${app.id})`, primary: true });
+                actions.push({ label: '📋 Review Prep Guide', action: `window.location.href='interview-intelligence.html'` });
+            }
+            // Interview stages
+            else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
+                if (statusDef.awaiting) {
+                    actions.push({ label: '📧 Send Thank-You', action: `sendThankYou(${app.id})`, primary: true });
+                    actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
+                } else {
+                    actions.push({ label: '📝 Capture Notes Now', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                    actions.push({ label: '📋 View Prep', action: `window.location.href='interview-intelligence.html'` });
+                }
+            }
+            // Final stages
+            else if (['Final Round', 'Executive Interview', 'Awaiting Decision', 'Interviewed'].includes(status)) {
+                if (statusDef.awaiting || status === 'Interviewed') {
+                    actions.push({ label: '📧 Send Thank-You', action: `sendThankYou(${app.id})`, primary: true });
+                    if (daysSince >= 3) {
+                        actions.push({ label: '📞 Request Timeline Update', action: `scheduleFollowUp(${app.id})` });
+                    }
+                } else {
+                    actions.push({ label: '📝 Capture Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                }
+                actions.push({ label: '💰 Research Comp', action: `window.location.href='overview.html'` });
+            }
+            // Offer stage
+            else if (status === 'Offer Received') {
+                actions.push({ label: '💰 Prep Negotiation', action: `window.location.href='overview.html'`, primary: true });
+                actions.push({ label: '📊 Compare Offers', action: `compareOffers(${app.id})` });
+            }
+            // Inactive states
+            else if (['No Response', 'Rejected', 'Withdrawn'].includes(status)) {
+                if (status === 'Rejected') {
+                    actions.push({ label: '🔄 Request Feedback', action: `requestFeedback(${app.id})` });
+                }
+                actions.push({ label: '🗑️ Archive', action: `showDeleteModal(${app.id})`, danger: true });
+                return actions;
+            }
+
+            // Always include archive for active apps
+            actions.push({ label: 'Archive', action: `showDeleteModal(${app.id})`, danger: true });
+
+            return actions;
+        }
+
+        function renderContextualActions(app) {
+            const actions = getContextualActions(app);
+
+            return actions.map(action => {
+                let btnClass = 'card-action-btn';
+                if (action.primary) btnClass += ' primary';
+                if (action.danger) btnClass += ' danger';
+
+                return `<button class="${btnClass}" onclick="${action.action}">${action.label}</button>`;
+            }).join('');
+        }
+
+        // Helper functions for contextual actions
+        function scheduleFollowUp(appId) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) return;
+            // Open calendar with follow-up event
+            const title = encodeURIComponent(`Follow up: ${app.role} at ${app.company}`);
+            const date = new Date();
+            date.setDate(date.getDate() + 3);
+            const dateStr = date.toISOString().replace(/-|:|\.\d\d\d/g, '').slice(0, 15);
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}`, '_blank');
+        }
+
+        function schedulePrepTime(appId) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) return;
+            const title = encodeURIComponent(`Interview Prep: ${app.role} at ${app.company}`);
+            const date = new Date();
+            date.setDate(date.getDate() + 1);
+            const dateStr = date.toISOString().replace(/-|:|\.\d\d\d/g, '').slice(0, 15);
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}/${dateStr}`, '_blank');
+        }
+
+        function sendThankYou(appId) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) return;
+            const subject = encodeURIComponent(`Thank you - ${app.role} Interview`);
+            const body = encodeURIComponent(`Hi [Interviewer Name],\n\nThank you for taking the time to speak with me about the ${app.role} position at ${app.company}.\n\n[Add specific detail from the conversation]\n\nI'm very excited about the opportunity and look forward to hearing about next steps.\n\nBest regards`);
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+        }
+
+        function requestFeedback(appId) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) return;
+            const subject = encodeURIComponent(`Feedback Request - ${app.role}`);
+            const body = encodeURIComponent(`Hi,\n\nThank you for considering me for the ${app.role} position. I was disappointed to learn I wasn't selected, but I'd genuinely appreciate any feedback you could share that might help me in my continued search.\n\nThank you for your time.\n\nBest regards`);
+            window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+        }
+
+        function compareOffers(appId) {
+            alert('Offer comparison feature coming soon!');
         }
 
         function renderRejectionDebrief(app) {
@@ -3863,36 +3963,6 @@
                             ${experience.grade === 'D' || experience.grade === 'F' ? ' Sometimes rejection is protection.' : ''}
                         </div>
                     </div>
-                </div>
-            `;
-        }
-
-        /**
-         * Render Questions to Ask section for active interviewing applications
-         */
-        function renderQuestionsToAsk(app) {
-            // Only show for applications in interview stages
-            const interviewingStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
-                                          'Panel Interview', 'Final Round', 'Executive Interview'];
-
-            if (!interviewingStatuses.includes(app.status)) return '';
-
-            const questions = getQuestionsToAsk(app);
-
-            return `
-                <div class="questions-section">
-                    <div class="questions-title">
-                        <span>❓</span> Questions to Ask Them
-                    </div>
-                    ${questions.slice(0, 3).map(q => `
-                        <div class="question-item">
-                            <div class="question-text">${q.text}</div>
-                            <div class="question-reveals">
-                                <strong>Reveals:</strong> ${q.reveals}<br>
-                                <strong>Red flag:</strong> ${q.redFlag}
-                            </div>
-                        </div>
-                    `).join('')}
                 </div>
             `;
         }
