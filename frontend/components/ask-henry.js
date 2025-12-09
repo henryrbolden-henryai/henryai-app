@@ -17,24 +17,21 @@
             position: fixed;
             bottom: 24px;
             right: 24px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #3a3a3a 0%, #1a1a1a 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 56px;
+            height: 56px;
             cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             z-index: 9998;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            background: transparent;
+            border: none;
+            padding: 0;
         }
 
-        .ask-henry-fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-            background: linear-gradient(145deg, #4a4a4a 0%, #2a2a2a 100%);
+        .ask-henry-fab:hover .ask-henry-logo {
+            filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
         }
 
         .ask-henry-fab.hidden {
@@ -43,22 +40,40 @@
             pointer-events: none;
         }
 
-        .ask-henry-fab-icon {
-            font-size: 1.6rem;
+        .ask-henry-logo {
+            width: 56px;
+            height: 56px;
+            transition: filter 0.3s ease;
         }
 
-        .ask-henry-fab-pulse {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            animation: pulse 2s ease-out infinite;
+        /* Breathing animation for the logo */
+        @keyframes breathe {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.12);
+            }
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.3; }
-            100% { transform: scale(1.5); opacity: 0; }
+        .ask-henry-logo {
+            animation: breathe 2.5s ease-in-out infinite;
+        }
+
+        /* When chat is open, use subtle pulse instead */
+        .ask-henry-fab.active .ask-henry-logo {
+            animation: pulse-active 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-active {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.4));
+            }
+            50% {
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.6));
+            }
         }
 
         /* Chat Drawer */
@@ -107,8 +122,8 @@
             gap: 10px;
         }
 
-        .ask-henry-title-icon {
-            font-size: 1.3rem;
+        .ask-henry-header-logo {
+            flex-shrink: 0;
         }
 
         .ask-henry-title-text {
@@ -605,15 +620,46 @@
         widget.innerHTML = `
             <!-- Floating Action Button -->
             <button class="ask-henry-fab" id="askHenryFab" aria-label="Ask Henry">
-                <div class="ask-henry-fab-pulse"></div>
-                <span class="ask-henry-fab-icon">💬</span>
+                <svg class="ask-henry-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="fabRingGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="fabStrokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="85" stroke="url(#fabRingGradient)" stroke-width="4" fill="none"/>
+                    <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <path d="M145 130 L145 50" stroke="url(#fabStrokeGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                </svg>
             </button>
 
             <!-- Chat Drawer -->
             <div class="ask-henry-drawer" id="askHenryDrawer">
                 <div class="ask-henry-header">
                     <div class="ask-henry-title">
-                        <span class="ask-henry-title-icon">🤖</span>
+                        <svg class="ask-henry-header-logo" width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="headerRingGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                                <linearGradient id="headerStrokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="100" cy="100" r="85" stroke="url(#headerRingGradient)" stroke-width="4" fill="none"/>
+                            <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <path d="M145 130 L145 50" stroke="url(#headerStrokeGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                        </svg>
                         <div>
                             <div class="ask-henry-title-text">Ask Henry</div>
                             <div class="ask-henry-title-context" id="askHenryContext">${context.description}</div>
