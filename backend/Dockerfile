@@ -2,10 +2,15 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY backend/requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY backend/ .
-COPY document_generator/ document_generator/
+# Copy backend code
+COPY . /app
 
+# Expose port
+ENV PORT=8000
+
+# Start the FastAPI server
 CMD ["uvicorn", "backend:app", "--host", "0.0.0.0", "--port", "8000"]
