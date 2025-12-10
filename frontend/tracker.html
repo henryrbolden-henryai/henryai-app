@@ -2184,6 +2184,15 @@
                 <h1>Pipeline Command Center</h1>
                 <p class="subtitle">Your strategic view of every opportunity in play</p>
             </div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="exportBackup()" title="Download all your data as a backup file">
+                    <span>📥</span> Export Backup
+                </button>
+                <button class="header-btn" onclick="document.getElementById('importFile').click()" title="Import data from a backup file">
+                    <span>📤</span> Import
+                </button>
+                <input type="file" id="importFile" accept=".json,.csv" style="display: none;" onchange="handleImport(event)">
+            </div>
         </div>
 
         <!-- DAILY PULSE BANNER -->
@@ -5084,6 +5093,268 @@
             if (pattern) {
                 renderInterventionModal(pattern);
             }
+        }
+
+        // ========================================================================
+        // EXPORT/IMPORT BACKUP FUNCTIONS
+        // ========================================================================
+
+        function exportBackup() {
+            // Collect all HenryAI data from localStorage
+            const backup = {
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                data: {}
+            };
+
+            // Get all localStorage keys that belong to HenryAI
+            const henryKeys = [
+                'trackedApplications',
+                'candidateProfile',
+                'resumeConversation',
+                'resumeExtractedData',
+                'interventionState'
+            ];
+
+            // Also get all analysis keys (analysis_*, documents_*)
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('analysis_') || key.startsWith('documents_')) {
+                    henryKeys.push(key);
+                }
+            }
+
+            // Collect data
+            henryKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        backup.data[key] = JSON.parse(value);
+                    } catch {
+                        backup.data[key] = value;
+                    }
+                }
+            });
+
+            // Create and download file
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `henryai-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('Backup downloaded! Keep this file safe to restore your data if needed.');
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+
+                    if (file.name.endsWith('.json')) {
+                        importJSON(content);
+                    } else if (file.name.endsWith('.csv')) {
+                        importCSV(content);
+                    } else {
+                        alert('Please upload a .json or .csv file');
+                    }
+                } catch (err) {
+                    console.error('Import error:', err);
+                    alert('Error importing file. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+
+            // Reset input so same file can be selected again
+            event.target.value = '';
+        }
+
+        function importJSON(content) {
+            const backup = JSON.parse(content);
+
+            // Check if it's a HenryAI backup
+            if (backup.data && backup.version) {
+                const confirmMsg = `This will restore data from ${new Date(backup.exportDate).toLocaleDateString()}.\n\nThis will MERGE with your existing data. Continue?`;
+                if (!confirm(confirmMsg)) return;
+
+                // Restore each key
+                Object.entries(backup.data).forEach(([key, value]) => {
+                    if (key === 'trackedApplications') {
+                        // Merge applications, avoiding duplicates
+                        const existing = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                        const imported = Array.isArray(value) ? value : [];
+                        const merged = [...existing];
+
+                        imported.forEach(app => {
+                            const exists = merged.some(e =>
+                                e.company === app.company &&
+                                e.role === app.role &&
+                                e.dateApplied === app.dateApplied
+                            );
+                            if (!exists) {
+                                merged.push(app);
+                            }
+                        });
+
+                        localStorage.setItem('trackedApplications', JSON.stringify(merged));
+                    } else {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    }
+                });
+
+                alert('Backup restored successfully!');
+                location.reload();
+            } else {
+                alert('This does not appear to be a valid HenryAI backup file.');
+            }
+        }
+
+        function importCSV(content) {
+            const lines = content.split('\n').filter(line => line.trim());
+            if (lines.length < 2) {
+                alert('CSV file appears to be empty');
+                return;
+            }
+
+            // Parse header
+            const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+
+            // Map common column names
+            const columnMap = {
+                company: ['company', 'company name', 'employer', 'organization'],
+                role: ['role', 'title', 'job title', 'position', 'job'],
+                status: ['status', 'stage', 'state'],
+                dateApplied: ['date applied', 'applied date', 'date', 'applied', 'application date'],
+                salary: ['salary', 'compensation', 'pay', 'salary range'],
+                location: ['location', 'city', 'place'],
+                notes: ['notes', 'comments', 'description']
+            };
+
+            // Find column indices
+            const indices = {};
+            Object.entries(columnMap).forEach(([field, aliases]) => {
+                const idx = header.findIndex(h => aliases.includes(h));
+                if (idx !== -1) indices[field] = idx;
+            });
+
+            if (!indices.company && !indices.role) {
+                alert('Could not find Company or Role columns. Please ensure your CSV has headers like "Company" and "Role".');
+                return;
+            }
+
+            // Parse rows
+            const imported = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length === 0) continue;
+
+                const app = {
+                    id: `imported_${Date.now()}_${i}`,
+                    company: values[indices.company] || 'Unknown Company',
+                    role: values[indices.role] || 'Unknown Role',
+                    status: mapImportedStatus(values[indices.status]) || 'Preparing',
+                    dateApplied: parseImportedDate(values[indices.dateApplied]) || new Date().toISOString().split('T')[0],
+                    salary: values[indices.salary] || '',
+                    location: values[indices.location] || '',
+                    notes: values[indices.notes] || '',
+                    fitScore: null,
+                    analysisKey: null,
+                    source: 'csv_import'
+                };
+
+                imported.push(app);
+            }
+
+            if (imported.length === 0) {
+                alert('No valid applications found in CSV');
+                return;
+            }
+
+            const confirmMsg = `Found ${imported.length} applications to import.\n\nThis will MERGE with your existing data. Continue?`;
+            if (!confirm(confirmMsg)) return;
+
+            // Merge with existing
+            const existing = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            const merged = [...existing];
+
+            let addedCount = 0;
+            imported.forEach(app => {
+                const exists = merged.some(e =>
+                    e.company.toLowerCase() === app.company.toLowerCase() &&
+                    e.role.toLowerCase() === app.role.toLowerCase()
+                );
+                if (!exists) {
+                    merged.push(app);
+                    addedCount++;
+                }
+            });
+
+            localStorage.setItem('trackedApplications', JSON.stringify(merged));
+            alert(`Imported ${addedCount} new applications (${imported.length - addedCount} duplicates skipped).`);
+            location.reload();
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function mapImportedStatus(status) {
+            if (!status) return 'Preparing';
+            const s = status.toLowerCase();
+
+            if (s.includes('offer')) return 'Offer Received';
+            if (s.includes('reject') || s.includes('declined') || s.includes('closed')) return 'Rejected';
+            if (s.includes('ghost') || s.includes('no response')) return 'Ghosted';
+            if (s.includes('final')) return 'Final Round';
+            if (s.includes('interview') || s.includes('screen')) return 'Recruiter Screen';
+            if (s.includes('applied') || s.includes('submitted')) return 'Applied';
+            if (s.includes('preparing') || s.includes('saved') || s.includes('interested')) return 'Preparing';
+
+            return 'Applied';
+        }
+
+        function parseImportedDate(dateStr) {
+            if (!dateStr) return null;
+
+            // Try various date formats
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0];
+            }
+
+            // Try MM/DD/YYYY format
+            const parts = dateStr.split(/[\/\-]/);
+            if (parts.length === 3) {
+                const [m, d, y] = parts;
+                const year = y.length === 2 ? '20' + y : y;
+                return `${year}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            }
+
+            return null;
         }
 
         // ========================================================================
