@@ -936,12 +936,12 @@
                     if (hasSpoken && audioChunks.length > 0) {
                         await transcribeAudio(audioBlob);
                     } else if (isAutoListen) {
-                        // If auto-listening and no speech detected, restart listening
+                        // If auto-listening and no speech detected, restart listening after a pause
                         setTimeout(() => {
-                            if (autoListenEnabled && !isProcessing && !currentAudio) {
+                            if (autoListenEnabled && !isProcessing && !currentAudio && messageInput.value.trim() === '') {
                                 startRecording(true);
                             }
-                        }, 500);
+                        }, 1000);
                     }
                 };
 
@@ -1055,12 +1055,14 @@
                     currentAudio = null;
 
                     // Auto-start listening after Henry finishes speaking
+                    // Longer delay (1.5s) to give user time to start speaking naturally
                     if (autoListenEnabled && !isProcessing && conversationState.state !== 'COMPLETE') {
                         setTimeout(() => {
-                            if (!isRecording) {
+                            // Only start if user hasn't already started typing or speaking
+                            if (!isRecording && messageInput.value.trim() === '') {
                                 startRecording(true);
                             }
-                        }, 500);
+                        }, 1500);
                     }
                 };
                 currentAudio.onerror = () => {
