@@ -6862,9 +6862,13 @@ You must respond with valid JSON in this exact format:
 ## GUIDELINES
 1. MAX 1 sentence per response
 2. NEVER ask follow-ups - just move to next state
-3. suggested_responses = example user ANSWERS (NOT for GET_NAME state):
-   - Good: "I manage the sales team", "About 3 years", "Looking for remote work"
-   - Bad: "Tell me about your education", "What do you do day to day?"
+3. suggested_responses = COMPLETE example answers the user might say:
+   - ACHIEVEMENTS question: "I increased sales by 30%", "I led a team of 5", "I automated our reporting"
+   - RESPONSIBILITIES question: "I manage client accounts", "I write code and review PRs", "I handle customer support"
+   - PREVIOUS_ROLES question: "I was a junior developer at StartupCo", "Marketing intern at BigCorp", "None worth mentioning"
+   - ROLE_GOALS question: "Senior engineer role", "Remote marketing position", "Management track"
+   - NEVER use "..." or incomplete phrases like "I was responsible for..."
+   - NEVER use placeholders - always complete sentences
 4. For GET_NAME: return empty suggested_responses []
 
 ## STATE TRANSITIONS
@@ -6951,7 +6955,7 @@ async def resume_chat(request: ResumeChatRequest):
                 next_state=request.current_state,
                 extracted_data=request.extracted_data or {},
                 skills_extracted=[],
-                suggested_responses=["I was responsible for...", "My main duties included...", "I mostly did..."]
+                suggested_responses=["I manage client projects", "I handle sales calls", "I write and review code"]
             )
 
     except Exception as e:
