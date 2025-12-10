@@ -664,7 +664,7 @@
     <!-- Start overlay - requires click to enable audio -->
     <div class="start-overlay" id="startOverlay">
         <h2>Ready to Chat with Henry?</h2>
-        <p>I will guide you through sharing your experience and help identify your skills.<br>This works best with sound on.</p>
+        <p>I will guide you through sharing your experience and help identify your skills.<br>This takes about 3-5 minutes.</p>
 
         <div class="name-form">
             <div class="name-row">
@@ -678,8 +678,8 @@
         </div>
 
         <button class="start-btn" id="startBtn" onclick="beginConversation()" disabled>
-            <span class="icon">🎙️</span>
-            Start Conversation
+            <span class="icon">💬</span>
+            Start Chat
         </button>
     </div>
 
@@ -699,7 +699,7 @@
     </header>
 
     <div class="chat-container" id="chatContainer">
-        <div class="speaking-indicator" id="speakingIndicator">
+        <div class="speaking-indicator" id="speakingIndicator" style="display: none;">
             <div class="speaking-bars">
                 <div class="speaking-bar"></div>
                 <div class="speaking-bar"></div>
@@ -742,27 +742,22 @@
     </div>
 
     <div class="input-area" id="inputArea">
-        <div class="recording-status" id="recordingStatus">
+        <div class="recording-status" id="recordingStatus" style="display: none;">
             🔴 Recording... Tap to stop
         </div>
         <div class="input-container">
-            <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()">
+            <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()" style="display: none;">
                 🎙️
             </button>
             <div class="input-wrapper">
                 <textarea
                     id="messageInput"
-                    placeholder="Or type your response here..."
+                    placeholder="Type your response..."
                     rows="1"
                 ></textarea>
             </div>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                 ↑
-            </button>
-        </div>
-        <div class="input-mode-toggle">
-            <button class="toggle-link" id="toggleMode" onclick="toggleInputMode()">
-                Prefer to type? Click here
             </button>
         </div>
     </div>
@@ -790,7 +785,7 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let currentAudio = null;
-        let autoListenEnabled = true; // Auto-start recording after Henry speaks
+        let autoListenEnabled = false; // Disabled - text only mode
         let silenceTimeout = null;
         let audioContext = null;
         let analyser = null;
@@ -1026,57 +1021,10 @@
             }
         }
 
-        // Text-to-speech for Henry's responses
+        // Text-to-speech for Henry's responses (disabled - text only mode)
         async function speakResponse(text) {
-            try {
-                speakingIndicator.classList.add('show');
-
-                const response = await fetch(`${API_BASE}/api/speak`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text })
-                });
-
-                if (!response.ok) {
-                    throw new Error('TTS failed');
-                }
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-
-                if (currentAudio) {
-                    currentAudio.pause();
-                }
-
-                currentAudio = new Audio(audioUrl);
-                currentAudio.onended = () => {
-                    speakingIndicator.classList.remove('show');
-                    URL.revokeObjectURL(audioUrl);
-                    currentAudio = null;
-
-                    // Auto-start listening after Henry finishes speaking
-                    // Longer delay (1.5s) to give user time to start speaking naturally
-                    if (autoListenEnabled && !isProcessing && conversationState.state !== 'COMPLETE') {
-                        setTimeout(() => {
-                            // Only start if user hasn't already started typing or speaking
-                            if (!isRecording && messageInput.value.trim() === '') {
-                                startRecording(true);
-                            }
-                        }, 1500);
-                    }
-                };
-                currentAudio.onerror = () => {
-                    speakingIndicator.classList.remove('show');
-                    currentAudio = null;
-                };
-
-                await currentAudio.play();
-            } catch (error) {
-                console.error('TTS error:', error);
-                speakingIndicator.classList.remove('show');
-                // Silently fail - text is still displayed
-                // Don't auto-listen if TTS failed - let user initiate
-            }
+            // Voice disabled for now - text only mode
+            return;
         }
 
         // Begin conversation after user clicks start button
