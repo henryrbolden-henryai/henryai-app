@@ -552,6 +552,9 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
 </head>
 <body>
     <header>
@@ -921,9 +924,40 @@
 
         // Start the conversation with Henry's opening message
         async function startConversation() {
-            const openingMessage = `Hi! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
+            // Check if user is logged in and has a name
+            let userNameFromAuth = null;
+            if (typeof HenryAuth !== 'undefined') {
+                userNameFromAuth = await HenryAuth.getUserName();
+            }
+
+            let openingMessage;
+            let startState;
+
+            if (userNameFromAuth && userNameFromAuth.firstName && userNameFromAuth.firstName !== 'there') {
+                // User is logged in with a name - skip GET_NAME state
+                userName.firstName = userNameFromAuth.firstName;
+                userName.lastName = userNameFromAuth.lastName || '';
+                userName.fullName = userNameFromAuth.fullName;
+                userName.displayName = userNameFromAuth.firstName;
+
+                // Store name in extracted data
+                conversationState.extracted_data.contact = {
+                    firstName: userName.firstName,
+                    lastName: userName.lastName,
+                    fullName: userName.fullName
+                };
+
+                openingMessage = `Hi ${userName.firstName}! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
+
+What's your current job title and company?`;
+                startState = 'CURRENT_ROLE';
+            } else {
+                // No name from auth - ask for it
+                openingMessage = `Hi! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
 
 First, what is your name?`;
+                startState = 'GET_NAME';
+            }
 
             conversationState.messages.push({
                 role: 'assistant',
@@ -932,12 +966,11 @@ First, what is your name?`;
 
             addMessageToUI('henry', openingMessage);
 
-            // No suggestions for name - user should type their real name
-            // Focus the input field to encourage typing
+            // Focus the input field
             messageInput.focus();
 
-            // Start at GET_NAME state
-            conversationState.state = 'GET_NAME';
+            // Set starting state
+            conversationState.state = startState;
             updateProgress();
             saveConversation();
         }
