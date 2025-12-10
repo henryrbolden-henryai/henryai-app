@@ -16,7 +16,7 @@ HenryAI is a strategic job search intelligence platform that provides honest, ac
 
 ## Phase 0: Conversational Resume Builder ✅
 
-**Status:** Complete (Waves 1 & 2) - In Beta Testing
+**Status:** Complete (Wave 1) - In Beta Testing
 
 Transform the profile creation experience from form-filling into an AI-guided conversation that extracts skills and builds a professional resume from any background.
 
@@ -24,8 +24,8 @@ Transform the profile creation experience from form-filling into an AI-guided co
 
 ### Core Concept
 
-A conversational interface (voice and/or text) that:
-1. Guides users through telling their work story naturally
+A streamlined text chat interface that:
+1. Guides users through telling their work story naturally in 3-5 minutes
 2. Extracts transferable skills from any experience (retail, gig work, volunteering, school projects)
 3. Maps those skills to professional competencies
 4. Suggests adjacent roles the user may not have considered
@@ -34,12 +34,12 @@ A conversational interface (voice and/or text) that:
 ### Features
 
 1. **Conversational Onboarding** ✅
-   - Text chat or voice conversation with Henry
-   - Graceful handling of uncertainty, rambling, emotional responses
-   - Progressive skill extraction as user shares experiences
-   - Celebration of transferable skills users didn't know they had
+   - Quick text chat with Henry (3-5 minutes, 10-15 questions total)
+   - Direct, efficient questioning style ("Got it." "Nice." "Love it.")
+   - No over-probing - accepts short answers and moves on
    - Name collection upfront (first, last, nickname)
    - Personalized greeting using preferred name
+   - Infers details from job titles/companies rather than asking obvious questions
 
 2. **Skills Extraction Engine** ✅
    - 12 skill categories: Leadership, Operations, Customer, Financial, Communication, Technical, Sales, Marketing, Administrative, Self-Management, Training, Industry-Specific
@@ -47,7 +47,7 @@ A conversational interface (voice and/or text) that:
    - Confidence scoring for extracted skills
    - Responsibility-to-skill mapping for common job titles
 
-3. **Adjacent Role Mapping** (Planned - Wave 3)
+3. **Adjacent Role Mapping** (Planned - Wave 2)
    - 35+ role definitions with required and preferred skills
    - Salary ranges and transition difficulty ratings
    - "Why It Fits" explanations based on extracted skills
@@ -65,14 +65,23 @@ A conversational interface (voice and/or text) that:
    - Experience bullets using extracted skills and real examples
    - Skills section organized by category
 
-### Voice/Text Hybrid Interaction ✅
+### Conversation Design Principles
 
-- **Voice Mode**: OpenAI Whisper (STT) + OpenAI TTS ("alloy" voice at 1.15x speed)
-- **Text Mode**: Chat interface for users who prefer typing
-- **Hybrid**: Start with voice, switch to text seamlessly
-- **Graceful Fallback**: Text always available if voice fails
-- **Auto-Listen**: Automatic recording after Henry speaks (with silence detection)
-- **Visual Feedback**: Speaking indicator during TTS playback
+The conversation follows a strict flow to respect user time:
+
+1. **Current Role** - "What's your current job title and company?"
+2. **Tenure/Location** - "How long have you been there, and where are you based?"
+3. **Day-to-Day** - "What does a typical day look like?"
+4. **Achievement** - "What's something you're proud of from your time there?"
+5. **Previous Jobs** - "Any previous jobs worth mentioning?"
+6. **Target Role** - "What kind of role are you looking for next?"
+
+**Key Rules:**
+- ONE question per turn
+- Accept short answers without probing for more
+- Use short acknowledgments: "Got it." "Nice." "Love it."
+- Infer details from context (job title tells you the function)
+- Never ask "Can you tell me more about..." or "What specifically..."
 
 ### User Segments
 
@@ -109,19 +118,21 @@ EXISTING: Analyze Job → Fit Scoring → Application Strategy
 - ✅ Basic resume generation
 - ✅ Skills visualization (skills-analysis.html)
 - ✅ Session persistence for conversation continuity
-
-**Wave 2: Voice Integration** ✅ Complete
-- ✅ OpenAI Whisper for speech-to-text
-- ✅ OpenAI TTS for Henry's responses
-- ✅ Voice/text hybrid mode
-- ✅ Auto-listen with silence detection
 - ✅ Claude Haiku for fast conversational responses
 - ✅ Name collection on start screen
+- ✅ Streamlined conversation flow (3-5 minutes)
 
-**Wave 3: Full Adjacent Role Engine** (Planned)
+**Wave 2: Adjacent Role Engine** (Planned)
 - Complete role database integration
 - Personalized role recommendations
 - Transition difficulty and salary insights
+
+**Wave 3: Voice Integration** (Future Enhancement)
+- OpenAI Whisper for speech-to-text
+- OpenAI TTS for Henry's responses
+- Voice/text hybrid mode
+- Auto-listen with silence detection
+- Visual feedback during speech
 
 ### Reference Documents
 
@@ -405,24 +416,29 @@ These features conflict with HenryAI's philosophy:
 
 ## Current Priority
 
-**Phase 0: Conversational Resume Builder** ✅ Complete (Waves 1 & 2)
+**Phase 0: Conversational Resume Builder** ✅ Complete (Wave 1)
 
-Conversational onboarding with voice-first experience is now live and in beta testing.
+Streamlined text-based conversational onboarding is now live and in beta testing.
 
 **Completed:**
 1. ✅ Text chat interface for conversational onboarding
-2. ✅ Voice integration (OpenAI Whisper STT + TTS)
-3. ✅ Auto-listen with silence detection
-4. ✅ Skills extraction engine with Claude Haiku
-5. ✅ Skills analysis visualization page
-6. ✅ Name collection on start screen (first, last, nickname)
-7. ✅ Session persistence for conversation continuity
-8. ✅ Flow to profile-edit for final setup
+2. ✅ Skills extraction engine with Claude Haiku
+3. ✅ Skills analysis visualization page
+4. ✅ Name collection on start screen (first, last, nickname)
+5. ✅ Session persistence for conversation continuity
+6. ✅ Flow to profile-edit for final setup
+7. ✅ Streamlined conversation (3-5 minutes, 10-15 questions)
+8. ✅ Efficient questioning style (no over-probing)
 
-**Next (Wave 3):**
+**Next (Wave 2):**
 - Adjacent role mapping engine
 - Personalized role recommendations
 - Transition difficulty and salary insights
+
+**Future (Wave 3):**
+- Voice integration (OpenAI Whisper STT + TTS)
+- Auto-listen with silence detection
+- Voice/text hybrid mode
 
 ---
 
@@ -457,7 +473,7 @@ The best features mean nothing if users don't engage with them. Before adding mo
 
 | Phase | Status | Completion |
 |-------|--------|------------|
-| Phase 0: Conversational Resume Builder | **Complete (Waves 1-2)** | ~85% |
+| Phase 0: Conversational Resume Builder | **Complete (Wave 1)** | ~70% |
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
 | Phase 1.75: Engagement & Coaching | In Progress | ~30% |

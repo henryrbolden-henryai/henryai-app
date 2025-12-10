@@ -535,113 +535,6 @@
             cursor: pointer;
         }
 
-        /* Start conversation overlay */
-        .start-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--color-bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .start-overlay.hidden {
-            display: none;
-        }
-
-        .start-overlay h2 {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 400;
-            margin-bottom: 16px;
-        }
-
-        .start-overlay p {
-            color: var(--color-text-secondary);
-            margin-bottom: 32px;
-            max-width: 400px;
-        }
-
-        .start-btn {
-            padding: 18px 48px;
-            background: var(--color-accent);
-            border: none;
-            border-radius: 30px;
-            color: #000;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .start-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 30px rgba(34, 211, 238, 0.4);
-        }
-
-        .start-btn .icon {
-            font-size: 1.3rem;
-        }
-
-        .start-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .name-form {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-            width: 100%;
-            max-width: 320px;
-        }
-
-        .name-row {
-            display: flex;
-            gap: 12px;
-        }
-
-        .name-input {
-            flex: 1;
-            padding: 14px 16px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            color: var(--color-text);
-            font-size: 1rem;
-            font-family: var(--font-body);
-            transition: border-color 0.2s;
-        }
-
-        .name-input:focus {
-            outline: none;
-            border-color: var(--color-accent);
-        }
-
-        .name-input::placeholder {
-            color: var(--color-text-secondary);
-        }
-
-        .name-input.full-width {
-            width: 100%;
-        }
-
-        .nickname-label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-            text-align: left;
-            margin-top: 4px;
-        }
-
         /* Responsive */
         @media (max-width: 640px) {
             .progress-indicator span {
@@ -661,28 +554,6 @@
     <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
-    <!-- Start overlay - requires click to enable audio -->
-    <div class="start-overlay" id="startOverlay">
-        <h2>Ready to Chat with Henry?</h2>
-        <p>I will guide you through sharing your experience and help identify your skills.<br>This works best with sound on.</p>
-
-        <div class="name-form">
-            <div class="name-row">
-                <input type="text" id="firstNameInput" class="name-input" placeholder="First name" required>
-                <input type="text" id="lastNameInput" class="name-input" placeholder="Last name" required>
-            </div>
-            <div>
-                <input type="text" id="nicknameInput" class="name-input full-width" placeholder="Nickname (optional)">
-                <div class="nickname-label">What should Henry call you?</div>
-            </div>
-        </div>
-
-        <button class="start-btn" id="startBtn" onclick="beginConversation()" disabled>
-            <span class="icon">🎙️</span>
-            Start Conversation
-        </button>
-    </div>
-
     <header>
         <a href="resume-builder.html" class="back-btn">←</a>
         <div class="header-title">Conversation with Henry</div>
@@ -699,7 +570,7 @@
     </header>
 
     <div class="chat-container" id="chatContainer">
-        <div class="speaking-indicator" id="speakingIndicator">
+        <div class="speaking-indicator" id="speakingIndicator" style="display: none;">
             <div class="speaking-bars">
                 <div class="speaking-bar"></div>
                 <div class="speaking-bar"></div>
@@ -742,27 +613,22 @@
     </div>
 
     <div class="input-area" id="inputArea">
-        <div class="recording-status" id="recordingStatus">
+        <div class="recording-status" id="recordingStatus" style="display: none;">
             🔴 Recording... Tap to stop
         </div>
         <div class="input-container">
-            <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()">
+            <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()" style="display: none;">
                 🎙️
             </button>
             <div class="input-wrapper">
                 <textarea
                     id="messageInput"
-                    placeholder="Or type your response here..."
+                    placeholder="Type your response..."
                     rows="1"
                 ></textarea>
             </div>
             <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                 ↑
-            </button>
-        </div>
-        <div class="input-mode-toggle">
-            <button class="toggle-link" id="toggleMode" onclick="toggleInputMode()">
-                Prefer to type? Click here
             </button>
         </div>
     </div>
@@ -790,7 +656,7 @@
         let mediaRecorder = null;
         let audioChunks = [];
         let currentAudio = null;
-        let autoListenEnabled = true; // Auto-start recording after Henry speaks
+        let autoListenEnabled = false; // Disabled - text only mode
         let silenceTimeout = null;
         let audioContext = null;
         let analyser = null;
@@ -826,39 +692,13 @@
         const recordingStatus = document.getElementById('recordingStatus');
         const speakingIndicator = document.getElementById('speakingIndicator');
 
-        // Name inputs
-        const firstNameInput = document.getElementById('firstNameInput');
-        const lastNameInput = document.getElementById('lastNameInput');
-        const nicknameInput = document.getElementById('nicknameInput');
-        const startButton = document.getElementById('startBtn');
-
-        // User name info
+        // User name info (collected via chat now)
         let userName = {
             firstName: '',
             lastName: '',
             nickname: '',
             displayName: '' // What Henry calls them
         };
-
-        // Enable start button when first and last name are filled
-        function validateNameInputs() {
-            const hasFirstName = firstNameInput.value.trim().length > 0;
-            const hasLastName = lastNameInput.value.trim().length > 0;
-            startButton.disabled = !(hasFirstName && hasLastName);
-        }
-
-        firstNameInput.addEventListener('input', validateNameInputs);
-        lastNameInput.addEventListener('input', validateNameInputs);
-
-        // Allow Enter to start conversation when form is valid
-        [firstNameInput, lastNameInput, nicknameInput].forEach(input => {
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !startButton.disabled) {
-                    e.preventDefault();
-                    beginConversation();
-                }
-            });
-        });
 
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
@@ -1026,78 +866,14 @@
             }
         }
 
-        // Text-to-speech for Henry's responses
+        // Text-to-speech for Henry's responses (disabled - text only mode)
         async function speakResponse(text) {
-            try {
-                speakingIndicator.classList.add('show');
-
-                const response = await fetch(`${API_BASE}/api/speak`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text })
-                });
-
-                if (!response.ok) {
-                    throw new Error('TTS failed');
-                }
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-
-                if (currentAudio) {
-                    currentAudio.pause();
-                }
-
-                currentAudio = new Audio(audioUrl);
-                currentAudio.onended = () => {
-                    speakingIndicator.classList.remove('show');
-                    URL.revokeObjectURL(audioUrl);
-                    currentAudio = null;
-
-                    // Auto-start listening after Henry finishes speaking
-                    // Longer delay (1.5s) to give user time to start speaking naturally
-                    if (autoListenEnabled && !isProcessing && conversationState.state !== 'COMPLETE') {
-                        setTimeout(() => {
-                            // Only start if user hasn't already started typing or speaking
-                            if (!isRecording && messageInput.value.trim() === '') {
-                                startRecording(true);
-                            }
-                        }, 1500);
-                    }
-                };
-                currentAudio.onerror = () => {
-                    speakingIndicator.classList.remove('show');
-                    currentAudio = null;
-                };
-
-                await currentAudio.play();
-            } catch (error) {
-                console.error('TTS error:', error);
-                speakingIndicator.classList.remove('show');
-                // Silently fail - text is still displayed
-                // Don't auto-listen if TTS failed - let user initiate
-            }
+            // Voice disabled for now - text only mode
+            return;
         }
 
-        // Begin conversation after user clicks start button
-        function beginConversation() {
-            // Capture name info from form
-            userName.firstName = firstNameInput.value.trim();
-            userName.lastName = lastNameInput.value.trim();
-            userName.nickname = nicknameInput.value.trim();
-            userName.displayName = userName.nickname || userName.firstName;
-
-            // Store name in extracted_data
-            conversationState.extracted_data.contact = {
-                firstName: userName.firstName,
-                lastName: userName.lastName,
-                nickname: userName.nickname,
-                fullName: `${userName.firstName} ${userName.lastName}`
-            };
-
-            document.getElementById('startOverlay').classList.add('hidden');
-
-            // Check if we have an existing conversation
+        // Restore conversation from session if exists, or start fresh (called on page load)
+        function loadConversation() {
             const stored = sessionStorage.getItem('resumeConversation');
             if (stored) {
                 try {
@@ -1131,41 +907,8 @@
                 }
             }
 
-            // Start fresh conversation
+            // No existing conversation - start fresh
             startConversation();
-        }
-
-        // Restore conversation from session if exists (called on page load)
-        function loadConversation() {
-            const stored = sessionStorage.getItem('resumeConversation');
-            if (stored) {
-                // We have an existing conversation - skip overlay and restore
-                document.getElementById('startOverlay').classList.add('hidden');
-                try {
-                    const parsed = JSON.parse(stored);
-                    conversationState = parsed.conversationState;
-                    allExtractedSkills = parsed.allExtractedSkills || [];
-
-                    // Restore messages to UI
-                    conversationState.messages.forEach(msg => {
-                        addMessageToUI(msg.role === 'assistant' ? 'henry' : 'user', msg.content, false);
-                    });
-
-                    // Restore skills panel
-                    if (allExtractedSkills.length > 0) {
-                        updateSkillsPanel();
-                    }
-
-                    updateProgress();
-                    scrollToBottom();
-                    return;
-                } catch (e) {
-                    console.error('Failed to restore conversation:', e);
-                }
-            }
-
-            // No existing conversation - show the start overlay
-            // Don't auto-start, wait for user click
         }
 
         // Save conversation to session
@@ -1178,9 +921,9 @@
 
         // Start the conversation with Henry's opening message
         async function startConversation() {
-            const openingMessage = `Hi ${userName.displayName}! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. No fluff, just the truth.
+            const openingMessage = `Hi! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
 
-Let us start with what you are doing now. What is your current job or most recent role?`;
+First, what is your name?`;
 
             conversationState.messages.push({
                 role: 'assistant',
@@ -1189,18 +932,15 @@ Let us start with what you are doing now. What is your current job or most recen
 
             addMessageToUI('henry', openingMessage);
 
-            // Try to speak the opening message
-            speakResponse(openingMessage);
-
-            // Show helpful suggestions for current role
+            // Show helpful suggestions
             showSuggestions([
-                "I work as a...",
-                "I am currently between jobs",
-                "I am a student"
+                "My name is...",
+                "I am Alex",
+                "Call me Sam"
             ]);
 
-            // Skip GET_NAME since we collected it upfront
-            conversationState.state = 'CURRENT_ROLE';
+            // Start at GET_NAME state
+            conversationState.state = 'GET_NAME';
             updateProgress();
             saveConversation();
         }
