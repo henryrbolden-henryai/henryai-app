@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .tagline {
+            text-align: center;
+            color: var(--color-text-secondary);
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        .auth-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .auth-tab:hover {
+            color: var(--color-text);
+        }
+
+        .auth-tab.active {
+            color: var(--color-accent);
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-accent);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 1rem;
+            font-family: var(--font-body);
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .form-group input::placeholder {
+            color: var(--color-text-secondary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: var(--color-error);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: var(--color-success);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .forgot-password a {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .forgot-password a:hover {
+            color: var(--color-accent);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .continue-without {
+            text-align: center;
+        }
+
+        .continue-without a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .continue-without a:hover {
+            color: var(--color-accent);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="logo"><em>Henry</em>AI</h1>
+        <p class="tagline">Your job search strategist</p>
+
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showTab('signin')">Sign In</button>
+                <button class="auth-tab" onclick="showTab('signup')">Create Account</button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <!-- Sign In Form -->
+            <form class="auth-form active" id="signinForm" onsubmit="handleSignIn(event)">
+                <div class="form-group">
+                    <label for="signinEmail">Email</label>
+                    <input type="email" id="signinEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="signinPassword">Password</label>
+                    <input type="password" id="signinPassword" placeholder="Your password" required>
+                </div>
+                <button type="submit" class="submit-btn" id="signinBtn">Sign In</button>
+                <div class="forgot-password">
+                    <a href="#" onclick="showForgotPassword(event)">Forgot your password?</a>
+                </div>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form class="auth-form" id="signupForm" onsubmit="handleSignUp(event)">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" placeholder="John Smith" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="At least 6 characters" required minlength="6">
+                </div>
+                <button type="submit" class="submit-btn" id="signupBtn">Create Account</button>
+            </form>
+
+            <!-- Forgot Password Form -->
+            <form class="auth-form" id="forgotForm" onsubmit="handleForgotPassword(event)">
+                <p style="color: var(--color-text-secondary); margin-bottom: 20px; font-size: 0.9rem;">
+                    Enter your email and we'll send you a link to reset your password.
+                </p>
+                <div class="form-group">
+                    <label for="forgotEmail">Email</label>
+                    <input type="email" id="forgotEmail" placeholder="you@example.com" required>
+                </div>
+                <button type="submit" class="submit-btn" id="forgotBtn">Send Reset Link</button>
+                <div class="forgot-password">
+                    <a href="#" onclick="showTab('signin')">Back to Sign In</a>
+                </div>
+            </form>
+
+            <div class="divider">or</div>
+
+            <div class="continue-without">
+                <a href="index.html">Continue without an account</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        // Check if already logged in
+        (async function() {
+            const session = await HenryAuth.getSession();
+            if (session) {
+                // Already logged in, redirect
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirect;
+            }
+        })();
+
+        function showTab(tab) {
+            // Hide all forms
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+
+            // Clear messages
+            hideMessages();
+
+            // Show selected
+            if (tab === 'signin') {
+                document.getElementById('signinForm').classList.add('active');
+                document.querySelectorAll('.auth-tab')[0].classList.add('active');
+            } else if (tab === 'signup') {
+                document.getElementById('signupForm').classList.add('active');
+                document.querySelectorAll('.auth-tab')[1].classList.add('active');
+            } else if (tab === 'forgot') {
+                document.getElementById('forgotForm').classList.add('active');
+            }
+        }
+
+        function showForgotPassword(e) {
+            e.preventDefault();
+            showTab('forgot');
+        }
+
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = message;
+            el.classList.add('show');
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading-spinner"></span>Please wait...';
+            } else {
+                btn.disabled = false;
+                btn.textContent = btn.id === 'signinBtn' ? 'Sign In' :
+                                  btn.id === 'signupBtn' ? 'Create Account' : 'Send Reset Link';
+            }
+        }
+
+        async function handleSignIn(e) {
+            e.preventDefault();
+            hideMessages();
+            setLoading('signinBtn', true);
+
+            const email = document.getElementById('signinEmail').value;
+            const password = document.getElementById('signinPassword').value;
+
+            const { data, error } = await HenryAuth.signIn(email, password);
+
+            if (error) {
+                showError(error.message);
+                setLoading('signinBtn', false);
+                return;
+            }
+
+            // Migrate localStorage data to Supabase
+            await HenryData.migrateFromLocalStorage();
+
+            // Redirect
+            const redirect = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+            sessionStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirect;
+        }
+
+        async function handleSignUp(e) {
+            e.preventDefault();
+            hideMessages();
+            setLoading('signupBtn', true);
+
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            const { data, error } = await HenryAuth.signUp(email, password, name);
+
+            if (error) {
+                showError(error.message);
+                setLoading('signupBtn', false);
+                return;
+            }
+
+            // Check if email confirmation is required
+            if (data.user && !data.session) {
+                showSuccess('Check your email for a confirmation link to complete your registration.');
+                setLoading('signupBtn', false);
+            } else {
+                // Auto-confirmed, migrate and redirect
+                await HenryData.migrateFromLocalStorage();
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'index.html';
+                sessionStorage.removeItem('redirectAfterLogin');
+                window.location.href = redirect;
+            }
+        }
+
+        async function handleForgotPassword(e) {
+            e.preventDefault();
+            hideMessages();
+            setLoading('forgotBtn', true);
+
+            const email = document.getElementById('forgotEmail').value;
+
+            const { data, error } = await HenryAuth.resetPassword(email);
+
+            setLoading('forgotBtn', false);
+
+            if (error) {
+                showError(error.message);
+                return;
+            }
+
+            showSuccess('Check your email for a password reset link.');
+        }
+    </script>
+</body>
+</html>

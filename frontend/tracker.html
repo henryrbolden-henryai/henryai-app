@@ -2165,6 +2165,8 @@
 
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- HEADER -->
@@ -5360,8 +5362,44 @@
         // ========================================================================
         // INITIALIZE
         // ========================================================================
-        renderAll(getApplications());
+
+        // Check if using Supabase auth
+        async function initializeWithAuth() {
+            if (typeof HenryAuth !== 'undefined') {
+                const session = await HenryAuth.getSession();
+                if (session) {
+                    // User is logged in - load from Supabase
+                    console.log('Loading data from Supabase...');
+                    const apps = await HenryData.getApplications();
+                    renderAll(apps);
+
+                    // Override getApplications and saveApplications for this session
+                    window.getApplicationsFromSupabase = async () => await HenryData.getApplications();
+                    window.saveApplicationsToSupabase = async (apps) => await HenryData.saveAllApplications(apps);
+                    return;
+                }
+            }
+            // Fallback to localStorage
+            console.log('Loading data from localStorage...');
+            renderAll(getApplications());
+        }
+
+        // Start initialization
+        if (typeof HenryAuth !== 'undefined') {
+            initializeWithAuth();
+        } else {
+            // Wait for supabase-client.js to load
+            window.addEventListener('load', () => {
+                if (typeof HenryAuth !== 'undefined') {
+                    initializeWithAuth();
+                } else {
+                    renderAll(getApplications());
+                }
+            });
+        }
     </script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth-check.js"></script>
 <script src="components/ask-henry.js"></script>
 </body>
 </html>
