@@ -755,6 +755,19 @@
             <div id="addMoreSection" style="display: none; text-align: center; margin-top: 24px;">
                 <button class="add-interview-btn" onclick="openAddInterviewModal()">+ Add Another Interview</button>
             </div>
+
+            <!-- Completed Interviews Section -->
+            <div id="completedSection" style="display: none; margin-top: 48px;">
+                <h2 style="font-size: 1.4rem; color: #ffffff; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <span style="color: #10b981;">✓</span> Completed Interviews
+                </h2>
+                <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 20px;">
+                    Review debriefs and insights from past interviews.
+                </p>
+                <div id="completedInterviewList" class="interview-list">
+                    <!-- Completed interviews will be dynamically added here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -852,6 +865,7 @@
         // STATE
         // ============================================================================
         let upcomingInterviews = [];
+        let completedInterviews = [];
         let analysisData = null;
         let resumeData = null;
 
@@ -884,11 +898,24 @@
             if (storedInterviews) {
                 try {
                     upcomingInterviews = JSON.parse(storedInterviews);
-                    renderInterviewList();
                 } catch (e) {
                     console.error('Error parsing interviews:', e);
                 }
             }
+
+            // Load completed interviews from localStorage
+            const storedCompleted = localStorage.getItem('completedInterviews');
+            if (storedCompleted) {
+                try {
+                    completedInterviews = JSON.parse(storedCompleted);
+                } catch (e) {
+                    console.error('Error parsing completed interviews:', e);
+                }
+            }
+
+            // Render both lists
+            renderInterviewList();
+            renderCompletedInterviews();
 
             // Set default date/time for form
             const dateInput = document.getElementById('interviewDate');
@@ -1059,16 +1086,24 @@
             const interviewList = document.getElementById('interviewList');
             const addMoreSection = document.getElementById('addMoreSection');
 
-            if (upcomingInterviews.length === 0) {
+            const hasUpcoming = upcomingInterviews.length > 0;
+            const hasCompleted = completedInterviews.length > 0;
+
+            if (!hasUpcoming && !hasCompleted) {
                 emptyState.style.display = 'block';
                 interviewList.style.display = 'none';
                 addMoreSection.style.display = 'none';
                 return;
             }
 
-            emptyState.style.display = 'none';
-            interviewList.style.display = 'flex';
+            // Show upcoming section if we have upcoming OR completed interviews
+            emptyState.style.display = hasUpcoming ? 'none' : 'block';
+            interviewList.style.display = hasUpcoming ? 'flex' : 'none';
             addMoreSection.style.display = 'block';
+
+            if (!hasUpcoming) {
+                return;
+            }
 
             // Sort by date (soonest first)
             const sorted = [...upcomingInterviews].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1109,6 +1144,66 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function renderCompletedInterviews() {
+            const completedSection = document.getElementById('completedSection');
+            const completedList = document.getElementById('completedInterviewList');
+
+            if (completedInterviews.length === 0) {
+                completedSection.style.display = 'none';
+                return;
+            }
+
+            completedSection.style.display = 'block';
+
+            // Sort by debrief date (most recent first)
+            const sorted = [...completedInterviews].sort((a, b) => {
+                const dateA = new Date(a.debriefCompletedAt || a.date);
+                const dateB = new Date(b.debriefCompletedAt || b.date);
+                return dateB - dateA;
+            });
+
+            const typeLabels = {
+                'Recruiter Screen': 'Recruiter Screen',
+                'Hiring Manager': 'Hiring Manager',
+                'Technical Round': 'Technical Round',
+                'Panel Interview': 'Panel Interview',
+                'Final Round': 'Final Round',
+                'Executive Interview': 'Executive Interview',
+                'recruiter_screen': 'Recruiter Screen',
+                'hiring_manager': 'Hiring Manager',
+                'technical': 'Technical',
+                'panel': 'Panel / Final',
+                'executive': 'Executive'
+            };
+
+            completedList.innerHTML = sorted.map(interview => {
+                const date = new Date(interview.date);
+                const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const initial = interview.company.charAt(0).toUpperCase();
+                const feeling = interview.feeling ? `You rated it: ${interview.feeling}/10` : 'Debriefed';
+
+                return `
+                    <div class="interview-card" style="opacity: 0.85; border-color: #10b981;">
+                        <div class="company-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">${initial}</div>
+                        <div class="interview-info">
+                            <div class="company-name">${interview.company}</div>
+                            <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr}</div>
+                            <div style="font-size: 0.8rem; color: #10b981; margin-top: 4px;">✓ ${feeling}</div>
+                        </div>
+                        <div class="interview-actions">
+                            <button class="open-debrief-btn" onclick="viewDebrief('${interview.id}')" style="background: #10b981;">View Debrief</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function viewDebrief(interviewId) {
+            // Store the interview ID and navigate to debrief page (which will load saved conversation)
+            sessionStorage.setItem('currentInterviewId', interviewId);
+            window.location.href = 'interview-debrief.html';
         }
 
         function openPrepGuide(interviewId) {

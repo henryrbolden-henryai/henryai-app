@@ -74,17 +74,36 @@
             padding: 40px 20px 120px;
         }
 
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
         .back-link {
             display: inline-flex;
             align-items: center;
             color: #60a5fa;
             text-decoration: none;
-            margin-bottom: 24px;
             font-size: 14px;
             transition: color 0.2s;
         }
 
         .back-link:hover {
+            color: #93c5fd;
+        }
+
+        .forward-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .forward-link:hover {
             color: #93c5fd;
         }
 
@@ -695,7 +714,10 @@
     </header>
 
     <div class="container">
-        <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+        <div class="nav-row">
+            <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+            <a href="tracker.html" class="forward-link">Track My Progress →</a>
+        </div>
 
         <div class="page-header">
             <div class="breadcrumb"><span class="company" id="companyName">Company</span> &middot; <span id="interviewType">Interview</span></div>
@@ -826,10 +848,13 @@ Examples of helpful info:
         // INITIALIZATION
         // ============================================================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Load interview
+            // Load interview - check both upcoming and completed
             const interviewId = sessionStorage.getItem('currentInterviewId');
-            const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
-            currentInterview = interviews.find(i => i.id === interviewId);
+            const upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+
+            currentInterview = upcomingInterviews.find(i => i.id === interviewId)
+                || completedInterviews.find(i => i.id === interviewId);
 
             if (!currentInterview) {
                 alert('Interview not found. Returning to Interview Intelligence.');
@@ -864,7 +889,94 @@ Examples of helpful info:
 
             // Setup drag and drop
             setupDragAndDrop();
+
+            // Check if there's a saved debrief for this interview
+            loadSavedDebrief();
         });
+
+        // ============================================================================
+        // DEBRIEF PERSISTENCE
+        // ============================================================================
+        function getDebriefStorageKey() {
+            return `debrief_${currentInterview.id}`;
+        }
+
+        function saveDebrief() {
+            if (!currentInterview) return;
+
+            const debriefData = {
+                interviewId: currentInterview.id,
+                feeling: selectedFeeling,
+                transcript: transcriptText,
+                conversationHistory: conversationHistory,
+                completedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem(getDebriefStorageKey(), JSON.stringify(debriefData));
+        }
+
+        function loadSavedDebrief() {
+            if (!currentInterview) return;
+
+            const savedDebrief = localStorage.getItem(getDebriefStorageKey());
+            if (!savedDebrief) return;
+
+            try {
+                const debriefData = JSON.parse(savedDebrief);
+
+                // Restore state
+                selectedFeeling = debriefData.feeling;
+                transcriptText = debriefData.transcript || '';
+                conversationHistory = debriefData.conversationHistory || [];
+
+                // If we have conversation history, show the chat section with the messages
+                if (conversationHistory.length > 0) {
+                    // Hide setup, show chat
+                    document.getElementById('setupSection').style.display = 'none';
+                    document.getElementById('chatSection').classList.add('active');
+                    document.getElementById('chatInputContainer').style.display = 'block';
+
+                    // Restore the feeling button selection
+                    if (selectedFeeling) {
+                        const feelingBtn = document.querySelector(`.feeling-btn[data-value="${selectedFeeling}"]`);
+                        if (feelingBtn) feelingBtn.classList.add('selected');
+                    }
+
+                    // Render all messages
+                    conversationHistory.forEach(msg => {
+                        addMessage(msg.role, msg.content);
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading saved debrief:', e);
+            }
+        }
+
+        function markInterviewCompleted() {
+            if (!currentInterview) return;
+
+            // Get current lists
+            const upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+
+            // Find and remove from upcoming
+            const interviewIndex = upcomingInterviews.findIndex(i => i.id === currentInterview.id);
+            if (interviewIndex > -1) {
+                const [interview] = upcomingInterviews.splice(interviewIndex, 1);
+
+                // Add debrief info to the interview
+                interview.debriefCompleted = true;
+                interview.debriefCompletedAt = new Date().toISOString();
+                interview.feeling = selectedFeeling;
+
+                // Add to completed (at the beginning)
+                completedInterviews.unshift(interview);
+
+                // Save both lists
+                localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+                localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+            }
+        }
 
         function updateInterviewInfo() {
             document.getElementById('companyName').textContent = currentInterview.company;
@@ -1046,6 +1158,10 @@ Examples of helpful info:
                 addMessage('assistant', data.response);
                 conversationHistory.push({ role: 'assistant', content: data.response });
 
+                // Mark interview as completed and save debrief
+                markInterviewCompleted();
+                saveDebrief();
+
             } catch (error) {
                 console.error('Debrief error:', error);
                 removeTypingIndicator();
@@ -1122,6 +1238,9 @@ Examples of helpful info:
 
                 addMessage('assistant', data.response);
                 conversationHistory.push({ role: 'assistant', content: data.response });
+
+                // Save conversation after each exchange
+                saveDebrief();
 
             } catch (error) {
                 console.error('Chat error:', error);
