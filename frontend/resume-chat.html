@@ -932,12 +932,9 @@ First, what is your name?`;
 
             addMessageToUI('henry', openingMessage);
 
-            // Show helpful suggestions
-            showSuggestions([
-                "My name is...",
-                "I am Alex",
-                "Call me Sam"
-            ]);
+            // No suggestions for name - user should type their real name
+            // Focus the input field to encourage typing
+            messageInput.focus();
 
             // Start at GET_NAME state
             conversationState.state = 'GET_NAME';
