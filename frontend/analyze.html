@@ -271,6 +271,160 @@
       opacity: 0.7;
     }
 
+    /* ========== INPUT METHOD TOGGLE ========== */
+    .input-method-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .input-method-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      color: var(--color-text-secondary);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .input-method-btn:hover {
+      border-color: var(--color-border-hover);
+      color: var(--color-text);
+    }
+
+    .input-method-btn.active {
+      background: var(--color-accent-muted);
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .input-method-btn .icon {
+      font-size: 1.1rem;
+    }
+
+    /* URL Input */
+    .url-input-wrapper {
+      display: none;
+    }
+
+    .url-input-wrapper.active {
+      display: block;
+    }
+
+    .url-input {
+      width: 100%;
+      padding: 16px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .url-input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+    }
+
+    .url-input::placeholder {
+      color: var(--color-text-secondary);
+      opacity: 0.7;
+    }
+
+    .url-warning {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--color-warning);
+      line-height: 1.5;
+    }
+
+    .url-warning-icon {
+      margin-right: 6px;
+    }
+
+    .extract-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 14px 20px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .extract-btn:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .extract-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .extract-btn .spinner-small {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .extraction-status {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .extraction-status.success {
+      display: block;
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      color: var(--color-success);
+    }
+
+    .extraction-status.error {
+      display: block;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: var(--color-error);
+    }
+
+    .textarea-wrapper {
+      display: block;
+    }
+
+    .textarea-wrapper.hidden {
+      display: none;
+    }
+
     /* ========== BUTTONS ========== */
     .btn-primary {
       width: 100%;
@@ -565,13 +719,47 @@
         </div>
 
         <div class="input-area">
-          <!-- Job Description Only -->
+          <!-- Input Method Toggle -->
+          <div class="input-method-toggle">
+            <button type="button" class="input-method-btn active" id="pasteMethodBtn" data-method="paste">
+              <span class="icon">📋</span>
+              <span>Paste Text</span>
+            </button>
+            <button type="button" class="input-method-btn" id="urlMethodBtn" data-method="url">
+              <span class="icon">🔗</span>
+              <span>Job URL</span>
+            </button>
+          </div>
+
+          <!-- Job Description Input -->
           <div class="input-group">
             <label for="jobDescription">Job Description</label>
-            <textarea 
-              id="jobDescription" 
-              placeholder="Paste the full job description here..."
-            ></textarea>
+
+            <!-- Paste method (default) -->
+            <div class="textarea-wrapper" id="pasteWrapper">
+              <textarea
+                id="jobDescription"
+                placeholder="Paste the full job description here..."
+              ></textarea>
+            </div>
+
+            <!-- URL method -->
+            <div class="url-input-wrapper" id="urlWrapper">
+              <input
+                type="url"
+                class="url-input"
+                id="jobUrl"
+                placeholder="https://jobs.lever.co/company/job-id or linkedin.com/jobs/..."
+              />
+              <div class="url-warning">
+                <span class="url-warning-icon">⚠️</span>
+                <strong>Heads up:</strong> URL extraction works best with LinkedIn, Lever, Greenhouse, and most job boards. Some sites may block automated access. For best results, review the extracted text before analyzing.
+              </div>
+              <button type="button" class="extract-btn" id="extractBtn">
+                <span class="extract-text">Extract Job Description</span>
+              </button>
+              <div class="extraction-status" id="extractionStatus"></div>
+            </div>
           </div>
         </div>
 
@@ -1073,6 +1261,102 @@
     document.getElementById('clarifyingModal').addEventListener('click', (e) => {
       if (e.target.id === 'clarifyingModal') {
         // Don't close on background click - user must make a choice
+      }
+    });
+
+    // ========================================================================
+    // INPUT METHOD TOGGLE (Paste vs URL)
+    // ========================================================================
+    let currentInputMethod = 'paste';
+
+    function setInputMethod(method) {
+      currentInputMethod = method;
+
+      // Update button states
+      document.getElementById('pasteMethodBtn').classList.toggle('active', method === 'paste');
+      document.getElementById('urlMethodBtn').classList.toggle('active', method === 'url');
+
+      // Show/hide input areas
+      document.getElementById('pasteWrapper').classList.toggle('hidden', method !== 'paste');
+      document.getElementById('urlWrapper').classList.toggle('active', method === 'url');
+
+      // Clear extraction status when switching
+      const statusEl = document.getElementById('extractionStatus');
+      statusEl.className = 'extraction-status';
+      statusEl.textContent = '';
+    }
+
+    document.getElementById('pasteMethodBtn').addEventListener('click', () => setInputMethod('paste'));
+    document.getElementById('urlMethodBtn').addEventListener('click', () => setInputMethod('url'));
+
+    // ========================================================================
+    // URL EXTRACTION
+    // ========================================================================
+    document.getElementById('extractBtn').addEventListener('click', async () => {
+      const urlInput = document.getElementById('jobUrl');
+      const url = urlInput.value.trim();
+      const extractBtn = document.getElementById('extractBtn');
+      const statusEl = document.getElementById('extractionStatus');
+
+      if (!url) {
+        statusEl.className = 'extraction-status error';
+        statusEl.textContent = 'Please enter a job posting URL.';
+        return;
+      }
+
+      // Show loading state
+      extractBtn.disabled = true;
+      extractBtn.innerHTML = '<span class="spinner-small"></span><span>Extracting...</span>';
+      statusEl.className = 'extraction-status';
+      statusEl.textContent = '';
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/jd/extract-from-url`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Populate the job description textarea
+          document.getElementById('jobDescription').value = data.job_description;
+
+          // Switch to paste view to show the extracted text
+          setInputMethod('paste');
+
+          // Show success message
+          statusEl.className = 'extraction-status success';
+          let successMsg = `Extracted ${data.job_description.length.toLocaleString()} characters`;
+          if (data.company) successMsg += ` from ${data.company}`;
+          if (data.role_title) successMsg += ` - ${data.role_title}`;
+          successMsg += '. Please review the text below before analyzing.';
+          statusEl.textContent = successMsg;
+
+          // Show warning if present
+          if (data.warning) {
+            console.log('Extraction warning:', data.warning);
+          }
+        } else {
+          statusEl.className = 'extraction-status error';
+          statusEl.textContent = data.error || 'Failed to extract job description. Please paste it manually.';
+        }
+      } catch (error) {
+        console.error('URL extraction error:', error);
+        statusEl.className = 'extraction-status error';
+        statusEl.textContent = 'Network error. Please check your connection and try again.';
+      } finally {
+        extractBtn.disabled = false;
+        extractBtn.innerHTML = '<span class="extract-text">Extract Job Description</span>';
+      }
+    });
+
+    // Allow Enter key to trigger extraction
+    document.getElementById('jobUrl').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('extractBtn').click();
       }
     });
 

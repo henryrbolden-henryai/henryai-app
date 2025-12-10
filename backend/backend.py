@@ -1804,6 +1804,161 @@ Your response must be ONLY valid JSON, no additional text."""
 
 
 # ============================================================================
+# URL JOB DESCRIPTION EXTRACTION
+# ============================================================================
+
+class URLExtractRequest(BaseModel):
+    url: str
+
+class URLExtractResponse(BaseModel):
+    success: bool
+    job_description: Optional[str] = None
+    company: Optional[str] = None
+    role_title: Optional[str] = None
+    warning: Optional[str] = None
+    error: Optional[str] = None
+
+@app.post("/api/jd/extract-from-url", response_model=URLExtractResponse)
+async def extract_jd_from_url(request: URLExtractRequest):
+    """
+    Extract job description content from a URL.
+
+    Supported job boards:
+    - LinkedIn, Indeed, Greenhouse, Lever, Workday, and generic job pages
+
+    Note: Some sites may block scraping or require authentication.
+    Results may vary in quality depending on the site structure.
+    """
+    import httpx
+    import re
+
+    url = request.url.strip()
+
+    # Validate URL format
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
+    print(f"🔗 Extracting JD from URL: {url}")
+
+    try:
+        # Set up headers to mimic a browser
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1"
+        }
+
+        async with httpx.AsyncClient(follow_redirects=True, timeout=15.0) as http_client:
+            response = await http_client.get(url, headers=headers)
+
+            if response.status_code != 200:
+                return URLExtractResponse(
+                    success=False,
+                    error=f"Could not access the page (status {response.status_code}). The site may block automated access."
+                )
+
+            html_content = response.text
+
+        # Check for common blocking patterns
+        if "captcha" in html_content.lower() or "verify you are human" in html_content.lower():
+            return URLExtractResponse(
+                success=False,
+                error="This site requires human verification. Please copy and paste the job description manually."
+            )
+
+        if len(html_content) < 500:
+            return URLExtractResponse(
+                success=False,
+                error="Page content appears incomplete. The site may require login or block automated access."
+            )
+
+        # Use Claude to extract the job description from HTML
+        extraction_prompt = f"""Extract the job description from this HTML page. Return a JSON object with these fields:
+
+1. "job_description": The full job description text, including:
+   - About the company (if present)
+   - Role overview/summary
+   - Responsibilities/duties
+   - Requirements/qualifications
+   - Nice-to-haves/preferred qualifications
+   - Benefits (if present)
+
+   Format this as clean, readable text with clear section breaks. Remove any navigation, footer, or unrelated content.
+
+2. "company": The company name
+
+3. "role_title": The job title
+
+If you cannot find a job description on this page, set job_description to null and explain in the "error" field.
+
+HTML CONTENT:
+{html_content[:50000]}
+
+Return ONLY valid JSON, no markdown code blocks."""
+
+        extraction_response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": extraction_prompt}]
+        )
+
+        result_text = extraction_response.content[0].text.strip()
+
+        # Clean up potential markdown formatting
+        if result_text.startswith("```"):
+            result_text = re.sub(r'^```(?:json)?\n?', '', result_text)
+            result_text = re.sub(r'\n?```$', '', result_text)
+
+        try:
+            extracted = json.loads(result_text)
+        except json.JSONDecodeError:
+            print(f"❌ Failed to parse extraction result: {result_text[:500]}")
+            return URLExtractResponse(
+                success=False,
+                error="Could not parse the job description from this page. Please copy and paste manually."
+            )
+
+        job_description = extracted.get("job_description")
+
+        if not job_description or len(job_description) < 100:
+            return URLExtractResponse(
+                success=False,
+                error=extracted.get("error", "Could not find a job description on this page. Please copy and paste manually.")
+            )
+
+        print(f"✅ Extracted JD: {len(job_description)} chars, Company: {extracted.get('company')}, Role: {extracted.get('role_title')}")
+
+        return URLExtractResponse(
+            success=True,
+            job_description=job_description,
+            company=extracted.get("company"),
+            role_title=extracted.get("role_title"),
+            warning="Job descriptions extracted from URLs may be incomplete or contain formatting artifacts. For best results, review and edit the extracted text before analyzing."
+        )
+
+    except httpx.TimeoutException:
+        return URLExtractResponse(
+            success=False,
+            error="Request timed out. The site may be slow or blocking automated access."
+        )
+    except httpx.RequestError as e:
+        print(f"❌ HTTP error: {e}")
+        return URLExtractResponse(
+            success=False,
+            error="Could not connect to the URL. Please check the URL and try again."
+        )
+    except Exception as e:
+        print(f"❌ URL extraction error: {e}")
+        return URLExtractResponse(
+            success=False,
+            error=f"An error occurred while extracting the job description. Please copy and paste manually."
+        )
+
+
+# ============================================================================
 # TAILORED DOCUMENT GENERATION ENDPOINTS
 # ============================================================================
 
