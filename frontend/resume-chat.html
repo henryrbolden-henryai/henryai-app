@@ -590,6 +590,58 @@
             font-size: 1.3rem;
         }
 
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .name-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .name-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .name-input {
+            flex: 1;
+            padding: 14px 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            color: var(--color-text);
+            font-size: 1rem;
+            font-family: var(--font-body);
+            transition: border-color 0.2s;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .name-input::placeholder {
+            color: var(--color-text-secondary);
+        }
+
+        .name-input.full-width {
+            width: 100%;
+        }
+
+        .nickname-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            text-align: left;
+            margin-top: 4px;
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
             .progress-indicator span {
@@ -613,7 +665,19 @@
     <div class="start-overlay" id="startOverlay">
         <h2>Ready to Chat with Henry?</h2>
         <p>I will guide you through sharing your experience and help identify your skills.<br>This works best with sound on.</p>
-        <button class="start-btn" onclick="beginConversation()">
+
+        <div class="name-form">
+            <div class="name-row">
+                <input type="text" id="firstNameInput" class="name-input" placeholder="First name" required>
+                <input type="text" id="lastNameInput" class="name-input" placeholder="Last name" required>
+            </div>
+            <div>
+                <input type="text" id="nicknameInput" class="name-input full-width" placeholder="Nickname (optional)">
+                <div class="nickname-label">What should Henry call you?</div>
+            </div>
+        </div>
+
+        <button class="start-btn" id="startBtn" onclick="beginConversation()" disabled>
             <span class="icon">🎙️</span>
             Start Conversation
         </button>
@@ -761,6 +825,40 @@
         const inputArea = document.getElementById('inputArea');
         const recordingStatus = document.getElementById('recordingStatus');
         const speakingIndicator = document.getElementById('speakingIndicator');
+
+        // Name inputs
+        const firstNameInput = document.getElementById('firstNameInput');
+        const lastNameInput = document.getElementById('lastNameInput');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const startButton = document.getElementById('startBtn');
+
+        // User name info
+        let userName = {
+            firstName: '',
+            lastName: '',
+            nickname: '',
+            displayName: '' // What Henry calls them
+        };
+
+        // Enable start button when first and last name are filled
+        function validateNameInputs() {
+            const hasFirstName = firstNameInput.value.trim().length > 0;
+            const hasLastName = lastNameInput.value.trim().length > 0;
+            startButton.disabled = !(hasFirstName && hasLastName);
+        }
+
+        firstNameInput.addEventListener('input', validateNameInputs);
+        lastNameInput.addEventListener('input', validateNameInputs);
+
+        // Allow Enter to start conversation when form is valid
+        [firstNameInput, lastNameInput, nicknameInput].forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !startButton.disabled) {
+                    e.preventDefault();
+                    beginConversation();
+                }
+            });
+        });
 
         // Auto-resize textarea
         messageInput.addEventListener('input', function() {
@@ -981,6 +1079,20 @@
 
         // Begin conversation after user clicks start button
         function beginConversation() {
+            // Capture name info from form
+            userName.firstName = firstNameInput.value.trim();
+            userName.lastName = lastNameInput.value.trim();
+            userName.nickname = nicknameInput.value.trim();
+            userName.displayName = userName.nickname || userName.firstName;
+
+            // Store name in extracted_data
+            conversationState.extracted_data.contact = {
+                firstName: userName.firstName,
+                lastName: userName.lastName,
+                nickname: userName.nickname,
+                fullName: `${userName.firstName} ${userName.lastName}`
+            };
+
             document.getElementById('startOverlay').classList.add('hidden');
 
             // Check if we have an existing conversation
@@ -990,6 +1102,14 @@
                     const parsed = JSON.parse(stored);
                     conversationState = parsed.conversationState;
                     allExtractedSkills = parsed.allExtractedSkills || [];
+
+                    // Restore userName from stored data
+                    if (conversationState.extracted_data?.contact) {
+                        userName.firstName = conversationState.extracted_data.contact.firstName || '';
+                        userName.lastName = conversationState.extracted_data.contact.lastName || '';
+                        userName.nickname = conversationState.extracted_data.contact.nickname || '';
+                        userName.displayName = userName.nickname || userName.firstName;
+                    }
 
                     // Restore messages to UI
                     conversationState.messages.forEach(msg => {
@@ -1056,9 +1176,9 @@
 
         // Start the conversation with Henry's opening message
         async function startConversation() {
-            const openingMessage = `Hi! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. No fluff, just the truth.
+            const openingMessage = `Hi ${userName.displayName}! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. No fluff, just the truth.
 
-Before we dive in, what is your name?`;
+Let us start with what you are doing now. What is your current job or most recent role?`;
 
             conversationState.messages.push({
                 role: 'assistant',
@@ -1070,10 +1190,15 @@ Before we dive in, what is your name?`;
             // Try to speak the opening message
             speakResponse(openingMessage);
 
-            // No suggestions for name - let them type/speak freely
-            hideSuggestions();
+            // Show helpful suggestions for current role
+            showSuggestions([
+                "I work as a...",
+                "I am currently between jobs",
+                "I am a student"
+            ]);
 
-            conversationState.state = 'GET_NAME';
+            // Skip GET_NAME since we collected it upfront
+            conversationState.state = 'CURRENT_ROLE';
             updateProgress();
             saveConversation();
         }
