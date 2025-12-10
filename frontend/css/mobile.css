@@ -81,16 +81,35 @@
         line-height: 1.3;
     }
 
+    /* Positioning page header - stack vertically on mobile */
+    .page-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
     .page-title h1 {
         font-size: 1.5rem !important;
     }
 
+    .page-title-icon {
+        font-size: 1.5rem !important;
+    }
+
     .role-title {
-        font-size: 1.2rem !important;
+        font-size: 1.1rem !important;
+        line-height: 1.4;
+        margin-top: 8px;
     }
 
     .subtitle {
         font-size: 1rem !important;
+    }
+
+    /* Outreach page header */
+    h1 span {
+        display: block;
+        margin-bottom: 8px;
     }
 }
 
