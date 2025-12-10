@@ -1,0 +1,387 @@
+/* HenryAI Mobile Responsive Styles */
+/* Include after page-specific styles for proper cascade */
+
+/* ============================================
+   HEADER NAVIGATION - Mobile Fixes
+   ============================================ */
+
+/* Ensure header stays horizontal on tablets */
+@media (max-width: 768px) {
+    header .header-container,
+    .header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .header-nav {
+        gap: 16px;
+    }
+
+    .nav-link {
+        font-size: 0.85rem;
+    }
+}
+
+/* Stack header on phones */
+@media (max-width: 480px) {
+    header .header-container,
+    .header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .header-nav {
+        width: 100%;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .nav-link {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        /* Larger tap target */
+    }
+
+    .logo {
+        font-size: 1.4rem;
+    }
+}
+
+/* ============================================
+   NAVIGATION ROWS (back/forward links)
+   ============================================ */
+
+@media (max-width: 640px) {
+    .nav-row,
+    .nav-links {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+
+    .nav-row a,
+    .nav-links a,
+    .back-link,
+    .forward-link {
+        font-size: 0.9rem;
+        padding: 10px 0;
+        /* Larger tap target */
+    }
+}
+
+/* ============================================
+   PAGE HEADERS & TITLES
+   ============================================ */
+
+@media (max-width: 640px) {
+    h1 {
+        font-size: 1.75rem !important;
+        line-height: 1.3;
+    }
+
+    .page-title h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .role-title {
+        font-size: 1.2rem !important;
+    }
+
+    .subtitle {
+        font-size: 1rem !important;
+    }
+}
+
+/* ============================================
+   BUTTONS & INTERACTIVE ELEMENTS
+   ============================================ */
+
+@media (max-width: 640px) {
+    /* Minimum touch target size (44px recommended by Apple) */
+    button,
+    .btn,
+    .btn-primary,
+    .btn-secondary,
+    [role="button"] {
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+
+    /* Full-width buttons on mobile */
+    .button-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .button-group button,
+    .button-group .btn {
+        width: 100%;
+    }
+
+    /* Action buttons in cards */
+    .card-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .card-actions button,
+    .card-actions a {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   FORM INPUTS
+   ============================================ */
+
+@media (max-width: 640px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="tel"],
+    textarea,
+    select {
+        font-size: 16px !important; /* Prevents iOS zoom on focus */
+        min-height: 44px;
+        padding: 12px;
+    }
+
+    /* File upload areas */
+    .upload-zone,
+    .drop-zone {
+        padding: 30px 20px;
+    }
+}
+
+/* ============================================
+   CARDS & CONTAINERS
+   ============================================ */
+
+@media (max-width: 640px) {
+    .container {
+        padding: 16px;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .nav-card,
+    .card,
+    .section {
+        padding: 20px;
+    }
+
+    .card-icon {
+        font-size: 2rem;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+    }
+}
+
+/* ============================================
+   INTERVIEW INTELLIGENCE SPECIFIC
+   ============================================ */
+
+@media (max-width: 640px) {
+    .interview-card {
+        padding: 16px;
+    }
+
+    .interview-card-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .interview-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .interview-actions button {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   TRACKER SPECIFIC
+   ============================================ */
+
+@media (max-width: 640px) {
+    .pipeline-dashboard {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    .stage-card {
+        padding: 16px;
+    }
+
+    .application-card {
+        padding: 16px;
+    }
+}
+
+/* ============================================
+   DOCUMENTS PAGE
+   ============================================ */
+
+@media (max-width: 640px) {
+    .document-preview {
+        padding: 16px;
+        font-size: 0.9rem;
+    }
+
+    .download-actions {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .download-actions button {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   CHAT INPUT (Interview Debrief, Ask Henry)
+   ============================================ */
+
+@media (max-width: 640px) {
+    .chat-input-container {
+        padding: 12px;
+    }
+
+    .chat-input-wrapper {
+        gap: 8px;
+    }
+
+    .chat-input {
+        font-size: 16px !important; /* Prevents iOS zoom */
+    }
+
+    .voice-btn,
+    .send-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+/* ============================================
+   ACCORDION SECTIONS
+   ============================================ */
+
+@media (max-width: 640px) {
+    .section-header {
+        padding: 16px;
+    }
+
+    .section-title {
+        font-size: 1rem;
+    }
+
+    .section-content {
+        padding: 16px;
+    }
+}
+
+/* ============================================
+   OUTREACH PAGE - Templates
+   ============================================ */
+
+@media (max-width: 640px) {
+    .outreach-template {
+        padding: 16px;
+    }
+
+    .template-text {
+        font-size: 0.9rem;
+    }
+
+    .copy-btn {
+        width: 100%;
+        margin-top: 12px;
+    }
+}
+
+/* ============================================
+   RESULTS PAGE - Score Circle
+   ============================================ */
+
+@media (max-width: 640px) {
+    .score-circle {
+        width: 140px;
+        height: 140px;
+    }
+
+    .score-number {
+        font-size: 2.5rem;
+    }
+
+    .strengths-gaps-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   UTILITY - HIDE ON MOBILE
+   ============================================ */
+
+@media (max-width: 640px) {
+    .hide-mobile {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   UTILITY - SHOW ONLY ON MOBILE
+   ============================================ */
+
+.show-mobile-only {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .show-mobile-only {
+        display: block;
+    }
+}
+
+/* ============================================
+   SAFE AREA INSETS (iPhone notch/home indicator)
+   ============================================ */
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .chat-input-container,
+    .fixed-bottom {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
+
+/* ============================================
+   PREVENT HORIZONTAL SCROLL
+   ============================================ */
+
+html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+/* ============================================
+   IMPROVE TOUCH SCROLLING
+   ============================================ */
+
+.scrollable {
+    -webkit-overflow-scrolling: touch;
+}
