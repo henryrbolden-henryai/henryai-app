@@ -671,9 +671,79 @@
     }
   </style>
   <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
+  <!-- Top Navigation -->
+  <nav class="top-nav" id="topNav">
+    <div class="top-nav-container">
+      <a href="index.html" class="top-nav-logo"><em>Henry</em>AI</a>
+      <div class="top-nav-links" id="navLinks">
+        <a href="tracker.html" class="top-nav-link">Command Center</a>
+        <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
+      </div>
+    </div>
+  </nav>
+  <style>
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 24px;
+    }
+    .top-nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .top-nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: #fff;
+      text-decoration: none;
+    }
+    .top-nav-logo em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+    .top-nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .top-nav-link {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .top-nav-link:hover {
+      color: var(--color-accent);
+    }
+    .top-nav-link.btn {
+      background: var(--color-accent);
+      color: #000;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+    .top-nav-link.btn:hover {
+      opacity: 0.9;
+      color: #000;
+    }
+    header {
+      padding-top: 60px !important;
+    }
+  </style>
 
   <!-- ========== HERO ========== -->
   <header>
@@ -997,6 +1067,24 @@
     }
   </script>
 
+<script src="js/supabase-client.js"></script>
+<script>
+  // Update nav based on auth status
+  (async function() {
+    if (typeof HenryAuth !== 'undefined') {
+      const session = await HenryAuth.getSession();
+      const loginLink = document.getElementById('loginLink');
+      if (session && loginLink) {
+        loginLink.textContent = 'Sign Out';
+        loginLink.href = '#';
+        loginLink.onclick = async (e) => {
+          e.preventDefault();
+          await HenryAuth.signOut();
+        };
+      }
+    }
+  })();
+</script>
 <script src="components/ask-henry.js"></script>
 </body>
 </html>
