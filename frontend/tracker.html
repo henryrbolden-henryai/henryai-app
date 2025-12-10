@@ -870,6 +870,17 @@
             border-color: var(--color-dead);
         }
 
+        .card-action-btn.ask-henry {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        .card-action-btn.ask-henry:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
         /* Status Selector */
         .status-selector {
             position: relative;
@@ -2167,6 +2178,7 @@
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- HEADER -->
@@ -2193,7 +2205,7 @@
                 <button class="header-btn" onclick="document.getElementById('importFile').click()" title="Import data from a backup file">
                     <span>📤</span> Import
                 </button>
-                <input type="file" id="importFile" accept=".json,.csv" style="display: none;" onchange="handleImport(event)">
+                <input type="file" id="importFile" accept=".json,.csv,.xlsx,.xls" style="display: none;" onchange="handleImport(event)">
             </div>
         </div>
 
@@ -4385,13 +4397,27 @@
         function renderContextualActions(app) {
             const actions = getContextualActions(app);
 
-            return actions.map(action => {
+            // Always add "Ask Henry" button first with the H-mark logo
+            const askHenryBtn = `<button class="card-action-btn ask-henry" onclick="openAskHenry(${app.id})">
+                <svg width="16" height="16" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
+                    <circle cx="100" cy="100" r="85" stroke="#fff" stroke-width="6" fill="none"/>
+                    <path d="M55 130 L55 70" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
+                    <path d="M145 130 L145 50" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
+                    <path d="M55 100 L145 100" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
+                    <circle cx="145" cy="50" r="10" fill="#fff"/>
+                </svg>
+                Ask Henry
+            </button>`;
+
+            const actionBtns = actions.map(action => {
                 let btnClass = 'card-action-btn';
                 if (action.primary) btnClass += ' primary';
                 if (action.danger) btnClass += ' danger';
 
                 return `<button class="${btnClass}" onclick="${action.action}">${action.label}</button>`;
             }).join('');
+
+            return askHenryBtn + actionBtns;
         }
 
         // Helper functions for contextual actions
@@ -4426,6 +4452,97 @@
 
         function compareOffers(appId) {
             alert('Offer comparison feature coming soon!');
+        }
+
+        /**
+         * Open Ask Henry for a specific application
+         * Sets context and opens the chat drawer with an initial message
+         */
+        function openAskHenry(appId) {
+            const app = getApplications().find(a => a.id === appId);
+            if (!app) {
+                console.error('Application not found:', appId);
+                return;
+            }
+
+            // Store application context for Ask Henry
+            const appContext = {
+                company: app.company,
+                role: app.role,
+                status: app.status,
+                jobDescription: app.jobDescription || null,
+                jobUrl: app.jobUrl || null,
+                interviewDate: app.interviewDate || null,
+                notes: app.notes || null,
+                fitScore: app.fitScore || null
+            };
+            sessionStorage.setItem('askHenryAppContext', JSON.stringify(appContext));
+
+            // Build initial message based on what we know
+            let initialMessage = '';
+            const hasJD = !!app.jobDescription;
+            const hasInterview = !!app.interviewDate;
+
+            if (!hasJD) {
+                // Prompt for JD
+                initialMessage = `I'd love to help you prepare for your ${app.role} position at ${app.company}. To give you the best strategy, could you paste the job description? You can usually find it on the job posting page.`;
+            } else if (hasInterview) {
+                // Interview prep mode
+                const interviewDate = new Date(app.interviewDate);
+                const daysUntil = Math.ceil((interviewDate - new Date()) / (1000 * 60 * 60 * 24));
+                initialMessage = `I see you have an interview coming up ${daysUntil <= 0 ? 'today' : daysUntil === 1 ? 'tomorrow' : `in ${daysUntil} days`} for ${app.role} at ${app.company}. Let's make sure you're ready!\n\nWhat would you like help with?\n• Interview prep questions\n• Position strategy (how to pitch yourself)\n• Company research talking points\n\nAlso, I recommend checking out **Leverage Interview Intelligence** for mock interview practice - it's a great way to rehearse before the real thing.`;
+            } else {
+                // General help with JD available
+                initialMessage = `Great, I have the job description for ${app.role} at ${app.company}. What would you like help with?\n\n• Interview prep questions\n• Position strategy (how to pitch yourself)\n• Company research talking points\n\nAlso, I recommend checking out **Leverage Interview Intelligence** for mock interview practice - it's a great way to rehearse before the real thing.`;
+            }
+
+            // Store the initial message to show in Ask Henry
+            sessionStorage.setItem('askHenryInitialMessage', initialMessage);
+
+            // Open Ask Henry drawer
+            const fab = document.getElementById('askHenryFab');
+            if (fab) {
+                fab.click();
+            }
+
+            // Clear the stored context after a delay (next page load will be fresh)
+            setTimeout(() => {
+                // Let Ask Henry component handle the initial message display
+                const messagesContainer = document.getElementById('askHenryMessages');
+                if (messagesContainer) {
+                    // Clear existing messages and add our contextual greeting
+                    messagesContainer.innerHTML = '';
+                    const msgEl = document.createElement('div');
+                    msgEl.className = 'ask-henry-message assistant';
+                    msgEl.innerHTML = formatAskHenryMessage(initialMessage);
+                    messagesContainer.appendChild(msgEl);
+
+                    // Hide suggestions since we have context
+                    const suggestions = document.getElementById('askHenrySuggestions');
+                    if (suggestions) {
+                        suggestions.style.display = 'none';
+                    }
+                }
+            }, 100);
+        }
+
+        // Simple markdown formatter for Ask Henry messages
+        function formatAskHenryMessage(content) {
+            return content
+                .split('\n\n').map(para => {
+                    if (para.match(/^[•]\s/m)) {
+                        const items = para.split('\n')
+                            .filter(line => line.trim())
+                            .map(line => `<li>${line.replace(/^[•]\s*/, '')}</li>`)
+                            .join('');
+                        return `<ul>${items}</ul>`;
+                    }
+                    return `<p>${para
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>')
+                    }</p>`;
+                })
+                .join('');
         }
 
         /**
@@ -5156,24 +5273,44 @@
             const file = event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const content = e.target.result;
+            const fileName = file.name.toLowerCase();
 
-                    if (file.name.endsWith('.json')) {
-                        importJSON(content);
-                    } else if (file.name.endsWith('.csv')) {
-                        importCSV(content);
-                    } else {
-                        alert('Please upload a .json or .csv file');
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                // Excel file - use SheetJS
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        importSpreadsheetData(jsonData);
+                    } catch (err) {
+                        console.error('Excel import error:', err);
+                        alert('Error importing Excel file. Please check the file format.');
                     }
-                } catch (err) {
-                    console.error('Import error:', err);
-                    alert('Error importing file. Please check the file format.');
-                }
-            };
-            reader.readAsText(file);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // JSON or CSV - read as text
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const content = e.target.result;
+                        if (fileName.endsWith('.json')) {
+                            importJSON(content);
+                        } else if (fileName.endsWith('.csv')) {
+                            importCSV(content);
+                        } else {
+                            alert('Please upload a .json, .csv, .xlsx, or .xls file');
+                        }
+                    } catch (err) {
+                        console.error('Import error:', err);
+                        alert('Error importing file. Please check the file format.');
+                    }
+                };
+                reader.readAsText(file);
+            }
 
             // Reset input so same file can be selected again
             event.target.value = '';
@@ -5226,18 +5363,33 @@
                 return;
             }
 
-            // Parse header
-            const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+            // Parse into 2D array for shared processing
+            const data = lines.map(line => parseCSVLine(line));
+            importSpreadsheetData(data);
+        }
 
-            // Map common column names
+        // Shared function for CSV and Excel import
+        async function importSpreadsheetData(data) {
+            if (data.length < 2) {
+                alert('File appears to be empty or has no data rows');
+                return;
+            }
+
+            // Parse header (first row)
+            const header = data[0].map(h => (h || '').toString().toLowerCase().trim());
+
+            // Enhanced column mapping with new fields
             const columnMap = {
-                company: ['company', 'company name', 'employer', 'organization'],
-                role: ['role', 'title', 'job title', 'position', 'job'],
-                status: ['status', 'stage', 'state'],
-                dateApplied: ['date applied', 'applied date', 'date', 'applied', 'application date'],
-                salary: ['salary', 'compensation', 'pay', 'salary range'],
-                location: ['location', 'city', 'place'],
-                notes: ['notes', 'comments', 'description']
+                company: ['company', 'company name', 'employer', 'organization', 'org'],
+                role: ['role', 'title', 'job title', 'position', 'job', 'job role'],
+                status: ['status', 'stage', 'state', 'application status'],
+                dateApplied: ['date applied', 'applied date', 'date', 'applied', 'application date', 'app date'],
+                salary: ['salary', 'compensation', 'pay', 'salary range', 'comp', 'wage'],
+                location: ['location', 'city', 'place', 'office', 'work location'],
+                notes: ['notes', 'comments', 'note'],
+                jobUrl: ['url', 'link', 'job url', 'posting url', 'job link', 'job posting', 'posting link', 'application url'],
+                jobDescription: ['description', 'job description', 'jd', 'job desc', 'full description'],
+                interviewDate: ['interview date', 'interview', 'next interview', 'scheduled interview', 'interview scheduled']
             };
 
             // Find column indices
@@ -5247,60 +5399,107 @@
                 if (idx !== -1) indices[field] = idx;
             });
 
-            if (!indices.company && !indices.role) {
-                alert('Could not find Company or Role columns. Please ensure your CSV has headers like "Company" and "Role".');
+            if (indices.company === undefined && indices.role === undefined) {
+                alert('Could not find Company or Role columns.\n\nPlease ensure your spreadsheet has headers like "Company" and "Role" or "Job Title".');
                 return;
             }
 
-            // Parse rows
+            // Parse data rows
             const imported = [];
-            for (let i = 1; i < lines.length; i++) {
-                const values = parseCSVLine(lines[i]);
-                if (values.length === 0) continue;
+            for (let i = 1; i < data.length; i++) {
+                const values = data[i];
+                if (!values || values.length === 0) continue;
+
+                const getValue = (field) => {
+                    if (indices[field] === undefined) return '';
+                    const val = values[indices[field]];
+                    return val ? val.toString().trim() : '';
+                };
+
+                const company = getValue('company');
+                const role = getValue('role');
+
+                // Skip rows without company and role
+                if (!company && !role) continue;
 
                 const app = {
                     id: `imported_${Date.now()}_${i}`,
-                    company: values[indices.company] || 'Unknown Company',
-                    role: values[indices.role] || 'Unknown Role',
-                    status: mapImportedStatus(values[indices.status]) || 'Preparing',
-                    dateApplied: parseImportedDate(values[indices.dateApplied]) || new Date().toISOString().split('T')[0],
-                    salary: values[indices.salary] || '',
-                    location: values[indices.location] || '',
-                    notes: values[indices.notes] || '',
+                    company: company || 'Unknown Company',
+                    role: role || 'Unknown Role',
+                    status: mapImportedStatus(getValue('status')) || 'Preparing',
+                    dateApplied: parseImportedDate(getValue('dateApplied')) || new Date().toISOString().split('T')[0],
+                    salary: getValue('salary'),
+                    location: getValue('location'),
+                    notes: getValue('notes'),
+                    jobUrl: getValue('jobUrl'),
+                    jobDescription: getValue('jobDescription'),
+                    interviewDate: parseImportedDate(getValue('interviewDate')) || null,
                     fitScore: null,
                     analysisKey: null,
-                    source: 'csv_import'
+                    source: 'spreadsheet_import'
                 };
 
                 imported.push(app);
             }
 
             if (imported.length === 0) {
-                alert('No valid applications found in CSV');
+                alert('No valid applications found in file');
                 return;
             }
 
-            const confirmMsg = `Found ${imported.length} applications to import.\n\nThis will MERGE with your existing data. Continue?`;
-            if (!confirm(confirmMsg)) return;
+            // Show summary of what was found
+            const hasJD = imported.filter(a => a.jobDescription).length;
+            const hasUrl = imported.filter(a => a.jobUrl).length;
+            const hasInterview = imported.filter(a => a.interviewDate).length;
 
-            // Merge with existing
-            const existing = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
-            const merged = [...existing];
+            let summaryMsg = `Found ${imported.length} applications to import:\n`;
+            summaryMsg += `• ${hasJD} with job descriptions\n`;
+            summaryMsg += `• ${hasUrl} with job URLs\n`;
+            summaryMsg += `• ${hasInterview} with scheduled interviews\n\n`;
+            summaryMsg += `This will MERGE with your existing data. Continue?`;
 
-            let addedCount = 0;
-            imported.forEach(app => {
-                const exists = merged.some(e =>
-                    e.company.toLowerCase() === app.company.toLowerCase() &&
-                    e.role.toLowerCase() === app.role.toLowerCase()
-                );
-                if (!exists) {
-                    merged.push(app);
-                    addedCount++;
+            if (!confirm(summaryMsg)) return;
+
+            // Check if user is logged in
+            const user = await HenryAuth.getUser();
+
+            if (user) {
+                // Save to Supabase
+                let addedCount = 0;
+                let errorCount = 0;
+
+                for (const app of imported) {
+                    const { data, error } = await HenryData.saveApplication(app);
+                    if (error) {
+                        console.error('Error saving application:', error);
+                        errorCount++;
+                    } else {
+                        addedCount++;
+                    }
                 }
-            });
 
-            localStorage.setItem('trackedApplications', JSON.stringify(merged));
-            alert(`Imported ${addedCount} new applications (${imported.length - addedCount} duplicates skipped).`);
+                alert(`Imported ${addedCount} applications to your account.${errorCount > 0 ? ` (${errorCount} errors)` : ''}`);
+            } else {
+                // Save to localStorage
+                const existing = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                const merged = [...existing];
+
+                let addedCount = 0;
+                imported.forEach(app => {
+                    const exists = merged.some(e =>
+                        e.company.toLowerCase() === app.company.toLowerCase() &&
+                        e.role.toLowerCase() === app.role.toLowerCase()
+                    );
+                    if (!exists) {
+                        merged.push(app);
+                        addedCount++;
+                    }
+                });
+
+                localStorage.setItem('trackedApplications', JSON.stringify(merged));
+                alert(`Imported ${addedCount} new applications (${imported.length - addedCount} duplicates skipped).`);
+            }
+
             location.reload();
         }
 

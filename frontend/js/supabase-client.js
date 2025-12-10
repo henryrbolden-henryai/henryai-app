@@ -196,6 +196,9 @@ const HenryData = {
             salary: app.salary,
             location: app.location,
             notes: app.notes,
+            jobUrl: app.job_url,
+            jobDescription: app.job_description,
+            interviewDate: app.interview_date,
             analysisKey: app.id, // Use app id as key
             analysisData: app.analysis_data,
             documentsData: app.documents_data,
@@ -220,6 +223,9 @@ const HenryData = {
             salary: app.salary,
             location: app.location,
             notes: app.notes,
+            job_url: app.jobUrl || null,
+            job_description: app.jobDescription || null,
+            interview_date: app.interviewDate || null,
             analysis_data: app.analysisData || {},
             documents_data: app.documentsData || {},
             metadata: {
