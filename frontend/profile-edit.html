@@ -185,19 +185,16 @@
             color: var(--color-text-secondary);
         }
 
-        .change-resume-btn {
-            background: none;
-            border: 1px solid var(--color-border);
-            color: var(--color-text-secondary);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
+        .resume-chat-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.9rem;
         }
 
-        .change-resume-btn:hover {
-            border-color: var(--color-accent);
-            color: var(--color-accent);
+        .resume-chat-link:hover {
+            text-decoration: underline;
         }
 
         .file-upload {
@@ -729,9 +726,9 @@
                 <div class="resume-info" id="resumeInfo" style="display: none;">
                     <div class="resume-info-header">
                         <span class="resume-info-name" id="resumeName">Loading...</span>
-                        <button class="change-resume-btn" id="changeResumeBtn">Edit Resume</button>
                     </div>
                     <div class="resume-info-meta" id="resumeMeta"></div>
+                    <a href="resume-chat.html" class="resume-chat-link">💬 Chat with Henry about your resume</a>
                 </div>
                 <label class="file-upload" id="fileUpload">
                     <input type="file" id="resumeFile" accept=".pdf,.docx,.doc,.txt">
@@ -920,7 +917,6 @@
         const resumeInfo = document.getElementById('resumeInfo');
         const resumeName = document.getElementById('resumeName');
         const resumeMeta = document.getElementById('resumeMeta');
-        const changeResumeBtn = document.getElementById('changeResumeBtn');
         const fileUpload = document.getElementById('fileUpload');
         const resumeFile = document.getElementById('resumeFile');
         const parsingStatus = document.getElementById('parsingStatus');
@@ -1129,12 +1125,6 @@
             }
         }
 
-        // Change resume button (edit mode)
-        changeResumeBtn.addEventListener('click', () => {
-            fileUpload.style.display = 'block';
-            changeResumeBtn.style.display = 'none';
-        });
-
         // File upload handler (works for both new and edit)
         resumeFile.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1183,7 +1173,6 @@
                 if (!isNewProfile) {
                     fileUpload.style.display = 'none';
                     resumeInfo.style.display = 'block';
-                    changeResumeBtn.style.display = '';
                 }
 
             } catch (error) {
