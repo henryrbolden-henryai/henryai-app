@@ -516,10 +516,6 @@
     <header>
         <div class="header-container">
             <a href="index.html" class="logo"><em>Henry</em>AI</a>
-            <nav class="header-nav">
-                <a href="analyze.html" class="nav-link">Analyze a Role</a>
-                <a href="tracker.html" class="nav-link">Command Center</a>
-            </nav>
         </div>
     </header>
 
@@ -572,11 +568,10 @@
             <!-- Action Section -->
             <div class="action-section">
                 <p class="action-text">
-                    Ready to put these skills to work? Let's generate your professional resume and start searching for roles.
+                    Ready to put these skills to work? Let's complete your profile and start searching for roles.
                 </p>
                 <div class="action-buttons">
-                    <button class="btn-primary" id="generateResumeBtn">Generate My Resume</button>
-                    <a href="profile-edit.html" class="btn-secondary">Complete Profile Setup</a>
+                    <a href="profile-edit.html" class="btn-primary" id="continueBtn">Complete Profile Setup</a>
                 </div>
             </div>
         </div>
@@ -754,64 +749,42 @@
                 .join(' ');
         }
 
-        // Generate resume
-        document.getElementById('generateResumeBtn').addEventListener('click', async () => {
-            const btn = document.getElementById('generateResumeBtn');
-            btn.disabled = true;
-            btn.textContent = 'Generating...';
-
+        // Continue to profile setup - save extracted data to profile first
+        document.getElementById('continueBtn').addEventListener('click', (e) => {
             const storedData = sessionStorage.getItem('resumeExtractedData');
             if (!storedData) {
-                alert('No skills data found. Please complete the conversation first.');
-                btn.disabled = false;
-                btn.textContent = 'Generate My Resume';
+                // No data, just navigate - profile-edit will show upload option
                 return;
             }
 
             try {
                 const data = JSON.parse(storedData);
+                const contact = data.extracted_data?.contact || {};
+                const fullName = contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || 'Candidate';
 
-                const response = await fetch(`${API_BASE}/api/generate-resume-from-chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        extracted_data: data.extracted_data,
-                        target_role: null
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to generate resume');
-                }
-
-                const result = await response.json();
-
-                // Store generated resume
-                sessionStorage.setItem('generatedResume', JSON.stringify(result));
-
-                // Create a profile from the extracted data
+                // Create profile from conversation data
                 const profile = {
                     resume: {
-                        full_name: data.extracted_data.contact?.name || 'Candidate',
-                        experience: data.extracted_data.experiences || [],
-                        skills: data.extracted_data.skills || [],
-                        education: data.extracted_data.education || []
+                        full_name: fullName,
+                        contact: {
+                            full_name: fullName,
+                            firstName: contact.firstName,
+                            lastName: contact.lastName,
+                            nickname: contact.nickname
+                        },
+                        experience: data.extracted_data?.experiences || [],
+                        skills: data.skills || [],
+                        education: data.extracted_data?.education || []
                     },
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 };
 
-                // Store in localStorage so the rest of the app can use it
+                // Store in localStorage so the profile-edit page can use it
                 localStorage.setItem('userProfile', JSON.stringify(profile));
-
-                // Navigate to profile setup to complete remaining fields
-                window.location.href = 'profile-edit.html';
-
             } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to generate resume. Please try again.');
-                btn.disabled = false;
-                btn.textContent = 'Generate My Resume';
+                console.error('Error preparing profile:', error);
+                // Continue anyway - profile-edit will handle missing data
             }
         });
 
