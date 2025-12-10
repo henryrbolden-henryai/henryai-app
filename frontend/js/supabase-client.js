@@ -32,6 +32,28 @@ const HenryAuth = {
     },
 
     /**
+     * Get user's display name (from signup or Google)
+     */
+    async getUserName() {
+        const user = await this.getUser();
+        if (!user) return null;
+
+        // Try different sources for the name
+        const fullName = user.user_metadata?.full_name ||
+                        user.user_metadata?.name ||
+                        user.email?.split('@')[0] ||
+                        'there';
+
+        // Parse first/last name
+        const parts = fullName.trim().split(' ');
+        return {
+            fullName: fullName,
+            firstName: parts[0] || fullName,
+            lastName: parts.slice(1).join(' ') || ''
+        };
+    },
+
+    /**
      * Sign up with email and password
      */
     async signUp(email, password, fullName) {
