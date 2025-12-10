@@ -19,7 +19,8 @@
       "Bash(git commit:*)",
       "Bash(git merge:*)",
       "Bash(/opt/homebrew/bin/gh pr create --title \"Fix outreach templates and add conversation persistence\" --body \"$(cat <<''EOF''\n## Summary\n\n- **Fix outreach intelligence**: Backend now generates full `outreach_intelligence` object with all required fields (`hiring_manager_likely_title`, `linkedin_query`, `filter_instructions`, `outreach_template` - same for recruiter). This fixes the bug where stale Oscar/Talent Engagement placeholders were showing instead of actual job data from the analyzed JD.\n\n- **Add Ask Henry conversation persistence**: Conversations now persist across page navigation using sessionStorage. Users can continue chats when moving between pages (e.g., from fit scoring to Application Strategy Overview).\n\n- **Improve Network Intelligence UI**: Better empty state messaging explaining 1st vs 2nd/3rd degree connection limitations, clearer next steps, white/gray color scheme matching app theme.\n\n## Test plan\n\n- [ ] Analyze a new job and verify outreach templates show correct company/role\n- [ ] Start a chat on one page, navigate to another, verify conversation continues\n- [ ] Upload LinkedIn CSV with no connections at target company, verify helpful guidance shows\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\nEOF\n)\")",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
