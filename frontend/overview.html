@@ -166,6 +166,26 @@
             margin-bottom: 20px;
         }
 
+        .card-insight {
+            background: rgba(34, 211, 238, 0.1);
+            border-left: 3px solid #22d3ee;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: #e0e0e0;
+            display: none;
+        }
+
+        .card-insight.visible {
+            display: block;
+        }
+
+        .card-insight .insight-highlight {
+            color: #22d3ee;
+            font-weight: 600;
+        }
+
         .card-description {
             color: #d1d5db;
             line-height: 1.7;
@@ -282,7 +302,7 @@
         <div class="header-container">
             <a href="index.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
-                <a href="tracker.html" class="nav-link">My Applications</a>
+                <a href="tracker.html" class="nav-link">Command Center</a>
                 <a href="profile-edit.html" class="nav-link">Edit Profile</a>
             </nav>
         </div>
@@ -304,8 +324,9 @@
                 <span class="card-icon">📍</span>
                 <h2 class="card-title">Your Positioning Strategy</h2>
                 <p class="card-subtitle">Strategic framing and key decisions</p>
+                <p class="card-insight" id="positioningInsight"></p>
                 <p class="card-description">
-                    How to position yourself for this role. Includes what to emphasize, 
+                    How to position yourself for this role. Includes what to emphasize,
                     what to avoid, key positioning decisions, and how to handle concerns.
                 </p>
                 <div class="card-cta">
@@ -319,8 +340,9 @@
                 <span class="card-icon">📄</span>
                 <h2 class="card-title">Your Tailored Documents</h2>
                 <p class="card-subtitle">Resume and cover letter with explanations</p>
+                <p class="card-insight" id="documentsInsight"></p>
                 <p class="card-description">
-                    ATS-optimized resume and custom cover letter tailored for this role. 
+                    ATS-optimized resume and custom cover letter tailored for this role.
                     See exactly what changed and why, then download both documents.
                 </p>
                 <div class="card-cta">
@@ -334,8 +356,9 @@
                 <span class="card-icon">🤝</span>
                 <h2 class="card-title">Network Intelligence & Outreach</h2>
                 <p class="card-subtitle">Who to contact and what to say</p>
+                <p class="card-insight" id="networkInsight"></p>
                 <p class="card-description">
-                    Identify the hiring manager and recruiter, get strategic guidance on outreach timing, 
+                    Identify the hiring manager and recruiter, get strategic guidance on outreach timing,
                     and use proven templates that sell your candidacy.
                 </p>
                 <div class="card-cta">
@@ -349,6 +372,7 @@
                 <span class="card-icon">🎯</span>
                 <h2 class="card-title">Interview Intelligence</h2>
                 <p class="card-subtitle">Interviewer research, prep guides, and practice</p>
+                <p class="card-insight" id="interviewInsight"></p>
                 <p class="card-description">
                     Upload interviewer LinkedIn profiles for personalized strategy and talking points.
                     Get stage-specific prep guides, practice mock interviews with <em style="color: #22d3ee; font-style: italic;">Henry's</em> feedback, and track your interview pipeline.
@@ -358,7 +382,23 @@
                 </div>
             </a>
 
-            <!-- Card 5: Offer Negotiation (Coming Soon) -->
+            <!-- Card 5: Pipeline Command Center -->
+            <a href="tracker.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">📊</span>
+                <h2 class="card-title">Pipeline Command Center</h2>
+                <p class="card-subtitle">Track all your applications in one place</p>
+                <p class="card-insight" id="pipelineInsight"></p>
+                <p class="card-description">
+                    See your full pipeline, prioritize what needs attention,
+                    and never lose track of where you stand with each opportunity.
+                </p>
+                <div class="card-cta">
+                    View Command Center <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 6: Offer Negotiation (Coming Soon) -->
             <div class="nav-card coming-soon">
                 <span class="coming-soon-badge">Coming Soon</span>
                 <span class="card-icon">💰</span>
@@ -383,13 +423,85 @@
     </div>
 
     <script>
-        // Verify we have analysis data
+        // Verify we have analysis data and generate insights
         window.addEventListener('DOMContentLoaded', () => {
-            const data = sessionStorage.getItem('analysisData');
-            if (!data) {
+            const dataStr = sessionStorage.getItem('analysisData');
+            if (!dataStr) {
                 window.location.href = 'index.html';
+                return;
             }
+
+            const data = JSON.parse(dataStr);
+            generateTeaserInsights(data);
         });
+
+        function generateTeaserInsights(data) {
+            // Positioning Insight - focus on gaps or concerns
+            const positioningEl = document.getElementById('positioningInsight');
+            if (data.gaps && data.gaps.length > 0) {
+                const topGap = typeof data.gaps[0] === 'object' ? data.gaps[0].area || data.gaps[0].gap : data.gaps[0];
+                positioningEl.innerHTML = `<span class="insight-highlight">Key gap to address:</span> ${topGap}. I have strategies to reframe this.`;
+                positioningEl.classList.add('visible');
+            } else if (data.concerns && data.concerns.length > 0) {
+                const topConcern = typeof data.concerns[0] === 'object' ? data.concerns[0].concern : data.concerns[0];
+                positioningEl.innerHTML = `<span class="insight-highlight">Potential concern:</span> ${topConcern}. See how to address it.`;
+                positioningEl.classList.add('visible');
+            }
+
+            // Documents Insight - ATS keywords or fit score
+            const documentsEl = document.getElementById('documentsInsight');
+            const keywords = data.ats_keywords || data.required_skills || [];
+            if (keywords.length > 0) {
+                const keywordCount = keywords.length;
+                positioningEl.innerHTML = `<span class="insight-highlight">Key gap to address:</span> ${typeof data.gaps?.[0] === 'object' ? data.gaps[0].area || data.gaps[0].gap : data.gaps?.[0] || 'positioning'}. I have strategies to reframe this.`;
+                documentsEl.innerHTML = `<span class="insight-highlight">${keywordCount} ATS keywords</span> incorporated into your tailored resume.`;
+                documentsEl.classList.add('visible');
+            }
+
+            // Network Insight - hiring manager title
+            const networkEl = document.getElementById('networkInsight');
+            const outreach = data.outreach_intelligence || {};
+            if (outreach.hiring_manager_likely_title) {
+                networkEl.innerHTML = `<span class="insight-highlight">Likely hiring manager:</span> ${outreach.hiring_manager_likely_title}. Direct outreach can 2x your response rate.`;
+                networkEl.classList.add('visible');
+            } else if (data._company_name || data.company_name) {
+                const company = data._company_name || data.company_name;
+                networkEl.innerHTML = `<span class="insight-highlight">70% of jobs</span> are filled through referrals. See who to contact at ${company}.`;
+                networkEl.classList.add('visible');
+            }
+
+            // Interview Insight - likely questions or company focus
+            const interviewEl = document.getElementById('interviewInsight');
+            const interviewPrep = data.interview_prep || {};
+            if (interviewPrep.likely_questions && interviewPrep.likely_questions.length > 0) {
+                const questionCount = interviewPrep.likely_questions.length;
+                interviewEl.innerHTML = `<span class="insight-highlight">${questionCount} likely interview questions</span> identified. Practice with Henry before your interview.`;
+                interviewEl.classList.add('visible');
+            } else {
+                interviewEl.innerHTML = `<span class="insight-highlight">Mock interviews available.</span> Practice with Henry and get real-time feedback.`;
+                interviewEl.classList.add('visible');
+            }
+
+            // Pipeline Insight - show tracker stats
+            const pipelineEl = document.getElementById('pipelineInsight');
+            const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            if (apps.length > 0) {
+                const activeApps = apps.filter(a => !['Rejected', 'No Response', 'Withdrawn', 'Offer Declined'].includes(a.status));
+                const interviewingApps = apps.filter(a =>
+                    ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                     'Final Round', 'Executive Interview', 'Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
+                );
+                if (interviewingApps.length > 0) {
+                    pipelineEl.innerHTML = `<span class="insight-highlight">${interviewingApps.length} application${interviewingApps.length > 1 ? 's' : ''}</span> in interview stages. ${activeApps.length} total active.`;
+                } else {
+                    pipelineEl.innerHTML = `<span class="insight-highlight">${activeApps.length} active application${activeApps.length > 1 ? 's' : ''}</span> in your pipeline.`;
+                }
+                pipelineEl.classList.add('visible');
+            } else {
+                pipelineEl.innerHTML = `<span class="insight-highlight">Start tracking</span> this application and never lose track of where you stand.`;
+                pipelineEl.classList.add('visible');
+            }
+        }
     </script>
 <script src="components/ask-henry.js"></script>
 </body>

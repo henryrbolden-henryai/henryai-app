@@ -1,0 +1,717 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-12-10",
+  "categories": {
+    "leadership": {
+      "name": "Leadership & Management",
+      "skills": [
+        {
+          "id": "team-management",
+          "name": "Team Management",
+          "aliases": ["managing teams", "team leadership", "supervising staff"],
+          "indicators": ["managed a team", "supervised employees", "led a team of"]
+        },
+        {
+          "id": "supervision",
+          "name": "Supervision",
+          "aliases": ["supervising", "overseeing staff", "direct oversight"],
+          "indicators": ["supervised", "oversaw", "monitored performance"]
+        },
+        {
+          "id": "delegation",
+          "name": "Delegation",
+          "aliases": ["assigning tasks", "task distribution", "work assignment"],
+          "indicators": ["delegated", "assigned tasks", "distributed work"]
+        },
+        {
+          "id": "mentoring",
+          "name": "Mentoring",
+          "aliases": ["coaching staff", "developing employees", "career development"],
+          "indicators": ["mentored", "coached", "developed junior"]
+        },
+        {
+          "id": "coaching",
+          "name": "Coaching",
+          "aliases": ["performance coaching", "skills coaching", "employee development"],
+          "indicators": ["coached", "provided feedback", "performance improvement"]
+        },
+        {
+          "id": "performance-management",
+          "name": "Performance Management",
+          "aliases": ["reviews", "evaluations", "performance tracking"],
+          "indicators": ["conducted reviews", "evaluated performance", "set goals"]
+        },
+        {
+          "id": "hiring",
+          "name": "Hiring",
+          "aliases": ["recruiting", "interviewing", "talent acquisition"],
+          "indicators": ["hired", "interviewed candidates", "recruited"]
+        },
+        {
+          "id": "termination",
+          "name": "Termination & Offboarding",
+          "aliases": ["firing", "letting go", "separation"],
+          "indicators": ["terminated", "managed separations", "exit interviews"]
+        },
+        {
+          "id": "conflict-resolution-team",
+          "name": "Team Conflict Resolution",
+          "aliases": ["mediating disputes", "resolving team issues", "workplace conflicts"],
+          "indicators": ["resolved conflicts", "mediated", "addressed disputes"]
+        },
+        {
+          "id": "change-management",
+          "name": "Change Management",
+          "aliases": ["leading change", "organizational change", "transformation"],
+          "indicators": ["led change", "implemented new processes", "drove transformation"]
+        },
+        {
+          "id": "strategic-planning",
+          "name": "Strategic Planning",
+          "aliases": ["strategy development", "long-term planning", "roadmapping"],
+          "indicators": ["developed strategy", "created roadmap", "long-term planning"]
+        }
+      ]
+    },
+    "operations": {
+      "name": "Operations & Logistics",
+      "skills": [
+        {
+          "id": "inventory-management",
+          "name": "Inventory Management",
+          "aliases": ["stock management", "inventory control", "stock tracking"],
+          "indicators": ["managed inventory", "tracked stock", "inventory counts"]
+        },
+        {
+          "id": "scheduling",
+          "name": "Scheduling",
+          "aliases": ["staff scheduling", "shift planning", "workforce scheduling"],
+          "indicators": ["created schedules", "managed shifts", "workforce planning"]
+        },
+        {
+          "id": "process-improvement",
+          "name": "Process Improvement",
+          "aliases": ["optimization", "efficiency improvement", "streamlining"],
+          "indicators": ["improved processes", "streamlined", "increased efficiency"]
+        },
+        {
+          "id": "compliance",
+          "name": "Compliance",
+          "aliases": ["regulatory compliance", "policy adherence", "standards"],
+          "indicators": ["ensured compliance", "maintained standards", "audits"]
+        },
+        {
+          "id": "logistics",
+          "name": "Logistics",
+          "aliases": ["distribution", "transportation", "shipping"],
+          "indicators": ["coordinated logistics", "managed distribution", "shipping"]
+        },
+        {
+          "id": "supply-chain",
+          "name": "Supply Chain Management",
+          "aliases": ["procurement", "sourcing", "supplier management"],
+          "indicators": ["managed supply chain", "procurement", "supplier relations"]
+        },
+        {
+          "id": "vendor-management",
+          "name": "Vendor Management",
+          "aliases": ["supplier management", "contractor management", "third-party management"],
+          "indicators": ["managed vendors", "vendor relationships", "contractor oversight"]
+        },
+        {
+          "id": "quality-control",
+          "name": "Quality Control",
+          "aliases": ["QA", "quality assurance", "inspection"],
+          "indicators": ["quality checks", "inspections", "maintained quality"]
+        },
+        {
+          "id": "safety-compliance",
+          "name": "Safety Compliance",
+          "aliases": ["OSHA", "workplace safety", "health and safety"],
+          "indicators": ["safety protocols", "OSHA compliance", "safety training"]
+        },
+        {
+          "id": "facilities-management",
+          "name": "Facilities Management",
+          "aliases": ["building management", "maintenance", "property management"],
+          "indicators": ["managed facilities", "maintenance schedules", "building operations"]
+        },
+        {
+          "id": "project-management",
+          "name": "Project Management",
+          "aliases": ["PM", "project coordination", "program management"],
+          "indicators": ["managed projects", "project delivery", "milestones"]
+        },
+        {
+          "id": "resource-allocation",
+          "name": "Resource Allocation",
+          "aliases": ["resource planning", "capacity planning", "staffing"],
+          "indicators": ["allocated resources", "capacity planning", "staffing decisions"]
+        }
+      ]
+    },
+    "customer": {
+      "name": "Customer Service & Relations",
+      "skills": [
+        {
+          "id": "customer-service",
+          "name": "Customer Service",
+          "aliases": ["client service", "customer support", "guest service"],
+          "indicators": ["served customers", "customer interactions", "service delivery"]
+        },
+        {
+          "id": "conflict-resolution-customer",
+          "name": "Customer Conflict Resolution",
+          "aliases": ["complaint handling", "de-escalation", "dispute resolution"],
+          "indicators": ["resolved complaints", "handled escalations", "de-escalated"]
+        },
+        {
+          "id": "escalation-handling",
+          "name": "Escalation Handling",
+          "aliases": ["handling escalations", "manager calls", "difficult situations"],
+          "indicators": ["handled escalations", "manager override", "difficult customers"]
+        },
+        {
+          "id": "relationship-management",
+          "name": "Relationship Management",
+          "aliases": ["client relationships", "customer relationships", "stakeholder relations"],
+          "indicators": ["built relationships", "maintained relationships", "client retention"]
+        },
+        {
+          "id": "retention",
+          "name": "Customer Retention",
+          "aliases": ["reducing churn", "customer loyalty", "keeping customers"],
+          "indicators": ["improved retention", "reduced churn", "loyalty programs"]
+        },
+        {
+          "id": "upselling",
+          "name": "Upselling",
+          "aliases": ["cross-selling", "suggestive selling", "add-on sales"],
+          "indicators": ["upsold", "cross-sold", "increased ticket size"]
+        },
+        {
+          "id": "account-management",
+          "name": "Account Management",
+          "aliases": ["client management", "book of business", "portfolio management"],
+          "indicators": ["managed accounts", "client portfolio", "account growth"]
+        },
+        {
+          "id": "client-communication",
+          "name": "Client Communication",
+          "aliases": ["customer communication", "stakeholder updates", "status reports"],
+          "indicators": ["client updates", "regular communication", "stakeholder management"]
+        },
+        {
+          "id": "needs-assessment",
+          "name": "Needs Assessment",
+          "aliases": ["discovery", "requirements gathering", "understanding needs"],
+          "indicators": ["assessed needs", "discovery calls", "requirements gathering"]
+        }
+      ]
+    },
+    "financial": {
+      "name": "Financial & Analytical",
+      "skills": [
+        {
+          "id": "cash-handling",
+          "name": "Cash Handling",
+          "aliases": ["register management", "cash management", "till management"],
+          "indicators": ["handled cash", "balanced register", "cash counts"]
+        },
+        {
+          "id": "budgeting",
+          "name": "Budgeting",
+          "aliases": ["budget management", "financial planning", "budget creation"],
+          "indicators": ["managed budget", "created budgets", "budget oversight"]
+        },
+        {
+          "id": "cost-control",
+          "name": "Cost Control",
+          "aliases": ["expense management", "cost reduction", "cost optimization"],
+          "indicators": ["controlled costs", "reduced expenses", "cost savings"]
+        },
+        {
+          "id": "forecasting",
+          "name": "Forecasting",
+          "aliases": ["financial forecasting", "projections", "predictions"],
+          "indicators": ["created forecasts", "projected", "financial modeling"]
+        },
+        {
+          "id": "pnl-management",
+          "name": "P&L Management",
+          "aliases": ["profit and loss", "P&L ownership", "financial responsibility"],
+          "indicators": ["P&L responsibility", "profit/loss management", "financial ownership"]
+        },
+        {
+          "id": "financial-reporting",
+          "name": "Financial Reporting",
+          "aliases": ["financial statements", "reporting", "financial analysis"],
+          "indicators": ["financial reports", "statements", "variance analysis"]
+        },
+        {
+          "id": "expense-management",
+          "name": "Expense Management",
+          "aliases": ["expense tracking", "expense reports", "cost tracking"],
+          "indicators": ["tracked expenses", "expense reports", "cost monitoring"]
+        },
+        {
+          "id": "revenue-management",
+          "name": "Revenue Management",
+          "aliases": ["revenue optimization", "pricing", "yield management"],
+          "indicators": ["revenue growth", "pricing strategy", "yield optimization"]
+        },
+        {
+          "id": "data-analysis",
+          "name": "Data Analysis",
+          "aliases": ["analytics", "data interpretation", "insights"],
+          "indicators": ["analyzed data", "insights", "data-driven decisions"]
+        },
+        {
+          "id": "reporting",
+          "name": "Reporting",
+          "aliases": ["business reporting", "metrics reporting", "KPI tracking"],
+          "indicators": ["created reports", "tracked KPIs", "reported metrics"]
+        }
+      ]
+    },
+    "communication": {
+      "name": "Communication",
+      "skills": [
+        {
+          "id": "written-communication",
+          "name": "Written Communication",
+          "aliases": ["writing", "documentation", "email communication"],
+          "indicators": ["wrote", "documented", "email correspondence"]
+        },
+        {
+          "id": "verbal-communication",
+          "name": "Verbal Communication",
+          "aliases": ["speaking", "oral communication", "phone skills"],
+          "indicators": ["presented", "phone calls", "verbal interactions"]
+        },
+        {
+          "id": "presentation",
+          "name": "Presentation Skills",
+          "aliases": ["presenting", "public speaking", "pitching"],
+          "indicators": ["presented to", "gave presentations", "pitched"]
+        },
+        {
+          "id": "negotiation",
+          "name": "Negotiation",
+          "aliases": ["deal negotiation", "contract negotiation", "bargaining"],
+          "indicators": ["negotiated", "contract terms", "deal terms"]
+        },
+        {
+          "id": "stakeholder-management",
+          "name": "Stakeholder Management",
+          "aliases": ["managing stakeholders", "stakeholder relations", "influencing"],
+          "indicators": ["managed stakeholders", "stakeholder alignment", "cross-functional"]
+        },
+        {
+          "id": "cross-functional-collaboration",
+          "name": "Cross-Functional Collaboration",
+          "aliases": ["working across teams", "interdepartmental", "collaboration"],
+          "indicators": ["worked with", "collaborated across", "cross-functional teams"]
+        },
+        {
+          "id": "executive-communication",
+          "name": "Executive Communication",
+          "aliases": ["executive presence", "leadership communication", "board presentations"],
+          "indicators": ["presented to executives", "board meetings", "leadership updates"]
+        },
+        {
+          "id": "active-listening",
+          "name": "Active Listening",
+          "aliases": ["listening skills", "understanding needs", "empathy"],
+          "indicators": ["listened to", "understood needs", "empathetic response"]
+        }
+      ]
+    },
+    "technical": {
+      "name": "Technical & Tools",
+      "skills": [
+        {
+          "id": "pos-systems",
+          "name": "POS Systems",
+          "aliases": ["point of sale", "register systems", "checkout systems"],
+          "indicators": ["used POS", "register operations", "checkout"]
+        },
+        {
+          "id": "crm",
+          "name": "CRM Systems",
+          "aliases": ["Salesforce", "HubSpot", "customer relationship management"],
+          "indicators": ["Salesforce", "HubSpot", "CRM usage"]
+        },
+        {
+          "id": "spreadsheets",
+          "name": "Spreadsheets",
+          "aliases": ["Excel", "Google Sheets", "data in spreadsheets"],
+          "indicators": ["Excel", "spreadsheets", "Google Sheets"]
+        },
+        {
+          "id": "data-entry",
+          "name": "Data Entry",
+          "aliases": ["entering data", "record keeping", "database entry"],
+          "indicators": ["entered data", "maintained records", "database updates"]
+        },
+        {
+          "id": "software-proficiency",
+          "name": "Software Proficiency",
+          "aliases": ["software skills", "tool proficiency", "applications"],
+          "indicators": ["proficient in", "used software", "tool expertise"]
+        },
+        {
+          "id": "technical-troubleshooting",
+          "name": "Technical Troubleshooting",
+          "aliases": ["debugging", "problem diagnosis", "technical issues"],
+          "indicators": ["troubleshot", "diagnosed issues", "resolved technical problems"]
+        }
+      ]
+    },
+    "sales": {
+      "name": "Sales",
+      "skills": [
+        {
+          "id": "prospecting",
+          "name": "Prospecting",
+          "aliases": ["lead generation", "cold calling", "outbound"],
+          "indicators": ["prospected", "generated leads", "cold calls"]
+        },
+        {
+          "id": "pipeline-management",
+          "name": "Pipeline Management",
+          "aliases": ["sales pipeline", "opportunity management", "funnel management"],
+          "indicators": ["managed pipeline", "sales funnel", "opportunity tracking"]
+        },
+        {
+          "id": "closing",
+          "name": "Closing",
+          "aliases": ["deal closing", "winning deals", "contract signing"],
+          "indicators": ["closed deals", "won contracts", "signed agreements"]
+        },
+        {
+          "id": "contract-negotiation",
+          "name": "Contract Negotiation",
+          "aliases": ["deal negotiation", "terms negotiation", "pricing negotiation"],
+          "indicators": ["negotiated contracts", "deal terms", "pricing discussions"]
+        },
+        {
+          "id": "territory-management",
+          "name": "Territory Management",
+          "aliases": ["territory planning", "geographic coverage", "territory ownership"],
+          "indicators": ["managed territory", "geographic region", "territory growth"]
+        },
+        {
+          "id": "quota-attainment",
+          "name": "Quota Attainment",
+          "aliases": ["hitting quota", "sales targets", "revenue targets"],
+          "indicators": ["achieved quota", "exceeded targets", "hit numbers"]
+        },
+        {
+          "id": "solution-selling",
+          "name": "Solution Selling",
+          "aliases": ["consultative selling", "value selling", "needs-based selling"],
+          "indicators": ["consultative approach", "solution-based", "value proposition"]
+        },
+        {
+          "id": "sales-presentations",
+          "name": "Sales Presentations",
+          "aliases": ["demos", "pitches", "product demonstrations"],
+          "indicators": ["gave demos", "sales pitches", "product presentations"]
+        },
+        {
+          "id": "lead-qualification",
+          "name": "Lead Qualification",
+          "aliases": ["qualifying leads", "BANT", "discovery"],
+          "indicators": ["qualified leads", "discovery calls", "assessed fit"]
+        }
+      ]
+    },
+    "marketing": {
+      "name": "Marketing",
+      "skills": [
+        {
+          "id": "campaign-management",
+          "name": "Campaign Management",
+          "aliases": ["running campaigns", "campaign execution", "marketing campaigns"],
+          "indicators": ["ran campaigns", "campaign management", "marketing execution"]
+        },
+        {
+          "id": "demand-generation",
+          "name": "Demand Generation",
+          "aliases": ["demand gen", "lead generation", "pipeline generation"],
+          "indicators": ["demand gen", "generated pipeline", "lead generation"]
+        },
+        {
+          "id": "content-creation",
+          "name": "Content Creation",
+          "aliases": ["content marketing", "copywriting", "content development"],
+          "indicators": ["created content", "wrote copy", "content strategy"]
+        },
+        {
+          "id": "seo",
+          "name": "SEO",
+          "aliases": ["search engine optimization", "organic search", "keyword optimization"],
+          "indicators": ["SEO", "organic traffic", "search rankings"]
+        },
+        {
+          "id": "paid-media",
+          "name": "Paid Media",
+          "aliases": ["paid advertising", "PPC", "digital advertising"],
+          "indicators": ["paid ads", "PPC", "advertising spend"]
+        },
+        {
+          "id": "email-marketing",
+          "name": "Email Marketing",
+          "aliases": ["email campaigns", "nurture campaigns", "email automation"],
+          "indicators": ["email campaigns", "nurture sequences", "email automation"]
+        },
+        {
+          "id": "analytics-marketing",
+          "name": "Marketing Analytics",
+          "aliases": ["marketing metrics", "campaign analytics", "performance tracking"],
+          "indicators": ["marketing analytics", "campaign performance", "ROI tracking"]
+        },
+        {
+          "id": "brand-management",
+          "name": "Brand Management",
+          "aliases": ["branding", "brand strategy", "brand positioning"],
+          "indicators": ["brand management", "brand guidelines", "positioning"]
+        },
+        {
+          "id": "social-media",
+          "name": "Social Media",
+          "aliases": ["social media marketing", "social management", "community management"],
+          "indicators": ["social media", "social channels", "community engagement"]
+        },
+        {
+          "id": "event-marketing",
+          "name": "Event Marketing",
+          "aliases": ["events", "trade shows", "webinars"],
+          "indicators": ["events", "trade shows", "webinar management"]
+        }
+      ]
+    },
+    "administrative": {
+      "name": "Administrative",
+      "skills": [
+        {
+          "id": "calendar-management",
+          "name": "Calendar Management",
+          "aliases": ["scheduling meetings", "calendar coordination", "appointment setting"],
+          "indicators": ["managed calendars", "scheduled meetings", "coordinated schedules"]
+        },
+        {
+          "id": "travel-coordination",
+          "name": "Travel Coordination",
+          "aliases": ["travel arrangements", "booking travel", "itinerary planning"],
+          "indicators": ["booked travel", "travel arrangements", "itineraries"]
+        },
+        {
+          "id": "document-management",
+          "name": "Document Management",
+          "aliases": ["filing", "record keeping", "documentation"],
+          "indicators": ["managed documents", "filing systems", "record keeping"]
+        },
+        {
+          "id": "meeting-coordination",
+          "name": "Meeting Coordination",
+          "aliases": ["meeting planning", "meeting logistics", "agenda preparation"],
+          "indicators": ["coordinated meetings", "prepared agendas", "meeting logistics"]
+        },
+        {
+          "id": "office-operations",
+          "name": "Office Operations",
+          "aliases": ["office management", "administrative operations", "front desk"],
+          "indicators": ["office operations", "administrative tasks", "office management"]
+        },
+        {
+          "id": "event-planning",
+          "name": "Event Planning",
+          "aliases": ["event coordination", "party planning", "corporate events"],
+          "indicators": ["planned events", "coordinated events", "event logistics"]
+        },
+        {
+          "id": "correspondence",
+          "name": "Correspondence",
+          "aliases": ["email management", "letter writing", "communication management"],
+          "indicators": ["managed correspondence", "drafted letters", "email management"]
+        }
+      ]
+    },
+    "self_management": {
+      "name": "Self-Management",
+      "skills": [
+        {
+          "id": "time-management",
+          "name": "Time Management",
+          "aliases": ["managing time", "prioritizing", "meeting deadlines"],
+          "indicators": ["met deadlines", "prioritized tasks", "time-sensitive"]
+        },
+        {
+          "id": "prioritization",
+          "name": "Prioritization",
+          "aliases": ["task prioritization", "workload management", "triage"],
+          "indicators": ["prioritized", "triaged", "managed workload"]
+        },
+        {
+          "id": "independence",
+          "name": "Independence",
+          "aliases": ["self-directed", "autonomous", "working independently"],
+          "indicators": ["worked independently", "self-directed", "minimal supervision"]
+        },
+        {
+          "id": "reliability",
+          "name": "Reliability",
+          "aliases": ["dependable", "consistent", "trustworthy"],
+          "indicators": ["reliable", "consistent performance", "dependable"]
+        },
+        {
+          "id": "adaptability",
+          "name": "Adaptability",
+          "aliases": ["flexibility", "adapting to change", "versatility"],
+          "indicators": ["adapted to", "flexible", "handled change"]
+        },
+        {
+          "id": "attention-to-detail",
+          "name": "Attention to Detail",
+          "aliases": ["detail-oriented", "accuracy", "thoroughness"],
+          "indicators": ["attention to detail", "accurate", "thorough"]
+        },
+        {
+          "id": "multitasking",
+          "name": "Multitasking",
+          "aliases": ["juggling tasks", "handling multiple", "concurrent tasks"],
+          "indicators": ["multitasked", "handled multiple", "juggled responsibilities"]
+        },
+        {
+          "id": "problem-solving",
+          "name": "Problem Solving",
+          "aliases": ["troubleshooting", "finding solutions", "critical thinking"],
+          "indicators": ["solved problems", "found solutions", "resolved issues"]
+        },
+        {
+          "id": "initiative",
+          "name": "Initiative",
+          "aliases": ["proactive", "self-starter", "taking initiative"],
+          "indicators": ["took initiative", "proactively", "identified opportunities"]
+        }
+      ]
+    },
+    "training": {
+      "name": "Training & Development",
+      "skills": [
+        {
+          "id": "onboarding",
+          "name": "Onboarding",
+          "aliases": ["new hire orientation", "employee onboarding", "orientation"],
+          "indicators": ["onboarded", "oriented new hires", "new employee training"]
+        },
+        {
+          "id": "training-delivery",
+          "name": "Training Delivery",
+          "aliases": ["conducting training", "teaching", "instruction"],
+          "indicators": ["trained", "conducted training", "taught"]
+        },
+        {
+          "id": "curriculum-development",
+          "name": "Curriculum Development",
+          "aliases": ["training materials", "course development", "content creation"],
+          "indicators": ["developed training", "created curriculum", "designed courses"]
+        },
+        {
+          "id": "knowledge-transfer",
+          "name": "Knowledge Transfer",
+          "aliases": ["sharing knowledge", "documentation", "process documentation"],
+          "indicators": ["transferred knowledge", "documented processes", "shared expertise"]
+        },
+        {
+          "id": "facilitation",
+          "name": "Facilitation",
+          "aliases": ["workshop facilitation", "group facilitation", "leading sessions"],
+          "indicators": ["facilitated", "led workshops", "group sessions"]
+        }
+      ]
+    }
+  },
+  "responsibilityToSkillMap": {
+    "retail_hospitality": {
+      "manage-team": ["team-management", "supervision", "delegation", "scheduling"],
+      "cash-handling": ["cash-handling", "accuracy", "attention-to-detail"],
+      "inventory": ["inventory-management", "forecasting", "cost-control"],
+      "train-employees": ["onboarding", "training-delivery", "coaching", "knowledge-transfer"],
+      "customer-escalations": ["conflict-resolution-customer", "customer-service", "escalation-handling"],
+      "open-close": ["reliability", "compliance", "cash-handling", "operations"],
+      "labor-targets": ["budgeting", "cost-control", "scheduling", "forecasting"],
+      "sales-targets": ["upselling", "sales", "performance-management"],
+      "food-safety": ["compliance", "safety-compliance", "quality-control"]
+    },
+    "sales": {
+      "own-pipeline": ["pipeline-management", "forecasting", "crm"],
+      "close-deals": ["closing", "negotiation", "solution-selling"],
+      "outbound-prospecting": ["prospecting", "cold-outreach", "lead-generation"],
+      "named-accounts": ["account-management", "relationship-management", "strategic-selling"],
+      "manage-reps": ["team-management", "coaching", "performance-management"],
+      "hit-quota": ["quota-attainment", "reliability", "performance-management"],
+      "cross-functional": ["cross-functional-collaboration", "stakeholder-management"]
+    },
+    "marketing": {
+      "demand-gen": ["demand-generation", "campaign-management", "lead-generation"],
+      "content-marketing": ["content-creation", "seo", "written-communication"],
+      "paid-media": ["paid-media", "analytics-marketing", "budgeting"],
+      "own-budget": ["budgeting", "cost-control", "financial-reporting"],
+      "manage-team": ["team-management", "delegation", "performance-management"],
+      "report-leadership": ["executive-communication", "presentation", "reporting"]
+    },
+    "operations": {
+      "process-improvement": ["process-improvement", "data-analysis", "problem-solving"],
+      "vendor-management": ["vendor-management", "negotiation", "relationship-management"],
+      "logistics": ["logistics", "supply-chain", "coordination"],
+      "manage-budget": ["budgeting", "cost-control", "financial-reporting"],
+      "compliance": ["compliance", "safety-compliance", "quality-control"]
+    },
+    "customer_success": {
+      "manage-accounts": ["account-management", "relationship-management", "retention"],
+      "handle-renewals": ["retention", "negotiation", "revenue-management"],
+      "onboard-customers": ["onboarding", "training-delivery", "client-communication"],
+      "handle-escalations": ["escalation-handling", "conflict-resolution-customer", "problem-solving"]
+    },
+    "gig_work": {
+      "delivery-driving": ["time-management", "customer-service", "reliability", "navigation"],
+      "maintain-rating": ["customer-service", "attention-to-detail", "reliability"],
+      "self-scheduling": ["time-management", "independence", "prioritization"],
+      "route-optimization": ["problem-solving", "logistics", "efficiency"]
+    },
+    "freelance": {
+      "manage-clients": ["client-communication", "project-management", "relationship-management"],
+      "deliver-projects": ["project-management", "time-management", "quality-control"],
+      "business-development": ["prospecting", "negotiation", "sales"],
+      "full-project-lifecycle": ["project-management", "client-communication", "independence"]
+    },
+    "administrative": {
+      "calendar-management": ["calendar-management", "scheduling", "attention-to-detail"],
+      "travel-arrangements": ["travel-coordination", "logistics", "attention-to-detail"],
+      "event-planning": ["event-planning", "coordination", "vendor-management"],
+      "office-operations": ["office-operations", "facilities-management", "vendor-management"]
+    },
+    "engineering": {
+      "write-code": ["software-development", "problem-solving", "technical-proficiency"],
+      "code-review": ["quality-control", "mentoring", "attention-to-detail"],
+      "architecture": ["strategic-planning", "technical-leadership", "problem-solving"],
+      "manage-engineers": ["team-management", "coaching", "performance-management"],
+      "on-call": ["reliability", "problem-solving", "technical-troubleshooting"]
+    },
+    "hr": {
+      "recruiting": ["hiring", "interviewing", "candidate-assessment"],
+      "onboarding": ["onboarding", "training-delivery", "documentation"],
+      "employee-relations": ["conflict-resolution-team", "active-listening", "compliance"],
+      "policy-work": ["compliance", "documentation", "written-communication"]
+    },
+    "finance": {
+      "close-books": ["financial-reporting", "accuracy", "attention-to-detail"],
+      "budgeting": ["budgeting", "forecasting", "financial-planning"],
+      "reporting": ["financial-reporting", "data-analysis", "presentation"],
+      "compliance": ["compliance", "accuracy", "documentation"]
+    }
+  }
+}

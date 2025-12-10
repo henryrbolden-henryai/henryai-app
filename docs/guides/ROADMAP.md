@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** November 28, 2024
+**Last Updated:** December 10, 2024
 
 ---
 
@@ -10,31 +10,141 @@ HenryAI is a strategic job search intelligence platform that provides honest, ac
 
 **Core Principle:** Quality over quantity. Strategy over spam.
 
+**Product Goal:** Users should think "What would Henry say?" before every job search decision. Henry is their strategist, not just their document generator.
+
+---
+
+## Phase 0: Conversational Resume Builder
+
+**Status:** Planned - Next Priority After Phase 1.75
+
+Transform the profile creation experience from form-filling into an AI-guided conversation that extracts skills and builds a professional resume from any background.
+
+**Strategic Goal:** Make HenryAI accessible to job seekers who don't have a polished resume yet, including career changers, gig workers, recent graduates, and underemployed professionals.
+
+### Core Concept
+
+A conversational interface (voice and/or text) that:
+1. Guides users through telling their work story naturally
+2. Extracts transferable skills from any experience (retail, gig work, volunteering, school projects)
+3. Maps those skills to professional competencies
+4. Suggests adjacent roles the user may not have considered
+5. Generates a professional resume formatted for ATS systems
+
+### Features
+
+1. **Conversational Onboarding**
+   - Text chat or voice conversation with Henry
+   - Graceful handling of uncertainty, rambling, emotional responses
+   - Progressive skill extraction as user shares experiences
+   - Celebration of transferable skills users didn't know they had
+
+2. **Skills Extraction Engine**
+   - 12 skill categories: Leadership, Operations, Customer, Financial, Communication, Technical, Sales, Marketing, Administrative, Self-Management, Training, Industry-Specific
+   - Indicator phrases mapped to skills (e.g., "handled complaints" → Customer Service, Conflict Resolution)
+   - Confidence scoring for extracted skills
+   - Responsibility-to-skill mapping for common job titles
+
+3. **Adjacent Role Mapping**
+   - 35+ role definitions with required and preferred skills
+   - Salary ranges and transition difficulty ratings
+   - "Why It Fits" explanations based on extracted skills
+   - Seniority level matching (entry, mid, senior, director)
+
+4. **Skills Analysis Presentation**
+   - Visual skill breakdown by category with proficiency levels
+   - Strength identification with evidence from conversation
+   - Growth area identification for professional development
+   - Matched roles with fit percentages
+
+5. **Resume Generation**
+   - Professional formatting from conversational input
+   - ATS-optimized structure
+   - Experience bullets using extracted skills and real examples
+   - Skills section organized by category
+
+### Voice/Text Hybrid Interaction
+
+- **Voice Mode**: OpenAI Whisper (STT) + OpenAI TTS for natural conversation
+- **Text Mode**: Chat interface for users who prefer typing
+- **Hybrid**: Start with voice, switch to text as needed
+- **Graceful Fallback**: Text always available if voice fails
+
+### User Segments
+
+| Segment | Pain Point | How Phase 0 Helps |
+|---------|-----------|-------------------|
+| Career Changers | Don't know how to translate experience | Skill mapping to new industries |
+| Gig Workers | Non-traditional work history | Extracts skills from diverse experiences |
+| Recent Grads | Limited work experience | Values internships, projects, volunteering |
+| Underemployed | Skills exceed current role | Surfaces hidden capabilities |
+| Re-entering Workforce | Employment gaps | Focuses on skills over timeline |
+
+### Integration with Existing Flow
+
+```
+NEW: Phase 0 Conversational Onboarding
+        ↓
+    Profile Created with Skills + Generated Resume
+        ↓
+EXISTING: Analyze Job → Fit Scoring → Application Strategy
+```
+
+- Replaces current profile-edit.html form-based entry
+- Generated resume becomes default for role analysis
+- Extracted skills enhance fit scoring accuracy
+- Adjacent roles inform job search strategy
+
+### Implementation Waves
+
+**Wave 1: Text-Only MVP**
+- Chat interface for conversational onboarding
+- Core skill extraction from conversation
+- Basic resume generation
+- Skills visualization
+
+**Wave 2: Voice Integration**
+- OpenAI Whisper for speech-to-text
+- OpenAI TTS for Henry's responses
+- Voice/text hybrid mode
+
+**Wave 3: Full Adjacent Role Engine**
+- Complete role database integration
+- Personalized role recommendations
+- Transition difficulty and salary insights
+
+### Reference Documents
+
+- [Resume Builder Specification](./henryai-resume-builder-spec.md) - Full implementation details
+- [Skill Taxonomy](./henryai-skill-taxonomy.json) - Complete skill categories and indicators
+- [Adjacent Roles Database](./henryai-adjacent-roles.json) - Role definitions and requirements
+- [Sample Conversations](./henryai-resume-builder-sample-conversations.md) - Example conversation flows
+
 ---
 
 ## Phase 1: Core Application Engine ✅
 
-**Status:** Complete (MVP)
+**Status:** Complete (MVP) - In Beta Testing
 
 The foundational workflow that takes a candidate from resume to application-ready materials.
 
 ### Features
 
-1. **Resume Parsing** - Extract structured candidate data
-2. **Job Description Analysis** - 50/30/20 fit scoring (Skills/Experience/Scope)
-3. **Fit Assessment** - Honest evaluation with strengths, gaps, and recommendation
-4. **Tailored Resume Generation** - ATS-optimized, no fabrication
-5. **Tailored Cover Letter Generation** - Strategic positioning, real experience only
-6. **Outreach Templates** - Hiring manager and recruiter messages
-7. **Basic Interview Prep** - Talking points and gap mitigation
-8. **Application Tracker** - Status tracking with actionable next steps
-9. **Reality Check** - Honest market context and networking strategies
-10. **Download Package** - ZIP with resume, cover letter, and outreach templates
+1. **Resume Parsing** ✅ - Extract structured candidate data
+2. **Job Description Analysis** ✅ - 50/30/20 fit scoring (Skills/Experience/Scope)
+3. **Fit Assessment** ✅ - Honest evaluation with strengths, gaps, and recommendation
+4. **Tailored Resume Generation** ✅ - ATS-optimized, no fabrication
+5. **Tailored Cover Letter Generation** ✅ - Strategic positioning, real experience only
+6. **Outreach Templates** ✅ - Hiring manager and recruiter messages
+7. **Basic Interview Prep** ✅ - Talking points and gap mitigation
+8. **Application Tracker** ✅ - Status tracking with actionable next steps
+9. **Reality Check** ✅ - Honest market context and networking strategies
+10. **Download Package** ✅ - ZIP with resume, cover letter, and outreach templates
 
 ### 10-Step Workflow
 
 1. Upload resume
-2. Paste job description
+2. Paste job description (or extract from URL)
 3. Analyze fit (50/30/20 scoring)
 4. Review strengths and gaps
 5. Generate tailored resume
@@ -46,15 +156,126 @@ The foundational workflow that takes a candidate from resume to application-read
 
 ---
 
+## Phase 1.5: Interview Intelligence ✅
+
+**Status:** Complete - In Beta Testing
+
+Advanced interview preparation and post-interview analysis, accelerated from Phase 3.
+
+### Features
+
+1. **Interview Transcript Analysis** ✅ - Upload or paste transcript for feedback
+2. **Response Scoring** ✅ - Rate content, clarity, relevance, structure, impact
+3. **Mock Interview Prep** ✅ - Practice questions tailored to role with real-time feedback
+4. **Interview Debrief** ✅ - Post-interview analysis with coaching and next steps
+5. **Interviewer Intelligence** ✅ - Analyze interviewer LinkedIn profiles for communication patterns
+6. **Practice Drills** ✅ - Dedicated practice interface for specific question types
+7. **Intro/Elevator Pitch Practice** ✅ - Practice and refine your introduction with feedback
+
+### Additional Features Built
+
+- **Ask Henry Chat** ✅ - AI assistant widget available on all pages for contextual help
+- **Text-to-Speech** ✅ - Audio generation for interview prep materials
+- **URL JD Extraction** ✅ - Extract job descriptions directly from job posting URLs
+- **Screening Question Responses** ✅ - Generate responses to application screening questions
+- **Thank You Email Generation** ✅ - Post-interview thank you messages
+
+---
+
+## Phase 1.75: Engagement & Coaching Layer
+
+**Status:** In Development - Current Priority
+
+Transform Henry from a tool into a coach. Drive engagement beyond document generation to make HenryAI the user's one-stop job search hub.
+
+**Strategic Goal:** Users currently get resume/cover letter and leave. This phase makes the other sections (Positioning, Network Intelligence, Interview Intelligence) feel essential, not optional.
+
+### Henry as Proactive Coach
+
+Shift Henry from reactive (waits for questions) to proactive (initiates guidance).
+
+- **Application Readiness Score** - Visual progress indicator showing preparation completeness
+  - Resume tailored (20%)
+  - Cover letter generated (15%)
+  - Positioning reviewed (10%)
+  - Outreach prepared (20%)
+  - Interview prep started (15%)
+  - Mock interview completed (20%)
+
+- **Proactive Notifications** - Henry nudges users based on their pipeline
+  - Follow-up reminders: "You applied to [Company] 5 days ago. Want me to draft a follow-up?"
+  - Interview prep alerts: "Your interview is in 2 days. You haven't done mock practice yet."
+  - Stale application warnings: "[Company] has been quiet for 2 weeks. Should we discuss next steps?"
+  - Post-interview prompts: "How did your interview go? Let's debrief."
+
+- **Daily Pulse** - Dashboard summary on tracker page
+  - Active applications count
+  - Follow-ups due today
+  - Upcoming interviews
+  - Highest priority action
+
+- **Application Import** - Import existing job search tracking
+  - CSV/Excel import for candidates already tracking via spreadsheets
+  - Column mapping for company, role, status, dates
+  - Reduces friction for users with existing systems
+
+### Insight-Driven Navigation
+
+Surface personalized insights that create curiosity and drive exploration.
+
+- **Teaser Insights on Overview Cards** - Don't just list sections, show what's inside
+  - Positioning: "Your biggest gap is [X]. I have 3 ways to address it."
+  - Network Intelligence: "I found the likely hiring manager. Direct outreach could 2x your response rate."
+  - Interview Intelligence: "[Company] asks behavioral questions 73% of the time. You have 2 strong stories."
+
+- **Post-Download Guidance** - After downloading documents, guide to next high-impact action
+  - Modal: "Your documents are ready! But 70% of jobs are filled through referrals. I found 2 people to reach out to."
+
+### Enhanced Ask Henry
+
+Position Ask Henry as the central strategic hub, not just a help widget.
+
+- **Proactive Conversation Starters** - Context-aware opening messages
+- **Action Suggestions in Responses** - Include clickable next steps in Henry's answers
+- **"What Should I Do Next?" Intelligence** - Smart prioritization of user's next best action
+- **Cross-Page Context** - Henry remembers conversation across page navigation
+
+### Success Metrics
+
+| Metric | Current (Est.) | Target |
+|--------|----------------|--------|
+| Pages visited per session | 2-3 | 5+ |
+| Return visits per week | 1-2 | 4+ |
+| Network Intelligence views | 10% | 50%+ |
+| Interview Intelligence views | 15% | 60%+ |
+| Mock interview completion | 5% | 30%+ |
+| Time on platform per session | 3-5 min | 10+ min |
+
+### Implementation Priority
+
+**Wave 1: Quick Wins**
+1. Teaser Insights on Overview Cards
+2. Post-Download Modal for Network Intelligence
+3. Daily Pulse Banner on Tracker
+
+**Wave 2: Core Systems**
+4. Application Readiness Score
+5. Proactive Ask Henry enhancements
+
+**Wave 3: Full Notification System**
+6. Henry Notification Engine with triggers, UI, and actions
+
+---
+
 ## Phase 2: Strategic Intelligence Layer
 
-**Status:** Planned
+**Status:** Partially Complete
 
 Enhances decision-making with market intelligence and broader career positioning.
 
 ### Job Quality and Market Intelligence
 
-- **Job Quality Scoring** - Strong/Medium/Weak assessment of role legitimacy
+- **Job Quality Scoring** ✅ - Apply/Apply with caution/Skip assessment of role legitimacy
 - **Industry Translation Engine** - Help career switchers reframe experience
 - **Adjacent Role Mapping** - Surface related roles candidate may not have considered
 - **Level Mismatch Detection** - Flag when candidate is over/under qualified
@@ -63,29 +284,29 @@ Enhances decision-making with market intelligence and broader career positioning
 
 - **LinkedIn Profile Score** - 0-100 rating with specific fixes
 - **LinkedIn Optimization Module** - Rewrite headline, About, bullets, skills for visibility
+- **LinkedIn Network Intelligence** ✅ (Partial) - Search queries for hiring managers/recruiters
 
 ### Tracker Enhancements
 
-- **Google Calendar Sync** - Add interviews to calendar automatically
-- **Apple Calendar Sync** - Add interviews to calendar automatically
-- **Action Item Reminders** - Email or push alerts for follow-ups
-- **Follow-up Timing Alerts** - "It has been 7 days, time to follow up"
+- **Calendar Sync** ✅ (Backend) - ICS file generation for Google/Apple Calendar (needs frontend triggers)
+- **Action Item Reminders** - Email or push alerts for follow-ups (moved to Phase 1.75)
+- **Follow-up Timing Alerts** ✅ (Phase 1.75) - "It has been 7 days, time to follow up"
 - **Similar Roles Feed** - Auto-surface matching roles from job boards (Indeed API)
 
 ---
 
 ## Phase 3: Performance Intelligence Layer
 
-**Status:** Future
+**Status:** Partially Complete (Interview features moved to Phase 1.5)
 
 Post-application coaching and interview performance optimization.
 
-### Interview Intelligence
+### Interview Intelligence (Moved to Phase 1.5)
 
-- **Interview Transcript Analysis** - Upload or paste transcript for feedback
-- **Response Scoring** - Rate content, clarity, delivery, confidence
+- ~~Interview Transcript Analysis~~ ✅ Implemented
+- ~~Response Scoring~~ ✅ Implemented
 - **Behavioral Example Library** - Build STAR stories from past experience
-- **Mock Interview Prep** - Practice questions tailored to role
+- ~~Mock Interview Prep~~ ✅ Implemented
 
 ### Negotiation and Offers
 
@@ -113,6 +334,13 @@ Expand reach and integrate with job search ecosystem.
 - **Peer Review Network** - Get feedback from other job seekers
 - **Industry-Specific Communities** - TA professionals, engineers, etc.
 - **Success Stories** - Share wins and strategies
+
+### External Engagement
+
+- **Weekly Email Digest** - Personalized summary driving users back to platform
+  - Pipeline health metrics
+  - What's working analysis
+  - Priority actions for the week
 
 ---
 
@@ -154,16 +382,6 @@ These features conflict with HenryAI's philosophy:
 
 ---
 
-## Phase Enforcement Rule
-
-If a user requests a feature from a future phase:
-
-> "This feature is planned for a future phase. Would you like me to activate it for this request?"
-
-No assumptions. User stays in control.
-
----
-
 ## Development Principles
 
 1. **No fabrication** - Every word must trace to real experience
@@ -171,11 +389,74 @@ No assumptions. User stays in control.
 3. **Recruiter perspective** - Build what actually moves the needle in hiring
 4. **Phase discipline** - Complete each phase before starting the next
 5. **User testing first** - Validate with real users before expanding features
+6. **Engagement over features** - A used feature beats an unused feature
 
 ---
 
 ## Current Priority
 
-**Phase 1 Polish:** User testing with 5-10 real candidates to validate core workflow before Phase 2 development begins.
+**Phase 1.75: Engagement & Coaching Layer** (Current)
 
-**Next Up:** Indeed Publisher API integration for Similar Roles feed.
+The best features mean nothing if users don't engage with them. Before adding more capabilities, ensure users are getting full value from what's already built.
+
+**Completed (Wave 1):**
+1. ✅ Teaser Insights on Overview Cards
+2. ✅ Post-Download Modal guiding to Network Intelligence
+3. ✅ Daily Pulse Banner on Tracker
+4. ✅ Command Center card on Overview
+5. ✅ Standardized "Command Center" naming across nav
+
+**Next (Wave 2):**
+- Application Readiness Score
+- Proactive Ask Henry enhancements
+
+---
+
+**Phase 0: Conversational Resume Builder** (Next After 1.75)
+
+Expand HenryAI's accessibility to users who don't have a polished resume yet.
+
+**Wave 1 Focus (Text-Only MVP):**
+1. Conversational chat interface for profile creation
+2. Skill extraction engine with taxonomy integration
+3. Basic resume generation from conversation
+4. Skills visualization dashboard
+
+**Wave 2 (Voice Integration):**
+- OpenAI Whisper speech-to-text
+- OpenAI TTS for Henry responses
+- Voice/text hybrid mode
+
+**Wave 3 (Adjacent Roles):**
+- Full role recommendation engine
+- Career transition insights
+
+---
+
+**Beta Testing Continues:**
+- Core 10-step application workflow
+- Mock interview experience
+- Interview debrief accuracy
+- Ask Henry contextual helpfulness
+- Engagement metrics tracking
+
+---
+
+## Implementation Summary
+
+| Phase | Status | Completion |
+|-------|--------|------------|
+| Phase 0: Conversational Resume Builder | Planned | 0% |
+| Phase 1: Core Application Engine | Complete | 100% |
+| Phase 1.5: Interview Intelligence | Complete | 100% |
+| Phase 1.75: Engagement & Coaching | **In Progress** | ~30% |
+| Phase 2: Strategic Intelligence | Partial | ~30% |
+| Phase 3: Performance Intelligence | Partial | ~20% |
+| Phase 4: Distribution & Ecosystem | Not Started | 0% |
+| Phase 5: Monetization & Scale | Not Started | 0% |
+
+---
+
+## Reference Documents
+
+- [Engagement Strategy Implementation Plan](./ENGAGEMENT_STRATEGY_IMPLEMENTATION.md) - Detailed technical specs for Phase 1.75

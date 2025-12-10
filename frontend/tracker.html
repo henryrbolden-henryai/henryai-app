@@ -187,6 +187,88 @@
             transform: translateY(-1px);
         }
 
+        /* DAILY PULSE BANNER */
+        .daily-pulse {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .pulse-header {
+            margin-bottom: 16px;
+        }
+
+        .pulse-greeting {
+            font-size: 1.1rem;
+            color: var(--color-text);
+            font-weight: 500;
+        }
+
+        .pulse-stats {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 16px;
+        }
+
+        .pulse-stat {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .pulse-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent);
+        }
+
+        .pulse-stat.highlight .pulse-stat-value {
+            color: var(--color-hot);
+        }
+
+        .pulse-stat-label {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pulse-action {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pulse-action-text {
+            color: var(--color-text);
+            font-size: 0.95rem;
+        }
+
+        .pulse-action-text strong {
+            color: var(--color-accent);
+        }
+
+        .pulse-action-btn {
+            padding: 8px 16px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .pulse-action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
         /* PIPELINE INTELLIGENCE DASHBOARD */
         .pipeline-dashboard {
             display: grid;
@@ -2101,6 +2183,30 @@
             <div>
                 <h1>Pipeline Command Center</h1>
                 <p class="subtitle">Your strategic view of every opportunity in play</p>
+            </div>
+        </div>
+
+        <!-- DAILY PULSE BANNER -->
+        <div class="daily-pulse" id="dailyPulse" style="display: none;">
+            <div class="pulse-header">
+                <div class="pulse-greeting" id="pulseGreeting">Good morning! Here's your job search pulse:</div>
+            </div>
+            <div class="pulse-stats">
+                <div class="pulse-stat">
+                    <span class="pulse-stat-value" id="pulseActive">0</span>
+                    <span class="pulse-stat-label">active apps</span>
+                </div>
+                <div class="pulse-stat highlight" id="pulseFollowUpStat" style="display: none;">
+                    <span class="pulse-stat-value" id="pulseFollowUps">0</span>
+                    <span class="pulse-stat-label">follow-ups due</span>
+                </div>
+                <div class="pulse-stat highlight" id="pulseInterviewStat" style="display: none;">
+                    <span class="pulse-stat-value" id="pulseInterviews">0</span>
+                    <span class="pulse-stat-label">upcoming interviews</span>
+                </div>
+            </div>
+            <div class="pulse-action" id="pulseAction">
+                <!-- Dynamic priority action -->
             </div>
         </div>
 
@@ -4853,12 +4959,105 @@
         }
 
         // ========================================================================
+        // DAILY PULSE BANNER
+        // ========================================================================
+        function renderDailyPulse(apps) {
+            const pulseEl = document.getElementById('dailyPulse');
+
+            // Only show if there are active applications
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+            if (activeApps.length === 0) {
+                pulseEl.style.display = 'none';
+                return;
+            }
+
+            pulseEl.style.display = 'block';
+
+            // Set greeting based on time of day
+            const hour = new Date().getHours();
+            let greeting = 'Good morning';
+            if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+            else if (hour >= 17) greeting = 'Good evening';
+            document.getElementById('pulseGreeting').textContent = `${greeting}! Here's your job search pulse:`;
+
+            // Count active apps
+            document.getElementById('pulseActive').textContent = activeApps.length;
+
+            // Count follow-ups due (applied 5+ days ago without progress)
+            const followUpsDue = apps.filter(a => {
+                const daysSince = getDaysSince(a.dateApplied || a.dateAdded);
+                return ['Applied', 'Reached Out'].includes(a.status) && daysSince >= 5;
+            });
+            const followUpStat = document.getElementById('pulseFollowUpStat');
+            if (followUpsDue.length > 0) {
+                document.getElementById('pulseFollowUps').textContent = followUpsDue.length;
+                followUpStat.style.display = 'flex';
+            } else {
+                followUpStat.style.display = 'none';
+            }
+
+            // Count upcoming interviews (interviewing statuses)
+            const interviewingStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
+                                          'Panel Interview', 'Final Round', 'Executive Interview'];
+            const upcomingInterviews = apps.filter(a => interviewingStatuses.includes(a.status));
+            const interviewStat = document.getElementById('pulseInterviewStat');
+            if (upcomingInterviews.length > 0) {
+                document.getElementById('pulseInterviews').textContent = upcomingInterviews.length;
+                interviewStat.style.display = 'flex';
+            } else {
+                interviewStat.style.display = 'none';
+            }
+
+            // Determine priority action
+            const pulseAction = document.getElementById('pulseAction');
+            let actionHtml = '';
+
+            if (upcomingInterviews.length > 0) {
+                const nextInterview = upcomingInterviews[0];
+                actionHtml = `
+                    <span class="pulse-action-text">
+                        <strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}
+                    </span>
+                    <a href="interview-intelligence.html" class="pulse-action-btn">Prep Now</a>
+                `;
+            } else if (followUpsDue.length > 0) {
+                const oldestFollowUp = followUpsDue.sort((a, b) =>
+                    new Date(a.dateApplied || a.dateAdded) - new Date(b.dateApplied || b.dateAdded)
+                )[0];
+                const daysSince = getDaysSince(oldestFollowUp.dateApplied || oldestFollowUp.dateAdded);
+                actionHtml = `
+                    <span class="pulse-action-text">
+                        <strong>Priority:</strong> Follow up with ${oldestFollowUp.company} (${daysSince} days since applying)
+                    </span>
+                    <button class="pulse-action-btn" onclick="navigateWithAnalysis(${oldestFollowUp.id}, 'outreach.html')">Draft Follow-up</button>
+                `;
+            } else if (activeApps.length < 5) {
+                actionHtml = `
+                    <span class="pulse-action-text">
+                        <strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Consider adding more to increase your odds.
+                    </span>
+                    <a href="analyze.html" class="pulse-action-btn">Analyze New Role</a>
+                `;
+            } else {
+                actionHtml = `
+                    <span class="pulse-action-text">
+                        <strong>Looking good!</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.
+                    </span>
+                    <a href="analyze.html" class="pulse-action-btn">Add Another</a>
+                `;
+            }
+
+            pulseAction.innerHTML = actionHtml;
+        }
+
+        // ========================================================================
         // RENDER ALL
         // ========================================================================
         function renderAll(apps) {
             const metrics = calculatePipelineMetrics(apps);
             const priorities = getStrategicPriorities(apps);
 
+            renderDailyPulse(apps);
             renderPipelineMetrics(metrics);
             renderStrategicPriorities(priorities);
             renderPatternAlert(apps);

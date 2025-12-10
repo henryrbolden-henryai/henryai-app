@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Started — HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        header .header-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        /* Main content */
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .hero-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 48px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Path cards */
+        .path-options {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .path-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .path-card:hover {
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.1);
+        }
+
+        .path-card.primary {
+            background: var(--color-accent-muted);
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        .path-card.primary:hover {
+            border-color: var(--color-accent);
+        }
+
+        .path-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .path-content {
+            flex: 1;
+        }
+
+        .path-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .path-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            background: var(--color-accent);
+            color: #000;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .path-description {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .path-arrow {
+            color: var(--color-text-secondary);
+            font-size: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .path-card:hover .path-arrow {
+            transform: translateX(4px);
+            color: var(--color-accent);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .hero-icon {
+                font-size: 3rem;
+            }
+
+            .path-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .path-icon {
+                margin: 0 auto;
+            }
+
+            .path-arrow {
+                display: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="hero-icon">👋</div>
+            <h1>Let's Get to Know You</h1>
+            <p class="subtitle">
+                Before we dive in, I need to learn about your experience. Choose how you would like to share your background with me.
+            </p>
+
+            <div class="path-options">
+                <a href="resume-chat.html" class="path-card primary">
+                    <div class="path-icon">🎙️</div>
+                    <div class="path-content">
+                        <div class="path-title">
+                            Have a Conversation with Henry
+                            <span class="path-badge">Recommended</span>
+                        </div>
+                        <div class="path-description">
+                            Tell me about your work experience in your own words. I will extract your skills and build your profile as we talk.
+                        </div>
+                    </div>
+                    <div class="path-arrow">→</div>
+                </a>
+
+                <a href="profile-edit.html" class="path-card">
+                    <div class="path-icon">📄</div>
+                    <div class="path-content">
+                        <div class="path-title">I Already Have a Resume</div>
+                        <div class="path-description">
+                            Upload your existing resume and I will parse it for you. Quick setup if you already have a document ready.
+                        </div>
+                    </div>
+                    <div class="path-arrow">→</div>
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

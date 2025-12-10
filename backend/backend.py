@@ -6737,6 +6737,421 @@ TOP APPLICATIONS IN PIPELINE:
 
 
 # ============================================================================
+# RESUME BUILDER - CONVERSATIONAL ONBOARDING
+# ============================================================================
+
+class ResumeChatMessage(BaseModel):
+    """Single message in resume chat conversation."""
+    role: str  # 'user' or 'assistant'
+    content: str
+
+
+class ExtractedSkill(BaseModel):
+    """A skill extracted from conversation."""
+    skill_name: str
+    category: str
+    evidence: str
+    confidence: str = "medium"  # high, medium, low
+
+
+class ResumeChatRequest(BaseModel):
+    """Request for resume builder conversation."""
+    conversation_history: List[ResumeChatMessage]
+    current_state: str = "START"
+    extracted_data: Optional[Dict[str, Any]] = None
+
+
+class ResumeChatResponse(BaseModel):
+    """Response from resume builder conversation."""
+    response: str
+    next_state: str
+    extracted_data: Dict[str, Any]
+    skills_extracted: List[ExtractedSkill] = []
+    suggested_responses: List[str] = []
+
+
+# Skill taxonomy (simplified version - full version in frontend/docs)
+SKILL_CATEGORIES = {
+    "leadership": ["Team Coordination", "Training", "Delegation", "Mentoring", "Decision Making"],
+    "operations": ["Process Improvement", "Inventory Management", "Quality Control", "Scheduling", "Logistics"],
+    "customer": ["Customer Service", "Conflict Resolution", "Client Relations", "Upselling", "Account Management"],
+    "communication": ["Written Communication", "Verbal Communication", "Presentation", "Negotiation", "Active Listening"],
+    "technical": ["Data Analysis", "Software Skills", "Technical Writing", "Problem Solving", "Research"],
+    "financial": ["Budgeting", "Financial Analysis", "Cash Handling", "Cost Reduction", "Forecasting"],
+    "sales": ["Sales", "Lead Generation", "Account Growth", "Pipeline Management", "Closing"],
+    "marketing": ["Marketing", "Social Media", "Content Creation", "Brand Management", "Campaign Management"],
+    "administrative": ["Organization", "Documentation", "Scheduling", "Filing", "Compliance"],
+    "self_management": ["Time Management", "Adaptability", "Reliability", "Initiative", "Stress Management"]
+}
+
+RESUME_CHAT_SYSTEM_PROMPT = """You are Henry, a warm and supportive career coach helping someone build their resume through conversation. Your goal is to extract their skills and work experience through natural dialogue.
+
+## YOUR PERSONALITY
+- Warm, encouraging, and direct
+- Find the positive in any experience
+- Never judge unconventional work history
+- Celebrate transferable skills people don't realize they have
+- Use casual, friendly language
+- IMPORTANT: Never use em dashes (—) in your responses. Use commas, periods, or separate sentences instead.
+
+## CONVERSATION STATES
+The conversation progresses through these states:
+1. START → CURRENT_ROLE: Ask about their main recent work/activity
+2. CURRENT_ROLE → RESPONSIBILITIES: Learn what they did day-to-day
+3. RESPONSIBILITIES → ACHIEVEMENTS: Dig into specific accomplishments
+4. ACHIEVEMENTS → PREVIOUS_ROLES: Ask about earlier experience
+5. PREVIOUS_ROLES → EDUCATION: Ask about education/training
+6. EDUCATION → SKILLS_SUMMARY: Summarize what you've learned
+7. SKILLS_SUMMARY → ROLE_GOALS: Ask what kind of work they want
+8. ROLE_GOALS → COMPLETE: Wrap up and prepare for skills analysis
+
+## SKILL EXTRACTION
+As the user shares experiences, identify transferable skills. Look for indicators like:
+- "Managed" / "supervised" / "trained" → Leadership, Training
+- "Handled complaints" / "dealt with customers" → Customer Service, Conflict Resolution
+- "Organized" / "scheduled" / "coordinated" → Organization, Scheduling
+- "Sold" / "upsold" / "recommended" → Sales, Upselling
+- "Fixed problems" / "figured out" → Problem Solving
+- "Made sure" / "ensured" / "quality" → Quality Control
+- "Communicated" / "explained" / "presented" → Communication
+- Working under pressure, multitasking → Stress Management, Time Management
+
+## RESPONSE FORMAT
+You must respond with valid JSON in this exact format:
+{{
+    "response": "Your conversational response to the user",
+    "next_state": "CURRENT_STATE or next state in flow",
+    "extracted_data": {{
+        "contact": {{}},
+        "experiences": [
+            {{
+                "title": "Job title if known",
+                "company": "Company name if known",
+                "industry": "Industry type",
+                "duration": "Time period",
+                "responsibilities": ["list of duties mentioned"],
+                "achievements": ["specific accomplishments"]
+            }}
+        ],
+        "skills": ["list of skill names extracted"],
+        "education": []
+    }},
+    "skills_extracted": [
+        {{
+            "skill_name": "Name of skill",
+            "category": "category from list",
+            "evidence": "What they said that shows this skill",
+            "confidence": "high/medium/low"
+        }}
+    ],
+    "suggested_responses": ["Quick reply option 1", "Quick reply option 2"]
+}}
+
+## CURRENT CONVERSATION STATE: {current_state}
+
+## PREVIOUSLY EXTRACTED DATA:
+{extracted_data}
+
+## IMPORTANT GUIDELINES
+1. Keep responses concise (2-3 sentences max) to maintain conversation flow
+2. Ask follow-up questions to get specific examples
+3. Always be encouraging - find value in any work experience
+4. If they seem stuck or uncertain, offer examples or rephrase
+5. For gig workers/non-traditional work, emphasize customer service, time management, self-direction
+6. If they mention negative experiences, acknowledge and redirect positively
+7. Move naturally between states - don't rush, but don't linger unnecessarily
+8. When you have enough info about current role, move to previous roles
+9. When transitioning to COMPLETE, summarize the key skills you've identified
+
+Remember: You're helping someone see the professional value in their experiences. Many people undersell themselves - your job is to help them see their transferable skills."""
+
+
+@app.post("/api/resume-chat", response_model=ResumeChatResponse)
+async def resume_chat(request: ResumeChatRequest):
+    """
+    RESUME CHAT: Conversational resume building through natural dialogue.
+
+    Guides users through sharing their experience and extracts skills
+    for resume generation.
+    """
+    print(f"📝 Resume Chat: State={request.current_state}, Messages={len(request.conversation_history)}")
+
+    # Format extracted data for prompt
+    extracted_data_str = json.dumps(request.extracted_data or {}, indent=2)
+
+    system_prompt = RESUME_CHAT_SYSTEM_PROMPT.format(
+        current_state=request.current_state,
+        extracted_data=extracted_data_str
+    )
+
+    # Build messages for Claude
+    messages = []
+    for msg in request.conversation_history:
+        messages.append({
+            "role": msg.role if msg.role in ["user", "assistant"] else "user",
+            "content": msg.content
+        })
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1500,
+            system=system_prompt,
+            messages=messages
+        )
+
+        response_text = response.content[0].text
+        print(f"✅ Resume Chat raw response: {response_text[:200]}...")
+
+        # Parse JSON response
+        try:
+            # Handle potential markdown code blocks
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            parsed = json.loads(response_text)
+
+            # Validate and extract fields
+            return ResumeChatResponse(
+                response=parsed.get("response", "I'd love to hear more about your experience."),
+                next_state=parsed.get("next_state", request.current_state),
+                extracted_data=parsed.get("extracted_data", request.extracted_data or {}),
+                skills_extracted=[
+                    ExtractedSkill(**skill) for skill in parsed.get("skills_extracted", [])
+                ],
+                suggested_responses=parsed.get("suggested_responses", [])
+            )
+
+        except json.JSONDecodeError as e:
+            print(f"⚠️ Failed to parse JSON response: {e}")
+            # Return a graceful fallback
+            return ResumeChatResponse(
+                response=response_text if len(response_text) < 500 else "Tell me more about what you did in that role.",
+                next_state=request.current_state,
+                extracted_data=request.extracted_data or {},
+                skills_extracted=[],
+                suggested_responses=["I was responsible for...", "My main duties included...", "I mostly did..."]
+            )
+
+    except Exception as e:
+        print(f"🔥 Resume Chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process conversation: {str(e)}")
+
+
+class GenerateResumeFromChatRequest(BaseModel):
+    """Request to generate resume from chat-extracted data."""
+    extracted_data: Dict[str, Any]
+    target_role: Optional[str] = None
+
+
+class GenerateResumeFromChatResponse(BaseModel):
+    """Generated resume from conversation data."""
+    resume_text: str
+    resume_html: str
+    sections: Dict[str, Any]
+
+
+RESUME_GENERATION_PROMPT = """Based on the following extracted data from a conversation, generate a professional resume.
+
+## EXTRACTED DATA:
+{extracted_data}
+
+## TARGET ROLE (if specified):
+{target_role}
+
+## GUIDELINES:
+1. Create a professional resume with clear sections
+2. Use the skills and experience shared in conversation
+3. Write achievement-focused bullets using the STAR format where possible
+4. Don't fabricate or embellish - only use what was actually shared
+5. If target role is specified, emphasize relevant skills
+6. Keep it concise - 1 page equivalent
+
+## OUTPUT FORMAT:
+Return JSON with this structure:
+{{
+    "resume_text": "Plain text version of the resume",
+    "resume_html": "HTML formatted version with basic styling",
+    "sections": {{
+        "summary": "Professional summary paragraph",
+        "experience": [
+            {{
+                "title": "Job Title",
+                "company": "Company Name",
+                "dates": "Date range",
+                "bullets": ["Achievement 1", "Achievement 2"]
+            }}
+        ],
+        "skills": ["Skill 1", "Skill 2"],
+        "education": "Education details if any"
+    }}
+}}"""
+
+
+@app.post("/api/generate-resume-from-chat", response_model=GenerateResumeFromChatResponse)
+async def generate_resume_from_chat(request: GenerateResumeFromChatRequest):
+    """
+    Generate a professional resume from conversation-extracted data.
+    """
+    print(f"📄 Generating resume from chat data...")
+
+    system_prompt = RESUME_GENERATION_PROMPT.format(
+        extracted_data=json.dumps(request.extracted_data, indent=2),
+        target_role=request.target_role or "Not specified - create general resume"
+    )
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=3000,
+            messages=[{
+                "role": "user",
+                "content": "Generate the resume based on the conversation data provided in the system prompt."
+            }],
+            system=system_prompt
+        )
+
+        response_text = response.content[0].text
+
+        # Parse JSON response
+        try:
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            parsed = json.loads(response_text)
+
+            return GenerateResumeFromChatResponse(
+                resume_text=parsed.get("resume_text", ""),
+                resume_html=parsed.get("resume_html", ""),
+                sections=parsed.get("sections", {})
+            )
+
+        except json.JSONDecodeError:
+            # Create basic resume from extracted data
+            name = request.extracted_data.get("contact", {}).get("name", "Candidate")
+            skills = request.extracted_data.get("skills", [])
+            experiences = request.extracted_data.get("experiences", [])
+
+            basic_text = f"{name}\n\n"
+            if skills:
+                basic_text += "SKILLS: " + ", ".join(skills) + "\n\n"
+            if experiences:
+                basic_text += "EXPERIENCE:\n"
+                for exp in experiences:
+                    basic_text += f"{exp.get('title', 'Role')} at {exp.get('company', 'Company')}\n"
+                    for resp in exp.get("responsibilities", []):
+                        basic_text += f"  - {resp}\n"
+
+            return GenerateResumeFromChatResponse(
+                resume_text=basic_text,
+                resume_html=f"<pre>{basic_text}</pre>",
+                sections={
+                    "summary": "",
+                    "experience": experiences,
+                    "skills": skills,
+                    "education": ""
+                }
+            )
+
+    except Exception as e:
+        print(f"🔥 Resume generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate resume: {str(e)}")
+
+
+# ============================================================================
+# VOICE ENDPOINTS (Whisper STT + OpenAI TTS)
+# ============================================================================
+
+# Import OpenAI for voice features
+try:
+    import openai
+    OPENAI_CLIENT = openai.OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+except ImportError:
+    OPENAI_CLIENT = None
+    print("⚠️ OpenAI library not installed - voice features disabled")
+
+
+class SpeakRequest(BaseModel):
+    """Request for text-to-speech."""
+    text: str
+    voice: str = "alloy"  # alloy, echo, fable, onyx, nova, shimmer
+
+
+@app.post("/api/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Transcribe audio using OpenAI Whisper.
+    Accepts audio file uploads and returns transcribed text.
+    """
+    if not OPENAI_CLIENT:
+        raise HTTPException(status_code=503, detail="Voice features not configured. Please set OPENAI_API_KEY.")
+
+    print(f"🎙️ Transcribing audio: {audio.filename}, {audio.content_type}")
+
+    try:
+        # Read audio content
+        audio_content = await audio.read()
+
+        # Create a temporary file-like object for OpenAI
+        audio_file = io.BytesIO(audio_content)
+        audio_file.name = audio.filename or "recording.webm"
+
+        # Call Whisper API
+        transcription = OPENAI_CLIENT.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
+            response_format="text"
+        )
+
+        print(f"✅ Transcribed: {transcription[:100]}...")
+
+        return {"text": transcription}
+
+    except Exception as e:
+        print(f"🔥 Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
+@app.post("/api/speak")
+async def text_to_speech(request: SpeakRequest):
+    """
+    Convert text to speech using OpenAI TTS.
+    Returns audio stream.
+    """
+    if not OPENAI_CLIENT:
+        raise HTTPException(status_code=503, detail="Voice features not configured. Please set OPENAI_API_KEY.")
+
+    print(f"🔊 TTS request: {request.text[:50]}... (voice: {request.voice})")
+
+    try:
+        # Call OpenAI TTS API
+        response = OPENAI_CLIENT.audio.speech.create(
+            model="tts-1",
+            voice=request.voice,
+            input=request.text
+        )
+
+        # Stream the audio response
+        audio_content = response.content
+
+        return StreamingResponse(
+            io.BytesIO(audio_content),
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": "attachment; filename=speech.mp3"
+            }
+        )
+
+    except Exception as e:
+        print(f"🔥 TTS error: {e}")
+        raise HTTPException(status_code=500, detail=f"Text-to-speech failed: {str(e)}")
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 
@@ -6746,4 +7161,8 @@ if __name__ == "__main__":
     print(f"\n🚀 Henry Job Search Engine API starting on http://localhost:{port}")
     print(f"📚 API docs available at http://localhost:{port}/docs")
     print(f"🔑 Using Anthropic API key: {API_KEY[:20]}...")
+    if OPENAI_API_KEY:
+        print(f"🎙️ Voice features enabled (OpenAI key: {OPENAI_API_KEY[:20]}...)")
+    else:
+        print("⚠️ Voice features disabled (no OPENAI_API_KEY)")
     uvicorn.run(app, host="0.0.0.0", port=port)

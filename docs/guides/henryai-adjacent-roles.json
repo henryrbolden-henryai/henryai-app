@@ -1,0 +1,631 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-12-10",
+  "roles": [
+    {
+      "id": "operations-coordinator",
+      "title": "Operations Coordinator",
+      "field": "Operations",
+      "description": "Coordinates day-to-day operations, manages schedules, and ensures smooth workflow across teams.",
+      "requiredSkills": ["scheduling", "inventory-management", "process-improvement", "coordination"],
+      "preferredSkills": ["vendor-management", "budgeting", "team-management", "data-entry"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 65000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "shift-supervisor", "warehouse-lead"],
+      "whyItFits": "Your inventory, scheduling, and process management experience translates directly to operations coordination.",
+      "relatedTitles": ["Operations Associate", "Operations Specialist", "Business Operations Coordinator"]
+    },
+    {
+      "id": "hr-coordinator",
+      "title": "HR Coordinator",
+      "field": "Human Resources",
+      "description": "Supports HR functions including onboarding, employee records, and coordination of HR programs.",
+      "requiredSkills": ["onboarding", "training-delivery", "scheduling", "documentation"],
+      "preferredSkills": ["compliance", "employee-relations", "data-entry", "attention-to-detail"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "shift-supervisor", "team-lead"],
+      "whyItFits": "You have already done onboarding, training, and retention work. HR coordination formalizes these skills.",
+      "relatedTitles": ["HR Assistant", "People Operations Coordinator", "Talent Coordinator"]
+    },
+    {
+      "id": "customer-success-associate",
+      "title": "Customer Success Associate",
+      "field": "Customer Success",
+      "description": "Supports customer relationships, handles inquiries, and ensures customer satisfaction and retention.",
+      "requiredSkills": ["customer-service", "conflict-resolution-customer", "relationship-management", "verbal-communication"],
+      "preferredSkills": ["retention", "upselling", "crm", "problem-solving"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 60000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["cashier", "server", "retail-associate", "shift-supervisor", "restaurant-manager"],
+      "whyItFits": "Your customer escalation and service skills are a direct match for customer success work.",
+      "relatedTitles": ["Customer Success Specialist", "Client Services Associate", "Account Coordinator"]
+    },
+    {
+      "id": "office-manager",
+      "title": "Office Manager",
+      "field": "Administration",
+      "description": "Manages office operations, coordinates administrative functions, and ensures smooth daily operations.",
+      "requiredSkills": ["team-management", "scheduling", "vendor-management", "office-operations"],
+      "preferredSkills": ["budgeting", "facilities-management", "event-planning", "problem-solving"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 50000,
+        "max": 70000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "shift-supervisor", "administrative-assistant"],
+      "whyItFits": "Your team coordination, vendor management, and operational skills apply directly to office management.",
+      "relatedTitles": ["Administrative Manager", "Office Administrator", "Facilities Coordinator"]
+    },
+    {
+      "id": "retail-store-manager",
+      "title": "Retail Store Manager",
+      "field": "Retail",
+      "description": "Manages all aspects of retail store operations including staff, inventory, sales, and customer experience.",
+      "requiredSkills": ["team-management", "pnl-management", "inventory-management", "customer-service"],
+      "preferredSkills": ["sales", "merchandising", "loss-prevention", "hiring"],
+      "seniorityLevel": "management",
+      "typicalSalaryRange": {
+        "min": 55000,
+        "max": 80000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["restaurant-manager", "shift-supervisor", "assistant-manager"],
+      "whyItFits": "Same skill set, different environment. Your food service management is directly applicable to retail.",
+      "relatedTitles": ["Store Manager", "Assistant Store Manager", "Retail Operations Manager"]
+    },
+    {
+      "id": "bank-teller",
+      "title": "Bank Teller",
+      "field": "Banking",
+      "description": "Handles customer banking transactions, manages cash drawer, and provides customer service.",
+      "requiredSkills": ["cash-handling", "customer-service", "accuracy", "attention-to-detail"],
+      "preferredSkills": ["sales", "compliance", "data-entry", "verbal-communication"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 45000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["cashier", "retail-associate", "server"],
+      "whyItFits": "Your cash handling accuracy and customer service experience are exactly what banks need.",
+      "relatedTitles": ["Personal Banker", "Customer Service Representative (Banking)", "Financial Services Representative"]
+    },
+    {
+      "id": "call-center-representative",
+      "title": "Call Center Representative",
+      "field": "Customer Service",
+      "description": "Handles inbound and outbound customer calls, resolves issues, and provides information.",
+      "requiredSkills": ["customer-service", "conflict-resolution-customer", "verbal-communication", "multitasking"],
+      "preferredSkills": ["data-entry", "crm", "problem-solving", "patience"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 32000,
+        "max": 42000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["cashier", "server", "retail-associate", "host"],
+      "whyItFits": "Your customer service and conflict resolution skills transfer directly to phone-based support.",
+      "relatedTitles": ["Customer Service Representative", "Support Specialist", "Contact Center Agent"]
+    },
+    {
+      "id": "medical-receptionist",
+      "title": "Medical Receptionist",
+      "field": "Healthcare Administration",
+      "description": "Manages front desk operations in medical settings, schedules appointments, and handles patient inquiries.",
+      "requiredSkills": ["customer-service", "scheduling", "multitasking", "attention-to-detail"],
+      "preferredSkills": ["data-entry", "compliance", "insurance-knowledge", "empathy"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 45000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["cashier", "retail-associate", "server", "host", "administrative-assistant"],
+      "whyItFits": "Your customer service and multitasking abilities apply well to healthcare front desk work.",
+      "relatedTitles": ["Front Desk Coordinator", "Patient Services Representative", "Medical Office Assistant"]
+    },
+    {
+      "id": "sales-development-representative",
+      "title": "Sales Development Representative",
+      "field": "Sales",
+      "description": "Generates leads and qualifies prospects through outbound outreach for the sales team.",
+      "requiredSkills": ["verbal-communication", "customer-service", "reliability", "resilience"],
+      "preferredSkills": ["prospecting", "crm", "cold-calling", "time-management"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["cashier", "server", "retail-associate", "gig-worker"],
+      "whyItFits": "Your upselling experience and customer interaction skills are the foundation of outbound sales.",
+      "relatedTitles": ["Business Development Representative", "Inside Sales Representative", "Lead Generation Specialist"]
+    },
+    {
+      "id": "corporate-courier",
+      "title": "Corporate Courier",
+      "field": "Logistics",
+      "description": "Delivers documents and packages for businesses, manages delivery routes, and ensures timely delivery.",
+      "requiredSkills": ["time-management", "reliability", "navigation", "customer-service"],
+      "preferredSkills": ["independence", "attention-to-detail", "problem-solving"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 50000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["gig-driver", "delivery-driver"],
+      "whyItFits": "Your delivery experience with verified reliability metrics makes you a strong candidate for corporate courier work.",
+      "relatedTitles": ["Messenger", "Delivery Driver", "Route Driver"]
+    },
+    {
+      "id": "warehouse-associate",
+      "title": "Warehouse Associate",
+      "field": "Logistics",
+      "description": "Handles receiving, storing, and shipping of goods in a warehouse environment.",
+      "requiredSkills": ["reliability", "time-management", "attention-to-detail", "physical-stamina"],
+      "preferredSkills": ["inventory-management", "forklift-operation", "teamwork"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 50000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["gig-driver", "delivery-driver", "retail-associate"],
+      "whyItFits": "Your logistics experience and proven reliability translate to warehouse operations.",
+      "relatedTitles": ["Fulfillment Associate", "Shipping and Receiving Clerk", "Distribution Associate"]
+    },
+    {
+      "id": "field-service-technician",
+      "title": "Field Service Technician",
+      "field": "Technical Services",
+      "description": "Travels to customer sites to install, maintain, or repair equipment and systems.",
+      "requiredSkills": ["time-management", "customer-service", "independence", "problem-solving"],
+      "preferredSkills": ["technical-aptitude", "documentation", "route-planning"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 60000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["gig-driver", "delivery-driver", "skilled-trades"],
+      "whyItFits": "Your route management and independent work style fit field service roles well.",
+      "relatedTitles": ["Service Technician", "Installation Technician", "Maintenance Technician"]
+    },
+    {
+      "id": "medical-courier",
+      "title": "Medical Courier",
+      "field": "Healthcare Logistics",
+      "description": "Transports medical specimens, supplies, and documents between healthcare facilities.",
+      "requiredSkills": ["reliability", "time-management", "attention-to-detail", "compliance"],
+      "preferredSkills": ["navigation", "customer-service", "independence"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 38000,
+        "max": 52000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["gig-driver", "delivery-driver"],
+      "whyItFits": "Your delivery experience with high reliability ratings transfers directly. Medical courier adds stability and benefits.",
+      "relatedTitles": ["Laboratory Courier", "Specimen Transport Driver", "Healthcare Logistics Driver"]
+    },
+    {
+      "id": "real-estate-showing-agent",
+      "title": "Real Estate Showing Agent",
+      "field": "Real Estate",
+      "description": "Conducts property showings for real estate agents, manages scheduling, and provides property information.",
+      "requiredSkills": ["scheduling", "customer-service", "time-management", "independence"],
+      "preferredSkills": ["sales", "verbal-communication", "navigation", "professionalism"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["gig-driver", "retail-associate", "server"],
+      "whyItFits": "Your scheduling, customer service, and self-management skills fit the flexible nature of real estate showings.",
+      "relatedTitles": ["Showing Assistant", "Real Estate Assistant", "Property Tour Specialist"]
+    },
+    {
+      "id": "in-house-creative",
+      "title": "In-House Designer/Developer/Writer",
+      "field": "Creative",
+      "description": "Works as part of an internal team providing creative services rather than freelancing.",
+      "requiredSkills": ["project-management", "client-communication", "quality-control", "deadline-management"],
+      "preferredSkills": ["collaboration", "feedback-incorporation", "brand-consistency"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 55000,
+        "max": 85000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["freelance-designer", "freelance-developer", "freelance-writer"],
+      "whyItFits": "Your freelance portfolio demonstrates the skills. In-house offers stability, benefits, and collaborative environment.",
+      "relatedTitles": ["Staff Designer", "Staff Writer", "Creative Specialist"]
+    },
+    {
+      "id": "project-manager",
+      "title": "Project Manager",
+      "field": "Project Management",
+      "description": "Plans, executes, and closes projects, managing timelines, resources, and stakeholder communication.",
+      "requiredSkills": ["project-management", "client-communication", "deadline-management", "coordination"],
+      "preferredSkills": ["budgeting", "team-management", "stakeholder-management", "risk-management"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 60000,
+        "max": 90000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["freelance-designer", "freelance-developer", "freelance-consultant", "operations-coordinator"],
+      "whyItFits": "You have been managing projects and clients independently. This formalizes those skills in a structured role.",
+      "relatedTitles": ["Program Coordinator", "Project Coordinator", "Implementation Manager"]
+    },
+    {
+      "id": "account-manager",
+      "title": "Account Manager",
+      "field": "Sales",
+      "description": "Manages ongoing client relationships, ensures satisfaction, and identifies growth opportunities.",
+      "requiredSkills": ["client-communication", "relationship-management", "negotiation", "retention"],
+      "preferredSkills": ["upselling", "crm", "presentation", "problem-solving"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 55000,
+        "max": 80000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["freelance-consultant", "freelance-designer", "customer-success-associate"],
+      "whyItFits": "Your client management and repeat business skills are the core of account management.",
+      "relatedTitles": ["Client Success Manager", "Relationship Manager", "Client Partner"]
+    },
+    {
+      "id": "recruiting-coordinator",
+      "title": "Recruiting Coordinator",
+      "field": "Human Resources",
+      "description": "Supports recruiting function by scheduling interviews, managing candidate communication, and coordinating hiring logistics.",
+      "requiredSkills": ["scheduling", "coordination", "communication", "attention-to-detail"],
+      "preferredSkills": ["crm", "multitasking", "candidate-experience", "data-entry"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 60000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["administrative-assistant", "retail-manager", "restaurant-manager", "executive-assistant"],
+      "whyItFits": "Your scheduling, coordination, and communication skills are exactly what recruiting teams need.",
+      "relatedTitles": ["Talent Coordinator", "Hiring Coordinator", "Interview Scheduler"]
+    },
+    {
+      "id": "executive-assistant",
+      "title": "Executive Assistant",
+      "field": "Administration",
+      "description": "Provides high-level administrative support to executives, managing calendars, communications, and special projects.",
+      "requiredSkills": ["calendar-management", "travel-coordination", "communication", "discretion"],
+      "preferredSkills": ["project-management", "event-planning", "presentation", "problem-solving"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 55000,
+        "max": 85000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["administrative-assistant", "office-manager", "executive-coordinator"],
+      "whyItFits": "Your administrative skills combined with discretion and proactive problem-solving are perfect for executive support.",
+      "relatedTitles": ["Senior Administrative Assistant", "Executive Coordinator", "Chief of Staff (Entry)"]
+    },
+    {
+      "id": "property-manager-assistant",
+      "title": "Property Management Assistant",
+      "field": "Real Estate",
+      "description": "Supports property managers with tenant relations, maintenance coordination, and administrative tasks.",
+      "requiredSkills": ["customer-service", "scheduling", "vendor-management", "coordination"],
+      "preferredSkills": ["conflict-resolution-customer", "budgeting", "compliance", "multitasking"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 38000,
+        "max": 52000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "administrative-assistant", "office-manager"],
+      "whyItFits": "Your scheduling, vendor coordination, and customer service skills translate well to property management.",
+      "relatedTitles": ["Leasing Coordinator", "Tenant Relations Coordinator", "Property Administrator"]
+    },
+    {
+      "id": "logistics-coordinator",
+      "title": "Logistics Coordinator",
+      "field": "Logistics",
+      "description": "Coordinates shipping, receiving, and transportation logistics for an organization.",
+      "requiredSkills": ["logistics", "coordination", "attention-to-detail", "problem-solving"],
+      "preferredSkills": ["vendor-management", "data-entry", "communication", "inventory-management"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 42000,
+        "max": 58000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["gig-driver", "warehouse-associate", "delivery-driver", "operations-coordinator"],
+      "whyItFits": "Your hands-on logistics experience gives you real-world understanding of what coordination requires.",
+      "relatedTitles": ["Shipping Coordinator", "Transportation Coordinator", "Supply Chain Coordinator"]
+    },
+    {
+      "id": "insurance-agent",
+      "title": "Insurance Agent",
+      "field": "Insurance",
+      "description": "Sells insurance policies, assesses client needs, and provides ongoing customer service.",
+      "requiredSkills": ["sales", "customer-service", "verbal-communication", "relationship-management"],
+      "preferredSkills": ["negotiation", "needs-assessment", "crm", "persistence"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 70000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["retail-associate", "server", "cashier", "sales-associate"],
+      "whyItFits": "Your customer service and sales skills are the foundation. Insurance adds licensing and product knowledge.",
+      "relatedTitles": ["Insurance Sales Representative", "Licensed Insurance Agent", "Benefits Advisor"]
+    },
+    {
+      "id": "technical-support-specialist",
+      "title": "Technical Support Specialist",
+      "field": "IT Support",
+      "description": "Provides technical assistance to customers or employees, troubleshooting hardware and software issues.",
+      "requiredSkills": ["customer-service", "problem-solving", "verbal-communication", "patience"],
+      "preferredSkills": ["technical-troubleshooting", "documentation", "crm", "multitasking"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["cashier", "retail-associate", "call-center-representative"],
+      "whyItFits": "Your customer service and problem-solving skills transfer. Tech support adds technical training.",
+      "relatedTitles": ["Help Desk Technician", "IT Support Specialist", "Desktop Support"]
+    },
+    {
+      "id": "event-coordinator",
+      "title": "Event Coordinator",
+      "field": "Events",
+      "description": "Plans and executes events, managing logistics, vendors, and on-site coordination.",
+      "requiredSkills": ["event-planning", "coordination", "vendor-management", "multitasking"],
+      "preferredSkills": ["budgeting", "negotiation", "customer-service", "problem-solving"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["restaurant-manager", "server", "administrative-assistant", "office-manager"],
+      "whyItFits": "Your experience managing high-pressure service environments translates well to event coordination.",
+      "relatedTitles": ["Event Planner", "Conference Coordinator", "Meeting Planner"]
+    },
+    {
+      "id": "sales-associate-b2b",
+      "title": "B2B Sales Associate",
+      "field": "Sales",
+      "description": "Sells products or services to businesses rather than consumers.",
+      "requiredSkills": ["sales", "verbal-communication", "relationship-management", "persistence"],
+      "preferredSkills": ["crm", "negotiation", "prospecting", "presentation"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 65000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["retail-associate", "server", "cashier", "sales-associate"],
+      "whyItFits": "Your retail sales experience gives you customer interaction skills. B2B adds longer sales cycles and larger deals.",
+      "relatedTitles": ["Inside Sales Representative", "Account Executive (Entry)", "Business Development Associate"]
+    },
+    {
+      "id": "dental-receptionist",
+      "title": "Dental Receptionist",
+      "field": "Healthcare Administration",
+      "description": "Manages front desk operations for dental practices, scheduling appointments and handling patient communication.",
+      "requiredSkills": ["customer-service", "scheduling", "attention-to-detail", "multitasking"],
+      "preferredSkills": ["insurance-verification", "data-entry", "phone-skills", "empathy"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 35000,
+        "max": 48000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["cashier", "retail-associate", "server", "host", "administrative-assistant"],
+      "whyItFits": "Your customer service and multitasking skills apply directly to dental front desk work.",
+      "relatedTitles": ["Dental Office Coordinator", "Patient Coordinator", "Front Office Specialist"]
+    },
+    {
+      "id": "inventory-specialist",
+      "title": "Inventory Specialist",
+      "field": "Operations",
+      "description": "Manages inventory levels, conducts counts, and ensures accurate stock records.",
+      "requiredSkills": ["inventory-management", "attention-to-detail", "data-entry", "accuracy"],
+      "preferredSkills": ["spreadsheets", "forecasting", "process-improvement", "erp-systems"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 38000,
+        "max": 52000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "shift-supervisor", "warehouse-associate"],
+      "whyItFits": "Your hands-on inventory management experience is exactly what this role requires.",
+      "relatedTitles": ["Inventory Analyst", "Stock Controller", "Inventory Control Specialist"]
+    },
+    {
+      "id": "training-coordinator",
+      "title": "Training Coordinator",
+      "field": "Human Resources",
+      "description": "Coordinates training programs, schedules sessions, and tracks employee development.",
+      "requiredSkills": ["training-delivery", "scheduling", "coordination", "communication"],
+      "preferredSkills": ["curriculum-development", "lms-systems", "presentation", "data-tracking"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 60000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["retail-manager", "restaurant-manager", "shift-supervisor", "team-lead"],
+      "whyItFits": "You have trained dozens of employees. This role formalizes that experience into a dedicated function.",
+      "relatedTitles": ["Learning Coordinator", "L&D Coordinator", "Training Administrator"]
+    },
+    {
+      "id": "quality-assurance-associate",
+      "title": "Quality Assurance Associate",
+      "field": "Operations",
+      "description": "Inspects products or processes to ensure they meet quality standards.",
+      "requiredSkills": ["attention-to-detail", "quality-control", "documentation", "accuracy"],
+      "preferredSkills": ["process-improvement", "compliance", "data-analysis", "problem-solving"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["restaurant-manager", "shift-supervisor", "retail-manager"],
+      "whyItFits": "Your experience maintaining quality and compliance standards in food service transfers to QA roles.",
+      "relatedTitles": ["Quality Inspector", "QA Technician", "Quality Control Associate"]
+    },
+    {
+      "id": "dispatch-coordinator",
+      "title": "Dispatch Coordinator",
+      "field": "Logistics",
+      "description": "Coordinates drivers and vehicles, manages routes, and ensures timely deliveries.",
+      "requiredSkills": ["coordination", "logistics", "communication", "problem-solving"],
+      "preferredSkills": ["scheduling", "navigation", "multitasking", "customer-service"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 40000,
+        "max": 55000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["gig-driver", "delivery-driver", "warehouse-associate"],
+      "whyItFits": "Your firsthand delivery experience gives you insight into route challenges and timing that dispatchers need.",
+      "relatedTitles": ["Logistics Dispatcher", "Fleet Coordinator", "Transportation Dispatcher"]
+    },
+    {
+      "id": "client-services-coordinator",
+      "title": "Client Services Coordinator",
+      "field": "Professional Services",
+      "description": "Coordinates client projects, manages communication, and ensures service delivery.",
+      "requiredSkills": ["client-communication", "coordination", "project-management", "attention-to-detail"],
+      "preferredSkills": ["multitasking", "problem-solving", "crm", "documentation"],
+      "seniorityLevel": "entry",
+      "typicalSalaryRange": {
+        "min": 45000,
+        "max": 60000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "easy",
+      "sourceRoles": ["freelance-consultant", "freelance-designer", "administrative-assistant", "customer-success-associate"],
+      "whyItFits": "Your client management and project coordination skills are the core of this role.",
+      "relatedTitles": ["Account Coordinator", "Project Coordinator", "Service Coordinator"]
+    },
+    {
+      "id": "operations-analyst",
+      "title": "Operations Analyst",
+      "field": "Operations",
+      "description": "Analyzes operational data to identify improvements and support decision-making.",
+      "requiredSkills": ["data-analysis", "spreadsheets", "reporting", "attention-to-detail"],
+      "preferredSkills": ["process-improvement", "sql", "visualization", "problem-solving"],
+      "seniorityLevel": "mid",
+      "typicalSalaryRange": {
+        "min": 55000,
+        "max": 75000,
+        "currency": "USD"
+      },
+      "transitionDifficulty": "moderate",
+      "sourceRoles": ["operations-coordinator", "retail-manager", "restaurant-manager", "inventory-specialist"],
+      "whyItFits": "Your operational experience combined with data skills positions you for analytical roles.",
+      "relatedTitles": ["Business Operations Analyst", "Process Analyst", "Data Analyst (Operations)"]
+    }
+  ],
+  "seniorityLevels": [
+    {
+      "id": "entry",
+      "name": "Entry Level",
+      "yearsExperience": "0-2",
+      "description": "New to the field, learning fundamentals"
+    },
+    {
+      "id": "mid",
+      "name": "Mid Level",
+      "yearsExperience": "2-5",
+      "description": "Solid experience, working independently"
+    },
+    {
+      "id": "senior",
+      "name": "Senior Level",
+      "yearsExperience": "5-8",
+      "description": "Deep expertise, may mentor others"
+    },
+    {
+      "id": "management",
+      "name": "Management",
+      "yearsExperience": "5+",
+      "description": "Leading teams and departments"
+    },
+    {
+      "id": "executive",
+      "name": "Executive",
+      "yearsExperience": "10+",
+      "description": "C-suite or VP level, strategic leadership"
+    }
+  ],
+  "transitionDifficulty": [
+    {
+      "id": "easy",
+      "name": "Easy Transition",
+      "description": "Skills transfer directly, minimal additional training needed"
+    },
+    {
+      "id": "moderate",
+      "name": "Moderate Transition",
+      "description": "Core skills transfer, some industry or technical learning required"
+    },
+    {
+      "id": "stretch",
+      "name": "Stretch Transition",
+      "description": "Significant skill gaps to close, may require certification or education"
+    }
+  ]
+}

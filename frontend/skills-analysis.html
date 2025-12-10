@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Skills Analysis — HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        header .header-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent);
+        }
+
+        /* Main content */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .back-link:hover {
+            color: var(--color-accent);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        /* Skills overview card */
+        .skills-overview {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .overview-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .overview-icon {
+            font-size: 1.5rem;
+        }
+
+        .overview-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+        }
+
+        /* Skill bars */
+        .skill-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .skill-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .skill-bar-label {
+            width: 140px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            flex-shrink: 0;
+        }
+
+        .skill-bar-container {
+            flex: 1;
+            height: 24px;
+            background: var(--color-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .skill-bar-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.8s var(--ease-out);
+        }
+
+        .skill-bar-fill.leadership { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .skill-bar-fill.customer { background: linear-gradient(90deg, #22d3ee, #67e8f9); }
+        .skill-bar-fill.operations { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .skill-bar-fill.communication { background: linear-gradient(90deg, #ec4899, #f472b6); }
+        .skill-bar-fill.technical { background: linear-gradient(90deg, #10b981, #34d399); }
+        .skill-bar-fill.financial { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .skill-bar-fill.sales { background: linear-gradient(90deg, #f97316, #fb923c); }
+        .skill-bar-fill.self_management { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
+
+        .skill-bar-percent {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            font-weight: 600;
+            width: 45px;
+            text-align: right;
+        }
+
+        /* Skills by category */
+        .skills-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .skill-category {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .category-icon {
+            font-size: 1.2rem;
+        }
+
+        .category-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .category-count {
+            margin-left: auto;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .skill-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .skill-item {
+            padding: 12px;
+            background: var(--color-bg);
+            border-radius: 8px;
+        }
+
+        .skill-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .skill-evidence {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        .skill-confidence {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .skill-confidence.high {
+            background: rgba(74, 222, 128, 0.2);
+            color: var(--color-success);
+        }
+
+        .skill-confidence.medium {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--color-warning);
+        }
+
+        /* Role matches section */
+        .role-matches {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+
+        .matches-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .matches-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+        }
+
+        .role-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .role-card {
+            padding: 20px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .role-card:hover {
+            border-color: var(--color-accent);
+        }
+
+        .role-match-score {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--color-accent-muted);
+            border: 2px solid var(--color-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+
+        .role-info {
+            flex: 1;
+        }
+
+        .role-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .role-meta {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .role-why {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .difficulty-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+
+        .difficulty-tag.easy {
+            background: rgba(74, 222, 128, 0.2);
+            color: var(--color-success);
+        }
+
+        .difficulty-tag.moderate {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--color-warning);
+        }
+
+        /* Action section */
+        .action-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            padding: 32px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .action-text {
+            font-size: 1.1rem;
+            max-width: 500px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            padding: 16px 32px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 16px 32px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            color: var(--color-text);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--color-accent);
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .skill-bar-label {
+                width: 100px;
+                font-size: 0.8rem;
+            }
+
+            .skills-categories {
+                grid-template-columns: 1fr;
+            }
+
+            .role-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .role-match-score {
+                margin: 0 auto;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="analyze.html" class="nav-link">Analyze a Role</a>
+                <a href="tracker.html" class="nav-link">Command Center</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <a href="resume-chat.html" class="back-link">← Back to conversation</a>
+
+        <h1>Your Skills Analysis</h1>
+        <p class="subtitle">Based on what you shared, here's what you bring to the table.</p>
+
+        <div id="loadingState" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Analyzing your skills...</p>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">📝</div>
+            <h2 class="empty-title">No skills data found</h2>
+            <p class="empty-text">Let's chat first so I can learn about your experience.</p>
+            <a href="resume-chat.html" class="btn-primary">Start Conversation</a>
+        </div>
+
+        <div id="mainContent" style="display: none;">
+            <!-- Skills Overview -->
+            <div class="skills-overview">
+                <div class="overview-header">
+                    <span class="overview-icon">📊</span>
+                    <h2 class="overview-title">Your Top Skills</h2>
+                </div>
+                <div class="skill-bars" id="skillBars">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Skills by Category -->
+            <div class="skills-categories" id="skillsCategories">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Role Matches -->
+            <div class="role-matches">
+                <div class="matches-header">
+                    <span class="overview-icon">🎯</span>
+                    <h2 class="matches-title">Roles That Match Your Skills</h2>
+                </div>
+                <div class="role-cards" id="roleCards">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Action Section -->
+            <div class="action-section">
+                <p class="action-text">
+                    Ready to put these skills to work? Let's generate your professional resume and start searching for roles.
+                </p>
+                <div class="action-buttons">
+                    <button class="btn-primary" id="generateResumeBtn">Generate My Resume</button>
+                    <a href="profile-edit.html" class="btn-secondary">Complete Profile Setup</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // Category icons and colors
+        const categoryConfig = {
+            leadership: { icon: '👥', color: '#a78bfa' },
+            customer: { icon: '🤝', color: '#67e8f9' },
+            operations: { icon: '⚙️', color: '#fbbf24' },
+            communication: { icon: '💬', color: '#f472b6' },
+            technical: { icon: '💻', color: '#34d399' },
+            financial: { icon: '💰', color: '#818cf8' },
+            sales: { icon: '📈', color: '#fb923c' },
+            marketing: { icon: '📣', color: '#f472b6' },
+            administrative: { icon: '📋', color: '#a1a1aa' },
+            self_management: { icon: '🎯', color: '#2dd4bf' }
+        };
+
+        // Sample adjacent roles (would come from backend in production)
+        const adjacentRoles = [
+            {
+                title: "Customer Success Associate",
+                salary: "$45,000 - $65,000",
+                difficulty: "easy",
+                match: 87,
+                why: "Your conflict resolution skills and customer focus translate directly. You're already doing this work - just in a different industry."
+            },
+            {
+                title: "Operations Coordinator",
+                salary: "$42,000 - $58,000",
+                difficulty: "easy",
+                match: 82,
+                why: "Your experience coordinating teams and managing processes is exactly what this role needs. The scheduling and logistics skills are a perfect fit."
+            },
+            {
+                title: "Account Manager",
+                salary: "$50,000 - $75,000",
+                difficulty: "moderate",
+                match: 75,
+                why: "Your customer relationship skills are strong. You'd need to learn some sales fundamentals, but the foundation is there."
+            }
+        ];
+
+        // Load data
+        function loadData() {
+            const storedData = sessionStorage.getItem('resumeExtractedData');
+
+            if (!storedData) {
+                showEmptyState();
+                return;
+            }
+
+            try {
+                const data = JSON.parse(storedData);
+                const skills = data.skills || [];
+                const extractedData = data.extracted_data || {};
+
+                if (skills.length === 0) {
+                    showEmptyState();
+                    return;
+                }
+
+                renderSkills(skills, extractedData);
+                showMainContent();
+            } catch (e) {
+                console.error('Failed to parse skills data:', e);
+                showEmptyState();
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'block';
+        }
+
+        function showMainContent() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+
+        function renderSkills(skills, extractedData) {
+            // Group skills by category
+            const skillsByCategory = {};
+            skills.forEach(skill => {
+                const category = skill.category || 'self_management';
+                if (!skillsByCategory[category]) {
+                    skillsByCategory[category] = [];
+                }
+                skillsByCategory[category].push(skill);
+            });
+
+            // Calculate category percentages (based on number of skills)
+            const maxSkillsPerCategory = 5;
+            const categoryScores = {};
+            Object.entries(skillsByCategory).forEach(([category, catSkills]) => {
+                categoryScores[category] = Math.min(100, Math.round((catSkills.length / maxSkillsPerCategory) * 100));
+            });
+
+            // Sort categories by score
+            const sortedCategories = Object.entries(categoryScores)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 6); // Top 6 categories
+
+            // Render skill bars
+            const skillBarsContainer = document.getElementById('skillBars');
+            skillBarsContainer.innerHTML = sortedCategories.map(([category, score]) => `
+                <div class="skill-bar-item">
+                    <span class="skill-bar-label">${formatCategoryName(category)}</span>
+                    <div class="skill-bar-container">
+                        <div class="skill-bar-fill ${category}" style="width: 0%"></div>
+                    </div>
+                    <span class="skill-bar-percent">${score}%</span>
+                </div>
+            `).join('');
+
+            // Animate bars after render
+            setTimeout(() => {
+                sortedCategories.forEach(([category, score]) => {
+                    const bar = document.querySelector(`.skill-bar-fill.${category}`);
+                    if (bar) bar.style.width = `${score}%`;
+                });
+            }, 100);
+
+            // Render skills by category
+            const categoriesContainer = document.getElementById('skillsCategories');
+            categoriesContainer.innerHTML = Object.entries(skillsByCategory)
+                .filter(([_, catSkills]) => catSkills.length > 0)
+                .map(([category, catSkills]) => {
+                    const config = categoryConfig[category] || { icon: '📌', color: '#a1a1aa' };
+                    return `
+                        <div class="skill-category">
+                            <div class="category-header">
+                                <span class="category-icon">${config.icon}</span>
+                                <span class="category-title">${formatCategoryName(category)}</span>
+                                <span class="category-count">${catSkills.length} skills</span>
+                            </div>
+                            <div class="skill-list">
+                                ${catSkills.map(skill => `
+                                    <div class="skill-item">
+                                        <div class="skill-name">${skill.skill_name}</div>
+                                        ${skill.evidence ? `<div class="skill-evidence">"${skill.evidence}"</div>` : ''}
+                                        <span class="skill-confidence ${skill.confidence || 'medium'}">${skill.confidence || 'medium'}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            // Render role matches
+            const roleCardsContainer = document.getElementById('roleCards');
+            roleCardsContainer.innerHTML = adjacentRoles.map(role => `
+                <div class="role-card">
+                    <div class="role-match-score">${role.match}%</div>
+                    <div class="role-info">
+                        <div class="role-title">
+                            ${role.title}
+                            <span class="difficulty-tag ${role.difficulty}">${role.difficulty} transition</span>
+                        </div>
+                        <div class="role-meta">${role.salary}</div>
+                        <div class="role-why">${role.why}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatCategoryName(category) {
+            return category.replace(/_/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
+        // Generate resume
+        document.getElementById('generateResumeBtn').addEventListener('click', async () => {
+            const btn = document.getElementById('generateResumeBtn');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            const storedData = sessionStorage.getItem('resumeExtractedData');
+            if (!storedData) {
+                alert('No skills data found. Please complete the conversation first.');
+                btn.disabled = false;
+                btn.textContent = 'Generate My Resume';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(storedData);
+
+                const response = await fetch(`${API_BASE}/api/generate-resume-from-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        extracted_data: data.extracted_data,
+                        target_role: null
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate resume');
+                }
+
+                const result = await response.json();
+
+                // Store generated resume
+                sessionStorage.setItem('generatedResume', JSON.stringify(result));
+
+                // Create a profile from the extracted data
+                const profile = {
+                    resume: {
+                        full_name: data.extracted_data.contact?.name || 'Candidate',
+                        experience: data.extracted_data.experiences || [],
+                        skills: data.extracted_data.skills || [],
+                        education: data.extracted_data.education || []
+                    },
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                // Store in localStorage so the rest of the app can use it
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+
+                // Navigate to profile setup to complete remaining fields
+                window.location.href = 'profile-edit.html';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to generate resume. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Generate My Resume';
+            }
+        });
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
