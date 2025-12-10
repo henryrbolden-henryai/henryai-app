@@ -6894,8 +6894,8 @@ async def resume_chat(request: ResumeChatRequest):
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            model="claude-3-5-haiku-20241022",
+            max_tokens=1000,
             system=system_prompt,
             messages=messages
         )
