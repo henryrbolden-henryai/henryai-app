@@ -45,9 +45,23 @@
         h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
+        }
+
+        .page-title {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .page-title-icon {
+            font-size: 1.8rem;
+        }
+
+        .role-title {
+            color: #60a5fa;
+            font-size: 1.6rem;
+            font-weight: 400;
         }
 
         .subtitle {
@@ -564,9 +578,11 @@
     <div class="container">
         <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
 
-        <h1>
-            <span>📍</span> Positioning Strategy for <span id="roleTitle">This Role</span>
-        </h1>
+        <div class="page-title">
+            <span class="page-title-icon">📍</span>
+            <h1>Positioning Strategy</h1>
+        </div>
+        <div class="role-title" id="roleTitle">This Role</div>
 
         <!-- Personalized Intro -->
         <div class="intro-message" id="introMessage">
@@ -673,11 +689,18 @@
             section.classList.toggle('open');
         }
 
+        // Capitalize name properly (handles ALL CAPS or all lowercase)
+        function capitalizeName(name) {
+            if (!name) return name;
+            return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+        }
+
         // Extract first name from full name
         function extractFirstName(fullName) {
             if (!fullName || fullName === 'undefined') return 'you';
             const parts = fullName.trim().split(' ');
-            return parts[0] || 'you';
+            const firstName = parts[0] || 'you';
+            return capitalizeName(firstName);
         }
 
         // Create action item with checkbox
