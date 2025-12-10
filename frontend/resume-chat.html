@@ -975,14 +975,7 @@
                 console.error('TTS error:', error);
                 speakingIndicator.classList.remove('show');
                 // Silently fail - text is still displayed
-                // Still auto-listen even if TTS fails
-                if (autoListenEnabled && !isProcessing && conversationState.state !== 'COMPLETE') {
-                    setTimeout(() => {
-                        if (!isRecording) {
-                            startRecording(true);
-                        }
-                    }, 1000);
-                }
+                // Don't auto-listen if TTS failed - let user initiate
             }
         }
 
