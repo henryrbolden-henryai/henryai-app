@@ -620,11 +620,11 @@
             <a href="index.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
                 <a href="tracker.html">My Applications</a>
-                <a href="index.html">Edit Profile</a>
+                <a href="profile-edit.html">Edit Profile</a>
             </nav>
         </div>
 
-        <a href="positioning.html" class="back-link">← Back to Strategic Overview</a>
+        <a href="overview.html" class="back-link">← Back to Strategic Overview</a>
         
         <h1>
             <span>🤝</span>
@@ -1189,8 +1189,15 @@
             const resultsContainer = document.getElementById('linkedinResults');
             if (!resultsContainer) return;
 
-            // No direct connections found - show helpful guidance
-            if (directConnections.length === 0 && recommendations.length === 0) {
+            // Filter out invalid recommendations early
+            const validRecommendations = recommendations.filter(rec => {
+                const hasValidName = rec.name && rec.name !== 'N/A' && rec.name.trim() !== '' && !rec.name.toLowerCase().includes('no existing');
+                const hasValidCompany = rec.company && rec.company !== 'N/A' && rec.company.trim() !== '';
+                return hasValidName && hasValidCompany;
+            });
+
+            // No direct connections found and no valid recommendations - show helpful guidance
+            if (directConnections.length === 0 && validRecommendations.length === 0) {
                 resultsContainer.innerHTML = `
                     <div style="text-align: center; padding: 20px 0;">
                         <div style="font-size: 2rem; margin-bottom: 12px;">🔍</div>
@@ -1247,7 +1254,8 @@
             }
 
             // Show AI recommendations for relevant connections (from other companies who might help)
-            if (recommendations.length > 0) {
+            // validRecommendations is already filtered at the top of this function
+            if (validRecommendations.length > 0) {
                 html += `
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
                         <span style="font-size: 1.5rem;">💡</span>
@@ -1259,7 +1267,7 @@
                 `;
                 html += `<div class="recommendations-list">`;
 
-                recommendations.forEach((rec, idx) => {
+                validRecommendations.forEach((rec, idx) => {
                     const priorityColors = {
                         1: '#ffffff',  // white - high priority
                         2: '#d1d5db',  // light gray - medium
