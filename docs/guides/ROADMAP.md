@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 10, 2025
+**Last Updated:** December 10, 2025 (Session 2)
 
 ---
 
@@ -452,10 +452,16 @@ The best features mean nothing if users don't engage with them. Before adding mo
 3. ✅ Daily Pulse Banner on Tracker
 4. ✅ Command Center card on Overview
 5. ✅ Standardized "Command Center" naming across nav
+6. ✅ Application Import (CSV/Excel with job URL, JD, interview date)
+7. ✅ "Ask Henry" button on application cards (context-aware help)
+8. ✅ Separate Resume Discussion flow (resume-discuss.html)
+9. ✅ HenryAI branding consistency across all pages
 
 **Next (Wave 2):**
 - Application Readiness Score
 - Proactive Ask Henry enhancements
+- Expandable skills view in profile
+- Target role field for skills gap analysis
 
 ---
 
@@ -476,7 +482,7 @@ The best features mean nothing if users don't engage with them. Before adding mo
 | Phase 0: Conversational Resume Builder | **Complete (Wave 1)** | ~70% |
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
-| Phase 1.75: Engagement & Coaching | In Progress | ~30% |
+| Phase 1.75: Engagement & Coaching | In Progress | ~50% |
 | Phase 2: Strategic Intelligence | Partial | ~30% |
 | Phase 3: Performance Intelligence | Partial | ~20% |
 | Phase 4: Distribution & Ecosystem | Not Started | 0% |
@@ -487,3 +493,75 @@ The best features mean nothing if users don't engage with them. Before adding mo
 ## Reference Documents
 
 - [Engagement Strategy Implementation Plan](./ENGAGEMENT_STRATEGY_IMPLEMENTATION.md) - Detailed technical specs for Phase 1.75
+
+---
+
+## Session Log: December 10, 2025 (Session 2)
+
+### Completed Today
+
+**1. Application Import Feature (tracker.html)**
+- CSV/Excel import with SheetJS library
+- Smart column mapping: company, role, status, applied date
+- New fields: job URL, job description, interview date
+- Supports existing tracker workflows
+
+**2. "Ask Henry" Button on Application Cards**
+- Added H-mark logo button to every application card
+- Context-aware help based on job description availability
+- Links to Ask Henry chat with application context
+
+**3. Resume Discussion Flow (resume-discuss.html)**
+- NEW separate page for discussing existing resumes
+- Always prompts for resume upload (not localStorage)
+- HenryAI logo avatar in chat interface
+- Offers: skills gap analysis, resume improvements, articulation help
+- Distinct from resume-chat.html (which is for BUILDING new resumes)
+
+**4. Profile Edit Updates (profile-edit.html)**
+- Replaced "Edit Resume" button with "Chat with Henry about your resume" link
+- Links to resume-discuss.html for existing resume discussion
+
+**5. HenryAI Branding Consistency**
+- Removed HenryAI logo from landing page (index.html) - hero "Meet Henry!" is sufficient
+- Added HenryAI top nav header to all other pages:
+  - strengthen.html
+  - practice-intro.html
+  - resume-chat.html
+  - resume-discuss.html
+- Consistent navigation: HenryAI logo (left), Command Center + Edit Profile links (right)
+
+**6. Login Page Design (previous session)**
+- Larger HenryAI text (2rem)
+- Bigger H-mark logo (54px)
+- Smaller tagline (1.1rem)
+- Logo inline with tagline with pulse animation
+
+### Database Updates Required
+
+The following Supabase schema changes were made (user ran SQL):
+```sql
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS job_url TEXT;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS job_description TEXT;
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS interview_date DATE;
+```
+
+### Key User Decisions
+
+1. **One Master Resume** - No multiple resumes. System generates tailored versions per job.
+2. **Separate Resume Flows**:
+   - "Conversation with Henry" (resume-chat.html) = BUILD new resume
+   - "Chat with Henry about your resume" (resume-discuss.html) = DISCUSS existing resume
+3. **Skills Gap Analysis** - Currently only available via resume discussion; profile-edit just shows counts
+
+### Files Modified
+
+- `frontend/tracker.html` - Import feature, Ask Henry button
+- `frontend/profile-edit.html` - Resume chat link
+- `frontend/resume-discuss.html` - NEW file
+- `frontend/resume-chat.html` - Cleaned up (build-only mode)
+- `frontend/index.html` - Removed HenryAI from nav
+- `frontend/strengthen.html` - Added HenryAI nav
+- `frontend/practice-intro.html` - Added HenryAI nav
+- `frontend/login.html` - Sizing adjustments (previous session)
+- `frontend/js/supabase-client.js` - New fields for applications
