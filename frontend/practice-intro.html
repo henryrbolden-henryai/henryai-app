@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Intro Sell Practice - HenryAI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -17,6 +17,44 @@
             background: #000000;
             min-height: 100vh;
             color: #e0e0e0;
+        }
+
+        /* TOP NAV */
+        .top-nav {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-nav-logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #fafafa;
+            text-decoration: none;
+        }
+
+        .top-nav-logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .top-nav-links {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .top-nav-link {
+            color: #a1a1aa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .top-nav-link:hover {
+            color: #22d3ee;
         }
 
         /* Header */
@@ -652,6 +690,14 @@
     <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
+    <nav class="top-nav">
+        <a href="index.html" class="top-nav-logo"><em>Henry</em>AI</a>
+        <div class="top-nav-links">
+            <a href="tracker.html" class="top-nav-link">Command Center</a>
+            <a href="profile-edit.html" class="top-nav-link">Edit Profile</a>
+        </div>
+    </nav>
+
     <header class="header">
         <div class="header-content">
             <a href="interview-intelligence.html" class="back-btn">
