@@ -301,66 +301,6 @@
             bottom: 0;
         }
 
-        /* Resume upload zone for discuss mode */
-        .resume-upload-container {
-            max-width: 700px;
-            margin: 0 auto 16px;
-        }
-
-        .resume-upload-zone {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 32px;
-            border: 2px dashed var(--color-border);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .resume-upload-zone:hover {
-            border-color: var(--color-accent);
-            background: var(--color-accent-muted);
-        }
-
-        .resume-upload-zone .upload-icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
-        }
-
-        .resume-upload-zone .upload-text {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .resume-upload-zone .upload-text span {
-            color: var(--color-accent);
-            text-decoration: underline;
-        }
-
-        .resume-upload-zone .upload-hint {
-            color: var(--color-text-secondary);
-            font-size: 0.8rem;
-            margin-top: 4px;
-            opacity: 0.7;
-        }
-
-        .upload-status {
-            text-align: center;
-            margin-top: 12px;
-            font-size: 0.9rem;
-            color: var(--color-text-secondary);
-        }
-
-        .upload-status.success {
-            color: var(--color-success);
-        }
-
-        .upload-status.error {
-            color: var(--color-error);
-        }
-
         .input-container {
             max-width: 700px;
             margin: 0 auto;
@@ -618,8 +558,8 @@
 </head>
 <body>
     <header>
-        <a href="resume-builder.html" class="back-btn" id="backBtn">←</a>
-        <div class="header-title" id="headerTitle">Conversation with Henry</div>
+        <a href="resume-builder.html" class="back-btn">←</a>
+        <div class="header-title">Conversation with Henry</div>
         <div class="progress-indicator">
             <div class="progress-dots">
                 <div class="progress-dot active" data-step="1"></div>
@@ -678,16 +618,6 @@
     <div class="input-area" id="inputArea">
         <div class="recording-status" id="recordingStatus" style="display: none;">
             🔴 Recording... Tap to stop
-        </div>
-        <!-- Resume upload UI for discuss mode -->
-        <div class="resume-upload-container" id="resumeUploadContainer" style="display: none;">
-            <label class="resume-upload-zone" id="resumeUploadZone">
-                <input type="file" id="discussResumeFile" accept=".pdf,.docx,.doc,.txt" style="display: none;">
-                <div class="upload-icon">📄</div>
-                <div class="upload-text">Drop your resume here or <span>browse</span></div>
-                <div class="upload-hint">PDF, Word, or text files</div>
-            </label>
-            <div class="upload-status" id="uploadStatus"></div>
         </div>
         <div class="input-container">
             <button class="voice-btn" id="voiceBtn" onclick="toggleRecording()" style="display: none;">
@@ -994,11 +924,6 @@
 
         // Start the conversation with Henry's opening message
         async function startConversation() {
-            // Check if we're in "discuss" mode (coming from profile edit)
-            const urlParams = new URLSearchParams(window.location.search);
-            const mode = urlParams.get('mode');
-            const isDiscussMode = mode === 'discuss';
-
             // Check if user is logged in and has a name
             let userNameFromAuth = null;
             if (typeof HenryAuth !== 'undefined') {
@@ -1008,14 +933,12 @@
             let openingMessage;
             let startState;
 
-            // Get name from auth or profile
-            let displayName = 'there';
             if (userNameFromAuth && userNameFromAuth.firstName && userNameFromAuth.firstName !== 'there') {
+                // User is logged in with a name - skip GET_NAME state
                 userName.firstName = userNameFromAuth.firstName;
                 userName.lastName = userNameFromAuth.lastName || '';
                 userName.fullName = userNameFromAuth.fullName;
                 userName.displayName = userNameFromAuth.firstName;
-                displayName = userNameFromAuth.firstName;
 
                 // Store name in extracted data
                 conversationState.extracted_data.contact = {
@@ -1023,60 +946,13 @@
                     lastName: userName.lastName,
                     fullName: userName.fullName
                 };
-            }
 
-            if (isDiscussMode) {
-                // Discuss existing resume mode
-                conversationState.state = 'DISCUSS_RESUME';
-
-                // Update header and back button for discuss mode
-                document.getElementById('backBtn').href = 'profile-edit.html';
-                document.getElementById('headerTitle').textContent = 'Resume Discussion';
-
-                // Check if we already have a resume in the profile
-                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                const hasResume = profile.resume && (profile.resume.experience?.length > 0 || profile.resume.skills?.length > 0);
-
-                if (hasResume) {
-                    // Load existing resume data into conversation state
-                    conversationState.extracted_data = {
-                        ...conversationState.extracted_data,
-                        experience: profile.resume.experience || [],
-                        skills: profile.resume.skills || [],
-                        education: profile.resume.education || [],
-                        contact: profile.resume.contact || conversationState.extracted_data.contact
-                    };
-                    allExtractedSkills = profile.resume.skills || [];
-                    updateSkillsPanel();
-
-                    const skillCount = profile.resume.skills?.length || 0;
-                    const roleCount = profile.resume.experience?.length || 0;
-
-                    openingMessage = `Hi ${displayName}! I see your resume with ${roleCount} role${roleCount !== 1 ? 's' : ''} and ${skillCount} skill${skillCount !== 1 ? 's' : ''}.
-
-How can I help you today? I can:
-• Analyze your skills for gaps based on a target role
-• Suggest improvements to strengthen your resume
-• Help you articulate your experience better
-
-What would you like to focus on?`;
-                    startState = 'DISCUSS_RESUME';
-                } else {
-                    // No resume yet - ask them to upload
-                    openingMessage = `Hi ${displayName}! I'm happy to chat with you about your resume.
-
-So we're aligned, would you mind uploading the resume you'd like to discuss? Just drag and drop it here or use the upload button below.`;
-                    startState = 'AWAITING_RESUME_UPLOAD';
-                    showResumeUploadUI();
-                }
-            } else if (displayName !== 'there') {
-                // Build new resume mode - user is logged in with a name
-                openingMessage = `Hi ${displayName}! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
+                openingMessage = `Hi ${userName.firstName}! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
 
 What's your current job title and company?`;
                 startState = 'CURRENT_ROLE';
             } else {
-                // Build new resume mode - no name from auth - ask for it
+                // No name from auth - ask for it
                 openingMessage = `Hi! I am Henry, your job search strategist. I am going to help you build a resume that shows off your real skills. This takes about 3-5 minutes.
 
 First, what is your name?`;
@@ -1097,134 +973,6 @@ First, what is your name?`;
             conversationState.state = startState;
             updateProgress();
             saveConversation();
-        }
-
-        // Show resume upload UI for discuss mode
-        function showResumeUploadUI() {
-            const uploadContainer = document.getElementById('resumeUploadContainer');
-            if (uploadContainer) {
-                uploadContainer.style.display = 'block';
-            }
-        }
-
-        // Hide resume upload UI
-        function hideResumeUploadUI() {
-            const uploadContainer = document.getElementById('resumeUploadContainer');
-            if (uploadContainer) {
-                uploadContainer.style.display = 'none';
-            }
-        }
-
-        // Initialize discuss resume file upload
-        function initDiscussResumeUpload() {
-            const fileInput = document.getElementById('discussResumeFile');
-            const uploadZone = document.getElementById('resumeUploadZone');
-            const uploadStatus = document.getElementById('uploadStatus');
-
-            if (!fileInput) return;
-
-            fileInput.addEventListener('change', handleDiscussResumeUpload);
-
-            // Drag and drop support
-            uploadZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadZone.style.borderColor = 'var(--color-accent)';
-                uploadZone.style.background = 'var(--color-accent-muted)';
-            });
-
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.style.borderColor = '';
-                uploadZone.style.background = '';
-            });
-
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.style.borderColor = '';
-                uploadZone.style.background = '';
-                const file = e.dataTransfer.files[0];
-                if (file) {
-                    handleDiscussResumeFile(file);
-                }
-            });
-        }
-
-        async function handleDiscussResumeUpload(e) {
-            const file = e.target.files[0];
-            if (file) {
-                handleDiscussResumeFile(file);
-            }
-        }
-
-        async function handleDiscussResumeFile(file) {
-            const uploadStatus = document.getElementById('uploadStatus');
-            uploadStatus.textContent = 'Parsing resume...';
-            uploadStatus.className = 'upload-status';
-
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch(`${API_BASE}/api/resume/parse`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) throw new Error('Failed to parse resume');
-
-                const parsedResume = await response.json();
-
-                // Store in conversation state
-                conversationState.extracted_data = {
-                    ...conversationState.extracted_data,
-                    experience: parsedResume.experience || [],
-                    skills: parsedResume.skills || [],
-                    education: parsedResume.education || [],
-                    contact: parsedResume.contact || {}
-                };
-
-                // Update skills panel
-                allExtractedSkills = parsedResume.skills || [];
-                updateSkillsPanel();
-
-                // Update profile with parsed resume
-                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                profile.resume = parsedResume;
-                localStorage.setItem('userProfile', JSON.stringify(profile));
-
-                uploadStatus.textContent = '✓ Resume uploaded!';
-                uploadStatus.className = 'upload-status success';
-
-                // Hide upload UI and show follow-up message
-                setTimeout(() => {
-                    hideResumeUploadUI();
-
-                    const skillCount = parsedResume.skills?.length || 0;
-                    const roleCount = parsedResume.experience?.length || 0;
-                    const name = userName.displayName || 'there';
-
-                    const followUpMessage = `Got it, ${name}! I see ${roleCount} role${roleCount !== 1 ? 's' : ''} and ${skillCount} skill${skillCount !== 1 ? 's' : ''} in your resume.
-
-How can I help you today? I can:
-• Analyze your skills for gaps based on a target role
-• Suggest improvements to strengthen your resume
-• Help you articulate your experience better
-
-What would you like to focus on?`;
-
-                    conversationState.messages.push({
-                        role: 'assistant',
-                        content: followUpMessage
-                    });
-                    addMessageToUI('henry', followUpMessage);
-                    conversationState.state = 'DISCUSS_RESUME';
-                    saveConversation();
-                }, 1000);
-
-            } catch (error) {
-                console.error('Parse error:', error);
-                uploadStatus.textContent = '✗ Failed to parse resume. Try another format?';
-                uploadStatus.className = 'upload-status error';
-            }
         }
 
         // Send user message
@@ -1435,7 +1183,6 @@ What would you like to focus on?`;
         }
 
         // Initialize
-        initDiscussResumeUpload();
         loadConversation();
     </script>
 </body>
