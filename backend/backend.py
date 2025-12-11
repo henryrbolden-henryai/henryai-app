@@ -780,6 +780,24 @@ def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096) -
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
 
+def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096):
+    """Call Claude API with streaming support - yields chunks of text"""
+    try:
+        print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars)")
+        with client.messages.stream(
+            model="claude-sonnet-4-20250514",
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_message}]
+        ) as stream:
+            for text in stream.text_stream:
+                yield text
+    except Exception as e:
+        print(f"🔥 CLAUDE API ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+
 def clean_claude_json(text: str) -> str:
     """Aggressively clean Claude's response to extract valid JSON"""
     # Remove code fences
@@ -799,6 +817,115 @@ def clean_claude_json(text: str) -> str:
     if last_brace != -1:
         text = text[:last_brace + 1]
     return text
+
+def verify_ats_keyword_coverage(generated_text: str, ats_keywords: List[str]) -> Dict[str, Any]:
+    """
+    Verify that all ATS keywords from JD analysis appear in the generated resume.
+    Returns coverage report with missing keywords and coverage percentage.
+    """
+    if not ats_keywords:
+        return {
+            "coverage_percentage": 100,
+            "total_keywords": 0,
+            "found_keywords": [],
+            "missing_keywords": [],
+            "status": "no_keywords"
+        }
+
+    generated_lower = generated_text.lower()
+    found_keywords = []
+    missing_keywords = []
+
+    for keyword in ats_keywords:
+        keyword_lower = keyword.lower()
+        if keyword_lower in generated_lower:
+            found_keywords.append(keyword)
+        else:
+            missing_keywords.append(keyword)
+
+    coverage_percentage = (len(found_keywords) / len(ats_keywords)) * 100 if ats_keywords else 100
+
+    return {
+        "coverage_percentage": round(coverage_percentage, 1),
+        "total_keywords": len(ats_keywords),
+        "found_keywords": found_keywords,
+        "missing_keywords": missing_keywords,
+        "status": "complete" if coverage_percentage == 100 else "incomplete"
+    }
+
+def validate_document_quality(generated_data: Dict[str, Any], source_resume: Dict[str, Any], jd_analysis: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate generated documents for quality issues:
+    - Grounding (no fabrication)
+    - ATS keyword coverage
+    - Positioning alignment
+    - Generic language detection
+    """
+    issues = []
+    warnings = []
+
+    # Extract resume output
+    resume_output = generated_data.get("resume_output", {})
+    full_text = resume_output.get("full_text", "")
+
+    # 1. ATS Keyword Coverage Check
+    ats_keywords = jd_analysis.get("ats_keywords", [])
+    keyword_coverage = verify_ats_keyword_coverage(full_text, ats_keywords)
+
+    if keyword_coverage["status"] == "incomplete":
+        missing = keyword_coverage["missing_keywords"]
+        issues.append(f"Missing ATS keywords: {', '.join(missing[:5])}" + (" and more" if len(missing) > 5 else ""))
+
+    # 2. Generic Language Detection
+    generic_phrases = [
+        "team player", "hard worker", "detail-oriented", "results-driven",
+        "proven track record", "dynamic professional", "highly motivated",
+        "excellent communication skills", "go-getter", "self-starter"
+    ]
+
+    found_generic = []
+    for phrase in generic_phrases:
+        if phrase.lower() in full_text.lower():
+            found_generic.append(phrase)
+
+    if found_generic:
+        warnings.append(f"Generic phrases detected: {', '.join(found_generic[:3])}")
+
+    # 3. Company Name Validation (basic check)
+    source_companies = []
+    for exp in source_resume.get("experience", []):
+        company = exp.get("company", "")
+        if company:
+            source_companies.append(company.lower())
+
+    generated_companies = []
+    for exp_section in resume_output.get("experience_sections", []):
+        company = exp_section.get("company", "")
+        if company:
+            generated_companies.append(company.lower())
+
+    # Check if any generated company doesn't appear in source
+    for gen_company in generated_companies:
+        if gen_company and not any(gen_company in src or src in gen_company for src in source_companies):
+            issues.append(f"Unrecognized company: {gen_company}")
+
+    # 4. Minimum Length Check
+    if len(full_text) < 200:
+        issues.append("Resume text too short (< 200 characters)")
+
+    # Calculate overall quality score
+    quality_score = 100
+    quality_score -= len(issues) * 15  # -15 per issue
+    quality_score -= len(warnings) * 5  # -5 per warning
+    quality_score = max(0, quality_score)
+
+    return {
+        "quality_score": quality_score,
+        "issues": issues,
+        "warnings": warnings,
+        "keyword_coverage": keyword_coverage,
+        "approval_status": "PASS" if quality_score >= 70 and len(issues) == 0 else "NEEDS_REVIEW"
+    }
 
 
 # ============================================================================
@@ -2928,6 +3055,14 @@ CRITICAL RULES - READ CAREFULLY:
 
 THE CANDIDATE IS THE PERSON WHOSE RESUME WAS UPLOADED - NOT the user, NOT Henry, NOT a template.
 
+CONVERSATIONAL CONTEXT:
+Before the JSON output, provide a 3-4 sentence conversational summary that:
+- Explains your strategic positioning decisions
+- Highlights what you changed and why
+- Notes key ATS keywords you incorporated
+- Flags any gaps and how you mitigated them
+Format: Start with "Here's what I created for you:\n\n" followed by your analysis, then add "\n\n---JSON_START---\n" before the JSON.
+
 You MUST return valid JSON with this EXACT structure. ALL fields are REQUIRED:
 
 {
@@ -3144,7 +3279,16 @@ Generate the complete JSON response with ALL required fields populated."""
     
     # Parse JSON response
     try:
-        cleaned = response.strip()
+        # Extract conversational context if present
+        conversational_summary = ""
+        json_text = response.strip()
+
+        if "---JSON_START---" in json_text:
+            parts = json_text.split("---JSON_START---")
+            conversational_summary = parts[0].strip()
+            json_text = parts[1].strip()
+
+        cleaned = json_text
         # Remove markdown code blocks if present
         if cleaned.startswith("```"):
             cleaned = cleaned.split("```")[1]
@@ -3153,8 +3297,12 @@ Generate the complete JSON response with ALL required fields populated."""
             cleaned = cleaned.strip()
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3].strip()
-        
+
         parsed_data = json.loads(cleaned)
+
+        # Add conversational summary to response
+        if conversational_summary:
+            parsed_data["conversational_summary"] = conversational_summary
         
         # Ensure resume_output has all required fields with fallbacks
         if "resume_output" not in parsed_data:
@@ -3258,13 +3406,31 @@ Generate the complete JSON response with ALL required fields populated."""
                 }
             }
         
+        # Validate document quality and keyword coverage
+        validation_results = validate_document_quality(parsed_data, request.resume, request.jd_analysis)
+
+        # Add validation results to response
+        parsed_data["validation"] = validation_results
+
+        # Log validation results
+        print("\n" + "="*60)
+        print("VALIDATION RESULTS:")
+        print(f"Quality Score: {validation_results['quality_score']}/100")
+        print(f"Status: {validation_results['approval_status']}")
+        print(f"Keyword Coverage: {validation_results['keyword_coverage']['coverage_percentage']}%")
+        if validation_results["issues"]:
+            print(f"Issues: {validation_results['issues']}")
+        if validation_results["warnings"]:
+            print(f"Warnings: {validation_results['warnings']}")
+        print("="*60 + "\n")
+
         # DEBUG: Print final parsed data
         print("\n" + "="*60)
         print("DEBUG: Final parsed_data being returned:")
         print("="*60)
         print(json.dumps(parsed_data, indent=2))
         print("="*60 + "\n")
-        
+
         return parsed_data
         
     except json.JSONDecodeError as e:
