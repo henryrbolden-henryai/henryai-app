@@ -82,42 +82,42 @@
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 50%;
-                transform: translateY(-50%);
+                top: 120px;
                 z-index: 90;
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
             }
 
             .strategy-nav-toggle {
-                width: 32px;
-                height: 32px;
-                background: rgba(34, 211, 238, 0.15);
-                border: 1px solid rgba(34, 211, 238, 0.3);
-                border-radius: 0 8px 8px 0;
-                color: #22d3ee;
+                width: 28px;
+                height: 28px;
+                background: #1a1a1a;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-left: none;
+                border-radius: 0 6px 6px 0;
+                color: #ffffff;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
+                font-size: 12px;
                 transition: all 0.3s ease;
             }
 
             .strategy-nav-toggle:hover {
-                background: rgba(34, 211, 238, 0.25);
-                border-color: #22d3ee;
+                background: #2a2a2a;
+                border-color: rgba(255, 255, 255, 0.4);
             }
 
             .strategy-nav.expanded .strategy-nav-toggle {
-                border-radius: 8px 0 0 8px;
+                border-radius: 6px 0 0 6px;
             }
 
             .strategy-nav-panel {
-                background: rgba(15, 15, 15, 0.98);
+                background: #0a0a0a;
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-left: none;
-                border-radius: 0 12px 12px 0;
+                border-radius: 0 8px 8px 0;
                 padding: 0;
                 max-height: 0;
                 width: 0;
@@ -128,31 +128,31 @@
 
             .strategy-nav.expanded .strategy-nav-panel {
                 max-height: 500px;
-                width: 220px;
+                width: 200px;
                 opacity: 1;
-                padding: 16px;
+                padding: 12px;
             }
 
             .strategy-nav-context {
-                padding: 8px 12px;
-                background: rgba(34, 211, 238, 0.1);
-                border-radius: 8px;
-                margin-bottom: 12px;
-                border-left: 3px solid #22d3ee;
+                padding: 8px 10px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 6px;
+                margin-bottom: 10px;
+                border-left: 2px solid #ffffff;
             }
 
             .strategy-nav-context-company {
                 font-weight: 600;
                 color: #ffffff;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
 
             .strategy-nav-context-role {
-                color: #9ca3af;
-                font-size: 0.75rem;
+                color: #6b7280;
+                font-size: 0.7rem;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -165,47 +165,47 @@
             }
 
             .strategy-nav-item {
-                margin-bottom: 2px;
+                margin-bottom: 0;
             }
 
             .strategy-nav-parent {
                 display: block;
-                padding: 10px 12px;
+                padding: 8px 10px;
                 color: #ffffff;
                 text-decoration: none;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
                 font-weight: 600;
                 transition: all 0.2s ease;
             }
 
             .strategy-nav-parent:hover {
-                color: #22d3ee;
+                color: #d1d5db;
             }
 
             .strategy-nav-parent.active {
-                color: #22d3ee;
+                color: #ffffff;
             }
 
             .strategy-nav-children {
                 list-style: none;
                 margin: 0;
-                padding: 0 0 0 12px;
-                border-left: 1px solid rgba(255, 255, 255, 0.1);
-                margin-left: 8px;
+                padding: 0 0 0 10px;
+                border-left: 1px solid rgba(255, 255, 255, 0.15);
+                margin-left: 6px;
             }
 
             .strategy-nav-child {
-                margin-bottom: 2px;
+                margin-bottom: 0;
             }
 
             .strategy-nav-child-link {
                 display: block;
-                padding: 8px 12px;
-                color: #9ca3af;
+                padding: 6px 10px;
+                color: #6b7280;
                 text-decoration: none;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
                 transition: all 0.2s ease;
-                border-radius: 6px;
+                border-radius: 4px;
             }
 
             .strategy-nav-child-link:hover {
@@ -214,30 +214,30 @@
             }
 
             .strategy-nav-child-link.active {
-                background: rgba(34, 211, 238, 0.15);
-                color: #22d3ee;
+                background: rgba(255, 255, 255, 0.1);
+                color: #ffffff;
             }
 
             .strategy-nav-child-link::before {
                 content: '•';
-                margin-right: 8px;
+                margin-right: 6px;
                 color: #4b5563;
             }
 
             .strategy-nav-child-link.active::before {
-                color: #22d3ee;
+                color: #ffffff;
             }
 
             /* Floating dots indicator for collapsed state */
             .strategy-nav-dots {
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
-                padding: 8px 6px;
-                background: rgba(15, 15, 15, 0.9);
+                gap: 5px;
+                padding: 6px 5px;
+                background: #0a0a0a;
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-left: none;
-                border-radius: 0 8px 8px 0;
+                border-radius: 0 6px 6px 0;
             }
 
             .strategy-nav.expanded .strategy-nav-dots {
@@ -245,51 +245,35 @@
             }
 
             .strategy-nav-dot {
-                width: 6px;
-                height: 6px;
+                width: 5px;
+                height: 5px;
                 border-radius: 50%;
                 background: rgba(255, 255, 255, 0.3);
                 transition: all 0.2s;
             }
 
             .strategy-nav-dot.active {
-                background: #22d3ee;
-                box-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+                background: #ffffff;
             }
 
             .strategy-nav-dot:hover {
-                background: rgba(255, 255, 255, 0.5);
-                transform: scale(1.3);
+                background: rgba(255, 255, 255, 0.6);
+                transform: scale(1.2);
             }
 
             /* Responsive adjustments */
             @media (max-width: 768px) {
                 .strategy-nav {
-                    bottom: 80px;
                     top: auto;
-                    transform: none;
+                    bottom: 80px;
                 }
 
                 .strategy-nav.expanded .strategy-nav-panel {
-                    width: 200px;
+                    width: 180px;
                 }
             }
 
-            /* Adjust main content when nav is present */
-            body.has-strategy-nav .container {
-                margin-left: 40px;
-            }
-
-            body.has-strategy-nav.nav-expanded .container {
-                margin-left: 260px;
-            }
-
-            @media (max-width: 768px) {
-                body.has-strategy-nav .container,
-                body.has-strategy-nav.nav-expanded .container {
-                    margin-left: 0;
-                }
-            }
+            /* No margin adjustments - nav overlays content */
         `;
         document.head.appendChild(styles);
     }
@@ -325,7 +309,7 @@
             `;
         }).join('');
 
-        // Build context section if available
+        // Build context section if available - use actual company name
         const contextHtml = jobContext && jobContext.company ? `
             <div class="strategy-nav-context">
                 <div class="strategy-nav-context-company">${jobContext.company}</div>
@@ -360,7 +344,6 @@
         toggle.setAttribute('aria-expanded', isExpanded);
         toggle.innerHTML = isExpanded ? '◀' : '▶';
         localStorage.setItem('strategyNavExpanded', isExpanded);
-        document.body.classList.toggle('nav-expanded', isExpanded);
     }
 
     // Initialize the navigation
@@ -373,25 +356,12 @@
             return;
         }
 
-        // Check if we have analysis data (needed for context)
-        const hasContext = sessionStorage.getItem('analysisData') !== null;
-
         // Inject styles
         injectStyles();
 
         // Create and append navigation
         const nav = createNavigation();
         document.body.appendChild(nav);
-        document.body.classList.add('has-strategy-nav');
-
-        // Set up toggle behavior
-        const toggle = nav.querySelector('.strategy-nav-toggle');
-        toggle.addEventListener('click', () => toggleNav(nav, toggle));
-
-        // Set initial expanded state class on body
-        if (nav.classList.contains('expanded')) {
-            document.body.classList.add('nav-expanded');
-        }
     }
 
     // Run when DOM is ready
