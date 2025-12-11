@@ -2199,6 +2199,9 @@
                 <p class="subtitle">Your strategic view of every opportunity in play</p>
             </div>
             <div class="header-actions">
+                <button class="header-btn primary" onclick="openScheduleInterviewModal()" title="Schedule an upcoming interview">
+                    <span>📅</span> Schedule Interview
+                </button>
                 <button class="header-btn" onclick="exportBackup()" title="Download all your data as a backup file">
                     <span>📥</span> Export Backup
                 </button>
@@ -2362,6 +2365,38 @@
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeDateEditModal()">Cancel</button>
                 <button class="modal-btn primary" onclick="saveDateEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCHEDULE INTERVIEW MODAL -->
+    <div class="modal-overlay" id="scheduleInterviewModal">
+        <div class="modal" style="max-width: 500px;">
+            <h2><span>📅</span> Schedule Interview</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Select an application to schedule an interview for, or create a new one.</p>
+
+            <div id="scheduleInterviewContent">
+                <!-- Application selector -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Select Application</label>
+                    <select id="interviewAppSelect" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                        <option value="">-- Select an application --</option>
+                        <!-- Dynamically populated -->
+                    </select>
+                </div>
+
+                <div style="text-align: center; color: var(--color-text-muted); margin: 16px 0;">or</div>
+
+                <div style="text-align: center;">
+                    <button class="modal-btn" onclick="createNewInterview()" style="background: transparent; border: 1px solid var(--color-accent); color: var(--color-accent);">
+                        + Add New Interview Manually
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="modal-btn secondary" onclick="closeScheduleInterviewModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="proceedToInterviewIntelligence()" id="proceedInterviewBtn" disabled>Continue to Schedule</button>
             </div>
         </div>
     </div>
@@ -4354,12 +4389,12 @@
             }
             // Screen scheduled/awaiting
             else if (['Response Received', 'Recruiter Screen', 'Awaiting Screen'].includes(status)) {
-                actions.push({ label: '📅 Schedule Prep Time', action: `schedulePrepTime(${app.id})`, primary: true });
+                actions.push({ label: '📅 Schedule Interview', action: `scheduleInterviewForApp(${app.id})`, primary: true });
                 actions.push({ label: '📋 Review Prep Guide', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
-                actions.push({ label: '📝 Add Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                actions.push({ label: '📅 Schedule Interview', action: `scheduleInterviewForApp(${app.id})`, primary: true });
                 if (statusDef.awaiting) {
                     actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
                 } else {
@@ -5001,6 +5036,84 @@
             renderAll(apps);
         }
 
+        // ========================================================================
+        // SCHEDULE INTERVIEW MODAL
+        // ========================================================================
+        let selectedInterviewAppId = null;
+
+        function openScheduleInterviewModal(appId = null) {
+            const modal = document.getElementById('scheduleInterviewModal');
+            const select = document.getElementById('interviewAppSelect');
+            const proceedBtn = document.getElementById('proceedInterviewBtn');
+
+            // Populate the select with active applications
+            const apps = getApplications().filter(a => STATUSES[a.status]?.active);
+            select.innerHTML = '<option value="">-- Select an application --</option>' +
+                apps.map(app => `<option value="${app.id}">${app.company} - ${app.role}</option>`).join('');
+
+            // If a specific app was passed, pre-select it
+            if (appId) {
+                select.value = appId;
+                selectedInterviewAppId = appId;
+                proceedBtn.disabled = false;
+            } else {
+                selectedInterviewAppId = null;
+                proceedBtn.disabled = true;
+            }
+
+            // Listen for selection changes
+            select.onchange = function() {
+                selectedInterviewAppId = this.value ? parseInt(this.value) : null;
+                proceedBtn.disabled = !selectedInterviewAppId;
+            };
+
+            modal.classList.add('show');
+        }
+
+        function closeScheduleInterviewModal() {
+            selectedInterviewAppId = null;
+            document.getElementById('scheduleInterviewModal').classList.remove('show');
+        }
+
+        function createNewInterview() {
+            // Navigate to Interview Intelligence without any context (manual entry)
+            closeScheduleInterviewModal();
+            window.location.href = 'interview-intelligence.html';
+        }
+
+        function proceedToInterviewIntelligence() {
+            if (!selectedInterviewAppId) return;
+
+            const apps = getApplications();
+            const app = apps.find(a => a.id === selectedInterviewAppId);
+            if (!app) return;
+
+            // Store context for the interview form
+            const interviewContext = {
+                company: app.company,
+                role: app.role,
+                jobDescription: app.notes || '',
+                appId: app.id
+            };
+            sessionStorage.setItem('pendingInterviewContext', JSON.stringify(interviewContext));
+
+            // Also load analysis data if available
+            if (app.analysisKey) {
+                const analysisData = localStorage.getItem(app.analysisKey);
+                if (analysisData) {
+                    sessionStorage.setItem('analysisData', analysisData);
+                }
+            }
+
+            closeScheduleInterviewModal();
+            window.location.href = 'interview-intelligence.html';
+        }
+
+        // Add "Schedule Interview" to contextual actions for interview stages
+        function scheduleInterviewForApp(appId) {
+            openScheduleInterviewModal(appId);
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.status-selector')) {
@@ -5600,5 +5713,6 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-check.js"></script>
 <script src="components/ask-henry.js"></script>
+<script src="components/strategy-nav.js"></script>
 </body>
 </html>
