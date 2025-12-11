@@ -302,22 +302,11 @@ class ResumeFormatter:
         Add education entry.
 
         Args:
-            school (str): School name
-            degree (str): Degree and major
-            details (list): Optional list of detail bullet points
+            school (str): School name (institution)
+            degree (str): Degree type and major
+            details (list): Optional list of detail strings (e.g., concentration, honors)
         """
-        # School name (bold, 11pt) - only add if school name exists
-        if school and school.strip():
-            school_para = self.doc.add_paragraph()
-            school_para.alignment = styles.ALIGN_LEFT
-            school_run = school_para.add_run(school)
-            school_run.font.size = styles.FONT_SIZE_COMPANY
-            school_run.font.bold = True
-            school_run.font.name = styles.FONT_FAMILY
-            school_run.font.color.rgb = styles.COLOR_BLACK
-            school_para.paragraph_format.space_after = Pt(0)
-
-        # Degree (regular, 10pt)
+        # Line 1: Degree type and major (regular, 10pt)
         if degree and degree.strip():
             degree_para = self.doc.add_paragraph()
             degree_para.alignment = styles.ALIGN_LEFT
@@ -325,20 +314,30 @@ class ResumeFormatter:
             degree_run.font.size = styles.FONT_SIZE_DEFAULT
             degree_run.font.name = styles.FONT_FAMILY
             degree_run.font.color.rgb = styles.COLOR_BLACK
-            degree_para.paragraph_format.space_after = Pt(3)
+            degree_para.paragraph_format.space_after = Pt(0)  # Single-spaced
 
-        # Details as bullets (9pt gray)
+        # Line 2: Institution/School name (bold, 10pt)
+        if school and school.strip():
+            school_para = self.doc.add_paragraph()
+            school_para.alignment = styles.ALIGN_LEFT
+            school_run = school_para.add_run(school)
+            school_run.font.size = styles.FONT_SIZE_DEFAULT
+            school_run.font.bold = True
+            school_run.font.name = styles.FONT_FAMILY
+            school_run.font.color.rgb = styles.COLOR_BLACK
+            school_para.paragraph_format.space_after = Pt(0)  # Single-spaced
+
+        # Line 3+: Details like concentration (regular, 10pt)
         if details:
             for detail in details:
                 if detail and str(detail).strip():
                     detail_para = self.doc.add_paragraph()
                     detail_para.alignment = styles.ALIGN_LEFT
-                    detail_run = detail_para.add_run(f"• {detail}")
-                    detail_run.font.size = Pt(9)
+                    detail_run = detail_para.add_run(detail)
+                    detail_run.font.size = styles.FONT_SIZE_DEFAULT
                     detail_run.font.name = styles.FONT_FAMILY
-                    detail_run.font.color.rgb = styles.COLOR_DARK_GRAY
-                    detail_para.paragraph_format.left_indent = styles.BULLET_INDENT
-                    detail_para.paragraph_format.space_after = Pt(2)
+                    detail_run.font.color.rgb = styles.COLOR_BLACK
+                    detail_para.paragraph_format.space_after = Pt(0)
 
     def save(self, filepath):
         """
