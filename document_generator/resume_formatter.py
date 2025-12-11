@@ -243,25 +243,25 @@ class ResumeFormatter:
         dates_run.font.name = styles.FONT_FAMILY
         dates_run.font.color.rgb = styles.COLOR_DARK_GRAY
 
-        # Company overview (italic, gray, 9pt)
+        # Company overview (italic, gray, same size as other details)
         if overview:
             overview_para = self.doc.add_paragraph()
             overview_para.alignment = styles.ALIGN_LEFT
             overview_run = overview_para.add_run(f"Company Overview: {overview}")
-            overview_run.font.size = styles.FONT_SIZE_COMPANY_OVERVIEW
+            overview_run.font.size = styles.FONT_SIZE_DEFAULT  # Same as location/dates
             overview_run.font.italic = True
             overview_run.font.name = styles.FONT_FAMILY
             overview_run.font.color.rgb = styles.COLOR_DARK_GRAY
             overview_para.paragraph_format.space_before = Pt(0)  # Single-spaced
-            overview_para.paragraph_format.space_after = Pt(3)  # Minimal space before bullets
+            overview_para.paragraph_format.space_after = Pt(6)  # Add space before bullets
 
         # Bullets (left-aligned with hanging indent)
         for i, bullet in enumerate(bullets):
             bullet_para = self.doc.add_paragraph()
             bullet_para.alignment = styles.ALIGN_LEFT
-            # Add hanging indent so text wraps under text, not under bullet
-            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Indent for text
-            bullet_para.paragraph_format.first_line_indent = Inches(-0.15)  # Negative indent for bullet
+            # Bullet at 0.0", text starts at 0.25", wrapped text aligns at 0.25"
+            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Where text starts
+            bullet_para.paragraph_format.first_line_indent = Inches(-0.25)  # Pulls bullet back to 0.0"
             # Add bullet character manually for consistent formatting
             bullet_run = bullet_para.add_run(f"• {bullet}")
             bullet_run.font.size = styles.FONT_SIZE_DEFAULT
