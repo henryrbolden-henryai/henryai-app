@@ -75,13 +75,15 @@
     // Get company and role from session/local storage for context
     function getJobContext() {
         try {
-            // First try sessionStorage
+            // First try sessionStorage analysisData
             let analysisData = sessionStorage.getItem('analysisData');
             if (analysisData) {
                 const data = JSON.parse(analysisData);
-                const company = data._company_name || data._company || '';
-                const role = data.role_title || data._role || '';
-                if (company) {
+                // Check all possible field names for company
+                const company = data._company_name || data._company || data.company_name || data.company || '';
+                const role = data.role_title || data._role || data.role || '';
+                // Only return if we have a real company name (not "Company" placeholder)
+                if (company && company !== 'Company' && company !== 'Unknown Company') {
                     return { company, role };
                 }
             }
@@ -96,10 +98,14 @@
                     // Sort by lastUpdated descending
                     activeApps.sort((a, b) => new Date(b.lastUpdated || b.dateAdded) - new Date(a.lastUpdated || a.dateAdded));
                     const mostRecent = activeApps[0];
-                    return {
-                        company: mostRecent.company || '',
-                        role: mostRecent.role || ''
-                    };
+                    const company = mostRecent.company || '';
+                    // Only return if we have a real company name
+                    if (company && company !== 'Company' && company !== 'Unknown Company') {
+                        return {
+                            company: company,
+                            role: mostRecent.role || ''
+                        };
+                    }
                 }
             }
         } catch (e) {
