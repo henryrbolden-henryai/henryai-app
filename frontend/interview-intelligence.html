@@ -918,12 +918,9 @@
             renderInterviewList();
             renderCompletedInterviews();
 
-            // Set default date/time for form
-            const dateInput = document.getElementById('interviewDate');
-            if (dateInput) {
-                const now = new Date();
-                now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-                dateInput.value = now.toISOString().slice(0, 16);
+            // Check if we should auto-open the add interview modal (e.g., from Command Center)
+            if (sessionStorage.getItem('pendingInterviewContext')) {
+                openAddInterviewModal();
             }
         });
 
@@ -974,23 +971,53 @@
         // ============================================================================
         // INTERVIEW MANAGEMENT
         // ============================================================================
-        function openAddInterviewModal() {
-            // Pre-populate from analysis data if available
-            if (analysisData) {
-                const companyField = document.getElementById('interviewCompany');
-                const roleField = document.getElementById('interviewRole');
-                const jdField = document.getElementById('interviewJD');
+        function openAddInterviewModal(appContext = null) {
+            const companyField = document.getElementById('interviewCompany');
+            const roleField = document.getElementById('interviewRole');
+            const jdField = document.getElementById('interviewJD');
 
-                if (companyField && !companyField.value) {
-                    companyField.value = analysisData._company_name || analysisData._company || '';
-                }
-                if (roleField && !roleField.value) {
-                    roleField.value = analysisData.role_title || analysisData._role || '';
-                }
-                if (jdField && !jdField.value) {
-                    jdField.value = analysisData._jd_text || '';
+            // Reset form first to clear any stale values
+            document.getElementById('addInterviewForm').reset();
+
+            // Reset LinkedIn upload state
+            linkedInFileData = null;
+            document.getElementById('linkedinFile').value = '';
+            document.getElementById('linkedinFileName').style.display = 'none';
+            document.getElementById('linkedinUploadZone').style.display = 'flex';
+            document.getElementById('linkedinText').value = '';
+            document.getElementById('linkedinPasteSection').style.display = 'none';
+
+            // Set default date/time
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('interviewDate').value = now.toISOString().slice(0, 16);
+
+            // Priority 1: Use explicit app context passed in (from Command Center)
+            if (appContext) {
+                if (companyField) companyField.value = appContext.company || '';
+                if (roleField) roleField.value = appContext.role || '';
+                if (jdField && appContext.jobDescription) jdField.value = appContext.jobDescription;
+            }
+            // Priority 2: Check for pending interview context from tracker (via sessionStorage)
+            else if (sessionStorage.getItem('pendingInterviewContext')) {
+                try {
+                    const pendingContext = JSON.parse(sessionStorage.getItem('pendingInterviewContext'));
+                    if (companyField) companyField.value = pendingContext.company || '';
+                    if (roleField) roleField.value = pendingContext.role || '';
+                    if (jdField && pendingContext.jobDescription) jdField.value = pendingContext.jobDescription;
+                    // Clear the pending context after using it
+                    sessionStorage.removeItem('pendingInterviewContext');
+                } catch (e) {
+                    console.error('Error parsing pending interview context:', e);
                 }
             }
+            // Priority 3: Pre-populate from analysis data if available
+            else if (analysisData) {
+                if (companyField) companyField.value = analysisData._company_name || analysisData._company || '';
+                if (roleField) roleField.value = analysisData.role_title || analysisData._role || '';
+                if (jdField) jdField.value = analysisData._jd_text || '';
+            }
+
             document.getElementById('addInterviewModal').classList.add('active');
         }
 
@@ -1384,5 +1411,6 @@
         });
     </script>
 <script src="components/ask-henry.js"></script>
+<script src="components/strategy-nav.js"></script>
 </body>
 </html>
