@@ -125,20 +125,24 @@
         .avatar {
             width: 36px;
             height: 36px;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            font-size: 1.2rem;
         }
 
         .message.henry .avatar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: none;
+        }
+
+        .message.henry .avatar svg {
+            width: 36px;
+            height: 36px;
         }
 
         .message.user .avatar {
             background: var(--color-surface-elevated);
+            border-radius: 50%;
         }
 
         .bubble {
@@ -530,7 +534,23 @@ What would you like to focus on?`;
 
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
-            avatar.textContent = role === 'henry' ? '🎯' : '👤';
+            if (role === 'henry') {
+                avatar.innerHTML = `<svg width="36" height="36" viewBox="0 0 200 200" fill="none">
+                    <defs>
+                        <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/>
+                    <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <path d="M145 130 L145 50" stroke="url(#ringGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                </svg>`;
+            } else {
+                avatar.textContent = '👤';
+            }
 
             const bubble = document.createElement('div');
             bubble.className = 'bubble';
@@ -566,7 +586,19 @@ What would you like to focus on?`;
 
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
-            avatar.textContent = '🎯';
+            avatar.innerHTML = `<svg width="36" height="36" viewBox="0 0 200 200" fill="none">
+                <defs>
+                    <linearGradient id="ringGradientTyping" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="85" stroke="url(#ringGradientTyping)" stroke-width="4" fill="none"/>
+                <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <path d="M145 130 L145 50" stroke="url(#ringGradientTyping)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+            </svg>`;
 
             const indicator = document.createElement('div');
             indicator.className = 'typing-indicator';
@@ -659,36 +691,15 @@ What would you like to focus on?`;
                 }
             }
 
-            // Check for existing resume in profile
-            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            const hasResume = profile.resume && (profile.resume.experience?.length > 0 || profile.resume.skills?.length > 0);
-
             const displayName = userName.displayName || 'there';
 
-            if (hasResume) {
-                resumeData = profile.resume;
-                const skillCount = profile.resume.skills?.length || 0;
-                const roleCount = profile.resume.experience?.length || 0;
-
-                const openingMessage = `Hi ${displayName}! I see your resume with ${roleCount} role${roleCount !== 1 ? 's' : ''} and ${skillCount} skill${skillCount !== 1 ? 's' : ''}.
-
-How can I help you today? I can:
-• Analyze your skills for gaps based on a target role
-• Suggest improvements to strengthen your resume
-• Help you articulate your experience better
-
-What would you like to focus on?`;
-
-                addMessage('henry', openingMessage);
-            } else {
-                // No resume - show upload prompt
-                const openingMessage = `Hi ${displayName}! I'm happy to chat with you about your resume.
+            // Always ask for resume upload so Henry can properly analyze it
+            const openingMessage = `Hi ${displayName}! I'm happy to chat with you about your resume.
 
 So we're aligned, would you mind uploading the resume you'd like to discuss? Just drag and drop it below or click to browse.`;
 
-                addMessage('henry', openingMessage);
-                resumeUploadContainer.style.display = 'block';
-            }
+            addMessage('henry', openingMessage);
+            resumeUploadContainer.style.display = 'block';
 
             messageInput.focus();
         }
