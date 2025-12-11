@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Henry - HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            background: var(--color-bg);
+            z-index: 100;
+        }
+
+        .back-btn {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 1.5rem;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: var(--color-accent);
+        }
+
+        .header-title {
+            flex: 1;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 400;
+        }
+
+        /* Chat container */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            max-width: 700px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Message bubbles */
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.henry {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.2rem;
+        }
+
+        .message.henry .avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .message.user .avatar {
+            background: var(--color-surface-elevated);
+        }
+
+        .bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message.henry .bubble {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .bubble {
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-bottom-right-radius: 4px;
+        }
+
+        .bubble p {
+            margin: 0 0 8px 0;
+        }
+
+        .bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .bubble ul, .bubble ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .bubble li {
+            margin-bottom: 4px;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 14px 18px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-text-secondary);
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator .dot:nth-child(1) { animation-delay: 0s; }
+        .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+
+        /* Resume upload zone */
+        .resume-upload-container {
+            max-width: 700px;
+            margin: 0 auto 16px;
+        }
+
+        .resume-upload-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .resume-upload-zone:hover {
+            border-color: var(--color-accent);
+            background: var(--color-accent-muted);
+        }
+
+        .resume-upload-zone .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .resume-upload-zone .upload-text {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .resume-upload-zone .upload-text span {
+            color: var(--color-accent);
+            text-decoration: underline;
+        }
+
+        .resume-upload-zone .upload-hint {
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+
+        .upload-status {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .upload-status.success {
+            color: var(--color-success);
+        }
+
+        .upload-status.error {
+            color: var(--color-error);
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .input-container {
+            max-width: 700px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 24px;
+            padding: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--color-accent);
+        }
+
+        #messageInput {
+            width: 100%;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: var(--color-text);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.4;
+            resize: none;
+            max-height: 120px;
+        }
+
+        #messageInput:focus {
+            outline: none;
+        }
+
+        #messageInput::placeholder {
+            color: var(--color-text-secondary);
+        }
+
+        .send-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 50%;
+            color: #000;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s var(--ease-out), box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Back to profile link */
+        .back-to-profile {
+            display: block;
+            text-align: center;
+            padding: 16px;
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .back-to-profile:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            .message {
+                max-width: 95%;
+            }
+        }
+    </style>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+<body>
+    <header>
+        <a href="profile-edit.html" class="back-btn">←</a>
+        <div class="header-title">Chat with Henry</div>
+    </header>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="messages" id="messages"></div>
+    </div>
+
+    <div class="input-area">
+        <!-- Resume upload UI (shown when no resume) -->
+        <div class="resume-upload-container" id="resumeUploadContainer" style="display: none;">
+            <label class="resume-upload-zone" id="resumeUploadZone">
+                <input type="file" id="resumeFile" accept=".pdf,.docx,.doc,.txt" style="display: none;">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your resume here or <span>browse</span></div>
+                <div class="upload-hint">PDF, Word, or text files</div>
+            </label>
+            <div class="upload-status" id="uploadStatus"></div>
+        </div>
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea
+                    id="messageInput"
+                    placeholder="Type your message..."
+                    rows="1"
+                ></textarea>
+            </div>
+            <button class="send-btn" id="sendBtn">↑</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // State
+        let messages = [];
+        let resumeData = null;
+        let isProcessing = false;
+        let userName = { firstName: '', lastName: '', displayName: '' };
+
+        // DOM elements
+        const chatContainer = document.getElementById('chatContainer');
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const resumeUploadContainer = document.getElementById('resumeUploadContainer');
+        const resumeFile = document.getElementById('resumeFile');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const resumeUploadZone = document.getElementById('resumeUploadZone');
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // Enter to send (shift+enter for newline)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        // File upload handlers
+        resumeFile.addEventListener('change', handleResumeUpload);
+
+        resumeUploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            resumeUploadZone.style.borderColor = 'var(--color-accent)';
+            resumeUploadZone.style.background = 'var(--color-accent-muted)';
+        });
+
+        resumeUploadZone.addEventListener('dragleave', () => {
+            resumeUploadZone.style.borderColor = '';
+            resumeUploadZone.style.background = '';
+        });
+
+        resumeUploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            resumeUploadZone.style.borderColor = '';
+            resumeUploadZone.style.background = '';
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleResumeFile(file);
+            }
+        });
+
+        async function handleResumeUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleResumeFile(file);
+            }
+        }
+
+        async function handleResumeFile(file) {
+            uploadStatus.textContent = 'Parsing resume...';
+            uploadStatus.className = 'upload-status';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/resume/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Failed to parse resume');
+
+                const parsedResume = await response.json();
+                resumeData = parsedResume;
+
+                // Update profile with parsed resume
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                profile.resume = parsedResume;
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+
+                uploadStatus.textContent = '✓ Resume uploaded!';
+                uploadStatus.className = 'upload-status success';
+
+                // Hide upload UI and show follow-up message
+                setTimeout(() => {
+                    resumeUploadContainer.style.display = 'none';
+                    showResumeLoadedMessage(parsedResume);
+                }, 800);
+
+            } catch (error) {
+                console.error('Parse error:', error);
+                uploadStatus.textContent = '✗ Failed to parse resume. Try another format?';
+                uploadStatus.className = 'upload-status error';
+            }
+        }
+
+        function showResumeLoadedMessage(resume) {
+            const skillCount = resume.skills?.length || 0;
+            const roleCount = resume.experience?.length || 0;
+            const name = userName.displayName || 'there';
+
+            const message = `Got it, ${name}! I see ${roleCount} role${roleCount !== 1 ? 's' : ''} and ${skillCount} skill${skillCount !== 1 ? 's' : ''} in your resume.
+
+How can I help you today? I can:
+• Analyze your skills for gaps based on a target role
+• Suggest improvements to strengthen your resume
+• Help you articulate your experience better
+
+What would you like to focus on?`;
+
+            addMessage('henry', message);
+        }
+
+        function addMessage(role, content) {
+            messages.push({ role, content });
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = role === 'henry' ? '🎯' : '👤';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.innerHTML = formatMessage(content);
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(bubble);
+            messagesEl.appendChild(messageDiv);
+
+            scrollToBottom();
+        }
+
+        function formatMessage(content) {
+            // Convert markdown-style formatting to HTML
+            return content
+                .split('\n\n').map(para => {
+                    if (para.match(/^[•\-]\s/m)) {
+                        const items = para.split('\n')
+                            .filter(line => line.trim())
+                            .map(line => `<li>${line.replace(/^[•\-]\s*/, '')}</li>`)
+                            .join('');
+                        return `<ul>${items}</ul>`;
+                    }
+                    return `<p>${para.replace(/\n/g, '<br>')}</p>`;
+                })
+                .join('');
+        }
+
+        function showTyping() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message henry';
+            typingDiv.id = 'typingIndicator';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = '🎯';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+
+            typingDiv.appendChild(avatar);
+            typingDiv.appendChild(indicator);
+            messagesEl.appendChild(typingDiv);
+
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+
+            // Add user message
+            addMessage('user', message);
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // Show typing indicator
+            showTyping();
+
+            try {
+                // Call the ask-henry API with resume context
+                const response = await fetch(`${API_BASE}/api/ask-henry`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        conversation_history: messages.slice(0, -1).map(m => ({
+                            role: m.role === 'henry' ? 'assistant' : 'user',
+                            content: m.content
+                        })),
+                        context: {
+                            current_page: 'Resume Discussion',
+                            page_description: 'Discussing and analyzing user resume',
+                            has_resume: !!resumeData,
+                            user_name: userName.displayName || null
+                        },
+                        resume_data: resumeData,
+                        user_profile: JSON.parse(localStorage.getItem('userProfile') || '{}')
+                    })
+                });
+
+                hideTyping();
+
+                if (!response.ok) throw new Error('Failed to get response');
+
+                const data = await response.json();
+                addMessage('henry', data.response);
+
+            } catch (error) {
+                console.error('Error:', error);
+                hideTyping();
+                addMessage('henry', "Sorry, I'm having trouble connecting right now. Try again in a moment!");
+            }
+
+            isProcessing = false;
+            sendBtn.disabled = false;
+            messageInput.focus();
+        }
+
+        // Initialize
+        async function init() {
+            // Get user name from auth
+            if (typeof HenryAuth !== 'undefined') {
+                const authName = await HenryAuth.getUserName();
+                if (authName && authName.firstName && authName.firstName !== 'there') {
+                    userName.firstName = authName.firstName;
+                    userName.lastName = authName.lastName || '';
+                    userName.displayName = authName.firstName;
+                }
+            }
+
+            // Check for existing resume in profile
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const hasResume = profile.resume && (profile.resume.experience?.length > 0 || profile.resume.skills?.length > 0);
+
+            const displayName = userName.displayName || 'there';
+
+            if (hasResume) {
+                resumeData = profile.resume;
+                const skillCount = profile.resume.skills?.length || 0;
+                const roleCount = profile.resume.experience?.length || 0;
+
+                const openingMessage = `Hi ${displayName}! I see your resume with ${roleCount} role${roleCount !== 1 ? 's' : ''} and ${skillCount} skill${skillCount !== 1 ? 's' : ''}.
+
+How can I help you today? I can:
+• Analyze your skills for gaps based on a target role
+• Suggest improvements to strengthen your resume
+• Help you articulate your experience better
+
+What would you like to focus on?`;
+
+                addMessage('henry', openingMessage);
+            } else {
+                // No resume - show upload prompt
+                const openingMessage = `Hi ${displayName}! I'm happy to chat with you about your resume.
+
+So we're aligned, would you mind uploading the resume you'd like to discuss? Just drag and drop it below or click to browse.`;
+
+                addMessage('henry', openingMessage);
+                resumeUploadContainer.style.display = 'block';
+            }
+
+            messageInput.focus();
+        }
+
+        init();
+    </script>
+</body>
+</html>
