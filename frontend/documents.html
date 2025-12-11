@@ -860,20 +860,19 @@
                                                  resumeData.experience?.[0]?.location);
                 }
 
-                // Get the tailored experience from documentsData if available
-                const tailoredExperience = documentsData.resume_output?.experience || [];
-                const baseExperience = Array.isArray(resumeData.experience) ? resumeData.experience : [];
+                // Get the tailored experience from documentsData - this is already in STRATEGIC order
+                // Use experience_sections which contains the strategic ordering from Claude
+                const experienceSections = documentsData.resume_output?.experience_sections || [];
 
-                // Merge tailored bullets with base experience data
-                const mergedExperience = baseExperience.map((job, index) => {
-                    const tailoredJob = tailoredExperience[index] || {};
+                // Map experience_sections to the format expected by backend
+                const mergedExperience = experienceSections.map(job => {
                     return {
-                        company: safeString(job.company || job.organization || ''),
-                        title: safeString(tailoredJob.title || job.title || job.role || ''),
+                        company: safeString(job.company || ''),
+                        title: safeString(job.title || ''),
                         location: safeString(job.location || ''),
-                        dates: safeString(job.dates || `${job.start_date || ''} - ${job.end_date || 'Present'}`),
-                        overview: safeString(job.company_overview || job.overview || job.description || ''),
-                        bullets: tailoredJob.bullets || job.bullets || job.achievements || []
+                        dates: safeString(job.dates || ''),
+                        overview: safeString(job.overview || job.company_overview || ''),
+                        bullets: Array.isArray(job.bullets) ? job.bullets : []
                     };
                 });
 

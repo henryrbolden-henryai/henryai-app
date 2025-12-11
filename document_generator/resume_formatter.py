@@ -154,6 +154,9 @@ class ResumeFormatter:
             cell = table.rows[row_idx].cells[col_idx]
 
             cell_para = cell.paragraphs[0]
+            # Add hanging indent so text wraps under text, not under checkmark
+            cell_para.paragraph_format.left_indent = Pt(12)  # Indent for the checkmark
+            cell_para.paragraph_format.first_line_indent = Pt(-12)  # Negative indent for first line (checkmark)
 
             # Add checkmark
             check_run = cell_para.add_run("✓ ")
@@ -203,6 +206,7 @@ class ResumeFormatter:
         # Row 1, Left cell: Company name (bold, 11pt)
         company_cell = company_table.rows[0].cells[0]
         company_para = company_cell.paragraphs[0]
+        company_para.paragraph_format.space_after = Pt(0)  # Remove spacing after company
         company_run = company_para.add_run(company)
         company_run.font.size = styles.FONT_SIZE_COMPANY
         company_run.font.bold = True
@@ -222,6 +226,7 @@ class ResumeFormatter:
         # Row 2, Left cell: Job title (bold, 10pt)
         title_cell = company_table.rows[1].cells[0]
         title_para = title_cell.paragraphs[0]
+        title_para.paragraph_format.space_before = Pt(0)  # Remove spacing between rows
         title_run = title_para.add_run(title)
         title_run.font.size = styles.FONT_SIZE_JOB_TITLE
         title_run.font.bold = True
@@ -250,7 +255,7 @@ class ResumeFormatter:
             overview_para.paragraph_format.space_after = styles.SPACING_AFTER_COMPANY_OVERVIEW
 
         # Bullets (left-aligned)
-        for bullet in bullets:
+        for i, bullet in enumerate(bullets):
             bullet_para = self.doc.add_paragraph()
             bullet_para.alignment = styles.ALIGN_LEFT
             # Add bullet character manually for consistent formatting
@@ -260,6 +265,9 @@ class ResumeFormatter:
             bullet_run.font.color.rgb = styles.COLOR_BLACK
             bullet_para.paragraph_format.left_indent = styles.BULLET_INDENT
             bullet_para.paragraph_format.space_after = styles.SPACING_BETWEEN_BULLETS
+            # Add extra spacing after the last bullet to separate jobs
+            if i == len(bullets) - 1:
+                bullet_para.paragraph_format.space_after = styles.SPACING_BETWEEN_JOBS
 
     def add_skills(self, skills_dict):
         """
