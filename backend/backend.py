@@ -891,25 +891,47 @@ def validate_document_quality(generated_data: Dict[str, Any], source_resume: Dic
     if found_generic:
         warnings.append(f"Generic phrases detected: {', '.join(found_generic[:3])}")
 
-    # 3. Company Name Validation (basic check)
+    # 3. Company Name Validation (comprehensive check)
     source_companies = []
+    source_company_titles = []  # Track company + title pairs
     for exp in source_resume.get("experience", []):
         company = exp.get("company", "")
+        title = exp.get("title", "")
         if company:
             source_companies.append(company.lower())
+            source_company_titles.append((company.lower(), title.lower()))
 
     generated_companies = []
+    generated_company_titles = []
     for exp_section in resume_output.get("experience_sections", []):
         company = exp_section.get("company", "")
+        title = exp_section.get("title", "")
         if company:
             generated_companies.append(company.lower())
+            generated_company_titles.append((company.lower(), title.lower()))
 
-    # Check if any generated company doesn't appear in source
+    # Check if any generated company doesn't appear in source (FABRICATION)
     for gen_company in generated_companies:
         if gen_company and not any(gen_company in src or src in gen_company for src in source_companies):
-            issues.append(f"Unrecognized company: {gen_company}")
+            issues.append(f"Fabricated company: {gen_company}")
 
-    # 4. Minimum Length Check
+    # Check if any source company is missing from generated (OMISSION)
+    for src_company in source_companies:
+        if src_company and not any(src_company in gen or gen in src_company for gen in generated_companies):
+            # Find which company was omitted
+            matching_exp = next((exp for exp in source_resume.get("experience", []) if exp.get("company", "").lower() == src_company), None)
+            company_name = matching_exp.get("company", src_company) if matching_exp else src_company
+            issues.append(f"Omitted company from source resume: {company_name}")
+
+    # 4. Experience Count Validation
+    source_job_count = len(source_resume.get("experience", []))
+    generated_job_count = len(resume_output.get("experience_sections", []))
+
+    if generated_job_count < source_job_count:
+        missing_count = source_job_count - generated_job_count
+        issues.append(f"Missing {missing_count} job(s) from source resume (has {source_job_count}, generated {generated_job_count})")
+
+    # 5. Minimum Length Check
     if len(full_text) < 200:
         issues.append("Resume text too short (< 200 characters)")
 
@@ -3052,6 +3074,13 @@ CRITICAL RULES - READ CAREFULLY:
 8. The underlying FACTS must remain true to the candidate's actual uploaded resume
 9. Tailor which roles and bullets you emphasize based on the JD
 10. Optimize for ATS systems with keywords from the JD
+
+⚠️ CRITICAL - ALL EXPERIENCE MUST BE INCLUDED:
+11. You MUST include ALL companies/roles from the candidate's resume in experience_sections
+12. Do NOT omit any jobs from the source resume, even if they seem less relevant
+13. You MAY reorder jobs to emphasize more relevant experience first
+14. You MAY shorten bullets for less relevant roles, but you CANNOT skip entire jobs
+15. Every company in the source resume MUST appear in the generated resume
 
 THE CANDIDATE IS THE PERSON WHOSE RESUME WAS UPLOADED - NOT the user, NOT Henry, NOT a template.
 
