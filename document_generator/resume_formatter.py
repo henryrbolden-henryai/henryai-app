@@ -237,6 +237,7 @@ class ResumeFormatter:
         dates_cell = company_table.rows[1].cells[1]
         dates_para = dates_cell.paragraphs[0]
         dates_para.alignment = styles.ALIGN_RIGHT
+        dates_para.paragraph_format.space_before = Pt(0)  # Single-spaced
         dates_run = dates_para.add_run(dates)
         dates_run.font.size = styles.FONT_SIZE_DEFAULT
         dates_run.font.name = styles.FONT_FAMILY
@@ -251,19 +252,21 @@ class ResumeFormatter:
             overview_run.font.italic = True
             overview_run.font.name = styles.FONT_FAMILY
             overview_run.font.color.rgb = styles.COLOR_DARK_GRAY
-            overview_para.paragraph_format.space_before = Pt(3)
-            overview_para.paragraph_format.space_after = styles.SPACING_AFTER_COMPANY_OVERVIEW
+            overview_para.paragraph_format.space_before = Pt(0)  # Single-spaced
+            overview_para.paragraph_format.space_after = Pt(3)  # Minimal space before bullets
 
-        # Bullets (left-aligned)
+        # Bullets (left-aligned with hanging indent)
         for i, bullet in enumerate(bullets):
             bullet_para = self.doc.add_paragraph()
             bullet_para.alignment = styles.ALIGN_LEFT
+            # Add hanging indent so text wraps under text, not under bullet
+            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Indent for text
+            bullet_para.paragraph_format.first_line_indent = Inches(-0.15)  # Negative indent for bullet
             # Add bullet character manually for consistent formatting
             bullet_run = bullet_para.add_run(f"• {bullet}")
             bullet_run.font.size = styles.FONT_SIZE_DEFAULT
             bullet_run.font.name = styles.FONT_FAMILY
             bullet_run.font.color.rgb = styles.COLOR_BLACK
-            bullet_para.paragraph_format.left_indent = styles.BULLET_INDENT
             bullet_para.paragraph_format.space_after = styles.SPACING_BETWEEN_BULLETS
             # Add extra spacing after the last bullet to separate jobs
             if i == len(bullets) - 1:
