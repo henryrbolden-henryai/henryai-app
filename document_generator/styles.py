@@ -21,11 +21,11 @@ PAGE_HEIGHT = Inches(11)
 # MARGINS
 # ==============================================================================
 
-# Resume margins
+# Resume margins (optimized for 2-page resumes)
 RESUME_MARGIN_TOP = Inches(0.5)
 RESUME_MARGIN_BOTTOM = Inches(0.5)
-RESUME_MARGIN_LEFT = Inches(0.75)
-RESUME_MARGIN_RIGHT = Inches(0.75)
+RESUME_MARGIN_LEFT = Inches(0.65)
+RESUME_MARGIN_RIGHT = Inches(0.65)
 
 # Cover letter margins (1" all sides)
 CL_MARGIN_ALL = Inches(1.0)
@@ -63,17 +63,17 @@ COLOR_DARK_GRAY = RGBColor(102, 102, 102)  # #666666
 # SPACING (all values in points)
 # ==============================================================================
 
-# Resume spacing
-SPACING_AFTER_NAME = Pt(3)
-SPACING_AFTER_TAGLINE = Pt(6)
+# Resume spacing (optimized for 2-page resumes)
+SPACING_AFTER_NAME = Pt(2)
+SPACING_AFTER_TAGLINE = Pt(4)
 SPACING_AFTER_CONTACT = Pt(0)
-SPACING_BEFORE_SECTION_HEADER = Pt(12)
-SPACING_AFTER_SECTION_HEADER = Pt(6)
-SPACING_AFTER_SUMMARY = Pt(12)
-SPACING_BETWEEN_BULLETS = Pt(3)
-SPACING_BETWEEN_JOBS = Pt(12)
-SPACING_AFTER_JOB_TITLE = Pt(3)
-SPACING_AFTER_COMPANY_OVERVIEW = Pt(6)
+SPACING_BEFORE_SECTION_HEADER = Pt(8)
+SPACING_AFTER_SECTION_HEADER = Pt(4)
+SPACING_AFTER_SUMMARY = Pt(8)
+SPACING_BETWEEN_BULLETS = Pt(2)
+SPACING_BETWEEN_JOBS = Pt(8)
+SPACING_AFTER_JOB_TITLE = Pt(2)
+SPACING_AFTER_COMPANY_OVERVIEW = Pt(4)
 
 # Cover letter spacing
 CL_SPACING_AFTER_NAME = Pt(3)
