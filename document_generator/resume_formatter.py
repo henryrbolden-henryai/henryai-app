@@ -260,10 +260,10 @@ class ResumeFormatter:
             bullet_para = self.doc.add_paragraph()
             bullet_para.alignment = styles.ALIGN_LEFT
             # Bullet at 0.0", text starts at 0.25", wrapped text aligns at 0.25"
-            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Where text starts
-            bullet_para.paragraph_format.first_line_indent = Inches(-0.25)  # Pulls bullet back to 0.0"
-            # Add bullet character manually for consistent formatting
-            bullet_run = bullet_para.add_run(f"• {bullet}")
+            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Where all text (including wrapped) starts
+            bullet_para.paragraph_format.first_line_indent = Inches(-0.25)  # Pulls first line (bullet) back to 0.0"
+            # Use tab after bullet to ensure text starts exactly at 0.25"
+            bullet_run = bullet_para.add_run("•\t" + bullet)
             bullet_run.font.size = styles.FONT_SIZE_DEFAULT
             bullet_run.font.name = styles.FONT_FAMILY
             bullet_run.font.color.rgb = styles.COLOR_BLACK
