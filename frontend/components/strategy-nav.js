@@ -14,14 +14,14 @@
     const NAV_STRUCTURE = {
         topLevel: [
             {
-                id: 'analyze',
-                label: 'Analyze a Role',
-                href: 'analyze.html'
-            },
-            {
                 id: 'results',
                 label: 'Job Fit Score',
                 href: 'results.html'
+            },
+            {
+                id: 'skills-analysis',
+                label: 'Skills Analysis',
+                href: 'skills-analysis.html'
             }
         ],
         parent: {
@@ -42,7 +42,7 @@
             },
             {
                 id: 'outreach',
-                label: 'Network Intelligence & Outreach',
+                label: 'Network & Outreach',
                 href: 'outreach.html'
             },
             {
@@ -55,6 +55,13 @@
                 label: 'Command Center',
                 href: 'tracker.html'
             }
+        ],
+        bottomLevel: [
+            {
+                id: 'analyze',
+                label: 'Analyze New Role',
+                href: 'analyze.html'
+            }
         ]
     };
 
@@ -65,16 +72,35 @@
         return filename.replace('.html', '');
     }
 
-    // Get company and role from session storage for context
+    // Get company and role from session/local storage for context
     function getJobContext() {
         try {
-            const analysisData = sessionStorage.getItem('analysisData');
+            // First try sessionStorage
+            let analysisData = sessionStorage.getItem('analysisData');
             if (analysisData) {
                 const data = JSON.parse(analysisData);
-                return {
-                    company: data._company_name || data._company || '',
-                    role: data.role_title || data._role || ''
-                };
+                const company = data._company_name || data._company || '';
+                const role = data.role_title || data._role || '';
+                if (company) {
+                    return { company, role };
+                }
+            }
+
+            // Fallback: try to get from tracked applications in localStorage
+            const trackedApps = localStorage.getItem('trackedApplications');
+            if (trackedApps) {
+                const apps = JSON.parse(trackedApps);
+                // Get the most recently updated active application
+                const activeApps = apps.filter(a => a.status !== 'Rejected' && a.status !== 'Withdrawn');
+                if (activeApps.length > 0) {
+                    // Sort by lastUpdated descending
+                    activeApps.sort((a, b) => new Date(b.lastUpdated || b.dateAdded) - new Date(a.lastUpdated || a.dateAdded));
+                    const mostRecent = activeApps[0];
+                    return {
+                        company: mostRecent.company || '',
+                        role: mostRecent.role || ''
+                    };
+                }
             }
         } catch (e) {
             console.error('Error getting job context:', e);
@@ -329,7 +355,7 @@
         nav.setAttribute('aria-label', 'Strategy Navigation');
 
         // Create dots indicator (for collapsed state) - all items
-        const allItems = [...NAV_STRUCTURE.topLevel, NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children];
+        const allItems = [...NAV_STRUCTURE.topLevel, NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children, ...(NAV_STRUCTURE.bottomLevel || [])];
         const dotsHtml = allItems.map(item => {
             const isActive = currentPage === item.id;
             return `<a href="${item.href}" class="strategy-nav-dot ${isActive ? 'active' : ''}" title="${item.label}"></a>`;
@@ -362,6 +388,12 @@
             </div>
         ` : '';
 
+        // Create bottom-level items (Analyze New Role)
+        const bottomLevelHtml = (NAV_STRUCTURE.bottomLevel || []).map(item => {
+            const isActive = currentPage === item.id;
+            return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
+        }).join('');
+
         nav.innerHTML = `
             <div class="strategy-nav-dots">${dotsHtml}</div>
             <button class="strategy-nav-toggle" aria-expanded="${isExpanded}" aria-controls="strategyNavPanel">
@@ -379,6 +411,7 @@
                         </ul>
                     </li>
                 </ul>
+                ${bottomLevelHtml ? '<div class="strategy-nav-divider"></div>' + bottomLevelHtml : ''}
             </div>
         `;
 
