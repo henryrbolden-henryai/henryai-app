@@ -17,6 +17,11 @@
                 id: 'results',
                 label: 'Job Fit Score',
                 href: 'results.html'
+            },
+            {
+                id: 'skills-analysis',
+                label: 'Skills Analysis',
+                href: 'skills-analysis.html'
             }
         ],
         parent: {
