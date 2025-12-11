@@ -12,6 +12,18 @@
 (function() {
     // Navigation items configuration - hierarchical structure
     const NAV_STRUCTURE = {
+        topLevel: [
+            {
+                id: 'analyze',
+                label: 'Analyze a Role',
+                href: 'analyze.html'
+            },
+            {
+                id: 'results',
+                label: 'Job Fit Score',
+                href: 'results.html'
+            }
+        ],
         parent: {
             id: 'overview',
             label: 'Strategy Overview',
@@ -168,6 +180,33 @@
                 margin-bottom: 0;
             }
 
+            .strategy-nav-top-link {
+                display: block;
+                padding: 6px 10px;
+                color: #6b7280;
+                text-decoration: none;
+                font-size: 0.8rem;
+                transition: all 0.2s ease;
+                border-radius: 4px;
+                margin-bottom: 2px;
+            }
+
+            .strategy-nav-top-link:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
+            }
+
+            .strategy-nav-top-link.active {
+                background: rgba(255, 255, 255, 0.1);
+                color: #ffffff;
+            }
+
+            .strategy-nav-divider {
+                height: 1px;
+                background: rgba(255, 255, 255, 0.1);
+                margin: 8px 0;
+            }
+
             .strategy-nav-parent {
                 display: block;
                 padding: 8px 10px;
@@ -289,11 +328,17 @@
         nav.className = `strategy-nav ${isExpanded ? 'expanded' : ''}`;
         nav.setAttribute('aria-label', 'Strategy Navigation');
 
-        // Create dots indicator (for collapsed state) - all items including parent
-        const allItems = [NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children];
+        // Create dots indicator (for collapsed state) - all items
+        const allItems = [...NAV_STRUCTURE.topLevel, NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children];
         const dotsHtml = allItems.map(item => {
             const isActive = currentPage === item.id;
             return `<a href="${item.href}" class="strategy-nav-dot ${isActive ? 'active' : ''}" title="${item.label}"></a>`;
+        }).join('');
+
+        // Create top-level items (Analyze, Job Fit Score)
+        const topLevelHtml = NAV_STRUCTURE.topLevel.map(item => {
+            const isActive = currentPage === item.id;
+            return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
 
         // Check if parent is active
@@ -324,6 +369,8 @@
             </button>
             <div class="strategy-nav-panel" id="strategyNavPanel">
                 ${contextHtml}
+                ${topLevelHtml}
+                <div class="strategy-nav-divider"></div>
                 <ul class="strategy-nav-list">
                     <li class="strategy-nav-item">
                         <a href="${NAV_STRUCTURE.parent.href}" class="strategy-nav-parent ${isParentActive ? 'active' : ''}">${NAV_STRUCTURE.parent.label}</a>
