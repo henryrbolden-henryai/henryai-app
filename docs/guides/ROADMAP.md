@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 10, 2025 (Session 2)
+**Last Updated:** December 11, 2025
 
 ---
 
@@ -294,6 +294,32 @@ Position Ask Henry as the central strategic hub, not just a help widget.
 
 Enhances decision-making with market intelligence and broader career positioning.
 
+### Multi-Resume Management (Future)
+
+**Status:** Planned - Requires Authentication Infrastructure
+
+Allow users to upload and manage multiple resumes (up to 5) for multi-track job searches.
+
+**Dependencies:**
+- User authentication system (Supabase Auth)
+- Backend database persistence for user data
+- File storage (Supabase Storage)
+
+**Features:**
+- Upload up to 5 resumes with custom labels (e.g., "Technical Recruiting", "Executive Search")
+- Set primary/default resume for new analyses
+- Select which resume to use when analyzing each job
+- Edit labels, delete resumes, manage library
+
+**Why Deferred:**
+- Current localStorage approach works for single-track users
+- Requires foundational auth infrastructure not yet implemented
+- Better to validate need with real user feedback first
+
+**Implementation Guide:** Available in `docs/guides/MULTI_RESUME_IMPLEMENTATION.md`
+
+---
+
 ### Job Quality and Market Intelligence
 
 - **Job Quality Scoring** ✅ - Apply/Apply with caution/Skip assessment of role legitimacy
@@ -565,3 +591,39 @@ ALTER TABLE applications ADD COLUMN IF NOT EXISTS interview_date DATE;
 - `frontend/practice-intro.html` - Added HenryAI nav
 - `frontend/login.html` - Sizing adjustments (previous session)
 - `frontend/js/supabase-client.js` - New fields for applications
+
+---
+
+## Session Log: December 11, 2025
+
+### Completed Today
+
+**1. Bug Fix: Ask Henry "there" Issue**
+- Fixed bug where Ask Henry was using "there" as if it were a user's name
+- When no user name available, AI now uses warm generic greetings ("Hey, that's a great question...")
+- Updated system prompt to explicitly prevent "there, ..." as a greeting
+
+**2. Bug Fix: Mock Interview Responses Failing**
+- Fixed bug where all mock interview responses showed "I didn't catch that"
+- Root cause: `/api/mock-interview/respond` endpoint required `session_id` but frontend wasn't sending it
+- Added `session_id` to the request body in `frontend/mock-interview.html`
+
+**3. Multi-Resume Feature - Deferred to Phase 2**
+- Received detailed implementation guide for multi-resume management
+- Decision: Defer until authentication infrastructure is in place
+- Added to Phase 2 in roadmap with dependencies documented
+- Created full implementation guide at `docs/guides/MULTI_RESUME_IMPLEMENTATION.md`
+
+**Why Multi-Resume Deferred:**
+- Requires backend database persistence (currently localStorage only)
+- Requires user authentication (Supabase Auth)
+- Requires file storage (Supabase Storage)
+- Current single-resume flow works for beta users
+- Better to validate need with real user feedback first
+
+### Files Modified
+
+- `backend/backend.py` - Ask Henry prompt fixes for name handling
+- `frontend/mock-interview.html` - Added session_id to respond API call
+- `docs/guides/ROADMAP.md` - Added Multi-Resume to Phase 2, session log
+- `docs/guides/MULTI_RESUME_IMPLEMENTATION.md` - NEW: Full implementation guide for future
