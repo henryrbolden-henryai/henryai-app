@@ -496,9 +496,9 @@
     }
 
     // Initialize the navigation
-    function init() {
+    async function init() {
         // Don't add navigation to public pages (before sign-in)
-        const excludedPages = ['index', 'login'];
+        const excludedPages = ['index', 'login', 'profile'];
         const currentPage = getCurrentPage();
         const rawPage = window.location.pathname.split('/').pop()?.replace('.html', '') || '';
 
@@ -506,9 +506,20 @@
             return;
         }
 
-        // Check if user has a profile (is authenticated/signed in)
-        const hasProfile = localStorage.getItem('userProfile');
-        if (!hasProfile) {
+        // Check if user is authenticated (localStorage profile OR Supabase session)
+        const hasLocalProfile = localStorage.getItem('userProfile');
+        let hasSupabaseSession = false;
+
+        if (typeof HenryAuth !== 'undefined') {
+            try {
+                const session = await HenryAuth.getSession();
+                hasSupabaseSession = !!session;
+            } catch (e) {
+                console.log('Could not check Supabase session');
+            }
+        }
+
+        if (!hasLocalProfile && !hasSupabaseSession) {
             return;
         }
 
