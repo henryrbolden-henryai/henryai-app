@@ -1,8 +1,9 @@
 # HenryAI Implementation Guide
 
 **Date**: December 11, 2025
-**Version**: 1.0
+**Version**: 1.1
 **Audience**: Development Team
+**Last Updated**: December 11, 2025, 11:30 PM PST
 
 ---
 
@@ -29,6 +30,118 @@ All features below have been implemented and are ready for testing:
 3. ✅ **Conversational Wrappers for Structured Outputs**
 4. ✅ **Enhanced System Prompts with Grounding Rules**
 5. ✅ **Streaming Support Infrastructure** (backend function added)
+6. ✅ **Resume Level Analysis Feature** (Dec 11, 2025 - Late)
+7. ✅ **UI/UX Improvements** (Dec 11, 2025 - Late)
+
+---
+
+### Resume Level Analysis Feature (Dec 11, 2025)
+
+**Files Modified**:
+- `frontend/resume-leveling.html` - Complete UI overhaul
+- `frontend/components/strategy-nav.js` - Navigation updates
+- `frontend/overview.html` - Removed leveling card
+
+**Features Implemented**:
+
+1. **Confidence-Based Visual Indicators**
+   - Green checkmark (✓) for confidence ≥85%
+   - Orange exclamation (!) for confidence 70-84%
+   - Red X (✗) for confidence <70%
+
+   ```javascript
+   if (confidence >= 85) {
+       levelBadge.className = 'level-badge high-confidence';
+       levelBadgeIcon.textContent = '✓';
+   } else if (confidence >= 70) {
+       levelBadge.className = 'level-badge medium-confidence';
+       levelBadgeIcon.textContent = '!';
+   } else {
+       levelBadge.className = 'level-badge low-confidence';
+       levelBadgeIcon.textContent = '✗';
+   }
+   ```
+
+2. **Signal Category Explanations**
+   - Scope: "The scale of your work—team sizes, budgets, global reach, and organizational breadth."
+   - Impact: "Measurable business outcomes—revenue growth, cost savings, efficiency gains, and KPI improvements."
+   - Leadership: "How you influence others—managing teams, mentoring, driving initiatives, and cross-functional collaboration."
+   - Technical: "Domain expertise and specialized skills—tools, methodologies, certifications, and technical depth."
+
+3. **Collapsible Sections**
+   - Reduces information overload on results page
+   - Default collapsed: Signals, Red Flags, Language Analysis
+   - Default expanded: Target Analysis, Recommendations
+   - Level Card always visible
+
+   ```css
+   .collapsible-section {
+       background: var(--color-surface);
+       border: 1px solid var(--color-border);
+       border-radius: 16px;
+       margin-bottom: 24px;
+       overflow: hidden;
+   }
+   .collapsible-section.collapsed .collapsible-content {
+       max-height: 0 !important;
+       padding-top: 0;
+       padding-bottom: 0;
+       opacity: 0;
+   }
+   ```
+
+4. **Updated Navigation Flow**
+   - Job Fit Score → Resume Level Analysis → Strategy Overview
+   - Replaced "Skills Analysis" with "Resume Level Analysis" in nav
+   - Sidebar now appears on Resume Level Analysis page
+
+---
+
+### UI/UX Improvements (Dec 11, 2025)
+
+**Files Modified**:
+- `frontend/components/strategy-nav.js` - Fixed toggle, updated nav structure
+- `frontend/overview.html` - Removed leveling card and associated JS
+
+**Fixes Implemented**:
+
+1. **Sidebar Navigator Toggle Fix**
+   - Issue: Toggle button wasn't expanding the sidebar panel
+   - Root cause: Missing event listener on toggle button
+   - Fix: Added click event listener in `init()` function
+
+   ```javascript
+   // Add toggle event listener
+   const toggle = nav.querySelector('.strategy-nav-toggle');
+   if (toggle) {
+       toggle.addEventListener('click', () => toggleNav(nav, toggle));
+   }
+   ```
+
+2. **Overview Page Cleanup**
+   - Removed Resume Level Analysis card (it's a pre-generation step, not post-generation)
+   - Removed associated JavaScript that referenced `levelingInsight`
+
+3. **Navigation Structure Update**
+   ```javascript
+   const NAV_STRUCTURE = {
+       topLevel: [
+           { id: 'results', label: 'Job Fit Score', href: 'results.html' },
+           { id: 'resume-leveling', label: 'Resume Level Analysis', href: 'resume-leveling.html' }
+       ],
+       parent: { id: 'overview', label: 'Strategy Overview', href: 'overview.html' },
+       children: [
+           { id: 'positioning', label: 'Positioning Strategy', href: 'positioning.html' },
+           { id: 'documents', label: 'Tailored Documents', href: 'documents.html' },
+           { id: 'outreach', label: 'Network & Outreach', href: 'outreach.html' },
+           { id: 'interview-intelligence', label: 'Interview Intelligence', href: 'interview-intelligence.html' },
+           { id: 'tracker', label: 'Command Center', href: 'tracker.html' }
+       ],
+       bottomLevel: [
+           { id: 'analyze', label: 'Analyze New Role', href: 'analyze.html' }
+       ]
+   };
+   ```
 
 ---
 
@@ -52,14 +165,20 @@ frontend/
 ├── analyze.html               # JD analysis entry point
 ├── analyzing.html             # JD analysis in progress
 ├── results.html               # Fit score results
+├── resume-leveling.html       # Resume level analysis (NEW - career leveling)
 ├── strengthen.html            # Gap-filling supplements
 ├── generating.html            # Document generation (auto-triggers)
 ├── overview.html              # Application strategy overview
 ├── documents.html             # Resume & cover letter preview
+├── positioning.html           # Positioning strategy
+├── outreach.html              # Network intelligence & outreach
+├── interview-intelligence.html # Interview prep
+├── tracker.html               # Pipeline command center
 ├── resume-chat.html           # Resume upload & conversation
 ├── ask-henry.html             # General chat interface
 └── components/
-    └── ask-henry.js           # Shared chat widget
+    ├── ask-henry.js           # Shared chat widget
+    └── strategy-nav.js        # Sidebar navigation component
 ```
 
 ### Key Files Modified
@@ -68,6 +187,9 @@ frontend/
 |------|---------------|---------|
 | `backend/backend.py` | +168 | Added validation, keyword coverage, streaming support |
 | System prompts | +6 | Added conversational wrapper instructions |
+| `frontend/resume-leveling.html` | +200 | Collapsible sections, confidence icons, signal explanations |
+| `frontend/components/strategy-nav.js` | +10 | Fixed toggle, updated nav structure |
+| `frontend/overview.html` | -30 | Removed leveling card and associated JS |
 
 ---
 

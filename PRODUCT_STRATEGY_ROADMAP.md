@@ -1,9 +1,9 @@
 # HenryAI Product Strategy Roadmap
 
 **Date**: December 11, 2025
-**Version**: 1.1
-**Status**: Phase 0 Complete, Phase 1 In Progress
-**Last Updated**: December 11, 2025, 10:00 PM PST
+**Version**: 1.2
+**Status**: Phase 0 Complete, Resume Level Analysis Complete, Phase 1 In Progress
+**Last Updated**: December 11, 2025, 11:30 PM PST
 **Next Review**: December 18, 2025
 
 ---
@@ -16,13 +16,27 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 **Current State**: B+ (Foundation strengthened with validation, keyword coverage, conversational wrappers)
 **Target State**: A (Claude-quality experience with recruiter-grade outputs)
 
-### Recent Achievement (Dec 11, 2025)
+### Recent Achievements (Dec 11, 2025)
+
 ✅ **Phase 0 COMPLETED** - Foundation Strengthening deployed to production
 - Post-generation validation layer
 - ATS keyword coverage verification
 - Conversational wrappers
 - Enhanced grounding rules
 - Streaming infrastructure
+
+✅ **Resume Level Analysis Feature COMPLETED** - New career leveling feature deployed
+- Merged skills-analysis.html with resume-leveling.html for unified experience
+- Added confidence-based visual indicators (✓ green ≥85%, ! orange 70-84%, ✗ red <70%)
+- Implemented collapsible sections to reduce information overload
+- Added signal category explanations (Scope, Impact, Leadership, Technical)
+- Updated navigation flow: Job Fit Score → Resume Level Analysis → Strategy Overview
+
+✅ **UI/UX Improvements COMPLETED**
+- Fixed sidebar navigator toggle (was missing event listener)
+- Removed Resume Level Analysis card from overview.html (it's a pre-generation step)
+- Standardized HenryAI logo font (Instrument Serif) across all pages
+- Expanded navigation panel width for better readability
 
 ---
 
