@@ -94,7 +94,15 @@
     }
 
     // Get company and role from session/local storage for context
+    // Only show context on job-specific pages (strategy pages), not on dashboard/tracker
     function getJobContext() {
+        // Don't show context on general pages
+        const currentPage = getCurrentPage();
+        const generalPages = ['dashboard', 'tracker', 'analyze', 'profile'];
+        if (generalPages.includes(currentPage)) {
+            return null;
+        }
+
         try {
             // First try sessionStorage analysisData
             let analysisData = sessionStorage.getItem('analysisData');
@@ -106,27 +114,6 @@
                 // Only return if we have a real company name (not "Company" placeholder)
                 if (company && company !== 'Company' && company !== 'Unknown Company') {
                     return { company, role };
-                }
-            }
-
-            // Fallback: try to get from tracked applications in localStorage
-            const trackedApps = localStorage.getItem('trackedApplications');
-            if (trackedApps) {
-                const apps = JSON.parse(trackedApps);
-                // Get the most recently updated active application
-                const activeApps = apps.filter(a => a.status !== 'Rejected' && a.status !== 'Withdrawn');
-                if (activeApps.length > 0) {
-                    // Sort by lastUpdated descending
-                    activeApps.sort((a, b) => new Date(b.lastUpdated || b.dateAdded) - new Date(a.lastUpdated || a.dateAdded));
-                    const mostRecent = activeApps[0];
-                    const company = mostRecent.company || '';
-                    // Only return if we have a real company name
-                    if (company && company !== 'Company' && company !== 'Unknown Company') {
-                        return {
-                            company: company,
-                            role: mostRecent.role || ''
-                        };
-                    }
                 }
             }
         } catch (e) {
@@ -353,6 +340,48 @@
                 transform: scale(1.2);
             }
 
+            /* Highlighted Analyze button */
+            .strategy-nav-analyze-btn {
+                display: block;
+                padding: 10px 14px;
+                background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+                color: #000;
+                text-decoration: none;
+                font-size: 0.85rem;
+                font-weight: 600;
+                border-radius: 8px;
+                text-align: center;
+                transition: all 0.2s ease;
+                margin-top: 4px;
+            }
+
+            .strategy-nav-analyze-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+            }
+
+            /* Footer section for profile/signout */
+            .strategy-nav-footer {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .strategy-nav-footer-link {
+                display: block;
+                padding: 6px 10px;
+                color: #6b7280;
+                text-decoration: none;
+                font-size: 0.75rem;
+                transition: all 0.2s ease;
+                border-radius: 4px;
+            }
+
+            .strategy-nav-footer-link:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: #ffffff;
+            }
+
             /* Responsive adjustments */
             @media (max-width: 768px) {
                 .strategy-nav {
@@ -415,11 +444,23 @@
             </div>
         ` : '';
 
-        // Create bottom-level items (Analyze New Role)
+        // Create bottom-level items (Analyze New Role) - now with highlighted button style
         const bottomLevelHtml = (NAV_STRUCTURE.bottomLevel || []).map(item => {
             const isActive = currentPage === item.id;
+            // Use highlighted button style for Analyze New Role
+            if (item.id === 'analyze') {
+                return `<a href="${item.href}" class="strategy-nav-analyze-btn">${item.label}</a>`;
+            }
             return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
+
+        // Footer section with Profile Settings and Sign Out
+        const footerHtml = `
+            <div class="strategy-nav-footer">
+                <a href="profile.html" class="strategy-nav-footer-link">Profile Settings</a>
+                <a href="#" class="strategy-nav-footer-link" id="navSignOut">Sign Out</a>
+            </div>
+        `;
 
         nav.innerHTML = `
             <div class="strategy-nav-dots">${dotsHtml}</div>
@@ -439,6 +480,7 @@
                     </li>
                 </ul>
                 ${bottomLevelHtml ? '<div class="strategy-nav-divider"></div>' + bottomLevelHtml : ''}
+                ${footerHtml}
             </div>
         `;
 
@@ -481,6 +523,22 @@
         const toggle = nav.querySelector('.strategy-nav-toggle');
         if (toggle) {
             toggle.addEventListener('click', () => toggleNav(nav, toggle));
+        }
+
+        // Add sign out event listener
+        const signOutLink = nav.querySelector('#navSignOut');
+        if (signOutLink) {
+            signOutLink.addEventListener('click', async (e) => {
+                e.preventDefault();
+                // Try Supabase sign out first
+                if (typeof HenryAuth !== 'undefined') {
+                    await HenryAuth.signOut();
+                } else {
+                    // Fallback: clear local storage and redirect
+                    localStorage.removeItem('userProfile');
+                    window.location.href = 'index.html';
+                }
+            });
         }
     }
 

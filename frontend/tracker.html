@@ -6311,26 +6311,46 @@
             console.log('Migration complete!');
         }
 
-        // Start initialization
+        // Start initialization - wait for henryAuthReady event from auth-check.js
+        // or fallback to localStorage if no auth
         console.log('=== TRACKER SCRIPT START ===');
-        console.log('Initial HenryAuth check:', typeof HenryAuth !== 'undefined');
-        if (typeof HenryAuth !== 'undefined') {
+
+        let initialized = false;
+
+        function doInitialize() {
+            if (initialized) return;
+            initialized = true;
             initializeWithAuth();
-        } else {
-            // Wait for supabase-client.js to load
-            window.addEventListener('load', () => {
-                console.log('=== WINDOW LOAD EVENT ===');
-                console.log('HenryAuth after load:', typeof HenryAuth !== 'undefined');
-                if (typeof HenryAuth !== 'undefined') {
-                    initializeWithAuth();
-                } else {
-                    console.log('No HenryAuth, loading from localStorage directly');
-                    const apps = getApplications();
-                    console.log('Direct localStorage apps:', apps);
-                    renderAll(apps);
-                }
-            });
         }
+
+        // Listen for auth ready event from auth-check.js
+        window.addEventListener('henryAuthReady', (event) => {
+            console.log('=== HENRY AUTH READY EVENT ===');
+            doInitialize();
+        });
+
+        // Also try on DOMContentLoaded as backup
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('=== DOM CONTENT LOADED ===');
+            // Give auth-check.js a moment to fire its event
+            setTimeout(() => {
+                if (!initialized) {
+                    console.log('Auth event not fired, initializing anyway...');
+                    doInitialize();
+                }
+            }, 500);
+        });
+
+        // Also try on window load as final fallback
+        window.addEventListener('load', () => {
+            console.log('=== WINDOW LOAD ===');
+            setTimeout(() => {
+                if (!initialized) {
+                    console.log('Still not initialized, forcing init...');
+                    doInitialize();
+                }
+            }, 200);
+        });
     </script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-check.js"></script>

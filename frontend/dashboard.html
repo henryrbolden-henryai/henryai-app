@@ -135,6 +135,24 @@
             padding: 32px 24px;
         }
 
+        /* WELCOME SECTION */
+        .welcome-section {
+            margin-bottom: 24px;
+        }
+
+        .welcome-heading {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .welcome-subtext {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
         /* DAILY PULSE BANNER */
         .daily-pulse {
             background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
@@ -227,16 +245,50 @@
             border: 1px solid var(--color-border);
             border-radius: 12px;
             padding: 24px;
+        }
+
+        .focus-items {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .focus-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 20px;
+            gap: 16px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border-left: 3px solid var(--color-accent);
+        }
+
+        .focus-item.secondary {
+            border-left-color: var(--color-text-muted);
+            background: transparent;
+        }
+
+        .focus-item.completed {
+            border-left-color: var(--color-active);
+            opacity: 0.7;
+        }
+
+        .focus-item-content {
+            flex: 1;
+        }
+
+        .focus-item-label {
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
         }
 
         .focus-message {
-            font-size: 1.05rem;
+            font-size: 1rem;
             color: var(--color-text);
-            flex: 1;
         }
 
         .focus-message strong {
@@ -244,16 +296,17 @@
         }
 
         .focus-button {
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: var(--color-accent);
             color: #000;
             border: none;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
+            text-decoration: none;
         }
 
         .focus-button:hover {
@@ -261,46 +314,14 @@
             transform: translateY(-1px);
         }
 
-        /* QUICK ACTIONS */
-        .quick-actions {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 32px;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .action-btn.primary {
-            background: var(--color-accent);
-            color: #000;
-            border: none;
-        }
-
-        .action-btn.primary:hover {
-            opacity: 0.9;
-        }
-
-        .action-btn.secondary {
-            background: var(--color-surface);
+        .focus-button.secondary {
+            background: var(--color-surface-elevated);
             color: var(--color-text);
             border: 1px solid var(--color-border);
         }
 
-        .action-btn.secondary:hover {
+        .focus-button.secondary:hover {
             border-color: var(--color-border-hover);
-            background: var(--color-surface-elevated);
         }
 
         /* RECENT ACTIVITY */
@@ -423,23 +444,6 @@
             margin-bottom: 24px;
         }
 
-        /* VIEW FULL PIPELINE LINK */
-        .view-pipeline {
-            text-align: center;
-            padding: 24px 0;
-        }
-
-        .view-pipeline a {
-            color: var(--color-accent);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .view-pipeline a:hover {
-            text-decoration: underline;
-        }
-
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -450,9 +454,14 @@
                 display: none;
             }
 
-            .focus-card {
+            .focus-item {
                 flex-direction: column;
                 text-align: center;
+                gap: 12px;
+            }
+
+            .focus-button {
+                width: 100%;
             }
 
             .activity-item {
@@ -465,16 +474,6 @@
             }
         }
 
-        @media (max-width: 480px) {
-            .quick-actions {
-                flex-direction: column;
-            }
-
-            .action-btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
     </style>
 </head>
 <body>
@@ -483,7 +482,7 @@
         <div class="header-container">
             <a href="dashboard.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
-                <a href="profile.html" class="nav-link">Profile</a>
+                <!-- Profile Settings moved to sidebar nav -->
             </nav>
             <div class="user-menu">
                 <span class="user-email" id="userEmail"></span>
@@ -493,6 +492,12 @@
     </header>
 
     <div class="container">
+        <!-- WELCOME MESSAGE -->
+        <div class="welcome-section" id="welcomeSection">
+            <h1 class="welcome-heading" id="welcomeHeading">Welcome back!</h1>
+            <p class="welcome-subtext" id="welcomeSubtext">Let's keep building momentum on your job search.</p>
+        </div>
+
         <!-- DAILY PULSE BANNER -->
         <div class="daily-pulse" id="dailyPulse">
             <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
@@ -526,16 +531,10 @@
         <div class="focus-section">
             <h2>Today's Focus</h2>
             <div class="focus-card">
-                <div class="focus-message" id="focusMessage">Loading...</div>
-                <button class="focus-button" id="focusButton">Take Action</button>
+                <div class="focus-items" id="focusItems">
+                    <!-- Dynamically populated with 3+ action items -->
+                </div>
             </div>
-        </div>
-
-        <!-- QUICK ACTIONS -->
-        <div class="quick-actions">
-            <a href="analyze.html" class="action-btn primary">Analyze New Role</a>
-            <a href="tracker.html" class="action-btn secondary">View Full Pipeline</a>
-            <a href="interview-intelligence.html" class="action-btn secondary">Interview Prep</a>
         </div>
 
         <!-- RECENT ACTIVITY -->
@@ -546,10 +545,6 @@
             </div>
         </div>
 
-        <!-- VIEW FULL PIPELINE -->
-        <div class="view-pipeline">
-            <a href="tracker.html">View Full Pipeline in Command Center →</a>
-        </div>
     </div>
 
     <script>
@@ -723,78 +718,6 @@
             return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
         }
 
-        function getFocusMessage(profile, apps, activeApps, interviewsThisWeek, followUpsDue) {
-            const { holding_up, timeline } = profile?.situation || {};
-
-            // Priority 1: Upcoming interviews
-            if (interviewsThisWeek.length > 0) {
-                const nextInterview = interviewsThisWeek[0];
-                return {
-                    message: `<strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}`,
-                    buttonText: 'Prep Interview',
-                    buttonLink: 'interview-intelligence.html'
-                };
-            }
-
-            // Priority 2: Follow-ups
-            if (followUpsDue.length > 0) {
-                const oldestFollowUp = followUpsDue.sort((a, b) =>
-                    new Date(a.dateApplied || a.dateAdded) - new Date(b.dateApplied || b.dateAdded)
-                )[0];
-                const daysSince = getDaysSince(oldestFollowUp.dateApplied || oldestFollowUp.dateAdded);
-
-                let message = `<strong>Priority:</strong> Follow up with ${oldestFollowUp.company} (${daysSince} days since applying)`;
-                if (timeline === 'clock_ticking' || timeline === 'urgent') {
-                    message = `<strong>Action needed:</strong> ${oldestFollowUp.company} hasn't responded in ${daysSince} days. Follow up now.`;
-                }
-
-                return {
-                    message: message,
-                    buttonText: 'Draft Follow-up',
-                    buttonLink: 'outreach.html'
-                };
-            }
-
-            // Priority 3: Pipeline too thin
-            if (activeApps.length < 5) {
-                let message = '';
-                let buttonText = 'Analyze New Role';
-
-                if (holding_up === 'zen' && timeline === 'exploring') {
-                    message = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Room to add higher-quality matches.`;
-                } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
-                    message = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. You need more options—broaden your search.`;
-                    buttonText = 'Find More Roles';
-                } else if (holding_up === 'stressed' || timeline === 'urgent') {
-                    message = `<strong>Pipeline check:</strong> ${activeApps.length} active apps. Consider adding 2-3 more to strengthen your position.`;
-                } else {
-                    message = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Consider adding more to increase your odds.`;
-                }
-
-                return {
-                    message: message,
-                    buttonText: buttonText,
-                    buttonLink: 'analyze.html'
-                };
-            }
-
-            // Priority 4: Pipeline healthy
-            let message = '';
-            if (holding_up === 'crushed' || holding_up === 'desperate') {
-                message = `<strong>Keep pushing:</strong> ${activeApps.length} active applications. You're doing the work.`;
-            } else if (holding_up === 'stressed') {
-                message = `<strong>On track:</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
-            } else {
-                message = `<strong>Looking good!</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
-            }
-
-            return {
-                message: message,
-                buttonText: 'Add Another',
-                buttonLink: 'analyze.html'
-            };
-        }
-
         // ========================================================================
         // RENDER FUNCTIONS
         // ========================================================================
@@ -803,10 +726,42 @@
             const apps = getApplications();
             const activeApps = getActiveApplications(apps);
 
+            renderWelcome(profile);
             renderDailyPulse(profile, apps);
             renderQuickStats(apps, activeApps);
             renderTodaysFocus(profile, apps, activeApps);
             renderRecentActivity(apps);
+        }
+
+        function renderWelcome(profile) {
+            const welcomeHeading = document.getElementById('welcomeHeading');
+            const welcomeSubtext = document.getElementById('welcomeSubtext');
+
+            // Get user's first name
+            let firstName = 'there';
+            if (profile && profile.name) {
+                firstName = profile.name.split(' ')[0];
+            }
+
+            // Time-based greeting
+            const hour = new Date().getHours();
+            let greeting = 'Good morning';
+            if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+            else if (hour >= 17) greeting = 'Good evening';
+
+            welcomeHeading.textContent = `${greeting}, ${firstName}`;
+
+            // Adaptive subtext based on situation
+            const situation = profile?.situation;
+            if (situation?.holding_up === 'crushed' || situation?.holding_up === 'desperate') {
+                welcomeSubtext.textContent = "One step at a time. Let's focus on what matters most today.";
+            } else if (situation?.timeline === 'clock_ticking' || situation?.timeline === 'urgent') {
+                welcomeSubtext.textContent = "Time is precious. Here's what needs your attention.";
+            } else if (situation?.holding_up === 'zen') {
+                welcomeSubtext.textContent = "No rush. Let's make sure every application counts.";
+            } else {
+                welcomeSubtext.textContent = "Let's keep building momentum on your job search.";
+            }
         }
 
         function renderDailyPulse(profile, apps) {
@@ -834,16 +789,206 @@
         }
 
         function renderTodaysFocus(profile, apps, activeApps) {
+            const container = document.getElementById('focusItems');
+            const focusItems = generateFocusItems(profile, apps, activeApps);
+
+            container.innerHTML = focusItems.map((item, i) => `
+                <div class="focus-item ${item.type || ''} ${item.completed ? 'completed' : ''}">
+                    <div class="focus-item-content">
+                        ${item.label ? `<div class="focus-item-label">${item.label}</div>` : ''}
+                        <div class="focus-message">${item.message}</div>
+                    </div>
+                    ${item.buttonText ? `
+                        <a href="${item.buttonLink}" class="focus-button ${item.buttonType || ''}">${item.buttonText}</a>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function generateFocusItems(profile, apps, activeApps) {
+            const items = [];
+            const { holding_up, timeline } = profile?.situation || {};
+
+            // Get interview-related data
             const interviewStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
                                        'Panel Interview', 'Final Round', 'Executive Interview'];
-            const interviewsThisWeek = apps.filter(a => interviewStatuses.includes(a.status));
+
+            // Check for UPCOMING interviews (have interview date in the future)
+            const now = new Date();
+            const upcomingInterviews = apps.filter(a => {
+                if (!interviewStatuses.includes(a.status)) return false;
+                // If there's an interview date, check if it's in the future
+                if (a.interviewDate) {
+                    return new Date(a.interviewDate) >= now;
+                }
+                // If no date but in interview status, it's "scheduled" but date unknown
+                return true;
+            });
+
+            // Check for COMPLETED interviews (have interview date in the past or dateInterviewed set)
+            const completedInterviews = apps.filter(a => {
+                // Apps that are in post-interview stages
+                if (['Awaiting Next Round', 'Awaiting Decision', 'Reference Check', 'Offer Received', 'Negotiating'].includes(a.status)) {
+                    return true;
+                }
+                // Apps in interview stage but with past interview date
+                if (interviewStatuses.includes(a.status) && a.dateInterviewed) {
+                    const interviewedDate = new Date(a.dateInterviewed);
+                    // Consider "completed" if interviewed more than 1 day ago
+                    return (now - interviewedDate) > (24 * 60 * 60 * 1000);
+                }
+                return false;
+            });
+
             const followUpsDue = getFollowUpsDue(apps);
 
-            const focus = getFocusMessage(profile, apps, activeApps, interviewsThisWeek, followUpsDue);
+            // ─────────────────────────────────────────────────────────────────
+            // ITEM 1: Priority action (interview prep, follow-up, or apply)
+            // ─────────────────────────────────────────────────────────────────
+            if (upcomingInterviews.length > 0) {
+                const nextInterview = upcomingInterviews[0];
+                items.push({
+                    label: 'Priority',
+                    message: `<strong>Prepare for ${nextInterview.status.toLowerCase()}</strong> at ${nextInterview.company}`,
+                    buttonText: 'Interview Prep',
+                    buttonLink: 'interview-intelligence.html'
+                });
+            } else if (completedInterviews.length > 0) {
+                // They have completed interviews - suggest follow-up or debrief
+                const awaitingResponse = completedInterviews.filter(a =>
+                    ['Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
+                );
+                if (awaitingResponse.length > 0) {
+                    const app = awaitingResponse[0];
+                    const daysSince = getDaysSince(app.dateInterviewed || app.lastUpdated);
+                    if (daysSince >= 3) {
+                        items.push({
+                            label: 'Priority',
+                            message: `<strong>Follow up with ${app.company}</strong> — ${daysSince} days since your interview`,
+                            buttonText: 'Draft Follow-up',
+                            buttonLink: 'outreach.html'
+                        });
+                    } else {
+                        items.push({
+                            label: 'Awaiting Response',
+                            message: `Waiting to hear back from <strong>${app.company}</strong> after your interview`,
+                            buttonText: 'View Status',
+                            buttonLink: 'tracker.html',
+                            buttonType: 'secondary'
+                        });
+                    }
+                }
+            } else if (followUpsDue.length > 0) {
+                const oldestFollowUp = followUpsDue.sort((a, b) =>
+                    new Date(a.dateApplied || a.dateAdded) - new Date(b.dateApplied || b.dateAdded)
+                )[0];
+                const daysSince = getDaysSince(oldestFollowUp.dateApplied || oldestFollowUp.dateAdded);
+                items.push({
+                    label: 'Priority',
+                    message: `<strong>Follow up with ${oldestFollowUp.company}</strong> — ${daysSince} days since applying`,
+                    buttonText: 'Draft Follow-up',
+                    buttonLink: 'outreach.html'
+                });
+            } else if (activeApps.length > 0) {
+                // Has active apps but nothing urgent - suggest keeping momentum
+                items.push({
+                    label: 'On Track',
+                    message: `<strong>${activeApps.length} active applications</strong> in your pipeline. Keep the momentum going.`,
+                    buttonText: 'View Pipeline',
+                    buttonLink: 'tracker.html',
+                    buttonType: 'secondary'
+                });
+            }
 
-            document.getElementById('focusMessage').innerHTML = focus.message;
-            document.getElementById('focusButton').textContent = focus.buttonText;
-            document.getElementById('focusButton').onclick = () => window.location.href = focus.buttonLink;
+            // ─────────────────────────────────────────────────────────────────
+            // ITEM 2: Pipeline health / Apply to more roles
+            // ─────────────────────────────────────────────────────────────────
+            if (activeApps.length < 5) {
+                let pipelineMsg = '';
+                if (activeApps.length === 0) {
+                    pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
+                } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
+                    pipelineMsg = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. Add more to increase your odds.`;
+                } else {
+                    pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active apps. Aim for 5-10 for best results.`;
+                }
+                items.push({
+                    label: 'Growth',
+                    message: pipelineMsg,
+                    buttonText: 'Analyze Role',
+                    buttonLink: 'analyze.html',
+                    type: 'secondary'
+                });
+            } else {
+                // Pipeline is healthy - still suggest adding strategically
+                items.push({
+                    label: 'Pipeline',
+                    message: `<strong>${activeApps.length} active applications</strong> — solid pipeline. Add selectively for quality matches.`,
+                    buttonText: 'Add Role',
+                    buttonLink: 'analyze.html',
+                    type: 'secondary',
+                    buttonType: 'secondary'
+                });
+            }
+
+            // ─────────────────────────────────────────────────────────────────
+            // ITEM 3: Coaching / Maintenance tasks
+            // ─────────────────────────────────────────────────────────────────
+            // Check for stale applications (no activity in 14+ days)
+            const staleApps = activeApps.filter(a => {
+                const daysSince = getDaysSince(a.lastUpdated || a.dateAdded);
+                return daysSince >= 14 && !['Awaiting Next Round', 'Awaiting Decision'].includes(a.status);
+            });
+
+            if (staleApps.length > 0) {
+                items.push({
+                    label: 'Maintenance',
+                    message: `<strong>${staleApps.length} stale application${staleApps.length > 1 ? 's' : ''}</strong> — no activity in 14+ days. Review and archive if needed.`,
+                    buttonText: 'Review',
+                    buttonLink: 'tracker.html',
+                    type: 'secondary',
+                    buttonType: 'secondary'
+                });
+            } else if (followUpsDue.length > 1) {
+                // Multiple follow-ups due
+                items.push({
+                    label: 'Follow-ups',
+                    message: `<strong>${followUpsDue.length} applications</strong> need follow-up messages`,
+                    buttonText: 'Draft All',
+                    buttonLink: 'outreach.html',
+                    type: 'secondary',
+                    buttonType: 'secondary'
+                });
+            } else {
+                // General coaching tip
+                const tips = [
+                    { message: '<strong>Tip:</strong> Personalize each application — generic submissions get filtered out.', link: 'positioning.html', btn: 'Positioning' },
+                    { message: '<strong>Tip:</strong> Network connections increase response rates by 4x.', link: 'outreach.html', btn: 'Outreach' },
+                    { message: '<strong>Tip:</strong> Practice your story — preparation shows in interviews.', link: 'interview-intelligence.html', btn: 'Prep' }
+                ];
+                const tip = tips[Math.floor(Math.random() * tips.length)];
+                items.push({
+                    label: 'Coaching',
+                    message: tip.message,
+                    buttonText: tip.btn,
+                    buttonLink: tip.link,
+                    type: 'secondary',
+                    buttonType: 'secondary'
+                });
+            }
+
+            // Ensure we have at least 3 items
+            if (items.length < 3 && activeApps.length === 0) {
+                items.push({
+                    label: 'Getting Started',
+                    message: '<strong>Welcome to HenryAI!</strong> Analyze your first job to get personalized strategy.',
+                    buttonText: 'Get Started',
+                    buttonLink: 'analyze.html',
+                    type: 'secondary'
+                });
+            }
+
+            return items;
         }
 
         function renderRecentActivity(apps) {
@@ -867,9 +1012,41 @@
                         <span class="status-badge ${getStatusClass(app.status)}">${app.status || 'Unknown'}</span>
                         <span class="activity-time">${getDaysSince(app.lastUpdated || app.dateAdded)}d ago</span>
                     </div>
-                    <a href="tracker.html?highlight=${app.id}" class="activity-link">View →</a>
+                    <a href="#" onclick="viewApplicationStrategy('${app.id}'); return false;" class="activity-link">View Strategy →</a>
                 </div>
             `).join('');
+        }
+
+        // Navigate to Strategy Overview for a specific application
+        function viewApplicationStrategy(appId) {
+            const apps = getApplications();
+            const app = apps.find(a => String(a.id) === String(appId));
+            if (!app) {
+                console.error('Application not found:', appId);
+                return;
+            }
+
+            // Try to load analysis data from the app's analysisKey
+            let analysisData = null;
+            if (app.analysisKey) {
+                const stored = localStorage.getItem(app.analysisKey);
+                if (stored) {
+                    try {
+                        analysisData = JSON.parse(stored);
+                    } catch (e) {
+                        console.error('Error parsing analysis data:', e);
+                    }
+                }
+            }
+
+            // If we have analysis data, store it in sessionStorage and navigate to overview
+            if (analysisData) {
+                sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
+                window.location.href = 'overview.html';
+            } else {
+                // No analysis data - fall back to tracker view
+                window.location.href = `tracker.html?highlight=${appId}`;
+            }
         }
 
         function getStatusClass(status) {
