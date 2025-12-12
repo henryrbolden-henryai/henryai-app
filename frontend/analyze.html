@@ -835,13 +835,15 @@
     function showNoProfileState() {
       document.getElementById('noProfileState').style.display = 'block';
       document.getElementById('analyzerCard').style.display = 'none';
-      document.getElementById('editProfileLink').style.display = 'none';
+      const editLink = document.getElementById('editProfileLink');
+      if (editLink) editLink.style.display = 'none';
     }
 
     function showAnalyzerState() {
       document.getElementById('noProfileState').style.display = 'none';
       document.getElementById('analyzerCard').style.display = 'block';
-      document.getElementById('editProfileLink').style.display = 'block';
+      const editLink = document.getElementById('editProfileLink');
+      if (editLink) editLink.style.display = 'block';
 
       // Populate profile banner
       const resume = userProfile.resume;
