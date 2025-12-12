@@ -1308,9 +1308,10 @@
                 company: companyName,
                 role: roleTitle || 'Unknown Role',
                 fitScore: data.fit_score || fitScore,
-                status: 'Preparing',  // They're generating docs, so "Preparing" to apply
+                status: 'Applied',  // User clicked "Apply" - mark as applied
                 salary: data.intelligence_layer?.salary_market_context?.typical_range || data.salary_info || 'Not specified',
                 dateAdded: new Date().toISOString(),
+                dateApplied: new Date().toISOString(),  // Track when they applied
                 lastUpdated: new Date().toISOString(),
                 notes: '',
                 strengths: data.strengths || [],
@@ -1329,10 +1330,15 @@
             );
 
             if (existingIndex !== -1) {
-                // Already tracked - update lastUpdated and analysisKey but keep existing status/notes
+                // Already tracked - update to Applied status if not already past that stage
                 applications[existingIndex].lastUpdated = new Date().toISOString();
                 applications[existingIndex].analysisKey = analysisKey;
-                console.log('Application already tracked, updated timestamp and analysis data');
+                // Update status to Applied if still in pre-apply stages
+                if (['Preparing', 'To Apply'].includes(applications[existingIndex].status)) {
+                    applications[existingIndex].status = 'Applied';
+                    applications[existingIndex].dateApplied = new Date().toISOString();
+                }
+                console.log('Application already tracked, updated to Applied status');
             } else {
                 // Add new application
                 applications.push(application);
