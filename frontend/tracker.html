@@ -5944,10 +5944,23 @@
                 const session = await HenryAuth.getSession();
                 console.log('Supabase session:', session ? 'exists' : 'null');
                 if (session) {
-                    // User is logged in - load from Supabase
+                    // User is logged in - try Supabase first
                     console.log('Loading data from Supabase...');
-                    const apps = await HenryData.getApplications();
+                    let apps = await HenryData.getApplications();
                     console.log('Supabase apps count:', apps?.length || 0);
+
+                    // If Supabase is empty but localStorage has data, use localStorage and migrate
+                    const localApps = getApplications();
+                    console.log('localStorage apps count:', localApps?.length || 0);
+
+                    if ((!apps || apps.length === 0) && localApps.length > 0) {
+                        console.log('Supabase empty but localStorage has data - using localStorage and migrating...');
+                        apps = localApps;
+
+                        // Migrate localStorage data to Supabase in background
+                        migrateToSupabase(localApps);
+                    }
+
                     renderAll(apps);
 
                     // Override getApplications and saveApplications for this session
@@ -5966,6 +5979,31 @@
                 console.log('STATUSES[status]:', STATUSES[apps[0].status]);
             }
             renderAll(apps);
+        }
+
+        // Migrate localStorage applications to Supabase
+        async function migrateToSupabase(localApps) {
+            console.log('Starting migration of', localApps.length, 'apps to Supabase...');
+            for (const app of localApps) {
+                try {
+                    // Add analysisData if we have it stored separately
+                    if (app.analysisKey) {
+                        const analysisData = localStorage.getItem(app.analysisKey);
+                        if (analysisData) {
+                            app.analysisData = JSON.parse(analysisData);
+                        }
+                    }
+                    const result = await HenryData.saveApplication(app);
+                    if (result.error) {
+                        console.error('Migration error for', app.company, ':', result.error);
+                    } else {
+                        console.log('Migrated:', app.company, app.role);
+                    }
+                } catch (err) {
+                    console.error('Migration exception for', app.company, ':', err);
+                }
+            }
+            console.log('Migration complete!');
         }
 
         // Start initialization
