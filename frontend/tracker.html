@@ -4687,20 +4687,71 @@
             title.textContent = `${app.role} at ${app.company}`;
 
             if (jobDescription) {
-                content.innerHTML = `<div class="jd-text">${jobDescription.replace(/\n/g, '<br>')}</div>`;
+                content.innerHTML = `
+                    <div class="jd-text">${jobDescription.replace(/\n/g, '<br>')}</div>
+                    <button class="modal-btn secondary" style="margin-top: 16px;" onclick="editJobDescription('${appId}')">
+                        ✏️ Edit Job Description
+                    </button>
+                `;
             } else {
                 content.innerHTML = `
                     <div class="jd-empty">
-                        <p>No job description saved for this role.</p>
+                        <p>⚠️ No job description saved for this role.</p>
                         <p style="margin-top: 12px; color: var(--color-text-muted); font-size: 0.9rem;">
-                            Job descriptions are automatically saved when you analyze a role.
-                            If you added this application manually, you can paste the JD in the notes section.
+                            Without a JD, some analysis features may be incomplete. Paste the job description below to enable full functionality.
                         </p>
+                        <textarea id="jdInput" placeholder="Paste the job description here..."
+                            style="width: 100%; min-height: 200px; margin-top: 16px; padding: 12px;
+                            background: var(--color-surface); border: 1px solid var(--color-border);
+                            border-radius: 8px; color: var(--color-text); font-size: 0.9rem; resize: vertical;"></textarea>
+                        <button class="modal-btn primary" style="margin-top: 12px;" onclick="saveJobDescriptionFromModal('${appId}')">
+                            💾 Save Job Description
+                        </button>
                     </div>
                 `;
             }
 
             modal.classList.add('show');
+        }
+
+        function editJobDescription(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            const content = document.getElementById('jobDescriptionContent');
+            const currentJD = app.jobDescription || '';
+
+            content.innerHTML = `
+                <textarea id="jdInput" style="width: 100%; min-height: 300px; padding: 12px;
+                    background: var(--color-surface); border: 1px solid var(--color-border);
+                    border-radius: 8px; color: var(--color-text); font-size: 0.9rem; resize: vertical;">${currentJD}</textarea>
+                <div style="display: flex; gap: 12px; margin-top: 12px;">
+                    <button class="modal-btn secondary" onclick="showJobDescription('${appId}')">Cancel</button>
+                    <button class="modal-btn primary" onclick="saveJobDescriptionFromModal('${appId}')">💾 Save Changes</button>
+                </div>
+            `;
+        }
+
+        function saveJobDescriptionFromModal(appId) {
+            const jdInput = document.getElementById('jdInput');
+            if (!jdInput) return;
+
+            const jobDescription = jdInput.value.trim();
+            if (!jobDescription) {
+                alert('Please paste a job description first.');
+                return;
+            }
+
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx === -1) return;
+
+            apps[idx].jobDescription = jobDescription;
+            apps[idx].lastUpdated = new Date().toISOString();
+            saveApplications(apps);
+
+            // Refresh the modal to show the saved JD
+            showJobDescription(appId);
         }
 
         function closeJobDescriptionModal() {
