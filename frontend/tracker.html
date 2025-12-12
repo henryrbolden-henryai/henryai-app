@@ -4290,19 +4290,27 @@
                 leverageScore = (finalStageApps.length * avgFit) / activeCount / 10;
             }
 
-            // Average time to screen - use either dateResponseReceived OR dateInterviewed
+            // Average time to screen - use dateResponseReceived, dateInterviewed, or infer from status
+            const screenStatuses = ['Recruiter Screen', 'Awaiting Screen Result', 'Hiring Manager', 'Technical Round',
+                'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision', 'Offer Received', 'Negotiating', 'Accepted'];
+
             const withScreen = allApps.filter(a => {
                 const hasApplied = a.dateApplied;
-                const hasResponse = a.dateResponseReceived || a.dateInterviewed;
+                // Has explicit response date OR is in a screen/interview status
+                const hasResponse = a.dateResponseReceived || a.dateInterviewed || screenStatuses.includes(a.status);
                 return hasApplied && hasResponse;
             });
+
             let avgTimeToScreen = null;
             if (withScreen.length > 0) {
                 const total = withScreen.reduce((sum, a) => {
-                    const responseDate = a.dateResponseReceived || a.dateInterviewed;
+                    // Use explicit dates if available, otherwise use lastUpdated as proxy for when they got a response
+                    const responseDate = a.dateResponseReceived || a.dateInterviewed || a.lastUpdated;
+                    if (!responseDate) return sum;
                     const applied = new Date(a.dateApplied);
                     const responded = new Date(responseDate);
-                    return sum + Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
+                    const daysDiff = Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
+                    return sum + Math.max(0, daysDiff); // Ensure non-negative
                 }, 0);
                 avgTimeToScreen = Math.round(total / withScreen.length * 10) / 10;
             }
@@ -4645,8 +4653,8 @@
                             <div class="card-stat-value">${daysSince === 0 ? 'Today' : daysSince + 'd'}</div>
                             <div class="card-stat-label">Last Activity</div>
                         </div>
-                        <div class="card-stat">
-                            <div class="card-stat-value">${app.networkLeverage ? '✓' : '—'}</div>
+                        <div class="card-stat" title="${app.networkLeverage ? 'You have a connection at this company' : 'No network connection identified - use Reach Out to find contacts'}">
+                            <div class="card-stat-value">${app.networkLeverage === '1st_degree' ? '1st°' : app.networkLeverage === '2nd_degree' ? '2nd°' : app.networkLeverage === 'referral' ? '🤝' : '—'}</div>
                             <div class="card-stat-label">Network</div>
                         </div>
                     </div>
@@ -4738,9 +4746,18 @@
                     actions.push({ label: '💬 Reach Out', action: `showReachOutModal('${app.id}')` });
                 }
             }
-            // Screen scheduled/awaiting
-            else if (['Recruiter Screen', 'Awaiting Screen Result'].includes(status)) {
+            // Screen scheduled - need to prep
+            else if (status === 'Recruiter Screen') {
                 actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence('${app.id}')`, primary: true });
+            }
+            // Awaiting screen result - waiting for response
+            else if (status === 'Awaiting Screen Result') {
+                if (daysSince >= 5) {
+                    actions.push({ label: '📧 Send Follow-Up', action: `showReachOutModal('${app.id}')`, primary: true });
+                } else {
+                    actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp('${app.id}')`, primary: true });
+                }
+                actions.push({ label: '📝 Add Notes', action: `toggleSection('${app.id}', 'notes')` });
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview'].includes(status)) {
@@ -5621,7 +5638,7 @@
             deleteBtn.disabled = !(reason && confirmText === 'DELETE');
         }
 
-        function confirmDelete() {
+        async function confirmDelete() {
             const reason = document.getElementById('deleteReason').value;
             const confirmText = document.getElementById('deleteConfirmInput').value;
 
@@ -5629,8 +5646,21 @@
                 return;
             }
 
+            // Delete from Supabase first if available
+            if (typeof HenryData !== 'undefined' && window.supabaseSession) {
+                try {
+                    await HenryData.deleteApplication(deleteAppId);
+                    console.log('Deleted from Supabase:', deleteAppId);
+                } catch (err) {
+                    console.error('Error deleting from Supabase:', err);
+                }
+            }
+
+            // Then remove from local cache and localStorage
             const apps = getApplications().filter(a => String(a.id) !== String(deleteAppId));
-            saveApplications(apps);
+            window.trackerAppsCache = apps;
+            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+
             closeDeleteModal();
             renderAll(apps);
         }
@@ -5978,19 +6008,29 @@ Thanks so much!
             const lastUpdated = document.getElementById('editLastUpdated').value;
             const interviewRounds = parseInt(document.getElementById('editInterviewRounds').value) || 0;
 
-            // Update application
-            if (dateApplied) apps[idx].dateApplied = new Date(dateApplied).toISOString();
+            // Helper to convert date input (YYYY-MM-DD) to ISO string preserving the date
+            // Using noon local time to avoid timezone shifts
+            function dateInputToISO(dateStr) {
+                if (!dateStr) return null;
+                // Parse as local date at noon to avoid timezone shifts
+                const [year, month, day] = dateStr.split('-').map(Number);
+                const date = new Date(year, month - 1, day, 12, 0, 0);
+                return date.toISOString();
+            }
+
+            // Update application - use helper to preserve dates
+            if (dateApplied) apps[idx].dateApplied = dateInputToISO(dateApplied);
             else delete apps[idx].dateApplied;
 
-            if (dateAdded) apps[idx].dateAdded = new Date(dateAdded).toISOString();
+            if (dateAdded) apps[idx].dateAdded = dateInputToISO(dateAdded);
 
-            if (dateReachedOut) apps[idx].dateReachedOut = new Date(dateReachedOut).toISOString();
+            if (dateReachedOut) apps[idx].dateReachedOut = dateInputToISO(dateReachedOut);
             else delete apps[idx].dateReachedOut;
 
-            if (dateInterviewed) apps[idx].dateInterviewed = new Date(dateInterviewed).toISOString();
+            if (dateInterviewed) apps[idx].dateInterviewed = dateInputToISO(dateInterviewed);
             else delete apps[idx].dateInterviewed;
 
-            if (lastUpdated) apps[idx].lastUpdated = new Date(lastUpdated).toISOString();
+            if (lastUpdated) apps[idx].lastUpdated = dateInputToISO(lastUpdated);
 
             apps[idx].interviewRounds = interviewRounds;
 
