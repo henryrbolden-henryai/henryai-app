@@ -14,6 +14,11 @@
     const NAV_STRUCTURE = {
         topLevel: [
             {
+                id: 'dashboard',
+                label: 'Dashboard',
+                href: 'dashboard.html'
+            },
+            {
                 id: 'results',
                 label: 'Job Fit Score',
                 href: 'results.html'

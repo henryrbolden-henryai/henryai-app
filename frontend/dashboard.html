@@ -483,9 +483,6 @@
         <div class="header-container">
             <a href="dashboard.html" class="logo"><em>Henry</em>AI</a>
             <nav class="header-nav">
-                <a href="dashboard.html" class="nav-link active">Dashboard</a>
-                <a href="tracker.html" class="nav-link">Command Center</a>
-                <a href="analyze.html" class="nav-link">Analyze Role</a>
                 <a href="profile.html" class="nav-link">Profile</a>
             </nav>
             <div class="user-menu">
@@ -721,7 +718,7 @@
 
             // Default
             if (activeCount === 0) {
-                return "Ready to get started? Let's find your next opportunity.";
+                return "Your pipeline is clear. Time to add your next target role.";
             }
             return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
         }
@@ -922,5 +919,6 @@
         })();
     </script>
     <script src="components/ask-henry.js"></script>
+    <script src="components/strategy-nav.js"></script>
 </body>
 </html>
