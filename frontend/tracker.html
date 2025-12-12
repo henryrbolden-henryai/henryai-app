@@ -2572,8 +2572,10 @@
         function getApplications() {
             // If we have a cache from Supabase, use it
             if (currentAppsCache !== null) {
+                console.log('getApplications: returning cache with', currentAppsCache.length, 'apps');
                 return currentAppsCache;
             }
+            console.log('getApplications: cache is null, falling back to localStorage');
             // Fallback to localStorage
             const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
             // Migrate legacy statuses to new structure
@@ -5321,9 +5323,14 @@
         function showDateEditModal(appId) {
             console.log('showDateEditModal called with:', appId);
             dateEditAppId = appId;
-            const app = getApplications().find(a => String(a.id) === String(appId));
+            const allApps = getApplications();
+            console.log('getApplications returned:', allApps.length, 'apps');
+            console.log('App IDs in cache:', allApps.map(a => a.id));
+            console.log('Looking for ID:', appId);
+            const app = allApps.find(a => String(a.id) === String(appId));
             if (!app) {
                 console.error('App not found for id:', appId);
+                console.error('Available IDs:', allApps.map(a => ({ id: a.id, company: a.company })));
                 return;
             }
             console.log('Found app:', app.company, app.role);
