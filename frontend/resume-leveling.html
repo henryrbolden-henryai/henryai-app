@@ -924,11 +924,23 @@
 
         async function performLevelingAnalysis() {
             try {
+                // Check if we have meaningful resume data to analyze
+                const resumeJson = analysisData._resume_json || {};
+                const hasExperience = resumeJson.experience && resumeJson.experience.length > 0;
+                const hasName = resumeJson.full_name || resumeJson.contact?.full_name;
+
+                if (!hasExperience && !hasName) {
+                    // No meaningful resume data - skip leveling analysis
+                    console.log('No meaningful resume data found, skipping leveling analysis');
+                    showError('Resume data not available for level analysis. Click "Skip & Continue" to proceed.');
+                    return;
+                }
+
                 const response = await fetch(`${API_BASE}/api/resume/level-assessment`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        resume_json: analysisData._resume_json || {},
+                        resume_json: resumeJson,
                         job_description: analysisData._jd_text || analysisData._jd || '',
                         target_title: analysisData.role_title || analysisData._role || '',
                         company: analysisData._company_name || analysisData._company || '',
@@ -937,7 +949,9 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Analysis failed (${response.status})`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorDetail = errorData.detail || `Analysis failed (${response.status})`;
+                    throw new Error(errorDetail);
                 }
 
                 levelingData = await response.json();
