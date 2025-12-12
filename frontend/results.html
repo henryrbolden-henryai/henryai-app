@@ -1364,6 +1364,9 @@
             // Auto-add to tracker when user commits to building application
             addToTrackerAutomatically();
 
+            // Small delay to ensure localStorage write completes before navigation
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Always route to resume-leveling first for ALL candidates
             // The leveling page provides career level analysis and recommendations
             // that feed into the strengthen page and document generation
