@@ -823,6 +823,11 @@
             </div>
 
             <div id="prepContent" style="display: none;">
+                <!-- Adaptive Empathy Intro Banner -->
+                <div id="prepIntroBanner" class="prep-intro-banner" style="display: none; background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+                    <p id="prepIntroText" style="margin: 0; color: #e2e8f0; font-size: 1rem; line-height: 1.5;"></p>
+                </div>
+
                 <!-- Expand/Collapse All -->
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 15px; gap: 10px;">
                     <button onclick="expandAllSections()" class="btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; background: transparent; border: 1px solid #374151; color: #9ca3af;">
@@ -1659,6 +1664,25 @@
             }
         }
 
+        // ========================================================================
+        // ADAPTIVE EMPATHY - INTERVIEW PREP INTRO
+        // ========================================================================
+        function getInterviewPrepIntro(confidence) {
+            if (confidence === 'high') {
+                return "You know your value. Here's how to frame your experience for this role:";
+            }
+
+            if (confidence === 'medium') {
+                return "You're qualified for this role—here's proof. Use these talking points:";
+            }
+
+            if (confidence === 'low') {
+                return "Listen: you wouldn't have made it to this interview if they didn't think you could do the job. Here's exactly what they need to hear:";
+            }
+
+            return "Here's how to position yourself for this role:";
+        }
+
         // Helper to get resume JSON
         function getResumeJson() {
             if (!analysisData) return {};
@@ -1730,6 +1754,19 @@
 
         // Render prep content
         function renderPrepContent(content) {
+            // Show adaptive empathy intro banner based on user confidence
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const confidence = profile?.situation?.confidence;
+            const introBanner = document.getElementById('prepIntroBanner');
+            const introText = document.getElementById('prepIntroText');
+
+            if (confidence) {
+                introText.textContent = getInterviewPrepIntro(confidence);
+                introBanner.style.display = 'block';
+            } else {
+                introBanner.style.display = 'none';
+            }
+
             // Overview
             document.getElementById('interviewOverview').textContent = content.interview_overview || '';
 

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Empathy Integration Tests</title>
+    <style>
+        body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background: #1e5128; }
+        .fail { background: #8b0000; }
+        .pending { background: #444; }
+        h1 { color: #3b82f6; }
+        h2 { color: #94a3b8; margin-top: 20px; }
+        pre { background: #2d2d44; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .result { font-weight: bold; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>Empathy Integration Tests</h1>
+    <p>Testing the adaptive empathy messaging system in tracker.html</p>
+
+    <div>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearLocalStorage()">Clear LocalStorage</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Mock STATUSES object (from tracker.html)
+        const STATUSES = {
+            'Researching': { active: true },
+            'Applied': { active: true },
+            'Reached Out': { active: true },
+            'Recruiter Screen': { active: true },
+            'Hiring Manager': { active: true },
+            'Technical Round': { active: true },
+            'Panel Interview': { active: true },
+            'Final Round': { active: true },
+            'Executive Interview': { active: true },
+            'Hot': { active: true },
+            'Active': { active: true },
+            'Offer': { active: false },
+            'Rejected': { active: false },
+            'Withdrawn': { active: false }
+        };
+
+        // Helper function
+        function getDaysSince(dateString) {
+            if (!dateString) return 0;
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // ========== FUNCTIONS UNDER TEST (copied from tracker.html) ==========
+
+        function getUserProfile() {
+            try {
+                const profile = localStorage.getItem('userProfile');
+                return profile ? JSON.parse(profile) : null;
+            } catch (err) {
+                console.error('Error loading user profile:', err);
+                return null;
+            }
+        }
+
+        function getPulseGreeting(profile, apps) {
+            if (!profile || !profile.situation) {
+                const activeCount = apps.filter(a => STATUSES[a.status]?.active).length;
+                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
+            }
+
+            const { holding_up, timeline } = profile.situation;
+            const activeCount = apps.filter(a => STATUSES[a.status]?.active).length;
+            const hotCount = apps.filter(a => a.status === 'Hot').length;
+
+            const interviewsThisWeek = apps.filter(a => {
+                if (!a.interviewDate) return false;
+                const date = new Date(a.interviewDate);
+                const today = new Date();
+                const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                return date >= today && date <= weekFromNow;
+            }).length;
+
+            if (holding_up === 'crushed') {
+                if (activeCount === 0) {
+                    return "I know this is brutal. Let's get some applications moving.";
+                }
+                return `I know this is brutal. You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Let's make sure each one gets follow-up.`;
+            }
+
+            if (holding_up === 'desperate' && timeline === 'urgent') {
+                if (interviewsThisWeek > 0) {
+                    return `Let's focus. You have ${interviewsThisWeek} interview${interviewsThisWeek !== 1 ? 's' : ''} this week and ${hotCount} hot application${hotCount !== 1 ? 's' : ''}. Here's your priority list.`;
+                }
+                return `Let's focus. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention today.`;
+            }
+
+            if (holding_up === 'desperate') {
+                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Let's make sure nothing slips through the cracks.`;
+            }
+
+            if (holding_up === 'stressed' && timeline === 'active') {
+                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention so nothing slips.`;
+            }
+
+            if (holding_up === 'stressed') {
+                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what's happening in your pipeline.`;
+            }
+
+            if (holding_up === 'zen' && timeline === 'exploring') {
+                return `You've got ${activeCount} active application${activeCount !== 1 ? 's' : ''}. No rush—let's keep the bar high.`;
+            }
+
+            if (holding_up === 'zen') {
+                return `${activeCount} application${activeCount !== 1 ? 's are' : ' is'} active. Things are looking solid.`;
+            }
+
+            if (timeline === 'clock_ticking') {
+                return `Time matters. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} active. Here's what requires immediate action.`;
+            }
+
+            if (timeline === 'urgent') {
+                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Let's prioritize what moves fastest.`;
+            }
+
+            return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
+        }
+
+        function getAdaptivePriorityAction(profile, apps, upcomingInterviews, followUpsDue, activeApps) {
+            const { holding_up, timeline } = profile?.situation || {};
+
+            if (upcomingInterviews.length > 0) {
+                const nextInterview = upcomingInterviews[0];
+                return `<span class="pulse-action-text"><strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}</span>`;
+            }
+
+            if (followUpsDue.length > 0) {
+                const oldestFollowUp = followUpsDue[0];
+                const daysSince = getDaysSince(oldestFollowUp.dateApplied);
+
+                let actionText = `<strong>Priority:</strong> Follow up with ${oldestFollowUp.company} (${daysSince} days since applying)`;
+                if (timeline === 'clock_ticking' || timeline === 'urgent') {
+                    actionText = `<strong>Action needed:</strong> ${oldestFollowUp.company} hasn't responded in ${daysSince} days. Follow up now.`;
+                }
+                return `<span class="pulse-action-text">${actionText}</span>`;
+            }
+
+            if (activeApps.length < 5) {
+                let suggestionText = '';
+                let buttonText = 'Analyze New Role';
+
+                if (holding_up === 'zen' && timeline === 'exploring') {
+                    suggestionText = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Room to add higher-quality matches.`;
+                } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
+                    suggestionText = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. You need more options—broaden your search.`;
+                    buttonText = 'Find More Roles';
+                } else if (holding_up === 'stressed' || timeline === 'urgent') {
+                    suggestionText = `<strong>Pipeline check:</strong> ${activeApps.length} active apps. Consider adding 2-3 more to strengthen your position.`;
+                } else {
+                    suggestionText = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Consider adding more to increase your odds.`;
+                }
+
+                return `<span class="pulse-action-text">${suggestionText}</span><button>${buttonText}</button>`;
+            }
+
+            let encouragementText = '';
+            if (holding_up === 'crushed' || holding_up === 'desperate') {
+                encouragementText = `<strong>Keep pushing:</strong> ${activeApps.length} active applications. You're doing the work.`;
+            } else if (holding_up === 'stressed') {
+                encouragementText = `<strong>On track:</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
+            } else {
+                encouragementText = `<strong>Looking good!</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
+            }
+
+            return `<span class="pulse-action-text">${encouragementText}</span>`;
+        }
+
+        // ========== TEST UTILITIES ==========
+
+        function createTestApps(count, statuses = ['Applied']) {
+            const apps = [];
+            for (let i = 0; i < count; i++) {
+                apps.push({
+                    id: i + 1,
+                    company: `Company ${i + 1}`,
+                    status: statuses[i % statuses.length],
+                    dateApplied: new Date(Date.now() - (i * 2 + 3) * 24 * 60 * 60 * 1000).toISOString()
+                });
+            }
+            return apps;
+        }
+
+        function setProfile(holding_up, timeline, confidence = 'medium') {
+            const profile = {
+                situation: { holding_up, timeline, confidence }
+            };
+            localStorage.setItem('userProfile', JSON.stringify(profile));
+            return profile;
+        }
+
+        function clearLocalStorage() {
+            localStorage.clear();
+            log('LocalStorage cleared', 'pending');
+        }
+
+        function log(message, status = 'pending') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test ${status}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        function assert(condition, testName, expected, actual) {
+            if (condition) {
+                log(`✅ <span class="result">PASS:</span> ${testName}`, 'pass');
+                return true;
+            } else {
+                log(`❌ <span class="result">FAIL:</span> ${testName}<br><pre>Expected: ${expected}\nActual: ${actual}</pre>`, 'fail');
+                return false;
+            }
+        }
+
+        // ========== TESTS ==========
+
+        function test1_NoProfile() {
+            log('<h2>Test 1: No Profile (Fallback Behavior)</h2>', 'pending');
+            localStorage.clear();
+
+            const apps = createTestApps(3);
+            const profile = getUserProfile();
+
+            // Check profile is null
+            const t1 = assert(profile === null, 'getUserProfile returns null when no profile', 'null', profile);
+
+            // Check fallback greeting
+            const greeting = getPulseGreeting(null, apps);
+            const t2 = assert(
+                greeting.includes('3 active applications') && greeting.includes("Here's what needs attention"),
+                'Fallback greeting shows correct message',
+                'You have 3 active applications. Here\'s what needs attention today.',
+                greeting
+            );
+
+            return t1 && t2;
+        }
+
+        function test2_ZenState() {
+            log('<h2>Test 2: Profile with Zen State</h2>', 'pending');
+
+            const profile = setProfile('zen', 'exploring');
+            const apps = createTestApps(3);
+
+            const greeting = getPulseGreeting(profile, apps);
+            const t1 = assert(
+                greeting.includes('No rush') && greeting.includes('keep the bar high'),
+                'Zen + exploring greeting',
+                "You've got 3 active applications. No rush—let's keep the bar high.",
+                greeting
+            );
+
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+            const action = getAdaptivePriorityAction(profile, apps, [], [], activeApps);
+            const t2 = assert(
+                action.includes('Room to add higher-quality matches'),
+                'Zen action suggests higher-quality matches',
+                'Room to add higher-quality matches',
+                action
+            );
+
+            return t1 && t2;
+        }
+
+        function test3_StressedState() {
+            log('<h2>Test 3: Profile with Stressed State</h2>', 'pending');
+
+            const profile = setProfile('stressed', 'active');
+            const apps = createTestApps(3);
+
+            const greeting = getPulseGreeting(profile, apps);
+            const t1 = assert(
+                greeting.includes("nothing slips"),
+                'Stressed + active greeting',
+                "You've got 3 applications moving. Here's what needs attention so nothing slips.",
+                greeting
+            );
+
+            return t1;
+        }
+
+        function test4_DesperateState() {
+            log('<h2>Test 4: Profile with Desperate State</h2>', 'pending');
+
+            const profile = setProfile('desperate', 'urgent');
+            const apps = createTestApps(3);
+
+            const greeting = getPulseGreeting(profile, apps);
+            const t1 = assert(
+                greeting.includes("Let's focus"),
+                'Desperate + urgent greeting',
+                "Let's focus. You have 3 applications moving. Here's what needs attention today.",
+                greeting
+            );
+
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+            const action = getAdaptivePriorityAction(profile, apps, [], [], activeApps);
+            const t2 = assert(
+                action.includes('Pipeline thin') && action.includes('Find More Roles'),
+                'Desperate action shows urgent pipeline message',
+                'Pipeline thin + Find More Roles button',
+                action
+            );
+
+            return t1 && t2;
+        }
+
+        function test5_CrushedState() {
+            log('<h2>Test 5: Profile with Crushed State</h2>', 'pending');
+
+            const profile = setProfile('crushed', 'clock_ticking');
+            const apps = createTestApps(5); // 5 apps for healthy pipeline to test supportive message
+
+            const greeting = getPulseGreeting(profile, apps);
+            const t1 = assert(
+                greeting.includes("I know this is brutal"),
+                'Crushed greeting shows empathy',
+                "I know this is brutal. You have 3 active applications. Let's make sure each one gets follow-up.",
+                greeting
+            );
+
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+            const action = getAdaptivePriorityAction(profile, apps, [], [], activeApps);
+            const t2 = assert(
+                action.includes("Keep pushing") && action.includes("You're doing the work"),
+                'Crushed action shows supportive message',
+                'Keep pushing + You\'re doing the work',
+                action
+            );
+
+            return t1 && t2;
+        }
+
+        function test6_PriorityActions() {
+            log('<h2>Test 6: Priority Actions Adapt</h2>', 'pending');
+
+            const profile = setProfile('stressed', 'urgent');
+
+            // Scenario A: No follow-ups, 3 apps
+            const apps3 = createTestApps(3);
+            const activeApps3 = apps3.filter(a => STATUSES[a.status]?.active);
+            const action3 = getAdaptivePriorityAction(profile, apps3, [], [], activeApps3);
+            const t1 = assert(
+                action3.includes('Pipeline check') || action3.includes('active apps'),
+                'Scenario A: < 5 apps suggests adding more',
+                'Pipeline check message',
+                action3
+            );
+
+            // Scenario B: Follow-ups due
+            const appsWithFollowup = createTestApps(3);
+            appsWithFollowup[0].dateApplied = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+            const followUpsDue = [appsWithFollowup[0]];
+            const action2 = getAdaptivePriorityAction(profile, appsWithFollowup, [], followUpsDue, appsWithFollowup);
+            const t2 = assert(
+                action2.includes('Action needed') || action2.includes('Follow up'),
+                'Scenario B: Follow-up due shows urgent message',
+                'Action needed or Follow up message',
+                action2
+            );
+
+            // Scenario C: Upcoming interview
+            const appsWithInterview = createTestApps(3, ['Recruiter Screen', 'Applied', 'Applied']);
+            const upcomingInterviews = [appsWithInterview[0]];
+            const action1 = getAdaptivePriorityAction(profile, appsWithInterview, upcomingInterviews, [], appsWithInterview);
+            const t3 = assert(
+                action1.includes('Priority:') && action1.includes('recruiter screen'),
+                'Scenario C: Interview prioritized',
+                'Priority: Prepare for your recruiter screen',
+                action1
+            );
+
+            return t1 && t2 && t3;
+        }
+
+        function runAllTests() {
+            document.getElementById('results').innerHTML = '';
+            log('<h2>Running All 6 Tests...</h2>', 'pending');
+
+            let passed = 0;
+            let failed = 0;
+
+            if (test1_NoProfile()) passed++; else failed++;
+            if (test2_ZenState()) passed++; else failed++;
+            if (test3_StressedState()) passed++; else failed++;
+            if (test4_DesperateState()) passed++; else failed++;
+            if (test5_CrushedState()) passed++; else failed++;
+            if (test6_PriorityActions()) passed++; else failed++;
+
+            log(`<h2>Summary: ${passed}/6 tests passed, ${failed} failed</h2>`, passed === 6 ? 'pass' : 'fail');
+
+            // Cleanup
+            localStorage.clear();
+        }
+
+        // Auto-run on load
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>
