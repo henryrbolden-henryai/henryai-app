@@ -258,29 +258,101 @@
             font-size: 0.85rem;
         }
 
-        /* Target Analysis */
-        .target-analysis {
+        /* Collapsible Sections */
+        .collapsible-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
-            padding: 32px;
             margin-bottom: 24px;
+            overflow: hidden;
         }
 
-        .target-header {
+        .collapsible-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 20px;
+            padding: 20px 24px;
+            cursor: pointer;
+            transition: background 0.2s ease;
         }
 
-        .target-title {
+        .collapsible-header:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .collapsible-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .collapsible-title {
             font-family: var(--font-display);
             font-size: 1.3rem;
             font-weight: 400;
         }
 
+        .collapsible-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .collapsible-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .collapse-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-secondary);
+            transition: transform 0.3s ease;
+        }
+
+        .collapsible-section.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            padding: 0 24px 24px;
+            transition: max-height 0.3s ease, opacity 0.2s ease;
+            overflow: hidden;
+        }
+
+        .collapsible-section.collapsed .collapsible-content {
+            max-height: 0 !important;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+        }
+
+        /* Signals wrapper for collapsible */
+        .signals-wrapper {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .signals-wrapper .collapsible-content {
+            padding-top: 0;
+        }
+
+        .signals-wrapper .signals-grid {
+            margin-bottom: 0;
+        }
+
+        /* Target Analysis - now uses collapsible wrapper */
         .qualification-badge {
             display: inline-flex;
             align-items: center;
@@ -377,28 +449,7 @@
             border-left: 2px solid var(--color-accent);
         }
 
-        /* Recommendations Section */
-        .recommendations-section {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-        }
-
-        .rec-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .rec-title {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            font-weight: 400;
-        }
-
+        /* Recommendations Section - now uses collapsible wrapper */
         .rec-item {
             background: var(--color-bg);
             border: 1px solid var(--color-border);
@@ -448,25 +499,7 @@
             font-style: italic;
         }
 
-        /* Red Flags */
-        .red-flags-section {
-            background: rgba(248, 113, 113, 0.05);
-            border: 1px solid rgba(248, 113, 113, 0.2);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .red-flags-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-error);
-            margin-bottom: 12px;
-        }
-
+        /* Red Flags - now uses collapsible wrapper */
         .red-flag-item {
             display: flex;
             align-items: flex-start;
@@ -480,29 +513,7 @@
             border-bottom: none;
         }
 
-        /* Language Analysis */
-        .language-section {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-        }
-
-        .language-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .language-title {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            font-weight: 400;
-        }
-
+        /* Language Analysis - now uses collapsible wrapper */
         .language-description {
             color: var(--color-text-secondary);
             font-size: 0.95rem;
@@ -831,70 +842,111 @@
                 <p class="summary-text" id="summaryText">—</p>
             </div>
 
-            <!-- Signals Section -->
-            <div class="signals-grid" id="signalsGrid">
-                <!-- Populated dynamically -->
-            </div>
-
-            <!-- Target Analysis (if target role provided) -->
-            <div class="target-analysis" id="targetAnalysis" style="display: none;">
-                <div class="target-header">
-                    <h3 class="target-title">Target Role Analysis</h3>
-                    <div class="qualification-badge" id="qualificationBadge">—</div>
-                </div>
-                <p class="levels-apart" id="levelsApart">—</p>
-
-                <!-- Gaps Section -->
-                <div class="gaps-section" id="gapsSection">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Red Flags (if any) -->
-            <div class="red-flags-section" id="redFlagsSection" style="display: none;">
-                <div class="red-flags-title">
-                    <span>Warning</span>
-                    Resume Red Flags
-                </div>
-                <div id="redFlagsList">
-                    <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Language Analysis -->
-            <div class="language-section" id="languageSection">
-                <div class="language-header">
-                    <h3 class="language-title">Language Analysis</h3>
-                    <div class="language-level-badge" id="languageLevelBadge">—</div>
-                </div>
-                <p class="language-description">The words you use signal your experience level. Senior professionals use leadership-focused verbs and quantify their impact.</p>
-
-                <div class="verb-distribution" id="verbDistribution">
-                    <!-- Populated dynamically -->
-                </div>
-                <div class="verb-legend">
-                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-warning)"></span> Entry</div>
-                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-accent)"></span> Mid</div>
-                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-success)"></span> Senior</div>
-                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-purple)"></span> Principal</div>
-                </div>
-
-                <div class="quantification-row">
-                    <div class="quant-label">Quantified Impact Statements</div>
-                    <div class="quant-bar-container">
-                        <div class="quant-bar-fill" id="quantBarFill" style="width: 0%"></div>
+            <!-- Signals Section (Collapsible - Default Collapsed) -->
+            <div class="collapsible-section signals-wrapper collapsed" id="signalsSection">
+                <div class="collapsible-header" onclick="toggleSection('signalsSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Resume Signals</h3>
+                        <span class="collapsible-badge" style="background: var(--color-accent-muted); color: var(--color-accent);" id="signalsBadge">4 categories</span>
                     </div>
-                    <div class="quant-value" id="quantValue">—% of bullets include metrics</div>
+                    <div class="collapsible-header-right">
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <div class="signals-grid" id="signalsGrid">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
 
-            <!-- Recommendations Section -->
-            <div class="recommendations-section" id="recommendationsSection">
-                <div class="rec-header">
-                    <h3 class="rec-title">Recommendations to Strengthen Your Resume</h3>
+            <!-- Target Analysis (Collapsible - Default Expanded) -->
+            <div class="collapsible-section" id="targetAnalysis" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('targetAnalysis')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Target Role Analysis</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <div class="qualification-badge" id="qualificationBadge">—</div>
+                        <span class="collapse-icon">▼</span>
+                    </div>
                 </div>
-                <div id="recommendationsList">
-                    <!-- Populated dynamically -->
+                <div class="collapsible-content">
+                    <p class="levels-apart" id="levelsApart" style="margin-bottom: 20px;">—</p>
+                    <!-- Gaps Section -->
+                    <div class="gaps-section" id="gapsSection">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Red Flags (Collapsible - Default Collapsed) -->
+            <div class="collapsible-section collapsed" id="redFlagsSection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('redFlagsSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Resume Red Flags</h3>
+                        <span class="collapsible-badge" style="background: rgba(248, 113, 113, 0.15); color: var(--color-error);" id="redFlagsBadge">—</span>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <div id="redFlagsList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Analysis (Collapsible - Default Collapsed) -->
+            <div class="collapsible-section collapsed" id="languageSection">
+                <div class="collapsible-header" onclick="toggleSection('languageSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Language Analysis</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <div class="language-level-badge" id="languageLevelBadge">—</div>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <p class="language-description">The words you use signal your experience level. Senior professionals use leadership-focused verbs and quantify their impact.</p>
+
+                    <div class="verb-distribution" id="verbDistribution">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="verb-legend">
+                        <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-warning)"></span> Entry</div>
+                        <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-accent)"></span> Mid</div>
+                        <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-success)"></span> Senior</div>
+                        <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-purple)"></span> Principal</div>
+                    </div>
+
+                    <div class="quantification-row">
+                        <div class="quant-label">Quantified Impact Statements</div>
+                        <div class="quant-bar-container">
+                            <div class="quant-bar-fill" id="quantBarFill" style="width: 0%"></div>
+                        </div>
+                        <div class="quant-value" id="quantValue">—% of bullets include metrics</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations Section (Collapsible - Default Expanded) -->
+            <div class="collapsible-section" id="recommendationsSection">
+                <div class="collapsible-header" onclick="toggleSection('recommendationsSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Recommendations to Strengthen Your Resume</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <span class="collapsible-badge" style="background: var(--color-accent-muted); color: var(--color-accent);" id="recsBadge">—</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <div id="recommendationsList">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
 
@@ -1024,6 +1076,12 @@
             window.location.href = 'strengthen.html';
         }
 
+        // Toggle collapsible sections
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('collapsed');
+        }
+
         function renderResults() {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
@@ -1112,6 +1170,13 @@
                 }
             ];
 
+            // Count total signals across all categories
+            let totalSignals = 0;
+            signalCategories.forEach(cat => {
+                totalSignals += (levelingData[cat.key] || []).length;
+            });
+            document.getElementById('signalsBadge').textContent = `${totalSignals} signal${totalSignals !== 1 ? 's' : ''} found`;
+
             signalsGrid.innerHTML = signalCategories.map(cat => {
                 const signals = levelingData[cat.key] || [];
                 return `
@@ -1181,6 +1246,10 @@
             const redFlagsSection = document.getElementById('redFlagsSection');
             redFlagsSection.style.display = 'block';
 
+            // Update badge count
+            const flagCount = levelingData.red_flags.length;
+            document.getElementById('redFlagsBadge').textContent = `${flagCount} issue${flagCount !== 1 ? 's' : ''}`;
+
             const redFlagsList = document.getElementById('redFlagsList');
             redFlagsList.innerHTML = levelingData.red_flags.map(flag => `
                 <div class="red-flag-item">
@@ -1217,9 +1286,14 @@
             const recsList = document.getElementById('recommendationsList');
 
             if (!levelingData.recommendations || levelingData.recommendations.length === 0) {
+                document.getElementById('recsBadge').textContent = '0 items';
                 recsList.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">No specific recommendations at this time.</p>';
                 return;
             }
+
+            // Update badge count
+            const recCount = Math.min(levelingData.recommendations.length, 5);
+            document.getElementById('recsBadge').textContent = `${recCount} item${recCount !== 1 ? 's' : ''}`;
 
             recsList.innerHTML = levelingData.recommendations.slice(0, 5).map(rec => `
                 <div class="rec-item">
