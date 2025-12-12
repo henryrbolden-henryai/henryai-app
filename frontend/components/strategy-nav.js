@@ -19,9 +19,9 @@
                 href: 'results.html'
             },
             {
-                id: 'skills-analysis',
-                label: 'Skills Analysis',
-                href: 'skills-analysis.html'
+                id: 'resume-leveling',
+                label: 'Resume Level Analysis',
+                href: 'resume-leveling.html'
             }
         ],
         parent: {
@@ -435,7 +435,7 @@
     // Initialize the navigation
     function init() {
         // Don't add navigation to certain pages
-        const excludedPages = ['index', 'login', 'analyze', 'analyzing', 'results', 'generating', 'strengthen', 'profile', 'profile-edit', 'resume-leveling', 'skills-analysis'];
+        const excludedPages = ['index', 'login', 'analyze', 'analyzing', 'results', 'generating', 'strengthen', 'profile', 'profile-edit'];
         const currentPage = getCurrentPage();
 
         if (excludedPages.includes(currentPage)) {
