@@ -1288,8 +1288,13 @@
 
         // Auto-add to tracker when user commits to applying
         function addToTrackerAutomatically() {
-            const companyName = data._company_name || data._company;
+            const companyName = data._company_name || data._company || data.company;
             const roleTitle = data.role_title || data._role;
+
+            console.log('addToTrackerAutomatically called');
+            console.log('Company name:', companyName);
+            console.log('Role title:', roleTitle);
+            console.log('Data keys:', Object.keys(data));
 
             if (!companyName) {
                 console.log('No company name found, skipping auto-track');
@@ -1347,6 +1352,7 @@
 
             // Save to localStorage
             localStorage.setItem('trackedApplications', JSON.stringify(applications));
+            console.log('Saved to trackedApplications. Total apps:', applications.length);
         }
 
         // Generate documents before navigating to overview
