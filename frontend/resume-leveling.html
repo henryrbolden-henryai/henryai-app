@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Level Analysis — HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --color-purple: #a78bfa;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Header */
+        .top-nav {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .top-nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-text);
+            text-decoration: none;
+        }
+
+        .top-nav-logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        /* Main content */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .back-link:hover {
+            color: var(--color-accent);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        /* Level Assessment Card */
+        .level-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .level-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .level-badge {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-purple), var(--color-accent));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .level-badge-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .level-badge-level {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .level-info {
+            flex: 1;
+        }
+
+        .level-function {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .level-title {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .level-meta {
+            display: flex;
+            gap: 16px;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--color-bg);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-accent), var(--color-purple));
+            border-radius: 2px;
+            transition: width 0.8s var(--ease-out);
+        }
+
+        /* Summary */
+        .summary-text {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* Signals Section */
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .signal-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .signal-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .signal-icon {
+            font-size: 1.2rem;
+        }
+
+        .signal-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+        }
+
+        .signal-list {
+            list-style: none;
+        }
+
+        .signal-list li {
+            font-size: 0.9rem;
+            padding: 4px 0;
+            color: var(--color-text);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .signal-list li:last-child {
+            border-bottom: none;
+        }
+
+        .empty-signal {
+            color: var(--color-text-secondary);
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        /* Target Analysis */
+        .target-analysis {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .target-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .target-icon {
+            font-size: 1.5rem;
+        }
+
+        .target-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+        }
+
+        .qualification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .qualification-badge.qualified {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .qualification-badge.stretch {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .qualification-badge.reach {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .levels-apart {
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        /* Gaps Section */
+        .gaps-section {
+            margin-top: 20px;
+        }
+
+        .gap-item {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .gap-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .gap-category {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+        }
+
+        .gap-priority {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .gap-priority.high {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .gap-priority.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .gap-priority.low {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .gap-description {
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+
+        .gap-recommendation {
+            font-size: 0.9rem;
+            color: var(--color-accent);
+            padding-left: 12px;
+            border-left: 2px solid var(--color-accent);
+        }
+
+        /* Recommendations Section */
+        .recommendations-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .rec-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .rec-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+        }
+
+        .rec-item {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .rec-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .rec-type {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+        }
+
+        .rec-current {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: rgba(248, 113, 113, 0.1);
+            border-radius: 8px;
+        }
+
+        .rec-suggested {
+            font-size: 0.95rem;
+            color: var(--color-success);
+            padding: 8px 12px;
+            background: rgba(74, 222, 128, 0.1);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .rec-rationale {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        /* Red Flags */
+        .red-flags-section {
+            background: rgba(248, 113, 113, 0.05);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .red-flags-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-error);
+            margin-bottom: 12px;
+        }
+
+        .red-flag-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(248, 113, 113, 0.1);
+        }
+
+        .red-flag-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Language Analysis */
+        .language-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .language-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .language-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 400;
+        }
+
+        .language-level-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .language-level-badge.entry {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .language-level-badge.mid {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+        }
+
+        .language-level-badge.senior {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .language-level-badge.principal {
+            background: rgba(167, 139, 250, 0.15);
+            color: var(--color-purple);
+        }
+
+        .verb-distribution {
+            display: flex;
+            gap: 4px;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .verb-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: width 0.8s var(--ease-out);
+        }
+
+        .verb-bar.entry { background: var(--color-warning); color: #000; }
+        .verb-bar.mid { background: var(--color-accent); color: #000; }
+        .verb-bar.senior { background: var(--color-success); color: #000; }
+        .verb-bar.principal { background: var(--color-purple); color: #000; }
+
+        .verb-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 0.85rem;
+        }
+
+        .verb-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .verb-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .quantification-row {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .quant-label {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .quant-bar-container {
+            height: 8px;
+            background: var(--color-bg);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .quant-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-error), var(--color-warning), var(--color-success));
+            border-radius: 4px;
+            transition: width 0.8s var(--ease-out);
+        }
+
+        .quant-value {
+            font-size: 0.85rem;
+            color: var(--color-text);
+            margin-top: 4px;
+        }
+
+        /* Action Section */
+        .action-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            padding: 32px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .action-text {
+            font-size: 1.1rem;
+            max-width: 500px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            padding: 16px 32px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-secondary {
+            padding: 16px 32px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            color: var(--color-text);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--color-accent);
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .loading-logo {
+            animation: breathe 2.5s ease-in-out infinite;
+        }
+
+        @keyframes dotBounce {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(8px, -8px); }
+            50% { transform: translate(0, 0); }
+            75% { transform: translate(-5px, 5px); }
+        }
+
+        .loading-logo .peak-dot {
+            animation: dotBounce 2.5s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        .loading-text {
+            color: var(--color-text-secondary);
+        }
+
+        /* Error state */
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .error-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .error-text {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .level-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .level-meta {
+                justify-content: center;
+            }
+
+            .signals-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="index.html" class="top-nav-logo"><em>Henry</em>AI</a>
+    </nav>
+
+    <main>
+        <a href="results.html" class="back-link">← Back to Results</a>
+
+        <h1>Resume Level Analysis</h1>
+        <p class="subtitle" id="subtitle">Analyzing your career level against the target role...</p>
+
+        <!-- Loading State -->
+        <div class="loading" id="loadingState">
+            <svg class="loading-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/>
+                <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <path d="M145 130 L145 50" stroke="url(#ringGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <circle class="peak-dot" cx="145" cy="50" r="9" fill="#764ba2"/>
+            </svg>
+            <p class="loading-text">Assessing your career level...</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-state" id="errorState" style="display: none;">
+            <div class="error-icon">!</div>
+            <h2 class="error-title">Analysis Failed</h2>
+            <p class="error-text" id="errorText">Something went wrong. Please try again.</p>
+            <button class="btn-primary" onclick="retryAnalysis()">Try Again</button>
+        </div>
+
+        <!-- Main Content -->
+        <div id="mainContent" style="display: none;">
+            <!-- Level Assessment Card -->
+            <div class="level-card" id="levelCard">
+                <div class="level-header">
+                    <div class="level-badge">
+                        <span class="level-badge-title">Current</span>
+                        <span class="level-badge-level" id="levelBadgeLevel">—</span>
+                    </div>
+                    <div class="level-info">
+                        <div class="level-function" id="levelFunction">—</div>
+                        <h2 class="level-title" id="levelTitle">—</h2>
+                        <div class="level-meta">
+                            <span id="yearsExp">— years experience</span>
+                            <span id="confidenceText">— confidence</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="summary-text" id="summaryText">—</p>
+            </div>
+
+            <!-- Signals Section -->
+            <div class="signals-grid" id="signalsGrid">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Target Analysis (if target role provided) -->
+            <div class="target-analysis" id="targetAnalysis" style="display: none;">
+                <div class="target-header">
+                    <span class="target-icon">target</span>
+                    <h3 class="target-title">Target Role Analysis</h3>
+                </div>
+                <div class="qualification-badge" id="qualificationBadge">—</div>
+                <p class="levels-apart" id="levelsApart">—</p>
+
+                <!-- Gaps Section -->
+                <div class="gaps-section" id="gapsSection">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Red Flags (if any) -->
+            <div class="red-flags-section" id="redFlagsSection" style="display: none;">
+                <div class="red-flags-title">
+                    <span>Warning</span>
+                    Resume Red Flags
+                </div>
+                <div id="redFlagsList">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Language Analysis -->
+            <div class="language-section" id="languageSection">
+                <div class="language-header">
+                    <span>ABC</span>
+                    <h3 class="language-title">Language Analysis</h3>
+                </div>
+                <div class="language-level-badge" id="languageLevelBadge">—</div>
+
+                <div class="verb-distribution" id="verbDistribution">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="verb-legend">
+                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-warning)"></span> Entry</div>
+                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-accent)"></span> Mid</div>
+                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-success)"></span> Senior</div>
+                    <div class="verb-legend-item"><span class="verb-legend-dot" style="background: var(--color-purple)"></span> Principal</div>
+                </div>
+
+                <div class="quantification-row">
+                    <div class="quant-label">Quantified Impact Statements</div>
+                    <div class="quant-bar-container">
+                        <div class="quant-bar-fill" id="quantBarFill" style="width: 0%"></div>
+                    </div>
+                    <div class="quant-value" id="quantValue">—% of bullets include metrics</div>
+                </div>
+            </div>
+
+            <!-- Recommendations Section -->
+            <div class="recommendations-section" id="recommendationsSection">
+                <div class="rec-header">
+                    <span>*</span>
+                    <h3 class="rec-title">Recommendations to Strengthen Your Resume</h3>
+                </div>
+                <div id="recommendationsList">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Action Section -->
+            <div class="action-section">
+                <p class="action-text" id="actionText">
+                    Ready to apply these insights and strengthen your application?
+                </p>
+                <div class="action-buttons">
+                    <button class="btn-primary" id="continueBtn">Continue to Strengthen</button>
+                    <button class="btn-secondary" id="skipBtn">Skip to Documents</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        let levelingData = null;
+        let analysisData = null;
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Get analysis data from sessionStorage
+            const analysisDataStr = sessionStorage.getItem('analysisData');
+            if (!analysisDataStr) {
+                window.location.href = 'analyze.html';
+                return;
+            }
+            analysisData = JSON.parse(analysisDataStr);
+
+            // Update subtitle with target role
+            const targetRole = analysisData.role_title || analysisData._role || 'your target role';
+            document.getElementById('subtitle').textContent = `Understanding your career level relative to ${targetRole}`;
+
+            // Perform leveling analysis
+            await performLevelingAnalysis();
+        });
+
+        async function performLevelingAnalysis() {
+            try {
+                const response = await fetch(`${API_BASE}/api/resume/level-assessment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resume_json: analysisData._resume_json || {},
+                        job_description: analysisData._jd_text || analysisData._jd || '',
+                        target_title: analysisData.role_title || analysisData._role || '',
+                        company: analysisData._company_name || analysisData._company || '',
+                        role_title: analysisData.role_title || analysisData._role || ''
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Analysis failed (${response.status})`);
+                }
+
+                levelingData = await response.json();
+                console.log('Leveling data:', levelingData);
+
+                // Store for use by strengthen page
+                sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+
+                // Render results
+                renderResults();
+
+            } catch (error) {
+                console.error('Leveling analysis error:', error);
+                showError(error.message);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+        }
+
+        function retryAnalysis() {
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+            performLevelingAnalysis();
+        }
+
+        function renderResults() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // Level Card
+            document.getElementById('levelBadgeLevel').textContent = levelingData.current_level.split(' ')[0];
+            document.getElementById('levelFunction').textContent = levelingData.detected_function;
+            document.getElementById('levelTitle').textContent = levelingData.current_level;
+            document.getElementById('yearsExp').textContent = `${levelingData.years_experience} years experience`;
+            document.getElementById('confidenceText').textContent = `${Math.round(levelingData.level_confidence * 100)}% confidence`;
+            document.getElementById('confidenceFill').style.width = `${levelingData.level_confidence * 100}%`;
+            document.getElementById('summaryText').textContent = levelingData.summary;
+
+            // Signals Grid
+            renderSignals();
+
+            // Target Analysis (if available)
+            if (levelingData.target_level) {
+                renderTargetAnalysis();
+            }
+
+            // Red Flags
+            if (levelingData.red_flags && levelingData.red_flags.length > 0) {
+                renderRedFlags();
+            }
+
+            // Language Analysis
+            renderLanguageAnalysis();
+
+            // Recommendations
+            renderRecommendations();
+        }
+
+        function renderSignals() {
+            const signalsGrid = document.getElementById('signalsGrid');
+
+            const signalCategories = [
+                { key: 'scope_signals', title: 'Scope', icon: 'O' },
+                { key: 'impact_signals', title: 'Impact', icon: '^' },
+                { key: 'leadership_signals', title: 'Leadership', icon: '*' },
+                { key: 'technical_signals', title: 'Technical', icon: '<>' }
+            ];
+
+            signalsGrid.innerHTML = signalCategories.map(cat => {
+                const signals = levelingData[cat.key] || [];
+                return `
+                    <div class="signal-card">
+                        <div class="signal-header">
+                            <span class="signal-icon">${cat.icon}</span>
+                            <span class="signal-title">${cat.title} Signals</span>
+                        </div>
+                        ${signals.length > 0 ? `
+                            <ul class="signal-list">
+                                ${signals.slice(0, 4).map(s => `<li>"${s}"</li>`).join('')}
+                            </ul>
+                        ` : '<p class="empty-signal">No strong signals detected</p>'}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTargetAnalysis() {
+            const targetSection = document.getElementById('targetAnalysis');
+            targetSection.style.display = 'block';
+
+            // Qualification badge
+            const qualBadge = document.getElementById('qualificationBadge');
+            if (levelingData.is_qualified) {
+                qualBadge.className = 'qualification-badge qualified';
+                qualBadge.textContent = 'Qualified for this level';
+            } else if (levelingData.levels_apart <= 1) {
+                qualBadge.className = 'qualification-badge stretch';
+                qualBadge.textContent = 'Stretch role - addressable gaps';
+            } else {
+                qualBadge.className = 'qualification-badge reach';
+                qualBadge.textContent = 'Significant gap to target';
+            }
+
+            // Levels apart
+            const levelsText = document.getElementById('levelsApart');
+            if (levelingData.levels_apart === 0) {
+                levelsText.textContent = `Your experience matches the ${levelingData.target_level} level.`;
+            } else if (levelingData.levels_apart > 0) {
+                levelsText.textContent = `Target role (${levelingData.target_level}) is ${levelingData.levels_apart} level${levelingData.levels_apart > 1 ? 's' : ''} above your current ${levelingData.current_level} position.`;
+            } else {
+                levelsText.textContent = `You're ${Math.abs(levelingData.levels_apart)} level${Math.abs(levelingData.levels_apart) > 1 ? 's' : ''} above the target role requirements.`;
+            }
+
+            // Gaps
+            if (levelingData.gaps && levelingData.gaps.length > 0) {
+                const gapsSection = document.getElementById('gapsSection');
+                gapsSection.innerHTML = `
+                    <h4 style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Gaps to Address</h4>
+                    ${levelingData.gaps.map(gap => `
+                        <div class="gap-item">
+                            <div class="gap-header">
+                                <span class="gap-category">${gap.category}</span>
+                                <span class="gap-priority ${gap.priority}">${gap.priority} priority</span>
+                            </div>
+                            <p class="gap-description">${gap.description}</p>
+                            <p class="gap-recommendation">${gap.recommendation}</p>
+                        </div>
+                    `).join('')}
+                `;
+            }
+        }
+
+        function renderRedFlags() {
+            const redFlagsSection = document.getElementById('redFlagsSection');
+            redFlagsSection.style.display = 'block';
+
+            const redFlagsList = document.getElementById('redFlagsList');
+            redFlagsList.innerHTML = levelingData.red_flags.map(flag => `
+                <div class="red-flag-item">
+                    <span>!</span>
+                    <span>${flag}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderLanguageAnalysis() {
+            // Language level badge
+            const langBadge = document.getElementById('languageLevelBadge');
+            const langLevel = levelingData.language_level.toLowerCase();
+            langBadge.className = `language-level-badge ${langLevel}`;
+            langBadge.textContent = `${levelingData.language_level}-Level Language`;
+
+            // Verb distribution
+            const verbDist = levelingData.action_verb_distribution || { entry: 0.25, mid: 0.5, senior: 0.2, principal: 0.05 };
+            const verbDistEl = document.getElementById('verbDistribution');
+            verbDistEl.innerHTML = `
+                <div class="verb-bar entry" style="width: ${verbDist.entry * 100}%">${Math.round(verbDist.entry * 100)}%</div>
+                <div class="verb-bar mid" style="width: ${verbDist.mid * 100}%">${Math.round(verbDist.mid * 100)}%</div>
+                <div class="verb-bar senior" style="width: ${verbDist.senior * 100}%">${Math.round(verbDist.senior * 100)}%</div>
+                <div class="verb-bar principal" style="width: ${verbDist.principal * 100}%">${Math.round(verbDist.principal * 100)}%</div>
+            `;
+
+            // Quantification rate
+            const quantRate = levelingData.quantification_rate || 0;
+            document.getElementById('quantBarFill').style.width = `${quantRate * 100}%`;
+            document.getElementById('quantValue').textContent = `${Math.round(quantRate * 100)}% of bullets include metrics`;
+        }
+
+        function renderRecommendations() {
+            const recsList = document.getElementById('recommendationsList');
+
+            if (!levelingData.recommendations || levelingData.recommendations.length === 0) {
+                recsList.innerHTML = '<p style="color: var(--color-text-secondary); font-style: italic;">No specific recommendations at this time.</p>';
+                return;
+            }
+
+            recsList.innerHTML = levelingData.recommendations.slice(0, 5).map(rec => `
+                <div class="rec-item">
+                    <div class="rec-meta">
+                        <span class="rec-type">${rec.type}</span>
+                        <span class="gap-priority ${rec.priority}">${rec.priority}</span>
+                    </div>
+                    ${rec.current ? `<div class="rec-current"><strong>Current:</strong> ${rec.current}</div>` : ''}
+                    <div class="rec-suggested"><strong>Suggested:</strong> ${rec.suggested}</div>
+                    <p class="rec-rationale">${rec.rationale}</p>
+                </div>
+            `).join('');
+        }
+
+        // Navigation
+        document.getElementById('continueBtn').addEventListener('click', () => {
+            // Store leveling data for strengthen page
+            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+            window.location.href = 'strengthen.html';
+        });
+
+        document.getElementById('skipBtn').addEventListener('click', () => {
+            // Skip strengthen, go directly to document generation
+            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+            window.location.href = 'generating.html';
+        });
+    </script>
+    <script src="components/ask-henry.js"></script>
+</body>
+</html>

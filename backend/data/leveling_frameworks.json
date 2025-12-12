@@ -1,0 +1,346 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-12-11",
+  "frameworks": {
+    "engineering": {
+      "name": "Technical IC (Engineering)",
+      "levels": [
+        {
+          "id": "engineer_1",
+          "name": "Engineer I",
+          "alternativeTitles": ["Junior Engineer", "Software Engineer I", "SWE I", "Associate Engineer"],
+          "typicalExperience": "0-2 years",
+          "scope": "Individual tasks and small features within a well-defined scope",
+          "impact": "Completes assigned work on time with guidance; learning codebase and practices",
+          "competencies": {
+            "technicalDepth": "Learning fundamentals; can implement straightforward features with support",
+            "ownership": "Owns small tasks; relies on senior guidance for technical decisions",
+            "collaboration": "Participates in code reviews; asks good questions; responsive to feedback",
+            "communication": "Clearly communicates blockers and progress; writes basic documentation"
+          },
+          "signals": ["worked on", "assisted with", "supported", "helped", "contributed to", "learned"],
+          "antiSignals": ["led", "architected", "defined", "mentored", "drove"]
+        },
+        {
+          "id": "engineer_2",
+          "name": "Engineer II",
+          "alternativeTitles": ["Software Engineer", "Software Engineer II", "SWE II", "Mid-level Engineer"],
+          "typicalExperience": "2-4 years",
+          "scope": "Complete features and small projects; owns a component or service area",
+          "impact": "Independently delivers quality work; starting to improve team practices",
+          "competencies": {
+            "technicalDepth": "Solid fundamentals; can design and implement features independently",
+            "ownership": "Owns features end-to-end; makes sound technical decisions in their area",
+            "collaboration": "Provides helpful code reviews; collaborates well cross-functionally",
+            "communication": "Writes clear technical documentation; presents work to team"
+          },
+          "signals": ["implemented", "built", "developed", "owned", "independently", "designed"],
+          "antiSignals": ["architected company-wide", "transformed", "defined strategy"]
+        },
+        {
+          "id": "senior_engineer",
+          "name": "Senior Engineer",
+          "alternativeTitles": ["Senior Software Engineer", "SWE III", "Sr. Engineer", "Senior Developer"],
+          "typicalExperience": "4-8 years",
+          "scope": "Complex features and projects; influences team technical direction",
+          "impact": "Significantly improves team velocity and code quality; mentors others",
+          "competencies": {
+            "technicalDepth": "Deep expertise in their domain; can tackle ambiguous technical problems",
+            "ownership": "Owns critical systems; makes high-quality technical decisions",
+            "collaboration": "Mentors junior engineers; drives cross-team collaboration",
+            "communication": "Influences technical decisions; communicates effectively with stakeholders"
+          },
+          "signals": ["led", "mentored", "architected", "drove", "influenced", "cross-team", "critical system"],
+          "antiSignals": []
+        },
+        {
+          "id": "staff_engineer",
+          "name": "Staff Engineer",
+          "alternativeTitles": ["Staff Software Engineer", "Tech Lead", "Senior Staff Engineer"],
+          "typicalExperience": "8-12 years",
+          "scope": "Multi-team technical initiatives; defines standards and architecture",
+          "impact": "Org-wide technical impact; sets technical direction for major systems",
+          "competencies": {
+            "technicalDepth": "Expert in multiple domains; solves novel, org-wide technical challenges",
+            "ownership": "Owns technical strategy for major product areas or platform",
+            "collaboration": "Drives alignment across teams; builds relationships with senior leadership",
+            "communication": "Influences org-wide technical decisions; represents engineering externally"
+          },
+          "signals": ["org-wide", "defined standards", "established architecture", "multi-team", "technical strategy", "drove adoption"],
+          "antiSignals": []
+        },
+        {
+          "id": "principal_engineer",
+          "name": "Principal Engineer",
+          "alternativeTitles": ["Principal Software Engineer", "Architect", "Distinguished Engineer"],
+          "typicalExperience": "12+ years",
+          "scope": "Company-wide technical direction; industry influence",
+          "impact": "Shapes company technical strategy; recognized external thought leader",
+          "competencies": {
+            "technicalDepth": "Industry-recognized expertise; pioneers new approaches",
+            "ownership": "Owns company-wide technical strategy and major architectural decisions",
+            "collaboration": "Advises executives on technology decisions; builds external partnerships",
+            "communication": "Represents company externally; shapes industry standards"
+          },
+          "signals": ["company-wide", "transformed", "pioneered", "industry", "external visibility", "defined company strategy"],
+          "antiSignals": []
+        }
+      ]
+    },
+    "product_management": {
+      "name": "Product Management",
+      "levels": [
+        {
+          "id": "apm",
+          "name": "Associate Product Manager",
+          "alternativeTitles": ["APM", "Junior PM", "Product Analyst"],
+          "typicalExperience": "0-2 years",
+          "scope": "Supports product initiatives; owns small features or experiments",
+          "impact": "Executes on defined roadmap; learning product craft",
+          "competencies": {
+            "productSense": "Developing intuition for user needs; learning to prioritize",
+            "execution": "Ships small features on time; maintains backlog hygiene",
+            "communication": "Writes clear PRDs for small features; presents in team meetings",
+            "dataFluency": "Tracks basic metrics; learning to use data for decisions"
+          },
+          "signals": ["supported", "assisted", "contributed", "coordinated", "documented"],
+          "antiSignals": ["owned roadmap", "defined strategy", "P&L responsibility"]
+        },
+        {
+          "id": "pm",
+          "name": "Product Manager",
+          "alternativeTitles": ["PM", "Product Manager I"],
+          "typicalExperience": "2-5 years",
+          "scope": "Owns a product area or significant feature set",
+          "impact": "Drives measurable improvements in product metrics",
+          "competencies": {
+            "productSense": "Strong user empathy; makes sound prioritization decisions",
+            "execution": "Delivers roadmap items on time; manages stakeholders effectively",
+            "communication": "Writes compelling product specs; presents to leadership",
+            "dataFluency": "Uses data to drive decisions; sets and tracks KPIs"
+          },
+          "signals": ["owned", "launched", "drove", "improved metrics", "roadmap"],
+          "antiSignals": ["org-wide strategy", "VP-level"]
+        },
+        {
+          "id": "senior_pm",
+          "name": "Senior Product Manager",
+          "alternativeTitles": ["Senior PM", "Lead PM", "Product Lead"],
+          "typicalExperience": "5-8 years",
+          "scope": "Owns major product area; influences product strategy",
+          "impact": "Significant business impact; shapes product direction",
+          "competencies": {
+            "productSense": "Deep market understanding; balances user, business, and technical needs",
+            "execution": "Delivers complex initiatives; manages multiple workstreams",
+            "communication": "Influences executives; drives alignment across teams",
+            "dataFluency": "Sophisticated analysis; experiments and measures impact"
+          },
+          "signals": ["strategy", "cross-functional", "executive", "significant impact", "multiple teams"],
+          "antiSignals": []
+        },
+        {
+          "id": "group_pm",
+          "name": "Group Product Manager",
+          "alternativeTitles": ["GPM", "Director of Product", "Principal PM"],
+          "typicalExperience": "8-12 years",
+          "scope": "Multiple product areas or team; manages PMs",
+          "impact": "Org-level business outcomes; builds PM capability",
+          "competencies": {
+            "productSense": "Sets product vision for org; identifies new opportunities",
+            "execution": "Delivers across multiple product areas; builds processes",
+            "communication": "Presents to C-suite; represents product externally",
+            "dataFluency": "Builds data-driven culture; sets org-wide metrics"
+          },
+          "signals": ["vision", "org-wide", "managed PMs", "C-suite", "P&L"],
+          "antiSignals": []
+        },
+        {
+          "id": "vp_product",
+          "name": "VP of Product",
+          "alternativeTitles": ["VP Product", "Head of Product", "CPO"],
+          "typicalExperience": "12+ years",
+          "scope": "Entire product organization; company-wide product strategy",
+          "impact": "Company-defining product decisions; board-level reporting",
+          "competencies": {
+            "productSense": "Shapes company vision; identifies transformative opportunities",
+            "execution": "Scales product org; delivers company-level outcomes",
+            "communication": "Board presentations; industry thought leadership",
+            "dataFluency": "Sets company metrics strategy; investor reporting"
+          },
+          "signals": ["company-wide", "board", "investors", "transformed", "scaled organization"],
+          "antiSignals": []
+        }
+      ]
+    },
+    "corporate": {
+      "name": "Corporate/Non-Technical Functions",
+      "functions": {
+        "marketing": {
+          "name": "Marketing",
+          "levels": [
+            {"id": "coordinator", "name": "Marketing Coordinator", "typicalExperience": "0-2 years"},
+            {"id": "specialist", "name": "Marketing Specialist", "typicalExperience": "2-4 years"},
+            {"id": "manager", "name": "Marketing Manager", "typicalExperience": "4-7 years"},
+            {"id": "senior_manager", "name": "Senior Marketing Manager", "typicalExperience": "7-10 years"},
+            {"id": "director", "name": "Director of Marketing", "typicalExperience": "10-15 years"},
+            {"id": "vp", "name": "VP of Marketing", "typicalExperience": "15+ years"}
+          ]
+        },
+        "sales": {
+          "name": "Sales",
+          "levels": [
+            {"id": "sdr", "name": "Sales Development Rep (SDR)", "typicalExperience": "0-2 years"},
+            {"id": "ae", "name": "Account Executive", "typicalExperience": "2-4 years"},
+            {"id": "senior_ae", "name": "Senior Account Executive", "typicalExperience": "4-7 years"},
+            {"id": "manager", "name": "Sales Manager", "typicalExperience": "7-10 years"},
+            {"id": "director", "name": "Director of Sales", "typicalExperience": "10-15 years"},
+            {"id": "vp", "name": "VP of Sales", "typicalExperience": "15+ years"}
+          ]
+        },
+        "operations": {
+          "name": "Operations",
+          "levels": [
+            {"id": "coordinator", "name": "Operations Coordinator", "typicalExperience": "0-2 years"},
+            {"id": "analyst", "name": "Operations Analyst", "typicalExperience": "2-4 years"},
+            {"id": "manager", "name": "Operations Manager", "typicalExperience": "4-7 years"},
+            {"id": "senior_manager", "name": "Senior Operations Manager", "typicalExperience": "7-10 years"},
+            {"id": "director", "name": "Director of Operations", "typicalExperience": "10-15 years"},
+            {"id": "vp", "name": "VP of Operations", "typicalExperience": "15+ years"}
+          ]
+        },
+        "finance": {
+          "name": "Finance",
+          "levels": [
+            {"id": "analyst", "name": "Financial Analyst", "typicalExperience": "0-3 years"},
+            {"id": "senior_analyst", "name": "Senior Financial Analyst", "typicalExperience": "3-5 years"},
+            {"id": "manager", "name": "Finance Manager", "typicalExperience": "5-8 years"},
+            {"id": "senior_manager", "name": "Senior Finance Manager", "typicalExperience": "8-12 years"},
+            {"id": "director", "name": "Director of Finance", "typicalExperience": "12-15 years"},
+            {"id": "vp", "name": "VP of Finance / CFO", "typicalExperience": "15+ years"}
+          ]
+        },
+        "hr": {
+          "name": "Human Resources",
+          "levels": [
+            {"id": "coordinator", "name": "HR Coordinator", "typicalExperience": "0-2 years"},
+            {"id": "generalist", "name": "HR Generalist", "typicalExperience": "2-4 years"},
+            {"id": "manager", "name": "HR Manager", "typicalExperience": "4-7 years"},
+            {"id": "senior_manager", "name": "Senior HR Manager", "typicalExperience": "7-10 years"},
+            {"id": "director", "name": "Director of HR", "typicalExperience": "10-15 years"},
+            {"id": "vp", "name": "VP of HR / CHRO", "typicalExperience": "15+ years"}
+          ]
+        },
+        "customer_success": {
+          "name": "Customer Success",
+          "levels": [
+            {"id": "associate", "name": "Customer Success Associate", "typicalExperience": "0-2 years"},
+            {"id": "manager", "name": "Customer Success Manager", "typicalExperience": "2-4 years"},
+            {"id": "senior_manager", "name": "Senior CSM", "typicalExperience": "4-7 years"},
+            {"id": "director", "name": "Director of Customer Success", "typicalExperience": "7-12 years"},
+            {"id": "vp", "name": "VP of Customer Success", "typicalExperience": "12+ years"}
+          ]
+        },
+        "legal": {
+          "name": "Legal",
+          "levels": [
+            {"id": "paralegal", "name": "Paralegal", "typicalExperience": "0-3 years"},
+            {"id": "associate", "name": "Associate Counsel", "typicalExperience": "3-6 years"},
+            {"id": "counsel", "name": "Counsel", "typicalExperience": "6-10 years"},
+            {"id": "senior_counsel", "name": "Senior Counsel", "typicalExperience": "10-15 years"},
+            {"id": "gc", "name": "General Counsel", "typicalExperience": "15+ years"}
+          ]
+        },
+        "data": {
+          "name": "Data / Analytics",
+          "levels": [
+            {"id": "analyst", "name": "Data Analyst", "typicalExperience": "0-2 years"},
+            {"id": "senior_analyst", "name": "Senior Data Analyst", "typicalExperience": "2-5 years"},
+            {"id": "scientist", "name": "Data Scientist", "typicalExperience": "3-6 years"},
+            {"id": "senior_scientist", "name": "Senior Data Scientist", "typicalExperience": "6-10 years"},
+            {"id": "lead", "name": "Lead Data Scientist / Analytics Manager", "typicalExperience": "10-14 years"},
+            {"id": "director", "name": "Director of Data Science", "typicalExperience": "14+ years"}
+          ]
+        },
+        "design": {
+          "name": "Design",
+          "levels": [
+            {"id": "junior", "name": "Junior Designer", "typicalExperience": "0-2 years"},
+            {"id": "designer", "name": "Product Designer / UX Designer", "typicalExperience": "2-4 years"},
+            {"id": "senior", "name": "Senior Designer", "typicalExperience": "4-7 years"},
+            {"id": "lead", "name": "Lead Designer / Design Manager", "typicalExperience": "7-10 years"},
+            {"id": "director", "name": "Director of Design", "typicalExperience": "10-15 years"},
+            {"id": "vp", "name": "VP of Design / CDO", "typicalExperience": "15+ years"}
+          ]
+        },
+        "project_management": {
+          "name": "Project/Program Management",
+          "levels": [
+            {"id": "coordinator", "name": "Project Coordinator", "typicalExperience": "0-2 years"},
+            {"id": "pm", "name": "Project Manager", "typicalExperience": "2-5 years"},
+            {"id": "senior_pm", "name": "Senior Project Manager", "typicalExperience": "5-8 years"},
+            {"id": "program_manager", "name": "Program Manager", "typicalExperience": "8-12 years"},
+            {"id": "director", "name": "Director of PMO", "typicalExperience": "12+ years"}
+          ]
+        }
+      }
+    }
+  },
+  "languagePatterns": {
+    "entry_level": {
+      "verbs": ["assisted", "supported", "helped", "contributed", "participated", "learned", "coordinated"],
+      "descriptors": ["under guidance", "with supervision", "as part of team", "assigned to"]
+    },
+    "mid_level": {
+      "verbs": ["managed", "led", "built", "developed", "implemented", "owned", "delivered", "designed"],
+      "descriptors": ["independently", "end-to-end", "cross-functional", "on time"]
+    },
+    "senior_level": {
+      "verbs": ["drove", "established", "architected", "mentored", "influenced", "defined", "scaled"],
+      "descriptors": ["cross-team", "org-wide", "critical", "strategic", "complex"]
+    },
+    "principal_level": {
+      "verbs": ["transformed", "pioneered", "shaped", "evangelized", "defined strategy"],
+      "descriptors": ["company-wide", "industry-leading", "transformational", "board-level"]
+    }
+  },
+  "scopeIndicators": {
+    "individual": {
+      "patterns": ["individual contributor", "IC", "assigned tasks", "under direction"],
+      "teamSize": "0"
+    },
+    "small_team": {
+      "patterns": ["small team", "team of 2-4", "startup", "led 2", "led 3"],
+      "teamSize": "2-4"
+    },
+    "medium_team": {
+      "patterns": ["team of 5-10", "multiple engineers", "cross-functional team"],
+      "teamSize": "5-10"
+    },
+    "large_team": {
+      "patterns": ["team of 10+", "organization of", "multiple teams", "department"],
+      "teamSize": "10+"
+    },
+    "org_wide": {
+      "patterns": ["company-wide", "org-wide", "across all teams", "enterprise"],
+      "teamSize": "50+"
+    }
+  },
+  "impactIndicators": {
+    "individual_impact": {
+      "patterns": ["completed", "delivered feature", "fixed bug", "implemented"],
+      "examples": ["Completed assigned tasks on time", "Implemented small features"]
+    },
+    "team_impact": {
+      "patterns": ["improved team", "team velocity", "reduced bugs", "better quality"],
+      "examples": ["Improved team velocity by 20%", "Reduced bug count by 40%"]
+    },
+    "org_impact": {
+      "patterns": ["org-wide", "reduced costs", "increased revenue", "scaled system"],
+      "examples": ["Saved $500K annually", "Scaled system to 10M users"]
+    },
+    "company_impact": {
+      "patterns": ["company-wide", "IPO", "acquisition", "market expansion", "transformed"],
+      "examples": ["Led technical due diligence for $500M acquisition"]
+    }
+  }
+}

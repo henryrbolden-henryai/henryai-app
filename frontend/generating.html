@@ -263,7 +263,8 @@
         }
 
         function goBack() {
-            window.location.href = 'strengthen.html';
+            // Go back to resume-leveling (user may have skipped strengthen)
+            window.location.href = 'resume-leveling.html';
         }
 
         // Progress through stages while waiting
@@ -290,6 +291,10 @@
             const supplementsStr = sessionStorage.getItem('supplements');
             const supplements = supplementsStr ? JSON.parse(supplementsStr) : [];
 
+            // Get leveling data from sessionStorage (from resume-leveling page)
+            const levelingDataStr = sessionStorage.getItem('levelingData');
+            const levelingData = levelingDataStr ? JSON.parse(levelingDataStr) : null;
+
             startProgressAnimation();
 
             try {
@@ -306,7 +311,19 @@
                         intelligence_layer: analysisData.intelligence_layer || {}
                     },
                     preferences: analysisData._profile || {},
-                    supplements: supplements.length > 0 ? supplements : undefined
+                    supplements: supplements.length > 0 ? supplements : undefined,
+                    // Include leveling data for level-appropriate document generation
+                    leveling: levelingData ? {
+                        current_level: levelingData.current_level,
+                        current_level_id: levelingData.current_level_id,
+                        target_level: levelingData.target_level,
+                        target_level_id: levelingData.target_level_id,
+                        levels_apart: levelingData.levels_apart,
+                        detected_function: levelingData.detected_function,
+                        language_level: levelingData.language_level,
+                        recommendations: levelingData.recommendations || [],
+                        gaps: levelingData.gaps || []
+                    } : undefined
                 };
 
                 console.log('Generating documents with payload:', requestPayload);
@@ -339,9 +356,10 @@
                     _generatedAt: new Date().toISOString()
                 }));
 
-                // Clear supplements after use
+                // Clear supplements and leveling data after use
                 sessionStorage.removeItem('supplements');
                 sessionStorage.removeItem('originalGaps');
+                sessionStorage.removeItem('levelingData');
 
                 // Go to Application Strategy Overview
                 window.location.href = 'overview.html';

@@ -1351,18 +1351,10 @@
             // Auto-add to tracker when user commits to building application
             addToTrackerAutomatically();
 
-            // Check if there are gaps to address - redirect to strengthen page first
-            const gaps = data.gaps || [];
-            if (gaps.length > 0) {
-                // Go to strengthen page to collect additional context
-                // User's answers will be used to improve resume/cover letter
-                window.location.href = 'strengthen.html';
-                return;
-            }
-
-            // No gaps - go directly to generating page
-            // The generating page will show the logo animation and handle the API call
-            window.location.href = 'generating.html';
+            // Always route to resume-leveling first for ALL candidates
+            // The leveling page provides career level analysis and recommendations
+            // that feed into the strengthen page and document generation
+            window.location.href = 'resume-leveling.html';
         }
 
         document.getElementById('getPackageBtn').addEventListener('click', generateDocumentsAndNavigate);

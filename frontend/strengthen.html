@@ -511,7 +511,7 @@
     </nav>
 
     <div class="container">
-        <a href="results.html" class="back-link">← Back to Results</a>
+        <a href="resume-leveling.html" class="back-link">← Back to Level Analysis</a>
 
         <div class="header">
             <h1>Strengthen Your Candidacy</h1>
@@ -592,6 +592,7 @@
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
 
         let analysisData = null;
+        let levelingData = null;
         let questions = [];
         let answers = {}; // { gap_area: { question, answer } }
 
@@ -605,15 +606,29 @@
             }
             analysisData = JSON.parse(analysisDataStr);
 
-            // Check if we have gaps to address
-            const gaps = analysisData.gaps || [];
+            // Get leveling data (from resume-leveling page)
+            const levelingDataStr = sessionStorage.getItem('levelingData');
+            if (levelingDataStr) {
+                levelingData = JSON.parse(levelingDataStr);
+                console.log('Leveling data loaded:', levelingData);
+            }
+
+            // Combine gaps from analysis and leveling
+            let gaps = analysisData.gaps || [];
+
+            // Add leveling gaps if available
+            if (levelingData && levelingData.gaps) {
+                const levelingGapDescriptions = levelingData.gaps.map(g => g.description);
+                gaps = [...new Set([...gaps, ...levelingGapDescriptions])];
+            }
+
             if (gaps.length === 0) {
                 // No gaps - show success state and auto-continue
                 showNoGapsState();
                 return;
             }
 
-            // Show score preview
+            // Show score preview with leveling context
             showScorePreview(analysisData.fit_score, gaps);
 
             // Fetch clarifying questions
@@ -631,6 +646,20 @@
             // Format gaps as a readable list
             const gapsText = gaps.slice(0, 3).map(g => '• ' + g).join('<br>');
             gapsList.innerHTML = gapsText || 'None identified';
+
+            // Add leveling context if available
+            if (levelingData) {
+                const levelContext = document.createElement('div');
+                levelContext.style.cssText = 'margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-border); font-size: 0.85rem; color: var(--color-text-secondary);';
+
+                let levelText = `<strong>Current Level:</strong> ${levelingData.current_level}`;
+                if (levelingData.target_level && levelingData.levels_apart > 0) {
+                    levelText += `<br><strong>Target:</strong> ${levelingData.target_level} (${levelingData.levels_apart} level${levelingData.levels_apart > 1 ? 's' : ''} up)`;
+                }
+                levelContext.innerHTML = levelText;
+
+                document.querySelector('.gaps-summary').appendChild(levelContext);
+            }
 
             scorePreview.style.display = 'flex';
         }

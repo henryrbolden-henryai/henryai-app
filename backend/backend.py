@@ -213,11 +213,24 @@ class SupplementAnswer(BaseModel):
     question: str
     answer: str
 
+class LevelingContext(BaseModel):
+    """Career level assessment data from resume-leveling page"""
+    current_level: str
+    current_level_id: str
+    target_level: Optional[str] = None
+    target_level_id: Optional[str] = None
+    levels_apart: Optional[int] = None
+    detected_function: str
+    language_level: str
+    recommendations: Optional[List[Dict[str, Any]]] = None
+    gaps: Optional[List[Dict[str, Any]]] = None
+
 class DocumentsGenerateRequest(BaseModel):
     resume: Dict[str, Any]
     jd_analysis: Dict[str, Any]
     preferences: Optional[Dict[str, Any]] = None
     supplements: Optional[List[SupplementAnswer]] = None  # User-provided answers from Strengthen page
+    leveling: Optional[LevelingContext] = None  # Career level assessment data
 
 class ResumeContent(BaseModel):
     summary: str
@@ -582,6 +595,85 @@ class ReanalyzeWithSupplementsResponse(BaseModel):
     addressed_gaps: List[str]
     updated_resume_json: Dict[str, Any]  # Resume with supplements incorporated
     summary: str  # Brief explanation of changes
+
+# ============================================================================
+# RESUME LEVELING MODELS
+# ============================================================================
+
+class LevelCompetency(BaseModel):
+    """Assessment of a specific competency area"""
+    area: str  # e.g., "Technical Depth", "Leadership", "Strategic Thinking"
+    current_level: str  # e.g., "Strong at Senior level"
+    evidence: List[str]  # Quotes/signals from resume
+    gap_to_target: Optional[str] = None  # What's missing for target level
+
+class LevelingGap(BaseModel):
+    """A specific gap between current and target level"""
+    category: str  # "scope", "impact", "competency", "language"
+    description: str
+    recommendation: str  # How to address in resume
+    priority: str  # "high", "medium", "low"
+
+class LevelingRecommendation(BaseModel):
+    """A specific recommendation to strengthen resume for target level"""
+    type: str  # "content", "language", "quantification", "scope"
+    priority: str  # "high", "medium", "low"
+    current: str  # Current state
+    suggested: str  # Recommended change
+    rationale: str  # Why this matters
+
+class ResumeLevelingRequest(BaseModel):
+    """Request for resume level assessment"""
+    resume_json: Dict[str, Any]
+    job_description: Optional[str] = None
+    target_title: Optional[str] = None  # If provided, do gap analysis against this
+    company: Optional[str] = None
+    role_title: Optional[str] = None
+
+class ResumeLevelingResponse(BaseModel):
+    """Response containing full resume leveling analysis"""
+    # Function detection
+    detected_function: str  # "Engineering", "Product Management", "Marketing", etc.
+    function_confidence: float  # 0-1 confidence score
+
+    # Current level assessment
+    current_level: str  # e.g., "Senior Engineer", "Product Manager"
+    current_level_id: str  # e.g., "senior_engineer", "pm"
+    level_confidence: float  # 0-1 confidence score
+    years_experience: int
+
+    # Evidence for current level
+    scope_signals: List[str]  # Scope indicators found
+    impact_signals: List[str]  # Impact statements found
+    leadership_signals: List[str]  # Leadership evidence
+    technical_signals: List[str]  # Technical depth evidence
+
+    # Competency breakdown
+    competencies: List[LevelCompetency]
+
+    # Language analysis
+    language_level: str  # "Entry", "Mid", "Senior", "Principal"
+    action_verb_distribution: Dict[str, float]  # {"entry": 0.1, "mid": 0.3, "senior": 0.5, "principal": 0.1}
+    quantification_rate: float  # % of bullets with numbers
+
+    # Red flags
+    red_flags: List[str]  # Issues found (generic claims, inconsistencies, etc.)
+
+    # Target analysis (if target_title provided)
+    target_level: Optional[str] = None
+    target_level_id: Optional[str] = None
+    levels_apart: Optional[int] = None  # 0 = matches, positive = target is higher
+    is_qualified: Optional[bool] = None
+    qualification_confidence: Optional[float] = None
+
+    # Gap analysis (if target provided)
+    gaps: Optional[List[LevelingGap]] = None
+
+    # Recommendations
+    recommendations: List[LevelingRecommendation]
+
+    # Summary
+    summary: str  # Brief narrative assessment
 
 # ============================================================================
 # PREP GUIDE MODELS
@@ -1701,6 +1793,7 @@ async def root():
             "/api/screening-questions/generate",
             "/api/experience/clarifying-questions",
             "/api/experience/reanalyze",
+            "/api/resume/level-assessment",
             "/api/tasks/prioritize",
             "/api/outcomes/log",
             "/api/strategy/review",
@@ -3281,6 +3374,40 @@ JOB DESCRIPTION ANALYSIS:
             user_message += f"Candidate's Answer: {supp.answer}\n\n"
         user_message += "Use this information to strengthen the resume summary, relevant experience bullets, and cover letter body.\n"
         user_message += "Do NOT fabricate beyond what the candidate stated, but DO weave in this context naturally.\n"
+
+    # Add leveling context for level-appropriate language and positioning
+    if request.leveling:
+        user_message += "\n\n=== CAREER LEVEL ANALYSIS (from Resume Leveling Assessment) ===\n"
+        user_message += f"Current Level: {request.leveling.current_level} ({request.leveling.detected_function})\n"
+        if request.leveling.target_level:
+            user_message += f"Target Level: {request.leveling.target_level}\n"
+            if request.leveling.levels_apart and request.leveling.levels_apart > 0:
+                user_message += f"Gap: {request.leveling.levels_apart} level(s) between current and target\n"
+        user_message += f"Resume Language Level: {request.leveling.language_level}\n\n"
+
+        # Add language recommendations
+        if request.leveling.recommendations:
+            user_message += "LEVELING RECOMMENDATIONS - Apply these to strengthen the resume:\n"
+            for rec in request.leveling.recommendations[:5]:  # Top 5 recommendations
+                if rec.get('type') == 'language':
+                    user_message += f"- Language: Replace '{rec.get('current', '')}' with '{rec.get('suggested', '')}'\n"
+                elif rec.get('type') == 'quantification':
+                    user_message += f"- Add metrics: {rec.get('suggested', '')}\n"
+                elif rec.get('type') == 'scope':
+                    user_message += f"- Expand scope: {rec.get('suggested', '')}\n"
+                else:
+                    user_message += f"- {rec.get('type', 'General')}: {rec.get('suggested', '')}\n"
+            user_message += "\n"
+
+        # Add leveling gaps to address
+        if request.leveling.gaps:
+            user_message += "LEVEL GAPS TO ADDRESS in resume language:\n"
+            for gap in request.leveling.gaps[:3]:  # Top 3 gaps
+                user_message += f"- {gap.get('description', '')}: {gap.get('recommendation', '')}\n"
+            user_message += "\n"
+
+        user_message += "IMPORTANT: Use language appropriate for the TARGET level. Upgrade action verbs and scope descriptors.\n"
+        user_message += "Example upgrades: 'helped' → 'drove', 'worked on' → 'led', 'assisted' → 'owned'\n"
 
     user_message += """
 
@@ -6038,6 +6165,305 @@ Return a JSON object with this EXACT structure:
 }}
 
 Your response must be ONLY valid JSON, no additional text."""
+
+
+# ============================================================================
+# RESUME LEVELING PROMPT
+# ============================================================================
+
+RESUME_LEVELING_PROMPT = """You are a resume leveling expert for HenryAI, specializing in career level assessment using industry-standard frameworks.
+
+Your task is to analyze a candidate's resume and determine:
+1. Their professional function (Engineering, Product Management, Marketing, Sales, etc.)
+2. Their current career level within that function
+3. Key signals supporting that level assessment
+4. Language quality and patterns
+5. If a target role is provided, gap analysis against that target level
+
+=== RESUME TO ANALYZE ===
+{resume_context}
+
+=== LEVELING FRAMEWORKS ===
+
+**Engineering IC Levels:**
+- Engineer I (0-2 years): Individual tasks, learning, needs guidance
+- Engineer II (2-4 years): Owns features independently, solid fundamentals
+- Senior Engineer (4-8 years): Complex projects, mentors others, cross-team influence
+- Staff Engineer (8-12 years): Multi-team initiatives, defines standards, org-wide impact
+- Principal Engineer (12+ years): Company-wide technical direction, industry influence
+
+**Product Management Levels:**
+- APM (0-2 years): Supports initiatives, learns product craft
+- PM (2-5 years): Owns product area, drives metrics
+- Senior PM (5-8 years): Major product area, influences strategy, executive communication
+- GPM/Director (8-12 years): Multiple product areas, manages PMs
+- VP Product (12+ years): Company-wide product strategy, board-level
+
+**Corporate Functions (Marketing, Sales, Operations, Finance, HR, etc.):**
+- Coordinator/Associate (0-2 years): Supporting role, learning function
+- Specialist/Analyst (2-4 years): Owns specific area, executes independently
+- Manager (4-7 years): Manages projects/people, broader responsibility
+- Senior Manager (7-10 years): Strategic projects, cross-functional leadership
+- Director (10-15 years): Department-level ownership, executive presence
+- VP (15+ years): Function-wide leadership, C-suite collaboration
+
+=== LANGUAGE PATTERN INDICATORS ===
+
+**Entry-Level Language:** "assisted", "supported", "helped", "contributed", "participated", "learned"
+**Mid-Level Language:** "managed", "led", "built", "developed", "implemented", "owned", "delivered"
+**Senior-Level Language:** "drove", "established", "architected", "mentored", "influenced", "defined", "scaled"
+**Principal-Level Language:** "transformed", "pioneered", "shaped", "evangelized", "company-wide strategy"
+
+=== SCOPE INDICATORS ===
+
+- Individual Contributor: "assigned tasks", "under direction"
+- Small Team (2-4): "led 3 engineers", "small team"
+- Medium Team (5-10): "cross-functional team", "multiple engineers"
+- Large Team (10+): "organization of", "department-wide"
+- Org-Wide (50+): "company-wide", "enterprise-wide"
+
+=== IMPACT INDICATORS ===
+
+- Individual Impact: "completed tasks", "implemented features"
+- Team Impact: "improved velocity 20%", "reduced bugs 40%"
+- Org Impact: "saved $500K", "scaled to 10M users"
+- Company Impact: "led acquisition", "IPO preparation"
+
+{target_context}
+
+=== ANALYSIS INSTRUCTIONS ===
+
+1. **Detect Function**: Look at job titles, skills, experience descriptions
+2. **Assess Level**: Consider title progression, years experience, scope, impact, language
+3. **Extract Signals**: Quote specific phrases that demonstrate level
+4. **Analyze Language**: Categorize action verbs used
+5. **Identify Red Flags**: Generic claims, missing quantification, title/evidence mismatch
+6. **Gap Analysis**: If target provided, identify specific gaps to that level
+7. **Recommendations**: Provide specific, actionable resume improvements
+
+=== OUTPUT FORMAT ===
+
+Return a JSON object with this structure:
+
+{{
+  "detected_function": "Engineering|Product Management|Marketing|Sales|Operations|Finance|HR|Customer Success|Legal|Data|Design|Project Management",
+  "function_confidence": 0.0-1.0,
+
+  "current_level": "Display name like 'Senior Engineer'",
+  "current_level_id": "snake_case identifier like 'senior_engineer'",
+  "level_confidence": 0.0-1.0,
+  "years_experience": integer,
+
+  "scope_signals": ["quoted phrases showing scope"],
+  "impact_signals": ["quoted phrases showing impact"],
+  "leadership_signals": ["quoted phrases showing leadership"],
+  "technical_signals": ["quoted phrases showing technical depth"],
+
+  "competencies": [
+    {{
+      "area": "Technical Depth|Ownership|Collaboration|Communication|Strategic Thinking",
+      "current_level": "Assessment description",
+      "evidence": ["supporting quotes"],
+      "gap_to_target": "what's missing for target level" or null
+    }}
+  ],
+
+  "language_level": "Entry|Mid|Senior|Principal",
+  "action_verb_distribution": {{
+    "entry": 0.0-1.0,
+    "mid": 0.0-1.0,
+    "senior": 0.0-1.0,
+    "principal": 0.0-1.0
+  }},
+  "quantification_rate": 0.0-1.0,
+
+  "red_flags": ["issues found"],
+
+  "target_level": "Display name or null",
+  "target_level_id": "snake_case or null",
+  "levels_apart": integer or null,
+  "is_qualified": true/false or null,
+  "qualification_confidence": 0.0-1.0 or null,
+
+  "gaps": [
+    {{
+      "category": "scope|impact|competency|language",
+      "description": "what's missing",
+      "recommendation": "how to address",
+      "priority": "high|medium|low"
+    }}
+  ] or null,
+
+  "recommendations": [
+    {{
+      "type": "content|language|quantification|scope",
+      "priority": "high|medium|low",
+      "current": "current state",
+      "suggested": "recommended change",
+      "rationale": "why this matters"
+    }}
+  ],
+
+  "summary": "2-3 sentence narrative assessment"
+}}
+
+Your response must be ONLY valid JSON, no additional text."""
+
+
+# Load leveling frameworks
+LEVELING_FRAMEWORKS_PATH = os.path.join(os.path.dirname(__file__), "data", "leveling_frameworks.json")
+LEVELING_FRAMEWORKS: Dict[str, Any] = {}
+
+def load_leveling_frameworks():
+    """Load the leveling frameworks from JSON file."""
+    global LEVELING_FRAMEWORKS
+    try:
+        if os.path.exists(LEVELING_FRAMEWORKS_PATH):
+            with open(LEVELING_FRAMEWORKS_PATH, "r") as f:
+                LEVELING_FRAMEWORKS = json.load(f)
+            print(f"✅ Loaded leveling frameworks v{LEVELING_FRAMEWORKS.get('version', 'unknown')}")
+        else:
+            print(f"⚠️ Leveling frameworks not found at {LEVELING_FRAMEWORKS_PATH}")
+            LEVELING_FRAMEWORKS = {}
+    except Exception as e:
+        print(f"🔥 Error loading leveling frameworks: {e}")
+        LEVELING_FRAMEWORKS = {}
+
+# Load frameworks on startup
+load_leveling_frameworks()
+
+
+@app.post("/api/resume/level-assessment")
+async def assess_resume_level(request: ResumeLevelingRequest) -> ResumeLevelingResponse:
+    """
+    Analyze a resume to determine the candidate's career level and provide
+    gap analysis against a target role if provided.
+    """
+    try:
+        print(f"📊 Assessing resume level for: {request.resume_json.get('full_name', 'Unknown')}")
+        if request.target_title:
+            print(f"   Target: {request.target_title} at {request.company}")
+
+        # Build resume context
+        resume_json = request.resume_json
+        resume_context = f"""
+Name: {resume_json.get('full_name', resume_json.get('contact', {}).get('full_name', 'Unknown'))}
+Current Title: {resume_json.get('current_title', 'Unknown')}
+Years of Experience: {resume_json.get('years_experience', 'Unknown')}
+Summary: {resume_json.get('summary', resume_json.get('summary_text', ''))}
+
+Skills: {', '.join(resume_json.get('skills', []))}
+
+Experience:
+"""
+        for exp in resume_json.get('experience', []):
+            resume_context += f"\n### {exp.get('title', exp.get('role', ''))} at {exp.get('company', '')} ({exp.get('dates', exp.get('start_date', ''))})\n"
+            for bullet in exp.get('bullets', []):
+                resume_context += f"- {bullet}\n"
+
+        # Add education
+        education = resume_json.get('education', [])
+        if education:
+            resume_context += "\nEducation:\n"
+            for edu in education:
+                resume_context += f"- {edu.get('degree', '')} from {edu.get('school', edu.get('institution', ''))} ({edu.get('year', edu.get('graduation_date', ''))})\n"
+
+        # Build target context if provided
+        target_context = ""
+        if request.target_title or request.role_title:
+            target_title = request.target_title or request.role_title
+            target_context = f"""
+=== TARGET ROLE ANALYSIS ===
+Target Title: {target_title}
+Company: {request.company or 'Not specified'}
+
+Job Description (if provided):
+{request.job_description[:2000] if request.job_description else 'Not provided - infer requirements from title'}
+
+Analyze gaps between candidate's current level and the target role requirements.
+"""
+
+        # Build the prompt
+        system_prompt = RESUME_LEVELING_PROMPT.format(
+            resume_context=resume_context,
+            target_context=target_context
+        )
+
+        user_message = "Analyze this resume and provide the leveling assessment."
+
+        response = call_claude(system_prompt, user_message)
+
+        # Parse the response
+        cleaned = clean_claude_json(response)
+        parsed_data = json.loads(cleaned)
+
+        # Build competencies list
+        competencies = []
+        for comp in parsed_data.get('competencies', []):
+            competencies.append(LevelCompetency(
+                area=comp.get('area', ''),
+                current_level=comp.get('current_level', ''),
+                evidence=comp.get('evidence', []),
+                gap_to_target=comp.get('gap_to_target')
+            ))
+
+        # Build gaps list
+        gaps = None
+        if parsed_data.get('gaps'):
+            gaps = []
+            for gap in parsed_data['gaps']:
+                gaps.append(LevelingGap(
+                    category=gap.get('category', ''),
+                    description=gap.get('description', ''),
+                    recommendation=gap.get('recommendation', ''),
+                    priority=gap.get('priority', 'medium')
+                ))
+
+        # Build recommendations list
+        recommendations = []
+        for rec in parsed_data.get('recommendations', []):
+            recommendations.append(LevelingRecommendation(
+                type=rec.get('type', ''),
+                priority=rec.get('priority', 'medium'),
+                current=rec.get('current', ''),
+                suggested=rec.get('suggested', ''),
+                rationale=rec.get('rationale', '')
+            ))
+
+        return ResumeLevelingResponse(
+            detected_function=parsed_data.get('detected_function', 'Unknown'),
+            function_confidence=parsed_data.get('function_confidence', 0.5),
+            current_level=parsed_data.get('current_level', 'Unknown'),
+            current_level_id=parsed_data.get('current_level_id', 'unknown'),
+            level_confidence=parsed_data.get('level_confidence', 0.5),
+            years_experience=parsed_data.get('years_experience', 0),
+            scope_signals=parsed_data.get('scope_signals', []),
+            impact_signals=parsed_data.get('impact_signals', []),
+            leadership_signals=parsed_data.get('leadership_signals', []),
+            technical_signals=parsed_data.get('technical_signals', []),
+            competencies=competencies,
+            language_level=parsed_data.get('language_level', 'Mid'),
+            action_verb_distribution=parsed_data.get('action_verb_distribution', {'entry': 0.25, 'mid': 0.5, 'senior': 0.2, 'principal': 0.05}),
+            quantification_rate=parsed_data.get('quantification_rate', 0.0),
+            red_flags=parsed_data.get('red_flags', []),
+            target_level=parsed_data.get('target_level'),
+            target_level_id=parsed_data.get('target_level_id'),
+            levels_apart=parsed_data.get('levels_apart'),
+            is_qualified=parsed_data.get('is_qualified'),
+            qualification_confidence=parsed_data.get('qualification_confidence'),
+            gaps=gaps,
+            recommendations=recommendations,
+            summary=parsed_data.get('summary', 'Assessment complete.')
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 LEVELING JSON ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse leveling assessment: {str(e)}")
+    except Exception as e:
+        print(f"🔥 LEVELING ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error assessing resume level: {str(e)}")
 
 
 @app.post("/api/experience/clarifying-questions")
