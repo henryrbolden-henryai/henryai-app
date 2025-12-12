@@ -1287,7 +1287,7 @@
         // =====================================================================
 
         // Auto-add to tracker when user commits to applying
-        function addToTrackerAutomatically() {
+        async function addToTrackerAutomatically() {
             const companyName = data._company_name || data._company || data.company;
             const roleTitle = data.role_title || data._role;
 
@@ -1322,10 +1322,11 @@
                 strengths: data.strengths || [],
                 gaps: data.gaps || [],
                 positioningStrategy: data.strategic_positioning || '',
-                analysisKey: analysisKey  // Reference to stored analysis data
+                analysisKey: analysisKey,  // Reference to stored analysis data
+                analysisData: data  // Include full analysis data for Supabase
             };
 
-            // Get existing applications
+            // Get existing applications from localStorage
             let applications = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
 
             // Check if already tracked (same company + role)
@@ -1350,9 +1351,29 @@
                 console.log('Auto-added application to tracker:', companyName, roleTitle);
             }
 
-            // Save to localStorage
+            // Save to localStorage (always, as backup)
             localStorage.setItem('trackedApplications', JSON.stringify(applications));
-            console.log('Saved to trackedApplications. Total apps:', applications.length);
+            console.log('Saved to trackedApplications (localStorage). Total apps:', applications.length);
+
+            // Also save to Supabase if user is authenticated
+            if (typeof HenryData !== 'undefined') {
+                try {
+                    const session = await HenryAuth.getSession();
+                    if (session) {
+                        console.log('User is authenticated, saving to Supabase...');
+                        const result = await HenryData.saveApplication(application);
+                        if (result.error) {
+                            console.error('Error saving to Supabase:', result.error);
+                        } else {
+                            console.log('Successfully saved to Supabase:', result.data);
+                        }
+                    } else {
+                        console.log('No Supabase session, using localStorage only');
+                    }
+                } catch (err) {
+                    console.error('Supabase save error:', err);
+                }
+            }
         }
 
         // Generate documents before navigating to overview
@@ -1362,9 +1383,10 @@
             const originalText = btn.textContent;
 
             // Auto-add to tracker when user commits to building application
-            addToTrackerAutomatically();
+            // Now async to handle Supabase save
+            await addToTrackerAutomatically();
 
-            // Small delay to ensure localStorage write completes before navigation
+            // Small delay to ensure writes complete before navigation
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // Always route to resume-leveling first for ALL candidates
@@ -1398,6 +1420,8 @@
             }
         });
     </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
 <script src="components/ask-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
 </body>
