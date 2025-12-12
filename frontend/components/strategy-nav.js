@@ -435,7 +435,7 @@
     // Initialize the navigation
     function init() {
         // Don't add navigation to certain pages
-        const excludedPages = ['index', 'login', 'analyze', 'analyzing', 'results', 'generating', 'strengthen', 'profile', 'profile-edit'];
+        const excludedPages = ['index', 'login', 'analyze', 'analyzing', 'results', 'generating', 'strengthen', 'profile', 'profile-edit', 'resume-leveling', 'skills-analysis'];
         const currentPage = getCurrentPage();
 
         if (excludedPages.includes(currentPage)) {
@@ -448,6 +448,12 @@
         // Create and append navigation
         const nav = createNavigation();
         document.body.appendChild(nav);
+
+        // Add toggle event listener
+        const toggle = nav.querySelector('.strategy-nav-toggle');
+        if (toggle) {
+            toggle.addEventListener('click', () => toggleNav(nav, toggle));
+        }
     }
 
     // Run when DOM is ready

@@ -345,23 +345,7 @@
                 </div>
             </a>
 
-            <!-- Card 3: Resume Level Analysis -->
-            <a href="resume-leveling.html" class="nav-card">
-                <span class="beta-badge">New</span>
-                <span class="card-icon">📈</span>
-                <h2 class="card-title">Resume Level Analysis</h2>
-                <p class="card-subtitle">Career level assessment and gap analysis</p>
-                <p class="card-insight" id="levelingInsight"></p>
-                <p class="card-description">
-                    Understand your career level relative to the target role. See scope, impact, and leadership signals
-                    from your resume, identify gaps, and get specific recommendations to strengthen your application.
-                </p>
-                <div class="card-cta">
-                    View Level Analysis <span>→</span>
-                </div>
-            </a>
-
-            <!-- Card 4: Network Intelligence -->
+            <!-- Card 3: Network Intelligence -->
             <a href="outreach.html" class="nav-card">
                 <span class="beta-badge">Beta</span>
                 <span class="card-icon">🤝</span>
@@ -467,21 +451,6 @@
                 positioningEl.innerHTML = `<span class="insight-highlight">Key gap to address:</span> ${typeof data.gaps?.[0] === 'object' ? data.gaps[0].area || data.gaps[0].gap : data.gaps?.[0] || 'positioning'}. I have strategies to reframe this.`;
                 documentsEl.innerHTML = `<span class="insight-highlight">${keywordCount} ATS keywords</span> incorporated into your tailored resume.`;
                 documentsEl.classList.add('visible');
-            }
-
-            // Leveling Insight - career level and gaps
-            const levelingEl = document.getElementById('levelingInsight');
-            const levelingData = JSON.parse(sessionStorage.getItem('levelingData') || 'null');
-            if (levelingData) {
-                if (levelingData.levels_apart && levelingData.levels_apart > 0) {
-                    levelingEl.innerHTML = `<span class="insight-highlight">${levelingData.levels_apart} level${levelingData.levels_apart > 1 ? 's' : ''} to target.</span> See specific gaps and how to address them in your resume.`;
-                } else if (levelingData.current_level) {
-                    levelingEl.innerHTML = `<span class="insight-highlight">Level match:</span> Your ${levelingData.current_level} experience aligns with this role.`;
-                }
-                levelingEl.classList.add('visible');
-            } else {
-                levelingEl.innerHTML = `<span class="insight-highlight">Analyze your career level</span> relative to this role and get specific resume improvements.`;
-                levelingEl.classList.add('visible');
             }
 
             // Network Insight - hiring manager title
