@@ -1001,6 +1001,19 @@ Examples of helpful info:
 
                 const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
 
+                // Build debrief highlights from conversation if available
+                let debriefHighlights = null;
+                if (conversationHistory.length > 0) {
+                    const assistantMessages = conversationHistory.filter(m => m.role === 'assistant');
+                    if (assistantMessages.length > 0) {
+                        // Get first substantive response as highlights
+                        debriefHighlights = assistantMessages[0].content.substring(0, 500);
+                        if (assistantMessages[0].content.length > 500) {
+                            debriefHighlights += '...';
+                        }
+                    }
+                }
+
                 if (existingAppIndex !== -1) {
                     // Update existing application
                     trackedApps[existingAppIndex].status = 'Interviewed';
@@ -1012,6 +1025,16 @@ Examples of helpful info:
                         trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
                     }
                     trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+
+                    // Add debrief info
+                    if (interview.debriefCompleted) {
+                        trackedApps[existingAppIndex].debriefCompleted = true;
+                        trackedApps[existingAppIndex].debriefCompletedAt = interview.debriefCompletedAt;
+                        trackedApps[existingAppIndex].interviewFeeling = interview.feeling || selectedFeeling;
+                        if (debriefHighlights) {
+                            trackedApps[existingAppIndex].debriefHighlights = debriefHighlights;
+                        }
+                    }
                 } else {
                     // Create new tracked application
                     const newApp = {
@@ -1030,7 +1053,11 @@ Examples of helpful info:
                         interviewRounds: 1,
                         notes: interview.jobDescription || '',
                         strengths: analysisData?.strengths || [],
-                        gaps: analysisData?.gaps || []
+                        gaps: analysisData?.gaps || [],
+                        debriefCompleted: interview.debriefCompleted || false,
+                        debriefCompletedAt: interview.debriefCompletedAt,
+                        interviewFeeling: interview.feeling || selectedFeeling,
+                        debriefHighlights: debriefHighlights
                     };
                     trackedApps.push(newApp);
                 }
