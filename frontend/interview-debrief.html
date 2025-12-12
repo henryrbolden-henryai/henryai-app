@@ -843,14 +843,22 @@ Examples of helpful info:
             const upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
             const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
 
-            currentInterview = upcomingInterviews.find(i => i.id === interviewId)
-                || completedInterviews.find(i => i.id === interviewId);
+            console.log('Looking for interview ID:', interviewId);
+            console.log('Upcoming interviews:', upcomingInterviews.map(i => ({ id: i.id, type: typeof i.id })));
+            console.log('Completed interviews:', completedInterviews.map(i => ({ id: i.id, type: typeof i.id })));
+
+            // Handle both string and number ID comparisons
+            currentInterview = upcomingInterviews.find(i => String(i.id) === String(interviewId))
+                || completedInterviews.find(i => String(i.id) === String(interviewId));
 
             if (!currentInterview) {
+                console.error('Interview not found for ID:', interviewId);
                 alert('Interview not found. Returning to Interview Intelligence.');
                 window.location.href = 'interview-intelligence.html';
                 return;
             }
+
+            console.log('Found interview:', currentInterview);
 
             // Load resume and analysis data
             const storedResume = sessionStorage.getItem('resumeData');
