@@ -907,6 +907,53 @@
             text-decoration: underline;
         }
 
+        /* Reach Out Modal Options */
+        .reach-out-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            color: var(--color-text);
+        }
+
+        .reach-out-option:hover {
+            background: var(--color-surface-elevated);
+            border-color: var(--color-accent);
+            transform: translateX(4px);
+        }
+
+        .reach-out-icon {
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg);
+            border-radius: 10px;
+        }
+
+        .reach-out-option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .reach-out-option-text strong {
+            font-size: 1rem;
+        }
+
+        .reach-out-option-text span {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
         /* Status Selector */
         .status-selector {
             position: relative;
@@ -2405,6 +2452,84 @@
             <div class="modal-actions" style="margin-top: 20px;">
                 <button class="modal-btn secondary" onclick="closeDeleteModal()">Cancel</button>
                 <button class="modal-btn danger" id="confirmDeleteBtn" disabled>Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REACH OUT MODAL -->
+    <div class="modal-overlay" id="reachOutModal">
+        <div class="modal" style="max-width: 600px;">
+            <h2>💬 Reach Out</h2>
+            <p id="reachOutDescription">Select who you're reaching out to and get a personalized message template.</p>
+
+            <!-- Step 1: Select Contact Type -->
+            <div id="reachOutStep1">
+                <div style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 12px; color: var(--color-text-muted);">Who are you contacting?</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="reach-out-option" onclick="selectReachOutType('hiring_manager')">
+                            <span class="reach-out-icon">👔</span>
+                            <div class="reach-out-option-text">
+                                <strong>Hiring Manager</strong>
+                                <span>Direct message to the person who would be your boss</span>
+                            </div>
+                        </button>
+                        <button class="reach-out-option" onclick="selectReachOutType('recruiter')">
+                            <span class="reach-out-icon">📞</span>
+                            <div class="reach-out-option-text">
+                                <strong>Recruiter</strong>
+                                <span>Message to internal or external recruiter</span>
+                            </div>
+                        </button>
+                        <button class="reach-out-option" onclick="selectReachOutType('other')">
+                            <span class="reach-out-icon">🤝</span>
+                            <div class="reach-out-option-text">
+                                <strong>Other Contact</strong>
+                                <span>Someone at the company who can refer or introduce you</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Custom Contact Info (for 'other' type) -->
+            <div id="reachOutStep2" style="display: none;">
+                <div style="margin-top: 16px;">
+                    <label style="display: block; margin-bottom: 8px;">Contact's Name</label>
+                    <input type="text" id="reachOutContactName" placeholder="e.g., Sarah Johnson"
+                        style="width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);">
+                </div>
+                <div style="margin-top: 12px;">
+                    <label style="display: block; margin-bottom: 8px;">Their Role/Connection</label>
+                    <input type="text" id="reachOutContactRole" placeholder="e.g., Senior Engineer, Former colleague"
+                        style="width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);">
+                </div>
+                <div style="margin-top: 16px; display: flex; gap: 12px;">
+                    <button class="modal-btn secondary" onclick="showReachOutStep1()">← Back</button>
+                    <button class="modal-btn primary" onclick="generateCustomMessage()">Generate Message</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Message Display -->
+            <div id="reachOutStep3" style="display: none;">
+                <div style="margin-top: 16px;">
+                    <label style="display: block; margin-bottom: 8px;">
+                        <span id="reachOutMessageLabel">Message Template</span>
+                        <span style="color: var(--color-text-muted); font-size: 0.85rem;"> (edit as needed)</span>
+                    </label>
+                    <textarea id="reachOutMessage" style="width: 100%; min-height: 200px; padding: 12px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; line-height: 1.5; resize: vertical;"></textarea>
+                </div>
+                <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: space-between;">
+                    <button class="modal-btn secondary" onclick="showReachOutStep1()">← Back</button>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="modal-btn primary" onclick="copyReachOutMessage()">📋 Copy to Clipboard</button>
+                        <button class="modal-btn" onclick="markReachOutComplete()">✓ Done</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 16px;">
+                <button class="modal-btn secondary" onclick="closeReachOutModal()">Close</button>
             </div>
         </div>
     </div>
@@ -4610,7 +4735,7 @@
                     actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp('${app.id}')`, primary: true });
                 }
                 if (!app.dateReachedOut) {
-                    actions.push({ label: '💬 Reach Out', action: `markAction('${app.id}', 'dateReachedOut')` });
+                    actions.push({ label: '💬 Reach Out', action: `showReachOutModal('${app.id}')` });
                 }
             }
             // Screen scheduled/awaiting
@@ -5508,6 +5633,198 @@
             saveApplications(apps);
             closeDeleteModal();
             renderAll(apps);
+        }
+
+        // ========================================================================
+        // REACH OUT MODAL
+        // ========================================================================
+        let reachOutAppId = null;
+        let reachOutType = null;
+
+        function showReachOutModal(appId) {
+            reachOutAppId = appId;
+            reachOutType = null;
+
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            // Update description with company name
+            document.getElementById('reachOutDescription').textContent =
+                `Select who you're reaching out to at ${app.company} and get a personalized message template.`;
+
+            // Reset to step 1
+            showReachOutStep1();
+            document.getElementById('reachOutModal').classList.add('show');
+        }
+
+        function closeReachOutModal() {
+            reachOutAppId = null;
+            reachOutType = null;
+            document.getElementById('reachOutModal').classList.remove('show');
+        }
+
+        function showReachOutStep1() {
+            document.getElementById('reachOutStep1').style.display = 'block';
+            document.getElementById('reachOutStep2').style.display = 'none';
+            document.getElementById('reachOutStep3').style.display = 'none';
+        }
+
+        function selectReachOutType(type) {
+            reachOutType = type;
+
+            if (type === 'other') {
+                // Show custom contact form
+                document.getElementById('reachOutStep1').style.display = 'none';
+                document.getElementById('reachOutStep2').style.display = 'block';
+                document.getElementById('reachOutStep3').style.display = 'none';
+                document.getElementById('reachOutContactName').value = '';
+                document.getElementById('reachOutContactRole').value = '';
+            } else {
+                // Get pre-drafted message for HM or Recruiter
+                showDraftedMessage(type);
+            }
+        }
+
+        function showDraftedMessage(type) {
+            const app = getApplications().find(a => String(a.id) === String(reachOutAppId));
+            if (!app) return;
+
+            let message = '';
+            let label = '';
+
+            // Try to get from outreach_intelligence in analysisData
+            if (app.analysisData?.outreach_intelligence) {
+                const outreach = app.analysisData.outreach_intelligence;
+                if (type === 'hiring_manager' && outreach.hiring_manager_outreach_template) {
+                    message = outreach.hiring_manager_outreach_template;
+                    label = 'Message to Hiring Manager';
+                } else if (type === 'recruiter' && outreach.recruiter_outreach_template) {
+                    message = outreach.recruiter_outreach_template;
+                    label = 'Message to Recruiter';
+                }
+            }
+
+            // Try localStorage analysisKey if not found
+            if (!message && app.analysisKey) {
+                try {
+                    const analysisData = JSON.parse(localStorage.getItem(app.analysisKey) || '{}');
+                    if (analysisData.outreach_intelligence) {
+                        const outreach = analysisData.outreach_intelligence;
+                        if (type === 'hiring_manager' && outreach.hiring_manager_outreach_template) {
+                            message = outreach.hiring_manager_outreach_template;
+                            label = 'Message to Hiring Manager';
+                        } else if (type === 'recruiter' && outreach.recruiter_outreach_template) {
+                            message = outreach.recruiter_outreach_template;
+                            label = 'Message to Recruiter';
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing analysis data:', e);
+                }
+            }
+
+            // Fallback template if no drafted message found
+            if (!message) {
+                const templates = {
+                    hiring_manager: `Hi [Name],
+
+I recently applied for the ${app.role} position at ${app.company} and wanted to reach out directly.
+
+I'm particularly excited about this opportunity because [specific reason related to the role/company].
+
+With my background in [relevant experience], I believe I could contribute meaningfully to your team, especially in [specific area].
+
+Would you be open to a brief conversation? I'd love to learn more about your vision for this role.
+
+Best regards,
+[Your name]`,
+                    recruiter: `Hi [Name],
+
+I recently applied for the ${app.role} position at ${app.company} and wanted to connect.
+
+I'm very interested in this opportunity because [specific reason]. My background in [relevant experience] aligns well with what you're looking for.
+
+Could you share any insights about the timeline or process? I'm happy to provide any additional information that would be helpful.
+
+Thanks for your time!
+[Your name]`
+                };
+                message = templates[type] || templates.hiring_manager;
+                label = type === 'hiring_manager' ? 'Message to Hiring Manager' : 'Message to Recruiter';
+            }
+
+            // Show the message
+            document.getElementById('reachOutMessageLabel').textContent = label;
+            document.getElementById('reachOutMessage').value = message;
+
+            document.getElementById('reachOutStep1').style.display = 'none';
+            document.getElementById('reachOutStep2').style.display = 'none';
+            document.getElementById('reachOutStep3').style.display = 'block';
+        }
+
+        function generateCustomMessage() {
+            const contactName = document.getElementById('reachOutContactName').value.trim() || '[Name]';
+            const contactRole = document.getElementById('reachOutContactRole').value.trim() || 'contact';
+
+            const app = getApplications().find(a => String(a.id) === String(reachOutAppId));
+            if (!app) return;
+
+            const message = `Hi ${contactName},
+
+I hope this message finds you well! I noticed you're a ${contactRole} at ${app.company}, and I wanted to reach out.
+
+I recently applied for the ${app.role} position and I'm very excited about the opportunity. I'd love to learn more about the team and culture from your perspective.
+
+Would you have a few minutes for a quick chat? I'd really appreciate any insights you could share.
+
+Thanks so much!
+[Your name]`;
+
+            document.getElementById('reachOutMessageLabel').textContent = `Message to ${contactName}`;
+            document.getElementById('reachOutMessage').value = message;
+
+            document.getElementById('reachOutStep1').style.display = 'none';
+            document.getElementById('reachOutStep2').style.display = 'none';
+            document.getElementById('reachOutStep3').style.display = 'block';
+        }
+
+        function copyReachOutMessage() {
+            const message = document.getElementById('reachOutMessage').value;
+            navigator.clipboard.writeText(message).then(() => {
+                // Show feedback
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                btn.style.background = 'var(--color-active)';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy. Please select and copy manually.');
+            });
+        }
+
+        function markReachOutComplete() {
+            if (!reachOutAppId) return;
+
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(reachOutAppId));
+
+            if (idx !== -1) {
+                apps[idx].dateReachedOut = new Date().toISOString();
+                apps[idx].lastUpdated = new Date().toISOString();
+
+                // Update status if appropriate
+                if (['Preparing', 'Applied'].includes(apps[idx].status)) {
+                    apps[idx].status = 'Networking';
+                }
+
+                saveApplications(apps);
+                closeReachOutModal();
+                renderAll(apps);
+            }
         }
 
         // ========================================================================
