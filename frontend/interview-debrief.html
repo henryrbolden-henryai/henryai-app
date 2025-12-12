@@ -913,6 +913,10 @@ Examples of helpful info:
         }
 
         function goToCommandCenter() {
+            // Ensure the interview is synced to Command Center before navigating
+            if (currentInterview) {
+                syncInterviewToTracker(currentInterview);
+            }
             window.location.href = 'tracker.html';
         }
 
