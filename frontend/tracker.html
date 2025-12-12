@@ -747,6 +747,13 @@
             background: var(--color-border);
             border-radius: 3px;
             position: relative;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .timeline-stage:hover {
+            transform: scaleY(1.5);
+            opacity: 0.8;
         }
 
         .timeline-stage.completed {
@@ -4313,16 +4320,18 @@
                     <div class="timeline-section">
                         <div class="timeline-bar">
                             ${[0,1,2,3,4].map(i => `
-                                <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? (isAwaiting ? 'current awaiting' : 'current') : ''}"></div>
+                                <div class="timeline-stage ${i < timelineStage ? 'completed' : i === timelineStage ? (isAwaiting ? 'current awaiting' : 'current') : ''}"
+                                     onclick="setTimelineStage('${app.id}', ${i})"
+                                     title="Click to update status"></div>
                             `).join('')}
                         </div>
                         ${isAwaiting && timelineStage >= 0 ? `<div class="you-are-here">↑ AWAITING NEXT STEPS${timelineStage === 2 ? ' (post-screen)' : timelineStage === 3 ? ' (mid-interviews)' : timelineStage === 4 ? ' (final rounds)' : ''}</div>` : ''}
                         <div class="timeline-labels">
-                            <span>Applied</span>
-                            <span>Screen</span>
-                            <span>${(app.interviewRounds || 0) > 1 ? 'Round ' + (app.interviewRounds || 1) : 'Interview'}</span>
-                            <span>Final</span>
-                            <span>Offer</span>
+                            <span onclick="setTimelineStage('${app.id}', 0)" style="cursor:pointer">Applied</span>
+                            <span onclick="setTimelineStage('${app.id}', 1)" style="cursor:pointer">Screen</span>
+                            <span onclick="setTimelineStage('${app.id}', 2)" style="cursor:pointer">${(app.interviewRounds || 0) > 1 ? 'Round ' + (app.interviewRounds || 1) : 'Interview'}</span>
+                            <span onclick="setTimelineStage('${app.id}', 3)" style="cursor:pointer">Final</span>
+                            <span onclick="setTimelineStage('${app.id}', 4)" style="cursor:pointer">Offer</span>
                         </div>
                     </div>
 
@@ -4463,8 +4472,7 @@
                 return actions;
             }
 
-            // Always include archive and reject for active apps
-            actions.push({ label: '❌ Rejected', action: `showRejectModal('${app.id}')` });
+            // Always include archive for active apps (reject handled by status-specific logic above)
             actions.push({ label: 'Archive', action: `showDeleteModal('${app.id}')`, danger: true });
 
             return actions;
@@ -5111,6 +5119,47 @@
         function toggleSection(appId, section) {
             const content = document.getElementById(`${section}-content-${appId}`);
             content.classList.toggle('show');
+        }
+
+        // Map timeline stage index to status
+        function setTimelineStage(appId, stageIndex) {
+            const stageToStatus = {
+                0: 'Applied',
+                1: 'Recruiter Screen',
+                2: 'Technical Round',
+                3: 'Final Round',
+                4: 'Offer Received'
+            };
+
+            const newStatus = stageToStatus[stageIndex];
+            if (!newStatus) return;
+
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx === -1) return;
+
+            const app = apps[idx];
+            const oldStatus = app.status;
+
+            // Update status
+            app.status = newStatus;
+            app.lastUpdated = new Date().toISOString();
+
+            // Update relevant dates if not already set
+            const today = new Date().toISOString();
+            if (stageIndex >= 0 && !app.dateApplied) {
+                app.dateApplied = today;
+            }
+            if (stageIndex >= 1 && !app.dateInterviewed) {
+                app.dateInterviewed = today;
+            }
+            if (stageIndex >= 2) {
+                // Increment interview rounds if moving further
+                app.interviewRounds = Math.max(app.interviewRounds || 0, stageIndex);
+            }
+
+            saveApplications(apps);
+            renderAll(apps);
         }
 
         function saveNotes(appId, notes) {
