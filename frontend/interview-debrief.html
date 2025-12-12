@@ -74,39 +74,6 @@
             padding: 40px 20px 120px;
         }
 
-        .nav-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: #60a5fa;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-
-        .back-link:hover {
-            color: #93c5fd;
-        }
-
-        .forward-link {
-            display: inline-flex;
-            align-items: center;
-            color: #60a5fa;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-
-        .forward-link:hover {
-            color: #93c5fd;
-        }
-
         /* Page Header */
         .page-header {
             margin-bottom: 32px;
@@ -356,6 +323,32 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+
+        /* Debrief Complete Button */
+        .debrief-complete-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #374151;
+            text-align: center;
+        }
+
+        .debrief-complete-btn {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .debrief-complete-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
         }
 
         /* Chat Section */
@@ -711,11 +704,6 @@
     </header>
 
     <div class="container">
-        <div class="nav-row">
-            <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
-            <a href="tracker.html" class="forward-link">Track My Progress →</a>
-        </div>
-
         <div class="page-header">
             <div class="breadcrumb"><span class="company" id="companyName">Company</span> &middot; <span id="interviewType">Interview</span></div>
             <h1>Interview Debrief</h1>
@@ -795,6 +783,11 @@ Examples of helpful info:
             </div>
             <div class="chat-messages" id="chatMessages">
                 <!-- Messages will be added here -->
+            </div>
+            <div class="debrief-complete-section" id="debriefCompleteSection" style="display: none;">
+                <button class="debrief-complete-btn" onclick="goToCommandCenter()">
+                    Debrief Completed → Go to Command Center
+                </button>
             </div>
         </div>
     </div>
@@ -912,6 +905,17 @@ Examples of helpful info:
             localStorage.setItem(getDebriefStorageKey(), JSON.stringify(debriefData));
         }
 
+        function showDebriefCompleteButton() {
+            const section = document.getElementById('debriefCompleteSection');
+            if (section) {
+                section.style.display = 'block';
+            }
+        }
+
+        function goToCommandCenter() {
+            window.location.href = 'tracker.html';
+        }
+
         function loadSavedDebrief() {
             if (!currentInterview) return;
 
@@ -943,6 +947,9 @@ Examples of helpful info:
                     conversationHistory.forEach(msg => {
                         addMessage(msg.role, msg.content);
                     });
+
+                    // Show the debrief complete button since we have conversation history
+                    showDebriefCompleteButton();
                 }
             } catch (e) {
                 console.error('Error loading saved debrief:', e);
@@ -1158,6 +1165,9 @@ Examples of helpful info:
                 // Mark interview as completed and save debrief
                 markInterviewCompleted();
                 saveDebrief();
+
+                // Show the "Debrief Completed" button
+                showDebriefCompleteButton();
 
             } catch (error) {
                 console.error('Debrief error:', error);
@@ -1481,6 +1491,7 @@ Examples of helpful info:
         // Initialize voice input on page load
         document.addEventListener('DOMContentLoaded', initVoiceInput);
     </script>
+<script src="components/strategy-nav.js"></script>
 <script src="components/ask-henry.js"></script>
 </body>
 </html>
