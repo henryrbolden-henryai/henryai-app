@@ -677,6 +677,298 @@
             display: block;
         }
 
+        /* VIEW MODE TOGGLE */
+        .view-mode-toggle {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+            background: var(--color-surface);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--color-border);
+        }
+
+        .view-mode-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: var(--color-text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .view-mode-btn:hover {
+            color: var(--color-text);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .view-mode-btn.active {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .view-mode-btn svg {
+            opacity: 0.8;
+        }
+
+        /* TABLE VIEW */
+        .table-view-container {
+            overflow-x: auto;
+            margin-bottom: 24px;
+        }
+
+        .applications-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .applications-table thead {
+            position: sticky;
+            top: 0;
+            background: var(--color-bg);
+            z-index: 10;
+        }
+
+        .applications-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--color-border);
+            white-space: nowrap;
+        }
+
+        .applications-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            vertical-align: middle;
+        }
+
+        .applications-table tbody tr {
+            transition: background 0.15s;
+        }
+
+        .applications-table tbody tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .applications-table tbody tr.selected {
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        .applications-table tbody tr.ghost-risk {
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .col-checkbox {
+            width: 40px;
+            text-align: center;
+        }
+
+        .col-checkbox input {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .col-company {
+            min-width: 140px;
+            max-width: 180px;
+        }
+
+        .col-role {
+            min-width: 180px;
+            max-width: 250px;
+        }
+
+        .col-status {
+            width: 140px;
+        }
+
+        .col-fit {
+            width: 70px;
+            text-align: center;
+        }
+
+        .col-stage {
+            width: 100px;
+        }
+
+        .col-days {
+            width: 60px;
+            text-align: center;
+        }
+
+        .col-action {
+            min-width: 200px;
+        }
+
+        .col-actions {
+            width: 100px;
+            text-align: right;
+        }
+
+        .table-company {
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .table-role {
+            color: var(--color-text);
+            cursor: pointer;
+        }
+
+        .table-role:hover {
+            color: var(--color-accent);
+        }
+
+        .table-status-select {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            max-width: 130px;
+        }
+
+        .table-fit-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .table-fit-badge.high {
+            background: var(--color-active-muted);
+            color: var(--color-active);
+        }
+
+        .table-fit-badge.medium {
+            background: var(--color-hot-muted);
+            color: var(--color-hot);
+        }
+
+        .table-fit-badge.low {
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+        }
+
+        .table-fit-badge.none {
+            background: rgba(128,128,128,0.2);
+            color: var(--color-text-muted);
+        }
+
+        .table-stage {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .table-stage-indicator {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .table-stage-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-border);
+        }
+
+        .table-stage-dot.completed {
+            background: var(--color-active);
+        }
+
+        .table-stage-dot.current {
+            background: var(--color-accent);
+            box-shadow: 0 0 6px var(--color-accent);
+        }
+
+        .table-days {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
+        .table-days.urgent {
+            color: var(--color-dead);
+            font-weight: 500;
+        }
+
+        .table-action {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .table-action-btn {
+            padding: 4px 10px;
+            border: none;
+            background: var(--color-accent);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .table-action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .table-action-btn.secondary {
+            background: var(--color-surface);
+            color: var(--color-text-muted);
+            border: 1px solid var(--color-border);
+        }
+
+        .table-actions-menu {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .table-icon-btn {
+            padding: 6px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .table-icon-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--color-text);
+        }
+
+        .table-icon-btn.danger:hover {
+            color: var(--color-dead);
+        }
+
+        /* Empty table state */
+        .table-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--color-text-muted);
+        }
+
         /* APPLICATION CARDS */
         .applications-grid {
             display: flex;
@@ -2653,29 +2945,56 @@
                     <option value="timeline">Timeline</option>
                 </select>
             </div>
-            <div class="filter-group" style="margin-left: auto;">
-                <button class="bulk-select-btn" id="bulkSelectToggle" onclick="toggleBulkSelectMode()">
-                    ☑️ Select Multiple
+            <div class="filter-group view-mode-toggle">
+                <button class="view-mode-btn active" id="tableViewBtn" onclick="setViewMode('table')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"/></svg>
+                    Table
+                </button>
+                <button class="view-mode-btn" id="cardViewBtn" onclick="setViewMode('cards')">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3z"/></svg>
+                    Cards
                 </button>
             </div>
         </div>
 
-        <!-- BULK ACTIONS BAR (hidden by default) -->
+        <!-- BULK ACTIONS BAR -->
         <div class="bulk-actions-bar" id="bulkActionsBar" style="display: none;">
             <div class="bulk-actions-left">
                 <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
-                <label for="selectAllCheckbox">Select All</label>
+                <label for="selectAllCheckbox">Select All Visible</label>
                 <span class="selected-count" id="selectedCount">0 selected</span>
             </div>
             <div class="bulk-actions-right">
-                <button class="bulk-action-btn archive" onclick="bulkArchive()">📦 Archive Selected</button>
-                <button class="bulk-action-btn delete" onclick="bulkDelete()">🗑️ Delete Selected</button>
+                <button class="bulk-action-btn archive" onclick="bulkArchive()">📦 Archive</button>
+                <button class="bulk-action-btn delete" onclick="bulkDelete()">🗑️ Delete</button>
                 <button class="bulk-action-btn cancel" onclick="exitBulkSelectMode()">Cancel</button>
             </div>
         </div>
 
-        <!-- APPLICATIONS -->
-        <div id="applicationsContainer">
+        <!-- TABLE VIEW (default) -->
+        <div id="tableViewContainer" class="table-view-container">
+            <table class="applications-table" id="applicationsTable">
+                <thead>
+                    <tr>
+                        <th class="col-checkbox"><input type="checkbox" id="tableSelectAll" onclick="toggleSelectAll()"></th>
+                        <th class="col-company">Company</th>
+                        <th class="col-role">Role</th>
+                        <th class="col-status">Status</th>
+                        <th class="col-fit">Fit</th>
+                        <th class="col-stage">Stage</th>
+                        <th class="col-days">Days</th>
+                        <th class="col-action">Next Action</th>
+                        <th class="col-actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- CARD VIEW (legacy) -->
+        <div id="applicationsContainer" style="display: none;">
             <!-- Dynamically populated -->
         </div>
 
@@ -4894,40 +5213,166 @@
             }).join('');
         }
 
+        // Current view mode: 'table' or 'cards'
+        let currentViewMode = 'table';
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            document.getElementById('tableViewBtn').classList.toggle('active', mode === 'table');
+            document.getElementById('cardViewBtn').classList.toggle('active', mode === 'cards');
+            document.getElementById('tableViewContainer').style.display = mode === 'table' ? 'block' : 'none';
+            document.getElementById('applicationsContainer').style.display = mode === 'cards' ? 'block' : 'none';
+            // Re-render with current apps
+            renderApplications(getApplications());
+        }
+
         function renderApplications(apps) {
-            const container = document.getElementById('applicationsContainer');
+            const cardContainer = document.getElementById('applicationsContainer');
+            const tableBody = document.getElementById('tableBody');
             const filtered = filterApplications(apps);
             const sorted = sortApplications(filtered);
 
-            // Show/hide filters
+            // Show/hide filters and bulk actions bar
             document.getElementById('filtersBar').style.display = apps.length > 0 ? 'flex' : 'none';
+            document.getElementById('bulkActionsBar').style.display = selectedAppIds.size > 0 ? 'flex' : 'none';
 
             if (apps.length === 0) {
-                container.innerHTML = `
+                const emptyHTML = `
                     <div class="empty-state">
                         <h2>Your command center is ready.</h2>
                         <p>Analyze your first role to start building your strategic pipeline.</p>
                         <a href="analyze.html">Analyze First Role</a>
                     </div>
                 `;
+                cardContainer.innerHTML = emptyHTML;
+                tableBody.innerHTML = `<tr><td colspan="9" class="table-empty">${emptyHTML}</td></tr>`;
                 return;
             }
 
             if (sorted.length === 0) {
-                container.innerHTML = `
+                const noMatchHTML = `
                     <div class="empty-state">
                         <h2>No matches</h2>
                         <p>No applications match your current filters.</p>
                     </div>
                 `;
+                cardContainer.innerHTML = noMatchHTML;
+                tableBody.innerHTML = `<tr><td colspan="9" class="table-empty">${noMatchHTML}</td></tr>`;
                 return;
             }
 
-            container.innerHTML = `
+            // Render card view
+            cardContainer.innerHTML = `
                 <div class="applications-grid">
                     ${sorted.map(app => renderAppCard(app)).join('')}
                 </div>
             `;
+
+            // Render table view
+            tableBody.innerHTML = sorted.map(app => renderTableRow(app)).join('');
+        }
+
+        function renderTableRow(app) {
+            const status = STATUSES[app.status] || { label: app.status, active: true };
+            const daysSince = getDaysSince(app.dateApplied || app.dateAdded);
+            const isGhostRisk = daysSince >= 14 && ['Applied', 'Networking'].includes(app.status);
+            const action = generateNextAction(app);
+            const timelineInfo = getTimelineStageForApp(app);
+            const timelineStage = timelineInfo.stage;
+
+            // Fit badge class
+            let fitClass = 'medium';
+            if (app.fitScore === null || app.fitScore === undefined) fitClass = 'none';
+            else if (app.fitScore >= 80) fitClass = 'high';
+            else if (app.fitScore < 60) fitClass = 'low';
+
+            const fitDisplay = app.fitScore !== null && app.fitScore !== undefined ? `${app.fitScore}%` : '—';
+
+            const isSelected = selectedAppIds.has(String(app.id));
+
+            // Stage names
+            const stageNames = ['Applied', 'Screen', 'Interview', 'Final', 'Offer'];
+            const currentStageName = timelineStage >= 0 && timelineStage < stageNames.length ? stageNames[timelineStage] : '—';
+
+            return `
+                <tr class="${isGhostRisk ? 'ghost-risk' : ''} ${isSelected ? 'selected' : ''}" data-id="${app.id}">
+                    <td class="col-checkbox">
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleRowSelection('${app.id}', this.checked)">
+                    </td>
+                    <td class="col-company">
+                        <span class="table-company">${app.company || 'Unknown'}</span>
+                    </td>
+                    <td class="col-role">
+                        <span class="table-role" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" title="View strategy">
+                            ${app.role || 'Unknown Role'}
+                        </span>
+                    </td>
+                    <td class="col-status">
+                        <select class="table-status-select" onchange="updateStatus('${app.id}', this.value)">
+                            ${renderStatusOptions(app.status)}
+                        </select>
+                    </td>
+                    <td class="col-fit">
+                        <span class="table-fit-badge ${fitClass}">${fitDisplay}</span>
+                    </td>
+                    <td class="col-stage">
+                        <div class="table-stage-indicator" title="${currentStageName}">
+                            ${[0,1,2,3,4].map(i => `<span class="table-stage-dot ${i < timelineStage ? 'completed' : i === timelineStage ? 'current' : ''}"></span>`).join('')}
+                        </div>
+                    </td>
+                    <td class="col-days">
+                        <span class="table-days ${daysSince >= 14 ? 'urgent' : ''}">${daysSince}d</span>
+                    </td>
+                    <td class="col-action">
+                        <span class="table-action" title="${action.action}">${action.action}</span>
+                    </td>
+                    <td class="col-actions">
+                        <div class="table-actions-menu">
+                            <button class="table-icon-btn" onclick="showReachOutModal('${app.id}')" title="Reach Out">
+                                💬
+                            </button>
+                            <button class="table-icon-btn" onclick="showArchiveModal('${app.id}')" title="Archive">
+                                📦
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function renderStatusOptions(currentStatus) {
+            let html = '';
+            for (const [category, statuses] of Object.entries(STATUS_CATEGORIES)) {
+                html += `<optgroup label="${category}">`;
+                for (const status of statuses) {
+                    const statusDef = STATUSES[status] || { label: status };
+                    const label = statusDef.label.replace(/^[^\s]+\s+/, ''); // Remove emoji prefix
+                    const isSelected = status === currentStatus;
+                    html += `<option value="${status}" ${isSelected ? 'selected' : ''}>${label}</option>`;
+                }
+                html += `</optgroup>`;
+            }
+            return html;
+        }
+
+        function toggleRowSelection(appId, isChecked) {
+            if (isChecked) {
+                selectedAppIds.add(String(appId));
+            } else {
+                selectedAppIds.delete(String(appId));
+            }
+
+            // Show/hide bulk actions bar based on selection
+            document.getElementById('bulkActionsBar').style.display = selectedAppIds.size > 0 ? 'flex' : 'none';
+
+            updateSelectedCount();
+            updateSelectAllCheckbox();
+
+            // Update row highlighting
+            const row = document.querySelector(`tr[data-id="${appId}"]`);
+            if (row) {
+                row.classList.toggle('selected', isChecked);
+            }
         }
 
         // Render grouped status dropdown options with emoji labels
@@ -6691,31 +7136,73 @@ Thanks so much!
         }
 
         function toggleSelectAll() {
-            const checkbox = document.getElementById('selectAllCheckbox');
-            const cards = document.querySelectorAll('.app-card.select-mode');
+            // Get the source checkbox (could be from bulk bar or table header)
+            const bulkCheckbox = document.getElementById('selectAllCheckbox');
+            const tableCheckbox = document.getElementById('tableSelectAll');
 
-            if (checkbox.checked) {
-                // Select all
-                cards.forEach(card => {
-                    const id = card.dataset.id;
-                    selectedAppIds.add(id);
-                    card.classList.add('selected');
-                });
+            // Determine if we're selecting or deselecting
+            const isSelecting = bulkCheckbox?.checked || tableCheckbox?.checked;
+
+            if (currentViewMode === 'table') {
+                // Table view - select all visible rows
+                const rows = document.querySelectorAll('#tableBody tr[data-id]');
+                if (isSelecting) {
+                    rows.forEach(row => {
+                        const id = row.dataset.id;
+                        selectedAppIds.add(id);
+                        row.classList.add('selected');
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        if (checkbox) checkbox.checked = true;
+                    });
+                } else {
+                    selectedAppIds.clear();
+                    rows.forEach(row => {
+                        row.classList.remove('selected');
+                        const checkbox = row.querySelector('input[type="checkbox"]');
+                        if (checkbox) checkbox.checked = false;
+                    });
+                }
             } else {
-                // Deselect all
-                selectedAppIds.clear();
-                cards.forEach(card => {
-                    card.classList.remove('selected');
-                });
+                // Card view
+                const cards = document.querySelectorAll('.app-card.select-mode');
+                if (isSelecting) {
+                    cards.forEach(card => {
+                        const id = card.dataset.id;
+                        selectedAppIds.add(id);
+                        card.classList.add('selected');
+                    });
+                } else {
+                    selectedAppIds.clear();
+                    cards.forEach(card => {
+                        card.classList.remove('selected');
+                    });
+                }
             }
+
+            // Sync both checkboxes
+            if (bulkCheckbox) bulkCheckbox.checked = isSelecting;
+            if (tableCheckbox) tableCheckbox.checked = isSelecting;
+
+            // Show/hide bulk actions bar
+            document.getElementById('bulkActionsBar').style.display = selectedAppIds.size > 0 ? 'flex' : 'none';
 
             updateSelectedCount();
         }
 
         function updateSelectAllCheckbox() {
-            const checkbox = document.getElementById('selectAllCheckbox');
-            const totalCards = document.querySelectorAll('.app-card.select-mode').length;
-            checkbox.checked = selectedAppIds.size === totalCards && totalCards > 0;
+            const bulkCheckbox = document.getElementById('selectAllCheckbox');
+            const tableCheckbox = document.getElementById('tableSelectAll');
+
+            let totalItems = 0;
+            if (currentViewMode === 'table') {
+                totalItems = document.querySelectorAll('#tableBody tr[data-id]').length;
+            } else {
+                totalItems = document.querySelectorAll('.app-card.select-mode').length;
+            }
+
+            const allSelected = selectedAppIds.size === totalItems && totalItems > 0;
+            if (bulkCheckbox) bulkCheckbox.checked = allSelected;
+            if (tableCheckbox) tableCheckbox.checked = allSelected;
         }
 
         function updateSelectedCount() {
