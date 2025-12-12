@@ -1050,61 +1050,69 @@
         }
 
         function syncInterviewToTracker(interview) {
-            // Get tracked applications from localStorage
-            let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            try {
+                // Get tracked applications from localStorage
+                let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                console.log('syncInterviewToTracker called with:', interview);
+                console.log('Current tracked apps:', trackedApps.length);
 
-            // Check if this company/role combo already exists
-            const existingAppIndex = trackedApps.findIndex(app =>
-                app.company.toLowerCase() === interview.company.toLowerCase() &&
-                app.role.toLowerCase() === interview.role.toLowerCase()
-            );
+                // Check if this company/role combo already exists
+                const existingAppIndex = trackedApps.findIndex(app =>
+                    app.company.toLowerCase() === interview.company.toLowerCase() &&
+                    app.role.toLowerCase() === interview.role.toLowerCase()
+                );
 
-            // Parse interview date to set dateInterviewed
-            const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
+                // Parse interview date to set dateInterviewed
+                const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
 
-            if (existingAppIndex !== -1) {
-                // Update existing application status to the interview stage
-                trackedApps[existingAppIndex].status = interview.type;
-                trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
-                trackedApps[existingAppIndex].interviewDate = interview.date;
-                trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
-                trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
+                if (existingAppIndex !== -1) {
+                    // Update existing application status to the interview stage
+                    trackedApps[existingAppIndex].status = interview.type;
+                    trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
+                    trackedApps[existingAppIndex].interviewDate = interview.date;
+                    trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
+                    trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
 
-                // Set dateInterviewed if not already set (for timeline tracking)
-                if (!trackedApps[existingAppIndex].dateInterviewed) {
-                    trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
+                    // Set dateInterviewed if not already set (for timeline tracking)
+                    if (!trackedApps[existingAppIndex].dateInterviewed) {
+                        trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
+                    }
+
+                    // Increment interview rounds counter
+                    trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+                    console.log('Updated existing tracked app:', trackedApps[existingAppIndex].company);
+                } else {
+                    // Create new tracked application
+                    const newApp = {
+                        id: Date.now(),
+                        company: interview.company,
+                        role: interview.role,
+                        status: interview.type, // Use interview type as status
+                        fitScore: analysisData?.overall_match_score || analysisData?.fit_score || 75,
+                        salary: analysisData?.intelligence_layer?.salary_market_context?.typical_range || analysisData?.salary_info || 'Not specified',
+                        dateAdded: new Date().toISOString(),
+                        lastUpdated: new Date().toISOString(),
+                        // Note: dateApplied should be set by user via date edit modal
+                        // since we don't know when they actually applied
+                        dateInterviewed: interviewDateTime,
+                        interviewDate: interview.date,
+                        interviewerName: interview.interviewerName,
+                        interviewerTitle: interview.interviewerTitle,
+                        interviewRounds: 1,
+                        notes: interview.jobDescription ? `Job Description:\n${interview.jobDescription}` : '',
+                        strengths: analysisData?.strengths || [],
+                        gaps: analysisData?.gaps || []
+                    };
+                    trackedApps.push(newApp);
+                    console.log('Created new tracked app:', newApp.company, newApp.role);
                 }
 
-                // Increment interview rounds counter
-                trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
-            } else {
-                // Create new tracked application
-                const newApp = {
-                    id: Date.now(),
-                    company: interview.company,
-                    role: interview.role,
-                    status: interview.type, // Use interview type as status
-                    fitScore: analysisData?.overall_match_score || analysisData?.fit_score || 75,
-                    salary: analysisData?.intelligence_layer?.salary_market_context?.typical_range || analysisData?.salary_info || 'Not specified',
-                    dateAdded: new Date().toISOString(),
-                    lastUpdated: new Date().toISOString(),
-                    // Note: dateApplied should be set by user via date edit modal
-                    // since we don't know when they actually applied
-                    dateInterviewed: interviewDateTime,
-                    interviewDate: interview.date,
-                    interviewerName: interview.interviewerName,
-                    interviewerTitle: interview.interviewerTitle,
-                    interviewRounds: 1,
-                    notes: interview.jobDescription ? `Job Description:\n${interview.jobDescription}` : '',
-                    strengths: analysisData?.strengths || [],
-                    gaps: analysisData?.gaps || []
-                };
-                trackedApps.push(newApp);
+                // Save back to localStorage
+                localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+                console.log('Interview synced to tracker. Total apps:', trackedApps.length);
+            } catch (error) {
+                console.error('Error syncing interview to tracker:', error);
             }
-
-            // Save back to localStorage
-            localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
-            console.log('Interview synced to tracker:', interview.company, interview.role, interview.type);
         }
 
         function renderInterviewList() {
