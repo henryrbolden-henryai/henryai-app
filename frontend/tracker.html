@@ -892,6 +892,21 @@
             transform: translateY(-1px);
         }
 
+        /* Delete link (subtle, only for archived apps) */
+        .card-action-link {
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            text-decoration: none;
+            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .card-action-link:hover {
+            color: var(--color-dead);
+            text-decoration: underline;
+        }
+
         /* Status Selector */
         .status-selector {
             position: relative;
@@ -2338,15 +2353,58 @@
         </div>
         </div>
 
-    <!-- DELETE MODAL -->
+    <!-- ARCHIVE MODAL -->
+    <div class="modal-overlay" id="archiveModal">
+        <div class="modal">
+            <h2>📦 Archive this application?</h2>
+            <p>This will move the role out of your active pipeline but <strong>preserve all data</strong> for future reference and coaching insights.</p>
+            <div style="margin-top: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--color-text-muted);">Why are you archiving this role?</label>
+                <select id="archiveReason" style="width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);">
+                    <option value="">Select a reason...</option>
+                    <option value="no_response">No response from company</option>
+                    <option value="rejected">Received rejection</option>
+                    <option value="withdrew">I withdrew my application</option>
+                    <option value="found_role">Accepted another role</option>
+                    <option value="not_interested">No longer interested</option>
+                    <option value="role_closed">Role was closed/filled</option>
+                    <option value="other">Other reason</option>
+                </select>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="modal-btn secondary" onclick="closeArchiveModal()">Cancel</button>
+                <button class="modal-btn primary" id="confirmArchiveBtn">Archive Role</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE MODAL (for archived apps only) -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
-            <h2>🗑️ Delete this application?</h2>
-            <p>This will <strong>permanently remove</strong> this role from your tracker. This cannot be undone.</p>
-            <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top: 8px;">To add it back, you'll need to analyze the job description again.</p>
-            <div class="modal-actions">
+            <h2>⚠️ Permanently Delete?</h2>
+            <p>This will <strong>permanently remove</strong> this role and all its data. This cannot be undone.</p>
+            <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top: 8px;">Archived data helps track patterns and improve coaching. Are you sure you want to delete?</p>
+
+            <div style="margin-top: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--color-text-muted);">Why are you deleting this data?</label>
+                <select id="deleteReason" style="width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);">
+                    <option value="">Select a reason...</option>
+                    <option value="duplicate">Duplicate entry</option>
+                    <option value="test">Test/practice entry</option>
+                    <option value="wrong_data">Wrong data entered</option>
+                    <option value="privacy">Privacy reasons</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <label style="display: block; margin-bottom: 8px; color: var(--color-text-muted);">Type DELETE to confirm:</label>
+                <input type="text" id="deleteConfirmInput" placeholder="Type DELETE here" style="width: 100%; padding: 10px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text);">
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
                 <button class="modal-btn secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="modal-btn danger" id="confirmDeleteBtn">Delete Permanently</button>
+                <button class="modal-btn danger" id="confirmDeleteBtn" disabled>Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -4581,18 +4639,19 @@
                 actions.push({ label: '📊 Compare Offers', action: `compareOffers('${app.id}')` });
                 actions.push({ label: '✅ Accept Offer', action: `updateStatus('${app.id}', 'Accepted')` });
             }
-            // Inactive states
+            // Inactive/Closed states - show delete link only for these
             else if (isClosedStatus(status) || status === 'Accepted') {
                 if (isRejectedStatus(status)) {
                     actions.push({ label: '📋 View Debrief', action: `showRejectionDebrief('${app.id}')` });
                     actions.push({ label: '🔄 Request Feedback', action: `requestFeedback('${app.id}')` });
                 }
-                actions.push({ label: '🗑️ Delete', action: `showDeleteModal('${app.id}')`, danger: true });
+                // For closed/archived apps, show delete as a link (not button)
+                actions.push({ label: 'Delete', action: `showDeleteModal('${app.id}')`, isLink: true });
                 return actions;
             }
 
-            // Always include delete option for active apps
-            actions.push({ label: 'Delete', action: `showDeleteModal('${app.id}')`, danger: true });
+            // Active apps get Archive option (not delete)
+            actions.push({ label: 'Archive', action: `showArchiveModal('${app.id}')` });
 
             return actions;
         }
@@ -4606,6 +4665,11 @@
             </button>`;
 
             const actionBtns = actions.map(action => {
+                // Render as a subtle link instead of button
+                if (action.isLink) {
+                    return `<a href="#" class="card-action-link" onclick="${action.action}; return false;">${action.label}</a>`;
+                }
+
                 let btnClass = 'card-action-btn';
                 if (action.primary) btnClass += ' primary';
                 if (action.danger) btnClass += ' danger';
@@ -5358,10 +5422,63 @@
             }
         }
 
+        // ========================================================================
+        // ARCHIVE MODAL
+        // ========================================================================
+        let archiveAppId = null;
+
+        function showArchiveModal(appId) {
+            archiveAppId = appId;
+            document.getElementById('archiveReason').value = '';
+            document.getElementById('archiveModal').classList.add('show');
+        }
+
+        function closeArchiveModal() {
+            archiveAppId = null;
+            document.getElementById('archiveModal').classList.remove('show');
+        }
+
+        function confirmArchive() {
+            if (!archiveAppId) return;
+
+            const reason = document.getElementById('archiveReason').value;
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(archiveAppId));
+
+            if (idx !== -1) {
+                // Map archive reasons to appropriate statuses
+                const reasonToStatus = {
+                    'no_response': 'No Response',
+                    'rejected': 'Rejected: Other',
+                    'withdrew': 'Withdrawn',
+                    'found_role': 'Accepted',
+                    'not_interested': 'Withdrawn',
+                    'role_closed': 'Rejected: Went Internal',
+                    'other': 'Withdrawn'
+                };
+
+                apps[idx].status = reasonToStatus[reason] || 'Withdrawn';
+                apps[idx].archiveReason = reason;
+                apps[idx].archivedAt = new Date().toISOString();
+                apps[idx].lastUpdated = new Date().toISOString();
+
+                saveApplications(apps);
+                closeArchiveModal();
+                renderAll(apps);
+            }
+        }
+
+        // ========================================================================
+        // DELETE MODAL (for archived apps only)
+        // ========================================================================
         let deleteAppId = null;
 
         function showDeleteModal(appId) {
             deleteAppId = appId;
+            // Reset form
+            document.getElementById('deleteReason').value = '';
+            document.getElementById('deleteConfirmInput').value = '';
+            document.getElementById('confirmDeleteBtn').disabled = true;
             document.getElementById('deleteModal').classList.add('show');
         }
 
@@ -5370,13 +5487,27 @@
             document.getElementById('deleteModal').classList.remove('show');
         }
 
+        function validateDeleteConfirmation() {
+            const reason = document.getElementById('deleteReason').value;
+            const confirmText = document.getElementById('deleteConfirmInput').value;
+            const deleteBtn = document.getElementById('confirmDeleteBtn');
+
+            // Enable button only if reason selected AND DELETE typed correctly
+            deleteBtn.disabled = !(reason && confirmText === 'DELETE');
+        }
+
         function confirmDelete() {
-            if (deleteAppId) {
-                const apps = getApplications().filter(a => a.id !== deleteAppId);
-                saveApplications(apps);
-                closeDeleteModal();
-                renderAll(apps);
+            const reason = document.getElementById('deleteReason').value;
+            const confirmText = document.getElementById('deleteConfirmInput').value;
+
+            if (!deleteAppId || !reason || confirmText !== 'DELETE') {
+                return;
             }
+
+            const apps = getApplications().filter(a => String(a.id) !== String(deleteAppId));
+            saveApplications(apps);
+            closeDeleteModal();
+            renderAll(apps);
         }
 
         // ========================================================================
@@ -5698,6 +5829,11 @@
         });
 
         document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+        document.getElementById('confirmArchiveBtn').addEventListener('click', confirmArchive);
+
+        // Add validation listeners for delete confirmation
+        document.getElementById('deleteReason').addEventListener('change', validateDeleteConfirmation);
+        document.getElementById('deleteConfirmInput').addEventListener('input', validateDeleteConfirmation);
 
         // ========================================================================
         // PATTERN ALERT RENDERING
