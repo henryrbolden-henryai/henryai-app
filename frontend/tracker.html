@@ -4052,11 +4052,19 @@
 
         /**
          * Render excessive interview rounds warning if detected
+         * Only shows for apps that are actually in interview stages (not screen)
          */
         function renderRoundsWarning(app) {
             const rounds = app.interviewRounds || countInterviewRounds(app);
+            const status = STATUSES[app.status];
 
-            if (rounds >= 5 && STATUSES[app.status]?.active) {
+            // Only show warning if:
+            // 1. Has 5+ rounds
+            // 2. Status is active
+            // 3. Status is in Interview category (not Application/Screening)
+            const isInterviewStage = status?.category === 'Interview' || status?.category === 'Outcome';
+
+            if (rounds >= 5 && status?.active && isInterviewStage) {
                 return `
                     <div class="rounds-warning">
                         <span class="rounds-warning-icon">⚠️</span>
@@ -4438,7 +4446,7 @@
                         <div class="timeline-labels">
                             <span onclick="setTimelineStage('${app.id}', 0)" style="cursor:pointer">Applied</span>
                             <span onclick="setTimelineStage('${app.id}', 1)" style="cursor:pointer">Screen</span>
-                            <span onclick="setTimelineStage('${app.id}', 2)" style="cursor:pointer">${(app.interviewRounds || 0) > 1 ? 'Round ' + (app.interviewRounds || 1) : 'Interview'}</span>
+                            <span onclick="setTimelineStage('${app.id}', 2)" style="cursor:pointer">${timelineStage >= 3 && (app.interviewRounds || 0) > 1 ? 'Round ' + app.interviewRounds : 'Interview'}</span>
                             <span onclick="setTimelineStage('${app.id}', 3)" style="cursor:pointer">Final</span>
                             <span onclick="setTimelineStage('${app.id}', 4)" style="cursor:pointer">Offer</span>
                         </div>
@@ -5265,9 +5273,13 @@
             if (stageIndex >= 1 && !app.dateInterviewed) {
                 app.dateInterviewed = today;
             }
-            if (stageIndex >= 2) {
-                // Increment interview rounds if moving further
-                app.interviewRounds = Math.max(app.interviewRounds || 0, stageIndex);
+            if (stageIndex >= 2 && stageIndex <= 3) {
+                // Track interview rounds - only count actual interview stages (2=Interview, 3=Final)
+                // Don't overwrite if already tracking higher rounds
+                const currentRounds = app.interviewRounds || 0;
+                if (currentRounds === 0) {
+                    app.interviewRounds = 1; // First interview round
+                }
             }
 
             saveApplications(apps);
