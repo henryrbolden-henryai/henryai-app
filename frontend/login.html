@@ -418,7 +418,7 @@
             const session = await HenryAuth.getSession();
             if (session) {
                 // Already logged in, redirect
-                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'tracker.html';
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
                 sessionStorage.removeItem('redirectAfterLogin');
                 window.location.href = redirect;
             }
@@ -500,7 +500,7 @@
             await HenryData.migrateFromLocalStorage();
 
             // Redirect
-            const redirect = sessionStorage.getItem('redirectAfterLogin') || 'tracker.html';
+            const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
             sessionStorage.removeItem('redirectAfterLogin');
             window.location.href = redirect;
         }
@@ -529,7 +529,7 @@
             } else {
                 // Auto-confirmed, migrate and redirect
                 await HenryData.migrateFromLocalStorage();
-                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'tracker.html';
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
                 sessionStorage.removeItem('redirectAfterLogin');
                 window.location.href = redirect;
             }

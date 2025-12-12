@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Core Colors */
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #71717a;
+            --color-text-muted: #52525b;
+
+            /* Status Colors */
+            --color-hot: #FF6B35;
+            --color-hot-muted: rgba(255, 107, 53, 0.15);
+            --color-active: #4CAF50;
+            --color-active-muted: rgba(76, 175, 80, 0.15);
+            --color-cooling: #546E7A;
+            --color-cooling-muted: rgba(84, 110, 122, 0.15);
+            --color-dead: #E57373;
+            --color-dead-muted: rgba(229, 115, 115, 0.15);
+            --color-leverage: #FFD700;
+            --color-leverage-muted: rgba(255, 215, 0, 0.15);
+
+            /* Accent */
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+
+            /* Typography */
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* HEADER */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.8rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--color-accent);
+        }
+
+        .nav-link.active {
+            color: var(--color-accent);
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-email {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .logout-btn {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            color: var(--color-text);
+        }
+
+        /* MAIN CONTAINER */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* DAILY PULSE BANNER */
+        .daily-pulse {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-bottom: 32px;
+        }
+
+        .pulse-greeting {
+            font-size: 1.25rem;
+            color: var(--color-text);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        /* QUICK STATS CARDS */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-border-hover);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.highlight {
+            border-color: var(--color-hot);
+            background: var(--color-hot-muted);
+        }
+
+        .stat-card.urgent {
+            border-color: var(--color-dead);
+            background: var(--color-dead-muted);
+        }
+
+        .stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: 4px;
+        }
+
+        .stat-card.highlight .stat-value {
+            color: var(--color-hot);
+        }
+
+        .stat-card.urgent .stat-value {
+            color: var(--color-dead);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* TODAY'S FOCUS */
+        .focus-section {
+            margin-bottom: 32px;
+        }
+
+        .focus-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .focus-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .focus-message {
+            font-size: 1.05rem;
+            color: var(--color-text);
+            flex: 1;
+        }
+
+        .focus-message strong {
+            color: var(--color-accent);
+        }
+
+        .focus-button {
+            padding: 12px 24px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .focus-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* QUICK ACTIONS */
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-btn.primary {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+        }
+
+        .action-btn.primary:hover {
+            opacity: 0.9;
+        }
+
+        .action-btn.secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        .action-btn.secondary:hover {
+            border-color: var(--color-border-hover);
+            background: var(--color-surface-elevated);
+        }
+
+        /* RECENT ACTIVITY */
+        .recent-section {
+            margin-bottom: 32px;
+        }
+
+        .recent-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .recent-activity {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            gap: 16px;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-info {
+            flex: 1;
+        }
+
+        .activity-company {
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 2px;
+        }
+
+        .activity-role {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .activity-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-hot {
+            background: var(--color-hot-muted);
+            color: var(--color-hot);
+        }
+
+        .status-active {
+            background: var(--color-active-muted);
+            color: var(--color-active);
+        }
+
+        .status-waiting {
+            background: var(--color-cooling-muted);
+            color: var(--color-cooling);
+        }
+
+        .status-default {
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .activity-link {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .activity-link:hover {
+            text-decoration: underline;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+        }
+
+        /* VIEW FULL PIPELINE LINK */
+        .view-pipeline {
+            text-align: center;
+            padding: 24px 0;
+        }
+
+        .view-pipeline a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .view-pipeline a:hover {
+            text-decoration: underline;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-nav {
+                display: none;
+            }
+
+            .focus-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .activity-item {
+                flex-wrap: wrap;
+            }
+
+            .activity-meta {
+                width: 100%;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="dashboard.html" class="logo"><em>Henry</em>AI</a>
+            <nav class="header-nav">
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="tracker.html" class="nav-link">Command Center</a>
+                <a href="analyze.html" class="nav-link">Analyze Role</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+            </nav>
+            <div class="user-menu">
+                <span class="user-email" id="userEmail"></span>
+                <a href="#" class="logout-btn" id="logoutBtn">Sign Out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- DAILY PULSE BANNER -->
+        <div class="daily-pulse" id="dailyPulse">
+            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
+        </div>
+
+        <!-- QUICK STATS CARDS -->
+        <div class="quick-stats">
+            <div class="stat-card" id="cardActive">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-label">Active Applications</div>
+            </div>
+            <div class="stat-card" id="cardInterviews">
+                <div class="stat-icon">📅</div>
+                <div class="stat-value" id="statInterviews">0</div>
+                <div class="stat-label">Interviews This Week</div>
+            </div>
+            <div class="stat-card" id="cardFollowUps">
+                <div class="stat-icon">🔔</div>
+                <div class="stat-value" id="statFollowUps">0</div>
+                <div class="stat-label">Follow-ups Due</div>
+            </div>
+            <div class="stat-card" id="cardResponseTime">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value" id="statResponseTime">—</div>
+                <div class="stat-label">Avg Response Time</div>
+            </div>
+        </div>
+
+        <!-- TODAY'S FOCUS -->
+        <div class="focus-section">
+            <h2>Today's Focus</h2>
+            <div class="focus-card">
+                <div class="focus-message" id="focusMessage">Loading...</div>
+                <button class="focus-button" id="focusButton">Take Action</button>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS -->
+        <div class="quick-actions">
+            <a href="analyze.html" class="action-btn primary">Analyze New Role</a>
+            <a href="tracker.html" class="action-btn secondary">View Full Pipeline</a>
+            <a href="interview-intelligence.html" class="action-btn secondary">Interview Prep</a>
+        </div>
+
+        <!-- RECENT ACTIVITY -->
+        <div class="recent-section" id="recentSection">
+            <h2>Recent Activity</h2>
+            <div class="recent-activity" id="recentActivity">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- VIEW FULL PIPELINE -->
+        <div class="view-pipeline">
+            <a href="tracker.html">View Full Pipeline in Command Center →</a>
+        </div>
+    </div>
+
+    <script>
+        // ========================================================================
+        // CONSTANTS
+        // ========================================================================
+        const STATUSES = {
+            'Researching': { active: true, color: 'cooling' },
+            'Applied': { active: true, color: 'waiting' },
+            'Reached Out': { active: true, color: 'waiting' },
+            'Recruiter Screen': { active: true, color: 'active' },
+            'Hiring Manager': { active: true, color: 'active' },
+            'Technical Round': { active: true, color: 'active' },
+            'Panel Interview': { active: true, color: 'active' },
+            'Final Round': { active: true, color: 'active' },
+            'Executive Interview': { active: true, color: 'active' },
+            'Reference Check': { active: true, color: 'hot' },
+            'Offer': { active: false, color: 'hot' },
+            'Negotiating': { active: true, color: 'hot' },
+            'Accepted': { active: false, color: 'active' },
+            'Rejected': { active: false, color: 'dead' },
+            'Withdrawn': { active: false, color: 'cooling' },
+            'No Response': { active: false, color: 'dead' },
+            'Hot': { active: true, color: 'hot' },
+            'Active': { active: true, color: 'active' }
+        };
+
+        // ========================================================================
+        // DATA LOADING FUNCTIONS
+        // ========================================================================
+        function getUserProfile() {
+            try {
+                const profile = localStorage.getItem('userProfile');
+                return profile ? JSON.parse(profile) : null;
+            } catch (err) {
+                console.error('Error loading user profile:', err);
+                return null;
+            }
+        }
+
+        function getApplications() {
+            try {
+                const apps = localStorage.getItem('trackedApplications');
+                return apps ? JSON.parse(apps) : [];
+            } catch (err) {
+                console.error('Error loading applications:', err);
+                return [];
+            }
+        }
+
+        function getActiveApplications(apps) {
+            return apps.filter(a => STATUSES[a.status]?.active);
+        }
+
+        function getDaysSince(dateString) {
+            if (!dateString) return 0;
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // ========================================================================
+        // STATS CALCULATION FUNCTIONS
+        // ========================================================================
+        function getInterviewsThisWeek(apps) {
+            const interviewStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
+                                       'Panel Interview', 'Final Round', 'Executive Interview'];
+            return apps.filter(a => interviewStatuses.includes(a.status)).length;
+        }
+
+        function getFollowUpsDue(apps) {
+            return apps.filter(a => {
+                const daysSince = getDaysSince(a.dateApplied || a.dateAdded);
+                return ['Applied', 'Reached Out'].includes(a.status) && daysSince >= 5;
+            });
+        }
+
+        function getAvgResponseTime(apps) {
+            const withResponse = apps.filter(a => {
+                return a.dateApplied && (a.dateResponseReceived || a.dateInterviewed);
+            });
+
+            if (withResponse.length === 0) return null;
+
+            const total = withResponse.reduce((sum, a) => {
+                const responseDate = a.dateResponseReceived || a.dateInterviewed;
+                const applied = new Date(a.dateApplied);
+                const responded = new Date(responseDate);
+                return sum + Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
+            }, 0);
+
+            return Math.round(total / withResponse.length);
+        }
+
+        function getRecentApplications(apps) {
+            return [...apps]
+                .sort((a, b) => {
+                    const aDate = new Date(a.lastUpdated || a.dateAdded);
+                    const bDate = new Date(b.lastUpdated || b.dateAdded);
+                    return bDate - aDate;
+                })
+                .slice(0, 5);
+        }
+
+        // ========================================================================
+        // EMPATHY FUNCTIONS
+        // ========================================================================
+        function getPulseGreeting(profile, apps) {
+            const activeCount = getActiveApplications(apps).length;
+
+            if (!profile || !profile.situation) {
+                if (activeCount === 0) {
+                    return "Welcome back! Ready to find your next opportunity?";
+                }
+                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
+            }
+
+            const { holding_up, timeline } = profile.situation;
+
+            // Crushed state (override everything)
+            if (holding_up === 'crushed') {
+                if (activeCount === 0) {
+                    return "I know this is brutal. Let's get some applications moving.";
+                }
+                return `I know this is brutal. You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Let's make sure each one gets follow-up.`;
+            }
+
+            // Desperate + urgent
+            if (holding_up === 'desperate' && timeline === 'urgent') {
+                return `Let's focus. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention today.`;
+            }
+
+            // Desperate (without urgent timeline)
+            if (holding_up === 'desperate') {
+                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Let's make sure nothing slips through the cracks.`;
+            }
+
+            // Stressed + active
+            if (holding_up === 'stressed' && timeline === 'active') {
+                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention so nothing slips.`;
+            }
+
+            // Stressed (without active timeline)
+            if (holding_up === 'stressed') {
+                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what's happening in your pipeline.`;
+            }
+
+            // Zen + exploring
+            if (holding_up === 'zen' && timeline === 'exploring') {
+                if (activeCount === 0) {
+                    return "No rush. When you're ready, let's find the right opportunity.";
+                }
+                return `You've got ${activeCount} active application${activeCount !== 1 ? 's' : ''}. No rush—let's keep the bar high.`;
+            }
+
+            // Zen (without exploring)
+            if (holding_up === 'zen') {
+                return `${activeCount} application${activeCount !== 1 ? 's are' : ' is'} active. Things are looking solid.`;
+            }
+
+            // Clock ticking (urgent timeline)
+            if (timeline === 'clock_ticking') {
+                return `Time matters. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} active. Here's what requires immediate action.`;
+            }
+
+            // Default
+            if (activeCount === 0) {
+                return "Ready to get started? Let's find your next opportunity.";
+            }
+            return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
+        }
+
+        function getFocusMessage(profile, apps, activeApps, interviewsThisWeek, followUpsDue) {
+            const { holding_up, timeline } = profile?.situation || {};
+
+            // Priority 1: Upcoming interviews
+            if (interviewsThisWeek.length > 0) {
+                const nextInterview = interviewsThisWeek[0];
+                return {
+                    message: `<strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}`,
+                    buttonText: 'Prep Interview',
+                    buttonLink: 'interview-intelligence.html'
+                };
+            }
+
+            // Priority 2: Follow-ups
+            if (followUpsDue.length > 0) {
+                const oldestFollowUp = followUpsDue.sort((a, b) =>
+                    new Date(a.dateApplied || a.dateAdded) - new Date(b.dateApplied || b.dateAdded)
+                )[0];
+                const daysSince = getDaysSince(oldestFollowUp.dateApplied || oldestFollowUp.dateAdded);
+
+                let message = `<strong>Priority:</strong> Follow up with ${oldestFollowUp.company} (${daysSince} days since applying)`;
+                if (timeline === 'clock_ticking' || timeline === 'urgent') {
+                    message = `<strong>Action needed:</strong> ${oldestFollowUp.company} hasn't responded in ${daysSince} days. Follow up now.`;
+                }
+
+                return {
+                    message: message,
+                    buttonText: 'Draft Follow-up',
+                    buttonLink: 'outreach.html'
+                };
+            }
+
+            // Priority 3: Pipeline too thin
+            if (activeApps.length < 5) {
+                let message = '';
+                let buttonText = 'Analyze New Role';
+
+                if (holding_up === 'zen' && timeline === 'exploring') {
+                    message = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Room to add higher-quality matches.`;
+                } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
+                    message = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. You need more options—broaden your search.`;
+                    buttonText = 'Find More Roles';
+                } else if (holding_up === 'stressed' || timeline === 'urgent') {
+                    message = `<strong>Pipeline check:</strong> ${activeApps.length} active apps. Consider adding 2-3 more to strengthen your position.`;
+                } else {
+                    message = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Consider adding more to increase your odds.`;
+                }
+
+                return {
+                    message: message,
+                    buttonText: buttonText,
+                    buttonLink: 'analyze.html'
+                };
+            }
+
+            // Priority 4: Pipeline healthy
+            let message = '';
+            if (holding_up === 'crushed' || holding_up === 'desperate') {
+                message = `<strong>Keep pushing:</strong> ${activeApps.length} active applications. You're doing the work.`;
+            } else if (holding_up === 'stressed') {
+                message = `<strong>On track:</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
+            } else {
+                message = `<strong>Looking good!</strong> ${activeApps.length} active applications in your pipeline. Keep the momentum going.`;
+            }
+
+            return {
+                message: message,
+                buttonText: 'Add Another',
+                buttonLink: 'analyze.html'
+            };
+        }
+
+        // ========================================================================
+        // RENDER FUNCTIONS
+        // ========================================================================
+        function renderDashboard() {
+            const profile = getUserProfile();
+            const apps = getApplications();
+            const activeApps = getActiveApplications(apps);
+
+            renderDailyPulse(profile, apps);
+            renderQuickStats(apps, activeApps);
+            renderTodaysFocus(profile, apps, activeApps);
+            renderRecentActivity(apps);
+        }
+
+        function renderDailyPulse(profile, apps) {
+            const greeting = getPulseGreeting(profile, apps);
+            document.getElementById('pulseGreeting').textContent = greeting;
+        }
+
+        function renderQuickStats(apps, activeApps) {
+            document.getElementById('statActive').textContent = activeApps.length;
+
+            const interviewsThisWeek = getInterviewsThisWeek(apps);
+            document.getElementById('statInterviews').textContent = interviewsThisWeek;
+            if (interviewsThisWeek > 0) {
+                document.getElementById('cardInterviews').classList.add('highlight');
+            }
+
+            const followUpsDue = getFollowUpsDue(apps);
+            document.getElementById('statFollowUps').textContent = followUpsDue.length;
+            if (followUpsDue.length > 0) {
+                document.getElementById('cardFollowUps').classList.add('urgent');
+            }
+
+            const avgResponseTime = getAvgResponseTime(apps);
+            document.getElementById('statResponseTime').textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
+        }
+
+        function renderTodaysFocus(profile, apps, activeApps) {
+            const interviewStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
+                                       'Panel Interview', 'Final Round', 'Executive Interview'];
+            const interviewsThisWeek = apps.filter(a => interviewStatuses.includes(a.status));
+            const followUpsDue = getFollowUpsDue(apps);
+
+            const focus = getFocusMessage(profile, apps, activeApps, interviewsThisWeek, followUpsDue);
+
+            document.getElementById('focusMessage').innerHTML = focus.message;
+            document.getElementById('focusButton').textContent = focus.buttonText;
+            document.getElementById('focusButton').onclick = () => window.location.href = focus.buttonLink;
+        }
+
+        function renderRecentActivity(apps) {
+            const recent = getRecentApplications(apps);
+            const container = document.getElementById('recentActivity');
+            const section = document.getElementById('recentSection');
+
+            if (recent.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = recent.map(app => `
+                <div class="activity-item">
+                    <div class="activity-info">
+                        <div class="activity-company">${app.company || 'Unknown Company'}</div>
+                        <div class="activity-role">${app.role_title || app.role || 'Role'}</div>
+                    </div>
+                    <div class="activity-meta">
+                        <span class="status-badge ${getStatusClass(app.status)}">${app.status || 'Unknown'}</span>
+                        <span class="activity-time">${getDaysSince(app.lastUpdated || app.dateAdded)}d ago</span>
+                    </div>
+                    <a href="tracker.html?highlight=${app.id}" class="activity-link">View →</a>
+                </div>
+            `).join('');
+        }
+
+        function getStatusClass(status) {
+            if (status === 'Hot' || status === 'Reference Check' || status === 'Negotiating') return 'status-hot';
+            if (['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(status)) return 'status-active';
+            if (['Applied', 'Reached Out', 'Researching'].includes(status)) return 'status-waiting';
+            return 'status-default';
+        }
+
+        // ========================================================================
+        // INITIALIZATION
+        // ========================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDashboard();
+        });
+    </script>
+
+    <!-- Auth scripts -->
+    <script src="js/supabase-client.js"></script>
+    <script>
+        // Auth check and user display
+        (async function() {
+            if (typeof HenryAuth !== 'undefined') {
+                const session = await HenryAuth.getSession();
+                if (!session) {
+                    // Not logged in, redirect to login
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Show user email
+                const userEmail = document.getElementById('userEmail');
+                if (userEmail && session.user?.email) {
+                    userEmail.textContent = session.user.email;
+                }
+
+                // Setup logout
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.onclick = async (e) => {
+                        e.preventDefault();
+                        await HenryAuth.signOut();
+                        window.location.href = 'index.html';
+                    };
+                }
+            }
+        })();
+    </script>
+    <script src="components/ask-henry.js"></script>
+</body>
+</html>
