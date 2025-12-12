@@ -915,7 +915,15 @@ Examples of helpful info:
         function goToCommandCenter() {
             // Ensure the interview is synced to Command Center before navigating
             if (currentInterview) {
+                // Make sure debrief info is set on the interview object
+                currentInterview.debriefCompleted = true;
+                currentInterview.debriefCompletedAt = currentInterview.debriefCompletedAt || new Date().toISOString();
+                currentInterview.feeling = selectedFeeling || currentInterview.feeling;
+
+                console.log('Syncing interview to tracker:', currentInterview);
                 syncInterviewToTracker(currentInterview);
+            } else {
+                console.error('No currentInterview found to sync');
             }
             window.location.href = 'tracker.html';
         }
