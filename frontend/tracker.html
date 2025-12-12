@@ -4302,6 +4302,15 @@
                     </div>
 
                     <div class="expandable-section">
+                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'jobdesc')">
+                            📄 Job Description ${app.jobDescription ? '(saved)' : ''}
+                        </div>
+                        <div class="expandable-content" id="jobdesc-content-${app.id}">
+                            <textarea class="notes-textarea" placeholder="Paste the job description here for easy reference..." onblur="saveJobDescription(${app.id}, this.value)">${app.jobDescription || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="expandable-section">
                         <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'notes')">
                             📝 Notes ${app.notes ? '(has notes)' : ''}
                         </div>
@@ -4390,16 +4399,14 @@
             }
             // Screen scheduled/awaiting
             else if (['Response Received', 'Recruiter Screen', 'Awaiting Screen'].includes(status)) {
-                actions.push({ label: '📅 Schedule Interview', action: `scheduleInterviewForApp(${app.id})`, primary: true });
-                actions.push({ label: '📋 Review Prep Guide', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
+                actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence(${app.id})`, primary: true });
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
-                actions.push({ label: '📅 Schedule Interview', action: `scheduleInterviewForApp(${app.id})`, primary: true });
                 if (statusDef.awaiting) {
                     actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
                 } else {
-                    actions.push({ label: '📋 View Prep', action: `navigateWithAnalysis(${app.id}, 'prep-guide.html')` });
+                    actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence(${app.id})`, primary: true });
                 }
             }
             // Final stages
@@ -4866,6 +4873,16 @@
             }
         }
 
+        function saveJobDescription(appId, jobDescription) {
+            const apps = getApplications();
+            const idx = apps.findIndex(a => a.id === appId);
+
+            if (idx !== -1) {
+                apps[idx].jobDescription = jobDescription;
+                saveApplications(apps);
+            }
+        }
+
         let deleteAppId = null;
 
         function showDeleteModal(appId) {
@@ -4962,6 +4979,15 @@
                                    max="${today}">
                         </div>
                     </div>
+                    <div class="timeline-date-row">
+                        <span class="timeline-date-label">Interview rounds completed</span>
+                        <div class="timeline-date-value">
+                            <input type="number" id="editInterviewRounds"
+                                   value="${app.interviewRounds || 0}"
+                                   min="0" max="20"
+                                   style="width: 60px; text-align: center;">
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -5017,6 +5043,7 @@
             const dateReachedOut = document.getElementById('editDateReachedOut').value;
             const dateInterviewed = document.getElementById('editDateInterviewed').value;
             const lastUpdated = document.getElementById('editLastUpdated').value;
+            const interviewRounds = parseInt(document.getElementById('editInterviewRounds').value) || 0;
 
             // Update application
             if (dateApplied) apps[idx].dateApplied = new Date(dateApplied).toISOString();
@@ -5031,6 +5058,8 @@
             else delete apps[idx].dateInterviewed;
 
             if (lastUpdated) apps[idx].lastUpdated = new Date(lastUpdated).toISOString();
+
+            apps[idx].interviewRounds = interviewRounds;
 
             saveApplications(apps);
             closeDateEditModal();
@@ -5107,6 +5136,32 @@
             }
 
             closeScheduleInterviewModal();
+            window.location.href = 'interview-intelligence.html';
+        }
+
+        // Navigate directly to Interview Intelligence with app context
+        function navigateToInterviewIntelligence(appId) {
+            const apps = getApplications();
+            const app = apps.find(a => a.id === appId);
+            if (!app) return;
+
+            // Store context for Interview Intelligence
+            const interviewContext = {
+                company: app.company,
+                role: app.role,
+                jobDescription: app.jobDescription || app.notes || '',
+                appId: app.id
+            };
+            sessionStorage.setItem('pendingInterviewContext', JSON.stringify(interviewContext));
+
+            // Also load analysis data if available
+            if (app.analysisKey) {
+                const analysisData = localStorage.getItem(app.analysisKey);
+                if (analysisData) {
+                    sessionStorage.setItem('analysisData', analysisData);
+                }
+            }
+
             window.location.href = 'interview-intelligence.html';
         }
 
