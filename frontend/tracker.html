@@ -2213,30 +2213,6 @@
             </div>
         </div>
 
-        <!-- DAILY PULSE BANNER -->
-        <div class="daily-pulse" id="dailyPulse" style="display: none;">
-            <div class="pulse-header">
-                <div class="pulse-greeting" id="pulseGreeting">Good morning! Here's your job search pulse:</div>
-            </div>
-            <div class="pulse-stats">
-                <div class="pulse-stat">
-                    <span class="pulse-stat-value" id="pulseActive">0</span>
-                    <span class="pulse-stat-label">active apps</span>
-                </div>
-                <div class="pulse-stat highlight" id="pulseFollowUpStat" style="display: none;">
-                    <span class="pulse-stat-value" id="pulseFollowUps">0</span>
-                    <span class="pulse-stat-label">follow-ups due</span>
-                </div>
-                <div class="pulse-stat highlight" id="pulseInterviewStat" style="display: none;">
-                    <span class="pulse-stat-value" id="pulseInterviews">0</span>
-                    <span class="pulse-stat-label">upcoming interviews</span>
-                </div>
-            </div>
-            <div class="pulse-action" id="pulseAction">
-                <!-- Dynamic priority action -->
-            </div>
-        </div>
-
         <!-- PIPELINE INTELLIGENCE DASHBOARD -->
         <div class="pipeline-dashboard" id="pipelineDashboard">
             <div class="metric-card">
@@ -2398,6 +2374,70 @@
             <div class="modal-actions" style="margin-top: 24px;">
                 <button class="modal-btn secondary" onclick="closeScheduleInterviewModal()">Cancel</button>
                 <button class="modal-btn primary" onclick="proceedToInterviewIntelligence()" id="proceedInterviewBtn" disabled>Continue to Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JOB DESCRIPTION MODAL -->
+    <div class="modal-overlay" id="jobDescriptionModal">
+        <div class="modal" style="max-width: 700px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 id="jobDescriptionTitle" style="margin: 0;">📄 Job Description</h2>
+                <button onclick="closeJobDescriptionModal()" style="background: none; border: none; color: var(--color-text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="jobDescriptionContent" style="flex: 1; overflow-y: auto; background: var(--color-bg); border-radius: 8px; padding: 20px;">
+                <!-- JD content will be inserted here -->
+            </div>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button class="modal-btn secondary" onclick="closeJobDescriptionModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REJECTION MODAL -->
+    <div class="modal-overlay" id="rejectModal">
+        <div class="modal" style="max-width: 500px;">
+            <h2><span>❌</span> Mark as Rejected</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Understanding what happened helps improve your strategy.</p>
+
+            <div id="rejectContent">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">When were you rejected?</label>
+                    <select id="rejectStage" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                        <option value="pre-screen">Before any interviews (auto-rejection)</option>
+                        <option value="after-screen">After recruiter screen</option>
+                        <option value="after-hiring-manager">After hiring manager interview</option>
+                        <option value="after-technical">After technical round</option>
+                        <option value="after-final">After final round</option>
+                        <option value="no-response">Never heard back (ghosted)</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Did they give any feedback?</label>
+                    <textarea id="rejectFeedback" placeholder="What feedback did you receive, if any?" style="width: 100%; min-height: 80px; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; resize: vertical;"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="modal-btn secondary" onclick="closeRejectModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="confirmRejection()" style="background: #ef4444;">Mark Rejected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REJECTION DEBRIEF MODAL -->
+    <div class="modal-overlay" id="rejectionDebriefModal">
+        <div class="modal" style="max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 id="debriefTitle" style="margin: 0;">📋 Rejection Debrief</h2>
+                <button onclick="closeRejectionDebriefModal()" style="background: none; border: none; color: var(--color-text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="debriefContent" style="flex: 1; overflow-y: auto;">
+                <!-- Debrief content will be inserted here -->
+            </div>
+            <div class="modal-actions" style="margin-top: 16px;">
+                <button class="modal-btn secondary" onclick="closeRejectionDebriefModal()">Close</button>
             </div>
         </div>
     </div>
@@ -4215,12 +4255,12 @@
                             <span class="fit-badge ${fitClass}">${app.fitScore}% fit</span>
                             ${showExperience ? `<span class="experience-badge grade-${experienceScore.grade.toLowerCase()}">${experienceScore.grade}</span>` : ''}
                             <div class="status-selector">
-                                <button class="status-btn" onclick="toggleStatusDropdown(${app.id})">
+                                <button class="status-btn" onclick="toggleStatusDropdown('${app.id}', event)">
                                     ${app.status} <span style="opacity: 0.5;">▼</span>
                                 </button>
                                 <div class="status-dropdown" id="dropdown-${app.id}">
                                     ${Object.keys(STATUSES).map(s => `
-                                        <div class="status-option" onclick="updateStatus(${app.id}, '${s}')">${s}</div>
+                                        <div class="status-option" onclick="updateStatus('${app.id}', '${s}')">${s}</div>
                                     `).join('')}
                                 </div>
                             </div>
@@ -4234,14 +4274,14 @@
                             <span class="timeline-date-display">${dateAppliedDisplay}</span>
                             <span class="timeline-days-ago">(${daysSinceApplied} days ago)</span>
                         </div>
-                        <button class="edit-date-btn" onclick="showDateEditModal(${app.id})">Edit Timeline</button>
+                        <button class="edit-date-btn" onclick="showDateEditModal('${app.id}')">Edit Timeline</button>
                     </div>
                     ` : `
                     <div class="timeline-date-edit">
                         <div class="timeline-date-edit-left">
                             <span style="color: var(--color-text-muted);">No application date set</span>
                         </div>
-                        <button class="edit-date-btn" onclick="showDateEditModal(${app.id})">Set Date</button>
+                        <button class="edit-date-btn" onclick="showDateEditModal('${app.id}')">Set Date</button>
                     </div>
                     `}
 
@@ -4302,20 +4342,11 @@
                     </div>
 
                     <div class="expandable-section">
-                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'jobdesc')">
-                            📄 Job Description ${app.jobDescription ? '(saved)' : ''}
-                        </div>
-                        <div class="expandable-content" id="jobdesc-content-${app.id}">
-                            <textarea class="notes-textarea" placeholder="Paste the job description here for easy reference..." onblur="saveJobDescription(${app.id}, this.value)">${app.jobDescription || ''}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="expandable-section">
-                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'notes')">
+                        <div class="expandable-toggle" onclick="toggleSection('${app.id}', 'notes')">
                             📝 Notes ${app.notes ? '(has notes)' : ''}
                         </div>
                         <div class="expandable-content" id="notes-content-${app.id}">
-                            <textarea class="notes-textarea" placeholder="Add notes: contacts, interview details, reminders..." onblur="saveNotes(${app.id}, this.value)">${app.notes || ''}</textarea>
+                            <textarea class="notes-textarea" placeholder="Add notes: contacts, interview details, reminders..." onblur="saveNotes('${app.id}', this.value)">${app.notes || ''}</textarea>
                         </div>
                     </div>
 
@@ -4382,57 +4413,59 @@
             // Pre-Apply stages
             if (['Preparing', 'To Apply'].includes(status)) {
                 if (!app.dateApplied) {
-                    actions.push({ label: '📤 Submit Application', action: `markAction(${app.id}, 'dateApplied')`, primary: true });
+                    actions.push({ label: '📤 Submit Application', action: `markAction('${app.id}', 'dateApplied')`, primary: true });
                 }
-                actions.push({ label: '📝 Review Materials', action: `navigateWithAnalysis(${app.id}, 'documents.html')` });
+                actions.push({ label: '📝 Review Materials', action: `navigateWithAnalysis('${app.id}', 'documents.html')` });
             }
             // Just Applied - waiting for response
             else if (['Applied', 'Reached Out'].includes(status)) {
                 if (daysSince >= 5 && daysSince <= 10) {
-                    actions.push({ label: '📧 Send Follow-Up', action: `navigateWithAnalysis(${app.id}, 'outreach.html')`, primary: true });
+                    actions.push({ label: '📧 Send Follow-Up', action: `navigateWithAnalysis('${app.id}', 'outreach.html')`, primary: true });
                 } else if (daysSince > 10) {
-                    actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp(${app.id})`, primary: true });
+                    actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp('${app.id}')`, primary: true });
                 }
                 if (!app.dateReachedOut) {
-                    actions.push({ label: '💬 Reach Out', action: `markAction(${app.id}, 'dateReachedOut')` });
+                    actions.push({ label: '💬 Reach Out', action: `markAction('${app.id}', 'dateReachedOut')` });
                 }
             }
             // Screen scheduled/awaiting
             else if (['Response Received', 'Recruiter Screen', 'Awaiting Screen'].includes(status)) {
-                actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence(${app.id})`, primary: true });
+                actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence('${app.id}')`, primary: true });
             }
             // Interview stages
             else if (['Hiring Manager', 'Technical Round', 'Panel Interview', 'Awaiting Next Round'].includes(status)) {
                 if (statusDef.awaiting) {
-                    actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp(${app.id})` });
+                    actions.push({ label: '⏰ Schedule Follow-Up', action: `scheduleFollowUp('${app.id}')` });
                 } else {
-                    actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence(${app.id})`, primary: true });
+                    actions.push({ label: '📋 Review Prep Guide', action: `navigateToInterviewIntelligence('${app.id}')`, primary: true });
                 }
             }
             // Final stages
             else if (['Final Round', 'Executive Interview', 'Awaiting Decision', 'Interviewed'].includes(status)) {
-                actions.push({ label: '📝 Add Notes', action: `toggleSection(${app.id}, 'notes')`, primary: true });
+                actions.push({ label: '📝 Add Notes', action: `toggleSection('${app.id}', 'notes')`, primary: true });
                 if ((statusDef.awaiting || status === 'Interviewed') && daysSince >= 3) {
-                    actions.push({ label: '📞 Request Timeline Update', action: `scheduleFollowUp(${app.id})` });
+                    actions.push({ label: '📞 Request Timeline Update', action: `scheduleFollowUp('${app.id}')` });
                 }
-                actions.push({ label: '💰 Research Comp', action: `navigateWithAnalysis(${app.id}, 'overview.html')` });
+                actions.push({ label: '❌ Mark Rejected', action: `showRejectModal('${app.id}')` });
             }
             // Offer stage
             else if (status === 'Offer Received') {
-                actions.push({ label: '💰 Prep Negotiation', action: `navigateWithAnalysis(${app.id}, 'overview.html')`, primary: true });
-                actions.push({ label: '📊 Compare Offers', action: `compareOffers(${app.id})` });
+                actions.push({ label: '💰 Prep Negotiation', action: `navigateWithAnalysis('${app.id}', 'overview.html')`, primary: true });
+                actions.push({ label: '📊 Compare Offers', action: `compareOffers('${app.id}')` });
             }
             // Inactive states
             else if (['No Response', 'Rejected', 'Withdrawn'].includes(status)) {
                 if (status === 'Rejected') {
-                    actions.push({ label: '🔄 Request Feedback', action: `requestFeedback(${app.id})` });
+                    actions.push({ label: '📋 View Debrief', action: `showRejectionDebrief('${app.id}')` });
+                    actions.push({ label: '🔄 Request Feedback', action: `requestFeedback('${app.id}')` });
                 }
-                actions.push({ label: '🗑️ Archive', action: `showDeleteModal(${app.id})`, danger: true });
+                actions.push({ label: '🗑️ Archive', action: `showDeleteModal('${app.id}')`, danger: true });
                 return actions;
             }
 
-            // Always include archive for active apps
-            actions.push({ label: 'Archive', action: `showDeleteModal(${app.id})`, danger: true });
+            // Always include archive and reject for active apps
+            actions.push({ label: '❌ Rejected', action: `showRejectModal('${app.id}')` });
+            actions.push({ label: 'Archive', action: `showDeleteModal('${app.id}')`, danger: true });
 
             return actions;
         }
@@ -4440,16 +4473,9 @@
         function renderContextualActions(app) {
             const actions = getContextualActions(app);
 
-            // Always add "Ask Henry" button first with the H-mark logo
-            const askHenryBtn = `<button class="card-action-btn ask-henry" onclick="openAskHenry(${app.id})">
-                <svg width="16" height="16" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 4px;">
-                    <circle cx="100" cy="100" r="85" stroke="#fff" stroke-width="6" fill="none"/>
-                    <path d="M55 130 L55 70" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
-                    <path d="M145 130 L145 50" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
-                    <path d="M55 100 L145 100" stroke="#fff" stroke-width="11" stroke-linecap="round" fill="none"/>
-                    <circle cx="145" cy="50" r="10" fill="#fff"/>
-                </svg>
-                Ask Henry
+            // Always add "Review Job Description" button first
+            const reviewJDBtn = `<button class="card-action-btn ask-henry" onclick="showJobDescription('${app.id}')">
+                📄 Review Job Description
             </button>`;
 
             const actionBtns = actions.map(action => {
@@ -4460,7 +4486,7 @@
                 return `<button class="${btnClass}" onclick="${action.action}">${action.label}</button>`;
             }).join('');
 
-            return askHenryBtn + actionBtns;
+            return reviewJDBtn + actionBtns;
         }
 
         // Helper functions for contextual actions
@@ -4495,6 +4521,226 @@
 
         function compareOffers(appId) {
             alert('Offer comparison feature coming soon!');
+        }
+
+        /**
+         * Show job description in a modal
+         * Retrieves JD from app data or analysis data
+         */
+        function showJobDescription(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) {
+                console.error('Application not found:', appId);
+                return;
+            }
+
+            // Try to get JD from multiple sources
+            let jobDescription = app.jobDescription || '';
+
+            // If not in app, try to get from analysis data
+            if (!jobDescription && app.analysisKey) {
+                const analysisData = localStorage.getItem(app.analysisKey);
+                if (analysisData) {
+                    try {
+                        const parsed = JSON.parse(analysisData);
+                        jobDescription = parsed.job_description || parsed.jd_text || parsed._jd_text || '';
+                    } catch (e) {
+                        console.error('Error parsing analysis data:', e);
+                    }
+                }
+            }
+
+            // Show modal with JD
+            const modal = document.getElementById('jobDescriptionModal');
+            const content = document.getElementById('jobDescriptionContent');
+            const title = document.getElementById('jobDescriptionTitle');
+
+            title.textContent = `${app.role} at ${app.company}`;
+
+            if (jobDescription) {
+                content.innerHTML = `<div class="jd-text">${jobDescription.replace(/\n/g, '<br>')}</div>`;
+            } else {
+                content.innerHTML = `
+                    <div class="jd-empty">
+                        <p>No job description saved for this role.</p>
+                        <p style="margin-top: 12px; color: var(--color-text-muted); font-size: 0.9rem;">
+                            Job descriptions are automatically saved when you analyze a role.
+                            If you added this application manually, you can paste the JD in the notes section.
+                        </p>
+                    </div>
+                `;
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeJobDescriptionModal() {
+            document.getElementById('jobDescriptionModal').classList.remove('show');
+        }
+
+        // ========================================================================
+        // REJECTION MODAL
+        // ========================================================================
+        let rejectAppId = null;
+
+        function showRejectModal(appId) {
+            rejectAppId = appId;
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            // Reset form
+            document.getElementById('rejectStage').value = 'pre-screen';
+            document.getElementById('rejectFeedback').value = '';
+
+            document.getElementById('rejectModal').classList.add('show');
+        }
+
+        function closeRejectModal() {
+            rejectAppId = null;
+            document.getElementById('rejectModal').classList.remove('show');
+        }
+
+        function confirmRejection() {
+            if (!rejectAppId) return;
+
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(rejectAppId));
+            if (idx === -1) return;
+
+            const rejectStage = document.getElementById('rejectStage').value;
+            const rejectFeedback = document.getElementById('rejectFeedback').value;
+
+            // Update application
+            apps[idx].status = 'Rejected';
+            apps[idx].lastUpdated = new Date().toISOString();
+            apps[idx].rejectionData = {
+                stage: rejectStage,
+                feedback: rejectFeedback,
+                date: new Date().toISOString()
+            };
+
+            saveApplications(apps);
+            closeRejectModal();
+            renderAll(apps);
+        }
+
+        function showRejectionDebrief(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            const title = document.getElementById('debriefTitle');
+            const content = document.getElementById('debriefContent');
+
+            title.textContent = `${app.role} at ${app.company}`;
+
+            const rejectionData = app.rejectionData || {};
+            const stageLabels = {
+                'pre-screen': 'Before any interviews (auto-rejection)',
+                'after-screen': 'After recruiter screen',
+                'after-hiring-manager': 'After hiring manager interview',
+                'after-technical': 'After technical round',
+                'after-final': 'After final round',
+                'no-response': 'Never heard back (ghosted)'
+            };
+
+            const stageLabel = stageLabels[rejectionData.stage] || 'Unknown stage';
+            const rejectionDate = rejectionData.date ? new Date(rejectionData.date).toLocaleDateString() : 'Unknown';
+
+            // Calculate insights based on rejection stage
+            let insights = '';
+            if (rejectionData.stage === 'pre-screen') {
+                insights = `
+                    <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                        <h4 style="color: #ef4444; margin: 0 0 8px 0;">Auto-Rejection Analysis</h4>
+                        <p style="margin: 0; color: var(--color-text-secondary);">
+                            Pre-screen rejections often indicate ATS filtering or a mismatch with hard requirements. Consider:
+                        </p>
+                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                            <li>Does your resume contain the exact keywords from the job description?</li>
+                            <li>Do you meet all stated requirements (years of experience, degree, certifications)?</li>
+                            <li>Is your resume format ATS-friendly (no tables, columns, or graphics)?</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (rejectionData.stage === 'after-screen') {
+                insights = `
+                    <div style="background: rgba(234, 179, 8, 0.1); border-left: 3px solid #eab308; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                        <h4 style="color: #eab308; margin: 0 0 8px 0;">Post-Screen Rejection</h4>
+                        <p style="margin: 0; color: var(--color-text-secondary);">
+                            The recruiter saw potential but something didn't align. Common reasons:
+                        </p>
+                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                            <li>Salary expectations didn't match their budget</li>
+                            <li>Location/remote work preferences didn't align</li>
+                            <li>Timeline mismatch (they needed someone sooner/later)</li>
+                            <li>Better-matched candidates in the pipeline</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (rejectionData.stage === 'no-response') {
+                insights = `
+                    <div style="background: rgba(107, 114, 128, 0.1); border-left: 3px solid #6b7280; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                        <h4 style="color: #6b7280; margin: 0 0 8px 0;">Ghosted</h4>
+                        <p style="margin: 0; color: var(--color-text-secondary);">
+                            Unfortunately, ghosting is common. This usually reflects the company's process, not you:
+                        </p>
+                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                            <li>Role may have been filled, put on hold, or cancelled</li>
+                            <li>High application volume with limited recruiter capacity</li>
+                            <li>Internal candidates or referrals took priority</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                insights = `
+                    <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                        <h4 style="color: #3b82f6; margin: 0 0 8px 0;">Post-Interview Rejection</h4>
+                        <p style="margin: 0; color: var(--color-text-secondary);">
+                            You made it far! Late-stage rejections often come down to:
+                        </p>
+                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                            <li>Cultural fit or team dynamics</li>
+                            <li>Specific technical skills gaps</li>
+                            <li>Another candidate was simply a better match</li>
+                            <li>Budget or headcount changes</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div style="background: var(--color-surface); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                        <div>
+                            <div style="color: var(--color-text-muted); font-size: 0.85rem;">Rejection Stage</div>
+                            <div style="color: var(--color-text); font-weight: 500;">${stageLabel}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="color: var(--color-text-muted); font-size: 0.85rem;">Date</div>
+                            <div style="color: var(--color-text); font-weight: 500;">${rejectionDate}</div>
+                        </div>
+                    </div>
+
+                    ${rejectionData.feedback ? `
+                        <div style="border-top: 1px solid var(--color-border); padding-top: 16px;">
+                            <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">Feedback Received</div>
+                            <div style="color: var(--color-text); background: var(--color-bg); padding: 12px; border-radius: 8px;">${rejectionData.feedback}</div>
+                        </div>
+                    ` : `
+                        <div style="border-top: 1px solid var(--color-border); padding-top: 16px; color: var(--color-text-muted); font-style: italic;">
+                            No feedback provided
+                        </div>
+                    `}
+                </div>
+
+                ${insights}
+            `;
+
+            document.getElementById('rejectionDebriefModal').classList.add('show');
+        }
+
+        function closeRejectionDebriefModal() {
+            document.getElementById('rejectionDebriefModal').classList.remove('show');
         }
 
         /**
@@ -4741,9 +4987,13 @@
         // ========================================================================
         // INTERACTION HANDLERS
         // ========================================================================
-        function toggleStatusDropdown(appId) {
+        function toggleStatusDropdown(appId, event) {
+            if (event) event.stopPropagation();
             document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
-            document.getElementById(`dropdown-${appId}`).classList.toggle('show');
+            const dropdown = document.getElementById(`dropdown-${appId}`);
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
         }
 
         function editCompanyName(appId, event) {
@@ -4793,7 +5043,7 @@
 
         function updateStatus(appId, newStatus) {
             const apps = getApplications();
-            const idx = apps.findIndex(a => a.id === appId);
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
 
             if (idx !== -1) {
                 const oldStatus = apps[idx].status;
@@ -4865,7 +5115,7 @@
 
         function saveNotes(appId, notes) {
             const apps = getApplications();
-            const idx = apps.findIndex(a => a.id === appId);
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
 
             if (idx !== -1) {
                 apps[idx].notes = notes;
@@ -4911,7 +5161,7 @@
 
         function showDateEditModal(appId) {
             dateEditAppId = appId;
-            const app = getApplications().find(a => a.id === appId);
+            const app = getApplications().find(a => String(a.id) === String(appId));
             if (!app) return;
 
             const today = new Date().toISOString().split('T')[0];
@@ -5034,7 +5284,7 @@
             if (!dateEditAppId) return;
 
             const apps = getApplications();
-            const idx = apps.findIndex(a => a.id === dateEditAppId);
+            const idx = apps.findIndex(a => String(a.id) === String(dateEditAppId));
             if (idx === -1) return;
 
             // Get values from form
