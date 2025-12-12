@@ -117,27 +117,33 @@
             width: 100px;
             height: 100px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--color-purple), var(--color-accent));
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            font-size: 3rem;
+            transition: all 0.3s ease;
         }
 
-        .level-badge-title {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.8;
+        .level-badge.high-confidence {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
         }
 
-        .level-badge-level {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            font-weight: 500;
-            text-align: center;
-            line-height: 1.2;
+        .level-badge.medium-confidence {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .level-badge.low-confidence {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .level-badge-icon {
+            font-size: 3rem;
+            line-height: 1;
         }
 
         .level-info {
@@ -239,6 +245,13 @@
             border-bottom: none;
         }
 
+        .signal-description {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
         .empty-signal {
             color: var(--color-text-secondary);
             font-style: italic;
@@ -257,12 +270,9 @@
         .target-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
             margin-bottom: 20px;
-        }
-
-        .target-icon {
-            font-size: 1.5rem;
         }
 
         .target-title {
@@ -279,7 +289,6 @@
             border-radius: 20px;
             font-size: 0.9rem;
             font-weight: 500;
-            margin-bottom: 16px;
         }
 
         .qualification-badge.qualified {
@@ -483,8 +492,9 @@
         .language-header {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
 
         .language-title {
@@ -493,13 +503,19 @@
             font-weight: 400;
         }
 
+        .language-description {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
         .language-level-badge {
             display: inline-block;
             padding: 6px 16px;
             border-radius: 20px;
             font-size: 0.9rem;
             font-weight: 500;
-            margin-bottom: 16px;
         }
 
         .language-level-badge.entry {
@@ -797,9 +813,8 @@
             <!-- Level Assessment Card -->
             <div class="level-card" id="levelCard">
                 <div class="level-header">
-                    <div class="level-badge">
-                        <span class="level-badge-title">Current</span>
-                        <span class="level-badge-level" id="levelBadgeLevel">—</span>
+                    <div class="level-badge" id="levelBadge">
+                        <span class="level-badge-icon" id="levelBadgeIcon">—</span>
                     </div>
                     <div class="level-info">
                         <div class="level-function" id="levelFunction">—</div>
@@ -824,10 +839,9 @@
             <!-- Target Analysis (if target role provided) -->
             <div class="target-analysis" id="targetAnalysis" style="display: none;">
                 <div class="target-header">
-                    <span class="target-icon">target</span>
                     <h3 class="target-title">Target Role Analysis</h3>
+                    <div class="qualification-badge" id="qualificationBadge">—</div>
                 </div>
-                <div class="qualification-badge" id="qualificationBadge">—</div>
                 <p class="levels-apart" id="levelsApart">—</p>
 
                 <!-- Gaps Section -->
@@ -850,10 +864,10 @@
             <!-- Language Analysis -->
             <div class="language-section" id="languageSection">
                 <div class="language-header">
-                    <span>ABC</span>
                     <h3 class="language-title">Language Analysis</h3>
+                    <div class="language-level-badge" id="languageLevelBadge">—</div>
                 </div>
-                <div class="language-level-badge" id="languageLevelBadge">—</div>
+                <p class="language-description">The words you use signal your experience level. Senior professionals use leadership-focused verbs and quantify their impact.</p>
 
                 <div class="verb-distribution" id="verbDistribution">
                     <!-- Populated dynamically -->
@@ -877,7 +891,6 @@
             <!-- Recommendations Section -->
             <div class="recommendations-section" id="recommendationsSection">
                 <div class="rec-header">
-                    <span>*</span>
                     <h3 class="rec-title">Recommendations to Strengthen Your Resume</h3>
                 </div>
                 <div id="recommendationsList">
@@ -891,8 +904,8 @@
                     Ready to apply these insights and strengthen your application?
                 </p>
                 <div class="action-buttons">
-                    <button class="btn-primary" id="continueBtn">Continue to Strengthen</button>
-                    <button class="btn-secondary" id="skipBtn">Skip to Documents</button>
+                    <button class="btn-primary" id="continueBtn">Strengthen Your Resume</button>
+                    <button class="btn-secondary" id="skipBtn">Skip to Application Strategy</button>
                 </div>
             </div>
         </div>
@@ -1015,13 +1028,38 @@
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
 
-            // Level Card
-            document.getElementById('levelBadgeLevel').textContent = levelingData.current_level.split(' ')[0];
-            document.getElementById('levelFunction').textContent = levelingData.detected_function;
+            // Level Card - Confidence-based icon
+            const confidence = levelingData.level_confidence * 100;
+            const levelBadge = document.getElementById('levelBadge');
+            const levelBadgeIcon = document.getElementById('levelBadgeIcon');
+
+            // Set icon and class based on confidence level
+            if (confidence >= 85) {
+                levelBadge.className = 'level-badge high-confidence';
+                levelBadgeIcon.textContent = '✓';
+            } else if (confidence >= 70) {
+                levelBadge.className = 'level-badge medium-confidence';
+                levelBadgeIcon.textContent = '!';
+            } else {
+                levelBadge.className = 'level-badge low-confidence';
+                levelBadgeIcon.textContent = '✗';
+            }
+
+            // Map abbreviated function names to full names
+            const functionNameMap = {
+                'HR': 'Human Resources',
+                'Eng': 'Engineering',
+                'PM': 'Product Management',
+                'Mkt': 'Marketing',
+                'Ops': 'Operations',
+                'Fin': 'Finance'
+            };
+            const functionName = functionNameMap[levelingData.detected_function] || levelingData.detected_function;
+            document.getElementById('levelFunction').textContent = functionName;
             document.getElementById('levelTitle').textContent = levelingData.current_level;
             document.getElementById('yearsExp').textContent = `${levelingData.years_experience} years experience`;
-            document.getElementById('confidenceText').textContent = `${Math.round(levelingData.level_confidence * 100)}% confidence`;
-            document.getElementById('confidenceFill').style.width = `${levelingData.level_confidence * 100}%`;
+            document.getElementById('confidenceText').textContent = `${Math.round(confidence)}% confidence`;
+            document.getElementById('confidenceFill').style.width = `${confidence}%`;
             document.getElementById('summaryText').textContent = levelingData.summary;
 
             // Signals Grid
@@ -1048,10 +1086,30 @@
             const signalsGrid = document.getElementById('signalsGrid');
 
             const signalCategories = [
-                { key: 'scope_signals', title: 'Scope', icon: 'O' },
-                { key: 'impact_signals', title: 'Impact', icon: '^' },
-                { key: 'leadership_signals', title: 'Leadership', icon: '*' },
-                { key: 'technical_signals', title: 'Technical', icon: '<>' }
+                {
+                    key: 'scope_signals',
+                    title: 'Scope',
+                    icon: 'O',
+                    description: 'The scale of your work—team sizes, budgets, global reach, and organizational breadth.'
+                },
+                {
+                    key: 'impact_signals',
+                    title: 'Impact',
+                    icon: '^',
+                    description: 'Measurable business outcomes—revenue growth, cost savings, efficiency gains, and KPI improvements.'
+                },
+                {
+                    key: 'leadership_signals',
+                    title: 'Leadership',
+                    icon: '*',
+                    description: 'How you influence others—managing teams, mentoring, driving initiatives, and cross-functional collaboration.'
+                },
+                {
+                    key: 'technical_signals',
+                    title: 'Technical',
+                    icon: '<>',
+                    description: 'Domain expertise and specialized skills—tools, methodologies, certifications, and technical depth.'
+                }
             ];
 
             signalsGrid.innerHTML = signalCategories.map(cat => {
@@ -1062,6 +1120,7 @@
                             <span class="signal-icon">${cat.icon}</span>
                             <span class="signal-title">${cat.title} Signals</span>
                         </div>
+                        <p class="signal-description">${cat.description}</p>
                         ${signals.length > 0 ? `
                             <ul class="signal-list">
                                 ${signals.slice(0, 4).map(s => `<li>"${s}"</li>`).join('')}
