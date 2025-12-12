@@ -1044,25 +1044,18 @@
   </footer>
 
   <script>
-    // Check if user has profile and customize CTA
+    // Check if user has profile - redirect logged-in users to dashboard
     const profile = localStorage.getItem('userProfile');
-    const ctaTitle = document.getElementById('ctaTitle');
-    const ctaSubtitle = document.getElementById('ctaSubtitle');
-    const ctaButton = document.getElementById('ctaButton');
 
     if (profile) {
-      try {
-        const parsed = JSON.parse(profile);
-        const name = parsed.resume?.full_name?.split(' ')[0] || '';
-        ctaTitle.textContent = name ? `Welcome back, ${name}` : 'Welcome back';
-        ctaSubtitle.textContent = 'Your profile is set up. Ready to analyze another role?';
-        ctaButton.textContent = 'Analyze a Role';
-        ctaButton.onclick = () => window.location.href = 'analyze.html';
-      } catch (e) {
-        // Fall through to default
-      }
+      // User is logged in, redirect to dashboard
+      window.location.href = 'dashboard.html';
     } else {
-      ctaButton.onclick = () => window.location.href = 'analyze.html';
+      // New user - set up CTA
+      const ctaButton = document.getElementById('ctaButton');
+      if (ctaButton) {
+        ctaButton.onclick = () => window.location.href = 'analyze.html';
+      }
     }
   </script>
 
