@@ -548,6 +548,135 @@
             border-color: var(--color-accent);
         }
 
+        /* BULK SELECT */
+        .bulk-select-btn {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bulk-select-btn:hover {
+            background: var(--color-bg);
+            border-color: var(--color-accent);
+        }
+
+        .bulk-select-btn.active {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: white;
+        }
+
+        .bulk-actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-accent);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .bulk-actions-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bulk-actions-left input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .bulk-actions-left label {
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .selected-count {
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+        }
+
+        .bulk-actions-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bulk-action-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .bulk-action-btn.archive {
+            background: var(--color-hot-muted);
+            color: var(--color-hot);
+        }
+
+        .bulk-action-btn.archive:hover {
+            background: var(--color-hot);
+            color: white;
+        }
+
+        .bulk-action-btn.delete {
+            background: var(--color-dead-muted);
+            color: var(--color-dead);
+        }
+
+        .bulk-action-btn.delete:hover {
+            background: var(--color-dead);
+            color: white;
+        }
+
+        .bulk-action-btn.cancel {
+            background: transparent;
+            color: var(--color-text-muted);
+            border: 1px solid var(--color-border);
+        }
+
+        .bulk-action-btn.cancel:hover {
+            background: var(--color-surface);
+        }
+
+        /* App card in select mode */
+        .app-card.select-mode {
+            cursor: pointer;
+        }
+
+        .app-card.select-mode:hover {
+            border-color: var(--color-accent);
+        }
+
+        .app-card.selected {
+            border-color: var(--color-accent);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .app-card-checkbox {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            z-index: 10;
+            display: none;
+        }
+
+        .app-card.select-mode .app-card-checkbox {
+            display: block;
+        }
+
         /* APPLICATION CARDS */
         .applications-grid {
             display: flex;
@@ -675,6 +804,12 @@
         .fit-badge.low {
             background: var(--color-dead-muted);
             color: var(--color-dead);
+        }
+
+        .fit-badge.none {
+            background: rgba(128, 128, 128, 0.2);
+            color: var(--color-text-muted);
+            font-size: 0.7rem;
         }
 
         /* Next Action Section */
@@ -2517,6 +2652,25 @@
                     <option value="recent">Most Recent</option>
                     <option value="timeline">Timeline</option>
                 </select>
+            </div>
+            <div class="filter-group" style="margin-left: auto;">
+                <button class="bulk-select-btn" id="bulkSelectToggle" onclick="toggleBulkSelectMode()">
+                    ☑️ Select Multiple
+                </button>
+            </div>
+        </div>
+
+        <!-- BULK ACTIONS BAR (hidden by default) -->
+        <div class="bulk-actions-bar" id="bulkActionsBar" style="display: none;">
+            <div class="bulk-actions-left">
+                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                <label for="selectAllCheckbox">Select All</label>
+                <span class="selected-count" id="selectedCount">0 selected</span>
+            </div>
+            <div class="bulk-actions-right">
+                <button class="bulk-action-btn archive" onclick="bulkArchive()">📦 Archive Selected</button>
+                <button class="bulk-action-btn delete" onclick="bulkDelete()">🗑️ Delete Selected</button>
+                <button class="bulk-action-btn cancel" onclick="exitBulkSelectMode()">Cancel</button>
             </div>
         </div>
 
@@ -4800,7 +4954,8 @@
 
             // Fit badge class
             let fitClass = 'medium';
-            if (app.fitScore >= 80) fitClass = 'high';
+            if (app.fitScore === null || app.fitScore === undefined) fitClass = 'none';
+            else if (app.fitScore >= 80) fitClass = 'high';
             else if (app.fitScore < 60) fitClass = 'low';
 
             // Timeline stage - use accurate stage based on actual interview history
@@ -4833,7 +4988,7 @@
                             </div>
                         </div>
                         <div class="card-meta">
-                            <span class="fit-badge ${fitClass}">${app.fitScore}% fit</span>
+                            <span class="fit-badge ${fitClass}">${app.fitScore !== null && app.fitScore !== undefined ? app.fitScore + '% fit' : 'No fit score'}</span>
                             ${showExperience ? `<span class="experience-badge grade-${experienceScore.grade.toLowerCase()}">${experienceScore.grade}</span>` : ''}
                             <div class="status-selector">
                                 <button class="status-btn" onclick="toggleStatusDropdown('${app.id}', event)">
@@ -6475,6 +6630,181 @@ Thanks so much!
         document.getElementById('deleteConfirmInput').addEventListener('input', validateDeleteConfirmation);
 
         // ========================================================================
+        // BULK SELECT MODE
+        // ========================================================================
+        let bulkSelectMode = false;
+        let selectedAppIds = new Set();
+
+        function toggleBulkSelectMode() {
+            bulkSelectMode = !bulkSelectMode;
+            const btn = document.getElementById('bulkSelectToggle');
+            const bar = document.getElementById('bulkActionsBar');
+
+            if (bulkSelectMode) {
+                btn.classList.add('active');
+                btn.textContent = '✓ Select Mode ON';
+                bar.style.display = 'flex';
+                selectedAppIds.clear();
+                updateSelectedCount();
+                // Add select-mode class to all cards
+                document.querySelectorAll('.app-card').forEach(card => {
+                    card.classList.add('select-mode');
+                });
+            } else {
+                exitBulkSelectMode();
+            }
+        }
+
+        function exitBulkSelectMode() {
+            bulkSelectMode = false;
+            selectedAppIds.clear();
+            const btn = document.getElementById('bulkSelectToggle');
+            const bar = document.getElementById('bulkActionsBar');
+
+            btn.classList.remove('active');
+            btn.textContent = '☑️ Select Multiple';
+            bar.style.display = 'none';
+            document.getElementById('selectAllCheckbox').checked = false;
+
+            // Remove select-mode and selected classes from all cards
+            document.querySelectorAll('.app-card').forEach(card => {
+                card.classList.remove('select-mode', 'selected');
+            });
+        }
+
+        function toggleCardSelection(appId) {
+            if (!bulkSelectMode) return;
+
+            const card = document.querySelector(`.app-card[data-id="${appId}"]`);
+            if (!card) return;
+
+            if (selectedAppIds.has(appId)) {
+                selectedAppIds.delete(appId);
+                card.classList.remove('selected');
+            } else {
+                selectedAppIds.add(appId);
+                card.classList.add('selected');
+            }
+
+            updateSelectedCount();
+            updateSelectAllCheckbox();
+        }
+
+        function toggleSelectAll() {
+            const checkbox = document.getElementById('selectAllCheckbox');
+            const cards = document.querySelectorAll('.app-card.select-mode');
+
+            if (checkbox.checked) {
+                // Select all
+                cards.forEach(card => {
+                    const id = card.dataset.id;
+                    selectedAppIds.add(id);
+                    card.classList.add('selected');
+                });
+            } else {
+                // Deselect all
+                selectedAppIds.clear();
+                cards.forEach(card => {
+                    card.classList.remove('selected');
+                });
+            }
+
+            updateSelectedCount();
+        }
+
+        function updateSelectAllCheckbox() {
+            const checkbox = document.getElementById('selectAllCheckbox');
+            const totalCards = document.querySelectorAll('.app-card.select-mode').length;
+            checkbox.checked = selectedAppIds.size === totalCards && totalCards > 0;
+        }
+
+        function updateSelectedCount() {
+            document.getElementById('selectedCount').textContent = `${selectedAppIds.size} selected`;
+        }
+
+        async function bulkArchive() {
+            if (selectedAppIds.size === 0) {
+                alert('No applications selected');
+                return;
+            }
+
+            const count = selectedAppIds.size;
+            if (!confirm(`Archive ${count} application${count > 1 ? 's' : ''}? They will be marked as "No Response".`)) {
+                return;
+            }
+
+            const apps = getApplications();
+            const idsToArchive = Array.from(selectedAppIds);
+
+            for (const id of idsToArchive) {
+                const idx = apps.findIndex(a => String(a.id) === String(id));
+                if (idx !== -1) {
+                    apps[idx].status = 'No Response';
+                    apps[idx].archivedAt = new Date().toISOString();
+                    apps[idx].lastUpdated = new Date().toISOString();
+                }
+            }
+
+            saveApplications(apps);
+            exitBulkSelectMode();
+            renderAll(apps);
+
+            alert(`Archived ${count} application${count > 1 ? 's' : ''}.`);
+        }
+
+        async function bulkDelete() {
+            if (selectedAppIds.size === 0) {
+                alert('No applications selected');
+                return;
+            }
+
+            const count = selectedAppIds.size;
+            const confirmMsg = `Permanently delete ${count} application${count > 1 ? 's' : ''}?\n\nThis cannot be undone. Type "DELETE" to confirm.`;
+            const userInput = prompt(confirmMsg);
+
+            if (userInput !== 'DELETE') {
+                alert('Deletion cancelled.');
+                return;
+            }
+
+            const idsToDelete = Array.from(selectedAppIds);
+
+            // Delete from Supabase if available
+            if (typeof HenryData !== 'undefined' && window.supabaseSession) {
+                for (const id of idsToDelete) {
+                    try {
+                        await HenryData.deleteApplication(id);
+                    } catch (err) {
+                        console.error('Error deleting from Supabase:', id, err);
+                    }
+                }
+            }
+
+            // Remove from local cache and localStorage
+            const apps = getApplications().filter(a => !idsToDelete.includes(String(a.id)));
+            window.trackerAppsCache = apps;
+            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+
+            exitBulkSelectMode();
+            renderAll(apps);
+
+            alert(`Deleted ${count} application${count > 1 ? 's' : ''}.`);
+        }
+
+        // Add click handler for card selection in bulk mode
+        document.addEventListener('click', function(e) {
+            if (!bulkSelectMode) return;
+
+            const card = e.target.closest('.app-card');
+            if (!card) return;
+
+            // Don't select if clicking on interactive elements
+            if (e.target.closest('button, select, input, a, .status-dropdown')) return;
+
+            toggleCardSelection(card.dataset.id);
+        });
+
+        // ========================================================================
         // PATTERN ALERT RENDERING
         // ========================================================================
         function renderPatternAlert(apps) {
@@ -7315,13 +7645,13 @@ Thanks so much!
             // Enhanced column mapping with new fields
             const columnMap = {
                 company: ['company', 'company name', 'employer', 'organization', 'org'],
-                role: ['role', 'title', 'job title', 'position', 'job', 'job role'],
-                status: ['status', 'stage', 'state', 'application status'],
-                dateApplied: ['date applied', 'applied date', 'date', 'applied', 'application date', 'app date'],
+                role: ['role', 'title', 'job title', 'position', 'job', 'job role', 'role title', 'jobtitle', 'role/title'],
+                status: ['status', 'stage', 'state', 'application status', 'current stage', 'current status', 'app status'],
+                dateApplied: ['date applied', 'applied date', 'date', 'applied', 'application date', 'app date', 'date applie'],
                 salary: ['salary', 'compensation', 'pay', 'salary range', 'comp', 'wage'],
                 location: ['location', 'city', 'place', 'office', 'work location'],
                 notes: ['notes', 'comments', 'note'],
-                jobUrl: ['url', 'link', 'job url', 'posting url', 'job link', 'job posting', 'posting link', 'application url'],
+                jobUrl: ['url', 'link', 'job url', 'posting url', 'job link', 'job posting', 'posting link', 'application url', 'application ur'],
                 jobDescription: ['description', 'job description', 'jd', 'job desc', 'full description'],
                 interviewDate: ['interview date', 'interview', 'next interview', 'scheduled interview', 'interview scheduled']
             };
