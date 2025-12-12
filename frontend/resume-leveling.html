@@ -714,6 +714,13 @@
             margin-bottom: 24px;
         }
 
+        .error-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
             h1 {
@@ -779,7 +786,10 @@
             <div class="error-icon">!</div>
             <h2 class="error-title">Analysis Failed</h2>
             <p class="error-text" id="errorText">Something went wrong. Please try again.</p>
-            <button class="btn-primary" onclick="retryAnalysis()">Try Again</button>
+            <div class="error-buttons">
+                <button class="btn-primary" onclick="retryAnalysis()">Try Again</button>
+                <button class="btn-secondary" onclick="skipLeveling()">Skip & Continue</button>
+            </div>
         </div>
 
         <!-- Main Content -->
@@ -955,6 +965,12 @@
             document.getElementById('errorState').style.display = 'none';
             document.getElementById('loadingState').style.display = 'block';
             performLevelingAnalysis();
+        }
+
+        function skipLeveling() {
+            // Skip leveling and go directly to strengthen page
+            // This allows users to continue even if leveling API fails
+            window.location.href = 'strengthen.html';
         }
 
         function renderResults() {
