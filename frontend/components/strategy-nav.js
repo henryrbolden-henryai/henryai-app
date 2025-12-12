@@ -457,7 +457,7 @@
         // Footer section with Profile Settings and Sign Out
         const footerHtml = `
             <div class="strategy-nav-footer">
-                <a href="profile.html" class="strategy-nav-footer-link">Profile Settings</a>
+                <a href="profile-edit.html" class="strategy-nav-footer-link">Profile Settings</a>
                 <a href="#" class="strategy-nav-footer-link" id="navSignOut">Sign Out</a>
             </div>
         `;
