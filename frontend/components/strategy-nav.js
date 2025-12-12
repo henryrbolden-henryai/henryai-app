@@ -69,7 +69,16 @@
     function getCurrentPage() {
         const path = window.location.pathname;
         const filename = path.split('/').pop() || 'overview.html';
-        return filename.replace('.html', '');
+        const page = filename.replace('.html', '');
+
+        // Map sub-pages to their parent nav item
+        const pageMapping = {
+            'interview-debrief': 'interview-intelligence',
+            'interview-prep': 'interview-intelligence',
+            'prep-guide': 'interview-intelligence'
+        };
+
+        return pageMapping[page] || page;
     }
 
     // Get company and role from session/local storage for context

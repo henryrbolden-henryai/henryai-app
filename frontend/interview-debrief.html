@@ -979,6 +979,62 @@ Examples of helpful info:
                 // Save both lists
                 localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
                 localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+
+                // Sync to Command Center tracker
+                syncInterviewToTracker(interview);
+            }
+        }
+
+        function syncInterviewToTracker(interview) {
+            try {
+                let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+
+                // Check if this company/role combo already exists
+                const existingAppIndex = trackedApps.findIndex(app =>
+                    app.company.toLowerCase() === interview.company.toLowerCase() &&
+                    app.role.toLowerCase() === interview.role.toLowerCase()
+                );
+
+                const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
+
+                if (existingAppIndex !== -1) {
+                    // Update existing application
+                    trackedApps[existingAppIndex].status = 'Interviewed';
+                    trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
+                    trackedApps[existingAppIndex].interviewDate = interview.date;
+                    trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
+                    trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
+                    if (!trackedApps[existingAppIndex].dateInterviewed) {
+                        trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
+                    }
+                    trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+                } else {
+                    // Create new tracked application
+                    const newApp = {
+                        id: Date.now(),
+                        company: interview.company,
+                        role: interview.role,
+                        status: 'Interviewed',
+                        fitScore: analysisData?.fit_score || 75,
+                        salary: analysisData?.intelligence_layer?.salary_market_context?.typical_range || 'Not specified',
+                        dateAdded: new Date().toISOString(),
+                        lastUpdated: new Date().toISOString(),
+                        dateInterviewed: interviewDateTime,
+                        interviewDate: interview.date,
+                        interviewerName: interview.interviewerName,
+                        interviewerTitle: interview.interviewerTitle,
+                        interviewRounds: 1,
+                        notes: interview.jobDescription || '',
+                        strengths: analysisData?.strengths || [],
+                        gaps: analysisData?.gaps || []
+                    };
+                    trackedApps.push(newApp);
+                }
+
+                localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+                console.log('Interview synced to Command Center:', interview.company, interview.role);
+            } catch (error) {
+                console.error('Error syncing interview to tracker:', error);
             }
         }
 
