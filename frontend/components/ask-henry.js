@@ -34,6 +34,52 @@
             filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
         }
 
+        /* Ask Henry Tooltip */
+        .ask-henry-fab::before {
+            content: 'Ask Henry';
+            position: absolute;
+            right: 70px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-family: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        .ask-henry-fab::after {
+            content: '';
+            position: absolute;
+            right: 64px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 6px solid transparent;
+            border-left-color: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .ask-henry-fab:hover::before,
+        .ask-henry-fab:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .ask-henry-fab.active::before,
+        .ask-henry-fab.active::after {
+            display: none;
+        }
+
         .ask-henry-fab.hidden {
             transform: scale(0);
             opacity: 0;

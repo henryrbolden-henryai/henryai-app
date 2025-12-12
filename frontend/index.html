@@ -1043,37 +1043,38 @@
     </div>
   </footer>
 
-  <script>
-    // Check if user has profile - redirect logged-in users to dashboard
-    const profile = localStorage.getItem('userProfile');
-
-    if (profile) {
-      // User is logged in, redirect to dashboard
-      window.location.href = 'dashboard.html';
-    } else {
-      // New user - set up CTA
-      const ctaButton = document.getElementById('ctaButton');
-      if (ctaButton) {
-        ctaButton.onclick = () => window.location.href = 'analyze.html';
-      }
-    }
-  </script>
-
 <script src="js/supabase-client.js"></script>
 <script>
-  // Update nav based on auth status
+  // Check if user is logged in - redirect to dashboard
   (async function() {
+    // First check Supabase session
     if (typeof HenryAuth !== 'undefined') {
       const session = await HenryAuth.getSession();
-      const loginLink = document.getElementById('loginLink');
-      if (session && loginLink) {
-        loginLink.textContent = 'Sign Out';
-        loginLink.href = '#';
-        loginLink.onclick = async (e) => {
-          e.preventDefault();
-          await HenryAuth.signOut();
-        };
+      if (session) {
+        // User is logged in via Supabase, redirect to dashboard
+        window.location.href = 'dashboard.html';
+        return;
       }
+    }
+
+    // Also check localStorage profile as fallback
+    const profile = localStorage.getItem('userProfile');
+    if (profile) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    // New user - set up CTA
+    const ctaButton = document.getElementById('ctaButton');
+    if (ctaButton) {
+      ctaButton.onclick = () => window.location.href = 'analyze.html';
+    }
+
+    // Update login link for non-logged-in users
+    const loginLink = document.getElementById('loginLink');
+    if (loginLink) {
+      loginLink.textContent = 'Sign In';
+      loginLink.href = 'login.html';
     }
   })();
 </script>

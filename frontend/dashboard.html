@@ -624,7 +624,16 @@
             }
         }
 
+        // Global cache for applications (populated by Supabase or localStorage)
+        let dashboardAppsCache = null;
+
         function getApplications() {
+            // If cache is populated (from Supabase), use it
+            if (dashboardAppsCache !== null) {
+                return dashboardAppsCache;
+            }
+
+            // Fallback to localStorage
             try {
                 const apps = localStorage.getItem('trackedApplications');
                 const parsed = apps ? JSON.parse(apps) : [];
@@ -1120,6 +1129,7 @@
         // ========================================================================
         // INITIALIZATION
         // ========================================================================
+        // Initial render with localStorage data (will be updated when Supabase loads)
         document.addEventListener('DOMContentLoaded', () => {
             renderDashboard();
         });
@@ -1129,7 +1139,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script>
-        // Auth check and user display
+        // Auth check, load Supabase data, and re-render
         (async function() {
             if (typeof HenryAuth !== 'undefined') {
                 const session = await HenryAuth.getSession();
@@ -1153,6 +1163,25 @@
                         await HenryAuth.signOut();
                         window.location.href = 'index.html';
                     };
+                }
+
+                // Load applications from Supabase and re-render dashboard
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        const apps = await HenryData.getApplications();
+                        if (apps && apps.length > 0) {
+                            console.log('Loaded', apps.length, 'applications from Supabase');
+                            // Update cache and localStorage
+                            dashboardAppsCache = apps;
+                            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+                            // Re-render with fresh data
+                            renderDashboard();
+                        } else {
+                            console.log('No applications in Supabase, using localStorage');
+                        }
+                    } catch (err) {
+                        console.error('Error loading from Supabase:', err);
+                    }
                 }
             }
         })();
