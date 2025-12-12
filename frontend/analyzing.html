@@ -311,12 +311,16 @@
 
                 // Build full data for results page
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                // Use backend-extracted company/role if available (more accurate than frontend regex)
+                const extractedCompany = analysisData.company || company;
+                const extractedRole = analysisData.role_title || role;
                 const fullData = {
                     ...analysisData,
                     _resume_json: resumeJson,
                     _candidate_name: candidateName,
-                    _company: company,
-                    _role: role,
+                    _company: extractedCompany,
+                    _company_name: extractedCompany,  // Also set _company_name for compatibility
+                    _role: extractedRole,
                     _jd_text: jobDescription,
                     _profile: userProfile
                 };
