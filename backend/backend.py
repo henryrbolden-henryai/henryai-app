@@ -624,7 +624,7 @@ class LevelingRecommendation(BaseModel):
 
 class ResumeLevelingRequest(BaseModel):
     """Request for resume level assessment"""
-    resume_json: Dict[str, Any]
+    resume_json: Any  # Can be dict or string (will be parsed in endpoint)
     job_description: Optional[str] = None
     target_title: Optional[str] = None  # If provided, do gap analysis against this
     company: Optional[str] = None
@@ -6340,12 +6340,20 @@ async def assess_resume_level(request: ResumeLevelingRequest) -> ResumeLevelingR
     gap analysis against a target role if provided.
     """
     try:
-        print(f"📊 Assessing resume level for: {request.resume_json.get('full_name', 'Unknown')}")
+        # Handle case where resume_json might be a string (double-encoded JSON)
+        resume_json = request.resume_json
+        if isinstance(resume_json, str):
+            try:
+                resume_json = json.loads(resume_json)
+            except json.JSONDecodeError:
+                print(f"⚠️ Could not parse resume_json string: {str(resume_json)[:200]}")
+                resume_json = {}
+
+        print(f"📊 Assessing resume level for: {resume_json.get('full_name', 'Unknown') if isinstance(resume_json, dict) else 'Unknown'}")
         if request.target_title:
             print(f"   Target: {request.target_title} at {request.company}")
 
         # Build resume context
-        resume_json = request.resume_json
         resume_context = f"""
 Name: {resume_json.get('full_name', resume_json.get('contact', {}).get('full_name', 'Unknown'))}
 Current Title: {resume_json.get('current_title', 'Unknown')}
