@@ -925,7 +925,16 @@
         async function performLevelingAnalysis() {
             try {
                 // Check if we have meaningful resume data to analyze
-                const resumeJson = analysisData._resume_json || {};
+                // Handle case where _resume_json might be a string (double-encoded)
+                let resumeJson = analysisData._resume_json || {};
+                if (typeof resumeJson === 'string') {
+                    try {
+                        resumeJson = JSON.parse(resumeJson);
+                    } catch (e) {
+                        console.error('Failed to parse resume_json string:', e);
+                        resumeJson = {};
+                    }
+                }
                 const hasExperience = resumeJson.experience && resumeJson.experience.length > 0;
                 const hasName = resumeJson.full_name || resumeJson.contact?.full_name;
 
