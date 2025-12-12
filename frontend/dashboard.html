@@ -551,33 +551,49 @@
         // ========================================================================
         // CONSTANTS
         // ========================================================================
-        // Status definitions matching tracker.html structure
+        // Status definitions matching tracker.html structure with visual labels
         const STATUSES = {
             // Application Stage
-            'Preparing': { active: true, color: 'cooling', category: 'Application' },
-            'Applied': { active: true, color: 'waiting', category: 'Application' },
-            'Networking': { active: true, color: 'waiting', category: 'Application' },
+            'Preparing': { active: true, color: 'cooling', category: 'Application', label: '📝 Preparing' },
+            'Applied': { active: true, color: 'waiting', category: 'Application', label: '📤 Applied' },
+            'Networking': { active: true, color: 'waiting', category: 'Application', label: '🤝 Networking' },
 
             // Screening Stage
-            'Recruiter Screen': { active: true, color: 'active', category: 'Screening' },
-            'Awaiting Screen Result': { active: true, color: 'waiting', category: 'Screening' },
+            'Recruiter Screen': { active: true, color: 'active', category: 'Screening', label: '📞 Recruiter Screen' },
+            'Awaiting Screen Result': { active: true, color: 'waiting', category: 'Screening', label: '⏳ Awaiting Screen Result' },
 
             // Interview Stage
-            'Hiring Manager': { active: true, color: 'active', category: 'Interview' },
-            'Technical Round': { active: true, color: 'active', category: 'Interview' },
-            'Panel Interview': { active: true, color: 'active', category: 'Interview' },
-            'Final Round': { active: true, color: 'active', category: 'Interview' },
-            'Executive Interview': { active: true, color: 'active', category: 'Interview' },
-            'Awaiting Decision': { active: true, color: 'waiting', category: 'Interview' },
+            'Hiring Manager': { active: true, color: 'active', category: 'Interview', label: '👔 Hiring Manager' },
+            'Technical Round': { active: true, color: 'active', category: 'Interview', label: '💻 Technical Round' },
+            'Panel Interview': { active: true, color: 'active', category: 'Interview', label: '👥 Panel Interview' },
+            'Final Round': { active: true, color: 'active', category: 'Interview', label: '🏁 Final Round' },
+            'Executive Interview': { active: true, color: 'active', category: 'Interview', label: '🎖️ Executive Interview' },
+            'Awaiting Decision': { active: true, color: 'waiting', category: 'Interview', label: '⏳ Awaiting Decision' },
 
-            // Outcome Stage
-            'Offer Received': { active: true, color: 'hot', category: 'Outcome' },
-            'Negotiating': { active: true, color: 'hot', category: 'Outcome' },
-            'Accepted': { active: false, color: 'active', category: 'Outcome' },
-            'Rejected': { active: false, color: 'dead', category: 'Outcome' },
-            'Withdrawn': { active: false, color: 'cooling', category: 'Outcome' },
-            'No Response': { active: false, color: 'dead', category: 'Outcome' }
+            // Positive Outcome Stage
+            'Offer Received': { active: true, color: 'hot', category: 'Outcome', label: '🎉 Offer Received' },
+            'Negotiating': { active: true, color: 'hot', category: 'Outcome', label: '💰 Negotiating' },
+            'Accepted': { active: false, color: 'active', category: 'Outcome', label: '🏆 Accepted' },
+
+            // Closed Stage - Rejection reasons for coaching
+            'Rejected: No Fit': { active: false, color: 'dead', category: 'Closed', label: '❌ No Fit' },
+            'Rejected: Experience Gap': { active: false, color: 'dead', category: 'Closed', label: '❌ Experience Gap' },
+            'Rejected: Culture Fit': { active: false, color: 'dead', category: 'Closed', label: '❌ Culture Fit' },
+            'Rejected: Went Internal': { active: false, color: 'dead', category: 'Closed', label: '❌ Went Internal' },
+            'Rejected: Other': { active: false, color: 'dead', category: 'Closed', label: '❌ Other' },
+            'Withdrawn': { active: false, color: 'cooling', category: 'Closed', label: '🚪 Withdrawn' },
+            'No Response': { active: false, color: 'dead', category: 'Closed', label: '📭 No Response' },
+            'Ghosted': { active: false, color: 'dead', category: 'Closed', label: '👻 Ghosted' }
         };
+
+        // Helper functions for status checking
+        function isRejectedStatus(status) {
+            return status && status.startsWith('Rejected:');
+        }
+
+        function isClosedStatus(status) {
+            return isRejectedStatus(status) || ['Withdrawn', 'No Response', 'Ghosted'].includes(status);
+        }
 
         // Legacy status mapping for migration
         const LEGACY_STATUS_MAP = {
@@ -591,7 +607,8 @@
             'Reference Check': 'Awaiting Decision',
             'Offer': 'Offer Received',
             'Hot': 'Recruiter Screen',
-            'Active': 'Applied'
+            'Active': 'Applied',
+            'Rejected': 'Rejected: Other'
         };
 
         // ========================================================================
@@ -1047,7 +1064,7 @@
                         <div class="activity-role">${app.role_title || app.role || 'Role'}</div>
                     </div>
                     <div class="activity-meta">
-                        <span class="status-badge ${getStatusClass(app.status)}">${app.status || 'Unknown'}</span>
+                        <span class="status-badge ${getStatusClass(app.status)}">${getStatusLabel(app.status) || 'Unknown'}</span>
                         <span class="activity-time">${getDaysSince(app.lastUpdated || app.dateAdded)}d ago</span>
                     </div>
                     <a href="#" onclick="viewApplicationStrategy('${app.id}'); return false;" class="activity-link">View Strategy →</a>
@@ -1091,7 +1108,13 @@
             if (['Offer Received', 'Negotiating'].includes(status)) return 'status-hot';
             if (['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(status)) return 'status-active';
             if (['Applied', 'Networking', 'Preparing', 'Awaiting Decision', 'Awaiting Screen Result'].includes(status)) return 'status-waiting';
+            if (isRejectedStatus(status) || isClosedStatus(status)) return 'status-dead';
             return 'status-default';
+        }
+
+        // Get display label for status (with emoji)
+        function getStatusLabel(status) {
+            return STATUSES[status]?.label || status;
         }
 
         // ========================================================================

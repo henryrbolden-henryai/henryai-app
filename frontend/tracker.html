@@ -2476,39 +2476,47 @@
         // Organized by category for cleaner dropdown display
         // ========================================================================
 
-        // Status categories for grouped dropdown
+        // Status categories for grouped dropdown with visual prefixes
         const STATUS_CATEGORIES = {
-            'Application': ['Preparing', 'Applied', 'Networking'],
-            'Screening': ['Recruiter Screen', 'Awaiting Screen Result'],
-            'Interview': ['Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision'],
-            'Outcome': ['Offer Received', 'Negotiating', 'Accepted', 'Rejected', 'Withdrawn', 'No Response']
+            '📋 Application': ['Preparing', 'Applied', 'Networking'],
+            '📞 Screening': ['Recruiter Screen', 'Awaiting Screen Result'],
+            '🎯 Interview': ['Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision'],
+            '✅ Outcome': ['Offer Received', 'Negotiating', 'Accepted'],
+            '❌ Closed': ['Rejected: No Fit', 'Rejected: Experience Gap', 'Rejected: Culture Fit', 'Rejected: Went Internal', 'Rejected: Other', 'Withdrawn', 'No Response', 'Ghosted']
         };
 
         const STATUSES = {
             // Application Stage (stage: 0)
-            'Preparing': { label: 'Preparing', active: true, stage: 0, stageWeight: 5, awaiting: false, category: 'Application' },
-            'Applied': { label: 'Applied', active: true, stage: 1, stageWeight: 15, awaiting: true, category: 'Application' },
-            'Networking': { label: 'Networking', active: true, stage: 1, stageWeight: 20, awaiting: false, category: 'Application' },
+            'Preparing': { label: '📝 Preparing', active: true, stage: 0, stageWeight: 5, awaiting: false, category: 'Application' },
+            'Applied': { label: '📤 Applied', active: true, stage: 1, stageWeight: 15, awaiting: true, category: 'Application' },
+            'Networking': { label: '🤝 Networking', active: true, stage: 1, stageWeight: 20, awaiting: false, category: 'Application' },
 
             // Screening Stage (stage: 2)
-            'Recruiter Screen': { label: 'Recruiter Screen', active: true, stage: 2, stageWeight: 30, awaiting: false, category: 'Screening' },
-            'Awaiting Screen Result': { label: 'Awaiting Screen Result', active: true, stage: 2, stageWeight: 28, awaiting: true, category: 'Screening' },
+            'Recruiter Screen': { label: '📞 Recruiter Screen', active: true, stage: 2, stageWeight: 30, awaiting: false, category: 'Screening' },
+            'Awaiting Screen Result': { label: '⏳ Awaiting Screen Result', active: true, stage: 2, stageWeight: 28, awaiting: true, category: 'Screening' },
 
             // Interview Stage (stage: 3-4)
-            'Hiring Manager': { label: 'Hiring Manager', active: true, stage: 3, stageWeight: 40, awaiting: false, category: 'Interview' },
-            'Technical Round': { label: 'Technical Round', active: true, stage: 3, stageWeight: 45, awaiting: false, category: 'Interview' },
-            'Panel Interview': { label: 'Panel Interview', active: true, stage: 3, stageWeight: 50, awaiting: false, category: 'Interview' },
-            'Final Round': { label: 'Final Round', active: true, stage: 4, stageWeight: 55, awaiting: false, category: 'Interview' },
-            'Executive Interview': { label: 'Executive Interview', active: true, stage: 4, stageWeight: 60, awaiting: false, category: 'Interview' },
-            'Awaiting Decision': { label: 'Awaiting Decision', active: true, stage: 4, stageWeight: 58, awaiting: true, category: 'Interview' },
+            'Hiring Manager': { label: '👔 Hiring Manager', active: true, stage: 3, stageWeight: 40, awaiting: false, category: 'Interview' },
+            'Technical Round': { label: '💻 Technical Round', active: true, stage: 3, stageWeight: 45, awaiting: false, category: 'Interview' },
+            'Panel Interview': { label: '👥 Panel Interview', active: true, stage: 3, stageWeight: 50, awaiting: false, category: 'Interview' },
+            'Final Round': { label: '🏁 Final Round', active: true, stage: 4, stageWeight: 55, awaiting: false, category: 'Interview' },
+            'Executive Interview': { label: '🎖️ Executive Interview', active: true, stage: 4, stageWeight: 60, awaiting: false, category: 'Interview' },
+            'Awaiting Decision': { label: '⏳ Awaiting Decision', active: true, stage: 4, stageWeight: 58, awaiting: true, category: 'Interview' },
 
-            // Outcome Stage (stage: 5 or -1)
-            'Offer Received': { label: 'Offer Received', active: true, stage: 5, stageWeight: 70, awaiting: false, category: 'Outcome' },
-            'Negotiating': { label: 'Negotiating', active: true, stage: 5, stageWeight: 72, awaiting: false, category: 'Outcome' },
-            'Accepted': { label: 'Accepted', active: false, stage: 5, stageWeight: 80, awaiting: false, category: 'Outcome' },
-            'Rejected': { label: 'Rejected', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Outcome' },
-            'Withdrawn': { label: 'Withdrawn', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Outcome' },
-            'No Response': { label: 'No Response', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Outcome' }
+            // Positive Outcome Stage (stage: 5)
+            'Offer Received': { label: '🎉 Offer Received', active: true, stage: 5, stageWeight: 70, awaiting: false, category: 'Outcome' },
+            'Negotiating': { label: '💰 Negotiating', active: true, stage: 5, stageWeight: 72, awaiting: false, category: 'Outcome' },
+            'Accepted': { label: '🏆 Accepted', active: false, stage: 5, stageWeight: 80, awaiting: false, category: 'Outcome' },
+
+            // Closed Stage - Rejection reasons for coaching insights
+            'Rejected: No Fit': { label: '❌ No Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'targeting' },
+            'Rejected: Experience Gap': { label: '❌ Experience Gap', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'skills' },
+            'Rejected: Culture Fit': { label: '❌ Culture Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'interview' },
+            'Rejected: Went Internal': { label: '❌ Went Internal', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'none' },
+            'Rejected: Other': { label: '❌ Other', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'unknown' },
+            'Withdrawn': { label: '🚪 Withdrawn', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed' },
+            'No Response': { label: '📭 No Response', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'outreach' },
+            'Ghosted': { label: '👻 Ghosted', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'follow-up' }
         };
 
         // Interview stages for timeline
@@ -2521,7 +2529,8 @@
             'Response Received': 'Recruiter Screen',
             'Awaiting Screen': 'Awaiting Screen Result',
             'Awaiting Next Round': 'Awaiting Decision',
-            'Interviewed': 'Awaiting Decision'
+            'Interviewed': 'Awaiting Decision',
+            'Rejected': 'Rejected: Other'  // Map old generic Rejected to new specific one
         };
 
         // ========================================================================
@@ -2534,6 +2543,17 @@
         // ========================================================================
         // HELPER FUNCTIONS
         // ========================================================================
+
+        // Check if a status is a rejection status (any of the rejection subcategories)
+        function isRejectedStatus(status) {
+            return status && status.startsWith('Rejected:');
+        }
+
+        // Check if a status is any closed/negative outcome
+        function isClosedStatus(status) {
+            return isRejectedStatus(status) || ['Withdrawn', 'No Response', 'Ghosted'].includes(status);
+        }
+
         function getDaysSince(dateString) {
             if (!dateString) return 0;
             const date = new Date(dateString);
@@ -2845,10 +2865,10 @@
             }
 
             // Inactive statuses
-            if (['No Response', 'Rejected', 'Withdrawn'].includes(status)) {
+            if (isClosedStatus(status)) {
                 return {
                     type: 'dead',
-                    context: status === 'Rejected' ? "This one didn't work out." : status === 'Withdrawn' ? "You withdrew from this one." : "No response received.",
+                    context: isRejectedStatus(status) ? "This one didn't work out." : status === 'Withdrawn' ? "You withdrew from this one." : status === 'Ghosted' ? "They went silent on you." : "No response received.",
                     action: "Archive it mentally and keep moving. Every silence gets you closer to the right fit."
                 };
             }
@@ -2865,7 +2885,7 @@
         // ========================================================================
         function isPreInterviewRejection(app) {
             // Check if rejected without ever getting an interview
-            if (app.status !== 'Rejected') return false;
+            if (!isRejectedStatus(app.status)) return false;
 
             // Never had an interview if no interview date and highest stage was Applied/Screening
             const hasInterviewed = app.dateInterviewed ||
@@ -3500,10 +3520,10 @@
                 // Check if they reached a late stage (either current status or in history)
                 const reachedLateStage = LATE_STAGE_STATUSES.includes(app.status) ||
                     app.statusHistory?.some(s => LATE_STAGE_STATUSES.includes(s)) ||
-                    (app.status === 'Rejected' && app.statusHistory?.some(s => LATE_STAGE_STATUSES.includes(s)));
+                    (isRejectedStatus(app.status) && app.statusHistory?.some(s => LATE_STAGE_STATUSES.includes(s)));
 
                 // Also count applications that were rejected after being interviewed
-                const rejectedAfterInterview = app.status === 'Rejected' && app.dateInterviewed;
+                const rejectedAfterInterview = isRejectedStatus(app.status) && app.dateInterviewed;
 
                 return reachedLateStage || rejectedAfterInterview;
             });
@@ -3593,7 +3613,7 @@
             // EARLY WARNING: 2 late-stage losses
             // ─────────────────────────────────────────────────────────────────
             if (lateStageApps.length === 2 && offers === 0) {
-                const rejectedLateStage = lateStageApps.filter(a => a.status === 'Rejected').length;
+                const rejectedLateStage = lateStageApps.filter(a => isRejectedStatus(a.status)).length;
                 if (rejectedLateStage >= 2) {
                     return {
                         pattern: 'potential_close_pattern',
@@ -3658,7 +3678,7 @@
                         ${pattern.lateStageApps.map(app => `
                             <div class="sample-app">
                                 <span class="sample-app-role">${app.role}, ${app.company}</span>
-                                <span class="sample-app-fit ${app.status === 'Rejected' ? 'low' : 'medium'}">${app.status === 'Rejected' ? 'Rejected' : app.status}</span>
+                                <span class="sample-app-fit ${isRejectedStatus(app.status) ? 'low' : 'medium'}">${isRejectedStatus(app.status) ? 'Rejected' : app.status}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -3846,7 +3866,7 @@
                 }
             }
 
-            if (app.dateInterviewed && app.status === 'Rejected') {
+            if (app.dateInterviewed && isRejectedStatus(app.status)) {
                 const daysSinceInterview = getDaysSince(app.dateInterviewed);
                 const daysSinceUpdate = getDaysSince(app.lastUpdated);
                 const daysToDecision = daysSinceInterview - daysSinceUpdate;
@@ -3865,7 +3885,7 @@
             // ─────────────────────────────────────────────────────────────────
             // FACTOR: Feedback Provided
             // ─────────────────────────────────────────────────────────────────
-            if (app.status === 'Rejected' && !app.feedbackProvided) {
+            if (isRejectedStatus(app.status) && !app.feedbackProvided) {
                 // Check if they reached interview stage
                 const hadInterview = app.dateInterviewed ||
                     INTERVIEW_STATUSES.some(s => app.statusHistory?.includes(s));
@@ -4274,14 +4294,15 @@
             `;
         }
 
-        // Render grouped status dropdown options
+        // Render grouped status dropdown options with emoji labels
         function renderGroupedStatusOptions(appId, currentStatus) {
             let html = '';
             for (const [category, statuses] of Object.entries(STATUS_CATEGORIES)) {
                 html += `<div class="status-category-header">${category}</div>`;
                 for (const status of statuses) {
+                    const statusDef = STATUSES[status] || { label: status };
                     const isCurrent = status === currentStatus;
-                    html += `<div class="status-option${isCurrent ? ' current' : ''}" onclick="updateStatus('${appId}', '${status}')">${status}</div>`;
+                    html += `<div class="status-option${isCurrent ? ' current' : ''}" onclick="updateStatus('${appId}', '${status}')">${statusDef.label}</div>`;
                 }
             }
             return html;
@@ -4310,7 +4331,7 @@
 
             // Calculate candidate experience score for rejected/completed applications
             const experienceScore = calculateCandidateExperienceScore(app);
-            const showExperience = app.status === 'Rejected' && experienceScore.signals.length > 0;
+            const showExperience = isRejectedStatus(app.status) && experienceScore.signals.length > 0;
 
             // Ghost risk detection
             const daysSinceApplied = getDaysSince(app.dateApplied);
@@ -4334,7 +4355,7 @@
                             ${showExperience ? `<span class="experience-badge grade-${experienceScore.grade.toLowerCase()}">${experienceScore.grade}</span>` : ''}
                             <div class="status-selector">
                                 <button class="status-btn" onclick="toggleStatusDropdown('${app.id}', event)">
-                                    ${app.status} <span style="opacity: 0.5;">▼</span>
+                                    ${status.label || app.status} <span style="opacity: 0.5;">▼</span>
                                 </button>
                                 <div class="status-dropdown" id="dropdown-${app.id}">
                                     ${renderGroupedStatusOptions(app.id, app.status)}
@@ -4533,8 +4554,8 @@
                 actions.push({ label: '✅ Accept Offer', action: `updateStatus('${app.id}', 'Accepted')` });
             }
             // Inactive states
-            else if (['No Response', 'Rejected', 'Withdrawn', 'Accepted'].includes(status)) {
-                if (status === 'Rejected') {
+            else if (isClosedStatus(status) || status === 'Accepted') {
+                if (isRejectedStatus(status)) {
                     actions.push({ label: '📋 View Debrief', action: `showRejectionDebrief('${app.id}')` });
                     actions.push({ label: '🔄 Request Feedback', action: `requestFeedback('${app.id}')` });
                 }
@@ -5005,7 +5026,7 @@
          */
         function renderCompanyBehaviorAnalysis(app) {
             // Only show for rejections that had interviews
-            if (app.status !== 'Rejected') return '';
+            if (!isRejectedStatus(app.status)) return '';
 
             const hadInterview = app.dateInterviewed ||
                 INTERVIEW_STATUSES.some(s => app.statusHistory?.includes(s));
