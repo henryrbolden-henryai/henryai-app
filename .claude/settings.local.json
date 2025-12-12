@@ -27,7 +27,8 @@
       "Bash(xargs:*)",
       "Bash(cat:*)",
       "Bash(/opt/homebrew/bin/gh pr create:*)",
-      "Bash(brew --prefix:*)"
+      "Bash(brew --prefix:*)",
+      "Bash(npx wrangler pages deploy:*)"
     ],
     "deny": [],
     "ask": []

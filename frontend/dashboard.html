@@ -106,28 +106,6 @@
             color: var(--color-accent);
         }
 
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .user-email {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .logout-btn {
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .logout-btn:hover {
-            color: var(--color-text);
-        }
-
         /* MAIN CONTAINER */
         .container {
             max-width: 1000px;
@@ -484,10 +462,7 @@
             <nav class="header-nav">
                 <!-- Profile Settings moved to sidebar nav -->
             </nav>
-            <div class="user-menu">
-                <span class="user-email" id="userEmail"></span>
-                <a href="#" class="logout-btn" id="logoutBtn">Sign Out</a>
-            </div>
+            <!-- User menu moved to sidebar navigation -->
         </div>
     </header>
 
@@ -1149,21 +1124,7 @@
                     return;
                 }
 
-                // Show user email
-                const userEmail = document.getElementById('userEmail');
-                if (userEmail && session.user?.email) {
-                    userEmail.textContent = session.user.email;
-                }
-
-                // Setup logout
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.onclick = async (e) => {
-                        e.preventDefault();
-                        await HenryAuth.signOut();
-                        window.location.href = 'index.html';
-                    };
-                }
+                // User menu (email, sign out) handled by sidebar navigation
 
                 // Load applications from Supabase and re-render dashboard
                 if (typeof HenryData !== 'undefined') {
