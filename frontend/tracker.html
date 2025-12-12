@@ -5544,7 +5544,18 @@
         // RENDER ALL
         // ========================================================================
         function renderAll(apps) {
+            console.log('=== RENDER ALL CALLED ===');
+            console.log('Apps received:', apps);
+            console.log('Apps count:', apps?.length || 0);
+
+            if (apps && apps.length > 0) {
+                apps.forEach((app, i) => {
+                    console.log(`App ${i}:`, app.company, app.status, 'active:', STATUSES[app.status]?.active);
+                });
+            }
+
             const metrics = calculatePipelineMetrics(apps);
+            console.log('Calculated metrics:', metrics);
             const priorities = getStrategicPriorities(apps);
 
             renderDailyPulse(apps);
@@ -5926,12 +5937,17 @@
 
         // Check if using Supabase auth
         async function initializeWithAuth() {
+            console.log('=== TRACKER INIT ===');
+            console.log('HenryAuth defined:', typeof HenryAuth !== 'undefined');
+
             if (typeof HenryAuth !== 'undefined') {
                 const session = await HenryAuth.getSession();
+                console.log('Supabase session:', session ? 'exists' : 'null');
                 if (session) {
                     // User is logged in - load from Supabase
                     console.log('Loading data from Supabase...');
                     const apps = await HenryData.getApplications();
+                    console.log('Supabase apps count:', apps?.length || 0);
                     renderAll(apps);
 
                     // Override getApplications and saveApplications for this session
@@ -5942,19 +5958,33 @@
             }
             // Fallback to localStorage
             console.log('Loading data from localStorage...');
-            renderAll(getApplications());
+            const apps = getApplications();
+            console.log('localStorage apps:', apps);
+            console.log('localStorage apps count:', apps?.length || 0);
+            if (apps.length > 0) {
+                console.log('First app status:', apps[0].status);
+                console.log('STATUSES[status]:', STATUSES[apps[0].status]);
+            }
+            renderAll(apps);
         }
 
         // Start initialization
+        console.log('=== TRACKER SCRIPT START ===');
+        console.log('Initial HenryAuth check:', typeof HenryAuth !== 'undefined');
         if (typeof HenryAuth !== 'undefined') {
             initializeWithAuth();
         } else {
             // Wait for supabase-client.js to load
             window.addEventListener('load', () => {
+                console.log('=== WINDOW LOAD EVENT ===');
+                console.log('HenryAuth after load:', typeof HenryAuth !== 'undefined');
                 if (typeof HenryAuth !== 'undefined') {
                     initializeWithAuth();
                 } else {
-                    renderAll(getApplications());
+                    console.log('No HenryAuth, loading from localStorage directly');
+                    const apps = getApplications();
+                    console.log('Direct localStorage apps:', apps);
+                    renderAll(apps);
                 }
             });
         }

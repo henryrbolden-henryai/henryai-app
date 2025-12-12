@@ -75,7 +75,14 @@
         const pageMapping = {
             'interview-debrief': 'interview-intelligence',
             'interview-prep': 'interview-intelligence',
-            'prep-guide': 'interview-intelligence'
+            'prep-guide': 'interview-intelligence',
+            'practice-intro': 'interview-intelligence',
+            'practice-drills': 'interview-intelligence',
+            'mock-interview': 'interview-intelligence',
+            'mock-debrief': 'interview-intelligence',
+            'analyzing': 'analyze',
+            'generating': 'overview',
+            'strengthen': 'resume-leveling'
         };
 
         return pageMapping[page] || page;
@@ -443,11 +450,18 @@
 
     // Initialize the navigation
     function init() {
-        // Don't add navigation to certain pages
-        const excludedPages = ['index', 'login', 'analyze', 'analyzing', 'results', 'generating', 'strengthen', 'profile', 'profile-edit'];
+        // Don't add navigation to public pages (before sign-in)
+        const excludedPages = ['index', 'login'];
         const currentPage = getCurrentPage();
+        const rawPage = window.location.pathname.split('/').pop()?.replace('.html', '') || '';
 
-        if (excludedPages.includes(currentPage)) {
+        if (excludedPages.includes(rawPage)) {
+            return;
+        }
+
+        // Check if user has a profile (is authenticated/signed in)
+        const hasProfile = localStorage.getItem('userProfile');
+        if (!hasProfile) {
             return;
         }
 
