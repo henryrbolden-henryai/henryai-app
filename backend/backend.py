@@ -6354,26 +6354,50 @@ async def assess_resume_level(request: ResumeLevelingRequest) -> ResumeLevelingR
             print(f"   Target: {request.target_title} at {request.company}")
 
         # Build resume context
+        # Safely get skills - could be list or string
+        skills = resume_json.get('skills', [])
+        skills_str = ', '.join(skills) if isinstance(skills, list) else str(skills) if skills else ''
+
+        # Safely get contact info
+        contact = resume_json.get('contact', {})
+        if isinstance(contact, str):
+            contact = {}
+
         resume_context = f"""
-Name: {resume_json.get('full_name', resume_json.get('contact', {}).get('full_name', 'Unknown'))}
+Name: {resume_json.get('full_name', contact.get('full_name', 'Unknown') if isinstance(contact, dict) else 'Unknown')}
 Current Title: {resume_json.get('current_title', 'Unknown')}
 Years of Experience: {resume_json.get('years_experience', 'Unknown')}
 Summary: {resume_json.get('summary', resume_json.get('summary_text', ''))}
 
-Skills: {', '.join(resume_json.get('skills', []))}
+Skills: {skills_str}
 
 Experience:
 """
         for exp in resume_json.get('experience', []):
+            # Handle case where exp might be a string instead of dict
+            if isinstance(exp, str):
+                resume_context += f"\n- {exp}\n"
+                continue
+            if not isinstance(exp, dict):
+                continue
             resume_context += f"\n### {exp.get('title', exp.get('role', ''))} at {exp.get('company', '')} ({exp.get('dates', exp.get('start_date', ''))})\n"
-            for bullet in exp.get('bullets', []):
-                resume_context += f"- {bullet}\n"
+            bullets = exp.get('bullets', [])
+            if isinstance(bullets, list):
+                for bullet in bullets:
+                    if isinstance(bullet, str):
+                        resume_context += f"- {bullet}\n"
 
         # Add education
         education = resume_json.get('education', [])
-        if education:
+        if education and isinstance(education, list):
             resume_context += "\nEducation:\n"
             for edu in education:
+                # Handle case where edu might be a string instead of dict
+                if isinstance(edu, str):
+                    resume_context += f"- {edu}\n"
+                    continue
+                if not isinstance(edu, dict):
+                    continue
                 resume_context += f"- {edu.get('degree', '')} from {edu.get('school', edu.get('institution', ''))} ({edu.get('year', edu.get('graduation_date', ''))})\n"
 
         # Build target context if provided
