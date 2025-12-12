@@ -26,7 +26,8 @@
       "Bash(pkill:*)",
       "Bash(xargs:*)",
       "Bash(cat:*)",
-      "Bash(/opt/homebrew/bin/gh pr create:*)"
+      "Bash(/opt/homebrew/bin/gh pr create:*)",
+      "Bash(brew --prefix:*)"
     ],
     "deny": [],
     "ask": []

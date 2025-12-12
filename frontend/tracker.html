@@ -2487,36 +2487,36 @@
 
         const STATUSES = {
             // Application Stage (stage: 0)
-            'Preparing': { label: '📝 Preparing', active: true, stage: 0, stageWeight: 5, awaiting: false, category: 'Application' },
-            'Applied': { label: '📤 Applied', active: true, stage: 1, stageWeight: 15, awaiting: true, category: 'Application' },
-            'Networking': { label: '🤝 Networking', active: true, stage: 1, stageWeight: 20, awaiting: false, category: 'Application' },
+            'Preparing': { label: '📝  Preparing', active: true, stage: 0, stageWeight: 5, awaiting: false, category: 'Application' },
+            'Applied': { label: '📤  Applied', active: true, stage: 1, stageWeight: 15, awaiting: true, category: 'Application' },
+            'Networking': { label: '🤝  Networking', active: true, stage: 1, stageWeight: 20, awaiting: false, category: 'Application' },
 
             // Screening Stage (stage: 2)
-            'Recruiter Screen': { label: '📞 Recruiter Screen', active: true, stage: 2, stageWeight: 30, awaiting: false, category: 'Screening' },
-            'Awaiting Screen Result': { label: '⏳ Awaiting Screen Result', active: true, stage: 2, stageWeight: 28, awaiting: true, category: 'Screening' },
+            'Recruiter Screen': { label: '📞  Recruiter Screen', active: true, stage: 2, stageWeight: 30, awaiting: false, category: 'Screening' },
+            'Awaiting Screen Result': { label: '⏳  Awaiting Screen Result', active: true, stage: 2, stageWeight: 28, awaiting: true, category: 'Screening' },
 
             // Interview Stage (stage: 3-4)
-            'Hiring Manager': { label: '👔 Hiring Manager', active: true, stage: 3, stageWeight: 40, awaiting: false, category: 'Interview' },
-            'Technical Round': { label: '💻 Technical Round', active: true, stage: 3, stageWeight: 45, awaiting: false, category: 'Interview' },
-            'Panel Interview': { label: '👥 Panel Interview', active: true, stage: 3, stageWeight: 50, awaiting: false, category: 'Interview' },
-            'Final Round': { label: '🏁 Final Round', active: true, stage: 4, stageWeight: 55, awaiting: false, category: 'Interview' },
-            'Executive Interview': { label: '🎖️ Executive Interview', active: true, stage: 4, stageWeight: 60, awaiting: false, category: 'Interview' },
-            'Awaiting Decision': { label: '⏳ Awaiting Decision', active: true, stage: 4, stageWeight: 58, awaiting: true, category: 'Interview' },
+            'Hiring Manager': { label: '👔  Hiring Manager', active: true, stage: 3, stageWeight: 40, awaiting: false, category: 'Interview' },
+            'Technical Round': { label: '💻  Technical Round', active: true, stage: 3, stageWeight: 45, awaiting: false, category: 'Interview' },
+            'Panel Interview': { label: '👥  Panel Interview', active: true, stage: 3, stageWeight: 50, awaiting: false, category: 'Interview' },
+            'Final Round': { label: '🏁  Final Round', active: true, stage: 4, stageWeight: 55, awaiting: false, category: 'Interview' },
+            'Executive Interview': { label: '🎖️  Executive Interview', active: true, stage: 4, stageWeight: 60, awaiting: false, category: 'Interview' },
+            'Awaiting Decision': { label: '⏳  Awaiting Decision', active: true, stage: 4, stageWeight: 58, awaiting: true, category: 'Interview' },
 
             // Positive Outcome Stage (stage: 5)
-            'Offer Received': { label: '🎉 Offer Received', active: true, stage: 5, stageWeight: 70, awaiting: false, category: 'Outcome' },
-            'Negotiating': { label: '💰 Negotiating', active: true, stage: 5, stageWeight: 72, awaiting: false, category: 'Outcome' },
-            'Accepted': { label: '🏆 Accepted', active: false, stage: 5, stageWeight: 80, awaiting: false, category: 'Outcome' },
+            'Offer Received': { label: '🎉  Offer Received', active: true, stage: 5, stageWeight: 70, awaiting: false, category: 'Outcome' },
+            'Negotiating': { label: '💰  Negotiating', active: true, stage: 5, stageWeight: 72, awaiting: false, category: 'Outcome' },
+            'Accepted': { label: '🏆  Accepted', active: false, stage: 5, stageWeight: 80, awaiting: false, category: 'Outcome' },
 
             // Closed Stage - Rejection reasons for coaching insights
-            'Rejected: No Fit': { label: '❌ No Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'targeting' },
-            'Rejected: Experience Gap': { label: '❌ Experience Gap', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'skills' },
-            'Rejected: Culture Fit': { label: '❌ Culture Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'interview' },
-            'Rejected: Went Internal': { label: '❌ Went Internal', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'none' },
-            'Rejected: Other': { label: '❌ Other', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'unknown' },
-            'Withdrawn': { label: '🚪 Withdrawn', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed' },
-            'No Response': { label: '📭 No Response', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'outreach' },
-            'Ghosted': { label: '👻 Ghosted', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'follow-up' }
+            'Rejected: No Fit': { label: '❌  No Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'targeting' },
+            'Rejected: Experience Gap': { label: '❌  Experience Gap', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'skills' },
+            'Rejected: Culture Fit': { label: '❌  Culture Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'interview' },
+            'Rejected: Went Internal': { label: '❌  Went Internal', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'none' },
+            'Rejected: Other': { label: '❌  Other', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'unknown' },
+            'Withdrawn': { label: '🚪  Withdrawn', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed' },
+            'No Response': { label: '📭  No Response', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'outreach' },
+            'Ghosted': { label: '👻  Ghosted', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'follow-up' }
         };
 
         // Interview stages for timeline
@@ -4627,11 +4627,13 @@
          * Retrieves JD from app data or analysis data
          */
         function showJobDescription(appId) {
+            console.log('showJobDescription called with:', appId);
             const app = getApplications().find(a => String(a.id) === String(appId));
             if (!app) {
                 console.error('Application not found:', appId);
                 return;
             }
+            console.log('Found app for JD:', app.company, app.role);
 
             // Try to get JD from multiple sources
             let jobDescription = app.jobDescription || '';
@@ -5300,9 +5302,14 @@
         let dateEditAppId = null;
 
         function showDateEditModal(appId) {
+            console.log('showDateEditModal called with:', appId);
             dateEditAppId = appId;
             const app = getApplications().find(a => String(a.id) === String(appId));
-            if (!app) return;
+            if (!app) {
+                console.error('App not found for id:', appId);
+                return;
+            }
+            console.log('Found app:', app.company, app.role);
 
             const today = new Date().toISOString().split('T')[0];
 
