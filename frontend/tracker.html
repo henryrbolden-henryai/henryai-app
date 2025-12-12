@@ -5786,6 +5786,11 @@
         function renderDailyPulse(apps) {
             const pulseEl = document.getElementById('dailyPulse');
 
+            // Element may not exist if removed from HTML - skip if so
+            if (!pulseEl) {
+                return;
+            }
+
             // Only show if there are active applications
             const activeApps = apps.filter(a => STATUSES[a.status]?.active);
             if (activeApps.length === 0) {
