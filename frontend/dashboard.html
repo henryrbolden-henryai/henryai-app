@@ -737,10 +737,14 @@
             const welcomeHeading = document.getElementById('welcomeHeading');
             const welcomeSubtext = document.getElementById('welcomeSubtext');
 
-            // Get user's first name
+            // Get user's first name - check multiple possible locations
             let firstName = 'there';
-            if (profile && profile.name) {
-                firstName = profile.name.split(' ')[0];
+            const fullName = profile?.resume?.contact?.full_name ||
+                           profile?.resume?.full_name ||
+                           profile?.name ||
+                           null;
+            if (fullName) {
+                firstName = fullName.split(' ')[0];
             }
 
             // Time-based greeting
