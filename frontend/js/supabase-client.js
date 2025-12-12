@@ -237,8 +237,10 @@ const HenryData = {
             updated_at: new Date().toISOString()
         };
 
-        // If app has a UUID id, update it; otherwise insert new
-        if (app.id && app.id.includes('-')) {
+        // If app has a UUID id (string with dashes), update it; otherwise insert new
+        // Convert id to string first since localStorage IDs may be numbers
+        const appIdStr = String(app.id || '');
+        if (appIdStr && appIdStr.includes('-')) {
             const { data, error } = await supabase
                 .from('applications')
                 .update(appData)
