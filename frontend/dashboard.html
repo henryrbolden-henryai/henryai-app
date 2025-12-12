@@ -768,18 +768,27 @@
             renderRecentActivity(apps);
         }
 
+        // Cache for Supabase user name (set during auth check)
+        let supabaseUserName = null;
+
         function renderWelcome(profile) {
             const welcomeHeading = document.getElementById('welcomeHeading');
             const welcomeSubtext = document.getElementById('welcomeSubtext');
 
             // Get user's first name - check multiple possible locations
             let firstName = 'there';
-            const fullName = profile?.resume?.contact?.full_name ||
-                           profile?.resume?.full_name ||
-                           profile?.name ||
-                           null;
-            if (fullName) {
-                firstName = fullName.split(' ')[0];
+            // First try Supabase user name (set during auth)
+            if (supabaseUserName?.firstName && supabaseUserName.firstName !== 'there') {
+                firstName = supabaseUserName.firstName;
+            } else {
+                // Fall back to profile data
+                const fullName = profile?.resume?.contact?.full_name ||
+                               profile?.resume?.full_name ||
+                               profile?.name ||
+                               null;
+                if (fullName) {
+                    firstName = fullName.split(' ')[0];
+                }
             }
 
             // Time-based greeting
@@ -1124,7 +1133,11 @@
                     return;
                 }
 
-                // User menu (email, sign out) handled by sidebar navigation
+                // Get user's name from Supabase for personalized greeting
+                supabaseUserName = await HenryAuth.getUserName();
+
+                // Re-render with user name now available
+                renderDashboard();
 
                 // Load applications from Supabase and re-render dashboard
                 if (typeof HenryData !== 'undefined') {
