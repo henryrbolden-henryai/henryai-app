@@ -2341,11 +2341,12 @@
     <!-- DELETE MODAL -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
-            <h2>Archive this application?</h2>
-            <p>This will move the role out of your active pipeline. You can always add it back by analyzing the job again.</p>
+            <h2>🗑️ Delete this application?</h2>
+            <p>This will <strong>permanently remove</strong> this role from your tracker. This cannot be undone.</p>
+            <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-top: 8px;">To add it back, you'll need to analyze the job description again.</p>
             <div class="modal-actions">
                 <button class="modal-btn secondary" onclick="closeDeleteModal()">Cancel</button>
-                <button class="modal-btn danger" id="confirmDeleteBtn">Archive</button>
+                <button class="modal-btn danger" id="confirmDeleteBtn">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -4586,12 +4587,12 @@
                     actions.push({ label: '📋 View Debrief', action: `showRejectionDebrief('${app.id}')` });
                     actions.push({ label: '🔄 Request Feedback', action: `requestFeedback('${app.id}')` });
                 }
-                actions.push({ label: '🗑️ Archive', action: `showDeleteModal('${app.id}')`, danger: true });
+                actions.push({ label: '🗑️ Delete', action: `showDeleteModal('${app.id}')`, danger: true });
                 return actions;
             }
 
-            // Always include archive for active apps (reject handled by status-specific logic above)
-            actions.push({ label: 'Archive', action: `showDeleteModal('${app.id}')`, danger: true });
+            // Always include delete option for active apps
+            actions.push({ label: 'Delete', action: `showDeleteModal('${app.id}')`, danger: true });
 
             return actions;
         }
