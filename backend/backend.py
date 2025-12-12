@@ -7831,6 +7831,119 @@ async def text_to_speech(request: SpeakRequest):
 
 
 # ============================================================================
+# SCREENSHOT JOB EXTRACTION (Claude Vision)
+# ============================================================================
+
+class ScreenshotExtractRequest(BaseModel):
+    image: str  # Base64 encoded image
+
+class ExtractedJob(BaseModel):
+    title: str
+    company: str
+    status: Optional[str] = None
+    date_applied: Optional[str] = None
+
+class ScreenshotExtractResponse(BaseModel):
+    jobs: List[ExtractedJob]
+    message: Optional[str] = None
+
+@app.post("/api/extract-jobs-from-screenshot", response_model=ScreenshotExtractResponse)
+async def extract_jobs_from_screenshot(request: ScreenshotExtractRequest):
+    """
+    Extract job applications from a screenshot of an ATS (Greenhouse, Lever, etc.)
+    Uses Claude Vision to analyze the image and extract structured job data.
+    """
+    try:
+        print(f"📸 Processing screenshot for job extraction...")
+
+        # Prepare the prompt for Claude Vision
+        extraction_prompt = """Analyze this screenshot of a job application tracker (likely from Greenhouse, Lever, Workday, or similar ATS).
+
+Extract ALL job applications visible in the image. For each job, identify:
+1. Job title/role
+2. Company name
+3. Application status (if visible - e.g., "Applied", "In Review", "Interview", "Rejected", "Offer")
+4. Date applied (if visible - any format is fine)
+
+Return a JSON object with this exact structure:
+{
+    "jobs": [
+        {
+            "title": "Job Title Here",
+            "company": "Company Name Here",
+            "status": "Status if visible or null",
+            "date_applied": "Date if visible or null"
+        }
+    ],
+    "message": "Optional note about the extraction"
+}
+
+Important:
+- Extract ALL jobs visible, even if some details are missing
+- If company or title is unclear, make your best guess based on context
+- For status, normalize to: "Applied", "Screening", "Interview", "Offer", "Rejected", or null if unknown
+- Return ONLY valid JSON, no markdown code blocks or extra text"""
+
+        # Call Claude Vision API
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4096,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/png",
+                                "data": request.image
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": extraction_prompt
+                        }
+                    ]
+                }
+            ]
+        )
+
+        result_text = response.content[0].text.strip()
+        print(f"📸 Claude Vision response: {result_text[:500]}...")
+
+        # Clean up potential markdown formatting
+        if result_text.startswith("```"):
+            import re
+            result_text = re.sub(r'^```(?:json)?\n?', '', result_text)
+            result_text = re.sub(r'\n?```$', '', result_text)
+
+        # Parse the JSON response
+        try:
+            parsed_result = json.loads(result_text)
+            jobs = parsed_result.get("jobs", [])
+            message = parsed_result.get("message")
+
+            print(f"📸 Extracted {len(jobs)} jobs from screenshot")
+
+            return ScreenshotExtractResponse(
+                jobs=[ExtractedJob(**job) for job in jobs],
+                message=message
+            )
+        except json.JSONDecodeError as e:
+            print(f"🔥 JSON parse error: {e}")
+            print(f"🔥 Raw response: {result_text}")
+            raise HTTPException(status_code=500, detail="Failed to parse job extraction results")
+
+    except anthropic.APIError as e:
+        print(f"🔥 Claude Vision API error: {e}")
+        raise HTTPException(status_code=500, detail=f"AI processing failed: {str(e)}")
+    except Exception as e:
+        print(f"🔥 Screenshot extraction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Screenshot processing failed: {str(e)}")
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

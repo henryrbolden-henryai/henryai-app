@@ -954,6 +954,136 @@
             color: var(--color-text-muted);
         }
 
+        /* Import Option Buttons */
+        .import-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            color: var(--color-text);
+            width: 100%;
+        }
+
+        .import-option-btn:hover {
+            background: var(--color-surface-elevated);
+            border-color: var(--color-accent);
+            transform: translateX(4px);
+        }
+
+        .import-option-icon {
+            font-size: 1.5rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg);
+            border-radius: 10px;
+        }
+
+        .import-option-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .import-option-text strong {
+            font-size: 1rem;
+        }
+
+        .import-option-text span {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
+        /* Screenshot Upload Area */
+        .screenshot-upload-area {
+            margin-top: 20px;
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .screenshot-upload-area:hover,
+        .screenshot-upload-area.dragover {
+            border-color: var(--color-accent);
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .screenshot-upload-area.has-image {
+            padding: 20px;
+            border-style: solid;
+        }
+
+        /* Processing Spinner */
+        .processing-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Extracted Job Item */
+        .extracted-job-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .extracted-job-item:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .extracted-job-checkbox {
+            margin-top: 4px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .extracted-job-details {
+            flex: 1;
+        }
+
+        .extracted-job-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .extracted-job-company {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        .extracted-job-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+
         /* Status Selector */
         .status-selector {
             position: relative;
@@ -2296,10 +2426,11 @@
                 <button class="header-btn" onclick="exportBackup()" title="Download all your data as a backup file">
                     <span>📥</span> Export Backup
                 </button>
-                <button class="header-btn" onclick="document.getElementById('importFile').click()" title="Import data from a backup file">
+                <button class="header-btn" onclick="showImportOptions()" title="Import applications">
                     <span>📤</span> Import
                 </button>
                 <input type="file" id="importFile" accept=".json,.csv,.xlsx,.xls" style="display: none;" onchange="handleImport(event)">
+                <input type="file" id="screenshotFile" accept="image/*" style="display: none;" onchange="handleScreenshotImport(event)">
             </div>
         </div>
 
@@ -2401,6 +2532,86 @@
         </div>
 
     <!-- ARCHIVE MODAL -->
+    <!-- IMPORT OPTIONS MODAL -->
+    <div class="modal-overlay" id="importOptionsModal">
+        <div class="modal" style="max-width: 500px;">
+            <h2>📤 Import Applications</h2>
+            <p style="color: var(--color-text-muted);">Choose how you'd like to import your applications</p>
+
+            <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+                <button class="import-option-btn" onclick="closeImportOptions(); document.getElementById('screenshotFile').click();">
+                    <span class="import-option-icon">📸</span>
+                    <div class="import-option-text">
+                        <strong>From Screenshot</strong>
+                        <span>Screenshot your Greenhouse, Lever, or any ATS job list</span>
+                    </div>
+                </button>
+
+                <button class="import-option-btn" onclick="closeImportOptions(); document.getElementById('importFile').click();">
+                    <span class="import-option-icon">📄</span>
+                    <div class="import-option-text">
+                        <strong>From File</strong>
+                        <span>Import from CSV, Excel, or JSON backup</span>
+                    </div>
+                </button>
+
+                <button class="import-option-btn" onclick="closeImportOptions(); showManualAddModal();">
+                    <span class="import-option-icon">✏️</span>
+                    <div class="import-option-text">
+                        <strong>Add Manually</strong>
+                        <span>Enter job details by hand</span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="modal-btn secondary" onclick="closeImportOptions()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREENSHOT IMPORT MODAL -->
+    <div class="modal-overlay" id="screenshotImportModal">
+        <div class="modal" style="max-width: 700px;">
+            <h2>📸 Import from Screenshot</h2>
+            <p style="color: var(--color-text-muted);">Upload a screenshot of your job applications from Greenhouse, Lever, Workday, or any other ATS</p>
+
+            <!-- Upload Area -->
+            <div id="screenshotUploadArea" class="screenshot-upload-area">
+                <div class="screenshot-upload-content">
+                    <span style="font-size: 3rem;">📷</span>
+                    <p style="margin-top: 12px;"><strong>Drop screenshot here</strong></p>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem;">or click to select, or paste (Ctrl/Cmd+V)</p>
+                </div>
+                <img id="screenshotPreview" style="display: none; max-width: 100%; max-height: 300px; border-radius: 8px;">
+            </div>
+
+            <!-- Processing State -->
+            <div id="screenshotProcessing" style="display: none; text-align: center; padding: 40px;">
+                <div class="processing-spinner"></div>
+                <p style="margin-top: 16px;">Analyzing screenshot with AI...</p>
+                <p style="color: var(--color-text-muted); font-size: 0.85rem;">Extracting job titles, companies, and dates</p>
+            </div>
+
+            <!-- Results -->
+            <div id="screenshotResults" style="display: none;">
+                <h3 style="margin-bottom: 12px;">Found <span id="extractedJobCount">0</span> applications</h3>
+                <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 16px;">Select which ones to import and fill in any missing details</p>
+
+                <div id="extractedJobsList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="modal-btn secondary" onclick="closeScreenshotImport()">Cancel</button>
+                <button class="modal-btn primary" id="importSelectedBtn" style="display: none;" onclick="importSelectedJobs()">
+                    Import Selected
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="archiveModal">
         <div class="modal">
             <h2>📦 Archive this application?</h2>
@@ -2740,14 +2951,39 @@
 
         function getDaysSince(dateString) {
             if (!dateString) return 0;
-            const date = new Date(dateString);
+            // Parse as local date to avoid timezone issues
+            const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+            const [year, month, day] = datePart.split('-').map(Number);
+            const date = new Date(year, month - 1, day, 12, 0, 0);
             const now = new Date();
-            return Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            // Set "now" to noon as well for consistent comparison
+            const todayNoon = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+            return Math.floor((todayNoon - date) / (1000 * 60 * 60 * 24));
         }
 
         function formatDate(dateString) {
             if (!dateString) return '';
-            return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            // Parse as local date to avoid timezone shifts
+            const localDate = isoToLocalDate(dateString);
+            return localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // Convert ISO date string to local date (fixing timezone issues)
+        // This ensures dates display correctly regardless of timezone
+        function isoToLocalDate(dateString) {
+            if (!dateString) return null;
+            // If it's a full ISO string with time, extract just the date part
+            // and create a local date at noon to avoid any timezone issues
+            const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+            const [year, month, day] = datePart.split('-').map(Number);
+            return new Date(year, month - 1, day, 12, 0, 0);
+        }
+
+        // Convert ISO date to YYYY-MM-DD format for date inputs (preserving intended date)
+        function isoToDateInputValue(dateString) {
+            if (!dateString) return '';
+            const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+            return datePart;
         }
 
         // Global current apps cache - attached to window for guaranteed global scope
@@ -2797,11 +3033,32 @@
 
         /**
          * Calculate the accurate timeline stage for an app
-         * For "Awaiting" statuses, use the last completed interview round, not a fixed stage
-         * Timeline stages: 0=Preparing, 1=Applied, 2=Screen, 3=Interview, 4=Final/Offer
+         * Timeline visual stages: 0=Applied, 1=Screen, 2=Interview, 3=Final, 4=Offer
+         *
+         * Note: STATUSES.stage values don't match timeline stages:
+         * - STATUSES stage 0 = Preparing (pre-application, not shown on timeline)
+         * - STATUSES stage 1 = Applied/Networking -> Timeline stage 0
+         * - STATUSES stage 2 = Screen -> Timeline stage 1
+         * - STATUSES stage 3 = Interview -> Timeline stage 2
+         * - STATUSES stage 4 = Final -> Timeline stage 3
+         * - STATUSES stage 5 = Offer/Outcome -> Timeline stage 4
          */
         function getTimelineStageForApp(app) {
-            const status = STATUSES[app.status] || { stage: -1, awaiting: false };
+            const statusDef = STATUSES[app.status] || { stage: -1, awaiting: false };
+            const statusStage = statusDef.stage;
+
+            // Map STATUSES stage to visual timeline stage
+            // Status stage 0 (Preparing) -> Timeline -1 (not on timeline)
+            // Status stage 1 (Applied) -> Timeline 0
+            // Status stage 2 (Screen) -> Timeline 1
+            // Status stage 3 (Interview) -> Timeline 2
+            // Status stage 4 (Final) -> Timeline 3
+            // Status stage 5 (Offer) -> Timeline 4
+            function mapStatusStageToTimeline(stage) {
+                if (stage <= 0) return -1;  // Preparing or closed
+                if (stage >= 5) return 4;   // Offer stage
+                return stage - 1;           // Shift down by 1
+            }
 
             // If it's an awaiting status, find the last completed interview stage
             if (app.status === 'Awaiting Decision') {
@@ -2810,29 +3067,35 @@
                 const interviewStatuses = ['Hiring Manager', 'Technical Round', 'Panel Interview'];
                 const finalStatuses = ['Final Round', 'Executive Interview'];
 
-                let maxStage = 2; // Default to Screen (after recruiter screen)
+                let maxTimelineStage = 1; // Default to Screen (timeline stage 1)
 
                 if (app.statusHistory) {
                     app.statusHistory.forEach(s => {
-                        if (finalStatuses.includes(s)) maxStage = Math.max(maxStage, 4);
-                        else if (interviewStatuses.includes(s)) maxStage = Math.max(maxStage, 3);
-                        else if (screenStatuses.includes(s)) maxStage = Math.max(maxStage, 2);
+                        if (finalStatuses.includes(s)) maxTimelineStage = Math.max(maxTimelineStage, 3);
+                        else if (interviewStatuses.includes(s)) maxTimelineStage = Math.max(maxTimelineStage, 2);
+                        else if (screenStatuses.includes(s)) maxTimelineStage = Math.max(maxTimelineStage, 1);
                     });
                 }
 
                 // Also check interviewRounds count
                 const rounds = app.interviewRounds || 0;
-                if (rounds >= 4) maxStage = Math.max(maxStage, 4);
-                else if (rounds >= 2) maxStage = Math.max(maxStage, 3);
-                else if (rounds >= 1) maxStage = Math.max(maxStage, 2);
+                if (rounds >= 4) maxTimelineStage = Math.max(maxTimelineStage, 3);
+                else if (rounds >= 2) maxTimelineStage = Math.max(maxTimelineStage, 2);
+                else if (rounds >= 1) maxTimelineStage = Math.max(maxTimelineStage, 1);
 
-                return { stage: maxStage, isAwaiting: true };
+                return { stage: maxTimelineStage, isAwaiting: true };
             }
 
-            // For other statuses, use the defined stage
+            // For 'Awaiting Screen Result', show at Screen stage
+            if (app.status === 'Awaiting Screen Result') {
+                return { stage: 1, isAwaiting: true }; // Timeline stage 1 = Screen
+            }
+
+            // For other statuses, use the mapped stage
+            const timelineStage = mapStatusStageToTimeline(statusStage);
             return {
-                stage: status.stage >= 0 ? Math.min(4, status.stage) : -1,
-                isAwaiting: status.awaiting || false
+                stage: timelineStage,
+                isAwaiting: statusDef.awaiting || false
             };
         }
 
@@ -5646,23 +5909,42 @@
                 return;
             }
 
+            const idToDelete = deleteAppId;
+            console.log('Deleting app with ID:', idToDelete);
+
             // Delete from Supabase first if available
             if (typeof HenryData !== 'undefined' && window.supabaseSession) {
                 try {
-                    await HenryData.deleteApplication(deleteAppId);
-                    console.log('Deleted from Supabase:', deleteAppId);
+                    const result = await HenryData.deleteApplication(idToDelete);
+                    console.log('Delete from Supabase result:', result);
+                    if (result.error) {
+                        console.error('Supabase delete error:', result.error);
+                    }
                 } catch (err) {
                     console.error('Error deleting from Supabase:', err);
                 }
             }
 
-            // Then remove from local cache and localStorage
-            const apps = getApplications().filter(a => String(a.id) !== String(deleteAppId));
-            window.trackerAppsCache = apps;
-            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+            // Remove from local cache
+            const currentApps = getApplications();
+            const filteredApps = currentApps.filter(a => String(a.id) !== String(idToDelete));
+            console.log('Filtered from', currentApps.length, 'to', filteredApps.length, 'apps');
+
+            // Update cache
+            window.trackerAppsCache = filteredApps;
+
+            // Update localStorage - make sure deleted app is removed
+            localStorage.setItem('trackedApplications', JSON.stringify(filteredApps));
+
+            // Also remove any associated analysis data
+            const deletedApp = currentApps.find(a => String(a.id) === String(idToDelete));
+            if (deletedApp && deletedApp.analysisKey) {
+                localStorage.removeItem(deletedApp.analysisKey);
+                console.log('Removed analysis data for:', deletedApp.analysisKey);
+            }
 
             closeDeleteModal();
-            renderAll(apps);
+            renderAll(filteredApps);
         }
 
         // ========================================================================
@@ -6680,6 +6962,247 @@ Thanks so much!
             alert('Backup downloaded! Keep this file safe to restore your data if needed.');
         }
 
+        // ========================================================================
+        // IMPORT OPTIONS
+        // ========================================================================
+        function showImportOptions() {
+            document.getElementById('importOptionsModal').classList.add('show');
+        }
+
+        function closeImportOptions() {
+            document.getElementById('importOptionsModal').classList.remove('show');
+        }
+
+        function showManualAddModal() {
+            // Navigate to analyze page for manual entry
+            window.location.href = 'analyze.html';
+        }
+
+        // ========================================================================
+        // SCREENSHOT IMPORT
+        // ========================================================================
+        let extractedJobs = [];
+
+        function handleScreenshotImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Show the screenshot import modal
+            document.getElementById('screenshotImportModal').classList.add('show');
+            processScreenshotFile(file);
+
+            // Reset the input for future use
+            event.target.value = '';
+        }
+
+        function closeScreenshotImport() {
+            document.getElementById('screenshotImportModal').classList.remove('show');
+            resetScreenshotModal();
+        }
+
+        function resetScreenshotModal() {
+            document.getElementById('screenshotUploadArea').style.display = 'block';
+            document.querySelector('.screenshot-upload-content').style.display = 'block';
+            document.getElementById('screenshotPreview').style.display = 'none';
+            document.getElementById('screenshotProcessing').style.display = 'none';
+            document.getElementById('screenshotResults').style.display = 'none';
+            document.getElementById('importSelectedBtn').style.display = 'none';
+            document.getElementById('screenshotUploadArea').classList.remove('has-image');
+            extractedJobs = [];
+        }
+
+        function processScreenshotFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Show preview
+                const preview = document.getElementById('screenshotPreview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.querySelector('.screenshot-upload-content').style.display = 'none';
+                document.getElementById('screenshotUploadArea').classList.add('has-image');
+
+                // Send to API for processing
+                processScreenshotWithAI(e.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function processScreenshotWithAI(imageDataUrl) {
+            // Show processing state
+            document.getElementById('screenshotUploadArea').style.display = 'none';
+            document.getElementById('screenshotProcessing').style.display = 'block';
+
+            try {
+                // Extract base64 data from data URL
+                const base64Data = imageDataUrl.split(',')[1];
+
+                // Call API to process with Claude Vision
+                const response = await fetch('/api/extract-jobs-from-screenshot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: base64Data })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const result = await response.json();
+                extractedJobs = result.jobs || [];
+
+                // Show results
+                displayExtractedJobs(extractedJobs);
+
+            } catch (error) {
+                console.error('Screenshot processing error:', error);
+                alert('Error processing screenshot. Please try again or use file import.');
+                resetScreenshotModal();
+            }
+        }
+
+        function displayExtractedJobs(jobs) {
+            document.getElementById('screenshotProcessing').style.display = 'none';
+            document.getElementById('screenshotResults').style.display = 'block';
+            document.getElementById('importSelectedBtn').style.display = 'inline-block';
+
+            document.getElementById('extractedJobCount').textContent = jobs.length;
+
+            const listContainer = document.getElementById('extractedJobsList');
+
+            if (jobs.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--color-text-muted);">
+                        <p>No job applications found in this screenshot.</p>
+                        <p style="font-size: 0.9rem; margin-top: 8px;">Try a screenshot that shows a list of applications with company names and job titles visible.</p>
+                    </div>
+                `;
+                document.getElementById('importSelectedBtn').style.display = 'none';
+                return;
+            }
+
+            listContainer.innerHTML = jobs.map((job, index) => `
+                <div class="extracted-job-item">
+                    <input type="checkbox" class="extracted-job-checkbox" id="job-${index}" checked>
+                    <div class="extracted-job-details">
+                        <div class="extracted-job-title">${job.title || 'Unknown Role'}</div>
+                        <div class="extracted-job-company">${job.company || 'Unknown Company'}</div>
+                        ${job.status || job.date_applied ? `
+                            <div class="extracted-job-meta">
+                                ${job.status ? `<span>Status: ${job.status}</span>` : ''}
+                                ${job.date_applied ? `<span>Applied: ${job.date_applied}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function importSelectedJobs() {
+            const checkboxes = document.querySelectorAll('.extracted-job-checkbox:checked');
+            const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.id.replace('job-', '')));
+
+            if (selectedIndices.length === 0) {
+                alert('Please select at least one job to import.');
+                return;
+            }
+
+            const apps = getApplications();
+            let addedCount = 0;
+
+            for (const index of selectedIndices) {
+                const job = extractedJobs[index];
+                if (!job) continue;
+
+                // Check for duplicates
+                const isDuplicate = apps.some(a =>
+                    a.company?.toLowerCase() === job.company?.toLowerCase() &&
+                    a.role?.toLowerCase() === job.title?.toLowerCase()
+                );
+
+                if (!isDuplicate) {
+                    const newApp = {
+                        id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+                        company: job.company || 'Unknown Company',
+                        role: job.title || 'Unknown Role',
+                        status: mapImportedStatus(job.status) || 'Applied',
+                        dateAdded: new Date().toISOString(),
+                        dateApplied: job.date_applied ? parseImportedDate(job.date_applied) : new Date().toISOString(),
+                        lastUpdated: new Date().toISOString(),
+                        fitScore: null,
+                        importedFromScreenshot: true
+                    };
+
+                    apps.push(newApp);
+                    addedCount++;
+
+                    // Also save to Supabase if available
+                    if (typeof HenryData !== 'undefined' && window.supabaseSession) {
+                        try {
+                            await HenryData.saveApplication(newApp);
+                        } catch (err) {
+                            console.error('Error saving to Supabase:', err);
+                        }
+                    }
+                }
+            }
+
+            saveApplications(apps);
+            closeScreenshotImport();
+            renderAll(apps);
+
+            alert(`Imported ${addedCount} applications${addedCount < selectedIndices.length ? ` (${selectedIndices.length - addedCount} duplicates skipped)` : ''}.`);
+        }
+
+        // Set up drag and drop + paste for screenshot modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('screenshotUploadArea');
+
+            if (uploadArea) {
+                // Click to upload
+                uploadArea.addEventListener('click', () => {
+                    document.getElementById('screenshotFile').click();
+                });
+
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        processScreenshotFile(file);
+                    }
+                });
+            }
+
+            // Paste support (when modal is open)
+            document.addEventListener('paste', (e) => {
+                const modal = document.getElementById('screenshotImportModal');
+                if (modal && modal.classList.contains('show')) {
+                    const items = e.clipboardData?.items;
+                    if (items) {
+                        for (const item of items) {
+                            if (item.type.startsWith('image/')) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    processScreenshotFile(file);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
         function handleImport(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -6982,21 +7505,27 @@ Thanks so much!
                 const session = await HenryAuth.getSession();
                 console.log('Supabase session:', session ? 'exists' : 'null');
                 if (session) {
+                    window.supabaseSession = session; // Store for later use
                     // User is logged in - try Supabase first
                     console.log('Loading data from Supabase...');
                     let apps = await HenryData.getApplications();
                     console.log('Supabase apps count:', apps?.length || 0);
 
-                    // If Supabase is empty but localStorage has data, use localStorage and migrate
-                    const localApps = getApplications();
-                    console.log('localStorage apps count:', localApps?.length || 0);
+                    // Read localStorage WITHOUT using cache (since cache is null)
+                    const localAppsRaw = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                    console.log('localStorage apps count:', localAppsRaw?.length || 0);
 
-                    if ((!apps || apps.length === 0) && localApps.length > 0) {
+                    if ((!apps || apps.length === 0) && localAppsRaw.length > 0) {
                         console.log('Supabase empty but localStorage has data - using localStorage and migrating...');
-                        apps = localApps;
+                        apps = localAppsRaw;
 
                         // Migrate localStorage data to Supabase in background
-                        migrateToSupabase(localApps);
+                        migrateToSupabase(localAppsRaw);
+                    } else if (apps && apps.length > 0) {
+                        // Supabase has data - sync localStorage with Supabase (source of truth)
+                        // This ensures deleted apps don't reappear from stale localStorage
+                        console.log('Syncing localStorage with Supabase data...');
+                        localStorage.setItem('trackedApplications', JSON.stringify(apps));
                     }
 
                     // Set the global cache so getApplications() returns the right data
