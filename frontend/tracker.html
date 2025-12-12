@@ -2566,7 +2566,15 @@
             return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
+        // Global current apps cache - populated by initializeWithAuth
+        let currentAppsCache = null;
+
         function getApplications() {
+            // If we have a cache from Supabase, use it
+            if (currentAppsCache !== null) {
+                return currentAppsCache;
+            }
+            // Fallback to localStorage
             const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
             // Migrate legacy statuses to new structure
             let needsSave = false;
@@ -2583,7 +2591,16 @@
         }
 
         function saveApplications(apps) {
+            // Update the cache
+            currentAppsCache = apps;
+            // Save to localStorage as backup
             localStorage.setItem('trackedApplications', JSON.stringify(apps));
+            // If Supabase is available, also save there
+            if (typeof HenryData !== 'undefined' && window.supabaseSession) {
+                HenryData.saveAllApplications(apps).catch(err => {
+                    console.error('Error saving to Supabase:', err);
+                });
+            }
         }
 
         function parseSalary(salaryStr) {
@@ -6418,6 +6435,10 @@
                         migrateToSupabase(localApps);
                     }
 
+                    // Set the global cache so getApplications() returns the right data
+                    currentAppsCache = apps;
+                    console.log('Set currentAppsCache with', apps?.length || 0, 'apps');
+
                     renderAll(apps);
 
                     // Override getApplications and saveApplications for this session
@@ -6435,6 +6456,8 @@
                 console.log('First app status:', apps[0].status);
                 console.log('STATUSES[status]:', STATUSES[apps[0].status]);
             }
+            // Set the global cache so getApplications() returns consistent data
+            currentAppsCache = apps;
             renderAll(apps);
         }
 
