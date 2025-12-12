@@ -924,17 +924,32 @@
 
         async function performLevelingAnalysis() {
             try {
+                // Debug: Log what we're getting
+                console.log('analysisData:', analysisData);
+                console.log('_resume_json type:', typeof analysisData._resume_json);
+                console.log('_resume_json value:', analysisData._resume_json);
+
                 // Check if we have meaningful resume data to analyze
                 // Handle case where _resume_json might be a string (double-encoded)
                 let resumeJson = analysisData._resume_json || {};
-                if (typeof resumeJson === 'string') {
+
+                // Keep parsing if it's a string (could be multi-level encoded)
+                let parseAttempts = 0;
+                while (typeof resumeJson === 'string' && parseAttempts < 3) {
                     try {
                         resumeJson = JSON.parse(resumeJson);
+                        parseAttempts++;
+                        console.log(`Parsed string (attempt ${parseAttempts}), new type:`, typeof resumeJson);
                     } catch (e) {
                         console.error('Failed to parse resume_json string:', e);
                         resumeJson = {};
+                        break;
                     }
                 }
+
+                console.log('Final resumeJson type:', typeof resumeJson);
+                console.log('Final resumeJson:', resumeJson);
+
                 const hasExperience = resumeJson.experience && resumeJson.experience.length > 0;
                 const hasName = resumeJson.full_name || resumeJson.contact?.full_name;
 
