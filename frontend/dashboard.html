@@ -551,25 +551,47 @@
         // ========================================================================
         // CONSTANTS
         // ========================================================================
+        // Status definitions matching tracker.html structure
         const STATUSES = {
-            'Researching': { active: true, color: 'cooling' },
-            'Applied': { active: true, color: 'waiting' },
-            'Reached Out': { active: true, color: 'waiting' },
-            'Recruiter Screen': { active: true, color: 'active' },
-            'Hiring Manager': { active: true, color: 'active' },
-            'Technical Round': { active: true, color: 'active' },
-            'Panel Interview': { active: true, color: 'active' },
-            'Final Round': { active: true, color: 'active' },
-            'Executive Interview': { active: true, color: 'active' },
-            'Reference Check': { active: true, color: 'hot' },
-            'Offer': { active: false, color: 'hot' },
-            'Negotiating': { active: true, color: 'hot' },
-            'Accepted': { active: false, color: 'active' },
-            'Rejected': { active: false, color: 'dead' },
-            'Withdrawn': { active: false, color: 'cooling' },
-            'No Response': { active: false, color: 'dead' },
-            'Hot': { active: true, color: 'hot' },
-            'Active': { active: true, color: 'active' }
+            // Application Stage
+            'Preparing': { active: true, color: 'cooling', category: 'Application' },
+            'Applied': { active: true, color: 'waiting', category: 'Application' },
+            'Networking': { active: true, color: 'waiting', category: 'Application' },
+
+            // Screening Stage
+            'Recruiter Screen': { active: true, color: 'active', category: 'Screening' },
+            'Awaiting Screen Result': { active: true, color: 'waiting', category: 'Screening' },
+
+            // Interview Stage
+            'Hiring Manager': { active: true, color: 'active', category: 'Interview' },
+            'Technical Round': { active: true, color: 'active', category: 'Interview' },
+            'Panel Interview': { active: true, color: 'active', category: 'Interview' },
+            'Final Round': { active: true, color: 'active', category: 'Interview' },
+            'Executive Interview': { active: true, color: 'active', category: 'Interview' },
+            'Awaiting Decision': { active: true, color: 'waiting', category: 'Interview' },
+
+            // Outcome Stage
+            'Offer Received': { active: true, color: 'hot', category: 'Outcome' },
+            'Negotiating': { active: true, color: 'hot', category: 'Outcome' },
+            'Accepted': { active: false, color: 'active', category: 'Outcome' },
+            'Rejected': { active: false, color: 'dead', category: 'Outcome' },
+            'Withdrawn': { active: false, color: 'cooling', category: 'Outcome' },
+            'No Response': { active: false, color: 'dead', category: 'Outcome' }
+        };
+
+        // Legacy status mapping for migration
+        const LEGACY_STATUS_MAP = {
+            'To Apply': 'Preparing',
+            'Researching': 'Preparing',
+            'Reached Out': 'Networking',
+            'Response Received': 'Recruiter Screen',
+            'Awaiting Screen': 'Awaiting Screen Result',
+            'Awaiting Next Round': 'Awaiting Decision',
+            'Interviewed': 'Awaiting Decision',
+            'Reference Check': 'Awaiting Decision',
+            'Offer': 'Offer Received',
+            'Hot': 'Recruiter Screen',
+            'Active': 'Applied'
         };
 
         // ========================================================================
@@ -588,7 +610,19 @@
         function getApplications() {
             try {
                 const apps = localStorage.getItem('trackedApplications');
-                return apps ? JSON.parse(apps) : [];
+                const parsed = apps ? JSON.parse(apps) : [];
+                // Migrate legacy statuses
+                let needsSave = false;
+                parsed.forEach(app => {
+                    if (LEGACY_STATUS_MAP[app.status]) {
+                        app.status = LEGACY_STATUS_MAP[app.status];
+                        needsSave = true;
+                    }
+                });
+                if (needsSave) {
+                    localStorage.setItem('trackedApplications', JSON.stringify(parsed));
+                }
+                return parsed;
             } catch (err) {
                 console.error('Error loading applications:', err);
                 return [];
@@ -619,7 +653,7 @@
         function getFollowUpsDue(apps) {
             return apps.filter(a => {
                 const daysSince = getDaysSince(a.dateApplied || a.dateAdded);
-                return ['Applied', 'Reached Out'].includes(a.status) && daysSince >= 5;
+                return ['Applied', 'Networking'].includes(a.status) && daysSince >= 5;
             });
         }
 
@@ -832,7 +866,7 @@
             // Check for COMPLETED interviews (have interview date in the past or dateInterviewed set)
             const completedInterviews = apps.filter(a => {
                 // Apps that are in post-interview stages
-                if (['Awaiting Next Round', 'Awaiting Decision', 'Reference Check', 'Offer Received', 'Negotiating'].includes(a.status)) {
+                if (['Awaiting Decision', 'Awaiting Screen Result', 'Offer Received', 'Negotiating'].includes(a.status)) {
                     return true;
                 }
                 // Apps in interview stage but with past interview date
@@ -860,7 +894,7 @@
             } else if (completedInterviews.length > 0) {
                 // They have completed interviews - suggest follow-up or debrief
                 const awaitingResponse = completedInterviews.filter(a =>
-                    ['Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
+                    ['Awaiting Decision', 'Awaiting Screen Result'].includes(a.status)
                 );
                 if (awaitingResponse.length > 0) {
                     const app = awaitingResponse[0];
@@ -941,7 +975,7 @@
             // Check for stale applications (no activity in 14+ days)
             const staleApps = activeApps.filter(a => {
                 const daysSince = getDaysSince(a.lastUpdated || a.dateAdded);
-                return daysSince >= 14 && !['Awaiting Next Round', 'Awaiting Decision'].includes(a.status);
+                return daysSince >= 14 && !['Awaiting Decision', 'Awaiting Screen Result'].includes(a.status);
             });
 
             if (staleApps.length > 0) {
@@ -1054,9 +1088,9 @@
         }
 
         function getStatusClass(status) {
-            if (status === 'Hot' || status === 'Reference Check' || status === 'Negotiating') return 'status-hot';
+            if (['Offer Received', 'Negotiating'].includes(status)) return 'status-hot';
             if (['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'].includes(status)) return 'status-active';
-            if (['Applied', 'Reached Out', 'Researching'].includes(status)) return 'status-waiting';
+            if (['Applied', 'Networking', 'Preparing', 'Awaiting Decision', 'Awaiting Screen Result'].includes(status)) return 'status-waiting';
             return 'status-default';
         }
 
