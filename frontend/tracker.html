@@ -2566,14 +2566,14 @@
             return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
 
-        // Global current apps cache - populated by initializeWithAuth
-        let currentAppsCache = null;
+        // Global current apps cache - attached to window for guaranteed global scope
+        window.trackerAppsCache = null;
 
         function getApplications() {
             // If we have a cache from Supabase, use it
-            if (currentAppsCache !== null) {
-                console.log('getApplications: returning cache with', currentAppsCache.length, 'apps');
-                return currentAppsCache;
+            if (window.trackerAppsCache !== null) {
+                console.log('getApplications: returning cache with', window.trackerAppsCache.length, 'apps');
+                return window.trackerAppsCache;
             }
             console.log('getApplications: cache is null, falling back to localStorage');
             // Fallback to localStorage
@@ -2594,7 +2594,7 @@
 
         function saveApplications(apps) {
             // Update the cache
-            currentAppsCache = apps;
+            window.trackerAppsCache = apps;
             // Save to localStorage as backup
             localStorage.setItem('trackedApplications', JSON.stringify(apps));
             // If Supabase is available, also save there
@@ -6443,8 +6443,8 @@
                     }
 
                     // Set the global cache so getApplications() returns the right data
-                    currentAppsCache = apps;
-                    console.log('Set currentAppsCache with', apps?.length || 0, 'apps');
+                    window.trackerAppsCache = apps;
+                    console.log('Set window.trackerAppsCache with', apps?.length || 0, 'apps');
 
                     renderAll(apps);
 
@@ -6464,7 +6464,7 @@
                 console.log('STATUSES[status]:', STATUSES[apps[0].status]);
             }
             // Set the global cache so getApplications() returns consistent data
-            currentAppsCache = apps;
+            window.trackerAppsCache = apps;
             renderAll(apps);
         }
 
