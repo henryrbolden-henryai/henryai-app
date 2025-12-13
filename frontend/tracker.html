@@ -5197,10 +5197,10 @@
                 const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
 
                 return `
-                    <div class="priority-item ${statusLabel}">
+                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" style="cursor: pointer;">
                         <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
                         <div class="priority-content">
-                            <div class="priority-role clickable-title" onclick="navigateWithAnalysis(${app.id}, 'overview.html')">${app.role}</div>
+                            <div class="priority-role">${app.role}</div>
                             <div class="priority-company">${app.company} • ${app.status}</div>
                             <div class="priority-action">→ ${action.action}</div>
                         </div>
