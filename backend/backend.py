@@ -24,6 +24,20 @@ import anthropic
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from document_generator import ResumeFormatter, CoverLetterFormatter
 
+# QA Validation module for fabrication detection and data quality
+from qa_validation import (
+    validate_documents_generation,
+    validate_chat_response,
+    validate_resume_parse,
+    validate_jd_analysis,
+    validate_interview_prep,
+    create_validation_error_response,
+    create_chat_fallback_response,
+    add_validation_warnings_to_response,
+    ValidationResult,
+    ValidationLogger
+)
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
@@ -1941,8 +1955,32 @@ Your response must be ONLY valid JSON, no additional text."""
             )
         
         print(f"✅ Successfully parsed resume for: {parsed_data.get('full_name', 'Unknown')}")
+
+        # =================================================================
+        # QA VALIDATION: Check parsed resume data quality
+        # =================================================================
+        qa_validation_result = validate_resume_parse(parsed_data)
+
+        if qa_validation_result.should_block:
+            # Log blocking issues
+            print("\n" + "🚫"*20)
+            print("RESUME PARSE QA VALIDATION - CRITICAL FIELDS MISSING")
+            print("🚫"*20)
+            for issue in qa_validation_result.issues:
+                print(f"  [{issue.severity.value}] {issue.field_path}: {issue.message}")
+            print("🚫"*20 + "\n")
+
+            # Return error with details about what's missing
+            error_response = create_validation_error_response(qa_validation_result)
+            raise HTTPException(status_code=422, detail=error_response)
+
+        # Add warnings to response if any (but don't block)
+        if qa_validation_result.warnings:
+            parsed_data = add_validation_warnings_to_response(parsed_data, qa_validation_result)
+            print(f"  ⚠️ Resume parse warnings: {len(qa_validation_result.warnings)}")
+
         return parsed_data
-        
+
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
@@ -1951,7 +1989,7 @@ Your response must be ONLY valid JSON, no additional text."""
         import traceback
         traceback.print_exc()
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Failed to parse Claude response as JSON: {str(e)}"
         )
     except Exception as e:
@@ -2576,13 +2614,47 @@ Remember: NO fabrication, NO generic filler, NO clichés."""
         response = call_claude(system_prompt, user_message, max_tokens=2000)
         cleaned = clean_claude_json(response)
         result = json.loads(cleaned)
-        
+
         # Validate required fields
         if "cover_letter_text" not in result:
             raise ValueError("Missing cover_letter_text in response")
-        
+
+        # =================================================================
+        # QA VALIDATION: Check cover letter for fabrication
+        # =================================================================
+        from qa_validation import OutputValidator, ResumeGroundingValidator
+
+        grounding_validator = ResumeGroundingValidator(request.resume)
+        output_validator = OutputValidator(grounding_validator)
+        qa_validation_result = output_validator.validate_cover_letter({"content": result.get("cover_letter_text", "")})
+
+        if qa_validation_result.should_block:
+            print("\n" + "🚫"*20)
+            print("COVER LETTER QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
+            print("🚫"*20)
+            for issue in qa_validation_result.issues:
+                print(f"  [{issue.category.value}] {issue.message}")
+            print("🚫"*20 + "\n")
+
+            # Log to file for review
+            ValidationLogger.log_blocked_output(
+                endpoint="/api/cover-letter/generate",
+                result=qa_validation_result,
+                output=result,
+                resume_data=request.resume,
+                request_context={"company": request.jd_analysis.get("company") if request.jd_analysis else None}
+            )
+
+            error_response = create_validation_error_response(qa_validation_result)
+            raise HTTPException(status_code=422, detail=error_response)
+
+        # Add warnings to response if any
+        if qa_validation_result.warnings:
+            result = add_validation_warnings_to_response(result, qa_validation_result)
+            print(f"  ⚠️ Cover letter validation warnings: {len(qa_validation_result.warnings)}")
+
         return result
-        
+
     except json.JSONDecodeError as e:
         print(f"🔥 JSON parse error in /api/cover-letter/generate: {e}")
         print(f"Response was: {response[:500]}...")
@@ -3021,6 +3093,23 @@ Role: {request.role_title}
                     print(f"\n⚠️  JD Analysis - Recruiter outreach has quality issues: {errors}")
                     # Cleanup common issues
                     outreach["recruiter_outreach_template"] = cleanup_outreach_template(rec_template)
+
+        # =================================================================
+        # QA VALIDATION: Check JD analysis completeness
+        # =================================================================
+        qa_validation_result = validate_jd_analysis(parsed_data)
+
+        # Log warnings for incomplete JD data (don't block - just inform)
+        if qa_validation_result.warnings:
+            print(f"  ⚠️ JD analysis warnings: {len(qa_validation_result.warnings)}")
+            for w in qa_validation_result.warnings:
+                print(f"    - {w.field_path}: {w.message}")
+
+            # Add warnings to response so frontend can show them to user
+            parsed_data["_validation_warnings"] = [
+                {"field": w.field_path, "message": w.message}
+                for w in qa_validation_result.warnings
+            ]
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -3586,6 +3675,44 @@ Generate the complete JSON response with ALL required fields populated."""
         print("="*60)
         print(json.dumps(parsed_data, indent=2))
         print("="*60 + "\n")
+
+        # =================================================================
+        # QA VALIDATION: Check for fabrication and incomplete outputs
+        # =================================================================
+        qa_validation_result = validate_documents_generation(
+            output=parsed_data,
+            resume_data=request.resume,
+            jd_data=request.jd_analysis
+        )
+
+        if qa_validation_result.should_block:
+            # Log the blocked output for review
+            print("\n" + "🚫"*30)
+            print("QA VALIDATION BLOCKED OUTPUT - POTENTIAL FABRICATION DETECTED")
+            print("🚫"*30)
+            for issue in qa_validation_result.issues:
+                print(f"  [{issue.category.value}] {issue.message}")
+                if issue.claim:
+                    print(f"    Claim: {issue.claim[:150]}...")
+            print("🚫"*30 + "\n")
+
+            # Log to file for manual review
+            ValidationLogger.log_blocked_output(
+                endpoint="/api/documents/generate",
+                result=qa_validation_result,
+                output=parsed_data,
+                resume_data=request.resume,
+                request_context={"company": request.jd_analysis.get("company"), "role": request.jd_analysis.get("role_title")}
+            )
+
+            # Return error response with validation details
+            error_response = create_validation_error_response(qa_validation_result)
+            raise HTTPException(status_code=422, detail=error_response)
+
+        # Add warnings to response if any (but don't block)
+        if qa_validation_result.warnings:
+            parsed_data = add_validation_warnings_to_response(parsed_data, qa_validation_result)
+            print(f"  ⚠️ QA validation warnings: {len(qa_validation_result.warnings)}")
 
         return parsed_data
         
@@ -4376,6 +4503,36 @@ Generate the intro sell template now."""
     try:
         cleaned = clean_claude_json(response)
         parsed = json.loads(cleaned)
+
+        # =================================================================
+        # QA VALIDATION: Check intro sell for fabrication
+        # =================================================================
+        from qa_validation import OutputValidator, ResumeGroundingValidator
+
+        grounding_validator = ResumeGroundingValidator(request.resume_json)
+        output_validator = OutputValidator(grounding_validator)
+        # Validate the template as interview prep content
+        qa_validation_result = output_validator.validate_interview_prep({
+            "talking_points": [{"content": parsed.get("template", "")}]
+        })
+
+        if qa_validation_result.should_block:
+            print("\n" + "🚫"*20)
+            print("INTRO SELL QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
+            print("🚫"*20)
+            for issue in qa_validation_result.issues:
+                print(f"  [{issue.category.value}] {issue.message}")
+            print("🚫"*20 + "\n")
+
+            ValidationLogger.log_blocked_output(
+                endpoint="/api/interview-prep/intro-sell/generate",
+                result=qa_validation_result,
+                output=parsed,
+                resume_data=request.resume_json
+            )
+
+            error_response = create_validation_error_response(qa_validation_result)
+            raise HTTPException(status_code=422, detail=error_response)
 
         return IntroSellTemplateResponse(
             template=parsed.get("template", ""),
@@ -7384,6 +7541,40 @@ TOP APPLICATIONS IN PIPELINE:
 
         assistant_response = response.content[0].text
         print(f"✅ Ask Henry response: {len(assistant_response)} chars")
+
+        # =================================================================
+        # QA VALIDATION: Check chat response for fabrication
+        # Only validate if we have resume data to check against
+        # =================================================================
+        if request.resume_data and request.context.has_resume:
+            qa_validation_result = validate_chat_response(
+                response=assistant_response,
+                user_question=request.message,
+                resume_data=request.resume_data
+            )
+
+            if qa_validation_result.should_block:
+                # Log the blocked response for review
+                print("\n" + "🚫"*20)
+                print("ASK HENRY QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
+                print("🚫"*20)
+                print(f"Question: {request.message[:100]}...")
+                for issue in qa_validation_result.issues:
+                    print(f"  [{issue.category.value}] {issue.message}")
+                print("🚫"*20 + "\n")
+
+                # Log to file for review
+                ValidationLogger.log_blocked_output(
+                    endpoint="/api/ask-henry",
+                    result=qa_validation_result,
+                    output={"response": assistant_response},
+                    resume_data=request.resume_data,
+                    request_context={"question": request.message[:200]}
+                )
+
+                # Return a safe fallback response instead of blocking entirely
+                fallback_response = create_chat_fallback_response(qa_validation_result, request.message)
+                return AskHenryResponse(response=fallback_response)
 
         return AskHenryResponse(response=assistant_response)
 
