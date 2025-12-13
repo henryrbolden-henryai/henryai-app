@@ -257,37 +257,6 @@
             color: var(--color-accent);
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin: 24px 0;
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--color-border);
-        }
-
-        .continue-without {
-            text-align: center;
-        }
-
-        .continue-without a {
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-        }
-
-        .continue-without a:hover {
-            color: var(--color-accent);
-        }
-
         .loading-spinner {
             display: inline-block;
             width: 16px;
@@ -388,7 +357,7 @@
                     <label for="signupPassword">Password</label>
                     <input type="password" id="signupPassword" placeholder="At least 6 characters" required minlength="6">
                 </div>
-                <button type="submit" class="submit-btn" id="signupBtn">Create Account</button>
+                <button type="submit" class="submit-btn" id="signupBtn">Join HenryHQ</button>
             </form>
 
             <!-- Forgot Password Form -->
@@ -406,11 +375,6 @@
                 </div>
             </form>
 
-            <div class="divider">or</div>
-
-            <div class="continue-without">
-                <a href="index.html">Continue without an account</a>
-            </div>
         </div>
     </div>
 
@@ -482,7 +446,7 @@
             } else {
                 btn.disabled = false;
                 btn.textContent = btn.id === 'signinBtn' ? 'Sign In' :
-                                  btn.id === 'signupBtn' ? 'Create Account' : 'Send Reset Link';
+                                  btn.id === 'signupBtn' ? 'Join HenryHQ' : 'Send Reset Link';
             }
         }
 
