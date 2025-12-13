@@ -217,7 +217,10 @@
 
     <div class="error-message" id="errorMessage">
         <p id="errorText">Something went wrong. Please try again.</p>
-        <button onclick="goBack()">Go Back</button>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="retryGeneration()">Try Again</button>
+            <button onclick="goBack()" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.2);">Go Back</button>
+        </div>
     </div>
 
     <script>
@@ -268,6 +271,21 @@
         function goBack() {
             // Go back to resume-leveling (user may have skipped strengthen)
             window.location.href = 'resume-leveling.html';
+        }
+
+        function retryGeneration() {
+            // Hide error, reset progress, and try again
+            errorMessage.classList.remove('show');
+            statusText.textContent = 'Crafting your resume...';
+            statusSubtext.textContent = 'This usually takes 30-60 seconds';
+            // Reset dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('active', 'completed');
+            }
+            document.getElementById('dot1').classList.add('active');
+            // Retry
+            generateDocuments();
         }
 
         // Progress through stages while waiting
@@ -362,26 +380,38 @@
 
                 if (!response.ok) {
                     let errorDetail = `Document generation failed (${response.status})`;
+                    let isValidationError = false;
                     try {
                         const errorData = await response.json();
                         console.error('API Error Response (raw):', JSON.stringify(errorData, null, 2));
-                        // Handle FastAPI validation errors (422)
-                        if (errorData && errorData.detail) {
-                            if (typeof errorData.detail === 'string') {
-                                errorDetail = errorData.detail;
-                            } else if (Array.isArray(errorData.detail)) {
+
+                        // Check if this is our custom validation error (QA blocked)
+                        if (errorData && errorData.detail && typeof errorData.detail === 'object') {
+                            const detail = errorData.detail;
+                            if (detail.error === 'validation_failed' && detail.user_message) {
+                                // Use the user-friendly message from the backend
+                                errorDetail = detail.user_message;
+                                isValidationError = true;
+                                console.log('QA Validation blocked output:', detail.validation);
+                            } else if (detail.message) {
+                                errorDetail = detail.message;
+                            } else if (Array.isArray(detail)) {
                                 // Pydantic validation errors come as array with loc, msg, type fields
-                                const messages = errorData.detail.map(e => {
+                                const messages = detail.map(e => {
                                     if (!e || typeof e !== 'object') return String(e);
                                     const loc = Array.isArray(e.loc) ? e.loc.join('.') : '';
                                     const msg = String(e.msg || e.message || '');
                                     return loc ? `${loc}: ${msg}` : msg || JSON.stringify(e);
                                 });
                                 errorDetail = messages.join('; ') || 'Validation error';
-                            } else if (typeof errorData.detail === 'object') {
-                                errorDetail = JSON.stringify(errorData.detail);
                             } else {
-                                errorDetail = String(errorData.detail);
+                                errorDetail = JSON.stringify(detail);
+                            }
+                        } else if (errorData && errorData.detail) {
+                            if (typeof errorData.detail === 'string') {
+                                errorDetail = errorData.detail;
+                            } else {
+                                errorDetail = JSON.stringify(errorData.detail);
                             }
                         } else if (errorData && errorData.message) {
                             errorDetail = String(errorData.message);
@@ -392,6 +422,12 @@
                         console.error('Could not parse error response:', parseErr);
                     }
                     console.error('Final error detail:', errorDetail);
+
+                    // For validation errors, show with retry option
+                    if (isValidationError) {
+                        showError(errorDetail + ' Click "Go Back" to check your resume data, or try generating again.');
+                        return;
+                    }
                     throw new Error(errorDetail);
                 }
 
