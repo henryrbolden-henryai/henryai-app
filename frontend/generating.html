@@ -152,6 +152,9 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
 </head>
 <body>
     <div class="logo-container">
@@ -355,6 +358,32 @@
                     _role: roleTitle,
                     _generatedAt: new Date().toISOString()
                 }));
+
+                // Sync documents to Supabase (update the application record)
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        const session = await HenryAuth.getSession();
+                        if (session) {
+                            // Find the application for this company/role and update with documents
+                            const apps = await HenryData.getApplications();
+                            const matchingApp = apps.find(app =>
+                                app.company.toLowerCase() === companyName.toLowerCase() &&
+                                app.role.toLowerCase() === roleTitle.toLowerCase()
+                            );
+                            if (matchingApp) {
+                                matchingApp.documentsData = documentsData;
+                                const result = await HenryData.saveApplication(matchingApp);
+                                if (result.error) {
+                                    console.error('Error saving documents to Supabase:', result.error);
+                                } else {
+                                    console.log('Documents synced to Supabase');
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Supabase documents sync error:', err);
+                    }
+                }
 
                 // Clear supplements and leveling data after use
                 sessionStorage.removeItem('supplements');

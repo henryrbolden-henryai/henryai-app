@@ -295,6 +295,27 @@ const HenryData = {
     },
 
     /**
+     * Update application documents data
+     */
+    async updateApplicationDocuments(appId, documentsData) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('applications')
+            .update({
+                documents_data: documentsData,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', appId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        return { data, error };
+    },
+
+    /**
      * Get resume conversation data
      */
     async getResumeConversation() {

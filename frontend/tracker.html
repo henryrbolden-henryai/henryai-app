@@ -6128,16 +6128,21 @@
                 console.log('Created minimal analysis data for:', app.company, app.role);
             }
 
-            // Try to load stored documents data
-            const documentsKey = `documents_${app.company}_${app.role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-            const documentsData = localStorage.getItem(documentsKey);
-            if (documentsData) {
-                sessionStorage.setItem('documentsData', documentsData);
-                console.log('Loaded documents data for:', app.company, app.role);
+            // Try to load stored documents data - prefer Supabase data from app, fallback to localStorage
+            if (app.documentsData && Object.keys(app.documentsData).length > 0) {
+                sessionStorage.setItem('documentsData', JSON.stringify(app.documentsData));
+                console.log('Loaded documents data from Supabase for:', app.company, app.role);
             } else {
-                // Clear any stale documents data from a different application
-                sessionStorage.removeItem('documentsData');
-                console.log('No documents found for:', app.company, app.role);
+                const documentsKey = `documents_${app.company}_${app.role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                const documentsData = localStorage.getItem(documentsKey);
+                if (documentsData) {
+                    sessionStorage.setItem('documentsData', documentsData);
+                    console.log('Loaded documents data from localStorage for:', app.company, app.role);
+                } else {
+                    // Clear any stale documents data from a different application
+                    sessionStorage.removeItem('documentsData');
+                    console.log('No documents found for:', app.company, app.role);
+                }
             }
 
             window.location.href = targetPage;
