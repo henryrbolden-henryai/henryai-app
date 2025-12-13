@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HenryHQ - Strategy that gets you hired.</title>
+    <meta name="description" content="HenryHQ - Strategy that gets you hired.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            position: relative;
+        }
+
+        /* H Logo */
+        .h-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+        }
+
+        .h-logo.fade-out {
+            opacity: 0;
+        }
+
+        /* HenryHQ Text Logo */
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 4rem;
+            color: #ffffff;
+            margin-bottom: 24px;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+
+        .logo.fade-in {
+            opacity: 1;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            color: #a1a1aa;
+            font-weight: 300;
+            letter-spacing: 0.02em;
+        }
+
+        @media (max-width: 600px) {
+            .h-logo {
+                width: 80px;
+                height: 80px;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Bouncing H Logo SVG (same as Ask Henry) -->
+        <div class="h-logo" id="hLogo">
+            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="strokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <!-- Outer ring -->
+                <circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/>
+                <!-- Left vertical (shorter) -->
+                <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <!-- Right vertical (taller, goes to top) -->
+                <path d="M145 130 L145 50" stroke="url(#strokeGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <!-- Horizontal crossbar -->
+                <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                <!-- Dot at top of right vertical -->
+                <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+            </svg>
+        </div>
+
+        <!-- HenryHQ Text (hidden initially) -->
+        <h1 class="logo" id="textLogo"><em>Henry</em>HQ</h1>
+
+    </div>
+
+    <script>
+        // After 2 seconds, fade out H logo and fade in HenryHQ text
+        setTimeout(() => {
+            document.getElementById('hLogo').classList.add('fade-out');
+            document.getElementById('textLogo').classList.add('fade-in');
+
+            // Remove the H logo from DOM after fade
+            setTimeout(() => {
+                document.getElementById('hLogo').style.display = 'none';
+            }, 800);
+        }, 2000);
+    </script>
+</body>
+</html>
