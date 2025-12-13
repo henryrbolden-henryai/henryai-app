@@ -247,6 +247,19 @@
             background: transparent;
         }
 
+        .focus-item.urgent {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        .focus-item.urgent .focus-item-label {
+            color: #f59e0b;
+        }
+
+        .focus-item.urgent .focus-message strong {
+            color: #f59e0b;
+        }
+
         .focus-item.completed {
             border-left-color: var(--color-active);
             opacity: 0.7;
@@ -645,10 +658,42 @@
         // ========================================================================
         // STATS CALCULATION FUNCTIONS
         // ========================================================================
+        // Get upcoming interviews from dedicated localStorage (set by interview-intelligence.html)
+        function getUpcomingInterviewsFromStorage() {
+            try {
+                const stored = localStorage.getItem('upcomingInterviews');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
         function getInterviewsThisWeek(apps) {
-            const interviewStatuses = ['Recruiter Screen', 'Hiring Manager', 'Technical Round',
-                                       'Panel Interview', 'Final Round', 'Executive Interview'];
-            return apps.filter(a => interviewStatuses.includes(a.status)).length;
+            const upcomingInterviews = getUpcomingInterviewsFromStorage();
+            const now = new Date();
+            const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            // Count interviews scheduled within the next 7 days
+            const scheduledThisWeek = upcomingInterviews.filter(interview => {
+                if (!interview.date) return false;
+                const interviewDate = new Date(interview.date);
+                return interviewDate >= now && interviewDate <= weekFromNow;
+            });
+
+            return scheduledThisWeek.length;
+        }
+
+        // Get the next upcoming interview with date details
+        function getNextUpcomingInterview() {
+            const upcomingInterviews = getUpcomingInterviewsFromStorage();
+            const now = new Date();
+
+            // Filter to future interviews and sort by date
+            const futureInterviews = upcomingInterviews
+                .filter(i => i.date && new Date(i.date) >= now)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            return futureInterviews.length > 0 ? futureInterviews[0] : null;
         }
 
         function getFollowUpsDue(apps) {
@@ -893,7 +938,32 @@
             // ─────────────────────────────────────────────────────────────────
             // ITEM 1: Priority action (interview prep, follow-up, or apply)
             // ─────────────────────────────────────────────────────────────────
-            if (upcomingInterviews.length > 0) {
+            // Check for scheduled interviews from dedicated storage first
+            const nextScheduledInterview = getNextUpcomingInterview();
+
+            if (nextScheduledInterview) {
+                // Format the interview date nicely
+                const interviewDate = new Date(nextScheduledInterview.date);
+                const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
+                const timeOptions = { hour: 'numeric', minute: '2-digit' };
+                const dateStr = interviewDate.toLocaleDateString('en-US', dateOptions);
+                const timeStr = interviewDate.toLocaleTimeString('en-US', timeOptions);
+
+                // Calculate days until interview
+                const daysUntil = Math.ceil((interviewDate - now) / (1000 * 60 * 60 * 24));
+                let urgency = '';
+                if (daysUntil === 0) urgency = '(Today!)';
+                else if (daysUntil === 1) urgency = '(Tomorrow)';
+                else if (daysUntil <= 3) urgency = `(in ${daysUntil} days)`;
+
+                items.push({
+                    label: 'Interview Coming Up',
+                    message: `<strong>${nextScheduledInterview.company}</strong> — ${nextScheduledInterview.type || 'Interview'} on ${dateStr} at ${timeStr} ${urgency}`,
+                    buttonText: 'Prep Now',
+                    buttonLink: 'interview-intelligence.html',
+                    type: 'urgent'
+                });
+            } else if (upcomingInterviews.length > 0) {
                 const nextInterview = upcomingInterviews[0];
                 items.push({
                     label: 'Priority',
@@ -953,19 +1023,31 @@
             // ─────────────────────────────────────────────────────────────────
             if (activeApps.length < 5) {
                 let pipelineMsg = '';
+                let itemType = 'secondary';
+                let labelText = 'Growth';
+
                 if (activeApps.length === 0) {
                     pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
+                } else if (activeApps.length === 1) {
+                    // Strong warning for single application - don't put all eggs in one basket
+                    pipelineMsg = `<strong>Don't put all your eggs in one basket.</strong> 1 active app is risky — aim for 5-10 to maximize your chances.`;
+                    itemType = 'urgent';
+                    labelText = 'Risk';
+                } else if (activeApps.length <= 2) {
+                    pipelineMsg = `<strong>Pipeline too thin:</strong> Only ${activeApps.length} active apps. The average successful search has 5-10 in play.`;
+                    itemType = 'urgent';
+                    labelText = 'Urgent';
                 } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
-                    pipelineMsg = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. Add more to increase your odds.`;
+                    pipelineMsg = `<strong>Keep applying:</strong> ${activeApps.length} active apps. Add more to increase your odds.`;
                 } else {
                     pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active apps. Aim for 5-10 for best results.`;
                 }
                 items.push({
-                    label: 'Growth',
+                    label: labelText,
                     message: pipelineMsg,
                     buttonText: 'Analyze Role',
                     buttonLink: 'analyze.html',
-                    type: 'secondary'
+                    type: itemType
                 });
             } else {
                 // Pipeline is healthy - still suggest adding strategically
