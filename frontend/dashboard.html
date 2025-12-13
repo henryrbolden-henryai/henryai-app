@@ -1044,32 +1044,24 @@
             // Scenario 2: Urgent search + only 1 application
             else if (isUrgentTimeline && appCount === 1) {
                 showRealityCheck = true;
-                // Day-aware messaging
-                const dayOfWeek = new Date().getDay(); // 0=Sun, 5=Fri, 6=Sat
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 5 || dayOfWeek === 6;
-                const timeframeText = isWeekend ? 'next week' : 'this week';
 
                 realityContent = {
                     icon: '⚠️',
                     headline: 'One application isn\'t a job search',
-                    detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy — that's hope. <strong>Add 4-9 more roles ${timeframeText}</strong> to build real momentum.`,
-                    primaryBtn: { text: 'Add More Roles', link: 'analyze.html' },
+                    detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy — that's hope. <strong>Build to 5-10 active applications</strong> over the next few weeks. Quality over quantity — but you need options.`,
+                    primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
                     secondaryBtn: { text: 'Why This Matters', link: 'tracker.html' }
                 };
             }
             // Scenario 3: Urgent + struggling emotionally + thin pipeline
             else if (isUrgentTimeline && isStrugglingEmotionally && appCount < 3) {
                 showRealityCheck = true;
-                // Day-aware messaging
-                const dayOfWeek3 = new Date().getDay();
-                const isWeekend3 = dayOfWeek3 === 0 || dayOfWeek3 === 5 || dayOfWeek3 === 6;
-                const timeframeText3 = isWeekend3 ? 'next week' : 'this week';
 
                 realityContent = {
                     icon: '💪',
                     headline: 'Let\'s get your pipeline working for you',
-                    detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Let's get that to 5 ${timeframeText3}.`,
-                    primaryBtn: { text: 'Add Applications', link: 'analyze.html' },
+                    detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Build toward 5-10 quality applications — take it one role at a time.`,
+                    primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
                     secondaryBtn: { text: 'Talk Strategy', link: '#', onclick: 'openAskHenry()' }
                 };
             }
