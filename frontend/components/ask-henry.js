@@ -946,4 +946,21 @@
     } else {
         createWidget();
     }
+
+    // Expose global functions for external access
+    window.openAskHenry = function() {
+        openDrawer();
+    };
+
+    window.openAskHenryWithPrompt = function(prompt) {
+        openDrawer();
+        // Small delay to ensure drawer is open and input is ready
+        setTimeout(() => {
+            const input = document.getElementById('askHenryInput');
+            if (input) {
+                input.value = prompt;
+                sendMessage();
+            }
+        }, 100);
+    };
 })();
