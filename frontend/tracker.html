@@ -5203,7 +5203,7 @@
                 const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
 
                 return `
-                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" style="cursor: pointer;">
+                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" style="cursor: pointer;">
                         <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
                         <div class="priority-content">
                             <div class="priority-role">${app.role}</div>
@@ -5430,12 +5430,12 @@
                 <div class="app-card ${statusLabel === 'hot' ? 'hot' : ''} ${isInactive ? 'inactive' : ''} ${isGhostRisk ? 'ghost-risk' : ''}" data-id="${app.id}">
                     <div class="card-header">
                         <div class="card-title-section">
-                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" title="View application strategy">
+                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" title="View application strategy">
                                 ${app.role}
                                 ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
                             </div>
                             <div class="card-subtitle">
-                                <span class="editable-company" onclick="editCompanyName(${app.id}, event)" title="Click to edit company name">${app.company}</span>${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
+                                <span class="editable-company" onclick="editCompanyName('${app.id}', event)" title="Click to edit company name">${app.company}</span>${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
                             </div>
                         </div>
                         <div class="card-meta">
@@ -5539,7 +5539,7 @@
 
                     ${app.interviewNotes ? `
                     <div class="expandable-section">
-                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'interview')">
+                        <div class="expandable-toggle" onclick="toggleSection('${app.id}', 'interview')">
                             🎤 Interview Notes
                         </div>
                         <div class="expandable-content" id="interview-content-${app.id}">
@@ -6094,7 +6094,8 @@
          * This ensures overview, documents, outreach, etc. have the context they need
          */
         function navigateWithAnalysis(appId, targetPage) {
-            const app = getApplications().find(a => a.id === appId);
+            // Handle both string and number IDs
+            const app = getApplications().find(a => String(a.id) === String(appId));
             if (!app) {
                 console.error('Application not found:', appId);
                 window.location.href = targetPage;
