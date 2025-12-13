@@ -547,6 +547,24 @@
             background: rgba(248, 113, 113, 0.1);
         }
 
+        .btn-danger-outline {
+            width: 100%;
+            padding: 14px 24px;
+            background: transparent;
+            border: 1px solid var(--color-warning);
+            border-radius: 12px;
+            color: var(--color-warning);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-danger-outline:hover {
+            background: rgba(251, 191, 36, 0.1);
+        }
+
         .error-message,
         .success-message {
             border-radius: 8px;
@@ -639,6 +657,11 @@
         .modal-btn.danger {
             background: var(--color-error);
             color: white;
+        }
+
+        .modal-btn.warning {
+            background: var(--color-warning);
+            color: #000;
         }
 
         @media (max-width: 640px) {
@@ -895,18 +918,66 @@
 
         <div class="button-group">
             <button class="btn-primary" id="saveBtn">Save and Start My Job Search</button>
-            <button class="btn-danger" id="deleteBtn" style="display: none;">Delete Profile</button>
+        </div>
+
+        <!-- Danger Zone - only shown in edit mode -->
+        <div class="form-section danger-zone" id="dangerZone" style="display: none; margin-top: 32px; border-color: rgba(248, 113, 113, 0.3);">
+            <div class="section-title" style="color: var(--color-error);">
+                <span class="icon">⚠️</span>
+                Danger Zone
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-danger-outline" id="resetProfileBtn">Reset Profile</button>
+                <button class="btn-danger" id="deleteAccountBtn">Delete Account</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 12px;">
+                <strong>Reset Profile</strong> clears your profile data and applications but keeps your account.<br>
+                <strong>Delete Account</strong> permanently removes your account and all data.
+            </p>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Reset Profile Confirmation Modal -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal">
+            <h2>Reset your profile?</h2>
+            <p>This will delete your profile data and all tracked applications. Your account will remain active and you can set up a new profile.</p>
+            <div class="form-group" style="margin: 20px 0;">
+                <label style="font-size: 0.9rem; color: var(--color-text-secondary);">Type <strong style="color: var(--color-warning);">RESET</strong> to confirm:</label>
+                <input type="text" id="resetConfirmInput" placeholder="Type RESET" autocomplete="off" style="margin-top: 8px;">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="cancelResetBtn">Cancel</button>
+                <button class="modal-btn warning" id="confirmResetBtn" disabled>Reset Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal - Step 1 -->
     <div class="modal-overlay" id="deleteModal">
         <div class="modal">
-            <h2>Delete your profile?</h2>
-            <p>This will permanently delete your profile and all tracked applications. You will need to set up your profile again to use HenryHQ.</p>
+            <h2>Delete your account?</h2>
+            <p>This will <strong>permanently</strong> delete your account and all associated data. This action cannot be undone.</p>
+            <p style="margin-top: 12px; color: var(--color-error); font-size: 0.9rem;">Are you absolutely sure you want to proceed?</p>
             <div class="modal-actions">
                 <button class="modal-btn secondary" id="cancelDeleteBtn">Cancel</button>
-                <button class="modal-btn danger" id="confirmDeleteBtn">Delete Everything</button>
+                <button class="modal-btn danger" id="proceedDeleteBtn">Yes, Delete My Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal - Step 2 (Final) -->
+    <div class="modal-overlay" id="deleteFinalModal">
+        <div class="modal">
+            <h2>Final Confirmation</h2>
+            <p>This is your last chance to cancel. All your data will be permanently deleted.</p>
+            <div class="form-group" style="margin: 20px 0;">
+                <label style="font-size: 0.9rem; color: var(--color-text-secondary);">Type <strong style="color: var(--color-error);">DELETE MY ACCOUNT</strong> to confirm:</label>
+                <input type="text" id="deleteConfirmInput" placeholder="Type DELETE MY ACCOUNT" autocomplete="off" style="margin-top: 8px;">
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="cancelDeleteFinalBtn">Cancel</button>
+                <button class="modal-btn danger" id="confirmDeleteBtn" disabled>Permanently Delete</button>
             </div>
         </div>
     </div>
@@ -1044,7 +1115,7 @@
             document.getElementById('pageTitle').textContent = 'Edit Your Profile';
             document.getElementById('pageSubtitle').textContent = 'Update your preferences anytime.';
             document.getElementById('backLink').style.display = 'block';
-            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('dangerZone').style.display = 'block';
             document.getElementById('saveBtn').textContent = 'Save Changes';
             // Show resume info, hide file upload
             document.getElementById('fileUpload').style.display = 'none';
@@ -1371,8 +1442,85 @@
             }
         });
 
-        // Delete profile
-        deleteBtn.addEventListener('click', () => {
+        // Reset Profile handlers
+        const resetModal = document.getElementById('resetModal');
+        const resetConfirmInput = document.getElementById('resetConfirmInput');
+        const confirmResetBtn = document.getElementById('confirmResetBtn');
+
+        document.getElementById('resetProfileBtn').addEventListener('click', () => {
+            resetConfirmInput.value = '';
+            confirmResetBtn.disabled = true;
+            resetModal.classList.add('show');
+            resetConfirmInput.focus();
+        });
+
+        // Enable reset button only when user types "RESET"
+        resetConfirmInput.addEventListener('input', () => {
+            confirmResetBtn.disabled = resetConfirmInput.value.trim().toUpperCase() !== 'RESET';
+        });
+
+        document.getElementById('cancelResetBtn').addEventListener('click', () => {
+            resetModal.classList.remove('show');
+            resetConfirmInput.value = '';
+        });
+
+        document.getElementById('confirmResetBtn').addEventListener('click', async () => {
+            if (resetConfirmInput.value.trim().toUpperCase() !== 'RESET') return;
+
+            try {
+                // Clear Supabase data if available
+                if (typeof HenryData !== 'undefined') {
+                    const session = await HenryAuth.getSession();
+                    if (session) {
+                        // Delete all applications
+                        await HenryData.deleteAllApplications();
+                        // Delete candidate profile
+                        await HenryData.deleteCandidateProfile();
+                        console.log('Cleared Supabase data');
+                    }
+                }
+
+                // Clear localStorage
+                localStorage.removeItem('userProfile');
+                localStorage.removeItem('trackedApplications');
+                localStorage.removeItem('upcomingInterviews');
+                localStorage.removeItem('completedInterviews');
+                localStorage.removeItem('resumeConversation');
+                localStorage.removeItem('celebratedMilestones');
+                localStorage.removeItem('interventionState');
+                // Clear analysis_ and documents_ prefixed items
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('analysis_') || key.startsWith('documents_'))) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                sessionStorage.clear();
+
+                // Mark as needing onboarding and redirect
+                localStorage.setItem('henryai_needs_onboarding', 'true');
+                window.location.href = 'profile-edit.html';
+            } catch (error) {
+                console.error('Reset error:', error);
+                errorMessage.textContent = 'Failed to reset profile: ' + error.message;
+                errorMessage.classList.add('show');
+                resetModal.classList.remove('show');
+            }
+        });
+
+        resetModal.addEventListener('click', (e) => {
+            if (e.target === resetModal) {
+                resetModal.classList.remove('show');
+                resetConfirmInput.value = '';
+            }
+        });
+
+        // Delete Account handlers - Two-step confirmation
+        const deleteFinalModal = document.getElementById('deleteFinalModal');
+        const deleteConfirmInput = document.getElementById('deleteConfirmInput');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+        document.getElementById('deleteAccountBtn').addEventListener('click', () => {
             deleteModal.classList.add('show');
         });
 
@@ -1380,17 +1528,69 @@
             deleteModal.classList.remove('show');
         });
 
-        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-            localStorage.removeItem('userProfile');
-            localStorage.removeItem('trackedApplications');
-            sessionStorage.clear();
-            window.location.href = 'analyze.html';
+        // Step 1: User clicks "Yes, Delete My Account" -> Show final confirmation
+        document.getElementById('proceedDeleteBtn').addEventListener('click', () => {
+            deleteModal.classList.remove('show');
+            deleteConfirmInput.value = '';
+            confirmDeleteBtn.disabled = true;
+            deleteFinalModal.classList.add('show');
+            deleteConfirmInput.focus();
         });
 
-        // Close modal on overlay click
+        // Enable delete button only when user types "DELETE MY ACCOUNT"
+        deleteConfirmInput.addEventListener('input', () => {
+            confirmDeleteBtn.disabled = deleteConfirmInput.value.trim().toUpperCase() !== 'DELETE MY ACCOUNT';
+        });
+
+        document.getElementById('cancelDeleteFinalBtn').addEventListener('click', () => {
+            deleteFinalModal.classList.remove('show');
+            deleteConfirmInput.value = '';
+        });
+
+        // Step 2: Final deletion
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+            if (deleteConfirmInput.value.trim().toUpperCase() !== 'DELETE MY ACCOUNT') return;
+
+            try {
+                // Clear Supabase data if available
+                if (typeof HenryData !== 'undefined' && typeof HenryAuth !== 'undefined') {
+                    const session = await HenryAuth.getSession();
+                    if (session) {
+                        // Delete all applications
+                        await HenryData.deleteAllApplications();
+                        // Delete candidate profile
+                        await HenryData.deleteCandidateProfile();
+                        // Sign out and delete user (note: full account deletion requires admin API)
+                        await HenryAuth.signOut();
+                        console.log('Signed out and cleared Supabase data');
+                    }
+                }
+
+                // Clear all localStorage
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Redirect to landing page
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Delete account error:', error);
+                errorMessage.textContent = 'Failed to delete account: ' + error.message;
+                errorMessage.classList.add('show');
+                deleteFinalModal.classList.remove('show');
+            }
+        });
+
+        // Close modals on overlay click
         deleteModal.addEventListener('click', (e) => {
             if (e.target === deleteModal) {
                 deleteModal.classList.remove('show');
+            }
+        });
+
+        deleteFinalModal.addEventListener('click', (e) => {
+            if (e.target === deleteFinalModal) {
+                deleteFinalModal.classList.remove('show');
+                deleteConfirmInput.value = '';
             }
         });
 

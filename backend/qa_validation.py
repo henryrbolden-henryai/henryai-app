@@ -612,7 +612,7 @@ class OutputValidator:
         self.grounding_validator = grounding_validator
 
     def validate_resume_output(self, output: Dict[str, Any]) -> ValidationResult:
-        """Validate AI-generated resume summary and key qualifications."""
+        """Validate AI-generated resume summary and core competencies."""
         issues = []
         warnings = []
         confidence_scores = []
@@ -621,7 +621,15 @@ class OutputValidator:
         if summary := output.get("summary"):
             self._validate_text_section(summary, "summary", issues, warnings, confidence_scores)
 
-        # Validate key qualifications
+        # Validate core competencies (previously key_qualifications)
+        if core_comps := output.get("core_competencies"):
+            if isinstance(core_comps, list):
+                for i, comp in enumerate(core_comps):
+                    self._validate_text_section(
+                        comp, f"core_competencies[{i}]", issues, warnings, confidence_scores
+                    )
+
+        # Also check for legacy key_qualifications field
         if key_quals := output.get("key_qualifications"):
             if isinstance(key_quals, list):
                 for i, qual in enumerate(key_quals):
@@ -649,9 +657,10 @@ class OutputValidator:
         warnings = []
         confidence_scores = []
 
-        # Validate paragraphs
+        # Validate paragraphs - including full_text which is the actual field used
         for para_key in ["opening_paragraph", "body_paragraph_1", "body_paragraph_2",
-                         "body_paragraph_3", "closing_paragraph", "content"]:
+                         "body_paragraph_3", "closing_paragraph", "content",
+                         "full_text", "opening", "body", "closing", "greeting"]:
             if para := output.get(para_key):
                 self._validate_text_section(para, para_key, issues, warnings, confidence_scores)
 
@@ -671,6 +680,10 @@ class OutputValidator:
         warnings = []
         confidence_scores = []
 
+        # Validate narrative (Tell me about yourself)
+        if narrative := output.get("narrative"):
+            self._validate_text_section(narrative, "narrative", issues, warnings, confidence_scores)
+
         # Validate talking points
         if talking_points := output.get("talking_points"):
             if isinstance(talking_points, list):
@@ -681,7 +694,14 @@ class OutputValidator:
                         text = str(point)
                     self._validate_text_section(text, f"talking_points[{i}]", issues, warnings, confidence_scores)
 
-        # Validate STAR stories
+        # Validate gap mitigation strategies
+        if gap_mitigation := output.get("gap_mitigation"):
+            if isinstance(gap_mitigation, list):
+                for i, gap in enumerate(gap_mitigation):
+                    text = gap if isinstance(gap, str) else str(gap)
+                    self._validate_text_section(text, f"gap_mitigation[{i}]", issues, warnings, confidence_scores)
+
+        # Validate STAR stories (may not be present in documents endpoint output)
         if star_stories := output.get("star_stories"):
             if isinstance(star_stories, list):
                 for i, story in enumerate(star_stories):
@@ -710,9 +730,10 @@ class OutputValidator:
         warnings = []
         confidence_scores = []
 
-        # Validate outreach templates
+        # Validate outreach templates - including actual field names from documents endpoint
         for key in ["recruiter_outreach_template", "hiring_manager_outreach_template",
-                    "linkedin_message", "email_template"]:
+                    "linkedin_message", "email_template",
+                    "hiring_manager", "recruiter", "linkedin_help_text"]:
             if template := output.get(key):
                 self._validate_text_section(template, key, issues, warnings, confidence_scores)
 
@@ -1138,10 +1159,11 @@ class JSONOutputValidator:
     # Fields that must have values
     REQUIRED_FIELDS_BY_TYPE = {
         "documents_generation": [
-            "resume_summary.summary",
-            "resume_summary.key_qualifications",
-            "cover_letter.content",
-            "fit_analysis.fit_summary",
+            # Updated to match actual output structure from /api/documents/generate
+            "resume_output.summary",
+            "resume_output.core_competencies",
+            "cover_letter.full_text",
+            "interview_prep.narrative",
         ],
         "interview_prep": [
             "talking_points",
@@ -1395,9 +1417,9 @@ def validate_documents_generation(output: Dict[str, Any],
     grounding_validator = ResumeGroundingValidator(resume_data)
     output_validator = OutputValidator(grounding_validator)
 
-    # 1. Validate resume summary
-    if resume_summary := output.get("resume_summary"):
-        result = output_validator.validate_resume_output(resume_summary)
+    # 1. Validate resume output (was previously "resume_summary", now "resume_output")
+    if resume_output := output.get("resume_output"):
+        result = output_validator.validate_resume_output(resume_output)
         all_issues.extend(result.issues)
         all_warnings.extend(result.warnings)
         confidence_scores.append(result.confidence_score)

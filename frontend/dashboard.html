@@ -1696,6 +1696,33 @@
                 // Store current user ID
                 localStorage.setItem('henryai_current_user_id', currentUserId);
 
+                // Check if user has a profile - redirect to onboarding if not
+                let hasProfile = false;
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        const profile = await HenryData.getCandidateProfile();
+                        hasProfile = !!profile;
+                    } catch (err) {
+                        console.error('Error checking profile:', err);
+                    }
+                }
+                // Fall back to localStorage check
+                if (!hasProfile) {
+                    const localProfile = localStorage.getItem('userProfile');
+                    hasProfile = !!localProfile;
+                }
+
+                // If no profile exists, redirect to onboarding
+                if (!hasProfile) {
+                    console.log('No profile found - redirecting to onboarding');
+                    localStorage.setItem('henryai_needs_onboarding', 'true');
+                    window.location.href = 'profile-edit.html';
+                    return;
+                }
+
+                // Clear onboarding flag if we have a profile
+                localStorage.removeItem('henryai_needs_onboarding');
+
                 // Get user's name from Supabase for personalized greeting
                 supabaseUserName = await HenryAuth.getUserName();
 

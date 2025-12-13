@@ -497,11 +497,10 @@
                 showSuccess('Check your email for a confirmation link to complete your registration.');
                 setLoading('signupBtn', false);
             } else {
-                // Auto-confirmed, migrate and redirect
-                await HenryData.migrateFromLocalStorage();
-                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
-                sessionStorage.removeItem('redirectAfterLogin');
-                window.location.href = redirect;
+                // Auto-confirmed - new user, send to profile onboarding
+                // Mark this as a new user so dashboard redirects to profile if they somehow land there
+                localStorage.setItem('henryai_needs_onboarding', 'true');
+                window.location.href = 'profile-edit.html';
             }
         }
 

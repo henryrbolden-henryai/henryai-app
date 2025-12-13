@@ -276,6 +276,38 @@ const HenryData = {
     },
 
     /**
+     * Delete all applications for current user
+     */
+    async deleteAllApplications() {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { error } = await supabase
+            .from('applications')
+            .delete()
+            .eq('user_id', user.id);
+
+        if (error) console.error('Error deleting all applications:', error);
+        return { error };
+    },
+
+    /**
+     * Delete candidate profile for current user
+     */
+    async deleteCandidateProfile() {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { error } = await supabase
+            .from('candidate_profiles')
+            .delete()
+            .eq('user_id', user.id);
+
+        if (error) console.error('Error deleting candidate profile:', error);
+        return { error };
+    },
+
+    /**
      * Save all applications (bulk update)
      */
     async saveAllApplications(apps) {
