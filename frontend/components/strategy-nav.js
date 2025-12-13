@@ -134,7 +134,7 @@
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 70px;
+                top: 150px;
                 z-index: 90;
                 display: flex;
                 align-items: flex-start;
@@ -180,7 +180,7 @@
 
             .strategy-nav.expanded .strategy-nav-panel {
                 max-height: 600px;
-                width: 220px;
+                width: 240px;
                 opacity: 1;
                 padding: 12px;
             }
