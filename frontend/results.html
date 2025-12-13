@@ -1322,6 +1322,7 @@
                 strengths: data.strengths || [],
                 gaps: data.gaps || [],
                 positioningStrategy: data.strategic_positioning || '',
+                jobDescription: data._jd_text || data.jd_text || '',  // Include job description
                 analysisKey: analysisKey,  // Reference to stored analysis data
                 analysisData: data  // Include full analysis data for Supabase
             };

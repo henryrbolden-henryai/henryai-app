@@ -429,6 +429,18 @@
                 }
             } catch (e) {}
         }
+
+        // Also check if user has any tracked applications in localStorage
+        const trackedApps = localStorage.getItem('trackedApplications');
+        if (trackedApps) {
+            try {
+                const apps = JSON.parse(trackedApps);
+                if (apps && apps.length > 0) {
+                    return true;
+                }
+            } catch (e) {}
+        }
+
         return false;
     }
 
