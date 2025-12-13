@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Beta Access | HenryAI</title>
+    <title>Beta Access | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -160,34 +160,19 @@
         .submit-btn:active {
             transform: translateY(0);
         }
-
-        .footer-text {
-            margin-top: 24px;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-
-        .footer-text a {
-            color: var(--color-accent);
-            text-decoration: none;
-        }
-
-        .footer-text a:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
     <div class="beta-container">
         <div class="beta-card">
-            <div class="logo"><em>Henry</em>AI</div>
+            <div class="logo"><em>Henry</em>HQ</div>
             <div class="beta-badge">Private Beta</div>
 
             <h1 class="beta-title">Welcome to the Beta</h1>
             <p class="beta-subtitle">Enter your access code to continue</p>
 
             <div class="error-message" id="errorMessage">
-                Invalid access code. Please contact Henry for access.
+                Invalid access code.
             </div>
 
             <form id="betaForm" onsubmit="handleSubmit(event)">
@@ -204,10 +189,6 @@
                 </div>
                 <button type="submit" class="submit-btn">Continue</button>
             </form>
-
-            <p class="footer-text">
-                Need access? <a href="mailto:henry@yourhenryai.com">Contact Henry</a>
-            </p>
         </div>
     </div>
 

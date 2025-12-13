@@ -459,7 +459,7 @@
         const page = path.split('/').pop().replace('.html', '') || 'index';
 
         const contexts = {
-            'index': { name: 'Home', description: 'Getting started with HenryAI' },
+            'index': { name: 'Home', description: 'Getting started with HenryHQ' },
             'analyze': { name: 'Job Analysis', description: 'Analyzing a new job posting' },
             'results': { name: 'Analysis Results', description: 'Reviewing job match analysis' },
             'overview': { name: 'Strategy Overview', description: 'Viewing your application strategy' },
@@ -474,7 +474,7 @@
             'profile-edit': { name: 'Profile', description: 'Editing your profile' }
         };
 
-        const context = contexts[page] || { name: 'HenryAI', description: 'Your personal job search guide' };
+        const context = contexts[page] || { name: 'HenryHQ', description: 'Your personal job search guide' };
         context.page = page; // Include the page key for greeting lookup
         return context;
     }

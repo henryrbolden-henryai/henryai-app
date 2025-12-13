@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Positioning Strategy - HenryAI</title>
+    <title>Your Positioning Strategy - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -572,7 +572,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -952,7 +952,7 @@
                 message = `Time to take action on your ${company} application.\n\n${fitScore}% fit. ${strengths[0] || 'Your background is strong'}. You can do this.`;
             }
 
-            return greeting + message + '\n\n— HenryAI';
+            return greeting + message + '\n\n— HenryHQ';
         }
 
         /**
@@ -992,7 +992,7 @@
             const icsContent = [
                 'BEGIN:VCALENDAR',
                 'VERSION:2.0',
-                'PRODID:-//HenryAI//Job Search Assistant//EN',
+                'PRODID:-//HenryHQ//Job Search Assistant//EN',
                 'CALSCALE:GREGORIAN',
                 'METHOD:PUBLISH',
                 'BEGIN:VEVENT',
@@ -1092,7 +1092,7 @@
 
             // Build event title
             const actionText = actionItem.replace(/^(TODAY|TOMORROW|THIS WEEK):\s*/i, '').substring(0, 60);
-            const title = `⚡ HenryAI Alert: ${actionText}`;
+            const title = `⚡ HenryHQ Alert: ${actionText}`;
 
             // Build description
             const description = [
@@ -1109,7 +1109,7 @@
                 strengths.length > 0 ? '💪 YOUR STRENGTHS:' : '',
                 ...strengths.slice(0, 3).map(s => `• ${s}`),
                 '',
-                'Need help? Review your full analysis package in HenryAI.'
+                'Need help? Review your full analysis package in HenryHQ.'
             ].filter(line => line !== null && line !== undefined).join('\n');
 
             // Generate ICS file
@@ -1123,7 +1123,7 @@
             };
 
             const icsContent = generateICSFile(eventData);
-            const filename = `HenryAI_${company.replace(/\s+/g, '_')}_${timing}.ics`;
+            const filename = `HenryHQ_${company.replace(/\s+/g, '_')}_${timing}.ics`;
             downloadICS(icsContent, filename);
         }
     </script>

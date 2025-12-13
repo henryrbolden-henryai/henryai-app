@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pipeline Command Center | HenryAI</title>
+    <title>Pipeline Command Center | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -2841,7 +2841,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>AI</a>
+            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -7737,14 +7737,14 @@ Thanks so much!
         // ========================================================================
 
         function exportBackup() {
-            // Collect all HenryAI data from localStorage
+            // Collect all HenryHQ data from localStorage
             const backup = {
                 exportDate: new Date().toISOString(),
                 version: '1.0',
                 data: {}
             };
 
-            // Get all localStorage keys that belong to HenryAI
+            // Get all localStorage keys that belong to HenryHQ
             const henryKeys = [
                 'trackedApplications',
                 'candidateProfile',
@@ -8078,7 +8078,7 @@ Thanks so much!
         function importJSON(content) {
             const backup = JSON.parse(content);
 
-            // Check if it's a HenryAI backup
+            // Check if it's a HenryHQ backup
             if (backup.data && backup.version) {
                 const confirmMsg = `This will restore data from ${new Date(backup.exportDate).toLocaleDateString()}.\n\nThis will MERGE with your existing data. Continue?`;
                 if (!confirm(confirmMsg)) return;
@@ -8111,7 +8111,7 @@ Thanks so much!
                 alert('Backup restored successfully!');
                 location.reload();
             } else {
-                alert('This does not appear to be a valid HenryAI backup file.');
+                alert('This does not appear to be a valid HenryHQ backup file.');
             }
         }
 
