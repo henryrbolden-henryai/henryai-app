@@ -673,6 +673,12 @@
   <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Beta Access Gate -->
+    <script>
+        if (localStorage.getItem('beta_verified') !== 'true') {
+            window.location.href = 'beta-access.html';
+        }
+    </script>
 </head>
 
 <body>

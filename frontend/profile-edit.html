@@ -697,6 +697,12 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Beta Access Gate -->
+    <script>
+        if (localStorage.getItem('beta_verified') !== 'true') {
+            window.location.href = 'beta-access.html';
+        }
+    </script>
 </head>
 <body>
     <!-- HEADER -->

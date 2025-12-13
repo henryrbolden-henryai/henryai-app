@@ -309,6 +309,12 @@
             }
         }
     </style>
+    <!-- Beta Access Gate -->
+    <script>
+        if (localStorage.getItem('beta_verified') !== 'true') {
+            window.location.href = 'beta-access.html';
+        }
+    </script>
 </head>
 <body>
     <!-- Top left logo -->

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Beta Access | HenryAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-text: #fafafa;
+            --color-text-secondary: #71717a;
+            --color-accent: #22d3ee;
+            --color-error: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        .beta-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+        }
+
+        .beta-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 48px 32px;
+            text-align: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .beta-badge {
+            display: inline-block;
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 32px;
+        }
+
+        .beta-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .beta-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--color-text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1rem;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            text-align: center;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .form-input::placeholder {
+            text-transform: none;
+            letter-spacing: normal;
+            color: var(--color-text-secondary);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--color-error);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #06b6d4;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .footer-text {
+            margin-top: 24px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .footer-text a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="beta-container">
+        <div class="beta-card">
+            <div class="logo"><em>Henry</em>AI</div>
+            <div class="beta-badge">Private Beta</div>
+
+            <h1 class="beta-title">Welcome to the Beta</h1>
+            <p class="beta-subtitle">Enter your access code to continue</p>
+
+            <div class="error-message" id="errorMessage">
+                Invalid access code. Please contact Henry for access.
+            </div>
+
+            <form id="betaForm" onsubmit="handleSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label" for="passcode">Access Code</label>
+                    <input
+                        type="text"
+                        id="passcode"
+                        class="form-input"
+                        placeholder="Enter your code"
+                        autocomplete="off"
+                        autofocus
+                    >
+                </div>
+                <button type="submit" class="submit-btn">Continue</button>
+            </form>
+
+            <p class="footer-text">
+                Need access? <a href="mailto:henry@yourhenryai.com">Contact Henry</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Beta passcode configuration
+        const BETA_PASSCODE = 'BETA2025';
+        const STORAGE_KEY = 'beta_verified';
+
+        // Check if already verified
+        function checkVerification() {
+            if (localStorage.getItem(STORAGE_KEY) === 'true') {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Handle form submission
+        function handleSubmit(event) {
+            event.preventDefault();
+
+            const passcodeInput = document.getElementById('passcode');
+            const errorMessage = document.getElementById('errorMessage');
+            const enteredCode = passcodeInput.value.trim().toUpperCase();
+
+            if (enteredCode === BETA_PASSCODE) {
+                // Success - set verification flag and redirect
+                localStorage.setItem(STORAGE_KEY, 'true');
+                window.location.href = 'index.html';
+            } else {
+                // Failure - show error
+                errorMessage.classList.add('show');
+                passcodeInput.value = '';
+                passcodeInput.focus();
+
+                // Hide error after 5 seconds
+                setTimeout(() => {
+                    errorMessage.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        // Run verification check on page load
+        checkVerification();
+    </script>
+</body>
+</html>
