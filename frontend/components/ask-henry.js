@@ -34,9 +34,8 @@
             filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
         }
 
-        /* Ask Henry Tooltip */
-        .ask-henry-fab::before {
-            content: "Hey, it's Henry! I'm here when you need me.";
+        /* Ask Henry Tooltip - Now JavaScript controlled */
+        .ask-henry-tooltip {
             position: absolute;
             right: 70px;
             top: 50%;
@@ -50,33 +49,30 @@
             white-space: nowrap;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             font-family: 'DM Sans', -apple-system, sans-serif;
+            pointer-events: none;
         }
 
-        .ask-henry-fab::after {
+        .ask-henry-tooltip::after {
             content: '';
             position: absolute;
-            right: 64px;
+            right: -12px;
             top: 50%;
             transform: translateY(-50%);
             border: 6px solid transparent;
-            border-left-color: rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
+            border-left-color: #1a1a1a;
         }
 
-        .ask-henry-fab:hover::before,
-        .ask-henry-fab:hover::after {
+        .ask-henry-tooltip.visible {
             opacity: 1;
             visibility: visible;
+            transform: translateY(-50%) translateX(-5px);
         }
 
-        .ask-henry-fab.active::before,
-        .ask-henry-fab.active::after {
+        .ask-henry-fab.active .ask-henry-tooltip {
             display: none;
         }
 
@@ -403,6 +399,82 @@
     let isOpen = false;
     let isLoading = false;
     let conversationHistory = [];
+    let tooltipTimer = null;
+    let tooltipHideTimer = null;
+
+    // Fun tooltip messages that randomly appear
+    const tooltipMessages = [
+        "Peek-a-boo!",
+        "Knock knock, it's Henry!",
+        "Hey there!",
+        "Need a hand?",
+        "I'm here if you need me!",
+        "Got questions?",
+        "Let's chat!",
+        "Psst... over here!",
+        "How's the search going?",
+        "Ready when you are!",
+        "I've got ideas...",
+        "Let me help!",
+        "Thinking about your next move?",
+        "Just checking in!"
+    ];
+
+    // Get random tooltip message
+    function getRandomTooltipMessage() {
+        return tooltipMessages[Math.floor(Math.random() * tooltipMessages.length)];
+    }
+
+    // Show tooltip with random message
+    function showRandomTooltip() {
+        if (isOpen) return; // Don't show if chat is open
+
+        const tooltip = document.getElementById('askHenryTooltip');
+        if (!tooltip) return;
+
+        tooltip.textContent = getRandomTooltipMessage();
+        tooltip.classList.add('visible');
+
+        // Hide after 3 seconds
+        if (tooltipHideTimer) clearTimeout(tooltipHideTimer);
+        tooltipHideTimer = setTimeout(() => {
+            tooltip.classList.remove('visible');
+        }, 3000);
+    }
+
+    // Start random tooltip appearances
+    function startTooltipTimer() {
+        // Show first tooltip after 5-10 seconds
+        const initialDelay = 5000 + Math.random() * 5000;
+
+        tooltipTimer = setTimeout(() => {
+            showRandomTooltip();
+            // Then show every 20-40 seconds
+            scheduleNextTooltip();
+        }, initialDelay);
+    }
+
+    function scheduleNextTooltip() {
+        const nextDelay = 20000 + Math.random() * 20000; // 20-40 seconds
+        tooltipTimer = setTimeout(() => {
+            showRandomTooltip();
+            scheduleNextTooltip();
+        }, nextDelay);
+    }
+
+    // Stop tooltip timer (when chat is opened)
+    function stopTooltipTimer() {
+        if (tooltipTimer) {
+            clearTimeout(tooltipTimer);
+            tooltipTimer = null;
+        }
+        if (tooltipHideTimer) {
+            clearTimeout(tooltipHideTimer);
+            tooltipHideTimer = null;
+        }
+        const tooltip = document.getElementById('askHenryTooltip');
+        if (tooltip) tooltip.classList.remove('visible');
+    }
 
     // Load conversation history from sessionStorage (persists across page navigation)
     function loadConversationHistory() {
@@ -666,6 +738,7 @@
         widget.innerHTML = `
             <!-- Floating Action Button -->
             <button class="ask-henry-fab" id="askHenryFab" aria-label="Ask Henry">
+                <span class="ask-henry-tooltip" id="askHenryTooltip">Hey, it's Henry!</span>
                 <svg class="ask-henry-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="fabRingGradient" x1="0%" y1="100%" x2="100%" y2="0%">
@@ -791,6 +864,22 @@
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 100) + 'px';
         });
+
+        // Start random tooltip appearances
+        startTooltipTimer();
+
+        // Also show tooltip on hover as fallback
+        const fab = document.getElementById('askHenryFab');
+        const tooltip = document.getElementById('askHenryTooltip');
+        fab.addEventListener('mouseenter', () => {
+            if (!isOpen) {
+                tooltip.textContent = getRandomTooltipMessage();
+                tooltip.classList.add('visible');
+            }
+        });
+        fab.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('visible');
+        });
     }
 
     function toggleDrawer() {
@@ -799,6 +888,7 @@
 
     function openDrawer() {
         isOpen = true;
+        stopTooltipTimer(); // Stop random tooltips when chat is open
         document.getElementById('askHenryDrawer').classList.add('open');
         document.getElementById('askHenryFab').classList.add('hidden');
         document.getElementById('askHenryInput').focus();
@@ -808,6 +898,7 @@
         isOpen = false;
         document.getElementById('askHenryDrawer').classList.remove('open');
         document.getElementById('askHenryFab').classList.remove('hidden');
+        startTooltipTimer(); // Resume random tooltips when chat is closed
     }
 
     function handleKeyDown(e) {

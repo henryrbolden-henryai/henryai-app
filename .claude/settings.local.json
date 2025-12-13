@@ -28,7 +28,10 @@
       "Bash(cat:*)",
       "Bash(/opt/homebrew/bin/gh pr create:*)",
       "Bash(brew --prefix:*)",
-      "Bash(npx wrangler pages deploy:*)"
+      "Bash(npx wrangler pages deploy:*)",
+      "Bash(script -q /dev/null npx wrangler pages deploy frontend --project-name=henryai-app)",
+      "Bash(for file in *.html)",
+      "Bash(do sed -i '' 's/<em>Henry<\\/em>AI/<em>Henry<\\/em>HQ/g' \"$file\")"
     ],
     "deny": [],
     "ask": []
