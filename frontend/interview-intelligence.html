@@ -775,14 +775,30 @@
         <div class="modal">
             <h2>Add Upcoming Interview</h2>
             <form id="addInterviewForm" onsubmit="saveInterview(event)">
-                <div class="form-group">
-                    <label for="interviewCompany">Company *</label>
-                    <input type="text" id="interviewCompany" required placeholder="e.g., Stripe">
+                <!-- Application Selection Dropdown -->
+                <div class="form-group" id="applicationSelectGroup">
+                    <label for="applicationSelect">Select Application *</label>
+                    <select id="applicationSelect" onchange="handleApplicationSelect()">
+                        <option value="">Choose an application...</option>
+                        <!-- Options populated dynamically -->
+                    </select>
+                    <div style="margin-top: 8px; font-size: 0.8rem; color: #6b7280;">
+                        Don't see your application? <a href="tracker.html" style="color: #22d3ee;">Add it in Command Center</a> or
+                        <span style="color: #22d3ee; cursor: pointer;" onclick="showManualEntry()">enter manually</span>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="interviewRole">Role *</label>
-                    <input type="text" id="interviewRole" required placeholder="e.g., Senior Product Manager">
+                <!-- Manual Entry Fields (hidden by default when apps exist) -->
+                <div id="manualEntryFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="interviewCompany">Company *</label>
+                        <input type="text" id="interviewCompany" placeholder="e.g., Stripe">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="interviewRole">Role *</label>
+                        <input type="text" id="interviewRole" placeholder="e.g., Senior Product Manager">
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -865,6 +881,8 @@
         // ============================================================================
         let upcomingInterviews = [];
         let completedInterviews = [];
+        let trackedApplications = [];
+        let selectedApplication = null;
         let analysisData = null;
         let resumeData = null;
 
@@ -909,6 +927,17 @@
                     completedInterviews = JSON.parse(storedCompleted);
                 } catch (e) {
                     console.error('Error parsing completed interviews:', e);
+                }
+            }
+
+            // Load tracked applications from localStorage
+            const storedApps = localStorage.getItem('trackedApplications');
+            if (storedApps) {
+                try {
+                    trackedApplications = JSON.parse(storedApps);
+                    console.log('Loaded tracked applications:', trackedApplications.length);
+                } catch (e) {
+                    console.error('Error parsing tracked applications:', e);
                 }
             }
 
@@ -973,9 +1002,13 @@
             const companyField = document.getElementById('interviewCompany');
             const roleField = document.getElementById('interviewRole');
             const jdField = document.getElementById('interviewJD');
+            const applicationSelect = document.getElementById('applicationSelect');
+            const applicationSelectGroup = document.getElementById('applicationSelectGroup');
+            const manualEntryFields = document.getElementById('manualEntryFields');
 
             // Reset form first to clear any stale values
             document.getElementById('addInterviewForm').reset();
+            selectedApplication = null;
 
             // Reset LinkedIn upload state
             linkedInFileData = null;
@@ -990,19 +1023,49 @@
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('interviewDate').value = now.toISOString().slice(0, 16);
 
+            // Populate application dropdown with active applications
+            populateApplicationDropdown();
+
+            // Determine if we should show dropdown or manual entry
+            const hasApplications = trackedApplications.length > 0;
+
+            if (hasApplications) {
+                applicationSelectGroup.style.display = 'block';
+                manualEntryFields.style.display = 'none';
+            } else {
+                applicationSelectGroup.style.display = 'none';
+                manualEntryFields.style.display = 'block';
+            }
+
             // Priority 1: Use explicit app context passed in (from Command Center)
             if (appContext) {
-                if (companyField) companyField.value = appContext.company || '';
-                if (roleField) roleField.value = appContext.role || '';
-                if (jdField && appContext.jobDescription) jdField.value = appContext.jobDescription;
+                // Pre-select the app in dropdown if it exists
+                const appId = appContext.id || findAppIdByCompanyRole(appContext.company, appContext.role);
+                if (appId && applicationSelect) {
+                    applicationSelect.value = appId;
+                    handleApplicationSelect();
+                } else {
+                    // Fall back to manual entry
+                    showManualEntry();
+                    if (companyField) companyField.value = appContext.company || '';
+                    if (roleField) roleField.value = appContext.role || '';
+                    if (jdField && appContext.jobDescription) jdField.value = appContext.jobDescription;
+                }
             }
             // Priority 2: Check for pending interview context from tracker (via sessionStorage)
             else if (sessionStorage.getItem('pendingInterviewContext')) {
                 try {
                     const pendingContext = JSON.parse(sessionStorage.getItem('pendingInterviewContext'));
-                    if (companyField) companyField.value = pendingContext.company || '';
-                    if (roleField) roleField.value = pendingContext.role || '';
-                    if (jdField && pendingContext.jobDescription) jdField.value = pendingContext.jobDescription;
+                    const appId = pendingContext.appId || findAppIdByCompanyRole(pendingContext.company, pendingContext.role);
+                    if (appId && applicationSelect) {
+                        applicationSelect.value = appId;
+                        handleApplicationSelect();
+                    } else {
+                        showManualEntry();
+                        if (companyField) companyField.value = pendingContext.company || '';
+                        if (roleField) roleField.value = pendingContext.role || '';
+                        if (jdField && pendingContext.jobDescription) jdField.value = pendingContext.jobDescription;
+                    }
                     // Clear the pending context after using it
                     sessionStorage.removeItem('pendingInterviewContext');
                 } catch (e) {
@@ -1010,13 +1073,78 @@
                 }
             }
             // Priority 3: Pre-populate from analysis data if available
-            else if (analysisData) {
+            else if (analysisData && !hasApplications) {
+                showManualEntry();
                 if (companyField) companyField.value = analysisData._company_name || analysisData._company || '';
                 if (roleField) roleField.value = analysisData.role_title || analysisData._role || '';
                 if (jdField) jdField.value = analysisData._jd_text || '';
             }
 
             document.getElementById('addInterviewModal').classList.add('active');
+        }
+
+        function populateApplicationDropdown() {
+            const select = document.getElementById('applicationSelect');
+            if (!select) return;
+
+            // Clear existing options except the placeholder
+            select.innerHTML = '<option value="">Choose an application...</option>';
+
+            // Filter to active applications (not rejected/archived)
+            const activeApps = trackedApplications.filter(app => {
+                const status = (app.status || '').toLowerCase();
+                return !status.includes('rejected') && !status.includes('archived') && !status.includes('withdrawn');
+            });
+
+            // Sort by most recently updated
+            activeApps.sort((a, b) => new Date(b.lastUpdated || b.dateAdded) - new Date(a.lastUpdated || a.dateAdded));
+
+            // Add options
+            activeApps.forEach(app => {
+                const option = document.createElement('option');
+                option.value = app.id;
+                option.textContent = `${app.company} — ${app.role || 'Unknown Role'}`;
+                select.appendChild(option);
+            });
+        }
+
+        function handleApplicationSelect() {
+            const select = document.getElementById('applicationSelect');
+            const companyField = document.getElementById('interviewCompany');
+            const roleField = document.getElementById('interviewRole');
+            const jdField = document.getElementById('interviewJD');
+
+            const appId = select.value;
+            if (!appId) {
+                selectedApplication = null;
+                return;
+            }
+
+            // Find the selected application
+            selectedApplication = trackedApplications.find(app => String(app.id) === String(appId));
+            if (!selectedApplication) return;
+
+            // Pre-fill hidden fields (used for saving)
+            if (companyField) companyField.value = selectedApplication.company || '';
+            if (roleField) roleField.value = selectedApplication.role || '';
+            if (jdField && selectedApplication.jobDescription) jdField.value = selectedApplication.jobDescription;
+
+            console.log('Selected application:', selectedApplication.company, selectedApplication.role);
+        }
+
+        function showManualEntry() {
+            document.getElementById('applicationSelectGroup').style.display = 'none';
+            document.getElementById('manualEntryFields').style.display = 'block';
+            selectedApplication = null;
+        }
+
+        function findAppIdByCompanyRole(company, role) {
+            if (!company) return null;
+            const app = trackedApplications.find(a =>
+                a.company.toLowerCase() === company.toLowerCase() &&
+                (!role || a.role.toLowerCase() === role.toLowerCase())
+            );
+            return app ? app.id : null;
         }
 
         function closeAddInterviewModal() {
@@ -1056,11 +1184,18 @@
                 console.log('syncInterviewToTracker called with:', interview);
                 console.log('Current tracked apps:', trackedApps.length);
 
-                // Check if this company/role combo already exists
-                const existingAppIndex = trackedApps.findIndex(app =>
-                    app.company.toLowerCase() === interview.company.toLowerCase() &&
-                    app.role.toLowerCase() === interview.role.toLowerCase()
-                );
+                // First try to find by appId (most accurate), then fall back to company/role match
+                let existingAppIndex = -1;
+                if (interview.appId) {
+                    existingAppIndex = trackedApps.findIndex(app => String(app.id) === String(interview.appId));
+                }
+                if (existingAppIndex === -1) {
+                    // Fall back to company/role match
+                    existingAppIndex = trackedApps.findIndex(app =>
+                        app.company.toLowerCase() === interview.company.toLowerCase() &&
+                        app.role.toLowerCase() === interview.role.toLowerCase()
+                    );
+                }
 
                 // Parse interview date to set dateInterviewed
                 const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
@@ -1133,7 +1268,8 @@
             // Show upcoming section if we have upcoming OR completed interviews
             emptyState.style.display = hasUpcoming ? 'none' : 'block';
             interviewList.style.display = hasUpcoming ? 'flex' : 'none';
-            addMoreSection.style.display = 'block';
+            // Only show "+ Add Another" button when there ARE upcoming interviews (to avoid duplicate)
+            addMoreSection.style.display = hasUpcoming ? 'block' : 'none';
 
             if (!hasUpcoming) {
                 return;
@@ -1328,10 +1464,46 @@
             });
         }
 
-        // Modified saveInterview to include LinkedIn data
+        // Modified saveInterview to include LinkedIn data and application selection
         const originalSaveInterview = saveInterview;
         saveInterview = async function(event) {
             event.preventDefault();
+
+            // Validate: either dropdown selection or manual entry must be filled
+            const applicationSelect = document.getElementById('applicationSelect');
+            const companyField = document.getElementById('interviewCompany');
+            const roleField = document.getElementById('interviewRole');
+            const manualEntryVisible = document.getElementById('manualEntryFields').style.display !== 'none';
+
+            let company, role;
+
+            if (selectedApplication) {
+                // Using dropdown selection
+                company = selectedApplication.company;
+                role = selectedApplication.role;
+            } else if (manualEntryVisible) {
+                // Using manual entry
+                company = companyField.value.trim();
+                role = roleField.value.trim();
+                if (!company || !role) {
+                    alert('Please enter company and role.');
+                    return;
+                }
+            } else if (applicationSelect && applicationSelect.value) {
+                // Dropdown was selected but selectedApplication wasn't set (edge case)
+                const app = trackedApplications.find(a => String(a.id) === String(applicationSelect.value));
+                if (app) {
+                    company = app.company;
+                    role = app.role;
+                    selectedApplication = app;
+                } else {
+                    alert('Please select an application or enter details manually.');
+                    return;
+                }
+            } else {
+                alert('Please select an application or enter details manually.');
+                return;
+            }
 
             // Gather LinkedIn data
             let linkedInData = null;
@@ -1358,8 +1530,9 @@
 
             const interview = {
                 id: Date.now().toString(),
-                company: document.getElementById('interviewCompany').value,
-                role: document.getElementById('interviewRole').value,
+                company: company,
+                role: role,
+                appId: selectedApplication ? selectedApplication.id : null,
                 type: document.getElementById('interviewType').value,
                 date: document.getElementById('interviewDate').value,
                 interviewerName: document.getElementById('interviewerName').value,
@@ -1372,7 +1545,7 @@
             upcomingInterviews.push(interview);
             localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
 
-            // Sync to tracker
+            // Sync to tracker (uses selectedApplication.id if available for direct update)
             syncInterviewToTracker(interview);
 
             // Reset LinkedIn upload state
