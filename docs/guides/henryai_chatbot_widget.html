@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HenryAI Chatbot Widget - Breathing Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 48px;
+        }
+        
+        .demo-section {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 32px;
+        }
+        
+        .demo-section h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: #667eea;
+        }
+        
+        /* Simulated page context */
+        .page-mockup {
+            background: #0a0a0a;
+            border-radius: 12px;
+            min-height: 500px;
+            position: relative;
+            padding: 32px;
+            border: 1px solid #222;
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #222;
+            margin-bottom: 32px;
+        }
+        
+        .page-title {
+            font-size: 20px;
+            color: #fff;
+        }
+        
+        .page-content {
+            color: #888;
+            line-height: 1.8;
+        }
+        
+        /* Chat widget in corner */
+        .chat-widget {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        
+        .page-mockup .chat-widget {
+            position: absolute;
+        }
+        
+        /* Breathing animation - more noticeable */
+        @keyframes breathe {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+        
+        .breathe {
+            animation: breathe 2.5s ease-in-out infinite;
+        }
+        
+        /* Slower, more dramatic breathing */
+        @keyframes breathe-slow {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+        }
+        
+        .breathe-slow {
+            animation: breathe-slow 3s ease-in-out infinite;
+        }
+        
+        /* Fast, energetic breathing */
+        @keyframes breathe-fast {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.12);
+            }
+        }
+        
+        .breathe-fast {
+            animation: breathe-fast 1.8s ease-in-out infinite;
+        }
+        
+        /* Glow effect on hover */
+        .chat-widget:hover svg {
+            filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
+        }
+        
+        /* Active state (when chat is open) */
+        @keyframes pulse-active {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.4));
+            }
+            50% {
+                transform: scale(1.08);
+                filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.6));
+            }
+        }
+        
+        .active-state {
+            animation: pulse-active 1.5s ease-in-out infinite;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .control-button {
+            padding: 10px 16px;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .control-button:hover {
+            border-color: #444;
+            color: #fff;
+        }
+        
+        .control-button.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: #fff;
+        }
+        
+        .size-options {
+            display: flex;
+            gap: 32px;
+            margin-top: 32px;
+        }
+        
+        .size-demo {
+            text-align: center;
+        }
+        
+        .size-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .code-section {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 24px;
+            margin-top: 24px;
+        }
+        
+        .code-section pre {
+            color: #e0e0e0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+        
+        .implementation-note {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 3px solid #667eea;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
+            color: #bbb;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HenryAI Chatbot Widget</h1>
+        <p class="subtitle">Noticeable breathing animation - "I'm here, I'm alive, I'm ready to help"</p>
+        
+        <div class="demo-section">
+            <h2>Animation Comparison</h2>
+            
+            <div class="controls">
+                <button class="control-button active" onclick="setAnimation('breathe')">Standard (15% scale)</button>
+                <button class="control-button" onclick="setAnimation('breathe-slow')">Dramatic (20% scale, slower)</button>
+                <button class="control-button" onclick="setAnimation('breathe-fast')">Energetic (12% scale, faster)</button>
+                <button class="control-button" onclick="setAnimation('active-state')">Active State (Chat Open)</button>
+            </div>
+            
+            <div class="page-mockup">
+                <div class="page-header">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <span style="font-family: Georgia, serif; font-style: italic; font-size: 20px; color: #22d3ee;">Henry</span><span style="font-weight: 600; font-size: 20px;">AI</span>
+                    </div>
+                    <div style="display: flex; gap: 24px; font-size: 14px; color: #888;">
+                        <span>My Applications</span>
+                        <span>Edit Profile</span>
+                    </div>
+                </div>
+                
+                <div class="page-content">
+                    <h3 style="color: #fff; margin-bottom: 16px; font-size: 24px;">Should you apply to <span style="color: #22d3ee; font-style: italic;">this role</span>?</h3>
+                    <p style="margin-bottom: 16px;">Paste the job description. I will tell you if it is worth your time and build your application if it is.</p>
+                    <p>The chatbot widget sits in the bottom-right corner, breathing gently to signal availability. It's your brand, animated.</p>
+                </div>
+                
+                <!-- Chat widget -->
+                <div class="chat-widget" id="chatWidget">
+                    <svg width="56" height="56" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" class="breathe">
+                        <defs>
+                            <linearGradient id="widgetRing" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="widgetStroke" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="100" cy="100" r="85" stroke="url(#widgetRing)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#widgetStroke)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Size Options</h2>
+            <p style="color: #888; margin-bottom: 24px;">Test different sizes to see what feels right for your layout.</p>
+            
+            <div class="size-options">
+                <div class="size-demo">
+                    <svg width="48" height="48" viewBox="0 0 200 200" fill="none" class="breathe">
+                        <defs>
+                            <linearGradient id="size1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="stroke1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#size1)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#stroke1)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">48px (Compact)</div>
+                </div>
+                
+                <div class="size-demo">
+                    <svg width="56" height="56" viewBox="0 0 200 200" fill="none" class="breathe">
+                        <defs>
+                            <linearGradient id="size2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="stroke2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#size2)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#stroke2)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">56px (Recommended)</div>
+                </div>
+                
+                <div class="size-demo">
+                    <svg width="64" height="64" viewBox="0 0 200 200" fill="none" class="breathe">
+                        <defs>
+                            <linearGradient id="size3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="stroke3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#size3)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#stroke3)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">64px (Bold)</div>
+                </div>
+                
+                <div class="size-demo">
+                    <svg width="72" height="72" viewBox="0 0 200 200" fill="none" class="breathe">
+                        <defs>
+                            <linearGradient id="size4" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="stroke4" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#size4)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#stroke4)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">72px (Large)</div>
+                </div>
+            </div>
+            
+            <div class="implementation-note">
+                <strong>Recommended: 56px</strong><br>
+                Big enough to be noticeable and clickable, small enough to not dominate the page. The breathing animation is visible but not distracting at this size.
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Implementation Code</h2>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">HTML Structure</h3>
+            <div class="code-section">
+                <pre>&lt;!-- Fixed position in bottom-right corner --&gt;
+&lt;div class="chat-widget" onclick="openChat()"&gt;
+  &lt;svg width="56" height="56" viewBox="0 0 200 200" fill="none" class="breathe"&gt;
+    &lt;defs&gt;
+      &lt;linearGradient id="widgetRing" x1="0%" y1="100%" x2="100%" y2="0%"&gt;
+        &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+        &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+      &lt;/linearGradient&gt;
+      &lt;linearGradient id="widgetStroke" x1="0%" y1="100%" x2="100%" y2="0%"&gt;
+        &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+        &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+      &lt;/linearGradient&gt;
+    &lt;/defs&gt;
+    
+    &lt;circle cx="100" cy="100" r="85" 
+            stroke="url(#widgetRing)" 
+            stroke-width="4" 
+            fill="none"/&gt;
+    
+    &lt;path d="M55 130 L55 70" 
+          stroke="#667eea" 
+          stroke-width="9" 
+          stroke-linecap="round" 
+          fill="none"/&gt;
+    
+    &lt;path d="M145 130 L145 50" 
+          stroke="url(#widgetStroke)" 
+          stroke-width="9" 
+          stroke-linecap="round" 
+          fill="none"/&gt;
+    
+    &lt;path d="M55 100 L145 100" 
+          stroke="#764ba2" 
+          stroke-width="9" 
+          stroke-linecap="round" 
+          fill="none"/&gt;
+    
+    &lt;circle cx="145" cy="50" r="9" fill="#764ba2"/&gt;
+  &lt;/svg&gt;
+&lt;/div&gt;</pre>
+            </div>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">CSS Animations</h3>
+            <div class="code-section">
+                <pre>.chat-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+/* Noticeable breathing animation (15% scale) */
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.breathe {
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+/* Add glow on hover */
+.chat-widget:hover svg {
+  filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
+}
+
+/* Active state when chat is open */
+@keyframes pulse-active {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.4));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.6));
+  }
+}
+
+.chat-widget.active svg {
+  animation: pulse-active 1.5s ease-in-out infinite;
+}
+
+/* Alternative: Dramatic breathing (20% scale, slower) */
+@keyframes breathe-dramatic {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.breathe-dramatic {
+  animation: breathe-dramatic 3s ease-in-out infinite;
+}</pre>
+            </div>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">JavaScript Toggle</h3>
+            <div class="code-section">
+                <pre>function openChat() {
+  const widget = document.querySelector('.chat-widget');
+  const svg = widget.querySelector('svg');
+  
+  // Toggle active state
+  widget.classList.toggle('active');
+  
+  // Switch to active animation when chat opens
+  if (widget.classList.contains('active')) {
+    svg.classList.remove('breathe');
+    svg.classList.add('active-state');
+  } else {
+    svg.classList.remove('active-state');
+    svg.classList.add('breathe');
+  }
+  
+  // Your chat open/close logic here
+  toggleChatWindow();
+}</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Design Rationale</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <div style="background: #0a0a0a; padding: 20px; border-radius: 8px; border: 1px solid #222;">
+                    <h3 style="color: #667eea; font-size: 16px; margin-bottom: 12px;">Why Breathing Works</h3>
+                    <ul style="color: #bbb; font-size: 14px; line-height: 1.8; list-style: none; padding: 0;">
+                        <li style="margin-bottom: 8px;">→ Organic, not mechanical</li>
+                        <li style="margin-bottom: 8px;">→ Signals availability without being pushy</li>
+                        <li style="margin-bottom: 8px;">→ Catches attention in peripheral vision</li>
+                        <li style="margin-bottom: 8px;">→ Reinforces "human + AI" positioning</li>
+                    </ul>
+                </div>
+                
+                <div style="background: #0a0a0a; padding: 20px; border-radius: 8px; border: 1px solid #222;">
+                    <h3 style="color: #667eea; font-size: 16px; margin-bottom: 12px;">Why Not Generic Bubble</h3>
+                    <ul style="color: #bbb; font-size: 14px; line-height: 1.8; list-style: none; padding: 0;">
+                        <li style="margin-bottom: 8px;">→ Looks like every other support widget</li>
+                        <li style="margin-bottom: 8px;">→ Doesn't reinforce your brand</li>
+                        <li style="margin-bottom: 8px;">→ Signals "generic chatbot," not "Henry"</li>
+                        <li style="margin-bottom: 8px;">→ Missed opportunity to differentiate</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="implementation-note" style="margin-top: 24px;">
+                <strong>Pro tip:</strong> When the chat is open, switch to the "active state" animation (faster pulse with glow). This gives visual feedback that the system is listening and ready to respond.
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function setAnimation(type) {
+            // Update button states
+            document.querySelectorAll('.control-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Get the widget SVG
+            const svg = document.querySelector('#chatWidget svg');
+            
+            // Remove all animation classes
+            svg.classList.remove('breathe', 'breathe-slow', 'breathe-fast', 'active-state');
+            
+            // Add the selected animation
+            svg.classList.add(type);
+        }
+    </script>
+</body>
+</html>

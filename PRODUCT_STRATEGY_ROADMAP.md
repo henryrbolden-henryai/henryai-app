@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
-**Date**: December 11, 2025
-**Version**: 1.2
-**Status**: Phase 0 Complete, Resume Level Analysis Complete, Phase 1 In Progress
-**Last Updated**: December 11, 2025, 11:30 PM PST
-**Next Review**: December 18, 2025
+**Date**: December 12, 2025
+**Version**: 1.3
+**Status**: Phase 0 Complete, Resume Level Analysis Complete, Beta Access Gate Deployed, Phase 1 In Progress
+**Last Updated**: December 12, 2025
+**Next Review**: December 19, 2025
 
 ---
 
@@ -16,7 +16,7 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 **Current State**: B+ (Foundation strengthened with validation, keyword coverage, conversational wrappers)
 **Target State**: A (Claude-quality experience with recruiter-grade outputs)
 
-### Recent Achievements (Dec 11, 2025)
+### Recent Achievements (Dec 11-12, 2025)
 
 ✅ **Phase 0 COMPLETED** - Foundation Strengthening deployed to production
 - Post-generation validation layer
@@ -37,6 +37,43 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Removed Resume Level Analysis card from overview.html (it's a pre-generation step)
 - Standardized HenryAI logo font (Instrument Serif) across all pages
 - Expanded navigation panel width for better readability
+
+✅ **Beta Access Gate DEPLOYED** (Dec 12, 2025)
+- Created beta-access.html with clean, branded passcode entry UI
+- Hardcoded passcode "BETA2025" (case-insensitive) for beta testers
+- localStorage-based verification persistence
+- Protected all application pages (index, login, dashboard, analyze, tracker, profile-edit, interview-intelligence)
+- Meta tags for noindex/nofollow to prevent search engine indexing
+
+✅ **Dashboard & Tracker Improvements** (Dec 12, 2025)
+- Reality Check section with quality-focused messaging
+- "Why This Matters" button opens Ask Henry chat with personalized explanation
+- Strategic Priority cards now fully clickable (navigate to application overview)
+- Changed "Table/Cards" toggle to "Summary/Detailed" for clarity
+- Fixed "Review Prep Guide" button (no longer opens Add Interview modal incorrectly)
+- Added global `openAskHenry()` and `openAskHenryWithPrompt()` functions for cross-page Ask Henry integration
+
+✅ **Ask Henry Chatbot Enhancements** (Dec 12, 2025)
+- Added random tooltip messages that appear periodically (every 20-40 seconds)
+- Fun prompts like "Peek-a-boo!", "Knock knock, it's Henry!", "Got questions?"
+- Tooltip also shows on hover as fallback
+- Timer pauses when chat drawer is open, resumes when closed
+
+✅ **Header & Navigation Improvements** (Dec 12, 2025)
+- Centered HenryHQ logo in header across all 16+ pages
+- Moved navigation panel down (top: 150px) to avoid header overlap
+- Increased navigation panel width to 240px for better readability
+
+✅ **HenryHQ.ai Landing Page Created** (Dec 12, 2025)
+- Created henryhq-landing.html for new HenryHQ.ai domain
+- Animated H logo (same as Ask Henry branding) with fade transition
+- Logo displays for 2 seconds, then fades to "HenryHQ" text
+- Clean black background, Instrument Serif font
+- Ready for Cloudflare Pages deployment
+
+✅ **Domain Acquisition** (Dec 12, 2025)
+- Purchased HenryHQ.ai domain from Cloudflare
+- Landing page ready for deployment
 
 ---
 
@@ -834,5 +871,5 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 ---
 
 **Document Owner**: Product Team
-**Last Updated**: December 11, 2025
-**Next Review**: January 11, 2026
+**Last Updated**: December 12, 2025
+**Next Review**: January 12, 2026
