@@ -523,6 +523,77 @@
             margin-bottom: 24px;
         }
 
+        /* MILESTONE CELEBRATION */
+        .milestone-toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border-radius: 16px;
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%;
+        }
+
+        .milestone-toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .milestone-icon {
+            font-size: 2.5rem;
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .milestone-content {
+            flex: 1;
+        }
+
+        .milestone-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .milestone-message {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .milestone-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: background 0.2s;
+        }
+
+        .milestone-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -572,6 +643,16 @@
             <!-- User menu moved to sidebar navigation -->
         </div>
     </header>
+
+    <!-- Milestone Celebration Toast -->
+    <div class="milestone-toast" id="milestoneToast">
+        <div class="milestone-icon" id="milestoneIcon">🎉</div>
+        <div class="milestone-content">
+            <div class="milestone-title" id="milestoneTitle">Milestone Reached!</div>
+            <div class="milestone-message" id="milestoneMessage">You're making great progress.</div>
+        </div>
+        <button class="milestone-close" onclick="closeMilestone()">×</button>
+    </div>
 
     <div class="container">
         <!-- WELCOME MESSAGE -->
@@ -1056,7 +1137,7 @@
                     headline: 'One application isn\'t a job search',
                     detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy — that's hope. <strong>Build to 5-10 active applications</strong> over the next few weeks. Quality over quantity — but you need options.`,
                     primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
-                    secondaryBtn: { text: 'Why This Matters', link: '#', onclick: "openAskHenryWithPrompt('Why does having only 1 application hurt my job search? Explain the math and psychology behind building a pipeline of 5-10 applications.')" }
+                    secondaryBtn: { text: 'Why This Matters', prompt: 'Why does having only 1 application hurt my job search? Explain the math and psychology behind building a pipeline of 5-10 applications.' }
                 };
             }
             // Scenario 3: Urgent + struggling emotionally + thin pipeline
@@ -1068,7 +1149,7 @@
                     headline: 'Let\'s get your pipeline working for you',
                     detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Build toward 5-10 quality applications — take it one role at a time.`,
                     primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
-                    secondaryBtn: { text: 'Talk Strategy', link: '#', onclick: 'openAskHenry()' }
+                    secondaryBtn: { text: 'Talk Strategy', action: 'openAskHenry' }
                 };
             }
             // Scenario 4: Low confidence + no interviews scheduled
@@ -1103,8 +1184,11 @@
 
                 let actionsHTML = `<a href="${realityContent.primaryBtn.link}" class="reality-check-btn">${realityContent.primaryBtn.text}</a>`;
                 if (realityContent.secondaryBtn) {
-                    if (realityContent.secondaryBtn.onclick) {
-                        actionsHTML += `<button class="reality-check-btn secondary" onclick="${realityContent.secondaryBtn.onclick}">${realityContent.secondaryBtn.text}</button>`;
+                    if (realityContent.secondaryBtn.prompt) {
+                        // Use data attribute for prompt to avoid quote escaping issues
+                        actionsHTML += `<button class="reality-check-btn secondary" data-prompt="${encodeURIComponent(realityContent.secondaryBtn.prompt)}" onclick="handleAskHenryPrompt(this)">${realityContent.secondaryBtn.text}</button>`;
+                    } else if (realityContent.secondaryBtn.action === 'openAskHenry') {
+                        actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openAskHenry) openAskHenry();">${realityContent.secondaryBtn.text}</button>`;
                     } else {
                         actionsHTML += `<a href="${realityContent.secondaryBtn.link}" class="reality-check-btn secondary">${realityContent.secondaryBtn.text}</a>`;
                     }
@@ -1429,12 +1513,140 @@
             return STATUSES[status]?.label || status;
         }
 
+        // Handle Ask Henry prompt from button click (avoids quote escaping issues)
+        function handleAskHenryPrompt(button) {
+            const prompt = decodeURIComponent(button.dataset.prompt);
+            if (window.openAskHenryWithPrompt) {
+                window.openAskHenryWithPrompt(prompt);
+            } else {
+                console.error('openAskHenryWithPrompt not available yet');
+            }
+        }
+
+        // ========================================================================
+        // MILESTONE CELEBRATIONS
+        // ========================================================================
+        const MILESTONES = {
+            first_app: {
+                icon: '🚀',
+                title: 'First Application!',
+                message: 'You\'ve started your job search journey. Keep the momentum going!',
+                check: (apps, interviews) => apps.length >= 1
+            },
+            five_apps: {
+                icon: '📈',
+                title: 'Pipeline Building!',
+                message: '5 applications in your pipeline. You\'re playing the numbers right.',
+                check: (apps, interviews) => apps.length >= 5
+            },
+            ten_apps: {
+                icon: '💪',
+                title: 'Serious Contender!',
+                message: '10 applications! Your pipeline is solid. Quality over quantity from here.',
+                check: (apps, interviews) => apps.length >= 10
+            },
+            first_interview: {
+                icon: '🎤',
+                title: 'First Interview Scheduled!',
+                message: 'Your prep is paying off. Time to shine!',
+                check: (apps, interviews) => interviews.length >= 1
+            },
+            three_interviews: {
+                icon: '🔥',
+                title: 'Interview Machine!',
+                message: '3 interviews scheduled. Your strategy is working.',
+                check: (apps, interviews) => interviews.length >= 3
+            },
+            offer_received: {
+                icon: '🎉',
+                title: 'OFFER RECEIVED!',
+                message: 'All your hard work paid off. Time to negotiate!',
+                check: (apps, interviews) => apps.some(a => a.status === 'Offer Received' || a.status === 'Negotiating')
+            },
+            accepted: {
+                icon: '🏆',
+                title: 'YOU DID IT!',
+                message: 'Congratulations on your new role! Henry is so proud of you.',
+                check: (apps, interviews) => apps.some(a => a.status === 'Accepted')
+            }
+        };
+
+        // Get celebrated milestones from localStorage
+        function getCelebratedMilestones() {
+            try {
+                const stored = localStorage.getItem('celebratedMilestones');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Mark a milestone as celebrated
+        function markMilestoneCelebrated(milestoneId) {
+            const celebrated = getCelebratedMilestones();
+            if (!celebrated.includes(milestoneId)) {
+                celebrated.push(milestoneId);
+                localStorage.setItem('celebratedMilestones', JSON.stringify(celebrated));
+            }
+        }
+
+        // Check for new milestones and show celebration
+        function checkMilestones(apps, interviews) {
+            const celebrated = getCelebratedMilestones();
+            const activeApps = getActiveApplications(apps);
+
+            // Check milestones in order of significance (highest first)
+            const priorityOrder = ['accepted', 'offer_received', 'three_interviews', 'first_interview', 'ten_apps', 'five_apps', 'first_app'];
+
+            for (const milestoneId of priorityOrder) {
+                const milestone = MILESTONES[milestoneId];
+                if (!celebrated.includes(milestoneId) && milestone.check(activeApps, interviews)) {
+                    showMilestone(milestoneId, milestone);
+                    markMilestoneCelebrated(milestoneId);
+                    return; // Only show one milestone at a time
+                }
+            }
+        }
+
+        // Show milestone toast
+        function showMilestone(milestoneId, milestone) {
+            const toast = document.getElementById('milestoneToast');
+            const icon = document.getElementById('milestoneIcon');
+            const title = document.getElementById('milestoneTitle');
+            const message = document.getElementById('milestoneMessage');
+
+            icon.textContent = milestone.icon;
+            title.textContent = milestone.title;
+            message.textContent = milestone.message;
+
+            // Show the toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 500); // Small delay for dramatic effect
+
+            // Auto-hide after 8 seconds
+            setTimeout(() => {
+                closeMilestone();
+            }, 8000);
+        }
+
+        // Close milestone toast
+        function closeMilestone() {
+            const toast = document.getElementById('milestoneToast');
+            toast.classList.remove('show');
+        }
+
         // ========================================================================
         // INITIALIZATION
         // ========================================================================
         // Initial render with localStorage data (will be updated when Supabase loads)
         document.addEventListener('DOMContentLoaded', () => {
             renderDashboard();
+
+            // Check for milestones after initial render
+            const apps = getApplications();
+            const interviews = getUpcomingInterviewsFromStorage();
+            checkMilestones(apps, interviews);
         });
     </script>
 
