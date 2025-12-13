@@ -1021,24 +1021,50 @@
             // ─────────────────────────────────────────────────────────────────
             // ITEM 2: Pipeline health / Apply to more roles
             // ─────────────────────────────────────────────────────────────────
+            // Check if user indicated urgency in their profile
+            // Timeline values: no_rush, actively_looking, soon, urgent
+            // Holding up values: doing_well, stressed_but_managing, struggling, rather_not_say
+            const isUrgentSearch = timeline === 'urgent' || timeline === 'soon' ||
+                                   holding_up === 'struggling' || holding_up === 'stressed_but_managing';
+
             if (activeApps.length < 5) {
                 let pipelineMsg = '';
                 let itemType = 'secondary';
                 let labelText = 'Growth';
 
                 if (activeApps.length === 0) {
-                    pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
+                    if (isUrgentSearch) {
+                        pipelineMsg = '<strong>You said this search is urgent — but you have no active applications.</strong> Every day without applications in play is a day lost.';
+                        itemType = 'urgent';
+                        labelText = 'Action Required';
+                    } else {
+                        pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
+                    }
                 } else if (activeApps.length === 1) {
                     // Strong warning for single application - don't put all eggs in one basket
-                    pipelineMsg = `<strong>Don't put all your eggs in one basket.</strong> 1 active app is risky — aim for 5-10 to maximize your chances.`;
-                    itemType = 'urgent';
-                    labelText = 'Risk';
+                    if (isUrgentSearch) {
+                        pipelineMsg = `<strong>You marked this search as urgent, but you only have 1 application.</strong> That's not a job search — that's hope. Add 4-9 more roles this week.`;
+                        itemType = 'urgent';
+                        labelText = 'Reality Check';
+                    } else {
+                        pipelineMsg = `<strong>Don't put all your eggs in one basket.</strong> 1 active app is risky — aim for 5-10 to maximize your chances.`;
+                        itemType = 'urgent';
+                        labelText = 'Risk';
+                    }
                 } else if (activeApps.length <= 2) {
-                    pipelineMsg = `<strong>Pipeline too thin:</strong> Only ${activeApps.length} active apps. The average successful search has 5-10 in play.`;
-                    itemType = 'urgent';
-                    labelText = 'Urgent';
-                } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
-                    pipelineMsg = `<strong>Keep applying:</strong> ${activeApps.length} active apps. Add more to increase your odds.`;
+                    if (isUrgentSearch) {
+                        pipelineMsg = `<strong>Urgent search + ${activeApps.length} apps = misalignment.</strong> You need more volume. Aim for 5-10 active applications minimum.`;
+                        itemType = 'urgent';
+                        labelText = 'Mismatch';
+                    } else {
+                        pipelineMsg = `<strong>Pipeline too thin:</strong> Only ${activeApps.length} active apps. The average successful search has 5-10 in play.`;
+                        itemType = 'urgent';
+                        labelText = 'Urgent';
+                    }
+                } else if (isUrgentSearch) {
+                    pipelineMsg = `<strong>Good progress:</strong> ${activeApps.length} active apps. For an urgent search, keep adding — you want 8-10 in play.`;
+                    itemType = 'secondary';
+                    labelText = 'Keep Going';
                 } else {
                     pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active apps. Aim for 5-10 for best results.`;
                 }
