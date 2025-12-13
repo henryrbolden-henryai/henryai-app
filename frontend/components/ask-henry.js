@@ -36,15 +36,15 @@
 
         /* Ask Henry Tooltip */
         .ask-henry-fab::before {
-            content: 'Ask Henry';
+            content: "Hey, it's Henry! I'm here when you need me.";
             position: absolute;
             right: 70px;
             top: 50%;
             transform: translateY(-50%);
             background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
             color: #fff;
-            padding: 8px 14px;
-            border-radius: 8px;
+            padding: 10px 16px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 500;
             white-space: nowrap;
