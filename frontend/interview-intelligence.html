@@ -897,6 +897,34 @@
 
         // Load data from sessionStorage and Supabase
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check for user switch and clear stale localStorage data
+            if (typeof HenryAuth !== 'undefined') {
+                try {
+                    const session = await HenryAuth.getSession();
+                    if (session) {
+                        const currentUserId = session.user.id;
+                        const lastUserId = localStorage.getItem('henryai_current_user_id');
+                        if (lastUserId && lastUserId !== currentUserId) {
+                            console.log('Different user detected - clearing localStorage data');
+                            localStorage.removeItem('trackedApplications');
+                            localStorage.removeItem('upcomingInterviews');
+                            localStorage.removeItem('completedInterviews');
+                            localStorage.removeItem('candidateProfile');
+                            localStorage.removeItem('resumeConversation');
+                            for (let i = localStorage.length - 1; i >= 0; i--) {
+                                const key = localStorage.key(i);
+                                if (key && (key.startsWith('analysis_') || key.startsWith('documents_'))) {
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                        }
+                        localStorage.setItem('henryai_current_user_id', currentUserId);
+                    }
+                } catch (e) {
+                    console.log('Could not check user session');
+                }
+            }
+
             // Load analysis data
             const storedAnalysis = sessionStorage.getItem('analysisData');
             if (storedAnalysis) {

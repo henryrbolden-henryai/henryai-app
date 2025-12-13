@@ -1669,6 +1669,33 @@
                     return;
                 }
 
+                const currentUserId = session.user.id;
+
+                // Check if localStorage data belongs to a different user
+                const lastUserId = localStorage.getItem('henryai_current_user_id');
+                if (lastUserId && lastUserId !== currentUserId) {
+                    console.log('Different user detected - clearing localStorage data');
+                    // Clear user-specific localStorage data to prevent data leakage
+                    localStorage.removeItem('trackedApplications');
+                    localStorage.removeItem('upcomingInterviews');
+                    localStorage.removeItem('completedInterviews');
+                    localStorage.removeItem('candidateProfile');
+                    localStorage.removeItem('resumeConversation');
+                    localStorage.removeItem('celebratedMilestones');
+                    localStorage.removeItem('interventionState');
+                    // Clear any analysis/documents keys
+                    for (let i = localStorage.length - 1; i >= 0; i--) {
+                        const key = localStorage.key(i);
+                        if (key && (key.startsWith('analysis_') || key.startsWith('documents_'))) {
+                            localStorage.removeItem(key);
+                        }
+                    }
+                    // Clear dashboard cache
+                    dashboardAppsCache = null;
+                }
+                // Store current user ID
+                localStorage.setItem('henryai_current_user_id', currentUserId);
+
                 // Get user's name from Supabase for personalized greeting
                 supabaseUserName = await HenryAuth.getUserName();
 

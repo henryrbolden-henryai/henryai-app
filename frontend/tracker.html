@@ -8337,6 +8337,31 @@ Thanks so much!
                 console.log('Supabase session:', session ? 'exists' : 'null');
                 if (session) {
                     window.supabaseSession = session; // Store for later use
+                    const currentUserId = session.user.id;
+
+                    // Check if localStorage data belongs to a different user
+                    const lastUserId = localStorage.getItem('henryai_current_user_id');
+                    if (lastUserId && lastUserId !== currentUserId) {
+                        console.log('Different user detected - clearing localStorage data');
+                        // Clear user-specific localStorage data to prevent data leakage
+                        localStorage.removeItem('trackedApplications');
+                        localStorage.removeItem('upcomingInterviews');
+                        localStorage.removeItem('completedInterviews');
+                        localStorage.removeItem('candidateProfile');
+                        localStorage.removeItem('resumeConversation');
+                        localStorage.removeItem('celebratedMilestones');
+                        localStorage.removeItem('interventionState');
+                        // Clear any analysis/documents keys
+                        for (let i = localStorage.length - 1; i >= 0; i--) {
+                            const key = localStorage.key(i);
+                            if (key && (key.startsWith('analysis_') || key.startsWith('documents_'))) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+                    }
+                    // Store current user ID
+                    localStorage.setItem('henryai_current_user_id', currentUserId);
+
                     // User is logged in - try Supabase first
                     console.log('Loading data from Supabase...');
                     let apps = await HenryData.getApplications();
@@ -8346,8 +8371,9 @@ Thanks so much!
                     const localAppsRaw = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
                     console.log('localStorage apps count:', localAppsRaw?.length || 0);
 
-                    if ((!apps || apps.length === 0) && localAppsRaw.length > 0) {
-                        console.log('Supabase empty but localStorage has data - using localStorage and migrating...');
+                    // Only migrate if localStorage has data AND it's from the same user (not cleared above)
+                    if ((!apps || apps.length === 0) && localAppsRaw.length > 0 && (!lastUserId || lastUserId === currentUserId)) {
+                        console.log('Supabase empty but localStorage has data for same user - migrating...');
                         apps = localAppsRaw;
 
                         // Migrate localStorage data to Supabase in background
