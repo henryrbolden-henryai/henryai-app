@@ -134,7 +134,7 @@
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 60px;
+                top: 70px;
                 z-index: 90;
                 display: flex;
                 align-items: flex-start;
@@ -180,7 +180,7 @@
 
             .strategy-nav.expanded .strategy-nav-panel {
                 max-height: 600px;
-                width: 200px;
+                width: 220px;
                 opacity: 1;
                 padding: 12px;
             }
@@ -222,13 +222,15 @@
 
             .strategy-nav-top-link {
                 display: block;
-                padding: 6px 10px;
+                padding: 8px 12px;
                 color: #6b7280;
                 text-decoration: none;
-                font-size: 0.8rem;
+                font-size: 0.85rem;
                 transition: all 0.2s ease;
                 border-radius: 4px;
                 margin-bottom: 2px;
+                white-space: nowrap;
+                overflow: visible;
             }
 
             .strategy-nav-top-link:hover {
@@ -438,7 +440,7 @@
         const hasAppContext = hasApplicationContext();
 
         // Pages that don't need app context (always accessible)
-        const alwaysAccessiblePages = ['dashboard', 'tracker', 'analyze', 'interview-intelligence'];
+        const alwaysAccessiblePages = ['dashboard', 'tracker', 'analyze'];
 
         // Create nav container
         const nav = document.createElement('nav');
