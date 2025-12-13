@@ -1164,13 +1164,14 @@
                 };
             }
             // Scenario 5: Thin pipeline without urgency (gentler nudge)
+            // Note: No action button - user can use "Analyze New Role" in navigation
             else if (appCount === 1 && !isUrgentTimeline) {
                 showRealityCheck = true;
                 realityContent = {
                     icon: '📊',
                     headline: 'Diversify your pipeline',
                     detail: `Right now, your entire job search depends on one application. Even if you're not in a rush, <strong>spreading your bets across 5-10 roles</strong> dramatically increases your chances of landing the right opportunity. Don't put all your eggs in one basket.`,
-                    primaryBtn: { text: 'Add More Roles', link: 'analyze.html' },
+                    primaryBtn: null,
                     secondaryBtn: null
                 };
             }
@@ -1182,7 +1183,10 @@
                 headline.textContent = realityContent.headline;
                 detail.innerHTML = realityContent.detail;
 
-                let actionsHTML = `<a href="${realityContent.primaryBtn.link}" class="reality-check-btn">${realityContent.primaryBtn.text}</a>`;
+                let actionsHTML = '';
+                if (realityContent.primaryBtn) {
+                    actionsHTML = `<a href="${realityContent.primaryBtn.link}" class="reality-check-btn">${realityContent.primaryBtn.text}</a>`;
+                }
                 if (realityContent.secondaryBtn) {
                     if (realityContent.secondaryBtn.prompt) {
                         // Use data attribute for prompt to avoid quote escaping issues
@@ -1351,13 +1355,14 @@
             // ─────────────────────────────────────────────────────────────────
             // Note: Critical warnings are now shown in the Reality Check section above
             // This section provides lighter guidance for pipeline growth
+            // User can click "Analyze New Role" in the navigation pane to add roles
             if (activeApps.length < 5) {
                 let pipelineMsg = '';
                 let itemType = 'secondary';
                 let labelText = 'Growth';
 
                 if (activeApps.length === 0) {
-                    pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
+                    pipelineMsg = '<strong>Start building your pipeline</strong> — use "Analyze New Role" in the menu to add your first target.';
                 } else if (activeApps.length <= 2) {
                     pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active app${activeApps.length > 1 ? 's' : ''}. Aim for 5-10 for best results.`;
                 } else {
@@ -1366,17 +1371,17 @@
                 items.push({
                     label: labelText,
                     message: pipelineMsg,
-                    buttonText: 'Analyze Role',
-                    buttonLink: 'analyze.html',
+                    buttonText: null,
+                    buttonLink: null,
                     type: itemType
                 });
             } else {
-                // Pipeline is healthy - still suggest adding strategically
+                // Pipeline is healthy - show status only
                 items.push({
                     label: 'Pipeline',
                     message: `<strong>${activeApps.length} active applications</strong> — solid pipeline. Add selectively for quality matches.`,
-                    buttonText: 'Add Role',
-                    buttonLink: 'analyze.html',
+                    buttonText: null,
+                    buttonLink: null,
                     type: 'secondary',
                     buttonType: 'secondary'
                 });
@@ -1432,9 +1437,9 @@
             if (items.length < 3 && activeApps.length === 0) {
                 items.push({
                     label: 'Getting Started',
-                    message: '<strong>Welcome to HenryHQ!</strong> Analyze your first job to get personalized strategy.',
-                    buttonText: 'Get Started',
-                    buttonLink: 'analyze.html',
+                    message: '<strong>Welcome to HenryHQ!</strong> Click "Analyze New Role" in the menu to get personalized strategy.',
+                    buttonText: null,
+                    buttonLink: null,
                     type: 'secondary'
                 });
             }
