@@ -498,7 +498,8 @@
     // Initialize the navigation
     async function init() {
         // Don't add navigation to public pages (before sign-in)
-        const excludedPages = ['index', 'login', 'profile'];
+        // Note: profile-edit should show nav, only exclude initial profile setup
+        const excludedPages = ['index', 'login'];
         const currentPage = getCurrentPage();
         const rawPage = window.location.pathname.split('/').pop()?.replace('.html', '') || '';
 

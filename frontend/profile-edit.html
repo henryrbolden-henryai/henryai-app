@@ -982,25 +982,45 @@
         setupCurrencyInput('compTarget');
         setupCurrencyInput('compStretch');
 
-        // Load existing profile
-        function loadProfile() {
-            const stored = localStorage.getItem('userProfile');
-            if (!stored) {
+        // Load existing profile - tries Supabase first, then localStorage
+        async function loadProfile() {
+            let profileData = null;
+
+            // Try Supabase first if available
+            if (typeof HenryData !== 'undefined') {
+                try {
+                    profileData = await HenryData.getCandidateProfile();
+                    if (profileData) {
+                        console.log('Loaded profile from Supabase');
+                    }
+                } catch (e) {
+                    console.error('Error loading from Supabase:', e);
+                }
+            }
+
+            // Fall back to localStorage if no Supabase data
+            if (!profileData) {
+                const stored = localStorage.getItem('userProfile');
+                if (stored) {
+                    try {
+                        profileData = JSON.parse(stored);
+                        console.log('Loaded profile from localStorage');
+                    } catch (e) {
+                        console.error('Failed to parse localStorage profile:', e);
+                    }
+                }
+            }
+
+            if (!profileData) {
                 // New profile mode
                 isNewProfile = true;
                 setupNewProfileMode();
                 return;
             }
 
-            try {
-                profile = JSON.parse(stored);
-                setupEditMode();
-                populateForm();
-            } catch (e) {
-                console.error('Failed to parse profile:', e);
-                isNewProfile = true;
-                setupNewProfileMode();
-            }
+            profile = profileData;
+            setupEditMode();
+            populateForm();
         }
 
         function setupNewProfileMode() {
@@ -1266,10 +1286,10 @@
         }
 
         // Save changes
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
             // Clear previous errors
             errorMessage.classList.remove('show');
-            
+
             // Validate required fields for new profile
             if (isNewProfile) {
                 if (!profile || !profile.resume) {
@@ -1288,36 +1308,47 @@
 
             try {
                 if (!profile) profile = {};
-                
+
                 profile.compensation = {
                     min: parseCurrency(document.getElementById('compMin').value),
                     target: parseCurrency(document.getElementById('compTarget').value),
                     stretch: parseCurrency(document.getElementById('compStretch').value)
                 };
-                
+
                 profile.work_arrangement = workArrangements;
-                
+
                 profile.location = {
                     current: document.getElementById('currentLocation').value.trim(),
                     open_to_relocate: getSelectedRadioValue('relocateGroup'),
                     relocate_to: relocateLocations
                 };
-                
+
                 profile.pronouns = document.getElementById('pronouns').value.trim() || null;
-                
+
                 profile.situation = {
                     holding_up: document.getElementById('holdingUp').value || null,
                     timeline: document.getElementById('timeline').value || null,
                     confidence: document.getElementById('confidence').value || null
                 };
-                
+
                 if (isNewProfile) {
                     profile.created_at = new Date().toISOString();
                 }
                 profile.updated_at = new Date().toISOString();
 
+                // Save to localStorage as fallback
                 localStorage.setItem('userProfile', JSON.stringify(profile));
-                
+
+                // Save to Supabase if available
+                if (typeof HenryData !== 'undefined') {
+                    const { error } = await HenryData.saveCandidateProfile(profile);
+                    if (error) {
+                        console.error('Error saving to Supabase:', error);
+                    } else {
+                        console.log('Profile saved to Supabase');
+                    }
+                }
+
                 // Initialize tracker if new
                 if (!localStorage.getItem('trackedApplications')) {
                     localStorage.setItem('trackedApplications', JSON.stringify([]));
@@ -1357,10 +1388,30 @@
             }
         });
 
-        // Initialize
-        loadProfile();
+        // Initialize will be called after Supabase is loaded
     </script>
-<script src="components/ask-henry.js"></script>
-<script src="components/strategy-nav.js"></script>
+
+    <!-- Auth scripts - must load before initialization -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        // Initialize after Supabase is available
+        (async function() {
+            // Check authentication
+            if (typeof HenryAuth !== 'undefined') {
+                const session = await HenryAuth.getSession();
+                if (!session) {
+                    // Not logged in, redirect to login
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+
+            // Now load the profile
+            await loadProfile();
+        })();
+    </script>
+    <script src="components/ask-henry.js"></script>
+    <script src="components/strategy-nav.js"></script>
 </body>
 </html>
