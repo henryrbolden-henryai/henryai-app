@@ -134,10 +134,30 @@
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 120px;
+                top: 60px;
                 z-index: 90;
                 display: flex;
                 align-items: flex-start;
+            }
+
+            /* HenryAI Logo in nav */
+            .strategy-nav-logo {
+                display: block;
+                padding: 12px 10px 16px;
+                text-decoration: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 12px;
+            }
+
+            .strategy-nav-logo-text {
+                font-family: 'Instrument Serif', Georgia, serif;
+                font-size: 1.4rem;
+                color: #ffffff;
+            }
+
+            .strategy-nav-logo-text em {
+                font-style: italic;
+                color: #22d3ee;
             }
 
             .strategy-nav-toggle {
@@ -179,7 +199,7 @@
             }
 
             .strategy-nav.expanded .strategy-nav-panel {
-                max-height: 500px;
+                max-height: 600px;
                 width: 200px;
                 opacity: 1;
                 padding: 12px;
@@ -462,12 +482,20 @@
             </div>
         `;
 
+        // Logo HTML
+        const logoHtml = `
+            <a href="dashboard.html" class="strategy-nav-logo">
+                <span class="strategy-nav-logo-text"><em>Henry</em>AI</span>
+            </a>
+        `;
+
         nav.innerHTML = `
             <div class="strategy-nav-dots">${dotsHtml}</div>
             <button class="strategy-nav-toggle" aria-expanded="${isExpanded}" aria-controls="strategyNavPanel">
                 ${isExpanded ? '◀' : '▶'}
             </button>
             <div class="strategy-nav-panel" id="strategyNavPanel">
+                ${logoHtml}
                 ${contextHtml}
                 ${topLevelHtml}
                 <div class="strategy-nav-divider"></div>
