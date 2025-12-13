@@ -140,26 +140,6 @@
                 align-items: flex-start;
             }
 
-            /* HenryAI Logo in nav */
-            .strategy-nav-logo {
-                display: block;
-                padding: 12px 10px 16px;
-                text-decoration: none;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                margin-bottom: 12px;
-            }
-
-            .strategy-nav-logo-text {
-                font-family: 'Instrument Serif', Georgia, serif;
-                font-size: 1.4rem;
-                color: #ffffff;
-            }
-
-            .strategy-nav-logo-text em {
-                font-style: italic;
-                color: #22d3ee;
-            }
-
             .strategy-nav-toggle {
                 width: 28px;
                 height: 28px;
@@ -327,6 +307,22 @@
                 color: #ffffff;
             }
 
+            /* Disabled state for items requiring context */
+            .strategy-nav-top-link.disabled,
+            .strategy-nav-parent.disabled,
+            .strategy-nav-child-link.disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .strategy-nav-top-link.disabled:hover,
+            .strategy-nav-parent.disabled:hover,
+            .strategy-nav-child-link.disabled:hover {
+                background: transparent;
+                color: #6b7280;
+            }
+
             /* Floating dots indicator for collapsed state */
             .strategy-nav-dots {
                 display: flex;
@@ -419,11 +415,30 @@
         document.head.appendChild(styles);
     }
 
+    // Check if there's any application context available (either in session or tracked apps)
+    function hasApplicationContext() {
+        // Check sessionStorage for active analysis
+        const analysisData = sessionStorage.getItem('analysisData');
+        if (analysisData) {
+            try {
+                const data = JSON.parse(analysisData);
+                if (data._company_name || data._company || data.company_name) {
+                    return true;
+                }
+            } catch (e) {}
+        }
+        return false;
+    }
+
     // Create the navigation HTML
     function createNavigation() {
         const currentPage = getCurrentPage();
         const jobContext = getJobContext();
         const isExpanded = localStorage.getItem('strategyNavExpanded') === 'true';
+        const hasAppContext = hasApplicationContext();
+
+        // Pages that don't need app context (always accessible)
+        const alwaysAccessiblePages = ['dashboard', 'tracker', 'analyze', 'interview-intelligence'];
 
         // Create nav container
         const nav = document.createElement('nav');
@@ -434,21 +449,44 @@
         const allItems = [...NAV_STRUCTURE.topLevel, NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children, ...(NAV_STRUCTURE.bottomLevel || [])];
         const dotsHtml = allItems.map(item => {
             const isActive = currentPage === item.id;
+            const needsContext = !alwaysAccessiblePages.includes(item.id);
+            const isDisabled = needsContext && !hasAppContext;
+            if (isDisabled) {
+                return `<span class="strategy-nav-dot disabled" title="${item.label} (select an application first)"></span>`;
+            }
             return `<a href="${item.href}" class="strategy-nav-dot ${isActive ? 'active' : ''}" title="${item.label}"></a>`;
         }).join('');
 
-        // Create top-level items (Analyze, Job Fit Score)
+        // Create top-level items (Dashboard, Job Fit Score, Resume Level Analysis)
         const topLevelHtml = NAV_STRUCTURE.topLevel.map(item => {
             const isActive = currentPage === item.id;
+            const needsContext = !alwaysAccessiblePages.includes(item.id);
+            const isDisabled = needsContext && !hasAppContext;
+            if (isDisabled) {
+                return `<span class="strategy-nav-top-link disabled" title="Select an application first">${item.label}</span>`;
+            }
             return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
 
         // Check if parent is active
         const isParentActive = currentPage === NAV_STRUCTURE.parent.id;
 
+        // Parent (Strategy Overview) needs context
+        const parentNeedsContext = !alwaysAccessiblePages.includes(NAV_STRUCTURE.parent.id);
+        const parentDisabled = parentNeedsContext && !hasAppContext;
+
         // Create children list items
         const childrenHtml = NAV_STRUCTURE.children.map(item => {
             const isActive = currentPage === item.id;
+            const needsContext = !alwaysAccessiblePages.includes(item.id);
+            const isDisabled = needsContext && !hasAppContext;
+            if (isDisabled) {
+                return `
+                <li class="strategy-nav-child">
+                    <span class="strategy-nav-child-link disabled" title="Select an application first">${item.label}</span>
+                </li>
+            `;
+            }
             return `
                 <li class="strategy-nav-child">
                     <a href="${item.href}" class="strategy-nav-child-link ${isActive ? 'active' : ''}">${item.label}</a>
@@ -482,12 +520,10 @@
             </div>
         `;
 
-        // Logo HTML
-        const logoHtml = `
-            <a href="dashboard.html" class="strategy-nav-logo">
-                <span class="strategy-nav-logo-text"><em>Henry</em>AI</span>
-            </a>
-        `;
+        // Parent link HTML (may be disabled)
+        const parentLinkHtml = parentDisabled
+            ? `<span class="strategy-nav-parent disabled" title="Select an application first">${NAV_STRUCTURE.parent.label}</span>`
+            : `<a href="${NAV_STRUCTURE.parent.href}" class="strategy-nav-parent ${isParentActive ? 'active' : ''}">${NAV_STRUCTURE.parent.label}</a>`;
 
         nav.innerHTML = `
             <div class="strategy-nav-dots">${dotsHtml}</div>
@@ -495,13 +531,12 @@
                 ${isExpanded ? '◀' : '▶'}
             </button>
             <div class="strategy-nav-panel" id="strategyNavPanel">
-                ${logoHtml}
                 ${contextHtml}
                 ${topLevelHtml}
                 <div class="strategy-nav-divider"></div>
                 <ul class="strategy-nav-list">
                     <li class="strategy-nav-item">
-                        <a href="${NAV_STRUCTURE.parent.href}" class="strategy-nav-parent ${isParentActive ? 'active' : ''}">${NAV_STRUCTURE.parent.label}</a>
+                        ${parentLinkHtml}
                         <ul class="strategy-nav-children">
                             ${childrenHtml}
                         </ul>
