@@ -417,9 +417,11 @@
         document.head.appendChild(styles);
     }
 
-    // Check if there's any application context available (either in session or tracked apps)
-    function hasApplicationContext() {
-        // Check sessionStorage for active analysis
+    // Check if there's an ACTIVE job context (user has selected a specific job)
+    // This is different from just having tracked apps - user must click into a job
+    function hasActiveJobContext() {
+        // Only check sessionStorage for active analysis data
+        // This is set when user clicks on a job in Command Center or analyzes a new role
         const analysisData = sessionStorage.getItem('analysisData');
         if (analysisData) {
             try {
@@ -429,18 +431,6 @@
                 }
             } catch (e) {}
         }
-
-        // Also check if user has any tracked applications in localStorage
-        const trackedApps = localStorage.getItem('trackedApplications');
-        if (trackedApps) {
-            try {
-                const apps = JSON.parse(trackedApps);
-                if (apps && apps.length > 0) {
-                    return true;
-                }
-            } catch (e) {}
-        }
-
         return false;
     }
 
@@ -449,9 +439,9 @@
         const currentPage = getCurrentPage();
         const jobContext = getJobContext();
         const isExpanded = localStorage.getItem('strategyNavExpanded') === 'true';
-        const hasAppContext = hasApplicationContext();
+        const hasJobContext = hasActiveJobContext();
 
-        // Pages that don't need app context (always accessible)
+        // Pages that don't need active job context (always accessible)
         const alwaysAccessiblePages = ['dashboard', 'tracker', 'analyze'];
 
         // Create nav container
@@ -464,7 +454,7 @@
         const dotsHtml = allItems.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
-            const isDisabled = needsContext && !hasAppContext;
+            const isDisabled = needsContext && !hasJobContext;
             if (isDisabled) {
                 return `<span class="strategy-nav-dot disabled" title="${item.label} (select an application first)"></span>`;
             }
@@ -475,7 +465,7 @@
         const topLevelHtml = NAV_STRUCTURE.topLevel.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
-            const isDisabled = needsContext && !hasAppContext;
+            const isDisabled = needsContext && !hasJobContext;
             if (isDisabled) {
                 return `<span class="strategy-nav-top-link disabled" title="Select an application first">${item.label}</span>`;
             }
@@ -487,13 +477,13 @@
 
         // Parent (Strategy Overview) needs context
         const parentNeedsContext = !alwaysAccessiblePages.includes(NAV_STRUCTURE.parent.id);
-        const parentDisabled = parentNeedsContext && !hasAppContext;
+        const parentDisabled = parentNeedsContext && !hasJobContext;
 
         // Create children list items
         const childrenHtml = NAV_STRUCTURE.children.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
-            const isDisabled = needsContext && !hasAppContext;
+            const isDisabled = needsContext && !hasJobContext;
             if (isDisabled) {
                 return `
                 <li class="strategy-nav-child">
