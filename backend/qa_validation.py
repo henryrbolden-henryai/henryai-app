@@ -809,10 +809,15 @@ class OutputValidator:
 
     def _extract_company_mention(self, text: str) -> Optional[str]:
         """Extract company name from text."""
-        # Check against known companies
+        # Check against known companies with word boundary matching
         text_lower = text.lower()
         for company in ValidationConfig.KNOWN_COMPANIES:
-            if company in text_lower:
+            # Skip companies that are too short to avoid false positives
+            if len(company) < 4:
+                continue
+            # Use word boundary matching
+            pattern = r'\b' + re.escape(company) + r'\b'
+            if re.search(pattern, text_lower):
                 return company
 
         # Pattern: "at [Company]" or "with [Company]"
@@ -823,13 +828,27 @@ class OutputValidator:
             r'from (\w+(?:\s+\w+)?)',
         ]
 
+        # Common words that are NOT company names
+        non_company_words = {
+            'the', 'a', 'an', 'their', 'our', 'your', 'my', 'his', 'her', 'its',
+            'experience', 'expertise', 'skills', 'work', 'job', 'role', 'team',
+            'least', 'most', 'first', 'last', 'start', 'end', 'time', 'times',
+            'days', 'weeks', 'months', 'years', 'hours', 'minutes', 'seconds',
+            'engineering', 'design', 'sales', 'marketing', 'product', 'data',
+            'all', 'some', 'any', 'each', 'every', 'both', 'few', 'many',
+            'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom',
+            'scale', 'speed', 'quality', 'level', 'rate', 'pace', 'cost',
+        }
+
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
                 potential_company = match.group(1).strip()
-                # Filter out common non-company words
-                if potential_company.lower() not in ['the', 'a', 'an', 'their', 'our', 'your',
-                                                      'experience', 'expertise', 'skills']:
+                # Filter out common non-company words and numbers
+                words = potential_company.lower().split()
+                if (words[0] not in non_company_words and
+                    not words[0].isdigit() and
+                    len(potential_company) > 2):
                     return potential_company
 
         return None
@@ -966,13 +985,22 @@ class ChatResponseValidator:
     def _mentions_company(self, text: str) -> bool:
         """Check if text mentions any known company."""
         text_lower = text.lower()
-        return any(company in text_lower for company in ValidationConfig.KNOWN_COMPANIES)
+        for company in ValidationConfig.KNOWN_COMPANIES:
+            if len(company) < 4:
+                continue
+            pattern = r'\b' + re.escape(company) + r'\b'
+            if re.search(pattern, text_lower):
+                return True
+        return False
 
     def _extract_company_from_sentence(self, sentence: str) -> Optional[str]:
         """Extract company name from a sentence."""
         sentence_lower = sentence.lower()
         for company in ValidationConfig.KNOWN_COMPANIES:
-            if company in sentence_lower:
+            if len(company) < 4:
+                continue
+            pattern = r'\b' + re.escape(company) + r'\b'
+            if re.search(pattern, sentence_lower):
                 return company
         return None
 

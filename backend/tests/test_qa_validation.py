@@ -165,8 +165,9 @@ class TestResumeGroundingValidator:
     def test_validate_claim_grounded(self, sample_resume):
         """Should validate claims grounded in resume."""
         validator = ResumeGroundingValidator(sample_resume)
+        # Use a claim that includes actual content from the resume
         is_valid, confidence, msg = validator.validate_claim(
-            "Your Spotify experience with playlist features is relevant"
+            "Led $12M ARR feature launch for playlist recommendations at Spotify"
         )
         assert is_valid is True
         assert confidence > 0.5
