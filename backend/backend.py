@@ -24,6 +24,9 @@ import anthropic
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from document_generator import ResumeFormatter, CoverLetterFormatter
 
+# Add current directory to path for qa_validation import (needed for Railway deployment)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 # QA Validation module for fabrication detection and data quality
 from qa_validation import (
     validate_documents_generation,
