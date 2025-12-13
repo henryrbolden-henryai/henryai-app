@@ -340,6 +340,147 @@ const HenryData = {
     },
 
     /**
+     * Get all interviews for current user
+     */
+    async getInterviews() {
+        const user = await HenryAuth.getUser();
+        if (!user) return { upcoming: [], completed: [] };
+
+        const { data, error } = await supabase
+            .from('interviews')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('interview_date', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching interviews:', error);
+            return { upcoming: [], completed: [] };
+        }
+
+        const now = new Date();
+        const upcoming = [];
+        const completed = [];
+
+        data.forEach(interview => {
+            const formatted = {
+                id: interview.id,
+                company: interview.company,
+                role: interview.role,
+                type: interview.interview_type,
+                date: interview.interview_date,
+                time: interview.interview_time,
+                location: interview.location,
+                interviewerName: interview.interviewer_name,
+                interviewerTitle: interview.interviewer_title,
+                interviewerLinkedIn: interview.interviewer_linkedin,
+                notes: interview.notes,
+                prepNotes: interview.prep_notes,
+                debriefNotes: interview.debrief_notes,
+                applicationId: interview.application_id,
+                status: interview.status,
+                ...interview.metadata
+            };
+
+            if (interview.status === 'completed') {
+                completed.push(formatted);
+            } else {
+                upcoming.push(formatted);
+            }
+        });
+
+        return { upcoming, completed };
+    },
+
+    /**
+     * Save interview
+     */
+    async saveInterview(interview) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const interviewData = {
+            user_id: user.id,
+            company: interview.company,
+            role: interview.role,
+            interview_type: interview.type,
+            interview_date: interview.date,
+            interview_time: interview.time,
+            location: interview.location,
+            interviewer_name: interview.interviewerName,
+            interviewer_title: interview.interviewerTitle,
+            interviewer_linkedin: interview.interviewerLinkedIn,
+            notes: interview.notes,
+            prep_notes: interview.prepNotes,
+            debrief_notes: interview.debriefNotes,
+            application_id: interview.applicationId,
+            status: interview.status || 'scheduled',
+            metadata: {
+                source: interview.source,
+                linkedFromTracker: interview.linkedFromTracker
+            },
+            updated_at: new Date().toISOString()
+        };
+
+        // If interview has a UUID id, update it; otherwise insert new
+        const interviewIdStr = String(interview.id || '');
+        if (interviewIdStr && interviewIdStr.includes('-')) {
+            const { data, error } = await supabase
+                .from('interviews')
+                .update(interviewData)
+                .eq('id', interview.id)
+                .eq('user_id', user.id)
+                .select()
+                .single();
+            return { data, error };
+        } else {
+            const { data, error } = await supabase
+                .from('interviews')
+                .insert(interviewData)
+                .select()
+                .single();
+            return { data, error };
+        }
+    },
+
+    /**
+     * Delete interview
+     */
+    async deleteInterview(interviewId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { error } = await supabase
+            .from('interviews')
+            .delete()
+            .eq('id', interviewId)
+            .eq('user_id', user.id);
+
+        return { error };
+    },
+
+    /**
+     * Mark interview as completed with debrief
+     */
+    async completeInterview(interviewId, debriefNotes) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('interviews')
+            .update({
+                status: 'completed',
+                debrief_notes: debriefNotes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', interviewId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        return { data, error };
+    },
+
+    /**
      * Migrate localStorage data to Supabase (run once on first login)
      */
     async migrateFromLocalStorage() {
@@ -399,6 +540,36 @@ const HenryData = {
                 console.log('✅ Migrated resume conversation');
             } catch (e) {
                 console.error('Failed to migrate resume conversation:', e);
+            }
+        }
+
+        // Migrate upcoming interviews
+        const upcomingInterviews = localStorage.getItem('upcomingInterviews');
+        if (upcomingInterviews) {
+            try {
+                const interviews = JSON.parse(upcomingInterviews);
+                for (const interview of interviews) {
+                    interview.status = 'scheduled';
+                    await this.saveInterview(interview);
+                }
+                console.log(`✅ Migrated ${interviews.length} upcoming interviews`);
+            } catch (e) {
+                console.error('Failed to migrate upcoming interviews:', e);
+            }
+        }
+
+        // Migrate completed interviews
+        const completedInterviews = localStorage.getItem('completedInterviews');
+        if (completedInterviews) {
+            try {
+                const interviews = JSON.parse(completedInterviews);
+                for (const interview of interviews) {
+                    interview.status = 'completed';
+                    await this.saveInterview(interview);
+                }
+                console.log(`✅ Migrated ${interviews.length} completed interviews`);
+            } catch (e) {
+                console.error('Failed to migrate completed interviews:', e);
             }
         }
 

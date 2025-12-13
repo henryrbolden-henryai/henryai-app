@@ -676,6 +676,9 @@
             window.location.href = 'beta-access.html';
         }
     </script>
+    <!-- Supabase for data persistence -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
 </head>
 <body>
     <!-- HEADER -->
@@ -892,8 +895,8 @@
         let analysisData = null;
         let resumeData = null;
 
-        // Load data from sessionStorage
-        document.addEventListener('DOMContentLoaded', () => {
+        // Load data from sessionStorage and Supabase
+        document.addEventListener('DOMContentLoaded', async () => {
             // Load analysis data
             const storedAnalysis = sessionStorage.getItem('analysisData');
             if (storedAnalysis) {
@@ -916,34 +919,69 @@
                 }
             }
 
-            // Load upcoming interviews from localStorage
-            const storedInterviews = localStorage.getItem('upcomingInterviews');
-            if (storedInterviews) {
+            // Try to load interviews from Supabase first, fall back to localStorage
+            let loadedFromSupabase = false;
+            if (typeof HenryData !== 'undefined') {
                 try {
-                    upcomingInterviews = JSON.parse(storedInterviews);
+                    const { upcoming, completed } = await HenryData.getInterviews();
+                    if (upcoming.length > 0 || completed.length > 0) {
+                        upcomingInterviews = upcoming;
+                        completedInterviews = completed;
+                        loadedFromSupabase = true;
+                        console.log('Loaded interviews from Supabase:', upcoming.length, 'upcoming,', completed.length, 'completed');
+                    }
                 } catch (e) {
-                    console.error('Error parsing interviews:', e);
+                    console.log('Supabase not available, using localStorage');
                 }
             }
 
-            // Load completed interviews from localStorage
-            const storedCompleted = localStorage.getItem('completedInterviews');
-            if (storedCompleted) {
-                try {
-                    completedInterviews = JSON.parse(storedCompleted);
-                } catch (e) {
-                    console.error('Error parsing completed interviews:', e);
+            // Fall back to localStorage if Supabase didn't have data
+            if (!loadedFromSupabase) {
+                // Load upcoming interviews from localStorage
+                const storedInterviews = localStorage.getItem('upcomingInterviews');
+                if (storedInterviews) {
+                    try {
+                        upcomingInterviews = JSON.parse(storedInterviews);
+                    } catch (e) {
+                        console.error('Error parsing interviews:', e);
+                    }
+                }
+
+                // Load completed interviews from localStorage
+                const storedCompleted = localStorage.getItem('completedInterviews');
+                if (storedCompleted) {
+                    try {
+                        completedInterviews = JSON.parse(storedCompleted);
+                    } catch (e) {
+                        console.error('Error parsing completed interviews:', e);
+                    }
                 }
             }
 
-            // Load tracked applications from localStorage
-            const storedApps = localStorage.getItem('trackedApplications');
-            if (storedApps) {
+            // Load tracked applications (try Supabase first)
+            let appsLoadedFromSupabase = false;
+            if (typeof HenryData !== 'undefined') {
                 try {
-                    trackedApplications = JSON.parse(storedApps);
-                    console.log('Loaded tracked applications:', trackedApplications.length);
+                    const apps = await HenryData.getApplications();
+                    if (apps.length > 0) {
+                        trackedApplications = apps;
+                        appsLoadedFromSupabase = true;
+                        console.log('Loaded applications from Supabase:', apps.length);
+                    }
                 } catch (e) {
-                    console.error('Error parsing tracked applications:', e);
+                    console.log('Supabase apps not available, using localStorage');
+                }
+            }
+
+            if (!appsLoadedFromSupabase) {
+                const storedApps = localStorage.getItem('trackedApplications');
+                if (storedApps) {
+                    try {
+                        trackedApplications = JSON.parse(storedApps);
+                        console.log('Loaded tracked applications:', trackedApplications.length);
+                    } catch (e) {
+                        console.error('Error parsing tracked applications:', e);
+                    }
                 }
             }
 
@@ -1176,6 +1214,21 @@
             upcomingInterviews.push(interview);
             localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
 
+            // Sync to Supabase
+            if (typeof HenryData !== 'undefined') {
+                HenryData.saveInterview(interview).then(result => {
+                    if (result.data) {
+                        // Update the interview with the Supabase UUID
+                        const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
+                        if (idx >= 0) {
+                            upcomingInterviews[idx].id = result.data.id;
+                            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+                        }
+                        console.log('Interview synced to Supabase:', result.data.id);
+                    }
+                }).catch(e => console.error('Failed to sync interview to Supabase:', e));
+            }
+
             // Sync to tracker - update or create application
             syncInterviewToTracker(interview);
 
@@ -1398,6 +1451,14 @@
             if (confirm('Are you sure you want to delete this interview?')) {
                 upcomingInterviews = upcomingInterviews.filter(i => i.id !== interviewId);
                 localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+                // Delete from Supabase
+                if (typeof HenryData !== 'undefined') {
+                    HenryData.deleteInterview(interviewId).then(() => {
+                        console.log('Interview deleted from Supabase');
+                    }).catch(e => console.error('Failed to delete from Supabase:', e));
+                }
+
                 renderInterviewList();
             }
         }
@@ -1550,6 +1611,21 @@
 
             upcomingInterviews.push(interview);
             localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Sync to Supabase
+            if (typeof HenryData !== 'undefined') {
+                HenryData.saveInterview(interview).then(result => {
+                    if (result.data) {
+                        // Update the interview with the Supabase UUID
+                        const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
+                        if (idx >= 0) {
+                            upcomingInterviews[idx].id = result.data.id;
+                            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+                        }
+                        console.log('Interview synced to Supabase:', result.data.id);
+                    }
+                }).catch(e => console.error('Failed to sync interview to Supabase:', e));
+            }
 
             // Sync to tracker (uses selectedApplication.id if available for direct update)
             syncInterviewToTracker(interview);
