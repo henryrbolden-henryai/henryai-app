@@ -204,6 +204,94 @@
             color: var(--color-text-secondary);
         }
 
+        /* REALITY CHECK SECTION */
+        .reality-check-section {
+            margin-bottom: 32px;
+        }
+
+        .reality-check-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f59e0b;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .reality-check-card {
+            background: rgba(245, 158, 11, 0.06);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .reality-check-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .reality-check-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .reality-check-text {
+            flex: 1;
+        }
+
+        .reality-check-headline {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f59e0b;
+            margin-bottom: 8px;
+        }
+
+        .reality-check-detail {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .reality-check-detail strong {
+            color: var(--color-text);
+        }
+
+        .reality-check-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .reality-check-btn {
+            padding: 10px 20px;
+            background: #f59e0b;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .reality-check-btn:hover {
+            background: #fbbf24;
+            transform: translateY(-1px);
+        }
+
+        .reality-check-btn.secondary {
+            background: transparent;
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .reality-check-btn.secondary:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
         /* TODAY'S FOCUS */
         .focus-section {
             margin-bottom: 32px;
@@ -515,6 +603,25 @@
             </div>
         </div>
 
+        <!-- REALITY CHECK (conditionally shown) -->
+        <div class="reality-check-section" id="realityCheckSection" style="display: none;">
+            <h2>Reality Check</h2>
+            <div class="reality-check-card">
+                <div class="reality-check-content">
+                    <div class="reality-check-icon" id="realityCheckIcon">⚠️</div>
+                    <div class="reality-check-text">
+                        <div class="reality-check-headline" id="realityCheckHeadline">Your pipeline doesn't match your goals</div>
+                        <div class="reality-check-detail" id="realityCheckDetail">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="reality-check-actions" id="realityCheckActions">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- TODAY'S FOCUS -->
         <div class="focus-section">
             <h2>Today's Focus</h2>
@@ -809,6 +916,7 @@
             renderWelcome(profile);
             renderDailyPulse(profile, apps);
             renderQuickStats(apps, activeApps);
+            renderRealityCheck(profile, apps, activeApps);
             renderTodaysFocus(profile, apps, activeApps);
             renderRecentActivity(apps);
         }
@@ -879,6 +987,112 @@
 
             const avgResponseTime = getAvgResponseTime(apps);
             document.getElementById('statResponseTime').textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
+        }
+
+        function renderRealityCheck(profile, apps, activeApps) {
+            const section = document.getElementById('realityCheckSection');
+            const headline = document.getElementById('realityCheckHeadline');
+            const detail = document.getElementById('realityCheckDetail');
+            const actions = document.getElementById('realityCheckActions');
+            const icon = document.getElementById('realityCheckIcon');
+
+            // Get profile situation values
+            const { holding_up, timeline, confidence } = profile?.situation || {};
+
+            // Determine urgency level
+            const isUrgentTimeline = timeline === 'urgent' || timeline === 'soon';
+            const isStrugglingEmotionally = holding_up === 'struggling' || holding_up === 'stressed_but_managing';
+            const hasLowConfidence = confidence === 'low' || confidence === 'need_validation';
+
+            // Calculate pipeline gaps
+            const appCount = activeApps.length;
+            const hasScheduledInterview = getNextUpcomingInterview() !== null;
+
+            // Define reality check scenarios (only show if there's a real mismatch)
+            let showRealityCheck = false;
+            let realityContent = {
+                icon: '⚠️',
+                headline: '',
+                detail: '',
+                primaryBtn: { text: 'Analyze Role', link: 'analyze.html' },
+                secondaryBtn: null
+            };
+
+            // Scenario 1: Urgent search + 0 applications
+            if (isUrgentTimeline && appCount === 0) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '🚨',
+                    headline: 'Urgent search, zero pipeline',
+                    detail: `You said your job search is <strong>${timeline === 'urgent' ? 'urgent' : 'happening soon'}</strong>, but you have no active applications. Every day without applications in play is a day lost. The average successful job search takes 3-6 months — start now.`,
+                    primaryBtn: { text: 'Analyze Your First Role', link: 'analyze.html' },
+                    secondaryBtn: null
+                };
+            }
+            // Scenario 2: Urgent search + only 1 application
+            else if (isUrgentTimeline && appCount === 1) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '⚠️',
+                    headline: 'One application isn\'t a job search',
+                    detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy — that's hope. Successful searchers typically have <strong>5-10 active applications</strong> at any time.`,
+                    primaryBtn: { text: 'Add 4 More Roles', link: 'analyze.html' },
+                    secondaryBtn: { text: 'Why This Matters', link: 'tracker.html' }
+                };
+            }
+            // Scenario 3: Urgent + struggling emotionally + thin pipeline
+            else if (isUrgentTimeline && isStrugglingEmotionally && appCount < 3) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '💪',
+                    headline: 'Let\'s get your pipeline working for you',
+                    detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Let's get that to 5 this week.`,
+                    primaryBtn: { text: 'Add Applications', link: 'analyze.html' },
+                    secondaryBtn: { text: 'Talk Strategy', link: '#', onclick: 'openAskHenry()' }
+                };
+            }
+            // Scenario 4: Low confidence + no interviews scheduled
+            else if (hasLowConfidence && !hasScheduledInterview && appCount >= 1) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '🎯',
+                    headline: 'Confidence comes from preparation',
+                    detail: `You mentioned feeling ${confidence === 'low' ? 'low confidence' : 'like you need validation'} about your search. Here's the truth: <strong>confidence is built, not found</strong>. Practice your story, research your targets, and prepare like the interviews are already scheduled. You've got this.`,
+                    primaryBtn: { text: 'Practice Interview', link: 'interview-intelligence.html' },
+                    secondaryBtn: { text: 'Review Positioning', link: 'positioning.html' }
+                };
+            }
+            // Scenario 5: Thin pipeline without urgency (gentler nudge)
+            else if (appCount === 1 && !isUrgentTimeline) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '📊',
+                    headline: 'Diversify your pipeline',
+                    detail: `Right now, your entire job search depends on one application. Even if you're not in a rush, <strong>spreading your bets across 5-10 roles</strong> dramatically increases your chances of landing the right opportunity. Don't put all your eggs in one basket.`,
+                    primaryBtn: { text: 'Add More Roles', link: 'analyze.html' },
+                    secondaryBtn: null
+                };
+            }
+
+            // Render or hide the section
+            if (showRealityCheck) {
+                section.style.display = 'block';
+                icon.textContent = realityContent.icon;
+                headline.textContent = realityContent.headline;
+                detail.innerHTML = realityContent.detail;
+
+                let actionsHTML = `<a href="${realityContent.primaryBtn.link}" class="reality-check-btn">${realityContent.primaryBtn.text}</a>`;
+                if (realityContent.secondaryBtn) {
+                    if (realityContent.secondaryBtn.onclick) {
+                        actionsHTML += `<button class="reality-check-btn secondary" onclick="${realityContent.secondaryBtn.onclick}">${realityContent.secondaryBtn.text}</button>`;
+                    } else {
+                        actionsHTML += `<a href="${realityContent.secondaryBtn.link}" class="reality-check-btn secondary">${realityContent.secondaryBtn.text}</a>`;
+                    }
+                }
+                actions.innerHTML = actionsHTML;
+            } else {
+                section.style.display = 'none';
+            }
         }
 
         function renderTodaysFocus(profile, apps, activeApps) {
@@ -1021,52 +1235,19 @@
             // ─────────────────────────────────────────────────────────────────
             // ITEM 2: Pipeline health / Apply to more roles
             // ─────────────────────────────────────────────────────────────────
-            // Check if user indicated urgency in their profile
-            // Timeline values: no_rush, actively_looking, soon, urgent
-            // Holding up values: doing_well, stressed_but_managing, struggling, rather_not_say
-            const isUrgentSearch = timeline === 'urgent' || timeline === 'soon' ||
-                                   holding_up === 'struggling' || holding_up === 'stressed_but_managing';
-
+            // Note: Critical warnings are now shown in the Reality Check section above
+            // This section provides lighter guidance for pipeline growth
             if (activeApps.length < 5) {
                 let pipelineMsg = '';
                 let itemType = 'secondary';
                 let labelText = 'Growth';
 
                 if (activeApps.length === 0) {
-                    if (isUrgentSearch) {
-                        pipelineMsg = '<strong>You said this search is urgent — but you have no active applications.</strong> Every day without applications in play is a day lost.';
-                        itemType = 'urgent';
-                        labelText = 'Action Required';
-                    } else {
-                        pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
-                    }
-                } else if (activeApps.length === 1) {
-                    // Strong warning for single application - don't put all eggs in one basket
-                    if (isUrgentSearch) {
-                        pipelineMsg = `<strong>You marked this search as urgent, but you only have 1 application.</strong> That's not a job search — that's hope. Add 4-9 more roles this week.`;
-                        itemType = 'urgent';
-                        labelText = 'Reality Check';
-                    } else {
-                        pipelineMsg = `<strong>Don't put all your eggs in one basket.</strong> 1 active app is risky — aim for 5-10 to maximize your chances.`;
-                        itemType = 'urgent';
-                        labelText = 'Risk';
-                    }
+                    pipelineMsg = '<strong>Start building your pipeline</strong> — analyze your first target role';
                 } else if (activeApps.length <= 2) {
-                    if (isUrgentSearch) {
-                        pipelineMsg = `<strong>Urgent search + ${activeApps.length} apps = misalignment.</strong> You need more volume. Aim for 5-10 active applications minimum.`;
-                        itemType = 'urgent';
-                        labelText = 'Mismatch';
-                    } else {
-                        pipelineMsg = `<strong>Pipeline too thin:</strong> Only ${activeApps.length} active apps. The average successful search has 5-10 in play.`;
-                        itemType = 'urgent';
-                        labelText = 'Urgent';
-                    }
-                } else if (isUrgentSearch) {
-                    pipelineMsg = `<strong>Good progress:</strong> ${activeApps.length} active apps. For an urgent search, keep adding — you want 8-10 in play.`;
-                    itemType = 'secondary';
-                    labelText = 'Keep Going';
+                    pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active app${activeApps.length > 1 ? 's' : ''}. Aim for 5-10 for best results.`;
                 } else {
-                    pipelineMsg = `<strong>Expand your pipeline:</strong> ${activeApps.length} active apps. Aim for 5-10 for best results.`;
+                    pipelineMsg = `<strong>Keep going:</strong> ${activeApps.length} active apps. A few more gives you optionality.`;
                 }
                 items.push({
                     label: labelText,
