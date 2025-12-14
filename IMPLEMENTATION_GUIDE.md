@@ -1,9 +1,9 @@
 # HenryAI Implementation Guide
 
 **Date**: December 11, 2025
-**Version**: 1.1
+**Version**: 1.2
 **Audience**: Development Team
-**Last Updated**: December 11, 2025, 11:30 PM PST
+**Last Updated**: December 14, 2025, 12:00 AM PST
 
 ---
 
@@ -32,6 +32,135 @@ All features below have been implemented and are ready for testing:
 5. ✅ **Streaming Support Infrastructure** (backend function added)
 6. ✅ **Resume Level Analysis Feature** (Dec 11, 2025 - Late)
 7. ✅ **UI/UX Improvements** (Dec 11, 2025 - Late)
+8. ✅ **API Error Resilience** (Dec 13-14, 2025)
+9. ✅ **Status Banner Component** (Dec 13-14, 2025)
+10. ✅ **Dashboard UI Refinements** (Dec 13-14, 2025)
+11. ✅ **Profile Management Enhancements** (Dec 13-14, 2025)
+
+---
+
+### API Error Resilience (Dec 13-14, 2025)
+
+**Files Modified**:
+- `backend/backend.py` - Added retry logic to `call_claude` and `call_claude_streaming`
+- `frontend/analyzing.html` - Added user-friendly error messages
+
+**Features Implemented**:
+
+1. **Exponential Backoff Retry Logic**
+   - Handles Anthropic 529 (overload) errors gracefully
+   - Retries up to 3 times with exponential backoff (2s, 4s, 8s)
+   - User-friendly error messages when retries exhausted
+
+   ```python
+   def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3) -> str:
+       import time
+       for attempt in range(max_retries):
+           try:
+               message = client.messages.create(...)
+               return response_text
+           except anthropic.APIStatusError as e:
+               if e.status_code == 529:
+                   if attempt < max_retries - 1:
+                       wait_time = (2 ** attempt) * 2  # 2s, 4s, 8s
+                       time.sleep(wait_time)
+                       continue
+                   else:
+                       raise HTTPException(status_code=503, detail="Our AI is temporarily busy. Please try again in a moment.")
+   ```
+
+2. **Frontend Error Handling**
+   - Detects Claude API errors and displays friendly messages
+   - Avoids exposing technical error details to users
+
+---
+
+### Status Banner Component (Dec 13-14, 2025)
+
+**Files Created**:
+- `frontend/components/status-banner.js` - New toggleable status banner component
+
+**Files Modified**:
+- 17+ HTML files - Added status-banner.js include
+
+**Features Implemented**:
+
+1. **Toggleable Service Outage Banner**
+   - Simple flag to enable/disable: `SHOW_STATUS_BANNER = true/false`
+   - Customizable message
+   - Personalized greeting with user's name
+   - Fun, friendly tone ("Ahh damn, [Name]!")
+
+   ```javascript
+   const SHOW_STATUS_BANNER = false;  // Toggle on/off
+   const STATUS_MESSAGE = "Our AI provider is experiencing some hiccups...";
+
+   function createAlert() {
+       const firstName = getUserFirstName();
+       const nameGreeting = firstName ? `, ${firstName}` : "";
+       const fullMessage = `Ahh damn${nameGreeting}! ${STATUS_MESSAGE}`;
+       // Creates inline alert box with 😅 icon
+   }
+   ```
+
+2. **Inline Alert Positioning**
+   - Inserted above Today's Focus section (not fixed position)
+   - Does not disrupt page layout or navigation
+   - Dismissible with sessionStorage persistence
+
+---
+
+### Dashboard UI Refinements (Dec 13-14, 2025)
+
+**Files Modified**:
+- `frontend/dashboard.html` - Layout changes
+- `frontend/components/strategy-nav.js` - Logo positioning
+
+**Features Implemented**:
+
+1. **HenryHQ Logo Repositioning**
+   - Moved from header to fixed position above sidebar navigation
+   - Centered over the nav panel (268px width)
+   - Sized to match greeting text (2rem)
+
+   ```javascript
+   const logo = document.createElement('div');
+   logo.className = 'strategy-nav-logo';
+   logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
+   document.body.appendChild(logo);
+   ```
+
+2. **Removed Redundant Banner**
+   - Removed "You have 1 active application" daily pulse banner
+   - Streamlined dashboard layout
+
+3. **Section Reordering**
+   - Moved Reality Check section below Today's Focus
+   - Improved visual hierarchy
+
+---
+
+### Profile Management Enhancements (Dec 13-14, 2025)
+
+**Files Modified**:
+- `frontend/profile-edit.html` - Danger zone redesign
+
+**Features Implemented**:
+
+1. **Subtle Account Actions**
+   - Replaced alarming "Danger Zone" red box with subtle text links
+   - Positioned in bottom-left corner, stacked vertically
+   - 50% opacity, small font (0.75rem)
+   - Actions still accessible but not prominent
+
+   ```html
+   <div id="dangerZone" style="display: none; position: fixed; bottom: 24px; left: 24px; opacity: 0.5;">
+       <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+           <button id="resetProfileBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.75rem;">Reset Profile</button>
+           <button id="deleteAccountBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.75rem;">Delete Account</button>
+       </div>
+   </div>
+   ```
 
 ---
 
@@ -1384,5 +1513,5 @@ For questions about this implementation:
 ---
 
 **Document Maintained By**: Engineering Team
-**Last Updated**: December 11, 2025
-**Next Review**: January 11, 2026
+**Last Updated**: December 14, 2025
+**Next Review**: January 14, 2026
