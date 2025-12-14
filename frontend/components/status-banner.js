@@ -1,7 +1,8 @@
 /**
  * Status Banner Component
  *
- * A simple, toggleable banner for communicating service status to users.
+ * A simple, toggleable alert box for communicating service status to users.
+ * Displays inline on the page (above Today's Focus on dashboard) rather than fixed position.
  *
  * To enable the banner:
  *   1. Set SHOW_STATUS_BANNER = true
@@ -18,7 +19,7 @@
 
     const SHOW_STATUS_BANNER = true;  // Set to true to show the banner
 
-    const STATUS_MESSAGE = "Our AI provider is experiencing some hiccups. Some features may be slower than usual. We're keeping an eye on it and appreciate your patience!";
+    const STATUS_MESSAGE = "Our AI provider is experiencing some hiccups. Some features may be slower than usual or temporarily unavailable. We're keeping an eye on it and appreciate your patience!";
 
     // =========================================================================
     // BANNER IMPLEMENTATION
@@ -41,82 +42,73 @@
         const styles = document.createElement('style');
         styles.id = 'status-banner-styles';
         styles.textContent = `
-            .status-banner {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%);
-                border-bottom: 1px solid rgba(251, 191, 36, 0.3);
-                padding: 12px 24px;
-                z-index: 1000;
+            .status-alert {
+                background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+                border: 1px solid rgba(251, 191, 36, 0.3);
+                border-radius: 12px;
+                padding: 16px 20px;
+                margin-bottom: 24px;
                 display: flex;
-                align-items: center;
-                justify-content: center;
+                align-items: flex-start;
                 gap: 12px;
             }
 
-            .status-banner-icon {
-                font-size: 1.2rem;
+            .status-alert-icon {
+                font-size: 1.3rem;
+                flex-shrink: 0;
+                margin-top: 2px;
             }
 
-            .status-banner-message {
+            .status-alert-content {
+                flex: 1;
+            }
+
+            .status-alert-message {
                 color: #fbbf24;
-                font-size: 0.9rem;
-                line-height: 1.4;
+                font-size: 0.95rem;
+                line-height: 1.5;
             }
 
-            .status-banner-close {
+            .status-alert-close {
                 background: transparent;
                 border: none;
-                color: rgba(251, 191, 36, 0.7);
-                font-size: 1.2rem;
+                color: rgba(251, 191, 36, 0.5);
+                font-size: 1.4rem;
                 cursor: pointer;
-                padding: 4px 8px;
-                margin-left: 8px;
+                padding: 0;
+                line-height: 1;
+                flex-shrink: 0;
             }
 
-            .status-banner-close:hover {
+            .status-alert-close:hover {
                 color: #fbbf24;
-            }
-
-            /* Push page content down when banner is visible */
-            body.has-status-banner {
-                padding-top: 52px;
-            }
-
-            body.has-status-banner .strategy-nav,
-            body.has-status-banner .strategy-nav-logo {
-                top: calc(24px + 52px);
-            }
-
-            body.has-status-banner .strategy-nav {
-                top: calc(150px + 52px);
             }
         `;
         document.head.appendChild(styles);
     }
 
-    function createBanner() {
+    function createAlert() {
         const firstName = getUserFirstName();
         const nameGreeting = firstName ? `, ${firstName}` : "";
         const fullMessage = `Ahh damn${nameGreeting}! ${STATUS_MESSAGE}`;
 
-        const banner = document.createElement('div');
-        banner.className = 'status-banner';
-        banner.id = 'statusBanner';
-        banner.innerHTML = `
-            <span class="status-banner-icon">😅</span>
-            <span class="status-banner-message">${fullMessage}</span>
-            <button class="status-banner-close" onclick="document.getElementById('statusBanner').remove(); document.body.classList.remove('has-status-banner');" aria-label="Dismiss">×</button>
+        const alert = document.createElement('div');
+        alert.className = 'status-alert';
+        alert.id = 'statusAlert';
+        alert.innerHTML = `
+            <span class="status-alert-icon">😅</span>
+            <div class="status-alert-content">
+                <span class="status-alert-message">${fullMessage}</span>
+            </div>
+            <button class="status-alert-close" aria-label="Dismiss">×</button>
         `;
 
-        return banner;
+        return alert;
     }
 
     function init() {
         // Don't show on public pages
-        const publicPages = ['index', 'login', 'beta-access'];
+        const publicPages = ['index', 'login', 'beta-access', 'henryhq-landing'];
         const currentPage = window.location.pathname.split('/').pop()?.replace('.html', '') || '';
         if (publicPages.includes(currentPage)) return;
 
@@ -125,20 +117,34 @@
         if (!hasProfile) return;
 
         // Check if user already dismissed this session
-        if (sessionStorage.getItem('statusBannerDismissed') === 'true') return;
+        if (sessionStorage.getItem('statusAlertDismissed') === 'true') return;
 
         injectStyles();
 
-        const banner = createBanner();
-        document.body.insertBefore(banner, document.body.firstChild);
-        document.body.classList.add('has-status-banner');
+        const alert = createAlert();
 
-        // Update close button to remember dismissal
-        const closeBtn = banner.querySelector('.status-banner-close');
+        // Find the best place to insert the alert
+        // Priority: before .focus-section, before .quick-stats, or at start of .container
+        const focusSection = document.querySelector('.focus-section');
+        const quickStats = document.querySelector('.quick-stats');
+        const container = document.querySelector('.container');
+
+        if (focusSection) {
+            focusSection.parentNode.insertBefore(alert, focusSection);
+        } else if (quickStats) {
+            quickStats.parentNode.insertBefore(alert, quickStats);
+        } else if (container) {
+            container.insertBefore(alert, container.firstChild);
+        } else {
+            // Fallback: append to body
+            document.body.appendChild(alert);
+        }
+
+        // Set up close button
+        const closeBtn = alert.querySelector('.status-alert-close');
         closeBtn.onclick = function() {
-            banner.remove();
-            document.body.classList.remove('has-status-banner');
-            sessionStorage.setItem('statusBannerDismissed', 'true');
+            alert.remove();
+            sessionStorage.setItem('statusAlertDismissed', 'true');
         };
     }
 
