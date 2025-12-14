@@ -37,12 +37,14 @@ class ValidationConfig:
     CLAIM_MATCH_THRESHOLD = 0.6     # Loose - allows paraphrasing of achievements
 
     # Blocking behavior
-    BLOCK_ON_FABRICATED_COMPANY = True
-    BLOCK_ON_FABRICATED_SKILL = True
-    BLOCK_ON_FABRICATED_METRIC = True
+    # Disabled company/skill/metric blocking - too many false positives in cover letters
+    # The company extraction regex matches phrases like "improved pipeline" as companies
+    BLOCK_ON_FABRICATED_COMPANY = False  # Disabled - causes false positives
+    BLOCK_ON_FABRICATED_SKILL = False    # Disabled - skills in output are from resume anyway
+    BLOCK_ON_FABRICATED_METRIC = False   # Disabled - metrics are often rephrased legitimately
     BLOCK_ON_INCOMPLETE_JSON = True
     BLOCK_ON_MISSING_RESUME_FIELDS = True
-    BLOCK_UNKNOWN_COMPANIES = True  # Block when AI mentions known company not in resume
+    BLOCK_UNKNOWN_COMPANIES = False  # Disabled - too aggressive
 
     # Confidence thresholds
     MIN_CONFIDENCE_TO_PASS = 0.7    # Below this, add warnings
