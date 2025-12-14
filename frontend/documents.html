@@ -1111,7 +1111,7 @@
         }
 
         // Load documents on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             // Get analysis data for candidate name
             const analysisDataStr = sessionStorage.getItem('analysisData');
             if (!analysisDataStr) {
