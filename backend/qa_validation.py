@@ -207,13 +207,14 @@ class ValidationResult:
         """Determine if the output should be blocked based on issues."""
         critical_issues = [i for i in self.issues
                          if i.severity in (ValidationSeverity.CRITICAL, ValidationSeverity.HIGH)]
-        # Only block if there are actual issues - low confidence alone shouldn't block
-        # if no fabrication was detected
+        # Only block if there are actual CRITICAL or HIGH severity issues
+        # Low confidence with warnings should NOT block - this is too aggressive
+        # and blocks legitimate cover letters/outreach that naturally contain
+        # content not directly in the resume
         if len(critical_issues) > 0:
             return True
-        # If no issues but confidence is very low AND there are warnings, consider blocking
-        if self.confidence_score < ValidationConfig.BLOCK_CONFIDENCE_THRESHOLD and len(self.warnings) > 0:
-            return True
+        # Removed: blocking on low confidence + warnings was too strict
+        # Warnings alone should never block - only log for review
         return False
 
     def to_dict(self) -> Dict[str, Any]:
