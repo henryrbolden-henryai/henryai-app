@@ -17,7 +17,7 @@
     // CONFIGURATION - Edit these values to control the banner
     // =========================================================================
 
-    const SHOW_STATUS_BANNER = true;  // Set to true to show the banner
+    const SHOW_STATUS_BANNER = false;  // Set to true to show the banner
 
     const STATUS_MESSAGE = "Our AI provider is experiencing some hiccups. Some features may be slower than usual or temporarily unavailable. We're keeping an eye on it and appreciate your patience!";
 
