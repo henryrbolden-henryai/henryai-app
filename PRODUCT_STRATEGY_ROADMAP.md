@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
-**Date**: December 12, 2025
-**Version**: 1.3
-**Status**: Phase 0 Complete, Resume Level Analysis Complete, Beta Access Gate Deployed, Phase 1 In Progress
-**Last Updated**: December 12, 2025
-**Next Review**: December 19, 2025
+**Date**: December 14, 2025
+**Version**: 1.4
+**Status**: Phase 0 Complete, User Signup/Profile Flow Complete, QA Validation Disabled (pending fixes), Phase 1 In Progress
+**Last Updated**: December 14, 2025
+**Next Review**: December 21, 2025
 
 ---
 
@@ -74,6 +74,53 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 ✅ **Domain Acquisition** (Dec 12, 2025)
 - Purchased HenryHQ.ai domain from Cloudflare
 - Landing page ready for deployment
+
+### Recent Achievements (Dec 13-14, 2025)
+
+✅ **New User Signup Flow COMPLETED** (Dec 13, 2025)
+- Profile check on dashboard load redirects new users to onboarding
+- Delete Account functionality with Supabase data clearing
+- Reset Profile functionality (clears data, keeps account)
+- Confirmation modals with type-to-confirm safety (DELETE/RESET)
+
+✅ **Supabase Database Tables Created** (Dec 14, 2025)
+- `candidate_profiles` table for user profiles
+- `applications` table for job tracking
+- `resume_conversations` table for chat history
+- `interviews` table created (new)
+- Row Level Security (RLS) policies on all tables
+
+✅ **QA Validation System Updates** (Dec 14, 2025)
+- Fixed schema mismatch in validation field names
+- Disabled aggressive blocking (false positives on phrases like "improved pipeline")
+- QA validation temporarily disabled for document generation (pending regex fixes)
+- TODO: Re-enable after fixing company/metric detection logic
+
+✅ **API Resilience Improvements** (Dec 14, 2025)
+- Added automatic retry logic for Claude API overload errors (529)
+- Exponential backoff: 2s, 4s, 8s (3 attempts)
+- User-friendly error messages: "Our AI is temporarily busy. Please try again in a moment."
+- Applied to both `call_claude` and `call_claude_streaming` helpers
+
+✅ **Status Banner Component** (Dec 14, 2025)
+- New `status-banner.js` component for service outage communication
+- Easy toggle: `SHOW_STATUS_BANNER = true/false`
+- Personalized message using user's first name ("Ahh damn, Jordan!")
+- Inline alert box (above Today's Focus) - doesn't disrupt page layout
+- Dismissible per session
+- Added to all authenticated pages (17+ pages)
+
+✅ **Dashboard UI Improvements** (Dec 14, 2025)
+- Removed redundant "You have X active applications" banner
+- Moved Reality Check section below Today's Focus
+- Positioned HenryHQ logo above sidebar navigation (centered, 2rem font)
+- Removed header from dashboard (logo now in sidebar area)
+
+✅ **Profile Settings Improvements** (Dec 14, 2025)
+- Removed alarming "Danger Zone" styling
+- Reset Profile / Delete Account now subtle text links
+- Fixed position in bottom-left corner, stacked vertically
+- 50% opacity, small font - present but not prominent
 
 ---
 
@@ -712,6 +759,48 @@ CREATE TABLE conversations (
 
 ---
 
+#### 5.4 SMS Notifications (Future - Needs Strategic Planning)
+
+**Status**: 📋 CONCEPT - Requires deeper strategic thinking
+
+**Vision**: Move HenryAI from reactive to proactive engagement through SMS notifications.
+
+**Technical Overview**:
+- **Provider**: Twilio (~$0.0079/text US, ~$1/month for phone number)
+- **Effort**: Medium (few hours to set up basic infrastructure)
+- **Cost at scale**: 100 users x 4 texts/month = ~$4/month
+
+**Potential Use Cases**:
+1. **Service Alerts**: "Hey [Name], our AI is back online! Ready when you are."
+2. **Engagement Nudges**: "You haven't checked in for 3 days. Your Headway application needs follow-up."
+3. **Interview Reminders**: "Reminder: Your interview with Headway is tomorrow at 2pm."
+4. **Milestone Celebrations**: "Congrats! You've submitted 5 applications this week."
+5. **Market Insights**: "New roles matching your profile posted today at [Company]."
+
+**Strategic Questions to Answer**:
+- How do we avoid being spammy while still driving engagement?
+- What's the opt-in/opt-out flow?
+- Should SMS be a premium feature or core?
+- How do we personalize messages based on user's emotional state (stressed vs zen)?
+- Can we use SMS to create urgency without anxiety?
+
+**Implementation Requirements**:
+1. Phone number collection in profile-edit.html (optional field)
+2. Phone number storage in Supabase (candidate_profiles table)
+3. Backend `/api/send-sms` endpoint with Twilio integration
+4. Admin interface or automated triggers for sending
+5. Opt-out mechanism (reply STOP)
+
+**Key Insight**: The real value isn't just notifications - it's making HenryAI feel like a proactive coach who reaches out when you need help, not just when you ask for it.
+
+**Next Steps** (when ready to implement):
+1. Define the "proactive coach" persona and tone for SMS
+2. Map user journey moments where SMS adds value (not noise)
+3. Design A/B tests for engagement vs annoyance
+4. Build MVP with manual trigger first, then automate
+
+---
+
 ## Technical Debt & Maintenance
 
 ### Ongoing Maintenance Tasks
@@ -871,5 +960,5 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 ---
 
 **Document Owner**: Product Team
-**Last Updated**: December 12, 2025
-**Next Review**: January 12, 2026
+**Last Updated**: December 14, 2025
+**Next Review**: December 21, 2025
