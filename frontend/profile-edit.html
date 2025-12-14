@@ -920,20 +920,13 @@
             <button class="btn-primary" id="saveBtn">Save and Start My Job Search</button>
         </div>
 
-        <!-- Danger Zone - only shown in edit mode -->
-        <div class="form-section danger-zone" id="dangerZone" style="display: none; margin-top: 32px; border-color: rgba(248, 113, 113, 0.3);">
-            <div class="section-title" style="color: var(--color-error);">
-                <span class="icon">⚠️</span>
-                Danger Zone
+        <!-- Account Options - only shown in edit mode -->
+        <div class="form-section" id="dangerZone" style="display: none; margin-top: 48px; border-color: var(--color-border); opacity: 0.6;">
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <button id="resetProfileBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.8rem; cursor: pointer; padding: 8px 12px;">Reset Profile</button>
+                <span style="color: var(--color-text-muted);">|</span>
+                <button id="deleteAccountBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.8rem; cursor: pointer; padding: 8px 12px;">Delete Account</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="btn-danger-outline" id="resetProfileBtn">Reset Profile</button>
-                <button class="btn-danger" id="deleteAccountBtn">Delete Account</button>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 12px;">
-                <strong>Reset Profile</strong> clears your profile data and applications but keeps your account.<br>
-                <strong>Delete Account</strong> permanently removes your account and all data.
-            </p>
         </div>
     </div>
 
