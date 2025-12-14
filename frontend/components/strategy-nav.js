@@ -133,14 +133,16 @@
             /* Strategy Navigation Logo */
             .strategy-nav-logo {
                 position: fixed;
-                left: 24px;
+                left: 0;
                 top: 24px;
+                width: 268px;
+                text-align: center;
                 z-index: 91;
             }
 
             .strategy-nav-logo a {
                 font-family: 'Instrument Serif', Georgia, serif;
-                font-size: 1.5rem;
+                font-size: 2rem;
                 color: #ffffff;
                 text-decoration: none;
             }
