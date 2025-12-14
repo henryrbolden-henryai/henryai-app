@@ -130,6 +130,26 @@
         const styles = document.createElement('style');
         styles.id = 'strategy-nav-styles';
         styles.textContent = `
+            /* Strategy Navigation Logo */
+            .strategy-nav-logo {
+                position: fixed;
+                left: 24px;
+                top: 24px;
+                z-index: 91;
+            }
+
+            .strategy-nav-logo a {
+                font-family: 'Instrument Serif', Georgia, serif;
+                font-size: 1.5rem;
+                color: #ffffff;
+                text-decoration: none;
+            }
+
+            .strategy-nav-logo a em {
+                font-style: italic;
+                color: #22d3ee;
+            }
+
             /* Strategy Navigation Sidebar */
             .strategy-nav {
                 position: fixed;
@@ -593,6 +613,12 @@
 
         // Inject styles
         injectStyles();
+
+        // Create and append logo
+        const logo = document.createElement('div');
+        logo.className = 'strategy-nav-logo';
+        logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
+        document.body.appendChild(logo);
 
         // Create and append navigation
         const nav = createNavigation();
