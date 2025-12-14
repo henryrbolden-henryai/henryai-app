@@ -920,13 +920,13 @@
             <button class="btn-primary" id="saveBtn">Save and Start My Job Search</button>
         </div>
 
-        <!-- Account Options - only shown in edit mode -->
-        <div class="form-section" id="dangerZone" style="display: none; margin-top: 48px; border-color: var(--color-border); opacity: 0.6;">
-            <div style="display: flex; gap: 16px; justify-content: center;">
-                <button id="resetProfileBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.8rem; cursor: pointer; padding: 8px 12px;">Reset Profile</button>
-                <span style="color: var(--color-text-muted);">|</span>
-                <button id="deleteAccountBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.8rem; cursor: pointer; padding: 8px 12px;">Delete Account</button>
-            </div>
+    </div>
+
+    <!-- Account Options - fixed bottom left, only shown in edit mode -->
+    <div id="dangerZone" style="display: none; position: fixed; bottom: 24px; left: 24px; opacity: 0.5;">
+        <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <button id="resetProfileBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.75rem; cursor: pointer; padding: 4px 0;">Reset Profile</button>
+            <button id="deleteAccountBtn" style="background: transparent; border: none; color: var(--color-text-muted); font-size: 0.75rem; cursor: pointer; padding: 4px 0;">Delete Account</button>
         </div>
     </div>
 
