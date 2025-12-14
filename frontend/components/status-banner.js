@@ -18,7 +18,7 @@
 
     const SHOW_STATUS_BANNER = true;  // Set to true to show the banner
 
-    const STATUS_MESSAGE = "our AI provider is experiencing some hiccups. Some features may be slower than usual. We're keeping an eye on it and appreciate your patience!";
+    const STATUS_MESSAGE = "Our AI provider is experiencing some hiccups. Some features may be slower than usual. We're keeping an eye on it and appreciate your patience!";
 
     // =========================================================================
     // BANNER IMPLEMENTATION
@@ -99,14 +99,15 @@
 
     function createBanner() {
         const firstName = getUserFirstName();
-        const greeting = firstName ? `Hey ${firstName}, ` : "Heads up — ";
+        const nameGreeting = firstName ? `, ${firstName}` : "";
+        const fullMessage = `Ahh damn${nameGreeting}! ${STATUS_MESSAGE}`;
 
         const banner = document.createElement('div');
         banner.className = 'status-banner';
         banner.id = 'statusBanner';
         banner.innerHTML = `
-            <span class="status-banner-icon">⚡</span>
-            <span class="status-banner-message">${greeting}${STATUS_MESSAGE}</span>
+            <span class="status-banner-icon">😅</span>
+            <span class="status-banner-message">${fullMessage}</span>
             <button class="status-banner-close" onclick="document.getElementById('statusBanner').remove(); document.body.classList.remove('has-status-banner');" aria-label="Dismiss">×</button>
         `;
 
