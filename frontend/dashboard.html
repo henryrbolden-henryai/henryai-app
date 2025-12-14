@@ -54,58 +54,6 @@
             line-height: 1.6;
         }
 
-        /* HEADER */
-        header {
-            padding: 20px 0;
-            border-bottom: 1px solid var(--color-border);
-            background: var(--color-bg);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        header .header-container {
-            max-width: none;
-            margin: 0;
-            padding: 0 24px;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-        }
-
-        .logo {
-            font-family: 'Instrument Serif', Georgia, serif;
-            font-size: 1.8rem;
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-        .logo em {
-            font-style: italic;
-            color: #22d3ee;
-        }
-
-        .header-nav {
-            display: flex;
-            gap: 24px;
-            align-items: center;
-        }
-
-        .nav-link {
-            color: var(--color-text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--color-accent);
-        }
-
-        .nav-link.active {
-            color: var(--color-accent);
-        }
-
         /* MAIN CONTAINER */
         .container {
             max-width: 1000px;
@@ -617,17 +565,6 @@
     </script>
 </head>
 <body>
-    <!-- HEADER -->
-    <header>
-        <div class="header-container">
-            <a href="dashboard.html" class="logo"><em>Henry</em>HQ</a>
-            <nav class="header-nav">
-                <!-- Profile Settings moved to sidebar nav -->
-            </nav>
-            <!-- User menu moved to sidebar navigation -->
-        </div>
-    </header>
-
     <!-- Milestone Celebration Toast -->
     <div class="milestone-toast" id="milestoneToast">
         <div class="milestone-icon" id="milestoneIcon">🎉</div>
