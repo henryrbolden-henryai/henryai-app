@@ -870,42 +870,82 @@ class SessionHistoryResponse(BaseModel):
 # HELPER FUNCTIONS
 # ============================================================================
 
-def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096) -> str:
-    """Call Claude API with given prompts"""
-    try:
-        print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars)")
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_message}]
-        )
-        response_text = message.content[0].text
-        print(f"🤖 Claude responded with {len(response_text)} chars")
-        return response_text
-    except Exception as e:
-        print(f"🔥 CLAUDE API ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3) -> str:
+    """Call Claude API with given prompts and automatic retry for overload errors"""
+    import time
 
-def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096):
-    """Call Claude API with streaming support - yields chunks of text"""
-    try:
-        print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars)")
-        with client.messages.stream(
-            model="claude-sonnet-4-20250514",
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_message}]
-        ) as stream:
-            for text in stream.text_stream:
-                yield text
-    except Exception as e:
-        print(f"🔥 CLAUDE API ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+    for attempt in range(max_retries):
+        try:
+            print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries})")
+            message = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_message}]
+            )
+            response_text = message.content[0].text
+            print(f"🤖 Claude responded with {len(response_text)} chars")
+            return response_text
+        except anthropic.APIStatusError as e:
+            # Check for overload error (529)
+            if e.status_code == 529:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) * 2  # 2s, 4s, 8s exponential backoff
+                    print(f"⏳ API overloaded, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"🔥 API still overloaded after {max_retries} attempts")
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Our AI is temporarily busy. Please try again in a moment."
+                    )
+            else:
+                print(f"🔥 CLAUDE API ERROR: {e}")
+                raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+        except Exception as e:
+            print(f"🔥 CLAUDE API ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+
+def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3):
+    """Call Claude API with streaming support - yields chunks of text, with retry for overload"""
+    import time
+
+    for attempt in range(max_retries):
+        try:
+            print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries})")
+            with client.messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_message}]
+            ) as stream:
+                for text in stream.text_stream:
+                    yield text
+            return  # Success, exit the retry loop
+        except anthropic.APIStatusError as e:
+            if e.status_code == 529:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) * 2
+                    print(f"⏳ API overloaded, retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"🔥 API still overloaded after {max_retries} attempts")
+                    raise HTTPException(
+                        status_code=503,
+                        detail="Our AI is temporarily busy. Please try again in a moment."
+                    )
+            else:
+                print(f"🔥 CLAUDE API ERROR: {e}")
+                raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
+        except Exception as e:
+            print(f"🔥 CLAUDE API ERROR: {e}")
+            import traceback
+            traceback.print_exc()
+            raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
 
 def clean_claude_json(text: str) -> str:
     """Aggressively clean Claude's response to extract valid JSON"""
