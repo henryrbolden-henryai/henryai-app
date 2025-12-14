@@ -69,7 +69,7 @@
             margin: 0 auto;
             padding: 0 24px;
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
         }
 
@@ -129,22 +129,6 @@
         .welcome-subtext {
             color: var(--color-text-secondary);
             font-size: 1rem;
-        }
-
-        /* DAILY PULSE BANNER */
-        .daily-pulse {
-            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
-            border: 1px solid rgba(34, 211, 238, 0.3);
-            border-radius: 16px;
-            padding: 24px 28px;
-            margin-bottom: 32px;
-        }
-
-        .pulse-greeting {
-            font-size: 1.25rem;
-            color: var(--color-text);
-            font-weight: 500;
-            line-height: 1.5;
         }
 
         /* QUICK STATS CARDS */
@@ -661,11 +645,6 @@
             <p class="welcome-subtext" id="welcomeSubtext">Let's keep building momentum on your job search.</p>
         </div>
 
-        <!-- DAILY PULSE BANNER -->
-        <div class="daily-pulse" id="dailyPulse">
-            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
-        </div>
-
         <!-- QUICK STATS CARDS -->
         <div class="quick-stats">
             <div class="stat-card" id="cardActive">
@@ -690,6 +669,16 @@
             </div>
         </div>
 
+        <!-- TODAY'S FOCUS -->
+        <div class="focus-section">
+            <h2>Today's Focus</h2>
+            <div class="focus-card">
+                <div class="focus-items" id="focusItems">
+                    <!-- Dynamically populated with 3+ action items -->
+                </div>
+            </div>
+        </div>
+
         <!-- REALITY CHECK (conditionally shown) -->
         <div class="reality-check-section" id="realityCheckSection" style="display: none;">
             <h2>Reality Check</h2>
@@ -705,16 +694,6 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TODAY'S FOCUS -->
-        <div class="focus-section">
-            <h2>Today's Focus</h2>
-            <div class="focus-card">
-                <div class="focus-items" id="focusItems">
-                    <!-- Dynamically populated with 3+ action items -->
                 </div>
             </div>
         </div>
@@ -937,74 +916,6 @@
         }
 
         // ========================================================================
-        // EMPATHY FUNCTIONS
-        // ========================================================================
-        function getPulseGreeting(profile, apps) {
-            const activeCount = getActiveApplications(apps).length;
-
-            if (!profile || !profile.situation) {
-                if (activeCount === 0) {
-                    return "Welcome back! Ready to find your next opportunity?";
-                }
-                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
-            }
-
-            const { holding_up, timeline } = profile.situation;
-
-            // Crushed state (override everything)
-            if (holding_up === 'crushed') {
-                if (activeCount === 0) {
-                    return "I know this is brutal. Let's get some applications moving.";
-                }
-                return `I know this is brutal. You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Let's make sure each one gets follow-up.`;
-            }
-
-            // Desperate + urgent
-            if (holding_up === 'desperate' && timeline === 'urgent') {
-                return `Let's focus. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention today.`;
-            }
-
-            // Desperate (without urgent timeline)
-            if (holding_up === 'desperate') {
-                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Let's make sure nothing slips through the cracks.`;
-            }
-
-            // Stressed + active
-            if (holding_up === 'stressed' && timeline === 'active') {
-                return `You've got ${activeCount} application${activeCount !== 1 ? 's' : ''} moving. Here's what needs attention so nothing slips.`;
-            }
-
-            // Stressed (without active timeline)
-            if (holding_up === 'stressed') {
-                return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what's happening in your pipeline.`;
-            }
-
-            // Zen + exploring
-            if (holding_up === 'zen' && timeline === 'exploring') {
-                if (activeCount === 0) {
-                    return "No rush. When you're ready, let's find the right opportunity.";
-                }
-                return `You've got ${activeCount} active application${activeCount !== 1 ? 's' : ''}. No rush—let's keep the bar high.`;
-            }
-
-            // Zen (without exploring)
-            if (holding_up === 'zen') {
-                return `${activeCount} application${activeCount !== 1 ? 's are' : ' is'} active. Things are looking solid.`;
-            }
-
-            // Clock ticking (urgent timeline)
-            if (timeline === 'clock_ticking') {
-                return `Time matters. You have ${activeCount} application${activeCount !== 1 ? 's' : ''} active. Here's what requires immediate action.`;
-            }
-
-            // Default
-            if (activeCount === 0) {
-                return "Your pipeline is clear. Time to add your next target role.";
-            }
-            return `You have ${activeCount} active application${activeCount !== 1 ? 's' : ''}. Here's what needs attention today.`;
-        }
-
-        // ========================================================================
         // RENDER FUNCTIONS
         // ========================================================================
         function renderDashboard() {
@@ -1013,7 +924,6 @@
             const activeApps = getActiveApplications(apps);
 
             renderWelcome(profile);
-            renderDailyPulse(profile, apps);
             renderQuickStats(apps, activeApps);
             renderRealityCheck(profile, apps, activeApps);
             renderTodaysFocus(profile, apps, activeApps);
@@ -1062,11 +972,6 @@
             } else {
                 welcomeSubtext.textContent = "Let's keep building momentum on your job search.";
             }
-        }
-
-        function renderDailyPulse(profile, apps) {
-            const greeting = getPulseGreeting(profile, apps);
-            document.getElementById('pulseGreeting').textContent = greeting;
         }
 
         function renderQuickStats(apps, activeApps) {
