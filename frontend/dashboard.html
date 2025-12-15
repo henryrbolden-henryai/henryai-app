@@ -556,6 +556,311 @@
             }
         }
 
+        /* STRATEGIC OPTIONS SECTION */
+        .strategic-options-section {
+            margin-bottom: 32px;
+        }
+
+        .strategic-options-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .strategic-options-section.desperate h2 {
+            color: #ef4444;
+        }
+
+        .strategic-options-section.stressed h2 {
+            color: #f59e0b;
+        }
+
+        .strategic-options-card {
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .strategic-options-section.desperate .strategic-options-card {
+            background: rgba(239, 68, 68, 0.06);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .strategic-options-section.stressed .strategic-options-card {
+            background: rgba(245, 158, 11, 0.06);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .strategic-options-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .strategic-options-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .strategic-options-text {
+            flex: 1;
+        }
+
+        .strategic-options-headline {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+        }
+
+        .strategic-options-section.desperate .strategic-options-headline {
+            color: #ef4444;
+        }
+
+        .strategic-options-section.stressed .strategic-options-headline {
+            color: #f59e0b;
+        }
+
+        .strategic-options-detail {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .strategic-options-detail strong {
+            color: var(--color-text);
+        }
+
+        .strategic-options-benefits {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .strategic-benefit {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .strategic-benefit-icon {
+            color: var(--color-accent);
+        }
+
+        .strategic-options-section.desperate .strategic-benefit-icon {
+            color: #ef4444;
+        }
+
+        .strategic-options-section.stressed .strategic-benefit-icon {
+            color: #f59e0b;
+        }
+
+        .strategic-options-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .strategic-options-btn {
+            padding: 10px 20px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .strategic-options-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .strategic-options-section.desperate .strategic-options-btn {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .strategic-options-section.stressed .strategic-options-btn {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .strategic-options-btn.secondary {
+            background: transparent;
+            color: var(--color-accent);
+            border: 1px solid rgba(34, 211, 238, 0.4);
+        }
+
+        .strategic-options-btn.secondary:hover {
+            background: rgba(34, 211, 238, 0.1);
+        }
+
+        .strategic-options-section.desperate .strategic-options-btn.secondary {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .strategic-options-section.desperate .strategic-options-btn.secondary:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .strategic-options-section.stressed .strategic-options-btn.secondary {
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .strategic-options-section.stressed .strategic-options-btn.secondary:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        /* Contract Guidance Modal */
+        .contract-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .contract-modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .contract-modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+
+        .contract-modal-overlay.show .contract-modal {
+            transform: translateY(0);
+        }
+
+        .contract-modal h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .contract-modal-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+
+        .contract-platform-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .contract-platform {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .contract-platform:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .contract-platform-info {
+            flex: 1;
+        }
+
+        .contract-platform-name {
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .contract-platform-desc {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .contract-platform-link {
+            padding: 8px 16px;
+            background: var(--color-accent);
+            color: #000;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .contract-platform-link:hover {
+            opacity: 0.9;
+        }
+
+        .contract-modal-close {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .contract-modal-close:hover {
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+        }
+
+        @media (max-width: 768px) {
+            .strategic-options-benefits {
+                grid-template-columns: 1fr;
+            }
+
+            .strategic-options-actions {
+                flex-direction: column;
+            }
+
+            .strategic-options-btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
     </style>
     <!-- Beta Access Gate -->
     <script>
@@ -628,6 +933,28 @@
                             <!-- Populated by JS -->
                         </div>
                         <div class="reality-check-actions" id="realityCheckActions">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STRATEGIC OPTIONS (conditionally shown based on urgency) -->
+        <div class="strategic-options-section" id="strategicOptionsSection" style="display: none;">
+            <h2 id="strategicOptionsTitle">Strategic Options</h2>
+            <div class="strategic-options-card" id="strategicOptionsCard">
+                <div class="strategic-options-content">
+                    <div class="strategic-options-icon" id="strategicOptionsIcon">💡</div>
+                    <div class="strategic-options-text">
+                        <div class="strategic-options-headline" id="strategicOptionsHeadline">Other Paths Worth Exploring</div>
+                        <div class="strategic-options-detail" id="strategicOptionsDetail">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="strategic-options-benefits" id="strategicOptionsBenefits">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="strategic-options-actions" id="strategicOptionsActions">
                             <!-- Populated by JS -->
                         </div>
                     </div>
@@ -862,8 +1189,9 @@
 
             renderWelcome(profile);
             renderQuickStats(apps, activeApps);
-            renderRealityCheck(profile, apps, activeApps);
             renderTodaysFocus(profile, apps, activeApps);
+            renderRealityCheck(profile, apps, activeApps);
+            renderStrategicOptions();
             renderRecentActivity(apps);
         }
 
@@ -1367,6 +1695,212 @@
                 window.openAskHenryWithPrompt(prompt);
             } else {
                 console.error('openAskHenryWithPrompt not available yet');
+            }
+        }
+
+        // ========================================================================
+        // STRATEGIC OPTIONS SECTION
+        // ========================================================================
+        // Content configuration for different urgency levels
+        const STRATEGIC_CONTENT = {
+            desperate: {
+                icon: '⚡',
+                title: 'Urgent: Cash Flow Options',
+                headline: 'Need income now? Consider contract work.',
+                detail: `When you need money <strong>fast</strong>, contract and freelance work can bridge the gap while you continue your full-time search. Many successful professionals use contract work strategically - it's not giving up, it's being smart about survival.`,
+                benefits: [
+                    { icon: '💰', text: 'Start earning within days, not months' },
+                    { icon: '⏰', text: 'Flexible hours - keep interviewing' },
+                    { icon: '📈', text: 'Build skills and recent experience' },
+                    { icon: '🔗', text: 'Network into full-time opportunities' }
+                ],
+                primaryBtn: { text: 'Show Contract Options', action: 'showContractModal' },
+                secondaryBtn: { text: 'Not Right Now', action: 'dismiss' }
+            },
+            stressed: {
+                icon: '🎯',
+                title: 'Tactical Options to Consider',
+                headline: 'Strategic alternatives while you search',
+                detail: `Your job search is heating up, but smart candidates always have a Plan B. Contract work can provide income stability and keep your skills sharp - plus, <strong>30% of contract roles convert to full-time</strong>.`,
+                benefits: [
+                    { icon: '🛡️', text: 'Financial safety net while searching' },
+                    { icon: '🎯', text: 'Stay sharp with real-world projects' },
+                    { icon: '🤝', text: 'Expand your professional network' },
+                    { icon: '🚀', text: 'Potential convert-to-hire opportunities' }
+                ],
+                primaryBtn: { text: 'Explore Options', action: 'showContractModal' },
+                secondaryBtn: { text: 'Dismiss', action: 'dismiss' }
+            },
+            standard: {
+                icon: '💡',
+                title: 'Other Paths Worth Exploring',
+                headline: 'Build leverage beyond the job search',
+                detail: `While your job search is on track, consider building additional leverage. Advisory roles, board positions, and strategic consulting can enhance your profile and create unexpected opportunities.`,
+                benefits: [
+                    { icon: '🎖️', text: 'Add board/advisory experience to resume' },
+                    { icon: '🧠', text: 'Learn new industries without commitment' },
+                    { icon: '📣', text: 'Raise your professional profile' },
+                    { icon: '💼', text: 'Create "backdoor" job opportunities' }
+                ],
+                primaryBtn: { text: 'Learn More', action: 'showContractModal' },
+                secondaryBtn: { text: 'Not Interested', action: 'dismiss' }
+            }
+        };
+
+        // Calculate urgency level based on profile situation
+        function calculateUrgency(profile) {
+            const timeline = profile?.situation?.timeline || 'actively_looking';
+            const holdingUp = profile?.situation?.holdingUp || profile?.situation?.holding_up || 'doing_well';
+
+            // Decision matrix from implementation guide
+            if (timeline === 'urgent') return 'desperate';
+            if (timeline === 'soon') return 'stressed';
+            if (timeline === 'actively_looking') {
+                if (holdingUp === 'struggling') return 'desperate';
+                if (holdingUp === 'stressed_but_managing') return 'stressed';
+                return 'standard';
+            }
+            if (timeline === 'no_rush') {
+                if (holdingUp === 'struggling') return 'desperate';
+                if (holdingUp === 'doing_well') return 'none'; // Hide section
+                return 'standard';
+            }
+            return 'standard';
+        }
+
+        // Render Strategic Options section
+        function renderStrategicOptions() {
+            const section = document.getElementById('strategicOptionsSection');
+            const profile = getUserProfile();
+
+            // Check if user has dismissed this section
+            if (localStorage.getItem('strategicOptionsDismissed') === 'true') {
+                section.style.display = 'none';
+                return;
+            }
+
+            const urgency = calculateUrgency(profile);
+
+            // If no urgency level (zen candidate with no_rush + doing_well), hide section
+            if (urgency === 'none') {
+                section.style.display = 'none';
+                return;
+            }
+
+            const content = STRATEGIC_CONTENT[urgency];
+            if (!content) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Update section urgency class
+            section.className = `strategic-options-section ${urgency}`;
+            section.style.display = 'block';
+
+            // Update content
+            document.getElementById('strategicOptionsTitle').textContent = content.title;
+            document.getElementById('strategicOptionsIcon').textContent = content.icon;
+            document.getElementById('strategicOptionsHeadline').textContent = content.headline;
+            document.getElementById('strategicOptionsDetail').innerHTML = content.detail;
+
+            // Render benefits
+            const benefitsContainer = document.getElementById('strategicOptionsBenefits');
+            benefitsContainer.innerHTML = content.benefits.map(b => `
+                <div class="strategic-benefit">
+                    <span class="strategic-benefit-icon">${b.icon}</span>
+                    <span>${b.text}</span>
+                </div>
+            `).join('');
+
+            // Render action buttons
+            const actionsContainer = document.getElementById('strategicOptionsActions');
+            let actionsHTML = '';
+
+            if (content.primaryBtn) {
+                if (content.primaryBtn.action === 'showContractModal') {
+                    actionsHTML += `<button class="strategic-options-btn" onclick="showContractGuidanceModal()">${content.primaryBtn.text}</button>`;
+                } else {
+                    actionsHTML += `<button class="strategic-options-btn" onclick="${content.primaryBtn.action}()">${content.primaryBtn.text}</button>`;
+                }
+            }
+
+            if (content.secondaryBtn) {
+                actionsHTML += `<button class="strategic-options-btn secondary" onclick="dismissStrategicOptions()">${content.secondaryBtn.text}</button>`;
+            }
+
+            actionsContainer.innerHTML = actionsHTML;
+        }
+
+        // Dismiss strategic options section
+        function dismissStrategicOptions() {
+            localStorage.setItem('strategicOptionsDismissed', 'true');
+            const section = document.getElementById('strategicOptionsSection');
+            section.style.display = 'none';
+        }
+
+        // Show contract guidance modal
+        function showContractGuidanceModal() {
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('contractGuidanceModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'contractGuidanceModal';
+                modal.className = 'contract-modal-overlay';
+                modal.innerHTML = `
+                    <div class="contract-modal">
+                        <h3>Contract & Freelance Platforms</h3>
+                        <p class="contract-modal-subtitle">These platforms can help you find contract work while continuing your full-time search.</p>
+                        <div class="contract-platform-list">
+                            <div class="contract-platform">
+                                <div class="contract-platform-info">
+                                    <div class="contract-platform-name">Toptal</div>
+                                    <div class="contract-platform-desc">Premium freelance talent network for top 3% professionals</div>
+                                </div>
+                                <a href="https://www.toptal.com" target="_blank" rel="noopener" class="contract-platform-link">Visit</a>
+                            </div>
+                            <div class="contract-platform">
+                                <div class="contract-platform-info">
+                                    <div class="contract-platform-name">Upwork</div>
+                                    <div class="contract-platform-desc">Large marketplace for freelance projects across industries</div>
+                                </div>
+                                <a href="https://www.upwork.com" target="_blank" rel="noopener" class="contract-platform-link">Visit</a>
+                            </div>
+                            <div class="contract-platform">
+                                <div class="contract-platform-info">
+                                    <div class="contract-platform-name">Catalant</div>
+                                    <div class="contract-platform-desc">Expert marketplace for business consulting projects</div>
+                                </div>
+                                <a href="https://www.catalant.com" target="_blank" rel="noopener" class="contract-platform-link">Visit</a>
+                            </div>
+                            <div class="contract-platform">
+                                <div class="contract-platform-info">
+                                    <div class="contract-platform-name">Fiverr Pro</div>
+                                    <div class="contract-platform-desc">Vetted professionals for business services</div>
+                                </div>
+                                <a href="https://www.fiverr.com/pro" target="_blank" rel="noopener" class="contract-platform-link">Visit</a>
+                            </div>
+                        </div>
+                        <button class="contract-modal-close" onclick="closeContractGuidanceModal()">Close</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Close on overlay click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeContractGuidanceModal();
+                    }
+                });
+            }
+
+            modal.classList.add('show');
+        }
+
+        // Close contract guidance modal
+        function closeContractGuidanceModal() {
+            const modal = document.getElementById('contractGuidanceModal');
+            if (modal) {
+                modal.classList.remove('show');
             }
         }
 
