@@ -854,284 +854,251 @@
             // Get parsed LinkedIn data for section analysis
             const linkedinParsed = profile.linkedin_parsed || {};
 
+            // Determine severity class
+            const severityClass = this.getSeverityClass(optimizedData.severity);
+            const severityLabel = optimizedData.severity || 'MEDIUM';
+
             container.innerHTML = `
                 <style>
-                    .linkedin-sections-grid {
-                        display: grid;
-                        grid-template-columns: 1fr;
-                        gap: 24px;
-                    }
-                    .linkedin-section-card {
-                        background: rgba(255,255,255,0.03);
-                        border: 1px solid rgba(255,255,255,0.08);
-                        border-radius: 12px;
-                        padding: 20px;
-                    }
-                    .linkedin-section-card h4 {
-                        color: #22d3ee;
-                        font-size: 1rem;
-                        margin-bottom: 4px;
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                    }
-                    .linkedin-section-card .section-priority {
-                        font-size: 0.7rem;
-                        padding: 2px 8px;
-                        border-radius: 4px;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                    }
+                    .linkedin-makeover { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                    .severity-banner { padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; }
+                    .severity-banner.critical { background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.4); }
+                    .severity-banner.high { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); }
+                    .severity-banner.medium { background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); }
+                    .severity-banner.low { background: rgba(74, 222, 128, 0.15); border: 1px solid rgba(74, 222, 128, 0.4); }
+                    .severity-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 4px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+                    .severity-badge.critical { background: #dc2626; color: white; }
+                    .severity-badge.high { background: #f59e0b; color: black; }
+                    .severity-badge.medium { background: #3b82f6; color: white; }
+                    .severity-badge.low { background: #4ade80; color: black; }
+                    .severity-message { color: #e0e0e0; font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
+                    .benefits-list { list-style: none; padding: 0; margin: 0; }
+                    .benefits-list li { color: #9ca3af; font-size: 0.85rem; padding: 3px 0; }
+                    .benefits-list li:before { content: "✓ "; color: #4ade80; }
+                    .linkedin-sections-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+                    .linkedin-section-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
+                    .linkedin-section-card h4 { color: #22d3ee; font-size: 1rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+                    .section-priority { font-size: 0.65rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
                     .priority-critical { background: #dc2626; color: white; }
                     .priority-high { background: #f59e0b; color: black; }
                     .priority-medium { background: #3b82f6; color: white; }
                     .priority-low { background: rgba(255,255,255,0.1); color: #9ca3af; }
-                    .linkedin-section-card .help-text {
-                        color: #9ca3af;
-                        font-size: 0.85rem;
-                        margin-bottom: 12px;
-                    }
-                    .copyable-field {
-                        position: relative;
-                    }
-                    .copyable-field textarea {
-                        width: 100%;
-                        background: rgba(0,0,0,0.3);
-                        border: 1px solid rgba(255,255,255,0.1);
-                        border-radius: 8px;
-                        padding: 12px;
-                        color: #e0e0e0;
-                        font-size: 0.95rem;
-                        resize: vertical;
-                        min-height: 60px;
-                    }
-                    .copyable-field .btn-copy {
-                        position: absolute;
-                        top: 8px;
-                        right: 8px;
-                        background: rgba(255,255,255,0.1);
-                        border: none;
-                        color: #9ca3af;
-                        padding: 4px 12px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-size: 0.8rem;
-                    }
-                    .copyable-field .btn-copy:hover {
-                        background: rgba(255,255,255,0.2);
-                        color: white;
-                    }
-                    .skills-list {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 8px;
-                        list-style: none;
-                        padding: 0;
-                    }
-                    .skills-list li {
-                        background: rgba(34, 211, 238, 0.15);
-                        border: 1px solid rgba(34, 211, 238, 0.3);
-                        padding: 6px 14px;
-                        border-radius: 20px;
-                        font-size: 0.9rem;
-                        color: #22d3ee;
-                    }
-                    .bullets-list {
-                        list-style: none;
-                        padding: 0;
-                    }
-                    .bullets-list li {
-                        padding: 8px 0 8px 20px;
-                        position: relative;
-                        color: #e0e0e0;
-                        font-size: 0.95rem;
-                        border-bottom: 1px solid rgba(255,255,255,0.05);
-                    }
-                    .bullets-list li:before {
-                        content: "•";
-                        color: #22d3ee;
-                        position: absolute;
-                        left: 0;
-                    }
-                    .bullets-list li:last-child {
-                        border-bottom: none;
-                    }
-                    .section-status {
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
-                        font-size: 0.8rem;
-                        margin-top: 8px;
-                    }
-                    .status-good { color: #4ade80; }
-                    .status-needs-work { color: #fbbf24; }
-                    .status-missing { color: #f87171; }
-                    .section-group-title {
-                        font-size: 0.75rem;
-                        text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        color: #6b7280;
-                        margin: 24px 0 12px 0;
-                        padding-bottom: 8px;
-                        border-bottom: 1px solid rgba(255,255,255,0.05);
-                    }
-                    .section-group-title:first-child {
-                        margin-top: 0;
-                    }
-                    .linkedin-update-confirmation {
-                        margin-top: 24px;
-                        padding: 16px;
-                        background: rgba(255,255,255,0.03);
-                        border-radius: 8px;
-                    }
-                    .linkedin-update-confirmation label {
-                        display: flex;
-                        align-items: center;
-                        gap: 10px;
-                        cursor: pointer;
-                        color: #9ca3af;
-                    }
-                    .linkedin-update-confirmation input[type="checkbox"] {
-                        width: 18px;
-                        height: 18px;
-                    }
+                    .help-text { color: #9ca3af; font-size: 0.85rem; margin-bottom: 12px; }
+                    .current-vs-optimized { margin-bottom: 16px; }
+                    .current-label, .optimized-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; }
+                    .current-label { color: #6b7280; }
+                    .optimized-label { color: #22d3ee; }
+                    .current-content { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px; color: #6b7280; font-size: 0.9rem; margin-bottom: 12px; font-style: italic; }
+                    .copyable-field { position: relative; }
+                    .copyable-field textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 8px; padding: 12px; padding-right: 70px; color: #e0e0e0; font-size: 0.95rem; resize: vertical; min-height: 60px; font-family: inherit; line-height: 1.5; }
+                    .copyable-field .btn-copy { position: absolute; top: 8px; right: 8px; background: rgba(34, 211, 238, 0.2); border: 1px solid rgba(34, 211, 238, 0.4); color: #22d3ee; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.2s; }
+                    .copyable-field .btn-copy:hover { background: rgba(34, 211, 238, 0.3); }
+                    .why-this-works { margin-top: 12px; padding: 12px; background: rgba(74, 222, 128, 0.05); border-radius: 8px; border: 1px solid rgba(74, 222, 128, 0.1); }
+                    .why-this-works-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #4ade80; margin-bottom: 8px; }
+                    .why-list { list-style: none; padding: 0; margin: 0; }
+                    .why-list li { color: #9ca3af; font-size: 0.85rem; padding: 3px 0; }
+                    .why-list li:before { content: "✓ "; color: #4ade80; }
+                    .update-reason { margin-top: 10px; padding: 10px 12px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; border-left: 3px solid #f59e0b; font-size: 0.85rem; color: #fbbf24; }
+                    .skills-section { display: grid; gap: 16px; }
+                    .skills-group { margin-bottom: 12px; }
+                    .skills-group-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; display: block; }
+                    .skills-group-label.top { color: #22d3ee; }
+                    .skills-group-label.add { color: #4ade80; }
+                    .skills-group-label.remove { color: #f87171; }
+                    .skills-list { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
+                    .skills-list li { padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; }
+                    .skills-list.top li { background: rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3); color: #22d3ee; }
+                    .skills-list.add li { background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); color: #4ade80; }
+                    .skills-list.remove li { background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2); color: #f87171; text-decoration: line-through; }
+                    .experience-role { border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 16px; margin-bottom: 16px; background: rgba(0,0,0,0.2); }
+                    .experience-role:last-child { margin-bottom: 0; }
+                    .role-header { margin-bottom: 12px; }
+                    .role-title { color: #e0e0e0; font-weight: 600; font-size: 1rem; }
+                    .role-company { color: #9ca3af; font-size: 0.9rem; }
+                    .role-context { color: #6b7280; font-size: 0.8rem; font-style: italic; margin-bottom: 12px; padding: 8px 12px; background: rgba(255,255,255,0.02); border-radius: 6px; }
+                    .bullets-list { list-style: none; padding: 0; margin: 0; }
+                    .bullets-list li { padding: 8px 0 8px 20px; position: relative; color: #e0e0e0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.03); line-height: 1.5; }
+                    .bullets-list li:before { content: "•"; color: #22d3ee; position: absolute; left: 0; font-weight: bold; }
+                    .bullets-list li:last-child { border-bottom: none; }
+                    .optional-section-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 16px; }
+                    .optional-section-card h5 { color: #9ca3af; font-size: 0.9rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+                    .optional-tip { color: #6b7280; font-size: 0.85rem; line-height: 1.5; }
+                    .who-to-ask-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
+                    .who-to-ask-list li { padding: 6px 0; font-size: 0.85rem; color: #9ca3af; }
+                    .who-to-ask-list li strong { color: #e0e0e0; }
+                    .section-group-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #6b7280; margin: 28px 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+                    .section-group-title:first-child { margin-top: 0; }
+                    .linkedin-update-confirmation { margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.03); border-radius: 8px; }
+                    .linkedin-update-confirmation label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: #9ca3af; }
+                    .linkedin-update-confirmation input[type="checkbox"] { width: 18px; height: 18px; accent-color: #22d3ee; }
                 </style>
 
-                ${optimizedData.has_issues ? `
-                    <div class="linkedin-warning-badge" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; color: #fbbf24;">
-                        ⚠️ Your LinkedIn has inconsistencies with your resume. Update these sections before applying.
-                    </div>
-                ` : ''}
-
-                <div class="linkedin-sections-grid">
-                    <!-- FIRST IMPRESSION SECTIONS (Critical) -->
-                    <div class="section-group-title">First Impression (Recruiters see this first)</div>
-
-                    <!-- Headline -->
-                    <div class="linkedin-section-card">
-                        <h4>
-                            Headline
-                            <span class="section-priority priority-critical">Critical</span>
-                        </h4>
-                        <p class="help-text">Your headline shows in search results and is the first thing recruiters scan. Make it count.</p>
-                        <div class="copyable-field">
-                            <textarea readonly id="linkedin-headline" rows="2">${optimizedData.headline || ''}</textarea>
-                            <button class="btn-copy" data-linkedin-copy="linkedin-headline">Copy</button>
-                        </div>
-                        ${this.getSectionStatus(linkedinParsed.headline, optimizedData.headline)}
-                    </div>
-
-                    <!-- About Section -->
-                    <div class="linkedin-section-card">
-                        <h4>
-                            About Section
-                            <span class="section-priority priority-critical">Critical</span>
-                        </h4>
-                        <p class="help-text">Your story: what you do, how you create value, and where you're headed. First 3 lines show before "see more".</p>
-                        <div class="copyable-field">
-                            <textarea readonly id="linkedin-summary" rows="6">${optimizedData.summary || ''}</textarea>
-                            <button class="btn-copy" data-linkedin-copy="linkedin-summary">Copy</button>
-                        </div>
-                        ${this.getSectionStatus(linkedinParsed.summary, optimizedData.summary)}
-                    </div>
-
-                    <!-- CREDIBILITY SECTIONS (High Priority) -->
-                    <div class="section-group-title">Credibility Signals</div>
-
-                    <!-- Experience -->
-                    ${optimizedData.experience_highlights?.length ? `
-                        <div class="linkedin-section-card">
-                            <h4>
-                                Experience Bullets
-                                <span class="section-priority priority-high">High</span>
-                            </h4>
-                            <p class="help-text">Add these to your current role. Impact-first language that matches your resume.</p>
-                            <ul class="bullets-list">
-                                ${optimizedData.experience_highlights.map(bullet => `<li>${bullet}</li>`).join('')}
-                            </ul>
+                <div class="linkedin-makeover">
+                    <!-- Severity Banner -->
+                    ${optimizedData.summary_message ? `
+                        <div class="severity-banner ${severityClass}">
+                            <span class="severity-badge ${severityClass}">${severityLabel} UPDATES REQUIRED</span>
+                            <p class="severity-message">${optimizedData.summary_message}</p>
+                            ${optimizedData.benefits?.length ? `
+                                <ul class="benefits-list">
+                                    ${optimizedData.benefits.map(b => `<li>${b}</li>`).join('')}
+                                </ul>
+                            ` : ''}
                         </div>
                     ` : ''}
 
-                    <!-- Skills -->
-                    ${optimizedData.top_skills?.length ? `
+                    <div class="linkedin-sections-grid">
+                        <!-- FIRST IMPRESSION SECTIONS -->
+                        <div class="section-group-title">First Impression (Recruiters see this first)</div>
+
+                        <!-- Headline -->
                         <div class="linkedin-section-card">
-                            <h4>
-                                Skills to Feature
-                                <span class="section-priority priority-high">High</span>
-                            </h4>
-                            <p class="help-text">Recruiters search by skills. Pin these to the top of your skills section.</p>
-                            <ul class="skills-list">
-                                ${optimizedData.top_skills.map(skill => `<li>${skill}</li>`).join('')}
-                            </ul>
-                            <div class="section-status status-needs-work" style="margin-top: 12px;">
-                                💡 Reorder your skills so these appear first
+                            <h4>Headline <span class="section-priority priority-critical">Critical</span></h4>
+                            <p class="help-text">Your headline shows in search results and determines whether recruiters click. 220 characters max.</p>
+                            ${optimizedData.current_headline ? `
+                                <div class="current-vs-optimized">
+                                    <span class="current-label">Current</span>
+                                    <div class="current-content">${optimizedData.current_headline}</div>
+                                </div>
+                            ` : ''}
+                            <span class="optimized-label">Optimized</span>
+                            <div class="copyable-field">
+                                <textarea readonly id="linkedin-headline" rows="2">${optimizedData.headline || ''}</textarea>
+                                <button class="btn-copy" data-linkedin-copy="linkedin-headline">Copy</button>
+                            </div>
+                            ${optimizedData.headline_why?.length ? `
+                                <div class="why-this-works">
+                                    <div class="why-this-works-title">Why this works</div>
+                                    <ul class="why-list">${optimizedData.headline_why.map(w => `<li>${w}</li>`).join('')}</ul>
+                                </div>
+                            ` : ''}
+                            ${optimizedData.headline_update_reason ? `<div class="update-reason">💡 ${optimizedData.headline_update_reason}</div>` : ''}
+                        </div>
+
+                        <!-- About Section -->
+                        <div class="linkedin-section-card">
+                            <h4>About Section <span class="section-priority priority-critical">Critical</span></h4>
+                            <p class="help-text">Your story: what you do, how you create value, and where you're headed. First 3 lines show before "see more".</p>
+                            ${optimizedData.current_summary ? `
+                                <div class="current-vs-optimized">
+                                    <span class="current-label">Current</span>
+                                    <div class="current-content">${optimizedData.current_summary.substring(0, 200)}${optimizedData.current_summary.length > 200 ? '...' : ''}</div>
+                                </div>
+                            ` : ''}
+                            <span class="optimized-label">Optimized</span>
+                            <div class="copyable-field">
+                                <textarea readonly id="linkedin-summary" rows="12">${optimizedData.summary || ''}</textarea>
+                                <button class="btn-copy" data-linkedin-copy="linkedin-summary">Copy</button>
+                            </div>
+                            ${optimizedData.summary_why?.length ? `
+                                <div class="why-this-works">
+                                    <div class="why-this-works-title">Why this works</div>
+                                    <ul class="why-list">${optimizedData.summary_why.map(w => `<li>${w}</li>`).join('')}</ul>
+                                </div>
+                            ` : ''}
+                            ${optimizedData.summary_update_reason ? `<div class="update-reason">💡 ${optimizedData.summary_update_reason}</div>` : ''}
+                        </div>
+
+                        <!-- CREDIBILITY SECTIONS -->
+                        <div class="section-group-title">Credibility Signals</div>
+
+                        <!-- Experience -->
+                        ${optimizedData.experience_optimizations?.length ? `
+                            <div class="linkedin-section-card">
+                                <h4>Experience Bullets <span class="section-priority priority-high">High</span></h4>
+                                <p class="help-text">Add these impact-first bullets to your experience section. Numbers and achievements that match your resume.</p>
+                                ${optimizedData.experience_optimizations.map(exp => `
+                                    <div class="experience-role">
+                                        <div class="role-header">
+                                            <div class="role-title">${exp.title}</div>
+                                            <div class="role-company">${exp.company} • ${exp.dates}</div>
+                                        </div>
+                                        ${exp.company_context ? `<div class="role-context">${exp.company_context}</div>` : ''}
+                                        <ul class="bullets-list">${exp.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+                                        ${exp.why_these_work?.length ? `
+                                            <div class="why-this-works" style="margin-top: 12px;">
+                                                <div class="why-this-works-title">Why these work</div>
+                                                <ul class="why-list">${exp.why_these_work.map(w => `<li>${w}</li>`).join('')}</ul>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : optimizedData.experience_highlights?.length ? `
+                            <div class="linkedin-section-card">
+                                <h4>Experience Bullets <span class="section-priority priority-high">High</span></h4>
+                                <p class="help-text">Add these to your current role. Impact-first language that matches your resume.</p>
+                                <ul class="bullets-list">${optimizedData.experience_highlights.map(bullet => `<li>${bullet}</li>`).join('')}</ul>
+                            </div>
+                        ` : ''}
+
+                        <!-- Skills -->
+                        <div class="linkedin-section-card">
+                            <h4>Skills to Feature <span class="section-priority priority-high">High</span></h4>
+                            <p class="help-text">Recruiters use Boolean searches with skills. Your top 3 show in search previews.</p>
+                            <div class="skills-section">
+                                ${optimizedData.top_skills?.length ? `
+                                    <div class="skills-group">
+                                        <span class="skills-group-label top">Pin to Top 3</span>
+                                        <ul class="skills-list top">${optimizedData.top_skills.map(s => `<li>${s}</li>`).join('')}</ul>
+                                    </div>
+                                ` : ''}
+                                ${optimizedData.skills_to_add?.length ? `
+                                    <div class="skills-group">
+                                        <span class="skills-group-label add">Add These</span>
+                                        <ul class="skills-list add">${optimizedData.skills_to_add.map(s => `<li>${s}</li>`).join('')}</ul>
+                                    </div>
+                                ` : ''}
+                                ${optimizedData.skills_to_remove?.length ? `
+                                    <div class="skills-group">
+                                        <span class="skills-group-label remove">Consider Removing</span>
+                                        <ul class="skills-list remove">${optimizedData.skills_to_remove.map(s => `<li>${s}</li>`).join('')}</ul>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${optimizedData.skills_why?.length ? `
+                                <div class="why-this-works" style="margin-top: 16px;">
+                                    <div class="why-this-works-title">Why this prioritization</div>
+                                    <ul class="why-list">${optimizedData.skills_why.map(w => `<li>${w}</li>`).join('')}</ul>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- OPTIONAL POWER-UPS -->
+                        <div class="section-group-title">Optional Power-Ups</div>
+
+                        <div style="display: grid; gap: 12px;">
+                            <div class="optional-section-card">
+                                <h5>Featured Section <span class="section-priority priority-medium">Medium</span></h5>
+                                <p class="optional-tip">${optimizedData.featured_recommendation || 'Proof of work: case studies, press mentions, presentations, or portfolio pieces.'}</p>
+                                ${optimizedData.featured_suggestions?.length ? `<ul class="who-to-ask-list">${optimizedData.featured_suggestions.map(s => `<li>• ${s}</li>`).join('')}</ul>` : ''}
+                            </div>
+
+                            <div class="optional-section-card">
+                                <h5>Recommendations <span class="section-priority priority-medium">Medium</span></h5>
+                                <p class="optional-tip">${optimizedData.recommendations_advice || '2-3 strong recommendations beat 10 generic ones. Ask people who can speak to specific accomplishments.'}</p>
+                                ${optimizedData.who_to_ask?.length ? `<ul class="who-to-ask-list">${optimizedData.who_to_ask.map(w => `<li><strong>${w.person_type}:</strong> Ask them to emphasize ${w.what_to_emphasize}</li>`).join('')}</ul>` : ''}
+                            </div>
+
+                            <div class="optional-section-card">
+                                <h5>Activity <span class="section-priority priority-low">Low</span></h5>
+                                <p class="optional-tip">${optimizedData.activity_recommendation || 'Recent engagement shows you\'re active. Like or comment on 2-3 industry posts this week.'}</p>
                             </div>
                         </div>
-                    ` : ''}
-
-                    <!-- OPTIONAL POWER-UPS -->
-                    <div class="section-group-title">Optional Power-Ups</div>
-
-                    <!-- Featured Section -->
-                    <div class="linkedin-section-card">
-                        <h4>
-                            Featured Section
-                            <span class="section-priority priority-medium">Medium</span>
-                        </h4>
-                        <p class="help-text">Proof of work: case studies, press mentions, presentations, or portfolio pieces.</p>
-                        ${linkedinParsed.featured?.length ? `
-                            <div class="section-status status-good">✓ You have ${linkedinParsed.featured.length} featured item${linkedinParsed.featured.length > 1 ? 's' : ''}</div>
-                        ` : `
-                            <div class="section-status status-needs-work">
-                                💡 Add 1-3 items that showcase your best work for this type of role
-                            </div>
-                        `}
                     </div>
 
-                    <!-- Recommendations -->
-                    <div class="linkedin-section-card">
-                        <h4>
-                            Recommendations
-                            <span class="section-priority priority-medium">Medium</span>
-                        </h4>
-                        <p class="help-text">Social proof from managers or colleagues. 2-3 strong ones beat 10 generic ones.</p>
-                        ${linkedinParsed.recommendations_count > 0 ? `
-                            <div class="section-status status-good">✓ You have ${linkedinParsed.recommendations_count} recommendation${linkedinParsed.recommendations_count > 1 ? 's' : ''}</div>
-                        ` : `
-                            <div class="section-status status-needs-work">
-                                💡 Request 2-3 recommendations from people who can speak to your impact
-                            </div>
-                        `}
+                    <!-- Update Confirmation -->
+                    <div class="linkedin-update-confirmation">
+                        <label>
+                            <input type="checkbox" id="linkedin-updated-checkbox">
+                            I've updated my LinkedIn profile
+                        </label>
                     </div>
 
-                    <!-- Activity -->
-                    <div class="linkedin-section-card">
-                        <h4>
-                            Activity
-                            <span class="section-priority priority-low">Low</span>
-                        </h4>
-                        <p class="help-text">Recent engagement shows you're active. Even commenting counts.</p>
-                        ${linkedinParsed.recent_activity ? `
-                            <div class="section-status status-good">✓ Recent activity detected</div>
-                        ` : `
-                            <div class="section-status status-needs-work">
-                                💡 Like or comment on 2-3 industry posts this week
-                            </div>
-                        `}
-                    </div>
+                    <p class="timestamp" style="margin-top: 12px; color: #6b7280; font-size: 0.85rem;">
+                        Last optimized: ${optimizedData.generated_at ? new Date(optimizedData.generated_at).toLocaleDateString() : 'Just now'}
+                    </p>
                 </div>
-
-                <!-- Update Confirmation -->
-                <div class="linkedin-update-confirmation">
-                    <label>
-                        <input type="checkbox" id="linkedin-updated-checkbox">
-                        I've updated my LinkedIn profile
-                    </label>
-                </div>
-
-                <p class="timestamp" style="margin-top: 12px; color: #6b7280; font-size: 0.85rem;">
-                    Last optimized: ${optimizedData.generated_at ? new Date(optimizedData.generated_at).toLocaleDateString() : 'Just now'}
-                </p>
             `;
 
             // Add checkbox handler
@@ -1143,6 +1110,32 @@
                     }
                 });
             }
+
+            // Add copy button handlers
+            container.querySelectorAll('[data-linkedin-copy]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.target.dataset.linkedinCopy;
+                    const textarea = document.getElementById(targetId);
+                    if (textarea) {
+                        navigator.clipboard.writeText(textarea.value).then(() => {
+                            const originalText = e.target.textContent;
+                            e.target.textContent = 'Copied!';
+                            setTimeout(() => { e.target.textContent = originalText; }, 2000);
+                        });
+                    }
+                });
+            });
+        }
+
+        /**
+         * Get severity class for styling
+         */
+        getSeverityClass(severity) {
+            const s = (severity || 'medium').toLowerCase();
+            if (s === 'critical') return 'critical';
+            if (s === 'high') return 'high';
+            if (s === 'low') return 'low';
+            return 'medium';
         }
 
         /**

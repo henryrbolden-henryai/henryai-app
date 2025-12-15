@@ -8674,12 +8674,53 @@ class LinkedInOptimizeRequest(BaseModel):
     resume_json: Optional[Dict[str, Any]] = None
     job_description: Optional[str] = None
     target_role: Optional[str] = None
+    linkedin_data: Optional[Dict[str, Any]] = None  # Current LinkedIn profile data
+
+class LinkedInExperienceOptimization(BaseModel):
+    """Optimized content for a single experience entry"""
+    title: str
+    company: str
+    dates: str
+    company_context: str  # E.g., "Fortune 500 tech company with 50K+ employees"
+    bullets: List[str]
+    why_these_work: List[str]
 
 class LinkedInOptimizeResponse(BaseModel):
     """Response with optimized LinkedIn sections"""
+    # Severity and summary
+    severity: str = "MEDIUM"  # CRITICAL, HIGH, MEDIUM, LOW
+    summary_message: str = ""
+    benefits: List[str] = []
+
+    # Headline
     headline: str
+    current_headline: Optional[str] = None
+    headline_why: List[str] = []
+    headline_update_reason: str = ""
+
+    # About section
     summary: str
+    current_summary: Optional[str] = None
+    summary_why: List[str] = []
+    summary_update_reason: str = ""
+
+    # Experience
+    experience_optimizations: List[LinkedInExperienceOptimization] = []
+
+    # Skills
     top_skills: List[str]
+    skills_to_add: List[str] = []
+    skills_to_remove: List[str] = []
+    skills_why: List[str] = []
+
+    # Optional sections
+    featured_recommendation: str = ""
+    featured_suggestions: List[str] = []
+    recommendations_advice: str = ""
+    who_to_ask: List[Dict[str, str]] = []
+    activity_recommendation: str = ""
+
+    # Legacy fields for backwards compatibility
     experience_highlights: Optional[List[str]] = None
     has_issues: bool = False
     issue_count: int = 0
@@ -8938,13 +8979,15 @@ async def optimize_linkedin_profile(
     request: LinkedInOptimizeRequest
 ) -> LinkedInOptimizeResponse:
     """
-    Generate optimized LinkedIn sections for a specific job target
+    Generate comprehensive LinkedIn optimization with world-class recommendations.
 
-    Uses resume data and job description to create:
-    - Optimized headline
-    - Optimized summary/About section
-    - Top skills to feature
-    - Experience bullet highlights
+    Uses resume data, job description, and current LinkedIn profile to create:
+    - Severity assessment and summary
+    - Optimized headline with strategic rationale
+    - Comprehensive About section (4 paragraphs)
+    - Experience bullets for multiple roles
+    - Skills prioritization and recommendations
+    - Optional section recommendations (Featured, Recommendations, Activity)
     """
 
     if not request.resume_json and not request.job_description:
@@ -8953,69 +8996,167 @@ async def optimize_linkedin_profile(
             detail="Either resume_json or job_description must be provided"
         )
 
-    # Build context for Claude
-    resume_summary = ""
+    # Build comprehensive resume context
+    resume_context = ""
     if request.resume_json:
-        resume_summary = f"""
-CANDIDATE RESUME:
-- Name: {request.resume_json.get('full_name', 'Unknown')}
-- Current Title: {request.resume_json.get('current_title', 'Unknown')}
-- Years Experience: {request.resume_json.get('years_experience', 'Unknown')}
-- Summary: {request.resume_json.get('summary', '')}
-- Skills: {', '.join(request.resume_json.get('skills', [])[:20])}
-- Experience:
+        resume_context = f"""
+CANDIDATE RESUME DATA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Name: {request.resume_json.get('full_name', 'Unknown')}
+Current Title: {request.resume_json.get('current_title', 'Unknown')}
+Years Experience: {request.resume_json.get('years_experience', 'Unknown')}
+Summary: {request.resume_json.get('summary', '')}
+Skills: {', '.join(request.resume_json.get('skills', [])[:30])}
+
+WORK EXPERIENCE:
 """
-        for exp in request.resume_json.get('experience', [])[:3]:
-            resume_summary += f"  - {exp.get('title', 'Unknown')} at {exp.get('company', 'Unknown')} ({exp.get('dates', '')})\n"
-            for bullet in exp.get('bullets', [])[:3]:
-                resume_summary += f"    • {bullet}\n"
+        for i, exp in enumerate(request.resume_json.get('experience', [])[:4]):
+            resume_context += f"""
+Role {i+1}: {exp.get('title', 'Unknown')} at {exp.get('company', 'Unknown')}
+Dates: {exp.get('dates', '')}
+Bullets:
+"""
+            for bullet in exp.get('bullets', [])[:6]:
+                resume_context += f"  • {bullet}\n"
+
+    # Build LinkedIn context
+    linkedin_context = ""
+    current_headline = ""
+    current_summary = ""
+    if request.linkedin_data:
+        current_headline = request.linkedin_data.get('headline', '')
+        current_summary = request.linkedin_data.get('summary', '')
+        linkedin_context = f"""
+CURRENT LINKEDIN PROFILE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Headline: {current_headline}
+Summary: {current_summary}
+Current Role: {request.linkedin_data.get('current_role', 'Unknown')}
+Current Company: {request.linkedin_data.get('current_company', 'Unknown')}
+Skills Listed: {', '.join(request.linkedin_data.get('skills', [])[:20])}
+Experience Entries: {len(request.linkedin_data.get('experience', []))}
+"""
 
     job_context = ""
     if request.job_description:
         job_context = f"""
 TARGET JOB DESCRIPTION:
-{request.job_description[:2000]}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{request.job_description[:3000]}
 """
 
     target_role = request.target_role or "their target role"
 
-    system_prompt = """You are a LinkedIn optimization expert. Generate optimized LinkedIn profile sections that will:
-1. Help the candidate get found in recruiter searches
-2. Position them strongly for their target role
-3. Ensure alignment with their resume
+    # Comprehensive system prompt for world-class LinkedIn optimization
+    system_prompt = """You are an elite executive recruiter generating world-class LinkedIn optimization recommendations for HenryHQ users. Your guidance must meet the standard of $50K/year executive coaching.
+
+QUALITY BAR:
+- Recommendations must be specific, actionable, and grounded in the candidate's ACTUAL experience
+- Never use generic placeholders or filler language
+- Every suggestion must have clear strategic rationale (why this works)
+- Output should feel like 1:1 coaching from a top executive recruiter
+
+HEADLINE RULES (220 characters max):
+Formula: [Seniority] [Function] | [Specialization] | [Brand Signals] | [Domain Expertise]
+Include: seniority signal, function, specialization, brand signals (Ex-[Company]), domain keywords
+Bad: "Senior Product Manager" (too generic)
+Good: "Senior Product Manager | B2B SaaS Growth | Ex-Spotify, Uber | Product-Market Fit & GTM Strategy"
+
+ABOUT SECTION RULES (600-800 words, 4 paragraphs):
+1. Value Proposition (3-4 sentences): What you do, for whom, your unique positioning
+2. Approach/Methodology (4-5 sentences): How you work differently, your philosophy
+3. Track Record (4-5 sentences): Specific, quantified accomplishments with company names
+4. Current Focus (3-4 sentences): What you're working on now, what excites you
+
+EXPERIENCE BULLETS RULES:
+Formula: [Accomplished X outcome] by [doing Y action], resulting in [Z measurable impact]
+- 5 bullets per role, each with quantified impact
+- Numbers must match resume exactly
+- Seniority-appropriate framing:
+  * IC: "Built...", "Shipped...", "Designed..."
+  * Senior IC: "Led...", "Owned...", "Architected..."
+  * Leadership: "Built and scaled...", "Established...", "Partnered with [exec]..."
+
+SKILLS RULES:
+- Top 3 skills: Most important for target role, highest recruiter search frequency
+- Add these skills: Missing but critical for target role
+- Remove these skills: Generic low-signal skills (Microsoft Office, Teamwork, etc.)
+
+SEVERITY LEVELS:
+- CRITICAL: Profile contradicts resume OR is severely underoptimized
+- HIGH: Profile is weak but not contradictory (generic language, no quantified impact)
+- MEDIUM: Profile is acceptable but not competitive
+- LOW: Profile is solid, minor tweaks only
 
 CRITICAL RULES:
-- Use ONLY information from the resume - do not fabricate
-- Keep headline under 220 characters
-- Write summary in first person
-- Focus on keywords recruiters search for
-- Be specific about achievements and impact
+- Use ONLY information from the provided resume - do not fabricate
+- Every claim must trace back to resume data
+- Numbers must match exactly between resume and recommendations
+- Write in candidate's authentic voice (professional but not robotic)
 
-Return valid JSON matching this structure:
+Return valid JSON matching this exact structure:
 {
-    "headline": "string - keyword-rich professional headline under 220 chars",
-    "summary": "string - 3-4 paragraph About section in first person",
-    "top_skills": ["array of 3 most important skills to feature at top"],
-    "experience_highlights": ["array of 3-4 bullet points to add/emphasize in current role"]
+    "severity": "CRITICAL|HIGH|MEDIUM|LOW",
+    "summary_message": "2-3 sentence summary of what's wrong and what these updates will fix",
+    "benefits": ["Specific benefit 1", "Specific benefit 2", "Specific benefit 3"],
+
+    "headline": "Optimized headline under 220 characters",
+    "headline_why": ["Reason 1 why this headline works", "Reason 2", "Reason 3", "Reason 4"],
+    "headline_update_reason": "1-2 sentence explanation of why current headline is weak",
+
+    "summary": "Full 4-paragraph About section (600-800 words) in first person",
+    "summary_why": ["Reason 1 why this summary works", "Reason 2", "Reason 3", "Reason 4", "Reason 5"],
+    "summary_update_reason": "1-2 sentence explanation of why current summary needs work",
+
+    "experience_optimizations": [
+        {
+            "title": "Job Title",
+            "company": "Company Name",
+            "dates": "Date Range",
+            "company_context": "Brief company description (e.g., Fortune 500 tech company...)",
+            "bullets": ["Impact bullet 1", "Impact bullet 2", "Impact bullet 3", "Impact bullet 4", "Impact bullet 5"],
+            "why_these_work": ["Reason 1", "Reason 2", "Reason 3"]
+        }
+    ],
+
+    "top_skills": ["Skill 1", "Skill 2", "Skill 3"],
+    "skills_to_add": ["Skill 4", "Skill 5", "Skill 6", "Skill 7", "Skill 8"],
+    "skills_to_remove": ["Generic skill 1", "Generic skill 2", "Generic skill 3"],
+    "skills_why": ["Why this prioritization makes sense"],
+
+    "featured_recommendation": "Recommendation for Featured section",
+    "featured_suggestions": ["Specific suggestion 1", "Specific suggestion 2"],
+    "recommendations_advice": "Advice for getting recommendations",
+    "who_to_ask": [
+        {"person_type": "Former manager", "what_to_emphasize": "Strategic thinking and execution"},
+        {"person_type": "Cross-functional partner", "what_to_emphasize": "Collaboration skills"}
+    ],
+    "activity_recommendation": "Specific activity recommendation based on target role"
 }
 
 Your response must be ONLY valid JSON, no additional text."""
 
-    user_message = f"""Generate optimized LinkedIn sections for this candidate targeting {target_role}.
+    user_message = f"""Generate comprehensive LinkedIn optimization for this candidate targeting {target_role}.
 
-{resume_summary}
+{resume_context}
+
+{linkedin_context}
 
 {job_context}
 
-Create optimized:
-1. Headline (keyword-rich, under 220 characters)
-2. Summary (3-4 paragraphs, first person, strategic positioning)
-3. Top 3 skills to feature (prioritized for recruiter searches)
-4. Top 3-4 experience bullet highlights (for current role)"""
+Generate:
+1. Severity assessment and summary message
+2. Optimized headline with 4 reasons why it works
+3. Full 4-paragraph About section (600-800 words) with rationale
+4. Experience optimizations for at least 2 recent roles (5 bullets each)
+5. Skills prioritization (top 3, add 5, remove 3)
+6. Optional section recommendations (Featured, Recommendations, Activity)
+
+Remember: Use ONLY information from the resume. Every number and claim must trace back to the provided data."""
 
     try:
         # Call Claude
-        print("📤 Generating optimized LinkedIn sections...")
+        print("📤 Generating comprehensive LinkedIn optimization...")
         response = call_claude(system_prompt, user_message)
 
         # Clean and parse JSON response
@@ -9024,13 +9165,61 @@ Create optimized:
 
         print("✅ LinkedIn optimization generated successfully")
 
+        # Build experience optimizations list
+        experience_opts = []
+        for exp in parsed.get("experience_optimizations", []):
+            experience_opts.append(LinkedInExperienceOptimization(
+                title=exp.get("title", ""),
+                company=exp.get("company", ""),
+                dates=exp.get("dates", ""),
+                company_context=exp.get("company_context", ""),
+                bullets=exp.get("bullets", []),
+                why_these_work=exp.get("why_these_work", [])
+            ))
+
+        # Extract first role's bullets for backwards compatibility
+        experience_highlights = []
+        if experience_opts:
+            experience_highlights = experience_opts[0].bullets[:4]
+
         return LinkedInOptimizeResponse(
+            # Severity and summary
+            severity=parsed.get("severity", "MEDIUM"),
+            summary_message=parsed.get("summary_message", ""),
+            benefits=parsed.get("benefits", []),
+
+            # Headline
             headline=parsed.get("headline", ""),
+            current_headline=current_headline,
+            headline_why=parsed.get("headline_why", []),
+            headline_update_reason=parsed.get("headline_update_reason", ""),
+
+            # About section
             summary=parsed.get("summary", ""),
+            current_summary=current_summary,
+            summary_why=parsed.get("summary_why", []),
+            summary_update_reason=parsed.get("summary_update_reason", ""),
+
+            # Experience
+            experience_optimizations=experience_opts,
+
+            # Skills
             top_skills=parsed.get("top_skills", []),
-            experience_highlights=parsed.get("experience_highlights", []),
-            has_issues=False,
-            issue_count=0,
+            skills_to_add=parsed.get("skills_to_add", []),
+            skills_to_remove=parsed.get("skills_to_remove", []),
+            skills_why=parsed.get("skills_why", []),
+
+            # Optional sections
+            featured_recommendation=parsed.get("featured_recommendation", ""),
+            featured_suggestions=parsed.get("featured_suggestions", []),
+            recommendations_advice=parsed.get("recommendations_advice", ""),
+            who_to_ask=parsed.get("who_to_ask", []),
+            activity_recommendation=parsed.get("activity_recommendation", ""),
+
+            # Legacy fields
+            experience_highlights=experience_highlights,
+            has_issues=parsed.get("severity", "MEDIUM") in ["CRITICAL", "HIGH"],
+            issue_count=1 if parsed.get("severity", "MEDIUM") in ["CRITICAL", "HIGH"] else 0,
             generated_at=datetime.utcnow().isoformat()
         )
 
