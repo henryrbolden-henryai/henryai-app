@@ -1607,6 +1607,727 @@ Warnings: ['Generic phrases detected: team player']
    - Skeleton loaders
    - Pre-loaded state
 
+---
+
+## Phase 1.5: Application Support Features (Jan 2-17, 2026)
+
+**Timeline**: Expedited 2.5 weeks (was Jan 9-22, now Jan 2-17)
+**Purpose**: Prevent silent rejections and enable document refinement
+
+### Sprint Overview
+
+| Week | Focus | Deliverables |
+|------|-------|--------------|
+| Week 1 (Jan 2-8) | Core Development | Screening Questions endpoint, Document Refine endpoint, Frontend UI |
+| Week 2 (Jan 9-15) | Beta Testing + Deploy | Internal testing, bug fixes, production deployment |
+| Week 3 (Jan 16-17) | Buffer + Monitoring | Post-deploy monitoring, user feedback collection |
+
+---
+
+### 1.5.1 Screening Questions Analysis
+
+**New Endpoint**: `POST /api/screening-questions/analyze`
+
+**Purpose**: Analyze screening questions to prevent silent auto-rejections
+
+**Pydantic Models**:
+
+```python
+from enum import Enum
+from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
+
+class QuestionType(str, Enum):
+    YES_NO = "yes_no"
+    EXPERIENCE_YEARS = "experience_years"
+    SALARY = "salary"
+    ESSAY = "essay"
+    MULTIPLE_CHOICE = "multiple_choice"
+    AVAILABILITY = "availability"
+
+class RiskLevel(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class HonestyFlag(str, Enum):
+    TRUTHFUL = "truthful"
+    STRATEGIC_FRAMING = "strategic_framing"
+    BORDERLINE = "borderline"
+
+class ScreeningQuestion(BaseModel):
+    question: str
+    type: QuestionType
+    options: Optional[List[str]] = None
+
+class ScreeningQuestionsRequest(BaseModel):
+    questions: List[ScreeningQuestion]
+    resume_data: Dict[str, Any]
+    jd_analysis: Dict[str, Any]
+    job_description: Optional[str] = None
+
+class QuestionAnalysis(BaseModel):
+    question: str
+    question_type: QuestionType
+    risk_level: RiskLevel
+    risk_reason: str
+    recommended_answer: str
+    justification: str
+    honesty_flag: HonestyFlag
+    knockout_question: bool
+    confidence: float  # 0.0 - 1.0
+
+class ScreeningQuestionsResponse(BaseModel):
+    analysis: List[QuestionAnalysis]
+    overall_risk: RiskLevel
+    auto_reject_flags: int
+    strategic_notes: str
+    conversational_summary: str
+```
+
+**Endpoint Implementation**:
+
+```python
+@app.post("/api/screening-questions/analyze", response_model=ScreeningQuestionsResponse)
+async def analyze_screening_questions(request: ScreeningQuestionsRequest):
+    """
+    Analyzes screening questions against resume to identify auto-rejection risks
+    and provide strategic, honest answer recommendations.
+    """
+
+    system_prompt = """You are an expert career advisor helping job seekers navigate
+    application screening questions. Your goal is to:
+
+    1. Identify questions that could trigger automatic rejection
+    2. Analyze the candidate's resume to find supporting evidence
+    3. Recommend honest but strategically-framed answers
+    4. Flag any questions where the candidate should be cautious
+
+    CRITICAL RULES:
+    - Never recommend lying or fabricating experience
+    - Always base recommendations on actual resume content
+    - Flag borderline cases honestly (e.g., "4.5 years" for "5+ years required")
+    - Consider how recruiters typically interpret these questions
+    - Prioritize the candidate's long-term reputation over short-term gains
+
+    For each question, provide:
+    - risk_level: "high" (likely auto-reject), "medium" (careful consideration needed), "low" (straightforward)
+    - recommended_answer: The strategic but honest response
+    - justification: Why this answer is appropriate
+    - honesty_flag: "truthful" (100% accurate), "strategic_framing" (true but optimally presented), "borderline" (requires judgment call)
+    - knockout_question: true if this could immediately disqualify the candidate
+
+    Return as JSON matching the ScreeningQuestionsResponse schema.
+    """
+
+    user_message = f"""Analyze these screening questions for this candidate:
+
+SCREENING QUESTIONS:
+{json.dumps([q.dict() for q in request.questions], indent=2)}
+
+CANDIDATE RESUME:
+{json.dumps(request.resume_data, indent=2)}
+
+JOB ANALYSIS:
+{json.dumps(request.jd_analysis, indent=2)}
+
+{f"JOB DESCRIPTION: {request.job_description}" if request.job_description else ""}
+
+Provide analysis for each question with risk assessment and recommended answers.
+Start with a brief conversational summary, then provide the structured analysis.
+"""
+
+    response = call_claude(system_prompt, user_message, max_tokens=4000)
+
+    # Parse JSON from response
+    json_text = response.strip()
+    if "---JSON_START---" in json_text:
+        parts = json_text.split("---JSON_START---")
+        conversational_summary = parts[0].strip()
+        json_text = parts[1].strip()
+    else:
+        conversational_summary = ""
+
+    # Clean markdown code blocks if present
+    if json_text.startswith("```"):
+        json_text = json_text.split("```")[1]
+        if json_text.startswith("json"):
+            json_text = json_text[4:]
+        json_text = json_text.strip()
+
+    parsed = json.loads(json_text)
+    parsed["conversational_summary"] = conversational_summary
+
+    return ScreeningQuestionsResponse(**parsed)
+```
+
+**Frontend Page** (`screening-questions.html`):
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screening Questions Analysis | HenryAI</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="screening-container">
+        <header>
+            <h1>Screening Questions Analysis</h1>
+            <p class="subtitle">Avoid silent rejections with strategic answer recommendations</p>
+        </header>
+
+        <!-- Question Input Section -->
+        <section class="question-input-section">
+            <h2>Add Your Screening Questions</h2>
+            <p>Paste or type the screening questions from your job application</p>
+
+            <div id="questionsList"></div>
+
+            <button onclick="addQuestion()" class="add-btn">
+                <span>+</span> Add Question
+            </button>
+
+            <button onclick="analyzeQuestions()" class="primary-btn" id="analyzeBtn">
+                Analyze Questions
+            </button>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden">
+            <div class="loading-spinner"></div>
+            <p>Analyzing your screening questions...</p>
+        </div>
+
+        <!-- Analysis Results -->
+        <section id="analysisResults" class="hidden">
+            <div class="risk-summary">
+                <div class="summary-card">
+                    <h3>Overall Risk</h3>
+                    <div class="overall-risk" id="overallRisk">--</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Knockout Questions</h3>
+                    <div class="auto-reject-count" id="rejectFlags">0</div>
+                </div>
+            </div>
+
+            <div class="conversational-summary" id="conversationalSummary"></div>
+
+            <h2>Question-by-Question Analysis</h2>
+            <div id="questionAnalysis"></div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'YOUR_API_URL';
+        let questionCount = 0;
+
+        function addQuestion() {
+            questionCount++;
+            const container = document.getElementById('questionsList');
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            questionDiv.id = `question-${questionCount}`;
+            questionDiv.innerHTML = `
+                <div class="question-header">
+                    <span class="question-number">Q${questionCount}</span>
+                    <button onclick="removeQuestion(${questionCount})" class="remove-btn">×</button>
+                </div>
+                <textarea placeholder="Enter the screening question..." class="question-text"></textarea>
+                <select class="question-type">
+                    <option value="yes_no">Yes/No</option>
+                    <option value="experience_years">Years of Experience</option>
+                    <option value="salary">Salary</option>
+                    <option value="essay">Essay/Open-ended</option>
+                    <option value="multiple_choice">Multiple Choice</option>
+                    <option value="availability">Availability</option>
+                </select>
+            `;
+            container.appendChild(questionDiv);
+        }
+
+        function removeQuestion(id) {
+            document.getElementById(`question-${id}`).remove();
+        }
+
+        async function analyzeQuestions() {
+            const questionItems = document.querySelectorAll('.question-item');
+            if (questionItems.length === 0) {
+                alert('Please add at least one screening question');
+                return;
+            }
+
+            const questions = [];
+            questionItems.forEach(item => {
+                const text = item.querySelector('.question-text').value.trim();
+                const type = item.querySelector('.question-type').value;
+                if (text) {
+                    questions.push({ question: text, type: type });
+                }
+            });
+
+            if (questions.length === 0) {
+                alert('Please enter at least one question');
+                return;
+            }
+
+            // Get resume and analysis data from session
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const resumeData = analysisData._resume_json || {};
+
+            // Show loading
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/screening-questions/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        questions: questions,
+                        resume_data: resumeData,
+                        jd_analysis: analysisData
+                    })
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to analyze questions. Please try again.');
+            } finally {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        function displayResults(result) {
+            // Overall risk
+            const riskDiv = document.getElementById('overallRisk');
+            riskDiv.textContent = result.overall_risk.toUpperCase();
+            riskDiv.className = `overall-risk risk-${result.overall_risk}`;
+
+            // Knockout count
+            document.getElementById('rejectFlags').textContent = result.auto_reject_flags;
+
+            // Conversational summary
+            if (result.conversational_summary) {
+                document.getElementById('conversationalSummary').innerHTML =
+                    `<p>${result.conversational_summary}</p>`;
+            }
+
+            // Question analysis
+            const analysisDiv = document.getElementById('questionAnalysis');
+            analysisDiv.innerHTML = '';
+
+            result.analysis.forEach((qa, index) => {
+                const card = document.createElement('div');
+                card.className = `analysis-card risk-${qa.risk_level}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="question-label">Question ${index + 1}</span>
+                        ${qa.knockout_question ? '<span class="knockout-badge">KNOCKOUT</span>' : ''}
+                        <span class="risk-badge risk-${qa.risk_level}">${qa.risk_level.toUpperCase()}</span>
+                    </div>
+                    <p class="question-text">"${qa.question}"</p>
+                    <div class="recommendation">
+                        <h4>Recommended Answer</h4>
+                        <p class="answer">${qa.recommended_answer}</p>
+                    </div>
+                    <div class="details">
+                        <p><strong>Risk Reason:</strong> ${qa.risk_reason}</p>
+                        <p><strong>Justification:</strong> ${qa.justification}</p>
+                        <p class="honesty-flag">
+                            <span class="flag-${qa.honesty_flag}">${qa.honesty_flag.replace('_', ' ')}</span>
+                            <span class="confidence">${Math.round(qa.confidence * 100)}% confidence</span>
+                        </p>
+                    </div>
+                `;
+                analysisDiv.appendChild(card);
+            });
+
+            // Show results
+            document.getElementById('analysisResults').classList.remove('hidden');
+        }
+
+        // Add first question on page load
+        addQuestion();
+    </script>
+
+    <style>
+        .screening-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .question-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .question-text {
+            width: 100%;
+            min-height: 80px;
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        .question-type {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        .risk-high { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1); }
+        .risk-medium { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.1); }
+        .risk-low { border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+
+        .knockout-badge {
+            background: #dc2626;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .risk-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .risk-badge.risk-high { background: #fecaca; color: #991b1b; }
+        .risk-badge.risk-medium { background: #fef3c7; color: #92400e; }
+        .risk-badge.risk-low { background: #d1fae5; color: #065f46; }
+
+        .analysis-card {
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .recommendation {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .recommendation h4 {
+            margin: 0 0 8px 0;
+            color: #60a5fa;
+        }
+
+        .answer {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+    </style>
+</body>
+</html>
+```
+
+---
+
+### 1.5.2 Document Iteration via Chat
+
+**New Endpoint**: `POST /api/documents/refine`
+
+**Purpose**: Allow users to refine documents via Ask Henry chat without restarting the flow
+
+**Pydantic Models**:
+
+```python
+class DocumentType(str, Enum):
+    RESUME = "resume"
+    COVER_LETTER = "cover_letter"
+    OUTREACH = "outreach"
+
+class RefineDocumentRequest(BaseModel):
+    document_type: DocumentType
+    current_document: Dict[str, Any]
+    refinement_prompt: str
+    resume_data: Dict[str, Any]
+    jd_analysis: Dict[str, Any]
+    version: int = 1
+
+class DocumentChange(BaseModel):
+    section: str
+    before: str
+    after: str
+    change_type: str  # "added", "removed", "modified"
+
+class RefineDocumentResponse(BaseModel):
+    refined_document: Dict[str, Any]
+    changes: List[DocumentChange]
+    change_summary: str
+    version: int
+    validation: Dict[str, Any]
+```
+
+**Endpoint Implementation**:
+
+```python
+@app.post("/api/documents/refine", response_model=RefineDocumentResponse)
+async def refine_document(request: RefineDocumentRequest):
+    """
+    Refines an existing document based on user feedback while maintaining
+    grounding in the original resume data.
+    """
+
+    system_prompt = f"""You are refining a {request.document_type.value} based on user feedback.
+
+CRITICAL RULES:
+1. Maintain all factual accuracy from the original resume
+2. Only modify based on the user's specific request
+3. Do NOT fabricate new experience, metrics, or achievements
+4. Track all changes for transparency
+5. Ensure ATS optimization is maintained or improved
+
+User's refinement request: "{request.refinement_prompt}"
+
+Return a JSON object with:
+1. "refined_document": The updated document in the same structure
+2. "changes": Array of {{"section": "...", "before": "...", "after": "...", "change_type": "modified"}}
+3. "change_summary": A 1-2 sentence summary of what you changed
+"""
+
+    user_message = f"""Refine this document based on the user's request.
+
+CURRENT DOCUMENT (v{request.version}):
+{json.dumps(request.current_document, indent=2)}
+
+ORIGINAL RESUME DATA (source of truth):
+{json.dumps(request.resume_data, indent=2)}
+
+JOB ANALYSIS:
+{json.dumps(request.jd_analysis, indent=2)}
+
+USER REQUEST: {request.refinement_prompt}
+
+Return the refined document with change tracking as JSON.
+"""
+
+    response = call_claude(system_prompt, user_message, max_tokens=6000)
+
+    # Parse response
+    json_text = response.strip()
+    if json_text.startswith("```"):
+        json_text = json_text.split("```")[1]
+        if json_text.startswith("json"):
+            json_text = json_text[4:]
+        json_text = json_text.strip()
+
+    parsed = json.loads(json_text)
+
+    # Run validation on refined document
+    validation = validate_document_quality(
+        {"resume_output": parsed["refined_document"]} if request.document_type == DocumentType.RESUME else {"cover_letter": parsed["refined_document"]},
+        request.resume_data,
+        request.jd_analysis
+    )
+
+    return RefineDocumentResponse(
+        refined_document=parsed["refined_document"],
+        changes=parsed.get("changes", []),
+        change_summary=parsed.get("change_summary", "Document refined successfully"),
+        version=request.version + 1,
+        validation=validation
+    )
+```
+
+**Ask Henry Integration** (`ask-henry.js` additions):
+
+```javascript
+// Add to ask-henry.js - detect refinement requests
+const REFINEMENT_TRIGGERS = [
+    'make it more', 'make this more', 'can you make',
+    'add more', 'remove the', 'change the',
+    'too generic', 'more specific', 'more senior',
+    'less formal', 'more formal', 'shorter', 'longer',
+    'rewrite', 'update the', 'modify the'
+];
+
+function detectRefinementRequest(message) {
+    const lowerMessage = message.toLowerCase();
+    return REFINEMENT_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+}
+
+async function handleRefinementRequest(message) {
+    const currentPage = window.location.pathname;
+
+    // Only handle refinements on document pages
+    if (!currentPage.includes('documents') && !currentPage.includes('overview')) {
+        return null; // Let normal chat handle it
+    }
+
+    const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
+    const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+
+    if (!documentsData.resume_output) {
+        return null; // No document to refine
+    }
+
+    // Determine document type from context or default to resume
+    let documentType = 'resume';
+    if (message.toLowerCase().includes('cover letter')) {
+        documentType = 'cover_letter';
+    }
+
+    const currentDoc = documentType === 'resume'
+        ? documentsData.resume_output
+        : documentsData.cover_letter;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/documents/refine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                document_type: documentType,
+                current_document: currentDoc,
+                refinement_prompt: message,
+                resume_data: analysisData._resume_json || {},
+                jd_analysis: analysisData,
+                version: documentsData._version || 1
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Refinement failed');
+        }
+
+        const result = await response.json();
+
+        // Update stored documents
+        if (documentType === 'resume') {
+            documentsData.resume_output = result.refined_document;
+        } else {
+            documentsData.cover_letter = result.refined_document;
+        }
+        documentsData._version = result.version;
+        documentsData._lastRefinement = {
+            timestamp: new Date().toISOString(),
+            changes: result.changes,
+            summary: result.change_summary
+        };
+        sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+        // Format response with changes
+        let changesText = '';
+        if (result.changes && result.changes.length > 0) {
+            changesText = '\n\n**Changes made:**\n';
+            result.changes.forEach(change => {
+                changesText += `• ${change.section}: ${change.change_type}\n`;
+            });
+        }
+
+        return {
+            message: `✅ I've updated your ${documentType.replace('_', ' ')} (now v${result.version}).\n\n${result.change_summary}${changesText}\n\n*Refresh the page to see the updated document.*`,
+            showRefreshButton: true,
+            validation: result.validation
+        };
+
+    } catch (error) {
+        console.error('Refinement error:', error);
+        return {
+            message: `I couldn't refine the document: ${error.message}. Try rephrasing your request or ask me a different question.`,
+            showRefreshButton: false
+        };
+    }
+}
+
+// Add refresh button helper
+function addRefreshButton() {
+    const chatMessages = document.querySelector('.chat-messages');
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = 'refresh-btn';
+    refreshBtn.textContent = '🔄 Refresh to see changes';
+    refreshBtn.onclick = () => window.location.reload();
+    chatMessages.appendChild(refreshBtn);
+}
+
+// Modify the existing sendMessage function to check for refinements first
+// Add this at the beginning of sendMessage():
+/*
+if (detectRefinementRequest(message)) {
+    showTypingIndicator();
+    const result = await handleRefinementRequest(message);
+    hideTypingIndicator();
+    if (result) {
+        displayAssistantMessage(result.message);
+        if (result.showRefreshButton) {
+            addRefreshButton();
+        }
+        return;
+    }
+}
+// ... continue with normal chat handling
+*/
+```
+
+---
+
+### Phase 1.5 Testing Checklist
+
+**Screening Questions Analysis**:
+- [ ] Yes/No questions with exact match (have exactly 5 years, need 5 years)
+- [ ] Yes/No questions with near-miss (have 4.5 years, need 5 years)
+- [ ] Salary questions with range detection
+- [ ] Essay questions with keyword coverage
+- [ ] Multiple knockout questions in same application
+- [ ] Resume with gaps vs questions about continuous employment
+- [ ] Work authorization questions
+- [ ] Availability/start date questions
+
+**Document Refinement**:
+- [ ] "Make it more senior" increases leadership language
+- [ ] "Add more ATS keywords" improves keyword coverage
+- [ ] "Make the summary shorter" reduces summary length
+- [ ] "Make the cover letter more enthusiastic" adjusts tone
+- [ ] Version tracking increments correctly
+- [ ] Changes are tracked and displayed
+- [ ] Validation runs on refined document
+- [ ] Original resume facts remain unchanged
+- [ ] Refresh button appears after successful refinement
+- [ ] Error handling for failed refinements
+
+---
+
+### Phase 1.5 Deployment Timeline
+
+| Day | Date | Milestone |
+|-----|------|-----------|
+| 1-3 | Jan 2-4 | Screening Questions backend + frontend |
+| 4-5 | Jan 5-6 | Document Refine backend + ask-henry.js integration |
+| 6-7 | Jan 7-8 | Integration testing, bug fixes |
+| 8-10 | Jan 9-11 | Internal beta testing |
+| 11-12 | Jan 12-13 | Bug fixes from beta feedback |
+| 13 | Jan 14 | Production deployment |
+| 14-15 | Jan 15-17 | Monitoring, user feedback collection |
+
+---
+
 ### Medium-Term (Month 2-3)
 
 4. **Iterative Refinement**

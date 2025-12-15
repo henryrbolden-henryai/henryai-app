@@ -869,12 +869,122 @@ All planned improvements have been **successfully implemented and deployed**. He
 - Phase 0 (Foundation Strengthening): ✅ COMPLETE
 - Dec 12-14 Polish: ✅ COMPLETE
 - Phase 1 (Streaming & Performance): 🔄 IN PROGRESS
+- Phase 1.5 (Application Support Features): 📋 PLANNED (Jan 2-17, 2026)
 
 **Next actions**:
 1. Complete frontend streaming UI integration
 2. Implement validation UI display (quality badge, keyword coverage)
 3. Add optimistic UI patterns
 4. Re-enable QA validation after fixing regex false positives
+5. Implement Phase 1.5 features (Screening Questions + Document Refinement)
+
+---
+
+## Planned: Phase 1.5 - Application Support Features (Jan 2-17, 2026)
+
+**Timeline**: Expedited 2.5 weeks for additional testing before launch
+**Goal**: Prevent silent rejections and enable document refinement
+
+### Sprint Overview
+
+| Week | Focus | Deliverables |
+|------|-------|--------------|
+| Week 1 (Jan 2-8) | Core Development | Screening Questions endpoint, Document Refine endpoint, Frontend UI |
+| Week 2 (Jan 9-15) | Beta Testing + Deploy | Internal testing, bug fixes, production deployment |
+| Week 3 (Jan 16-17) | Buffer + Monitoring | Post-deploy monitoring, user feedback collection |
+
+### 20. 📋 Screening Questions Analysis (Phase 1.5.1)
+
+**What it will do**: Analyze screening questions to prevent silent auto-rejections.
+
+**Why this matters**:
+- Users pass resume screen, then get auto-rejected for answering "No" to "5+ years Python?" when they have 4.5 years
+- 100% of online applicants face screening questions
+- No workaround exists today
+
+**Features**:
+- New endpoint: `POST /api/screening-questions/analyze`
+- Risk assessment for each question (high/medium/low)
+- "Knockout question" detection
+- Recommended answers with justification
+- Honesty flags (truthful, strategic framing, borderline)
+- New `screening-questions.html` page
+
+**Key Pydantic Models**:
+- `QuestionType`: yes_no, experience_years, salary, essay, multiple_choice, availability
+- `RiskLevel`: high, medium, low
+- `HonestyFlag`: truthful, strategic_framing, borderline
+- `ScreeningQuestionsRequest/Response`
+
+**Expected Impact**:
+- Auto-rejection rate: -30%
+- User confidence in screening answers: 4.5/5
+
+---
+
+### 21. 📋 Document Iteration via Chat (Phase 1.5.2)
+
+**What it will do**: Allow users to refine documents via Ask Henry chat.
+
+**Why this matters**:
+- Users currently must restart the entire flow to regenerate documents
+- ~20% of users want granular control ("make this more senior")
+- Natural language refinement is more intuitive
+
+**Features**:
+- New endpoint: `POST /api/documents/refine`
+- Version tracking (v1, v2, v3...)
+- Change tracking with before/after diffs
+- Integration with Ask Henry chat
+- Automatic detection of refinement requests
+- Validation runs on refined documents
+
+**Refinement Triggers Detected**:
+- "make it more", "make this more"
+- "add more", "remove the", "change the"
+- "too generic", "more specific", "more senior"
+- "less formal", "more formal", "shorter", "longer"
+
+**Expected Impact**:
+- Time to final document: -25%
+- User satisfaction with document control: 4.5/5
+
+---
+
+### Phase 1.5 Testing Checklist
+
+**Screening Questions**:
+- [ ] Yes/No with exact match experience
+- [ ] Yes/No with near-miss (4.5 years vs 5 years required)
+- [ ] Salary questions with range detection
+- [ ] Essay questions with keyword coverage
+- [ ] Multiple knockout questions
+- [ ] Work authorization questions
+- [ ] Availability/start date questions
+
+**Document Refinement**:
+- [ ] "Make it more senior" increases leadership language
+- [ ] "Add more ATS keywords" improves coverage
+- [ ] Version tracking increments correctly
+- [ ] Changes tracked and displayed
+- [ ] Original resume facts unchanged
+- [ ] Refresh button appears after refinement
+
+---
+
+### Phase 1.5 Deployment Timeline
+
+| Day | Date | Milestone |
+|-----|------|-----------|
+| 1-3 | Jan 2-4 | Screening Questions backend + frontend |
+| 4-5 | Jan 5-6 | Document Refine backend + ask-henry.js integration |
+| 6-7 | Jan 7-8 | Integration testing, bug fixes |
+| 8-10 | Jan 9-11 | Internal beta testing |
+| 11-12 | Jan 12-13 | Bug fixes from beta feedback |
+| 13 | Jan 14 | Production deployment |
+| 14-15 | Jan 15-17 | Monitoring, user feedback collection |
+
+---
 
 HenryAI is now delivering Claude-like responsiveness and recruiter-grade quality—a significant competitive advantage in the job application assistant market.
 
