@@ -1,0 +1,68 @@
+{
+  "screening_questions": [
+    {
+      "question_text": "How many years of Python experience do you have?",
+      "question_type": "years_of_experience",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "What are your salary expectations for this role?",
+      "question_type": "salary",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "Are you authorized to work in the United States?",
+      "question_type": "authorization",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "Do you have experience with cloud platforms (AWS, GCP, Azure)?",
+      "question_type": "yes_no",
+      "required": true,
+      "user_draft_answer": null
+    }
+  ],
+  "job_description_text": "We are seeking a Senior Python Developer with 5+ years of experience in building scalable web applications. Must have expertise in Django, PostgreSQL, and AWS. The ideal candidate will have led teams and delivered complex projects. Salary range: $140K-$180K. Must be authorized to work in the United States.",
+  "candidate_resume_data": {
+    "full_name": "Alex Johnson",
+    "current_title": "Software Engineer",
+    "years_experience": 4,
+    "summary": "Software engineer with 4 years of experience building web applications using Python, Django, and modern cloud technologies.",
+    "skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "Git", "JavaScript", "React"],
+    "experience": [
+      {
+        "title": "Software Engineer",
+        "company": "Tech Corp",
+        "dates": "2020 - 2024",
+        "duration": "4 years",
+        "bullets": [
+          "Built scalable web applications using Python and Django serving 100K+ users",
+          "Designed and implemented PostgreSQL database schemas",
+          "Deployed applications to AWS using EC2, S3, and RDS"
+        ]
+      },
+      {
+        "title": "Junior Developer",
+        "company": "StartupXYZ",
+        "dates": "2019 - 2020",
+        "duration": "1 year",
+        "bullets": [
+          "Developed features for Python-based web applications",
+          "Collaborated with team on code reviews and testing"
+        ]
+      }
+    ],
+    "education": "BS Computer Science, State University, 2019"
+  },
+  "job_analysis": {
+    "fit_score": 72,
+    "required_skills": ["Python", "Django", "PostgreSQL", "AWS"],
+    "required_experience_years": 5,
+    "salary_range": "$140K-$180K",
+    "strengths": ["Python proficiency", "Django experience", "AWS deployment"],
+    "gaps": ["Leadership experience", "5+ years requirement"]
+  }
+}

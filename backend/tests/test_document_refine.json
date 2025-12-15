@@ -1,0 +1,77 @@
+{
+  "chat_command": "Make my resume sound more senior and emphasize leadership",
+  "target_document": "resume",
+  "current_document_data": {
+    "summary": "Software engineer with 4 years of experience building web applications using Python, Django, and AWS.",
+    "experience_sections": [
+      {
+        "title": "Software Engineer",
+        "company": "Tech Corp",
+        "dates": "2020 - 2024",
+        "bullets": [
+          "Built features using Python and Django",
+          "Worked with PostgreSQL databases",
+          "Deployed applications to AWS"
+        ]
+      },
+      {
+        "title": "Junior Developer",
+        "company": "StartupXYZ",
+        "dates": "2019 - 2020",
+        "bullets": [
+          "Developed features for web applications",
+          "Collaborated with team on code reviews"
+        ]
+      }
+    ],
+    "skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker"],
+    "education": "BS Computer Science, State University, 2019",
+    "version": 1
+  },
+  "original_jd_analysis": {
+    "fit_score": 72,
+    "required_skills": ["Python", "Django", "PostgreSQL", "AWS", "team leadership"],
+    "ats_keywords": ["Python", "Django", "PostgreSQL", "AWS", "scalable", "leadership", "team", "agile"]
+  },
+  "original_resume_data": {
+    "full_name": "Alex Johnson",
+    "current_title": "Software Engineer",
+    "years_experience": 4,
+    "summary": "Software engineer with 4 years of experience building web applications.",
+    "skills": ["Python", "Django", "PostgreSQL", "AWS", "Docker", "Git"],
+    "experience": [
+      {
+        "title": "Software Engineer",
+        "company": "Tech Corp",
+        "dates": "2020 - 2024",
+        "bullets": [
+          "Built scalable web applications using Python and Django serving 100K+ users",
+          "Designed and implemented PostgreSQL database schemas",
+          "Deployed applications to AWS using EC2, S3, and RDS",
+          "Mentored 2 junior developers on best practices"
+        ]
+      },
+      {
+        "title": "Junior Developer",
+        "company": "StartupXYZ",
+        "dates": "2019 - 2020",
+        "bullets": [
+          "Developed features for Python-based web applications",
+          "Collaborated with team on code reviews and testing"
+        ]
+      }
+    ],
+    "education": "BS Computer Science, State University, 2019"
+  },
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "I want to make my resume stronger for senior roles"
+    },
+    {
+      "role": "henry",
+      "content": "I can help with that! What specifically would you like to improve?"
+    }
+  ],
+  "version": 1
+}

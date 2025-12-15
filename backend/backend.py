@@ -11,6 +11,7 @@ import uuid
 import random
 from typing import Optional, Dict, Any, List
 from datetime import datetime
+from enum import Enum
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.exceptions import RequestValidationError
@@ -8083,6 +8084,115 @@ class ScreenshotExtractResponse(BaseModel):
     jobs: List[ExtractedJob]
     message: Optional[str] = None
 
+
+# ============================================================================
+# PHASE 1.5: SCREENING QUESTIONS ANALYSIS MODELS
+# ============================================================================
+
+class ScreeningQuestionType(str, Enum):
+    """Types of screening questions encountered in job applications"""
+    YEARS_OF_EXPERIENCE = "years_of_experience"
+    SALARY = "salary"
+    AUTHORIZATION = "authorization"
+    YES_NO = "yes_no"
+    ESSAY = "essay"
+    RELOCATION = "relocation"
+    AVAILABILITY = "availability"
+    MULTIPLE_CHOICE = "multiple_choice"
+
+class ScreeningRiskLevel(str, Enum):
+    """Risk level for auto-rejection from screening questions"""
+    HIGH = "high"      # Honest answer likely triggers auto-rejection
+    MEDIUM = "medium"  # Borderline/defensible answer needed
+    LOW = "low"        # Meets requirements but could be stronger
+    SAFE = "safe"      # Clearly meets requirements
+
+class HonestyFlag(str, Enum):
+    """Honesty assessment for recommended answers"""
+    TRUTHFUL = "truthful"              # 100% accurate, no embellishment
+    STRATEGIC_FRAMING = "strategic_framing"  # Defensible but generous interpretation
+    BORDERLINE = "borderline"          # Requires judgment call
+
+class ScreeningQuestionInput(BaseModel):
+    """Individual screening question from user"""
+    question_text: str
+    question_type: ScreeningQuestionType
+    required: bool = True
+    user_draft_answer: Optional[str] = None
+
+class ScreeningQuestionsAnalyzeRequest(BaseModel):
+    """Request for analyzing screening questions for auto-rejection risk"""
+    screening_questions: List[ScreeningQuestionInput]
+    job_description_text: str
+    candidate_resume_data: Dict[str, Any]
+    job_analysis: Dict[str, Any]
+
+class ScreeningQuestionAnalysis(BaseModel):
+    """Analysis result for a single screening question"""
+    question_text: str
+    question_type: ScreeningQuestionType
+    auto_rejection_risk: ScreeningRiskLevel
+    risk_explanation: str
+    recommended_answer: str
+    recommended_answer_rationale: str
+    honesty_flag: HonestyFlag
+    honesty_explanation: str
+    alternative_approach: str
+    keywords_to_include: Optional[List[str]] = None
+
+class ScreeningQuestionsAnalyzeResponse(BaseModel):
+    """Response containing analysis of all screening questions"""
+    screening_analysis: List[ScreeningQuestionAnalysis]
+    overall_risk_score: ScreeningRiskLevel
+    critical_dealbreakers: List[str]
+    strategic_guidance: str
+    conversational_summary: str
+
+
+# ============================================================================
+# PHASE 1.5: DOCUMENT REFINEMENT MODELS
+# ============================================================================
+
+class DocumentTypeForRefine(str, Enum):
+    """Document types that can be refined via chat"""
+    RESUME = "resume"
+    COVER_LETTER = "cover_letter"
+    OUTREACH = "outreach"
+
+class DocumentRefineRequest(BaseModel):
+    """Request for refining a document via chat command"""
+    chat_command: str
+    target_document: DocumentTypeForRefine
+    current_document_data: Dict[str, Any]
+    original_jd_analysis: Dict[str, Any]
+    original_resume_data: Dict[str, Any]
+    conversation_history: List[Dict[str, Any]] = []
+    version: int = 1
+
+class DocumentChangeDetail(BaseModel):
+    """Details of a specific change made during refinement"""
+    section: str
+    before: str
+    after: str
+    change_type: str  # "added", "removed", "modified"
+
+class DocumentChangesSummary(BaseModel):
+    """Summary of all changes made during document refinement"""
+    what_changed: str
+    sections_modified: List[str]
+    positioning_shift: str
+    ats_impact: str
+    version: int
+
+class DocumentRefineResponse(BaseModel):
+    """Response from document refinement"""
+    updated_document: Dict[str, Any]
+    changes_summary: DocumentChangesSummary
+    changes_detail: Optional[List[DocumentChangeDetail]] = None
+    conversational_response: str
+    validation: Dict[str, Any]
+
+
 @app.post("/api/extract-jobs-from-screenshot", response_model=ScreenshotExtractResponse)
 async def extract_jobs_from_screenshot(request: ScreenshotExtractRequest):
     """
@@ -8177,6 +8287,333 @@ Important:
     except Exception as e:
         print(f"🔥 Screenshot extraction error: {e}")
         raise HTTPException(status_code=500, detail=f"Screenshot processing failed: {str(e)}")
+
+
+# ============================================================================
+# PHASE 1.5: SCREENING QUESTIONS ANALYSIS ENDPOINT
+# ============================================================================
+
+@app.post("/api/screening-questions/analyze", response_model=ScreeningQuestionsAnalyzeResponse)
+async def analyze_screening_questions_risk(request: ScreeningQuestionsAnalyzeRequest):
+    """
+    Analyzes screening questions for auto-rejection risk.
+
+    Unlike /api/screening-questions/generate which creates responses,
+    this endpoint ANALYZES questions to identify:
+    - Auto-rejection risk levels
+    - Knockout questions
+    - Strategic answer recommendations with honesty flags
+    - Critical dealbreakers
+
+    Returns recommended answers with explicit honesty assessments.
+    """
+    try:
+        print(f"🔍 Analyzing {len(request.screening_questions)} screening questions for risk...")
+
+        system_prompt = """You are a recruiting systems expert who understands how ATS filters work.
+
+Your job: analyze screening questions and predict auto-rejection risk.
+
+CRITICAL RULES:
+1. NEVER recommend fabricated answers - if the honest answer means auto-rejection, say so
+2. Flag "strategic_framing" answers that are defensible but require generous interpretation
+3. If honest answer = auto-rejection, mark as HIGH risk and recommend user reconsider applying
+4. Provide alternative approaches for borderline cases
+5. Include ATS keywords in essay-type recommended answers
+6. Use the candidate's ACTUAL resume data to determine honest answers
+7. Use the job description to detect hard requirements and threshold filters
+
+RISK SCORING:
+- "high": Honest answer clearly fails stated requirement (e.g., 4 years when 5+ required)
+- "medium": Answer is borderline/defensible (e.g., 4.5 years when 5+ required)
+- "low": Answer meets requirements but could be stronger
+- "safe": Answer clearly meets requirements with no concerns
+
+HONESTY FLAGS:
+- "truthful": Answer reflects candidate's actual experience with no embellishment
+- "strategic_framing": Technically defensible but requires generous interpretation (e.g., counting academic work as "professional")
+- "borderline": Requires judgment call - explain the tradeoffs
+
+At the start of your response, provide a brief conversational_summary (2-3 sentences) explaining the overall situation before the JSON.
+
+Return valid JSON after the summary. Structure:
+{
+  "screening_analysis": [
+    {
+      "question_text": "...",
+      "question_type": "years_of_experience|salary|authorization|yes_no|essay|relocation|availability|multiple_choice",
+      "auto_rejection_risk": "high|medium|low|safe",
+      "risk_explanation": "...",
+      "recommended_answer": "...",
+      "recommended_answer_rationale": "...",
+      "honesty_flag": "truthful|strategic_framing|borderline",
+      "honesty_explanation": "...",
+      "alternative_approach": "...",
+      "keywords_to_include": ["keyword1", "keyword2"] // for essay questions only, null otherwise
+    }
+  ],
+  "overall_risk_score": "high|medium|low|safe",
+  "critical_dealbreakers": ["...", "..."],
+  "strategic_guidance": "..."
+}"""
+
+        # Format questions for analysis
+        questions_json = json.dumps([q.dict() for q in request.screening_questions], indent=2)
+
+        user_message = f"""JOB DESCRIPTION:
+{request.job_description_text}
+
+CANDIDATE RESUME DATA:
+{json.dumps(request.candidate_resume_data, indent=2)}
+
+JOB ANALYSIS (FIT SCORE, REQUIREMENTS):
+{json.dumps(request.job_analysis, indent=2)}
+
+SCREENING QUESTIONS TO ANALYZE:
+{questions_json}
+
+Analyze each question for auto-rejection risk and provide strategic, honest recommendations."""
+
+        response_text = call_claude(system_prompt, user_message, max_tokens=8000)
+
+        # Parse conversational summary and JSON
+        conversational_summary = ""
+        json_text = response_text.strip()
+
+        # Check for conversational prefix before JSON
+        if not json_text.startswith("{"):
+            # Find where JSON starts
+            json_start = json_text.find("{")
+            if json_start > 0:
+                conversational_summary = json_text[:json_start].strip()
+                json_text = json_text[json_start:]
+
+        # Clean markdown code blocks if present
+        if "```json" in json_text:
+            json_text = json_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in json_text:
+            parts = json_text.split("```")
+            for part in parts:
+                if part.strip().startswith("{"):
+                    json_text = part.strip()
+                    break
+
+        # Parse JSON response
+        try:
+            parsed = json.loads(json_text)
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing error: {e}")
+            print(f"Response text: {json_text[:1000]}")
+            raise HTTPException(status_code=500, detail="Failed to parse screening questions analysis")
+
+        # Validate response structure
+        if "screening_analysis" not in parsed:
+            raise ValueError("Missing screening_analysis in response")
+
+        # Build response with conversational summary
+        parsed["conversational_summary"] = conversational_summary if conversational_summary else parsed.get("strategic_guidance", "Analysis complete.")
+
+        print(f"✅ Analyzed {len(parsed['screening_analysis'])} questions. Overall risk: {parsed['overall_risk_score']}")
+
+        return ScreeningQuestionsAnalyzeResponse(**parsed)
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parsing error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse screening questions analysis")
+    except Exception as e:
+        print(f"🔥 Error analyzing screening questions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# PHASE 1.5: DOCUMENT REFINEMENT ENDPOINT
+# ============================================================================
+
+@app.post("/api/documents/refine", response_model=DocumentRefineResponse)
+async def refine_document_from_chat(request: DocumentRefineRequest):
+    """
+    Refines an existing document based on chat command.
+
+    Allows users to iteratively improve documents through natural language:
+    - "Make it more senior"
+    - "Add more ATS keywords"
+    - "Make the summary shorter"
+    - "Remove my internship"
+
+    Returns updated document with changes summary and validation.
+    Maintains version history for tracking iterations.
+    """
+    try:
+        print(f"✏️ Refining {request.target_document.value} (v{request.version}): '{request.chat_command}'")
+
+        system_prompt = f"""You are refining an existing {request.target_document.value} based on user feedback.
+
+CRITICAL RULES:
+1. Only change what the user requested - don't rewrite the entire document
+2. Preserve all factual information - NO FABRICATION
+3. Maintain ATS keyword coverage - don't remove keywords unless explicitly asked
+4. Track what you changed in changes_summary
+5. Explain your changes conversationally in 2-3 sentences
+6. If user requests fabrication (e.g., "add 2 years of experience"), refuse and explain why
+
+SUPPORTED REFINEMENTS:
+- Tone adjustments ("make it more senior", "less formal")
+- Section rewrites ("rewrite my summary to emphasize data skills")
+- Bullet refinements ("make the third bullet stronger")
+- Keyword injection ("add more ML keywords")
+- Content removal ("remove my internship")
+- Format changes ("make it more concise")
+
+FORBIDDEN OPERATIONS (refuse politely):
+- Adding fake experience, companies, or credentials
+- Changing dates or tenure
+- Fabricating metrics or achievements
+- Adding skills not evidenced in resume
+
+Return valid JSON only. Structure:
+{{
+  "updated_document": {{ ... same structure as input document ... }},
+  "changes_summary": {{
+    "what_changed": "Brief description of changes",
+    "sections_modified": ["summary", "experience"],
+    "positioning_shift": "How the document positioning changed",
+    "ats_impact": "Impact on ATS keyword coverage",
+    "version": {request.version + 1}
+  }},
+  "changes_detail": [
+    {{
+      "section": "summary",
+      "before": "Original text...",
+      "after": "Modified text...",
+      "change_type": "modified"
+    }}
+  ],
+  "conversational_response": "2-3 sentence explanation of what was changed and why"
+}}"""
+
+        # Build conversation context
+        conversation_context = ""
+        if request.conversation_history:
+            recent_history = request.conversation_history[-5:]
+            conversation_context = f"\nRECENT CONVERSATION:\n{json.dumps(recent_history, indent=2)}\n"
+
+        user_message = f"""CHAT COMMAND: {request.chat_command}
+
+TARGET DOCUMENT: {request.target_document.value}
+
+CURRENT DOCUMENT (VERSION {request.version}):
+{json.dumps(request.current_document_data, indent=2)}
+
+ORIGINAL JD ANALYSIS:
+{json.dumps(request.original_jd_analysis, indent=2)}
+
+ORIGINAL RESUME DATA (source of truth - cannot fabricate beyond this):
+{json.dumps(request.original_resume_data, indent=2)}
+{conversation_context}
+Refine the document based on the chat command. Return the full updated document with changes_summary."""
+
+        response_text = call_claude(system_prompt, user_message, max_tokens=8000)
+
+        # Clean markdown code blocks if present
+        json_text = response_text.strip()
+        if "```json" in json_text:
+            json_text = json_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in json_text:
+            parts = json_text.split("```")
+            for part in parts:
+                if part.strip().startswith("{"):
+                    json_text = part.strip()
+                    break
+
+        # Parse JSON response
+        try:
+            parsed = json.loads(json_text)
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing error: {e}")
+            print(f"Response text: {json_text[:1000]}")
+            raise HTTPException(status_code=500, detail="Failed to parse document refinement")
+
+        # Validate structure
+        if "updated_document" not in parsed:
+            raise ValueError("Missing updated_document in response")
+        if "changes_summary" not in parsed:
+            raise ValueError("Missing changes_summary in response")
+        if "conversational_response" not in parsed:
+            parsed["conversational_response"] = "Document updated successfully."
+
+        # Ensure version is incremented
+        if "changes_summary" in parsed:
+            if "version" not in parsed["changes_summary"]:
+                parsed["changes_summary"]["version"] = request.version + 1
+
+        # Validate document didn't introduce fabrication
+        # Build a document structure that validate_document_quality expects
+        doc_for_validation = {}
+        if request.target_document == DocumentTypeForRefine.RESUME:
+            doc_for_validation["resume_output"] = parsed["updated_document"]
+        elif request.target_document == DocumentTypeForRefine.COVER_LETTER:
+            doc_for_validation["cover_letter"] = parsed["updated_document"]
+        else:
+            doc_for_validation["outreach"] = parsed["updated_document"]
+
+        validation_results = validate_document_quality(
+            doc_for_validation,
+            request.original_resume_data,
+            request.original_jd_analysis
+        )
+
+        # Check if validation found fabrication issues
+        if validation_results.get("approval_status") == "FAIL":
+            issues = validation_results.get("issues", [])
+            fabrication_issues = [i for i in issues if "fabricat" in i.lower()]
+
+            if fabrication_issues:
+                print(f"⚠️ Refinement rejected due to fabrication: {fabrication_issues}")
+                # Return original document with error message
+                return DocumentRefineResponse(
+                    updated_document=request.current_document_data,
+                    changes_summary=DocumentChangesSummary(
+                        what_changed="Refinement rejected - would introduce fabricated content",
+                        sections_modified=[],
+                        positioning_shift="No change",
+                        ats_impact="No change",
+                        version=request.version
+                    ),
+                    changes_detail=None,
+                    conversational_response="I couldn't make that change because it would require fabricating information that's not in your resume. Let's try a different approach - what specific aspect would you like to strengthen using your actual experience?",
+                    validation=validation_results
+                )
+
+        parsed["validation"] = validation_results
+
+        print(f"✅ Document refined successfully (v{request.version} -> v{parsed['changes_summary']['version']})")
+
+        # Convert changes_summary dict to model
+        changes_summary = DocumentChangesSummary(**parsed["changes_summary"])
+
+        # Convert changes_detail if present
+        changes_detail = None
+        if "changes_detail" in parsed and parsed["changes_detail"]:
+            changes_detail = [DocumentChangeDetail(**cd) for cd in parsed["changes_detail"]]
+
+        return DocumentRefineResponse(
+            updated_document=parsed["updated_document"],
+            changes_summary=changes_summary,
+            changes_detail=changes_detail,
+            conversational_response=parsed["conversational_response"],
+            validation=parsed["validation"]
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parsing error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse document refinement")
+    except Exception as e:
+        print(f"🔥 Error refining document: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
