@@ -72,7 +72,7 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Ready for Cloudflare Pages deployment
 
 ✅ **Domain Acquisition** (Dec 12, 2025)
-- Purchased HenryHQ.ai domain from Cloudflare
+- Purchased HenryHQ.ai domain from Cloudflare (locked-in)
 - Landing page ready for deployment
 
 ### Recent Achievements (Dec 13-14, 2025)

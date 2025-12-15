@@ -603,7 +603,7 @@ Frontend will gracefully handle missing `validation` field.
 
 **Impact**:
 - ✅ Professional brand presence
-- ✅ Domain acquisition (HenryHQ.ai from Cloudflare)
+- ✅ Domain acquisition (HenryHQ.ai from Cloudflare - locked-in)
 - ✅ Memorable first impression
 
 ---

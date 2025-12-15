@@ -210,6 +210,7 @@ All features below have been implemented and deployed to production:
 - Animated H logo with fade transition (2-second display)
 - Clean black background, Instrument Serif font
 - Ready for Cloudflare Pages deployment
+- Domain HenryHQ.ai locked-in
 
 ---
 
