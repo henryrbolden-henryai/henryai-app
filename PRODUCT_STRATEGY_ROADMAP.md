@@ -109,6 +109,7 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Inline alert box (above Today's Focus) - doesn't disrupt page layout
 - Dismissible per session
 - Added to all authenticated pages (17+ pages)
+- Currently **DISABLED** (Anthropic outage resolved)
 
 ✅ **Dashboard UI Improvements** (Dec 14, 2025)
 - Removed redundant "You have X active applications" banner
@@ -121,6 +122,9 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Reset Profile / Delete Account now subtle text links
 - Fixed position in bottom-left corner, stacked vertically
 - 50% opacity, small font - present but not prominent
+
+✅ **Bug Fixes** (Dec 14, 2025)
+- Fixed async/await syntax error in documents.html (commit: `97edb3e`)
 
 ---
 
