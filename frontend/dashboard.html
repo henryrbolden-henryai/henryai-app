@@ -594,6 +594,244 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        /* STRATEGIC OPTIONS SECTION */
+        .strategic-options-section {
+            margin-bottom: 32px;
+        }
+
+        .strategic-options-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .strategic-options-card {
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .strategic-options-card.stressed {
+            background: rgba(234, 179, 8, 0.06);
+            border-color: rgba(234, 179, 8, 0.3);
+        }
+
+        .strategic-options-card.standard {
+            background: rgba(34, 211, 238, 0.06);
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        .strategic-options-urgency-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #ef4444;
+        }
+
+        .strategic-options-card.stressed .strategic-options-urgency-label {
+            color: #eab308;
+        }
+
+        .strategic-options-card.standard .strategic-options-urgency-label {
+            color: var(--color-accent);
+        }
+
+        .strategic-options-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .strategic-options-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .strategic-options-text {
+            flex: 1;
+        }
+
+        .strategic-options-headline {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .strategic-options-detail {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .strategic-options-detail strong {
+            color: var(--color-text);
+        }
+
+        .strategic-options-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .strategic-options-btn {
+            padding: 10px 20px;
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .strategic-options-btn:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .strategic-options-card.stressed .strategic-options-btn {
+            background: #eab308;
+            color: #000;
+        }
+
+        .strategic-options-card.stressed .strategic-options-btn:hover {
+            background: #ca8a04;
+        }
+
+        .strategic-options-card.standard .strategic-options-btn {
+            background: var(--color-accent);
+            color: #000;
+        }
+
+        .strategic-options-card.standard .strategic-options-btn:hover {
+            background: #06b6d4;
+        }
+
+        .strategic-options-btn.secondary {
+            background: transparent;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .strategic-options-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .strategic-options-dismiss {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: right;
+        }
+
+        .strategic-options-dismiss button {
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .strategic-options-dismiss button:hover {
+            color: var(--color-text-secondary);
+        }
+
+        /* Contract Guidance Modal */
+        .contract-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .contract-modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .contract-modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 32px;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .contract-modal-overlay.show .contract-modal {
+            transform: translateY(0);
+        }
+
+        .contract-modal h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--color-text);
+        }
+
+        .contract-modal-section {
+            margin-bottom: 24px;
+        }
+
+        .contract-modal-section h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+        }
+
+        .contract-modal-section p {
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .contract-modal-section ul {
+            color: var(--color-text-secondary);
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .contract-modal-close {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+
+        .contract-modal-close:hover {
+            opacity: 0.9;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -706,6 +944,59 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- STRATEGIC OPTIONS (conditionally shown based on urgency) -->
+        <div class="strategic-options-section" id="strategicOptionsSection" style="display: none;">
+            <h2>Strategic Options</h2>
+            <div class="strategic-options-card" id="strategicOptionsCard">
+                <div class="strategic-options-urgency-label" id="strategicOptionsUrgencyLabel"></div>
+                <div class="strategic-options-content">
+                    <div class="strategic-options-icon" id="strategicOptionsIcon">💰</div>
+                    <div class="strategic-options-text">
+                        <div class="strategic-options-headline" id="strategicOptionsHeadline"></div>
+                        <div class="strategic-options-detail" id="strategicOptionsDetail"></div>
+                        <div class="strategic-options-actions" id="strategicOptionsActions"></div>
+                    </div>
+                </div>
+                <div class="strategic-options-dismiss">
+                    <button onclick="dismissStrategicOptions()">Dismiss for today</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contract Guidance Modal -->
+        <div class="contract-modal-overlay" id="contractModalOverlay" onclick="closeContractGuidanceModal(event)">
+            <div class="contract-modal" onclick="event.stopPropagation()">
+                <h3>💼 Contract/Consulting Work: A Strategic Option</h3>
+                <div class="contract-modal-section">
+                    <h4>Why Consider Contract Work?</h4>
+                    <p>When cash flow is tight, contract work can be a strategic bridge that keeps you financially stable while you continue your full-time search.</p>
+                </div>
+                <div class="contract-modal-section">
+                    <h4>Benefits</h4>
+                    <ul>
+                        <li><strong>Income now:</strong> Start earning within 1-2 weeks vs. 2-3 months for full-time</li>
+                        <li><strong>Flexibility:</strong> Continue interviewing without quitting</li>
+                        <li><strong>Network expansion:</strong> Meet new people who might lead to full-time roles</li>
+                        <li><strong>Resume gap coverage:</strong> Stay current and employed</li>
+                    </ul>
+                </div>
+                <div class="contract-modal-section">
+                    <h4>Where to Find Contract Work</h4>
+                    <ul>
+                        <li><strong>Toptal:</strong> Premium remote opportunities (competitive screening)</li>
+                        <li><strong>LinkedIn:</strong> Filter by "Contract" employment type</li>
+                        <li><strong>Your network:</strong> Let contacts know you're available for project work</li>
+                        <li><strong>Agencies:</strong> Robert Half, TEKsystems, Insight Global</li>
+                    </ul>
+                </div>
+                <div class="contract-modal-section">
+                    <h4>Rate Guidance</h4>
+                    <p>Calculate your target rate: (Annual Salary ÷ 2000 hours) × 1.3 to account for benefits/taxes you'll self-pay.</p>
+                </div>
+                <button class="contract-modal-close" onclick="closeContractGuidanceModal()">Got it</button>
             </div>
         </div>
 
@@ -1016,6 +1307,7 @@
             renderDailyPulse(profile, apps);
             renderQuickStats(apps, activeApps);
             renderRealityCheck(profile, apps, activeApps);
+            renderStrategicOptions(profile);
             renderTodaysFocus(profile, apps, activeApps);
             renderRecentActivity(apps);
         }
@@ -1201,6 +1493,138 @@
             } else {
                 section.style.display = 'none';
             }
+        }
+
+        // ========================================================================
+        // STRATEGIC OPTIONS SECTION
+        // ========================================================================
+        const STRATEGIC_CONTENT = {
+            desperate: {
+                urgencyLabel: 'URGENT: CASH FLOW OPTIONS',
+                icon: '🚨',
+                headline: 'Consider contract work to bridge the gap',
+                detail: 'When money is tight, contract/consulting work can provide income within 1-2 weeks while you continue your full-time search. <strong>This isn\'t giving up</strong> — it\'s being strategic about cash flow.',
+                primaryBtn: { text: 'Contract Work Guide', action: 'showContractGuidance' },
+                secondaryBtn: { text: 'Ask Henry', action: 'openAskHenry' },
+                cardClass: ''
+            },
+            stressed: {
+                urgencyLabel: 'INCOME OPTIONS TO CONSIDER',
+                icon: '💡',
+                headline: 'Strategic options to reduce pressure',
+                detail: 'If the job search is taking longer than expected, consider <strong>parallel income strategies</strong> that don\'t derail your primary search: contract work, consulting, or freelance projects in your field.',
+                primaryBtn: { text: 'Explore Options', action: 'showContractGuidance' },
+                secondaryBtn: { text: 'Talk Strategy', action: 'openAskHenry' },
+                cardClass: 'stressed'
+            },
+            standard: {
+                urgencyLabel: 'STRATEGIC OPPORTUNITIES',
+                icon: '📊',
+                headline: 'Maximize your leverage',
+                detail: 'While you\'re searching, consider building additional leverage: <strong>side projects</strong> that demonstrate skills, <strong>consulting</strong> that builds network, or <strong>upskilling</strong> that opens new opportunities.',
+                primaryBtn: { text: 'Strategy Ideas', action: 'openAskHenry' },
+                secondaryBtn: null,
+                cardClass: 'standard'
+            }
+        };
+
+        function calculateUrgency(profile) {
+            const { holding_up, timeline } = profile?.situation || {};
+
+            // Desperate: urgent timeline + struggling emotionally
+            if ((timeline === 'urgent' || timeline === 'clock_ticking') &&
+                (holding_up === 'desperate' || holding_up === 'crushed' || holding_up === 'struggling')) {
+                return 'desperate';
+            }
+
+            // Stressed: some urgency but managing
+            if ((timeline === 'urgent' || timeline === 'soon' || timeline === 'clock_ticking') &&
+                (holding_up === 'stressed' || holding_up === 'stressed_but_managing')) {
+                return 'stressed';
+            }
+
+            // Also stressed if financially pressured but not emotionally desperate
+            if (holding_up === 'desperate' && timeline !== 'urgent') {
+                return 'stressed';
+            }
+
+            // Standard: exploring or zen with no urgency
+            if (holding_up === 'zen' || timeline === 'exploring' || timeline === 'passive') {
+                return 'standard';
+            }
+
+            // Default: don't show if no clear urgency signal
+            return 'none';
+        }
+
+        function renderStrategicOptions(profile) {
+            const section = document.getElementById('strategicOptionsSection');
+            const card = document.getElementById('strategicOptionsCard');
+            const urgencyLabel = document.getElementById('strategicOptionsUrgencyLabel');
+            const icon = document.getElementById('strategicOptionsIcon');
+            const headline = document.getElementById('strategicOptionsHeadline');
+            const detail = document.getElementById('strategicOptionsDetail');
+            const actions = document.getElementById('strategicOptionsActions');
+
+            // Check if dismissed today
+            const dismissedDate = localStorage.getItem('strategicOptionsDismissed');
+            const today = new Date().toDateString();
+            if (dismissedDate === today) {
+                section.style.display = 'none';
+                return;
+            }
+
+            const urgency = calculateUrgency(profile);
+
+            if (urgency === 'none') {
+                section.style.display = 'none';
+                return;
+            }
+
+            const content = STRATEGIC_CONTENT[urgency];
+            if (!content) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            card.className = 'strategic-options-card ' + content.cardClass;
+            urgencyLabel.textContent = content.urgencyLabel;
+            icon.textContent = content.icon;
+            headline.textContent = content.headline;
+            detail.innerHTML = content.detail;
+
+            // Build action buttons
+            let actionsHTML = '';
+            if (content.primaryBtn) {
+                if (content.primaryBtn.action === 'showContractGuidance') {
+                    actionsHTML += `<button class="strategic-options-btn" onclick="showContractGuidanceModal()">${content.primaryBtn.text}</button>`;
+                } else if (content.primaryBtn.action === 'openAskHenry') {
+                    actionsHTML += `<button class="strategic-options-btn" onclick="if(window.openAskHenry) openAskHenry();">${content.primaryBtn.text}</button>`;
+                }
+            }
+            if (content.secondaryBtn) {
+                if (content.secondaryBtn.action === 'openAskHenry') {
+                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openAskHenry) openAskHenry();">${content.secondaryBtn.text}</button>`;
+                }
+            }
+            actions.innerHTML = actionsHTML;
+        }
+
+        function dismissStrategicOptions() {
+            const today = new Date().toDateString();
+            localStorage.setItem('strategicOptionsDismissed', today);
+            document.getElementById('strategicOptionsSection').style.display = 'none';
+        }
+
+        function showContractGuidanceModal() {
+            document.getElementById('contractModalOverlay').classList.add('show');
+        }
+
+        function closeContractGuidanceModal(event) {
+            // If called from overlay click, only close if clicking the overlay itself
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('contractModalOverlay').classList.remove('show');
         }
 
         function renderTodaysFocus(profile, apps, activeApps) {
