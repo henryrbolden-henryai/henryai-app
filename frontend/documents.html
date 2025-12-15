@@ -557,6 +557,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('resume')">Resume</button>
             <button class="tab" onclick="switchTab('coverLetter')">Cover Letter</button>
+            <button class="tab" onclick="switchTab('linkedin')">LinkedIn</button>
         </div>
 
         <!-- Resume Tab -->
@@ -610,6 +611,22 @@
             </div>
         </div>
 
+        <!-- LinkedIn Tab -->
+        <div id="linkedinTab" class="tab-content">
+            <div class="document-section linkedin-document-section">
+                <div class="document-header">
+                    <div class="document-title">
+                        <span>💼</span> LinkedIn Profile Updates
+                    </div>
+                </div>
+                <p class="section-subtitle" style="color: var(--color-text-secondary); margin-bottom: 20px;">Copy-paste these optimized sections before applying</p>
+
+                <div id="linkedin-optimized-content">
+                    <!-- Populated dynamically by linkedin-upload.js -->
+                </div>
+            </div>
+        </div>
+
         <p class="disclaimer">* Preview formatting may differ from downloaded document. We strongly encourage proofreading before submitting.</p>
     </div>
 
@@ -654,8 +671,10 @@
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             if (tabName === 'resume') {
                 document.getElementById('resumeTab').classList.add('active');
-            } else {
+            } else if (tabName === 'coverLetter') {
                 document.getElementById('coverLetterTab').classList.add('active');
+            } else if (tabName === 'linkedin') {
+                document.getElementById('linkedinTab').classList.add('active');
             }
         }
 
@@ -1288,5 +1307,37 @@ COVER LETTER
 <script src="components/ask-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
     <script src="components/status-banner.js"></script>
+
+    <!-- LinkedIn Upload Feature -->
+    <link rel="stylesheet" href="css/linkedin.css">
+    <script src="js/linkedin-upload.js"></script>
+    <script>
+        // Initialize LinkedIn section on documents page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render LinkedIn optimized sections (or upload prompt)
+            if (window.linkedInUpload) {
+                // Get job context from session storage
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || localStorage.getItem('userProfile') || '{}');
+
+                // Get optimized LinkedIn sections if profile is uploaded
+                const profile = window.linkedInUpload.getUserProfile();
+                if (profile && profile.linkedin_profile_uploaded) {
+                    // Fetch optimized sections from API
+                    window.linkedInUpload.getOptimizedSections(analysisData._job_id)
+                        .then(optimizedData => {
+                            window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', optimizedData);
+                        })
+                        .catch(err => {
+                            console.error('Error loading LinkedIn optimizations:', err);
+                            window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', null);
+                        });
+                } else {
+                    // Show upload prompt
+                    window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', null);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

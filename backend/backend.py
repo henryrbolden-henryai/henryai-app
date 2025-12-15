@@ -8620,6 +8620,448 @@ Refine the document based on the chat command. Return the full updated document 
 
 
 # ============================================================================
+# LINKEDIN PROFILE MODELS
+# ============================================================================
+
+class LinkedInExperience(BaseModel):
+    """A single experience entry from LinkedIn"""
+    title: str
+    company: str
+    dates: Optional[str] = None
+    location: Optional[str] = None
+    bullets: List[str] = []
+
+class LinkedInEducation(BaseModel):
+    """A single education entry from LinkedIn"""
+    school: str
+    degree: Optional[str] = None
+    dates: Optional[str] = None
+
+class LinkedInParsedData(BaseModel):
+    """Structured data parsed from LinkedIn PDF"""
+    headline: Optional[str] = None
+    summary: Optional[str] = None
+    current_role: Optional[str] = None
+    current_company: Optional[str] = None
+    experience: List[LinkedInExperience] = []
+    skills: List[str] = []
+    education: List[LinkedInEducation] = []
+
+class LinkedInUploadResponse(BaseModel):
+    """Response from LinkedIn upload"""
+    success: bool
+    parsed_data: LinkedInParsedData
+    message: str
+
+class LinkedInAlignmentIssue(BaseModel):
+    """A single alignment issue between resume and LinkedIn"""
+    type: str  # title_mismatch, company_mismatch, date_mismatch, skills_mismatch
+    severity: str  # high, medium, low
+    resume_value: Optional[str] = None
+    linkedin_value: Optional[str] = None
+    message: str
+
+class LinkedInAlignmentResponse(BaseModel):
+    """Response from alignment check"""
+    aligned: bool
+    discrepancies: List[LinkedInAlignmentIssue]
+    severity: str  # overall severity: high, medium, low
+    discrepancy_count: int
+
+class LinkedInOptimizeRequest(BaseModel):
+    """Request for optimizing LinkedIn sections"""
+    job_id: Optional[str] = None
+    resume_json: Optional[Dict[str, Any]] = None
+    job_description: Optional[str] = None
+    target_role: Optional[str] = None
+
+class LinkedInOptimizeResponse(BaseModel):
+    """Response with optimized LinkedIn sections"""
+    headline: str
+    summary: str
+    top_skills: List[str]
+    experience_highlights: Optional[List[str]] = None
+    has_issues: bool = False
+    issue_count: int = 0
+    generated_at: str
+
+# ============================================================================
+# LINKEDIN API ENDPOINTS
+# ============================================================================
+
+@app.post("/api/linkedin/upload", response_model=LinkedInUploadResponse)
+async def upload_linkedin_profile(
+    file: UploadFile = File(...)
+) -> LinkedInUploadResponse:
+    """
+    Upload and parse a LinkedIn profile PDF
+
+    Accepts PDF file exported from LinkedIn (Profile -> More -> Save to PDF)
+    Returns structured data parsed from the profile.
+    """
+
+    try:
+        # Validate file type
+        filename = file.filename.lower() if file.filename else ""
+        if not filename.endswith('.pdf'):
+            raise HTTPException(
+                status_code=400,
+                detail="Only PDF files are supported. Please upload your LinkedIn profile as a PDF."
+            )
+
+        # Read file
+        file_bytes = await file.read()
+
+        # Validate file size (10MB max)
+        max_size = 10 * 1024 * 1024  # 10MB
+        if len(file_bytes) > max_size:
+            raise HTTPException(
+                status_code=400,
+                detail="File size exceeds 10MB limit. LinkedIn PDFs are typically 1-3MB."
+            )
+
+        # Extract text from PDF
+        text_content = extract_pdf_text(file_bytes)
+
+        if not text_content or len(text_content.strip()) < 100:
+            raise HTTPException(
+                status_code=422,
+                detail="Could not extract sufficient text from PDF. Please ensure you uploaded a valid LinkedIn profile PDF."
+            )
+
+        print(f"📄 LinkedIn PDF text extracted: {len(text_content)} chars")
+
+        # Parse LinkedIn content using Claude
+        system_prompt = """You are a LinkedIn profile parser. Extract structured information from LinkedIn PDF exports.
+
+LinkedIn PDFs have a specific format:
+- Name appears at top
+- Headline appears after name (job title + value proposition)
+- "About" or "Summary" section contains the profile summary
+- "Experience" section lists jobs with title, company, dates, and bullet points
+- "Skills" section lists skills (sometimes separated by · or newlines)
+- "Education" section lists schools, degrees, and dates
+
+CRITICAL RULES:
+- Extract ONLY information that is explicitly present in the text
+- Do NOT fabricate or infer data
+- If a field is not found, use null or empty array
+- Preserve exact text as written
+- For experience, extract company name, title, date range, and bullet points
+
+Return valid JSON matching this structure:
+{
+    "headline": "string or null - the professional headline/tagline",
+    "summary": "string or null - the About/Summary section text",
+    "current_role": "string or null - current job title",
+    "current_company": "string or null - current employer",
+    "experience": [
+        {
+            "title": "string",
+            "company": "string",
+            "dates": "string or null",
+            "location": "string or null",
+            "bullets": ["array of responsibility/achievement bullets"]
+        }
+    ],
+    "skills": ["array of skill keywords"],
+    "education": [
+        {
+            "school": "string",
+            "degree": "string or null",
+            "dates": "string or null"
+        }
+    ]
+}
+
+Your response must be ONLY valid JSON, no additional text."""
+
+        user_message = f"Parse this LinkedIn profile PDF text into structured JSON:\n\n{text_content}"
+
+        # Call Claude
+        print("📤 Sending LinkedIn content to Claude for parsing...")
+        response = call_claude(system_prompt, user_message)
+        print(f"📥 Received response from Claude: {len(response)} chars")
+
+        # Clean and parse JSON response
+        cleaned = clean_claude_json(response)
+
+        try:
+            parsed_data = json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            print(f"🔥 JSON parse error: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse LinkedIn profile. Please try downloading your profile again from LinkedIn."
+            )
+
+        print(f"✅ Successfully parsed LinkedIn profile: {parsed_data.get('headline', 'Unknown')}")
+
+        # Convert to response model
+        linkedin_data = LinkedInParsedData(
+            headline=parsed_data.get("headline"),
+            summary=parsed_data.get("summary"),
+            current_role=parsed_data.get("current_role"),
+            current_company=parsed_data.get("current_company"),
+            experience=[LinkedInExperience(**exp) for exp in parsed_data.get("experience", [])],
+            skills=parsed_data.get("skills", []),
+            education=[LinkedInEducation(**edu) for edu in parsed_data.get("education", [])]
+        )
+
+        return LinkedInUploadResponse(
+            success=True,
+            parsed_data=linkedin_data,
+            message="LinkedIn profile uploaded and analyzed successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"🔥 LinkedIn upload error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process LinkedIn profile: {str(e)}"
+        )
+
+
+@app.post("/api/linkedin/check-alignment", response_model=LinkedInAlignmentResponse)
+async def check_linkedin_alignment(
+    resume_json: Dict[str, Any],
+    linkedin_data: Dict[str, Any],
+    job_id: Optional[str] = None
+) -> LinkedInAlignmentResponse:
+    """
+    Check alignment between resume and LinkedIn profile
+
+    Identifies discrepancies in:
+    - Job titles
+    - Company names
+    - Date ranges
+    - Skills
+    """
+
+    discrepancies = []
+
+    # Get resume current role info
+    resume_experience = resume_json.get("experience", [])
+    resume_current = resume_experience[0] if resume_experience else {}
+    resume_title = resume_current.get("title", "").lower().strip()
+    resume_company = resume_current.get("company", "").lower().strip()
+    resume_dates = resume_current.get("dates", "")
+    resume_skills = set([s.lower().strip() for s in resume_json.get("skills", [])])
+
+    # Get LinkedIn info
+    linkedin_title = (linkedin_data.get("current_role") or "").lower().strip()
+    linkedin_company = (linkedin_data.get("current_company") or "").lower().strip()
+    linkedin_exp = linkedin_data.get("experience", [])
+    linkedin_dates = linkedin_exp[0].get("dates", "") if linkedin_exp else ""
+    linkedin_skills = set([s.lower().strip() for s in linkedin_data.get("skills", [])])
+
+    # Check title mismatch
+    if resume_title and linkedin_title:
+        # Allow for some variation (e.g., "Senior Engineer" vs "Sr. Engineer")
+        if resume_title not in linkedin_title and linkedin_title not in resume_title:
+            # Check for common abbreviation variations
+            title_variations = [
+                (resume_title.replace("senior", "sr.").replace("sr.", "senior"), linkedin_title),
+                (resume_title.replace("junior", "jr.").replace("jr.", "junior"), linkedin_title),
+                (resume_title.replace("manager", "mgr").replace("mgr", "manager"), linkedin_title),
+            ]
+            if not any(r in l or l in r for r, l in title_variations):
+                discrepancies.append(LinkedInAlignmentIssue(
+                    type="title_mismatch",
+                    severity="high",
+                    resume_value=resume_current.get("title"),
+                    linkedin_value=linkedin_data.get("current_role"),
+                    message=f"Your resume says '{resume_current.get('title')}' but your LinkedIn says '{linkedin_data.get('current_role')}'"
+                ))
+
+    # Check company mismatch
+    if resume_company and linkedin_company:
+        if resume_company not in linkedin_company and linkedin_company not in resume_company:
+            discrepancies.append(LinkedInAlignmentIssue(
+                type="company_mismatch",
+                severity="high",
+                resume_value=resume_current.get("company"),
+                linkedin_value=linkedin_data.get("current_company"),
+                message=f"Your resume shows current company as '{resume_current.get('company')}' but LinkedIn shows '{linkedin_data.get('current_company')}'"
+            ))
+
+    # Check date range mismatch (basic check)
+    if resume_dates and linkedin_dates:
+        resume_dates_lower = resume_dates.lower()
+        linkedin_dates_lower = linkedin_dates.lower()
+        if resume_dates_lower not in linkedin_dates_lower and linkedin_dates_lower not in resume_dates_lower:
+            # More sophisticated date comparison could be added here
+            discrepancies.append(LinkedInAlignmentIssue(
+                type="date_mismatch",
+                severity="medium",
+                resume_value=resume_dates,
+                linkedin_value=linkedin_dates,
+                message=f"Date ranges don't match: Resume shows '{resume_dates}', LinkedIn shows '{linkedin_dates}'"
+            ))
+
+    # Check skills overlap
+    if resume_skills:
+        common_skills = resume_skills & linkedin_skills
+        resume_only = resume_skills - linkedin_skills
+
+        if len(common_skills) < len(resume_skills) * 0.5:  # Less than 50% overlap
+            missing_sample = list(resume_only)[:3]
+            discrepancies.append(LinkedInAlignmentIssue(
+                type="skills_mismatch",
+                severity="medium",
+                resume_value=", ".join(missing_sample),
+                linkedin_value=None,
+                message=f"Your resume emphasizes skills that aren't listed on your LinkedIn: {', '.join(missing_sample)}"
+            ))
+
+    # Determine overall severity
+    severity = "low"
+    if any(d.severity == "high" for d in discrepancies):
+        severity = "high"
+    elif any(d.severity == "medium" for d in discrepancies):
+        severity = "medium"
+
+    return LinkedInAlignmentResponse(
+        aligned=len(discrepancies) == 0,
+        discrepancies=discrepancies,
+        severity=severity,
+        discrepancy_count=len(discrepancies)
+    )
+
+
+@app.post("/api/linkedin/optimize", response_model=LinkedInOptimizeResponse)
+async def optimize_linkedin_profile(
+    request: LinkedInOptimizeRequest
+) -> LinkedInOptimizeResponse:
+    """
+    Generate optimized LinkedIn sections for a specific job target
+
+    Uses resume data and job description to create:
+    - Optimized headline
+    - Optimized summary/About section
+    - Top skills to feature
+    - Experience bullet highlights
+    """
+
+    if not request.resume_json and not request.job_description:
+        raise HTTPException(
+            status_code=400,
+            detail="Either resume_json or job_description must be provided"
+        )
+
+    # Build context for Claude
+    resume_summary = ""
+    if request.resume_json:
+        resume_summary = f"""
+CANDIDATE RESUME:
+- Name: {request.resume_json.get('full_name', 'Unknown')}
+- Current Title: {request.resume_json.get('current_title', 'Unknown')}
+- Years Experience: {request.resume_json.get('years_experience', 'Unknown')}
+- Summary: {request.resume_json.get('summary', '')}
+- Skills: {', '.join(request.resume_json.get('skills', [])[:20])}
+- Experience:
+"""
+        for exp in request.resume_json.get('experience', [])[:3]:
+            resume_summary += f"  - {exp.get('title', 'Unknown')} at {exp.get('company', 'Unknown')} ({exp.get('dates', '')})\n"
+            for bullet in exp.get('bullets', [])[:3]:
+                resume_summary += f"    • {bullet}\n"
+
+    job_context = ""
+    if request.job_description:
+        job_context = f"""
+TARGET JOB DESCRIPTION:
+{request.job_description[:2000]}
+"""
+
+    target_role = request.target_role or "their target role"
+
+    system_prompt = """You are a LinkedIn optimization expert. Generate optimized LinkedIn profile sections that will:
+1. Help the candidate get found in recruiter searches
+2. Position them strongly for their target role
+3. Ensure alignment with their resume
+
+CRITICAL RULES:
+- Use ONLY information from the resume - do not fabricate
+- Keep headline under 220 characters
+- Write summary in first person
+- Focus on keywords recruiters search for
+- Be specific about achievements and impact
+
+Return valid JSON matching this structure:
+{
+    "headline": "string - keyword-rich professional headline under 220 chars",
+    "summary": "string - 3-4 paragraph About section in first person",
+    "top_skills": ["array of 3 most important skills to feature at top"],
+    "experience_highlights": ["array of 3-4 bullet points to add/emphasize in current role"]
+}
+
+Your response must be ONLY valid JSON, no additional text."""
+
+    user_message = f"""Generate optimized LinkedIn sections for this candidate targeting {target_role}.
+
+{resume_summary}
+
+{job_context}
+
+Create optimized:
+1. Headline (keyword-rich, under 220 characters)
+2. Summary (3-4 paragraphs, first person, strategic positioning)
+3. Top 3 skills to feature (prioritized for recruiter searches)
+4. Top 3-4 experience bullet highlights (for current role)"""
+
+    try:
+        # Call Claude
+        print("📤 Generating optimized LinkedIn sections...")
+        response = call_claude(system_prompt, user_message)
+
+        # Clean and parse JSON response
+        cleaned = clean_claude_json(response)
+        parsed = json.loads(cleaned)
+
+        print("✅ LinkedIn optimization generated successfully")
+
+        return LinkedInOptimizeResponse(
+            headline=parsed.get("headline", ""),
+            summary=parsed.get("summary", ""),
+            top_skills=parsed.get("top_skills", []),
+            experience_highlights=parsed.get("experience_highlights", []),
+            has_issues=False,
+            issue_count=0,
+            generated_at=datetime.utcnow().isoformat()
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parse error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate LinkedIn optimization"
+        )
+    except Exception as e:
+        print(f"🔥 LinkedIn optimization error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"LinkedIn optimization failed: {str(e)}"
+        )
+
+
+@app.delete("/api/linkedin/profile")
+async def delete_linkedin_profile():
+    """
+    Delete LinkedIn profile data
+
+    Note: In this implementation, LinkedIn data is stored client-side.
+    This endpoint exists for API consistency and future server-side storage.
+    """
+    return {"success": True, "message": "LinkedIn profile deleted"}
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 

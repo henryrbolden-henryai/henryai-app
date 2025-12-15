@@ -804,6 +804,14 @@
                         <div class="section-title">Gaps to Address</div>
                         <ul class="bullets gaps" id="gaps"></ul>
                     </div>
+
+                    <!-- 6. LINKEDIN ALIGNMENT CHECK -->
+                    <div class="section linkedin-alignment-section" id="linkedinAlignmentSection">
+                        <div class="section-title">LinkedIn Alignment Check</div>
+                        <div id="linkedin-alignment-content">
+                            <!-- Populated dynamically by linkedin-upload.js -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1426,5 +1434,17 @@
 <script src="components/ask-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
     <script src="components/status-banner.js"></script>
+
+    <!-- LinkedIn Upload Feature -->
+    <link rel="stylesheet" href="css/linkedin.css">
+    <script src="js/linkedin-upload.js"></script>
+    <script>
+        // Initialize LinkedIn alignment section on results page
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.linkedInUpload) {
+                window.linkedInUpload.renderAlignmentSection('linkedin-alignment-content');
+            }
+        });
+    </script>
 </body>
 </html>

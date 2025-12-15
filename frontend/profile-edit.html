@@ -871,6 +871,17 @@
             </div>
         </div>
 
+        <!-- SECTION 5.5: LINKEDIN PROFILE -->
+        <div class="form-section linkedin-profile-section">
+            <div class="section-title">
+                <span class="icon">💼</span>
+                LinkedIn Profile
+            </div>
+            <div id="linkedin-profile-status">
+                <!-- Populated dynamically by linkedin-upload.js -->
+            </div>
+        </div>
+
         <!-- SECTION 6: WHERE YOU'RE AT -->
         <div class="form-section">
             <div class="section-title">
@@ -1613,5 +1624,17 @@
     <script src="components/ask-henry.js"></script>
     <script src="components/strategy-nav.js"></script>
     <script src="components/status-banner.js"></script>
+
+    <!-- LinkedIn Upload Feature -->
+    <link rel="stylesheet" href="css/linkedin.css">
+    <script src="js/linkedin-upload.js"></script>
+    <script>
+        // Initialize LinkedIn section on profile page
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.linkedInUpload) {
+                window.linkedInUpload.renderProfileSection('linkedin-profile-status');
+            }
+        });
+    </script>
 </body>
 </html>
