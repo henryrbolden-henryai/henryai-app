@@ -42,9 +42,8 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Main content */
         main {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 40px 20px;
         }
@@ -73,7 +72,21 @@
         .subtitle {
             color: var(--color-text-secondary);
             font-size: 1.1rem;
-            margin-bottom: 40px;
+            margin-bottom: 32px;
+        }
+
+        /* Two Column Layout */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Score Card */
@@ -89,7 +102,6 @@
             display: flex;
             align-items: center;
             gap: 24px;
-            margin-bottom: 24px;
         }
 
         .score-circle {
@@ -101,6 +113,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            flex-shrink: 0;
         }
 
         .score-circle::before {
@@ -130,6 +143,348 @@
         .score-label {
             color: var(--color-text-secondary);
             font-size: 0.95rem;
+        }
+
+        /* Real Talk Banner */
+        .real-talk {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 3px solid var(--color-accent);
+            border-radius: 8px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+
+        .real-talk h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+        }
+
+        .real-talk p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .real-talk strong {
+            color: var(--color-text);
+        }
+
+        /* Section Cards */
+        .section-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Breakdown Items - Compact */
+        .breakdown-item {
+            background: var(--color-surface-elevated);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--color-border);
+        }
+
+        .breakdown-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .breakdown-item.success { border-left-color: var(--color-success); }
+        .breakdown-item.warning { border-left-color: var(--color-warning); }
+        .breakdown-item.error { border-left-color: var(--color-error); }
+
+        .breakdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .breakdown-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .breakdown-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .breakdown-icon.success { background: rgba(74, 222, 128, 0.15); }
+        .breakdown-icon.warning { background: rgba(251, 191, 36, 0.15); }
+        .breakdown-icon.error { background: rgba(248, 113, 113, 0.15); }
+
+        .breakdown-label-text {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .breakdown-score {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .breakdown-score.success { color: var(--color-success); }
+        .breakdown-score.warning { color: var(--color-warning); }
+        .breakdown-score.error { color: var(--color-error); }
+
+        .breakdown-why {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-left: 38px;
+        }
+
+        /* Pain Points Section */
+        .pain-points {
+            background: rgba(248, 113, 113, 0.05);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .pain-points .section-title {
+            color: var(--color-error);
+        }
+
+        .pain-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(248, 113, 113, 0.1);
+        }
+
+        .pain-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .pain-icon {
+            color: var(--color-error);
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .pain-content strong {
+            display: block;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .pain-content p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* What to Remove Section */
+        .remove-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .remove-item {
+            display: flex;
+            gap: 12px;
+            padding: 14px;
+            background: rgba(248, 113, 113, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .remove-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .remove-icon {
+            color: var(--color-error);
+            font-size: 1.2rem;
+        }
+
+        .remove-content strong {
+            display: block;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .remove-content p {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        /* Elite Insights Section */
+        .elite-section {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, rgba(167, 139, 250, 0.05) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .elite-section .section-title {
+            color: var(--color-accent);
+        }
+
+        .elite-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .elite-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .elite-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .elite-item strong {
+            display: block;
+            color: var(--color-accent);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .elite-item p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Action Items */
+        .action-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .action-item {
+            padding: 14px;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            gap: 12px;
+            border-left: 3px solid transparent;
+        }
+
+        .action-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .action-item.high {
+            border-left-color: var(--color-error);
+        }
+
+        .action-item.medium {
+            border-left-color: var(--color-warning);
+        }
+
+        .action-priority {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            height: fit-content;
+        }
+
+        .action-priority.high {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .action-priority.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .action-text strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .action-text p {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        /* CTA Button */
+        .cta-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-top: 24px;
+        }
+
+        .cta-section h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .cta-section p {
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            padding: 14px 28px;
+            background: var(--color-accent);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
         }
 
         /* Upload State */
@@ -170,10 +525,6 @@
             display: inline-block;
         }
 
-        .upload-how-to strong {
-            color: var(--color-text);
-        }
-
         .upload-path {
             color: var(--color-text-secondary);
             font-size: 0.9rem;
@@ -181,7 +532,7 @@
             margin-top: 8px;
         }
 
-        .btn-primary {
+        .btn-upload {
             padding: 14px 28px;
             background: var(--color-linkedin);
             border: none;
@@ -191,244 +542,11 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
         }
 
-        .btn-primary:hover {
+        .btn-upload:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 20px rgba(0, 119, 181, 0.3);
-        }
-
-        /* Real Talk Banner */
-        .real-talk {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-left: 3px solid var(--color-accent);
-            border-radius: 8px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-        }
-
-        .real-talk h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-accent);
-            margin-bottom: 8px;
-        }
-
-        .real-talk p {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin: 0;
-        }
-
-        .real-talk strong {
-            color: var(--color-text);
-        }
-
-        /* Score Breakdown */
-        .breakdown-section {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .breakdown-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .breakdown-item {
-            background: var(--color-surface-elevated);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border-left: 3px solid var(--color-border);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .breakdown-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .breakdown-item:hover {
-            border-left-color: var(--color-accent);
-        }
-
-        .breakdown-item.success {
-            border-left-color: var(--color-success);
-        }
-
-        .breakdown-item.warning {
-            border-left-color: var(--color-warning);
-        }
-
-        .breakdown-item.error {
-            border-left-color: var(--color-error);
-        }
-
-        .breakdown-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .breakdown-label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .breakdown-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-
-        .breakdown-icon.success {
-            background: rgba(74, 222, 128, 0.15);
-        }
-
-        .breakdown-icon.warning {
-            background: rgba(251, 191, 36, 0.15);
-        }
-
-        .breakdown-icon.error {
-            background: rgba(248, 113, 113, 0.15);
-        }
-
-        .breakdown-label-text {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .breakdown-score {
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .breakdown-score.success {
-            color: var(--color-success);
-        }
-
-        .breakdown-score.warning {
-            color: var(--color-warning);
-        }
-
-        .breakdown-score.error {
-            color: var(--color-error);
-        }
-
-        .breakdown-why {
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.6;
-            margin-bottom: 12px;
-            padding-left: 44px;
-        }
-
-        .breakdown-what-recruiters-see {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 14px 16px;
-            margin-left: 44px;
-        }
-
-        .breakdown-what-recruiters-see strong {
-            display: block;
-            color: var(--color-text);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .breakdown-what-recruiters-see p {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .breakdown-what-recruiters-see ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .breakdown-what-recruiters-see li {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            padding: 4px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
-
-        .breakdown-what-recruiters-see li::before {
-            content: '→';
-            color: var(--color-accent);
-            flex-shrink: 0;
-        }
-
-        /* Recommendations */
-        .recommendations-list {
-            list-style: none;
-        }
-
-        .recommendation-item {
-            padding: 16px;
-            background: var(--color-surface-elevated);
-            border-radius: 8px;
-            margin-bottom: 12px;
-            display: flex;
-            gap: 12px;
-        }
-
-        .recommendation-priority {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .priority-high {
-            background: rgba(248, 113, 113, 0.15);
-            color: var(--color-error);
-        }
-
-        .priority-medium {
-            background: rgba(251, 191, 36, 0.15);
-            color: var(--color-warning);
-        }
-
-        .recommendation-text {
-            flex: 1;
-        }
-
-        .recommendation-text strong {
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .recommendation-text p {
-            color: var(--color-text-secondary);
-            font-size: 0.9rem;
         }
 
         /* Loading */
@@ -454,7 +572,6 @@
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/linkedin.css">
-    <!-- Supabase Auth -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
 </head>
@@ -463,59 +580,104 @@
         <a href="results.html" class="back-link">← Back to Results</a>
 
         <h1>LinkedIn Scoring</h1>
-        <p class="subtitle" id="subtitle">Analyze your LinkedIn profile's effectiveness for this role</p>
+        <p class="subtitle" id="subtitle">What recruiters see in the first 6 seconds—and how to optimize for it</p>
 
-        <!-- Content will be rendered dynamically -->
         <div id="mainContent">
-            <!-- Upload Prompt (shown when no LinkedIn) -->
+            <!-- Upload Prompt -->
             <div class="upload-prompt" id="uploadPrompt">
                 <div class="upload-icon">💼</div>
                 <h2>Upload Your LinkedIn Profile</h2>
-                <p>Get a detailed score and recommendations to optimize your LinkedIn for recruiter visibility and job fit.</p>
+                <p>Get a detailed analysis of what recruiters see and specific actions to improve your visibility.</p>
 
                 <div class="upload-how-to">
                     <strong>How to get your LinkedIn PDF:</strong>
                     <span class="upload-path">LinkedIn.com → Your Profile → More → Save to PDF</span>
                 </div>
 
-                <button class="btn-primary" id="uploadBtn">Upload LinkedIn Profile PDF</button>
+                <button class="btn-upload" id="uploadBtn">Upload LinkedIn Profile PDF</button>
                 <input type="file" id="linkedinFile" accept=".pdf" style="display: none;">
             </div>
 
-            <!-- Score Card (shown when LinkedIn uploaded) -->
+            <!-- Score Content -->
             <div id="scoreContent" style="display: none;">
                 <!-- Real Talk Banner -->
                 <div class="real-talk">
-                    <h3>Real Talk: How Recruiters Use LinkedIn</h3>
-                    <p>You've got <strong>6–10 seconds</strong> to look "worth opening." Recruiters aren't reading your whole profile at first—your headline, current role, and last company do most of the work. This score helps you optimize for that first impression.</p>
+                    <h3>The 6-Second Reality</h3>
+                    <p>Recruiters aren't reading your profile—they're <strong>scanning</strong>. Headline, current role, last company. That's it for the first pass. Everything below helps you win that 6-second audition.</p>
                 </div>
 
+                <!-- Score Card -->
                 <div class="score-card">
                     <div class="score-header">
                         <div class="score-circle" style="--score: 75">
                             <span class="score-value" id="overallScore">75</span>
                         </div>
                         <div class="score-info">
-                            <h2 id="scoreLabel">Good Profile</h2>
-                            <p class="score-label" id="scoreSummary">Your LinkedIn profile is well-optimized but has room for improvement.</p>
+                            <h2 id="scoreLabel">Good Foundation</h2>
+                            <p class="score-label" id="scoreSummary">Recruiters can find you, but you're not standing out yet.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Breakdown -->
-                <div class="breakdown-section">
-                    <h3 class="breakdown-title">📊 What Recruiters Are Looking At</h3>
-                    <div id="breakdownItems">
+                <!-- Two Column Layout: What Recruiters Check + Pain Points -->
+                <div class="two-column">
+                    <!-- Left: What Recruiters Check -->
+                    <div class="section-card">
+                        <h3 class="section-title">📊 What Recruiters Check</h3>
+                        <div id="breakdownItems">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Pain Points -->
+                    <div class="pain-points" id="painPointsSection">
+                        <h3 class="section-title">🚨 Immediate Attention Needed</h3>
+                        <div id="painPointsItems">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What to Remove Section -->
+                <div class="remove-section">
+                    <h3 class="section-title">🗑️ What to Remove or Fix</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;">These common mistakes can hurt your credibility with recruiters:</p>
+                    <div id="removeItems">
                         <!-- Populated dynamically -->
                     </div>
                 </div>
 
-                <!-- Recommendations -->
-                <div class="breakdown-section">
-                    <h3 class="breakdown-title">🎯 Your Action Items</h3>
-                    <ul class="recommendations-list" id="recommendationsList">
+                <!-- Elite Insights -->
+                <div class="elite-section">
+                    <h3 class="section-title">✨ What Top 0.01% Profiles Have</h3>
+                    <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;">What elite recruiters at FAANG, top PE/VC firms, and Fortune 100 companies look for:</p>
+                    <div class="elite-grid" id="eliteInsights">
                         <!-- Populated dynamically -->
-                    </ul>
+                    </div>
+                </div>
+
+                <!-- Action Items -->
+                <div class="two-column">
+                    <div class="action-section">
+                        <h3 class="section-title">🎯 Priority Actions</h3>
+                        <div id="actionItems">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="action-section">
+                        <h3 class="section-title">📝 Quick Wins</h3>
+                        <div id="quickWins">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="cta-section">
+                    <h3>Ready to Update Your LinkedIn?</h3>
+                    <p>We've generated optimized sections based on your target role. Copy-paste them into your profile.</p>
+                    <a href="documents.html" class="btn-primary" id="viewDocumentsBtn">View Optimized LinkedIn Sections →</a>
                 </div>
             </div>
         </div>
@@ -523,6 +685,62 @@
 
     <script>
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // Elite insights - what top recruiters look for
+        const ELITE_INSIGHTS = [
+            {
+                title: 'Quantified Impact',
+                description: 'Not "managed team" but "scaled team from 3→15, reduced attrition 40%". Numbers signal credibility.'
+            },
+            {
+                title: 'Clear Positioning',
+                description: 'They know exactly what they do and who they serve. No generic "passionate professional" language.'
+            },
+            {
+                title: 'Proof of Growth',
+                description: 'Visible promotions, increasing scope, or deliberate lateral moves that make sense.'
+            },
+            {
+                title: 'Network Quality',
+                description: '500+ connections, recommendations from credible people, engagement on thoughtful content.'
+            },
+            {
+                title: 'Specificity Over Buzzwords',
+                description: '"Led M&A integration for $200M acquisition" beats "strategic leader driving transformation".'
+            },
+            {
+                title: 'Active Presence',
+                description: 'Recent activity, profile photo updated, responding to messages. Shows they\'re engaged, not dormant.'
+            }
+        ];
+
+        // Things to remove from LinkedIn
+        const REMOVE_ITEMS = [
+            {
+                title: 'Buzzword-heavy headline',
+                description: '"Results-driven professional" tells recruiters nothing. Use your actual expertise and level instead.'
+            },
+            {
+                title: 'Generic summary opening',
+                description: '"I am a passionate..." or "With over X years..." - recruiters skip these. Lead with what you actually do.'
+            },
+            {
+                title: 'Outdated roles without context',
+                description: 'Jobs from 10+ years ago don\'t need bullets. Brief context is fine, but don\'t pad your profile.'
+            },
+            {
+                title: 'Skills you can\'t back up',
+                description: 'If you list 50 skills but can\'t discuss half of them, you\'ll look dishonest. Keep your top 10-15.'
+            },
+            {
+                title: 'Personal email in contact',
+                description: 'aol.com, yahoo.com, or joke emails look unprofessional. Use gmail or your personal domain.'
+            },
+            {
+                title: 'Inconsistent dates with resume',
+                description: 'Any mismatch between LinkedIn and resume raises immediate red flags. Sync them exactly.'
+            }
+        ];
 
         // Check if LinkedIn profile is already uploaded
         document.addEventListener('DOMContentLoaded', async () => {
@@ -555,7 +773,6 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // Show loading
             document.getElementById('uploadPrompt').innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -572,20 +789,22 @@
                     body: formData
                 });
 
-                if (!response.ok) {
-                    throw new Error('Upload failed');
-                }
+                if (!response.ok) throw new Error('Upload failed');
 
                 const data = await response.json();
 
-                // Update local profile
                 let profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
                 profile.linkedin_profile_uploaded = true;
                 profile.linkedin_last_updated = new Date().toISOString();
                 profile.linkedin_parsed = data.parsed_data;
                 localStorage.setItem('userProfile', JSON.stringify(profile));
 
-                // Show score
+                // Store scoring data for use in documents page
+                sessionStorage.setItem('linkedinScoringData', JSON.stringify({
+                    parsed: data.parsed_data,
+                    timestamp: new Date().toISOString()
+                }));
+
                 showScoreContent();
                 await loadLinkedInScore();
 
@@ -600,72 +819,38 @@
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
 
-            // Generate score based on profile completeness and job alignment
             const score = calculateLinkedInScore(profile, analysisData);
-            displayScore(score);
+            displayScore(score, analysisData);
+
+            // Store score data for documents page to use
+            sessionStorage.setItem('linkedinScoringResults', JSON.stringify(score));
         }
 
-        // Detailed coaching content for each breakdown category
+        // Scoring logic
         const BREAKDOWN_COACHING = {
-            titleScope: {
-                label: 'Title + Scope',
-                why: 'Recruiters don\'t care about fancy words. They\'re looking at your level, the size of what you owned, and whether you\'ve done the job before.',
-                whatRecruitersSee: [
-                    'Not the title itself—the scope behind it',
-                    'Team size, budget, revenue responsibility',
-                    'Individual contributor vs manager vs director',
-                    'Whether your level matches what they\'re hiring for'
-                ]
+            headline: {
+                label: 'Headline Impact',
+                why: 'Your headline is the first thing recruiters see. It needs to communicate your level and expertise in 3 seconds.'
             },
             careerStory: {
-                label: 'Career Story',
-                why: 'Your progression either makes sense or it doesn\'t. Recruiters are pattern-matching your trajectory to predict your next move.',
-                whatRecruitersSee: [
-                    'Progression: Did you grow or move laterally?',
-                    'Lateral hops get side-eyed—why\'d you move?',
-                    'Gaps longer than 6 months need context',
-                    'The story your moves tell about your ambition'
-                ]
+                label: 'Career Narrative',
+                why: 'Does your progression make sense? Recruiters pattern-match to predict if you\'ll stay and grow.'
             },
-            companyQuality: {
-                label: 'Company Quality',
-                why: 'Name recognition, scale, and relevance to the role all matter. Working at a known company is social proof—it means someone else already vetted you.',
-                whatRecruitersSee: [
-                    'Brand recognition of your employers',
-                    'Company scale and growth stage',
-                    'Industry relevance to the target role',
-                    'Whether you\'ve worked in similar environments'
-                ]
+            credibility: {
+                label: 'Credibility Signals',
+                why: 'Company quality, tenure patterns, and visible achievements build trust before they even message you.'
             },
-            tenure: {
-                label: 'Tenure Patterns',
-                why: 'Too short everywhere looks risky—will you leave in 6 months? Too long everywhere can look stale—are you still growing? Balance matters.',
-                whatRecruitersSee: [
-                    'Average time at each company',
-                    'Recent short stints (< 1 year) are red flags',
-                    '2-4 years is the sweet spot for most roles',
-                    'Long tenure (5+ years) needs visible growth'
-                ]
+            searchability: {
+                label: 'Search Visibility',
+                why: 'Recruiters use Boolean searches. If your skills aren\'t in the right places, you\'re invisible.'
             },
-            keywords: {
-                label: 'Skills Alignment',
-                why: 'Keywords matter for search, but context matters more. Recruiters use Boolean searches to find candidates—if your skills aren\'t there, you\'re invisible.',
-                whatRecruitersSee: [
-                    'Do your skills match what they\'re searching for?',
-                    'Are keywords in context or just listed?',
-                    'Technical skills validated by experience',
-                    'Industry-specific terminology they expect'
-                ]
+            freshness: {
+                label: 'Profile Freshness',
+                why: 'Recent updates signal intent. Stale profiles get filtered out of recruiter searches.'
             },
-            activitySignals: {
-                label: 'Activity Signals',
-                why: '"Open to Work," recent updates, and profile freshness signal intent. Recruiters filter for people who look like they\'re actually open to moving.',
-                whatRecruitersSee: [
-                    'Open to Work badge (visible to recruiters only)',
-                    'Profile updated in last 90 days',
-                    'Recent activity: posts, comments, shares',
-                    'Complete profile = serious candidate'
-                ]
+            completeness: {
+                label: 'Profile Completeness',
+                why: 'Incomplete profiles signal you\'re not serious. All-Star status matters for search ranking.'
             }
         };
 
@@ -673,196 +858,200 @@
             const linkedinData = profile.linkedin_parsed || {};
             const resumeData = analysisData._resume_json || {};
 
-            // Score components (out of 100 each, 6 categories)
-            let titleScopeScore = 0;
-            let careerStoryScore = 0;
-            let companyQualityScore = 0;
-            let tenureScore = 0;
-            let keywordsScore = 0;
-            let activityScore = 0;
+            let scores = {
+                headline: 0,
+                careerStory: 0,
+                credibility: 0,
+                searchability: 0,
+                freshness: 0,
+                completeness: 0
+            };
 
-            // Title + Scope (17 points max)
-            if (linkedinData.headline && linkedinData.headline.length > 20) titleScopeScore += 5;
+            let painPoints = [];
+
+            // Headline Impact (17 points)
+            if (linkedinData.headline) {
+                if (linkedinData.headline.length > 50) scores.headline += 8;
+                else if (linkedinData.headline.length > 20) scores.headline += 4;
+                else painPoints.push({ title: 'Weak Headline', description: 'Your headline is too short. You have 220 characters—use them to show your level and expertise.' });
+
+                if (linkedinData.headline.includes('|') || linkedinData.headline.includes('•')) scores.headline += 5;
+                if (!/passionate|driven|professional|seeking/i.test(linkedinData.headline)) scores.headline += 4;
+                else painPoints.push({ title: 'Buzzword Headline', description: 'Remove generic words like "passionate" or "driven". State what you actually do.' });
+            } else {
+                painPoints.push({ title: 'Missing Headline', description: 'You need a headline. This is the #1 thing recruiters see.' });
+            }
+
+            // Career Story (17 points)
+            const expCount = linkedinData.experience?.length || 0;
+            if (expCount >= 3) scores.careerStory += 6;
+            else if (expCount >= 2) scores.careerStory += 4;
+            else if (expCount >= 1) scores.careerStory += 2;
+            else painPoints.push({ title: 'No Experience Listed', description: 'Add your work experience. Without it, recruiters can\'t assess your background.' });
+
+            if (linkedinData.summary && linkedinData.summary.length > 300) scores.careerStory += 6;
+            else if (linkedinData.summary && linkedinData.summary.length > 100) scores.careerStory += 3;
+            else painPoints.push({ title: 'Weak or Missing Summary', description: 'Your About section should tell your career story. What\'s the thread that connects your roles?' });
+
+            if (linkedinData.education?.length > 0) scores.careerStory += 5;
+
+            // Credibility Signals (17 points)
             if (linkedinData.experience?.length > 0) {
                 const currentRole = linkedinData.experience[0];
-                if (currentRole.title) titleScopeScore += 4;
-                if (currentRole.description && currentRole.description.length > 100) titleScopeScore += 4;
-                if (currentRole.company) titleScopeScore += 4;
+                if (currentRole.description && currentRole.description.length > 200) scores.credibility += 7;
+                else painPoints.push({ title: 'Thin Current Role Description', description: 'Your current role needs more detail. Include scope, team size, and quantified achievements.' });
+
+                scores.credibility += Math.min(5, linkedinData.experience.length * 1.5);
+
+                // Check for quantified achievements
+                const hasNumbers = linkedinData.experience.some(e =>
+                    /\d+%|\$\d+|\d+x|\d+ (people|team|million|billion)/i.test(e.description || '')
+                );
+                if (hasNumbers) scores.credibility += 5;
+                else painPoints.push({ title: 'No Quantified Achievements', description: 'Add numbers to your experience. "Grew revenue 40%" beats "drove growth".' });
             }
 
-            // Career Story (17 points max)
-            const expCount = linkedinData.experience?.length || 0;
-            if (expCount >= 3) careerStoryScore += 8;
-            else if (expCount >= 2) careerStoryScore += 5;
-            else if (expCount >= 1) careerStoryScore += 3;
-
-            // Check for progression (simplified)
-            if (linkedinData.summary && linkedinData.summary.length > 200) careerStoryScore += 5;
-            if (linkedinData.education?.length > 0) careerStoryScore += 4;
-
-            // Company Quality (17 points max) - simplified scoring
-            if (linkedinData.experience?.length > 0) {
-                const hasCompanyDescriptions = linkedinData.experience.some(e => e.company_description?.length > 50);
-                if (hasCompanyDescriptions) companyQualityScore += 8;
-                companyQualityScore += Math.min(9, linkedinData.experience.length * 3);
-            }
-
-            // Tenure Patterns (17 points max)
-            if (linkedinData.experience?.length > 0) {
-                const hasMultiYearRoles = linkedinData.experience.some(e => {
-                    const dates = e.dates || '';
-                    return dates.includes('year') || dates.includes('Present');
-                });
-                if (hasMultiYearRoles) tenureScore += 10;
-                tenureScore += Math.min(7, linkedinData.experience.length * 2);
-            }
-
-            // Skills Alignment (17 points max)
+            // Search Visibility (17 points)
             const atsKeywords = analysisData.ats_keywords || analysisData.required_skills || [];
             const skillCount = linkedinData.skills?.length || 0;
-            if (skillCount >= 10) keywordsScore += 8;
-            else if (skillCount >= 5) keywordsScore += 5;
-            else if (skillCount >= 1) keywordsScore += 2;
 
-            if (atsKeywords.length > 0 && linkedinData.summary) {
-                const summaryLower = (linkedinData.summary + ' ' + (linkedinData.headline || '')).toLowerCase();
-                const matchingKeywords = atsKeywords.filter(kw => summaryLower.includes(kw.toLowerCase()));
-                keywordsScore += Math.min(9, Math.round((matchingKeywords.length / atsKeywords.length) * 9));
+            if (skillCount >= 15) scores.searchability += 6;
+            else if (skillCount >= 5) scores.searchability += 3;
+            else painPoints.push({ title: 'Not Enough Skills', description: 'Add more skills. Recruiters search by skills—if you don\'t list them, you won\'t appear.' });
+
+            if (atsKeywords.length > 0) {
+                const allText = [
+                    linkedinData.headline || '',
+                    linkedinData.summary || '',
+                    ...(linkedinData.experience || []).map(e => e.description || '')
+                ].join(' ').toLowerCase();
+
+                const matchingKeywords = atsKeywords.filter(kw => allText.includes(kw.toLowerCase()));
+                const matchRate = matchingKeywords.length / atsKeywords.length;
+
+                if (matchRate > 0.5) scores.searchability += 8;
+                else if (matchRate > 0.25) scores.searchability += 4;
+                else painPoints.push({ title: 'Missing Key Skills for This Role', description: `Your profile doesn't include many skills recruiters search for in this role: ${atsKeywords.slice(0, 3).join(', ')}.` });
             } else {
-                keywordsScore += 4;
+                scores.searchability += 4;
             }
 
-            // Activity Signals (15 points max)
+            if (linkedinData.headline && atsKeywords.some(kw => linkedinData.headline.toLowerCase().includes(kw.toLowerCase()))) {
+                scores.searchability += 3;
+            }
+
+            // Freshness (17 points)
             if (profile.linkedin_last_updated) {
                 const lastUpdated = new Date(profile.linkedin_last_updated);
                 const daysSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24);
-                if (daysSinceUpdate < 30) activityScore = 15;
-                else if (daysSinceUpdate < 90) activityScore = 12;
-                else if (daysSinceUpdate < 180) activityScore = 8;
-                else activityScore = 4;
+                if (daysSinceUpdate < 30) scores.freshness = 17;
+                else if (daysSinceUpdate < 90) scores.freshness = 12;
+                else if (daysSinceUpdate < 180) scores.freshness = 6;
+                else {
+                    scores.freshness = 3;
+                    painPoints.push({ title: 'Stale Profile', description: 'Your profile hasn\'t been updated recently. Recruiters filter for active profiles.' });
+                }
             } else {
-                activityScore = 10;
+                scores.freshness = 10;
             }
 
-            const overall = Math.round(titleScopeScore + careerStoryScore + companyQualityScore + tenureScore + keywordsScore + activityScore);
+            // Completeness (15 points)
+            let completenessChecks = 0;
+            if (linkedinData.headline) completenessChecks++;
+            if (linkedinData.summary) completenessChecks++;
+            if (linkedinData.experience?.length > 0) completenessChecks++;
+            if (linkedinData.education?.length > 0) completenessChecks++;
+            if (linkedinData.skills?.length > 0) completenessChecks++;
+
+            scores.completeness = Math.round((completenessChecks / 5) * 15);
+            if (completenessChecks < 4) {
+                painPoints.push({ title: 'Incomplete Profile', description: 'Complete all sections: headline, about, experience, education, and skills.' });
+            }
+
+            const overall = Object.values(scores).reduce((a, b) => a + b, 0);
 
             return {
                 overall,
-                breakdown: {
-                    titleScope: {
-                        score: titleScopeScore,
-                        max: 17,
-                        ...BREAKDOWN_COACHING.titleScope
-                    },
-                    careerStory: {
-                        score: careerStoryScore,
-                        max: 17,
-                        ...BREAKDOWN_COACHING.careerStory
-                    },
-                    companyQuality: {
-                        score: companyQualityScore,
-                        max: 17,
-                        ...BREAKDOWN_COACHING.companyQuality
-                    },
-                    tenure: {
-                        score: tenureScore,
-                        max: 17,
-                        ...BREAKDOWN_COACHING.tenure
-                    },
-                    keywords: {
-                        score: keywordsScore,
-                        max: 17,
-                        ...BREAKDOWN_COACHING.keywords
-                    },
-                    activitySignals: {
-                        score: activityScore,
-                        max: 15,
-                        ...BREAKDOWN_COACHING.activitySignals
-                    }
-                },
-                recommendations: generateRecommendations(titleScopeScore, careerStoryScore, companyQualityScore, tenureScore, keywordsScore, activityScore, linkedinData)
+                breakdown: Object.keys(scores).map(key => ({
+                    key,
+                    score: scores[key],
+                    max: key === 'completeness' || key === 'freshness' ? 15 : 17,
+                    ...BREAKDOWN_COACHING[key]
+                })),
+                painPoints,
+                recommendations: generateRecommendations(scores, linkedinData, atsKeywords)
             };
         }
 
-        function generateRecommendations(titleScope, careerStory, companyQuality, tenure, keywords, activity, linkedinData) {
-            const recommendations = [];
+        function generateRecommendations(scores, linkedinData, atsKeywords) {
+            const priority = [];
+            const quickWins = [];
 
-            // Title + Scope recommendations
-            if (titleScope < 12) {
-                recommendations.push({
+            // Priority actions based on lowest scores
+            if (scores.headline < 12) {
+                priority.push({
                     priority: 'high',
-                    title: 'Strengthen Your Headline',
-                    text: 'Your headline is prime real estate. Include your level, specialty, and what you\'re known for—not just your job title. Recruiters decide in 3 seconds if you\'re worth clicking.'
+                    title: 'Rewrite Your Headline',
+                    text: `Use format: "[Level] [Role] | [Specialty] | [Differentiator]". Example: "VP Talent Acquisition | Tech & Finance | Built teams from 0-100".`
                 });
             }
 
-            // Career Story recommendations
-            if (careerStory < 12) {
-                recommendations.push({
+            if (scores.credibility < 10) {
+                priority.push({
+                    priority: 'high',
+                    title: 'Add Quantified Achievements',
+                    text: 'For each role, include at least 2-3 metrics: team size, budget, revenue impact, cost savings, or growth percentages.'
+                });
+            }
+
+            if (scores.searchability < 10) {
+                priority.push({
+                    priority: 'high',
+                    title: 'Optimize for Search',
+                    text: `Add these skills to your profile: ${atsKeywords.slice(0, 5).join(', ')}. Put the most important ones in your headline and summary too.`
+                });
+            }
+
+            if (scores.careerStory < 10) {
+                priority.push({
                     priority: 'high',
                     title: 'Tell Your Career Story',
-                    text: 'Add a summary that connects the dots. Why did you make each move? What\'s the thread? Recruiters are pattern-matching—help them see your trajectory.'
+                    text: 'Rewrite your About section to explain the "why" behind your career moves. What\'s the thread that connects your experience?'
                 });
             }
 
-            // Company Quality recommendations
-            if (companyQuality < 10) {
-                recommendations.push({
+            // Quick wins
+            quickWins.push({
+                priority: 'medium',
+                title: 'Turn on "Open to Work"',
+                text: 'Enable it for recruiters only. This puts you in their search filters for active candidates.'
+            });
+
+            if (scores.freshness < 15) {
+                quickWins.push({
                     priority: 'medium',
-                    title: 'Add Company Context',
-                    text: 'Not everyone knows your past employers. Add brief company descriptions: size, industry, what they\'re known for. This gives your experience context and credibility.'
+                    title: 'Update Something Today',
+                    text: 'Even a small edit refreshes your profile in LinkedIn\'s algorithm. Add a skill, tweak a bullet point.'
                 });
             }
 
-            // Tenure recommendations
-            if (tenure < 10) {
-                recommendations.push({
-                    priority: 'medium',
-                    title: 'Address Tenure Concerns',
-                    text: 'If you have short stints, add context in your descriptions. Acquisitions, restructures, and contract roles are valid—but recruiters won\'t know unless you tell them.'
-                });
-            }
+            quickWins.push({
+                priority: 'medium',
+                title: 'Get a Recommendation',
+                text: 'Ask a recent manager or colleague. Recommendations from credible people add social proof.'
+            });
 
-            // Keywords recommendations
-            if (keywords < 12) {
-                recommendations.push({
-                    priority: 'high',
-                    title: 'Optimize for Recruiter Search',
-                    text: 'Recruiters use Boolean search to find candidates. Make sure your target skills appear in your headline, summary, AND experience sections—not just your skills list.'
-                });
-            }
+            quickWins.push({
+                priority: 'medium',
+                title: 'Engage with Content',
+                text: 'Comment thoughtfully on industry posts. Active profiles rank higher and show recruiters you\'re engaged.'
+            });
 
-            // Activity recommendations
-            if (activity < 12) {
-                recommendations.push({
-                    priority: 'medium',
-                    title: 'Signal You\'re Open',
-                    text: 'Turn on "Open to Work" (visible to recruiters only). Update your profile this week. Recent activity signals intent—and recruiters filter for it.'
-                });
-            }
-
-            // Add specific tactical recommendations
-            if (!linkedinData?.headline || linkedinData.headline.length < 30) {
-                recommendations.push({
-                    priority: 'high',
-                    title: 'Expand Your Headline',
-                    text: 'You have 220 characters—use them. Format: "[Level] [Role] | [Specialty] | [What you\'re known for]". Example: "Senior Product Manager | B2B SaaS | Scaled products from 0-1"'
-                });
-            }
-
-            if (!linkedinData?.summary || linkedinData.summary.length < 200) {
-                recommendations.push({
-                    priority: 'high',
-                    title: 'Write a Real Summary',
-                    text: 'Your About section should answer: What do you do? What are you great at? What are you looking for? Write it in first person—be human, not a robot.'
-                });
-            }
-
-            return recommendations;
+            return { priority, quickWins };
         }
 
-        function displayScore(scoreData) {
-            const { overall, breakdown, recommendations } = scoreData;
+        function displayScore(scoreData, analysisData) {
+            const { overall, breakdown, painPoints, recommendations } = scoreData;
 
             // Update overall score
             document.getElementById('overallScore').textContent = overall;
@@ -870,43 +1059,29 @@
 
             // Set score label
             let label, summary;
-            if (overall >= 80) {
-                label = 'Strong Profile';
-                summary = 'You\'re showing up well in recruiter searches. A few tweaks could make you stand out even more.';
-            } else if (overall >= 60) {
-                label = 'Good Foundation';
-                summary = 'Recruiters can find you, but you\'re not standing out yet. Focus on the items below to level up.';
-            } else if (overall >= 40) {
-                label = 'Needs Work';
-                summary = 'You\'re likely getting filtered out of recruiter searches. Address the high-priority items first.';
+            if (overall >= 85) {
+                label = 'Elite Profile';
+                summary = 'You\'re in the top tier. Recruiters will notice you. Fine-tune the details below.';
+            } else if (overall >= 70) {
+                label = 'Strong Foundation';
+                summary = 'You\'re showing up in searches. Address the pain points to stand out from the crowd.';
+            } else if (overall >= 50) {
+                label = 'Needs Improvement';
+                summary = 'Recruiters might find you but won\'t click. Focus on the high-priority items first.';
             } else {
                 label = 'Invisible to Recruiters';
-                summary = 'Your profile isn\'t optimized for how recruiters actually search. Let\'s fix that.';
+                summary = 'Your profile isn\'t optimized for how recruiters search. Start with the pain points below.';
             }
 
             document.getElementById('scoreLabel').textContent = label;
             document.getElementById('scoreSummary').textContent = summary;
 
-            // Render breakdown with coaching content
+            // Render breakdown (compact version)
             const breakdownContainer = document.getElementById('breakdownItems');
-            breakdownContainer.innerHTML = Object.entries(breakdown).map(([key, item]) => {
+            breakdownContainer.innerHTML = breakdown.map(item => {
                 const percentage = Math.round((item.score / item.max) * 100);
-                let status, icon;
-                if (percentage >= 80) {
-                    status = 'success';
-                    icon = '✓';
-                } else if (percentage >= 50) {
-                    status = 'warning';
-                    icon = '!';
-                } else {
-                    status = 'error';
-                    icon = '✗';
-                }
-
-                // Build the "What Recruiters See" list
-                const whatRecruitersSeeHTML = item.whatRecruitersSee
-                    ? item.whatRecruitersSee.map(point => `<li>${point}</li>`).join('')
-                    : '';
+                let status = percentage >= 80 ? 'success' : percentage >= 50 ? 'warning' : 'error';
+                let icon = percentage >= 80 ? '✓' : percentage >= 50 ? '!' : '✗';
 
                 return `
                     <div class="breakdown-item ${status}">
@@ -917,39 +1092,80 @@
                             </div>
                             <span class="breakdown-score ${status}">${item.score}/${item.max}</span>
                         </div>
-                        <p class="breakdown-why">${item.why || ''}</p>
-                        ${whatRecruitersSeeHTML ? `
-                            <div class="breakdown-what-recruiters-see">
-                                <strong>What Recruiters Check</strong>
-                                <ul>${whatRecruitersSeeHTML}</ul>
-                            </div>
-                        ` : ''}
+                        <p class="breakdown-why">${item.why}</p>
                     </div>
                 `;
             }).join('');
 
-            // Render recommendations
-            const recommendationsContainer = document.getElementById('recommendationsList');
-            if (recommendations.length > 0) {
-                recommendationsContainer.innerHTML = recommendations.map(rec => `
-                    <li class="recommendation-item">
-                        <span class="recommendation-priority priority-${rec.priority}">${rec.priority}</span>
-                        <div class="recommendation-text">
-                            <strong>${rec.title}</strong>
-                            <p>${rec.text}</p>
+            // Render pain points
+            const painPointsContainer = document.getElementById('painPointsItems');
+            if (painPoints.length > 0) {
+                painPointsContainer.innerHTML = painPoints.map(point => `
+                    <div class="pain-item">
+                        <span class="pain-icon">⚠️</span>
+                        <div class="pain-content">
+                            <strong>${point.title}</strong>
+                            <p>${point.description}</p>
                         </div>
-                    </li>
+                    </div>
                 `).join('');
             } else {
-                recommendationsContainer.innerHTML = `
-                    <li class="recommendation-item" style="background: rgba(74, 222, 128, 0.1); border-left: 3px solid var(--color-success);">
-                        <div class="recommendation-text">
-                            <strong style="color: var(--color-success);">You\'re in great shape</strong>
-                            <p>Your LinkedIn profile is well-optimized. Keep it fresh by updating every 90 days and engaging with content in your industry.</p>
-                        </div>
-                    </li>
+                painPointsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--color-success);">
+                        <span style="font-size: 2rem;">✓</span>
+                        <p style="margin-top: 8px;">No critical issues found. Focus on the quick wins to optimize further.</p>
+                    </div>
                 `;
+                document.getElementById('painPointsSection').style.background = 'rgba(74, 222, 128, 0.05)';
+                document.getElementById('painPointsSection').style.border = '1px solid rgba(74, 222, 128, 0.2)';
+                document.querySelector('#painPointsSection .section-title').style.color = 'var(--color-success)';
+                document.querySelector('#painPointsSection .section-title').textContent = '✓ Looking Good';
             }
+
+            // Render what to remove
+            const removeContainer = document.getElementById('removeItems');
+            removeContainer.innerHTML = REMOVE_ITEMS.map(item => `
+                <div class="remove-item">
+                    <span class="remove-icon">✗</span>
+                    <div class="remove-content">
+                        <strong>${item.title}</strong>
+                        <p>${item.description}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render elite insights
+            const eliteContainer = document.getElementById('eliteInsights');
+            eliteContainer.innerHTML = ELITE_INSIGHTS.map(item => `
+                <div class="elite-item">
+                    <strong>${item.title}</strong>
+                    <p>${item.description}</p>
+                </div>
+            `).join('');
+
+            // Render action items
+            const actionContainer = document.getElementById('actionItems');
+            actionContainer.innerHTML = recommendations.priority.map(rec => `
+                <div class="action-item ${rec.priority}">
+                    <span class="action-priority ${rec.priority}">${rec.priority}</span>
+                    <div class="action-text">
+                        <strong>${rec.title}</strong>
+                        <p>${rec.text}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render quick wins
+            const quickWinsContainer = document.getElementById('quickWins');
+            quickWinsContainer.innerHTML = recommendations.quickWins.map(rec => `
+                <div class="action-item ${rec.priority}">
+                    <span class="action-priority ${rec.priority}">${rec.priority}</span>
+                    <div class="action-text">
+                        <strong>${rec.title}</strong>
+                        <p>${rec.text}</p>
+                    </div>
+                </div>
+            `).join('');
         }
     </script>
 
