@@ -1,26 +1,26 @@
 {
   "screening_questions": [
     {
-      "question_text": "How many years of Python experience do you have?",
-      "question_type": "years_of_experience",
-      "required": true,
-      "user_draft_answer": null
-    },
-    {
-      "question_text": "What are your salary expectations for this role?",
-      "question_type": "salary",
-      "required": true,
-      "user_draft_answer": null
-    },
-    {
-      "question_text": "Are you authorized to work in the United States?",
-      "question_type": "authorization",
-      "required": true,
-      "user_draft_answer": null
-    },
-    {
       "question_text": "Do you have experience with cloud platforms (AWS, GCP, Azure)?",
       "question_type": "yes_no",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "What are your compensation expectations for this role?",
+      "question_type": "comp_expectations",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "Describe a challenging project you led and how you overcame obstacles.",
+      "question_type": "essay",
+      "required": true,
+      "user_draft_answer": null
+    },
+    {
+      "question_text": "When can you start?",
+      "question_type": "availability",
       "required": true,
       "user_draft_answer": null
     }

@@ -8091,14 +8091,11 @@ class ScreenshotExtractResponse(BaseModel):
 
 class ScreeningQuestionType(str, Enum):
     """Types of screening questions encountered in job applications"""
-    YEARS_OF_EXPERIENCE = "years_of_experience"
-    SALARY = "salary"
-    AUTHORIZATION = "authorization"
     YES_NO = "yes_no"
+    COMP_EXPECTATIONS = "comp_expectations"
     ESSAY = "essay"
-    RELOCATION = "relocation"
-    AVAILABILITY = "availability"
     MULTIPLE_CHOICE = "multiple_choice"
+    AVAILABILITY = "availability"
 
 class ScreeningRiskLevel(str, Enum):
     """Risk level for auto-rejection from screening questions"""
@@ -8323,6 +8320,12 @@ CRITICAL RULES:
 6. Use the candidate's ACTUAL resume data to determine honest answers
 7. Use the job description to detect hard requirements and threshold filters
 
+WRITING STYLE:
+- Use proper grammar and punctuation throughout all responses
+- NEVER use em dashes (—) or en dashes (–). Use commas, semicolons, colons, or separate sentences instead
+- Write in clear, professional English
+- Avoid run-on sentences
+
 RISK SCORING:
 - "high": Honest answer clearly fails stated requirement (e.g., 4 years when 5+ required)
 - "medium": Answer is borderline/defensible (e.g., 4.5 years when 5+ required)
@@ -8332,7 +8335,7 @@ RISK SCORING:
 HONESTY FLAGS:
 - "truthful": Answer reflects candidate's actual experience with no embellishment
 - "strategic_framing": Technically defensible but requires generous interpretation (e.g., counting academic work as "professional")
-- "borderline": Requires judgment call - explain the tradeoffs
+- "borderline": Requires judgment call, explain the tradeoffs
 
 At the start of your response, provide a brief conversational_summary (2-3 sentences) explaining the overall situation before the JSON.
 
@@ -8341,7 +8344,7 @@ Return valid JSON after the summary. Structure:
   "screening_analysis": [
     {
       "question_text": "...",
-      "question_type": "years_of_experience|salary|authorization|yes_no|essay|relocation|availability|multiple_choice",
+      "question_type": "yes_no|comp_expectations|essay|multiple_choice|availability",
       "auto_rejection_risk": "high|medium|low|safe",
       "risk_explanation": "...",
       "recommended_answer": "...",
