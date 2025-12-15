@@ -119,20 +119,32 @@
             font-size: 0.95rem;
         }
 
-        /* Fix List */
+        /* Fix List - Collapsible */
         .fix-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
-            padding: 24px;
             margin-bottom: 24px;
+            overflow: hidden;
         }
 
         .fix-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 20px 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .fix-header:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .fix-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .fix-title {
@@ -151,6 +163,36 @@
 
         .fix-count.success {
             background: var(--color-success);
+        }
+
+        .fix-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .fix-chevron {
+            transition: transform 0.2s;
+        }
+
+        .fix-section.expanded .fix-chevron {
+            transform: rotate(180deg);
+        }
+
+        .fix-list {
+            display: none;
+            padding: 0 24px 24px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .fix-section.expanded .fix-list {
+            display: block;
+        }
+
+        .fix-list-inner {
+            padding-top: 16px;
         }
 
         .fix-item {
@@ -269,12 +311,18 @@
 
         .after-text { color: var(--color-text); }
 
-        /* Section Cards */
+        /* Section Cards - 2 Column Grid */
         .section-cards {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
             margin-bottom: 24px;
+        }
+
+        @media (max-width: 700px) {
+            .section-cards {
+                grid-template-columns: 1fr;
+            }
         }
 
         .section-card {
@@ -293,7 +341,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
+            padding: 14px 16px;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -305,27 +353,27 @@
         .section-card-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .section-icon {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
 
         .section-name {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .section-card-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .section-score {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
 
         .section-card.good .section-score { color: var(--color-success); }
@@ -335,6 +383,7 @@
         .section-chevron {
             color: var(--color-text-secondary);
             transition: transform 0.2s;
+            font-size: 0.8rem;
         }
 
         .section-card.expanded .section-chevron {
@@ -343,7 +392,7 @@
 
         .section-card-body {
             display: none;
-            padding: 0 20px 20px;
+            padding: 0 16px 16px;
             border-top: 1px solid var(--color-border);
         }
 
@@ -352,15 +401,15 @@
         }
 
         .score-criteria {
-            padding-top: 16px;
+            padding-top: 12px;
         }
 
         .criteria-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 0;
-            font-size: 0.9rem;
+            padding: 6px 0;
+            font-size: 0.85rem;
             border-bottom: 1px solid var(--color-border);
         }
 
@@ -1316,32 +1365,58 @@
             const highCount = fixes.filter(f => f.severity === 'HIGH').length;
             const countClass = criticalCount > 0 ? '' : (highCount > 0 ? '' : 'success');
 
+            // Generate summary text
+            let summaryText = '';
+            if (criticalCount > 0) {
+                summaryText = `${criticalCount} critical`;
+                if (highCount > 0) summaryText += `, ${highCount} high priority`;
+            } else if (highCount > 0) {
+                summaryText = `${highCount} high priority`;
+            } else {
+                summaryText = 'Minor improvements';
+            }
+
             container.innerHTML = `
-                <div class="fix-section">
-                    <div class="fix-header">
-                        <span class="fix-title">Priority Fix List</span>
-                        <span class="fix-count ${countClass}">${fixes.length} items</span>
+                <div class="fix-section" id="fixSection">
+                    <div class="fix-header" id="fixToggle">
+                        <div class="fix-header-left">
+                            <span class="fix-title">Priority Fix List</span>
+                            <span class="fix-count ${countClass}">${fixes.length} items</span>
+                        </div>
+                        <div class="fix-header-right">
+                            <span>${summaryText}</span>
+                            <span class="fix-chevron">▼</span>
+                        </div>
                     </div>
-                    ${fixes.map(fix => {
-                        const severity = SEVERITY[fix.severity];
-                        return `
-                            <div class="fix-item ${severity.class}">
-                                <div class="fix-item-header">
-                                    <span class="fix-item-title">
-                                        <span class="priority ${severity.class}">${severity.label}</span>
-                                        ${fix.problem}
-                                    </span>
-                                </div>
-                                <p class="fix-item-why"><strong>Why it matters:</strong> ${fix.why}</p>
-                                <div class="after">
-                                    <div class="after-label">How to fix</div>
-                                    <div class="after-text">${fix.fix}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                    <div class="fix-list">
+                        <div class="fix-list-inner">
+                            ${fixes.map(fix => {
+                                const severity = SEVERITY[fix.severity];
+                                return `
+                                    <div class="fix-item ${severity.class}">
+                                        <div class="fix-item-header">
+                                            <span class="fix-item-title">
+                                                <span class="priority ${severity.class}">${severity.label}</span>
+                                                ${fix.problem}
+                                            </span>
+                                        </div>
+                                        <p class="fix-item-why"><strong>Why it matters:</strong> ${fix.why}</p>
+                                        <div class="after">
+                                            <div class="after-label">How to fix</div>
+                                            <div class="after-text">${fix.fix}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
                 </div>
             `;
+
+            // Add click handler for fix list toggle
+            document.getElementById('fixToggle').addEventListener('click', () => {
+                document.getElementById('fixSection').classList.toggle('expanded');
+            });
         }
     </script>
 
