@@ -554,6 +554,51 @@
     line-height: 1.6;
 }
 
+/* Alert Info Box */
+.linkedin-alert-info {
+    background: rgba(34, 211, 238, 0.08);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.linkedin-alert-info h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 12px;
+}
+
+.linkedin-alert-info p {
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+/* Loading State */
+.linkedin-loading {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--color-text-secondary);
+}
+
+.linkedin-loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-surface-elevated);
+    border-top-color: #0077b5;
+    border-radius: 50%;
+    animation: linkedin-spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes linkedin-spin {
+    to { transform: rotate(360deg); }
+}
+
+.linkedin-loading p {
+    font-size: 0.95rem;
+}
+
 /* Discrepancies List */
 .linkedin-discrepancies-list {
     margin: 16px 0;

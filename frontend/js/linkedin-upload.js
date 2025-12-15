@@ -683,7 +683,7 @@
          * @param {string} containerId - ID of container element
          * @param {Object} alignmentData - Alignment check results (optional)
          */
-        renderAlignmentSection(containerId, alignmentData = null) {
+        async renderAlignmentSection(containerId, alignmentData = null) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
@@ -696,8 +696,52 @@
                 this.renderAlignmentResults(container, alignmentData);
             } else {
                 // Show loading state while fetching alignment
-                container.innerHTML = '<div class="loading">Checking LinkedIn alignment...</div>';
+                container.innerHTML = '<div class="linkedin-loading"><div class="spinner"></div><p>Checking LinkedIn alignment...</p></div>';
+
+                try {
+                    // Get job context from session storage
+                    const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                    const jobId = analysisData._job_id;
+
+                    // Fetch alignment check from API
+                    const results = await this.checkAlignment(jobId);
+
+                    if (results && !results.error) {
+                        this.renderAlignmentResults(container, results);
+                    } else {
+                        // Fallback: show basic status
+                        this.renderAlignmentFallback(container, profile);
+                    }
+                } catch (error) {
+                    console.error('Error checking LinkedIn alignment:', error);
+                    // Fallback: show basic status
+                    this.renderAlignmentFallback(container, profile);
+                }
             }
+        }
+
+        /**
+         * Render fallback alignment status when API fails
+         */
+        renderAlignmentFallback(container, profile) {
+            const lastUpdated = profile.linkedin_last_updated
+                ? new Date(profile.linkedin_last_updated).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })
+                : 'Unknown';
+
+            container.innerHTML = `
+                <div class="linkedin-alert-info">
+                    <h3>💼 LinkedIn Profile Uploaded</h3>
+                    <p>Your LinkedIn profile was uploaded on ${lastUpdated}.</p>
+                    <p style="margin-top: 12px; color: var(--color-text-secondary); font-size: 0.9rem;">
+                        Tip: Make sure your LinkedIn headline and summary reflect the role you're applying for.
+                        Visit your <a href="documents.html" style="color: var(--color-accent);">Tailored Documents</a> to see optimized LinkedIn sections.
+                    </p>
+                </div>
+            `;
         }
 
         /**
