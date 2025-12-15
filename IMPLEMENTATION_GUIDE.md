@@ -192,7 +192,7 @@ All features below have been implemented and deployed to production:
 **Files Modified**:
 - `frontend/components/ask-henry.js` - Full-featured contextual AI assistant (1,058 lines)
 
-**Features Implemented**:
+**What's Implemented** (Informational Chat):
 
 1. **Random Tooltip Messages**
    - 14+ fun prompts appearing every 20-40 seconds
@@ -231,6 +231,17 @@ All features below have been implemented and deployed to production:
 9. **Global Functions**
    - `openAskHenry()` - Opens chat drawer
    - `openAskHenryWithPrompt(prompt)` - Opens and sends a message
+
+**What's NOT Implemented** (Transactional Chat - Phase 1.5):
+
+- ❌ **Document regeneration from chat commands**
+  - Cannot say "make this bullet more impactful" and have it regenerate
+  - Users must go back through the full flow to regenerate documents
+  - See Phase 1.5.2 in PRODUCT_STRATEGY_ROADMAP.md
+
+- ❌ **Screening questions analysis**
+  - Cannot analyze screening questions for auto-rejection risk
+  - See Phase 1.5.1 in PRODUCT_STRATEGY_ROADMAP.md (RECOMMENDED PRIORITY)
 
 ---
 

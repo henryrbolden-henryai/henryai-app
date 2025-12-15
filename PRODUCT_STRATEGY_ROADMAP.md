@@ -444,6 +444,123 @@ function submitAnalysis() {
 
 ---
 
+### 💬 Phase 1.5: Application Support Features
+
+**Goal**: Prevent silent rejections and enable document refinement
+
+**Priority**: HIGH
+**Effort**: Medium (3-5 days each feature)
+**Impact**: HIGH
+**Timeline**: 2 weeks (Jan 9-22, 2026)
+**Status**: 📋 PLANNED
+**Dependencies**: Phase 1 complete
+
+#### Clarification: Ask Henry Chat Status
+
+**What's Already Implemented** (Dec 12, 2025):
+- ✅ Contextual AI assistant (Ask Henry) - 1,058 lines
+- ✅ Full conversation history persistence (last 20 messages)
+- ✅ 13+ page-specific suggestion sets
+- ✅ Pipeline data integration (tracks apps, interview rates, ghosted detection)
+- ✅ Global functions: `openAskHenry()`, `openAskHenryWithPrompt()`
+- ✅ Message formatting (bold, italic, lists)
+- ✅ Personalized greetings, breathing animation, tooltips
+
+**What's NOT Implemented** (actual gaps):
+- ❌ Document regeneration from chat commands ("make this more senior")
+- ❌ Screening questions analysis
+
+#### 1.5.1 Screening Questions Analysis (RECOMMENDED PRIORITY)
+
+**Why this comes first**:
+1. **Critical failure point**: Users pass resume screen, then get auto-rejected for answering "No" to "5+ years Python?" when they have 4.5 years
+2. **100% of online applicants** face screening questions vs ~20% who want granular document control
+3. **No workaround exists** - document iteration has a clunky but functional workaround; screening questions have nothing
+
+**Implementation**:
+- New endpoint: `POST /api/screening-questions/analyze`
+- Input: Array of screening questions with types (yes/no, years of experience, salary, essay)
+- Output: Auto-rejection risk scores + recommended answers
+
+**Files to Create/Modify**:
+- `backend/backend.py`: Add `/api/screening-questions/analyze` endpoint
+- `frontend/screening-questions.html`: New page for question analysis
+
+**Endpoint Design**:
+```python
+@app.post("/api/screening-questions/analyze")
+async def analyze_screening_questions(request: ScreeningQuestionsRequest):
+    """
+    Analyzes screening questions and provides risk assessment + recommended answers.
+
+    Input:
+    {
+        "questions": [
+            {"question": "Do you have 5+ years Python experience?", "type": "yes_no"},
+            {"question": "What are your salary expectations?", "type": "salary"},
+            {"question": "Are you authorized to work in the US?", "type": "yes_no"}
+        ],
+        "resume_data": {...},
+        "jd_analysis": {...}
+    }
+
+    Output:
+    {
+        "analysis": [
+            {
+                "question": "Do you have 5+ years Python experience?",
+                "risk_level": "high",  # high, medium, low
+                "risk_reason": "You have 4.5 years Python. Answering 'No' may auto-reject.",
+                "recommended_answer": "Yes",
+                "justification": "Your 4.5 years rounds to 5. Most recruiters consider 4+ as meeting this threshold."
+            },
+            ...
+        ],
+        "overall_risk": "medium",
+        "auto_reject_flags": 1
+    }
+    """
+```
+
+**Expected Outcome**:
+- Prevent silent auto-rejections from screening question mistakes
+- Users understand which questions are "knockout" questions
+- Provide defensible answers for edge cases
+
+**Success Metrics**:
+- Auto-rejection rate: -30% (measured via user feedback)
+- User confidence in screening answers: 4.5/5
+
+---
+
+#### 1.5.2 Document Iteration via Chat (SECONDARY)
+
+**Why this is secondary**:
+- Users can already regenerate documents by going back through the flow (clunky but works)
+- Serves ~20% of users who want granular control
+- More complex to implement (version history, UI for comparing v1 vs v2)
+
+**Implementation**:
+- New endpoint: `POST /api/documents/refine`
+- Input: Existing document + chat prompt ("make more senior", "add more ATS keywords")
+- Output: Refined document with diff highlighting
+
+**Files to Create/Modify**:
+- `backend/backend.py`: Add `/api/documents/refine` endpoint
+- `frontend/components/ask-henry.js`: Add "Regenerate" button when user requests changes
+- `frontend/documents.html`: Add iteration history UI (v1, v2, v3)
+
+**Expected Outcome**:
+- Users can refine documents without restarting flow
+- Version history for document iterations
+- Diff view showing what changed
+
+**Success Metrics**:
+- Document edit requests via chat: track adoption
+- Time to final document: -25%
+
+---
+
 ## Medium-Term Roadmap (January 9 - March 31, 2026)
 
 ### 🎯 Phase 2: Intelligent Defaults & Smart Inference

@@ -605,6 +605,12 @@ Frontend will gracefully handle missing `validation` field.
 - ✅ Context-aware assistance on every page
 - ✅ Persistent conversation across page navigation
 
+**What's NOT Implemented** (Phase 1.5):
+- ❌ Document regeneration from chat commands ("make this more senior")
+- ❌ Screening questions analysis (auto-rejection risk detection)
+
+See PRODUCT_STRATEGY_ROADMAP.md Phase 1.5 for planned features.
+
 ---
 
 ### 10. ✅ HenryHQ.ai Landing Page (Dec 12)
