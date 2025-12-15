@@ -726,6 +726,155 @@
         return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
     }
 
+    // ==========================================
+    // Document Refinement Detection (Phase 1.5)
+    // ==========================================
+
+    // Triggers that indicate user wants to modify a document
+    const REFINEMENT_TRIGGERS = [
+        'make it more', 'make this more', 'can you make',
+        'add more', 'remove the', 'change the',
+        'too generic', 'more specific', 'more senior',
+        'less formal', 'more formal', 'shorter', 'longer',
+        'rewrite', 'update the', 'modify the',
+        'make my resume', 'make the resume', 'make my cover letter',
+        'add keywords', 'more impactful', 'more action verbs',
+        'sound more', 'tone down', 'emphasize', 'highlight'
+    ];
+
+    function detectRefinementRequest(message) {
+        const lowerMessage = message.toLowerCase();
+        return REFINEMENT_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+    }
+
+    async function handleRefinementRequest(message) {
+        const currentPage = window.location.pathname;
+
+        // Only handle refinements on document-related pages
+        if (!currentPage.includes('documents') && !currentPage.includes('overview')) {
+            return null; // Let normal chat handle it
+        }
+
+        const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
+        const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+
+        // Check if we have documents to refine
+        if (!documentsData.resume_output && !documentsData.cover_letter) {
+            return null; // No document to refine
+        }
+
+        // Determine document type from context or default to resume
+        let documentType = 'resume';
+        const lowerMessage = message.toLowerCase();
+        if (lowerMessage.includes('cover letter')) {
+            documentType = 'cover_letter';
+        } else if (lowerMessage.includes('outreach')) {
+            documentType = 'outreach';
+        }
+
+        const currentDoc = documentType === 'resume'
+            ? documentsData.resume_output
+            : documentsData.cover_letter;
+
+        if (!currentDoc) {
+            return null; // Specific document not available
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/api/documents/refine`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_command: message,
+                    target_document: documentType,
+                    current_document_data: currentDoc,
+                    original_jd_analysis: analysisData,
+                    original_resume_data: analysisData._resume_json || {},
+                    conversation_history: conversationHistory.slice(-10),
+                    version: documentsData._version || 1
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Refinement failed');
+            }
+
+            const result = await response.json();
+
+            // Update stored documents
+            if (documentType === 'resume') {
+                documentsData.resume_output = result.updated_document;
+            } else {
+                documentsData.cover_letter = result.updated_document;
+            }
+            documentsData._version = result.updated_document.version || (documentsData._version || 1) + 1;
+            documentsData._lastRefinement = {
+                timestamp: new Date().toISOString(),
+                changes: result.changes_summary,
+                summary: result.conversational_response
+            };
+            sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+            // Format response with changes
+            let changesText = '';
+            if (result.changes_summary && result.changes_summary.sections_modified) {
+                changesText = '\n\n**Changes made:**\n';
+                result.changes_summary.sections_modified.forEach(section => {
+                    changesText += `• ${section}\n`;
+                });
+            }
+
+            const docName = documentType.replace('_', ' ');
+            return {
+                message: `I've updated your ${docName} (now v${documentsData._version}).\n\n${result.conversational_response}${changesText}\n\n*Refresh the page to see the updated document.*`,
+                showRefreshButton: true,
+                validation: result.validation
+            };
+
+        } catch (error) {
+            console.error('Refinement error:', error);
+            return {
+                message: `I couldn't refine the document: ${error.message}. Try rephrasing your request or ask me a different question.`,
+                showRefreshButton: false
+            };
+        }
+    }
+
+    function addRefreshButton() {
+        const messagesContainer = document.getElementById('askHenryMessages');
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'ask-henry-refresh-btn';
+        refreshBtn.innerHTML = 'Refresh to see changes';
+        refreshBtn.onclick = () => window.location.reload();
+
+        // Add some basic inline styles for the button
+        refreshBtn.style.cssText = `
+            display: block;
+            margin: 12px auto;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        `;
+        refreshBtn.onmouseover = () => {
+            refreshBtn.style.transform = 'translateY(-2px)';
+            refreshBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+        };
+        refreshBtn.onmouseout = () => {
+            refreshBtn.style.transform = 'translateY(0)';
+            refreshBtn.style.boxShadow = 'none';
+        };
+
+        messagesContainer.appendChild(refreshBtn);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
     // Create widget HTML
     function createWidget() {
         const context = getPageContext();
@@ -928,6 +1077,23 @@
         addTypingIndicator();
 
         try {
+            // Check for document refinement requests (Phase 1.5)
+            if (detectRefinementRequest(message)) {
+                const refinementResult = await handleRefinementRequest(message);
+                if (refinementResult) {
+                    removeTypingIndicator();
+                    addMessage('assistant', refinementResult.message);
+                    conversationHistory.push({ role: 'assistant', content: refinementResult.message });
+                    saveConversationHistory();
+                    if (refinementResult.showRefreshButton) {
+                        addRefreshButton();
+                    }
+                    isLoading = false;
+                    return;
+                }
+                // If refinementResult is null, continue with normal chat
+            }
+
             // Gather context
             const context = getPageContext();
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
