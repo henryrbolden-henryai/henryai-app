@@ -947,6 +947,16 @@
             </div>
         </div>
 
+        <!-- TODAY'S FOCUS -->
+        <div class="focus-section">
+            <h2>Today's Focus</h2>
+            <div class="focus-card">
+                <div class="focus-items" id="focusItems">
+                    <!-- Dynamically populated with 3+ action items -->
+                </div>
+            </div>
+        </div>
+
         <!-- STRATEGIC OPTIONS (conditionally shown based on urgency) -->
         <div class="strategic-options-section" id="strategicOptionsSection" style="display: none;">
             <h2>Strategic Options</h2>
@@ -997,16 +1007,6 @@
                     <p>Calculate your target rate: (Annual Salary ÷ 2000 hours) × 1.3 to account for benefits/taxes you'll self-pay.</p>
                 </div>
                 <button class="contract-modal-close" onclick="closeContractGuidanceModal()">Got it</button>
-            </div>
-        </div>
-
-        <!-- TODAY'S FOCUS -->
-        <div class="focus-section">
-            <h2>Today's Focus</h2>
-            <div class="focus-card">
-                <div class="focus-items" id="focusItems">
-                    <!-- Dynamically populated with 3+ action items -->
-                </div>
             </div>
         </div>
 
@@ -1307,8 +1307,8 @@
             renderDailyPulse(profile, apps);
             renderQuickStats(apps, activeApps);
             renderRealityCheck(profile, apps, activeApps);
-            renderStrategicOptions(profile);
             renderTodaysFocus(profile, apps, activeApps);
+            renderStrategicOptions(profile);
             renderRecentActivity(apps);
         }
 
