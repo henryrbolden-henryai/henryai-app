@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Scoring — HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --color-linkedin: #0077b5;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Main content */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .back-link:hover {
+            color: var(--color-accent);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+
+        /* Score Card */
+        .score-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .score-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .score-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(var(--color-linkedin) calc(var(--score) * 3.6deg), var(--color-surface-elevated) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--color-surface);
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--color-linkedin);
+        }
+
+        .score-info h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .score-label {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Upload State */
+        .upload-prompt {
+            background: var(--color-surface);
+            border: 2px dashed var(--color-border);
+            border-radius: 16px;
+            padding: 48px 32px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .upload-prompt h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 12px;
+        }
+
+        .upload-prompt p {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-how-to {
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: inline-block;
+        }
+
+        .upload-how-to strong {
+            color: var(--color-text);
+        }
+
+        .upload-path {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            padding: 14px 28px;
+            background: var(--color-linkedin);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 119, 181, 0.3);
+        }
+
+        /* Score Breakdown */
+        .breakdown-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .breakdown-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .breakdown-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .breakdown-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .breakdown-icon.success {
+            background: rgba(74, 222, 128, 0.15);
+        }
+
+        .breakdown-icon.warning {
+            background: rgba(251, 191, 36, 0.15);
+        }
+
+        .breakdown-icon.error {
+            background: rgba(248, 113, 113, 0.15);
+        }
+
+        .breakdown-score {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .breakdown-score.success {
+            color: var(--color-success);
+        }
+
+        .breakdown-score.warning {
+            color: var(--color-warning);
+        }
+
+        .breakdown-score.error {
+            color: var(--color-error);
+        }
+
+        /* Recommendations */
+        .recommendations-list {
+            list-style: none;
+        }
+
+        .recommendation-item {
+            padding: 16px;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .recommendation-priority {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .priority-medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .recommendation-text {
+            flex: 1;
+        }
+
+        .recommendation-text strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .recommendation-text p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--color-surface-elevated);
+            border-top: 3px solid var(--color-linkedin);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/linkedin.css">
+    <!-- Supabase Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+<body>
+    <main>
+        <a href="results.html" class="back-link">← Back to Results</a>
+
+        <h1>LinkedIn Scoring</h1>
+        <p class="subtitle" id="subtitle">Analyze your LinkedIn profile's effectiveness for this role</p>
+
+        <!-- Content will be rendered dynamically -->
+        <div id="mainContent">
+            <!-- Upload Prompt (shown when no LinkedIn) -->
+            <div class="upload-prompt" id="uploadPrompt">
+                <div class="upload-icon">💼</div>
+                <h2>Upload Your LinkedIn Profile</h2>
+                <p>Get a detailed score and recommendations to optimize your LinkedIn for recruiter visibility and job fit.</p>
+
+                <div class="upload-how-to">
+                    <strong>How to get your LinkedIn PDF:</strong>
+                    <span class="upload-path">LinkedIn.com → Your Profile → More → Save to PDF</span>
+                </div>
+
+                <button class="btn-primary" id="uploadBtn">Upload LinkedIn Profile PDF</button>
+                <input type="file" id="linkedinFile" accept=".pdf" style="display: none;">
+            </div>
+
+            <!-- Score Card (shown when LinkedIn uploaded) -->
+            <div id="scoreContent" style="display: none;">
+                <div class="score-card">
+                    <div class="score-header">
+                        <div class="score-circle" style="--score: 75">
+                            <span class="score-value" id="overallScore">75</span>
+                        </div>
+                        <div class="score-info">
+                            <h2 id="scoreLabel">Good Profile</h2>
+                            <p class="score-label" id="scoreSummary">Your LinkedIn profile is well-optimized but has room for improvement.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown -->
+                <div class="breakdown-section">
+                    <h3 class="breakdown-title">📊 Score Breakdown</h3>
+                    <div id="breakdownItems">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div class="breakdown-section">
+                    <h3 class="breakdown-title">🎯 Recommendations</h3>
+                    <ul class="recommendations-list" id="recommendationsList">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // Check if LinkedIn profile is already uploaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+            if (profile.linkedin_profile_uploaded) {
+                showScoreContent();
+                await loadLinkedInScore();
+            } else {
+                showUploadPrompt();
+            }
+        });
+
+        function showUploadPrompt() {
+            document.getElementById('uploadPrompt').style.display = 'block';
+            document.getElementById('scoreContent').style.display = 'none';
+        }
+
+        function showScoreContent() {
+            document.getElementById('uploadPrompt').style.display = 'none';
+            document.getElementById('scoreContent').style.display = 'block';
+        }
+
+        // File upload handling
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('linkedinFile').click();
+        });
+
+        document.getElementById('linkedinFile').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show loading
+            document.getElementById('uploadPrompt').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Analyzing your LinkedIn profile...</p>
+                </div>
+            `;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/linkedin/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+
+                // Update local profile
+                let profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                profile.linkedin_profile_uploaded = true;
+                profile.linkedin_last_updated = new Date().toISOString();
+                profile.linkedin_parsed = data.parsed_data;
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+
+                // Show score
+                showScoreContent();
+                await loadLinkedInScore();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                alert('Failed to upload LinkedIn profile. Please try again.');
+                showUploadPrompt();
+            }
+        });
+
+        async function loadLinkedInScore() {
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+            // Generate score based on profile completeness and job alignment
+            const score = calculateLinkedInScore(profile, analysisData);
+            displayScore(score);
+        }
+
+        function calculateLinkedInScore(profile, analysisData) {
+            const linkedinData = profile.linkedin_parsed || {};
+            const resumeData = analysisData._resume_json || {};
+
+            // Score components (out of 100 each)
+            let completenessScore = 0;
+            let alignmentScore = 0;
+            let keywordScore = 0;
+            let recencyScore = 0;
+
+            // Completeness (25 points max)
+            if (linkedinData.headline) completenessScore += 5;
+            if (linkedinData.summary && linkedinData.summary.length > 100) completenessScore += 5;
+            if (linkedinData.experience?.length > 0) completenessScore += 5;
+            if (linkedinData.education?.length > 0) completenessScore += 5;
+            if (linkedinData.skills?.length >= 5) completenessScore += 5;
+
+            // Alignment with resume (25 points max)
+            if (resumeData.experience) {
+                const resumeTitles = resumeData.experience.map(e => e.title?.toLowerCase() || '');
+                const linkedinTitles = (linkedinData.experience || []).map(e => e.title?.toLowerCase() || '');
+                const matchingTitles = resumeTitles.filter(t => linkedinTitles.some(lt => lt.includes(t) || t.includes(lt)));
+                alignmentScore = Math.min(25, (matchingTitles.length / Math.max(resumeTitles.length, 1)) * 25);
+            } else {
+                alignmentScore = 15; // Default if no resume data
+            }
+
+            // Keyword optimization (25 points max)
+            const atsKeywords = analysisData.ats_keywords || analysisData.required_skills || [];
+            if (atsKeywords.length > 0 && linkedinData.summary) {
+                const summaryLower = linkedinData.summary.toLowerCase();
+                const matchingKeywords = atsKeywords.filter(kw => summaryLower.includes(kw.toLowerCase()));
+                keywordScore = Math.min(25, (matchingKeywords.length / atsKeywords.length) * 25);
+            } else {
+                keywordScore = 10;
+            }
+
+            // Recency (25 points max)
+            if (profile.linkedin_last_updated) {
+                const lastUpdated = new Date(profile.linkedin_last_updated);
+                const daysSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24);
+                if (daysSinceUpdate < 30) recencyScore = 25;
+                else if (daysSinceUpdate < 90) recencyScore = 20;
+                else if (daysSinceUpdate < 180) recencyScore = 10;
+                else recencyScore = 5;
+            } else {
+                recencyScore = 15;
+            }
+
+            const overall = Math.round(completenessScore + alignmentScore + keywordScore + recencyScore);
+
+            return {
+                overall,
+                breakdown: {
+                    completeness: { score: completenessScore, max: 25, label: 'Profile Completeness' },
+                    alignment: { score: Math.round(alignmentScore), max: 25, label: 'Resume Alignment' },
+                    keywords: { score: Math.round(keywordScore), max: 25, label: 'Keyword Optimization' },
+                    recency: { score: recencyScore, max: 25, label: 'Profile Recency' }
+                },
+                recommendations: generateRecommendations(completenessScore, alignmentScore, keywordScore, recencyScore, linkedinData)
+            };
+        }
+
+        function generateRecommendations(completeness, alignment, keywords, recency, linkedinData) {
+            const recommendations = [];
+
+            if (completeness < 20) {
+                recommendations.push({
+                    priority: 'high',
+                    title: 'Complete Your Profile',
+                    text: 'Add a compelling headline, detailed summary, and at least 5 skills to improve recruiter visibility.'
+                });
+            }
+
+            if (alignment < 20) {
+                recommendations.push({
+                    priority: 'high',
+                    title: 'Align with Your Resume',
+                    text: 'Ensure your LinkedIn titles and dates match your resume to avoid red flags during screening.'
+                });
+            }
+
+            if (keywords < 15) {
+                recommendations.push({
+                    priority: 'medium',
+                    title: 'Optimize for Keywords',
+                    text: 'Include industry-relevant keywords in your summary and experience to appear in recruiter searches.'
+                });
+            }
+
+            if (recency < 20) {
+                recommendations.push({
+                    priority: 'medium',
+                    title: 'Update Your Profile',
+                    text: 'LinkedIn profiles updated in the last 90 days are 3x more likely to appear in recruiter searches.'
+                });
+            }
+
+            if (!linkedinData?.headline || linkedinData.headline.length < 20) {
+                recommendations.push({
+                    priority: 'high',
+                    title: 'Craft a Strong Headline',
+                    text: 'Use your headline to highlight your expertise and target role, not just your current job title.'
+                });
+            }
+
+            return recommendations;
+        }
+
+        function displayScore(scoreData) {
+            const { overall, breakdown, recommendations } = scoreData;
+
+            // Update overall score
+            document.getElementById('overallScore').textContent = overall;
+            document.querySelector('.score-circle').style.setProperty('--score', overall);
+
+            // Set score label
+            let label, summary;
+            if (overall >= 80) {
+                label = 'Excellent Profile';
+                summary = 'Your LinkedIn profile is highly optimized for this role.';
+            } else if (overall >= 60) {
+                label = 'Good Profile';
+                summary = 'Your LinkedIn profile is well-optimized but has room for improvement.';
+            } else if (overall >= 40) {
+                label = 'Needs Improvement';
+                summary = 'Your LinkedIn profile could be significantly improved for better visibility.';
+            } else {
+                label = 'Needs Work';
+                summary = 'Your LinkedIn profile needs attention to be effective in your job search.';
+            }
+
+            document.getElementById('scoreLabel').textContent = label;
+            document.getElementById('scoreSummary').textContent = summary;
+
+            // Render breakdown
+            const breakdownContainer = document.getElementById('breakdownItems');
+            breakdownContainer.innerHTML = Object.entries(breakdown).map(([key, item]) => {
+                const percentage = Math.round((item.score / item.max) * 100);
+                let status, icon;
+                if (percentage >= 80) {
+                    status = 'success';
+                    icon = '✓';
+                } else if (percentage >= 50) {
+                    status = 'warning';
+                    icon = '!';
+                } else {
+                    status = 'error';
+                    icon = '✗';
+                }
+
+                return `
+                    <div class="breakdown-item">
+                        <div class="breakdown-label">
+                            <div class="breakdown-icon ${status}">${icon}</div>
+                            <span>${item.label}</span>
+                        </div>
+                        <span class="breakdown-score ${status}">${item.score}/${item.max}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Render recommendations
+            const recommendationsContainer = document.getElementById('recommendationsList');
+            if (recommendations.length > 0) {
+                recommendationsContainer.innerHTML = recommendations.map(rec => `
+                    <li class="recommendation-item">
+                        <span class="recommendation-priority priority-${rec.priority}">${rec.priority}</span>
+                        <div class="recommendation-text">
+                            <strong>${rec.title}</strong>
+                            <p>${rec.text}</p>
+                        </div>
+                    </li>
+                `).join('');
+            } else {
+                recommendationsContainer.innerHTML = '<li class="recommendation-item"><p>No recommendations - your profile looks great!</p></li>';
+            }
+        }
+    </script>
+
+    <script src="components/ask-henry.js"></script>
+    <script src="components/strategy-nav.js"></script>
+    <script src="components/status-banner.js"></script>
+    <script src="js/linkedin-upload.js"></script>
+</body>
+</html>

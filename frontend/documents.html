@@ -1318,7 +1318,7 @@ COVER LETTER
             if (window.linkedInUpload) {
                 // Get job context from session storage
                 const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-                const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || localStorage.getItem('userProfile') || '{}');
+                const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
 
                 // Get optimized LinkedIn sections if profile is uploaded
                 const profile = window.linkedInUpload.getUserProfile();
@@ -1326,11 +1326,19 @@ COVER LETTER
                     // Fetch optimized sections from API
                     window.linkedInUpload.getOptimizedSections(analysisData._job_id)
                         .then(optimizedData => {
-                            window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', optimizedData);
+                            if (optimizedData && !optimizedData.error) {
+                                window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', optimizedData);
+                            } else {
+                                // Fallback: generate from existing data
+                                const fallbackData = generateFallbackOptimizedSections(analysisData, documentsData);
+                                window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', fallbackData);
+                            }
                         })
                         .catch(err => {
                             console.error('Error loading LinkedIn optimizations:', err);
-                            window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', null);
+                            // Fallback: generate from existing data
+                            const fallbackData = generateFallbackOptimizedSections(analysisData, documentsData);
+                            window.linkedInUpload.renderOptimizedSections('linkedin-optimized-content', fallbackData);
                         });
                 } else {
                     // Show upload prompt
@@ -1338,6 +1346,42 @@ COVER LETTER
                 }
             }
         });
+
+        // Generate fallback optimized sections from analysis/documents data
+        function generateFallbackOptimizedSections(analysisData, documentsData) {
+            const resumeOutput = documentsData?.resume_output || {};
+            const role = analysisData?._role || analysisData?.role_title || '';
+            const company = analysisData?._company_name || analysisData?.company_name || '';
+
+            // Generate headline from resume headline or role
+            const headline = resumeOutput.headline || role || 'Your optimized headline will appear here';
+
+            // Generate summary from resume summary
+            const summary = resumeOutput.summary || 'Your optimized summary will appear here after analyzing your LinkedIn profile against this role.';
+
+            // Get top skills from ATS keywords or required skills
+            const topSkills = resumeOutput.ats_keywords?.slice(0, 3) ||
+                             analysisData?.required_skills?.slice(0, 3) ||
+                             [];
+
+            // Get experience highlights from resume bullets
+            const experienceHighlights = [];
+            if (resumeOutput.experience_sections?.length > 0) {
+                const currentRole = resumeOutput.experience_sections[0];
+                if (currentRole.bullets?.length > 0) {
+                    experienceHighlights.push(...currentRole.bullets.slice(0, 3));
+                }
+            }
+
+            return {
+                headline,
+                summary,
+                top_skills: topSkills,
+                experience_highlights: experienceHighlights,
+                has_issues: false,
+                generated_at: new Date().toISOString()
+            };
+        }
     </script>
 </body>
 </html>

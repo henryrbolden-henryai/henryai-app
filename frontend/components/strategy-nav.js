@@ -27,6 +27,11 @@
                 id: 'resume-leveling',
                 label: 'Resume Level Analysis',
                 href: 'resume-leveling.html'
+            },
+            {
+                id: 'linkedin-scoring',
+                label: 'LinkedIn Scoring',
+                href: 'linkedin-scoring.html'
             }
         ],
         parent: {
@@ -439,6 +444,34 @@
                 }
             }
 
+            /* Auto-hide nav at 60% width or less (approx 900px) */
+            @media (max-width: 900px) {
+                .strategy-nav-logo {
+                    display: none;
+                }
+
+                .strategy-nav {
+                    opacity: 0.3;
+                    transition: opacity 0.3s ease;
+                }
+
+                .strategy-nav:hover,
+                .strategy-nav.expanded {
+                    opacity: 1;
+                }
+
+                .strategy-nav.expanded .strategy-nav-panel {
+                    max-width: 200px;
+                }
+            }
+
+            /* Hide page headers when strategy-nav is present */
+            body.has-strategy-nav header,
+            body.has-strategy-nav .top-nav,
+            body.has-strategy-nav .header-container .logo {
+                display: none !important;
+            }
+
             /* No margin adjustments - nav overlays content */
         `;
         document.head.appendChild(styles);
@@ -620,6 +653,9 @@
 
         // Inject styles
         injectStyles();
+
+        // Add class to body to hide page-level headers
+        document.body.classList.add('has-strategy-nav');
 
         // Create and append logo
         const logo = document.createElement('div');
