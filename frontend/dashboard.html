@@ -1500,61 +1500,69 @@
         // ========================================================================
         const STRATEGIC_CONTENT = {
             desperate: {
-                urgencyLabel: 'URGENT: CASH FLOW OPTIONS',
-                icon: '🚨',
-                headline: 'Consider contract work to bridge the gap',
-                detail: 'When money is tight, contract/consulting work can provide income within 1-2 weeks while you continue your full-time search. <strong>This isn\'t giving up</strong> — it\'s being strategic about cash flow.',
-                primaryBtn: { text: 'Contract Work Guide', action: 'showContractGuidance' },
-                secondaryBtn: { text: 'Ask Henry', action: 'openAskHenry' },
+                urgencyLabel: 'Urgent: Cash Flow Options',
+                icon: '⚡',
+                headline: 'Need income now? Consider contract work.',
+                detail: 'You need income now, not in 3-6 months. Contract work isn\'t giving up on your FTE search — it\'s <strong>buying yourself time</strong> and reducing desperation energy in interviews.',
+                primaryBtn: { text: 'Show Contract Options', action: 'showContractGuidance' },
+                secondaryBtn: { text: 'Not Right Now', action: 'dismiss' },
                 cardClass: ''
             },
             stressed: {
-                urgencyLabel: 'INCOME OPTIONS TO CONSIDER',
-                icon: '💡',
-                headline: 'Strategic options to reduce pressure',
-                detail: 'If the job search is taking longer than expected, consider <strong>parallel income strategies</strong> that don\'t derail your primary search: contract work, consulting, or freelance projects in your field.',
+                urgencyLabel: 'Tactical Options to Consider',
+                icon: '🎯',
+                headline: 'Strategic alternatives while you search',
+                detail: 'A tight timeline means you need to expand your opportunity set strategically. Contract work can serve as a <strong>bridge while you find the right FTE role</strong>. Plus, 30% of contract roles convert to full-time.',
                 primaryBtn: { text: 'Explore Options', action: 'showContractGuidance' },
-                secondaryBtn: { text: 'Talk Strategy', action: 'openAskHenry' },
+                secondaryBtn: { text: 'Dismiss', action: 'dismiss' },
                 cardClass: 'stressed'
             },
             standard: {
-                urgencyLabel: 'STRATEGIC OPPORTUNITIES',
-                icon: '📊',
-                headline: 'Maximize your leverage',
-                detail: 'While you\'re searching, consider building additional leverage: <strong>side projects</strong> that demonstrate skills, <strong>consulting</strong> that builds network, or <strong>upskilling</strong> that opens new opportunities.',
-                primaryBtn: { text: 'Strategy Ideas', action: 'openAskHenry' },
-                secondaryBtn: null,
+                urgencyLabel: 'Other Paths Worth Exploring',
+                icon: '💡',
+                headline: 'Build leverage beyond the job search',
+                detail: 'You\'ve got solid runway. Beyond your core search, consider <strong>advisory/consulting work</strong> to build credibility, expand your network, and create unexpected opportunities.',
+                primaryBtn: { text: 'Learn More', action: 'showContractGuidance' },
+                secondaryBtn: { text: 'Not Interested', action: 'dismiss' },
                 cardClass: 'standard'
             }
         };
 
         function calculateUrgency(profile) {
-            const { holding_up, timeline } = profile?.situation || {};
+            const timeline = profile?.situation?.timeline || 'actively_looking';
+            const holdingUp = profile?.situation?.holdingUp || profile?.situation?.holding_up || 'doing_well';
 
-            // Desperate: urgent timeline + struggling emotionally
-            if ((timeline === 'urgent' || timeline === 'clock_ticking') &&
-                (holding_up === 'desperate' || holding_up === 'crushed' || holding_up === 'struggling')) {
+            // Decision matrix from STRATEGIC_OPTIONS_DECISION_MATRIX.md
+
+            // timeline = 'urgent' -> DESPERATE (regardless of holdingUp)
+            if (timeline === 'urgent') {
                 return 'desperate';
             }
 
-            // Stressed: some urgency but managing
-            if ((timeline === 'urgent' || timeline === 'soon' || timeline === 'clock_ticking') &&
-                (holding_up === 'stressed' || holding_up === 'stressed_but_managing')) {
+            // timeline = 'soon' -> STRESSED (regardless of holdingUp)
+            if (timeline === 'soon') {
                 return 'stressed';
             }
 
-            // Also stressed if financially pressured but not emotionally desperate
-            if (holding_up === 'desperate' && timeline !== 'urgent') {
-                return 'stressed';
-            }
-
-            // Standard: exploring or zen with no urgency
-            if (holding_up === 'zen' || timeline === 'exploring' || timeline === 'passive') {
+            // timeline = 'actively_looking'
+            if (timeline === 'actively_looking') {
+                if (holdingUp === 'struggling') return 'desperate';
+                if (holdingUp === 'stressed_but_managing') return 'stressed';
+                // doing_well or rather_not_say -> standard
                 return 'standard';
             }
 
-            // Default: don't show if no clear urgency signal
-            return 'none';
+            // timeline = 'no_rush'
+            if (timeline === 'no_rush') {
+                if (holdingUp === 'struggling') return 'desperate';
+                if (holdingUp === 'stressed_but_managing') return 'stressed';
+                if (holdingUp === 'doing_well') return 'none'; // Hide section for zen candidates
+                // rather_not_say -> standard
+                return 'standard';
+            }
+
+            // Default fallback
+            return 'standard';
         }
 
         function renderStrategicOptions(profile) {
@@ -1604,7 +1612,9 @@
                 }
             }
             if (content.secondaryBtn) {
-                if (content.secondaryBtn.action === 'openAskHenry') {
+                if (content.secondaryBtn.action === 'dismiss') {
+                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="dismissStrategicOptions()">${content.secondaryBtn.text}</button>`;
+                } else if (content.secondaryBtn.action === 'openAskHenry') {
                     actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openAskHenry) openAskHenry();">${content.secondaryBtn.text}</button>`;
                 }
             }
