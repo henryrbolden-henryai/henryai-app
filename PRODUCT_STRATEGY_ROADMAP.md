@@ -54,10 +54,15 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Added global `openAskHenry()` and `openAskHenryWithPrompt()` functions for cross-page Ask Henry integration
 
 ✅ **Ask Henry Chatbot Enhancements** (Dec 12, 2025)
-- Added random tooltip messages that appear periodically (every 20-40 seconds)
-- Fun prompts like "Peek-a-boo!", "Knock knock, it's Henry!", "Got questions?"
-- Tooltip also shows on hover as fallback
-- Timer pauses when chat drawer is open, resumes when closed
+- Random tooltip messages appearing every 20-40 seconds (14+ fun prompts)
+- Breathing animation with pulse effects on logo
+- Conversation history persistence (last 20 messages in sessionStorage)
+- Pipeline data integration (tracks applications, calculates interview rates, identifies ghosted apps)
+- 13+ contextual suggestion sets based on current page
+- Personalized greetings using user's first name
+- Page context awareness (12 different contexts)
+- Message formatting (bold, italic, lists)
+- Global functions: `openAskHenry()` and `openAskHenryWithPrompt(prompt)`
 
 ✅ **Header & Navigation Improvements** (Dec 12, 2025)
 - Centered HenryHQ logo in header across all 16+ pages

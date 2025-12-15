@@ -576,18 +576,34 @@ Frontend will gracefully handle missing `validation` field.
 
 ### 9. ✅ Ask Henry Chatbot Enhancements (Dec 12)
 
-**What it does**: More engaging and proactive chatbot experience.
+**What it does**: Comprehensive contextually-aware AI assistant with engaging UX.
 
 **Implementation**:
-- Random tooltip messages that appear every 20-40 seconds
-- 14+ fun prompts ("Peek-a-boo!", "Knock knock, it's Henry!", "Got questions?")
-- Tooltip also shows on hover as fallback
-- Timer pauses when chat drawer is open, resumes when closed
+- **Random Tooltip Messages**: 14+ fun prompts appearing every 20-40 seconds
+  - Examples: "Peek-a-boo!", "Knock knock, it's Henry!", "Got questions?"
+  - Timer pauses when chat drawer is open
+- **Breathing Animation**: Logo pulses with subtle scale animation (2.5s cycle)
+- **Conversation History Persistence**: Last 20 messages saved in sessionStorage
+- **Pipeline Data Integration**:
+  - Tracks total, active, interviewing applications
+  - Calculates interview rates and average fit scores
+  - Identifies ghosted applications (no response after 14 days)
+  - Provides top 5 apps with context to AI
+- **13+ Contextual Suggestion Sets**: Page-specific quick prompts
+  - Documents page: "Why did you change this?", "Is this ATS-friendly?"
+  - Tracker page: "What should I focus on?", "When to follow up?"
+  - Interview prep: "How do I prepare?", "What questions should I expect?"
+- **Personalized Greetings**: Uses user's first name from profile
+- **Page Context Awareness**: 12 different page contexts with descriptions
+- **Message Formatting**: Supports bold, italic, bulleted/numbered lists
+- **Global Functions**: `openAskHenry()` and `openAskHenryWithPrompt(prompt)` for cross-page integration
 
 **Impact**:
 - ✅ More playful, engaging UX
 - ✅ Encourages users to interact with Henry
 - ✅ Non-intrusive prompting
+- ✅ Context-aware assistance on every page
+- ✅ Persistent conversation across page navigation
 
 ---
 

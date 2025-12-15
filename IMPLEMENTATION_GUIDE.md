@@ -190,7 +190,7 @@ All features below have been implemented and deployed to production:
 ### Ask Henry Chatbot Enhancements (Dec 12, 2025)
 
 **Files Modified**:
-- `frontend/components/ask-henry.js` - Tooltip messages, timer logic
+- `frontend/components/ask-henry.js` - Full-featured contextual AI assistant (1,058 lines)
 
 **Features Implemented**:
 
@@ -198,6 +198,39 @@ All features below have been implemented and deployed to production:
    - 14+ fun prompts appearing every 20-40 seconds
    - Examples: "Peek-a-boo!", "Knock knock, it's Henry!", "Got questions?"
    - Timer pauses when chat is open
+
+2. **Breathing Animation**
+   - Logo pulses with scale animation (2.5s cycle)
+   - Active pulse when chat is open
+
+3. **Conversation History Persistence**
+   - Last 20 messages saved in sessionStorage
+   - Persists across page navigation
+
+4. **Pipeline Data Integration**
+   - Tracks total, active, interviewing applications
+   - Calculates interview rates and fit scores
+   - Identifies ghosted applications (14+ days no response)
+   - Provides top 5 apps context to AI
+
+5. **13+ Contextual Suggestion Sets**
+   - Page-specific quick prompts (documents, tracker, interview-prep, etc.)
+
+6. **Personalized Greetings**
+   - Uses user's first name from profile/resume data
+
+7. **Page Context Awareness**
+   - 12 different page contexts with descriptions
+   - Sent to backend for context-aware responses
+
+8. **Message Formatting**
+   - Supports bold (**text**), italic (*text*)
+   - Bulleted and numbered lists
+   - Paragraph formatting
+
+9. **Global Functions**
+   - `openAskHenry()` - Opens chat drawer
+   - `openAskHenryWithPrompt(prompt)` - Opens and sends a message
 
 ---
 
