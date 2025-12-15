@@ -512,6 +512,12 @@
             z-index: 100;
         }
 
+        /* Hide page header when strategy-nav is present */
+        body.has-strategy-nav header,
+        body.has-strategy-nav .logo {
+            display: none !important;
+        }
+
         .logo em {
             font-style: italic;
             color: #22d3ee;

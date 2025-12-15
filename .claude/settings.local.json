@@ -8,7 +8,18 @@
       "Bash(do echo \"=== $file ===\" grep -A6 \"header .header-container\" \"$file\")",
       "Bash(for file in dashboard.html documents.html interview-debrief.html interview-intelligence.html interview-prep.html mock-debrief.html overview.html package.html positioning.html practice-drills.html prep-guide.html profile-edit.html results.html resume-builder.html skills-analysis.html tracker.html)",
       "Bash(do sed -i '' 's/justify-content: flex-start;/justify-content: center;/g' \"$file\")",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(xargs:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd LinkedIn Profile Upload feature\n\n- Add LinkedIn PDF upload and parsing via Claude AI\n- Add dashboard modal announcing feature to existing users\n- Add LinkedIn section in profile settings page\n- Add LinkedIn alignment check in job analysis results\n- Add LinkedIn tab in documents page with optimized sections\n- Add backend endpoints for upload, alignment check, and optimize\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nMove LinkedIn Profile section below Resume section\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(vercel:*)",
+      "Bash(npx vercel --prod)",
+      "Bash(git commit:*)",
+      "Bash(npx vercel --prod --yes)"
     ],
     "deny": [],
     "ask": []

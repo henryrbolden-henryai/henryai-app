@@ -851,54 +851,275 @@
                 return;
             }
 
+            // Get parsed LinkedIn data for section analysis
+            const linkedinParsed = profile.linkedin_parsed || {};
+
             container.innerHTML = `
+                <style>
+                    .linkedin-sections-grid {
+                        display: grid;
+                        grid-template-columns: 1fr;
+                        gap: 24px;
+                    }
+                    .linkedin-section-card {
+                        background: rgba(255,255,255,0.03);
+                        border: 1px solid rgba(255,255,255,0.08);
+                        border-radius: 12px;
+                        padding: 20px;
+                    }
+                    .linkedin-section-card h4 {
+                        color: #22d3ee;
+                        font-size: 1rem;
+                        margin-bottom: 4px;
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+                    .linkedin-section-card .section-priority {
+                        font-size: 0.7rem;
+                        padding: 2px 8px;
+                        border-radius: 4px;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                    }
+                    .priority-critical { background: #dc2626; color: white; }
+                    .priority-high { background: #f59e0b; color: black; }
+                    .priority-medium { background: #3b82f6; color: white; }
+                    .priority-low { background: rgba(255,255,255,0.1); color: #9ca3af; }
+                    .linkedin-section-card .help-text {
+                        color: #9ca3af;
+                        font-size: 0.85rem;
+                        margin-bottom: 12px;
+                    }
+                    .copyable-field {
+                        position: relative;
+                    }
+                    .copyable-field textarea {
+                        width: 100%;
+                        background: rgba(0,0,0,0.3);
+                        border: 1px solid rgba(255,255,255,0.1);
+                        border-radius: 8px;
+                        padding: 12px;
+                        color: #e0e0e0;
+                        font-size: 0.95rem;
+                        resize: vertical;
+                        min-height: 60px;
+                    }
+                    .copyable-field .btn-copy {
+                        position: absolute;
+                        top: 8px;
+                        right: 8px;
+                        background: rgba(255,255,255,0.1);
+                        border: none;
+                        color: #9ca3af;
+                        padding: 4px 12px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 0.8rem;
+                    }
+                    .copyable-field .btn-copy:hover {
+                        background: rgba(255,255,255,0.2);
+                        color: white;
+                    }
+                    .skills-list {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 8px;
+                        list-style: none;
+                        padding: 0;
+                    }
+                    .skills-list li {
+                        background: rgba(34, 211, 238, 0.15);
+                        border: 1px solid rgba(34, 211, 238, 0.3);
+                        padding: 6px 14px;
+                        border-radius: 20px;
+                        font-size: 0.9rem;
+                        color: #22d3ee;
+                    }
+                    .bullets-list {
+                        list-style: none;
+                        padding: 0;
+                    }
+                    .bullets-list li {
+                        padding: 8px 0 8px 20px;
+                        position: relative;
+                        color: #e0e0e0;
+                        font-size: 0.95rem;
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    }
+                    .bullets-list li:before {
+                        content: "•";
+                        color: #22d3ee;
+                        position: absolute;
+                        left: 0;
+                    }
+                    .bullets-list li:last-child {
+                        border-bottom: none;
+                    }
+                    .section-status {
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        font-size: 0.8rem;
+                        margin-top: 8px;
+                    }
+                    .status-good { color: #4ade80; }
+                    .status-needs-work { color: #fbbf24; }
+                    .status-missing { color: #f87171; }
+                    .section-group-title {
+                        font-size: 0.75rem;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        color: #6b7280;
+                        margin: 24px 0 12px 0;
+                        padding-bottom: 8px;
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    }
+                    .section-group-title:first-child {
+                        margin-top: 0;
+                    }
+                    .linkedin-update-confirmation {
+                        margin-top: 24px;
+                        padding: 16px;
+                        background: rgba(255,255,255,0.03);
+                        border-radius: 8px;
+                    }
+                    .linkedin-update-confirmation label {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        cursor: pointer;
+                        color: #9ca3af;
+                    }
+                    .linkedin-update-confirmation input[type="checkbox"] {
+                        width: 18px;
+                        height: 18px;
+                    }
+                </style>
+
                 ${optimizedData.has_issues ? `
-                    <div class="linkedin-warning-badge">
-                        Action Required: Your LinkedIn contradicts your resume in ${optimizedData.issue_count} place${optimizedData.issue_count > 1 ? 's' : ''}
+                    <div class="linkedin-warning-badge" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; color: #fbbf24;">
+                        ⚠️ Your LinkedIn has inconsistencies with your resume. Update these sections before applying.
                     </div>
                 ` : ''}
 
-                <!-- Optimized Headline -->
-                <div class="linkedin-field">
-                    <h4>Optimized Headline</h4>
-                    <p class="help-text">Copy-paste this into your LinkedIn headline</p>
-                    <div class="copyable-field">
-                        <textarea readonly id="linkedin-headline">${optimizedData.headline || ''}</textarea>
-                        <button class="btn-copy" data-linkedin-copy="linkedin-headline">Copy</button>
+                <div class="linkedin-sections-grid">
+                    <!-- FIRST IMPRESSION SECTIONS (Critical) -->
+                    <div class="section-group-title">First Impression (Recruiters see this first)</div>
+
+                    <!-- Headline -->
+                    <div class="linkedin-section-card">
+                        <h4>
+                            Headline
+                            <span class="section-priority priority-critical">Critical</span>
+                        </h4>
+                        <p class="help-text">Your headline shows in search results and is the first thing recruiters scan. Make it count.</p>
+                        <div class="copyable-field">
+                            <textarea readonly id="linkedin-headline" rows="2">${optimizedData.headline || ''}</textarea>
+                            <button class="btn-copy" data-linkedin-copy="linkedin-headline">Copy</button>
+                        </div>
+                        ${this.getSectionStatus(linkedinParsed.headline, optimizedData.headline)}
+                    </div>
+
+                    <!-- About Section -->
+                    <div class="linkedin-section-card">
+                        <h4>
+                            About Section
+                            <span class="section-priority priority-critical">Critical</span>
+                        </h4>
+                        <p class="help-text">Your story: what you do, how you create value, and where you're headed. First 3 lines show before "see more".</p>
+                        <div class="copyable-field">
+                            <textarea readonly id="linkedin-summary" rows="6">${optimizedData.summary || ''}</textarea>
+                            <button class="btn-copy" data-linkedin-copy="linkedin-summary">Copy</button>
+                        </div>
+                        ${this.getSectionStatus(linkedinParsed.summary, optimizedData.summary)}
+                    </div>
+
+                    <!-- CREDIBILITY SECTIONS (High Priority) -->
+                    <div class="section-group-title">Credibility Signals</div>
+
+                    <!-- Experience -->
+                    ${optimizedData.experience_highlights?.length ? `
+                        <div class="linkedin-section-card">
+                            <h4>
+                                Experience Bullets
+                                <span class="section-priority priority-high">High</span>
+                            </h4>
+                            <p class="help-text">Add these to your current role. Impact-first language that matches your resume.</p>
+                            <ul class="bullets-list">
+                                ${optimizedData.experience_highlights.map(bullet => `<li>${bullet}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    <!-- Skills -->
+                    ${optimizedData.top_skills?.length ? `
+                        <div class="linkedin-section-card">
+                            <h4>
+                                Skills to Feature
+                                <span class="section-priority priority-high">High</span>
+                            </h4>
+                            <p class="help-text">Recruiters search by skills. Pin these to the top of your skills section.</p>
+                            <ul class="skills-list">
+                                ${optimizedData.top_skills.map(skill => `<li>${skill}</li>`).join('')}
+                            </ul>
+                            <div class="section-status status-needs-work" style="margin-top: 12px;">
+                                💡 Reorder your skills so these appear first
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- OPTIONAL POWER-UPS -->
+                    <div class="section-group-title">Optional Power-Ups</div>
+
+                    <!-- Featured Section -->
+                    <div class="linkedin-section-card">
+                        <h4>
+                            Featured Section
+                            <span class="section-priority priority-medium">Medium</span>
+                        </h4>
+                        <p class="help-text">Proof of work: case studies, press mentions, presentations, or portfolio pieces.</p>
+                        ${linkedinParsed.featured?.length ? `
+                            <div class="section-status status-good">✓ You have ${linkedinParsed.featured.length} featured item${linkedinParsed.featured.length > 1 ? 's' : ''}</div>
+                        ` : `
+                            <div class="section-status status-needs-work">
+                                💡 Add 1-3 items that showcase your best work for this type of role
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="linkedin-section-card">
+                        <h4>
+                            Recommendations
+                            <span class="section-priority priority-medium">Medium</span>
+                        </h4>
+                        <p class="help-text">Social proof from managers or colleagues. 2-3 strong ones beat 10 generic ones.</p>
+                        ${linkedinParsed.recommendations_count > 0 ? `
+                            <div class="section-status status-good">✓ You have ${linkedinParsed.recommendations_count} recommendation${linkedinParsed.recommendations_count > 1 ? 's' : ''}</div>
+                        ` : `
+                            <div class="section-status status-needs-work">
+                                💡 Request 2-3 recommendations from people who can speak to your impact
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- Activity -->
+                    <div class="linkedin-section-card">
+                        <h4>
+                            Activity
+                            <span class="section-priority priority-low">Low</span>
+                        </h4>
+                        <p class="help-text">Recent engagement shows you're active. Even commenting counts.</p>
+                        ${linkedinParsed.recent_activity ? `
+                            <div class="section-status status-good">✓ Recent activity detected</div>
+                        ` : `
+                            <div class="section-status status-needs-work">
+                                💡 Like or comment on 2-3 industry posts this week
+                            </div>
+                        `}
                     </div>
                 </div>
-
-                <!-- Optimized Summary -->
-                <div class="linkedin-field">
-                    <h4>Optimized Summary</h4>
-                    <p class="help-text">Copy-paste this into your LinkedIn About section</p>
-                    <div class="copyable-field">
-                        <textarea readonly id="linkedin-summary" rows="8">${optimizedData.summary || ''}</textarea>
-                        <button class="btn-copy" data-linkedin-copy="linkedin-summary">Copy</button>
-                    </div>
-                </div>
-
-                <!-- Top 3 Skills -->
-                ${optimizedData.top_skills?.length ? `
-                    <div class="linkedin-field">
-                        <h4>Top 3 Skills to Feature</h4>
-                        <p class="help-text">Update your LinkedIn skills section—move these to the top</p>
-                        <ul class="skills-list">
-                            ${optimizedData.top_skills.map(skill => `<li>${skill}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-
-                <!-- Experience Highlights -->
-                ${optimizedData.experience_highlights?.length ? `
-                    <div class="linkedin-field">
-                        <h4>Experience Updates</h4>
-                        <p class="help-text">Add these bullets to your current role on LinkedIn</p>
-                        <ul class="bullets-list">
-                            ${optimizedData.experience_highlights.map(bullet => `<li>${bullet}</li>`).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
 
                 <!-- Update Confirmation -->
                 <div class="linkedin-update-confirmation">
@@ -908,7 +1129,7 @@
                     </label>
                 </div>
 
-                <p class="timestamp" style="margin-top: 12px; color: var(--color-text-muted); font-size: 0.85rem;">
+                <p class="timestamp" style="margin-top: 12px; color: #6b7280; font-size: 0.85rem;">
                     Last optimized: ${optimizedData.generated_at ? new Date(optimizedData.generated_at).toLocaleDateString() : 'Just now'}
                 </p>
             `;
@@ -922,6 +1143,22 @@
                     }
                 });
             }
+        }
+
+        /**
+         * Get status indicator for a LinkedIn section
+         */
+        getSectionStatus(currentValue, optimizedValue) {
+            if (!currentValue && optimizedValue) {
+                return '<div class="section-status status-missing">⚠️ Missing - add this section</div>';
+            }
+            if (currentValue && optimizedValue && currentValue !== optimizedValue) {
+                return '<div class="section-status status-needs-work">💡 Update recommended</div>';
+            }
+            if (currentValue) {
+                return '<div class="section-status status-good">✓ Has content</div>';
+            }
+            return '';
         }
 
         /**
