@@ -604,11 +604,14 @@ ats_keywords = ["stakeholder management", "agile development", "cross-functional
 **Location**: `backend/backend.py` lines 2949-2955 (system prompt)
 
 **What it does**:
-- Instructs Claude to provide conversational context before JSON
+- Adds a conversational context **before the required JSON output**
+- JSON output is **always required** - this wrapper enhances it with explanation
 - Explains strategic positioning decisions
 - Highlights what was changed and why
 - Notes key ATS keywords incorporated
 - Flags gaps and mitigation strategies
+
+**Important**: The JSON output is mandatory. The conversational wrapper provides additional context but does not replace the structured JSON response.
 
 **System Prompt Addition**:
 ```python
@@ -619,11 +622,14 @@ Before the JSON output, provide a 3-4 sentence conversational summary that:
 - Notes key ATS keywords you incorporated
 - Flags any gaps and how you mitigated them
 Format: Start with "Here's what I created for you:\n\n" followed by your analysis, then add "\n\n---JSON_START---\n" before the JSON.
+
+# NOTE: The JSON output after ---JSON_START--- is REQUIRED. The conversational
+# summary is an enhancement that precedes the mandatory JSON response.
 ```
 
 **Response Parsing** (lines 3282-3305):
 ```python
-# Extract conversational context if present
+# Extract conversational context (appears before the required JSON)
 conversational_summary = ""
 json_text = response.strip()
 
@@ -632,9 +638,10 @@ if "---JSON_START---" in json_text:
     conversational_summary = parts[0].strip()
     json_text = parts[1].strip()
 
-# ... parse JSON ...
+# Parse the required JSON output
+parsed_data = json.loads(json_text)
 
-# Add conversational summary to response
+# Add conversational summary to response (if wrapper was included)
 if conversational_summary:
     parsed_data["conversational_summary"] = conversational_summary
 ```
