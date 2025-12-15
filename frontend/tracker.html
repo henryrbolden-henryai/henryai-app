@@ -5203,7 +5203,7 @@
                 const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
 
                 return `
-                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" style="cursor: pointer;">
+                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" style="cursor: pointer;">
                         <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
                         <div class="priority-content">
                             <div class="priority-role">${app.role}</div>
@@ -5430,12 +5430,12 @@
                 <div class="app-card ${statusLabel === 'hot' ? 'hot' : ''} ${isInactive ? 'inactive' : ''} ${isGhostRisk ? 'ghost-risk' : ''}" data-id="${app.id}">
                     <div class="card-header">
                         <div class="card-title-section">
-                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis(${app.id}, 'overview.html')" title="View application strategy">
+                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" title="View application strategy">
                                 ${app.role}
                                 ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
                             </div>
                             <div class="card-subtitle">
-                                <span class="editable-company" onclick="editCompanyName(${app.id}, event)" title="Click to edit company name">${app.company}</span>${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
+                                <span class="editable-company" onclick="editCompanyName('${app.id}', event)" title="Click to edit company name">${app.company}</span>${app.salary && app.salary !== 'Not specified' ? ' • ' + app.salary : ''}
                             </div>
                         </div>
                         <div class="card-meta">
@@ -5539,7 +5539,7 @@
 
                     ${app.interviewNotes ? `
                     <div class="expandable-section">
-                        <div class="expandable-toggle" onclick="toggleSection(${app.id}, 'interview')">
+                        <div class="expandable-toggle" onclick="toggleSection('${app.id}', 'interview')">
                             🎤 Interview Notes
                         </div>
                         <div class="expandable-content" id="interview-content-${app.id}">
@@ -6094,7 +6094,8 @@
          * This ensures overview, documents, outreach, etc. have the context they need
          */
         function navigateWithAnalysis(appId, targetPage) {
-            const app = getApplications().find(a => a.id === appId);
+            // Handle both string and number IDs
+            const app = getApplications().find(a => String(a.id) === String(appId));
             if (!app) {
                 console.error('Application not found:', appId);
                 window.location.href = targetPage;
@@ -6127,16 +6128,21 @@
                 console.log('Created minimal analysis data for:', app.company, app.role);
             }
 
-            // Try to load stored documents data
-            const documentsKey = `documents_${app.company}_${app.role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-            const documentsData = localStorage.getItem(documentsKey);
-            if (documentsData) {
-                sessionStorage.setItem('documentsData', documentsData);
-                console.log('Loaded documents data for:', app.company, app.role);
+            // Try to load stored documents data - prefer Supabase data from app, fallback to localStorage
+            if (app.documentsData && Object.keys(app.documentsData).length > 0) {
+                sessionStorage.setItem('documentsData', JSON.stringify(app.documentsData));
+                console.log('Loaded documents data from Supabase for:', app.company, app.role);
             } else {
-                // Clear any stale documents data from a different application
-                sessionStorage.removeItem('documentsData');
-                console.log('No documents found for:', app.company, app.role);
+                const documentsKey = `documents_${app.company}_${app.role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                const documentsData = localStorage.getItem(documentsKey);
+                if (documentsData) {
+                    sessionStorage.setItem('documentsData', documentsData);
+                    console.log('Loaded documents data from localStorage for:', app.company, app.role);
+                } else {
+                    // Clear any stale documents data from a different application
+                    sessionStorage.removeItem('documentsData');
+                    console.log('No documents found for:', app.company, app.role);
+                }
             }
 
             window.location.href = targetPage;
@@ -8331,6 +8337,31 @@ Thanks so much!
                 console.log('Supabase session:', session ? 'exists' : 'null');
                 if (session) {
                     window.supabaseSession = session; // Store for later use
+                    const currentUserId = session.user.id;
+
+                    // Check if localStorage data belongs to a different user
+                    const lastUserId = localStorage.getItem('henryai_current_user_id');
+                    if (lastUserId && lastUserId !== currentUserId) {
+                        console.log('Different user detected - clearing localStorage data');
+                        // Clear user-specific localStorage data to prevent data leakage
+                        localStorage.removeItem('trackedApplications');
+                        localStorage.removeItem('upcomingInterviews');
+                        localStorage.removeItem('completedInterviews');
+                        localStorage.removeItem('candidateProfile');
+                        localStorage.removeItem('resumeConversation');
+                        localStorage.removeItem('celebratedMilestones');
+                        localStorage.removeItem('interventionState');
+                        // Clear any analysis/documents keys
+                        for (let i = localStorage.length - 1; i >= 0; i--) {
+                            const key = localStorage.key(i);
+                            if (key && (key.startsWith('analysis_') || key.startsWith('documents_'))) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+                    }
+                    // Store current user ID
+                    localStorage.setItem('henryai_current_user_id', currentUserId);
+
                     // User is logged in - try Supabase first
                     console.log('Loading data from Supabase...');
                     let apps = await HenryData.getApplications();
@@ -8340,8 +8371,9 @@ Thanks so much!
                     const localAppsRaw = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
                     console.log('localStorage apps count:', localAppsRaw?.length || 0);
 
-                    if ((!apps || apps.length === 0) && localAppsRaw.length > 0) {
-                        console.log('Supabase empty but localStorage has data - using localStorage and migrating...');
+                    // Only migrate if localStorage has data AND it's from the same user (not cleared above)
+                    if ((!apps || apps.length === 0) && localAppsRaw.length > 0 && (!lastUserId || lastUserId === currentUserId)) {
+                        console.log('Supabase empty but localStorage has data for same user - migrating...');
                         apps = localAppsRaw;
 
                         // Migrate localStorage data to Supabase in background
@@ -8449,5 +8481,6 @@ Thanks so much!
 <script src="js/auth-check.js"></script>
 <script src="components/ask-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
+    <script src="components/status-banner.js"></script>
 </body>
 </html>

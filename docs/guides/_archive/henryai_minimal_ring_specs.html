@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HenryAI Minimal Ring - Design Specs & Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 48px;
+        }
+        
+        .section {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .section h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: #667eea;
+        }
+        
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .spec-item {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .spec-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #667eea;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .spec-value {
+            font-size: 16px;
+            color: #fff;
+            font-family: 'Monaco', 'Courier New', monospace;
+            margin-bottom: 4px;
+        }
+        
+        .spec-note {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+        
+        .code-block {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 24px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        
+        .code-block pre {
+            color: #e0e0e0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .animation-demo {
+            background: #0a0a0a;
+            border-radius: 12px;
+            padding: 64px;
+            text-align: center;
+            margin: 24px 0;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 32px;
+        }
+        
+        .loading-stages {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .stage {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .stage.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-left-color: #667eea;
+        }
+        
+        .stage.complete {
+            background: rgba(102, 126, 234, 0.08);
+            border-left-color: #764ba2;
+            opacity: 0.6;
+        }
+        
+        .stage-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .stage.active .stage-icon {
+            border-color: #667eea;
+        }
+        
+        .stage.complete .stage-icon {
+            border-color: #764ba2;
+            background: #764ba2;
+        }
+        
+        .stage-text {
+            font-size: 14px;
+            color: #888;
+        }
+        
+        .stage.active .stage-text {
+            color: #fff;
+            font-weight: 500;
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        .bounce-dot {
+            animation: bounce 1.2s ease-in-out infinite;
+        }
+        
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .spin-logo {
+            animation: rotate 3s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .pulse-ring {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .tab-button {
+            padding: 8px 16px;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            border-color: #444;
+            color: #fff;
+        }
+        
+        .tab-button.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: #fff;
+        }
+        
+        .download-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .download-card {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .download-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .download-size {
+            font-size: 32px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+        
+        .download-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HenryAI Minimal Ring - Design Specs</h1>
+        <p class="subtitle">Production-ready specifications and animated loading implementation</p>
+        
+        <!-- DESIGN SPECIFICATIONS -->
+        <div class="section">
+            <h2>Core Design Specifications</h2>
+            
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <div class="spec-label">Canvas Size</div>
+                    <div class="spec-value">200px × 200px</div>
+                    <div class="spec-note">Base artboard. Scale proportionally for all sizes.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Ring Radius</div>
+                    <div class="spec-value">85px (from center)</div>
+                    <div class="spec-note">42.5% of canvas width. Keeps consistent proportions at any size.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Ring Stroke Width</div>
+                    <div class="spec-value">4px</div>
+                    <div class="spec-note">2% of canvas width. Thin but visible at small sizes.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Ring Color</div>
+                    <div class="spec-value">Linear Gradient</div>
+                    <div class="spec-note">
+                        Start: #667eea (purple)<br>
+                        End: #764ba2 (violet)<br>
+                        Angle: 135° (bottom-left to top-right)
+                    </div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Left Stroke (Grounded)</div>
+                    <div class="spec-value">9px width</div>
+                    <div class="spec-note">
+                        Start: (55, 130)<br>
+                        End: (55, 70)<br>
+                        Color: #667eea<br>
+                        Height: 60px (30% of canvas)
+                    </div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Right Stroke (Ascending)</div>
+                    <div class="spec-value">9px width</div>
+                    <div class="spec-note">
+                        Start: (145, 130)<br>
+                        End: (145, 50)<br>
+                        Gradient: #667eea → #764ba2<br>
+                        Height: 80px (40% of canvas)<br>
+                        40% taller than left stroke
+                    </div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Horizontal Connector</div>
+                    <div class="spec-value">9px width</div>
+                    <div class="spec-note">
+                        Start: (55, 100)<br>
+                        End: (145, 100)<br>
+                        Color: #764ba2<br>
+                        Length: 90px (45% of canvas)
+                    </div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Peak Dot</div>
+                    <div class="spec-value">9px radius</div>
+                    <div class="spec-note">
+                        Center: (145, 50)<br>
+                        Color: #764ba2<br>
+                        This is your animation target
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SVG CODE -->
+        <div class="section">
+            <h2>Clean SVG Code</h2>
+            <p style="color: #888; margin-bottom: 16px;">Copy-paste ready. Works in HTML, React, or as standalone file.</p>
+            
+            <div class="code-block">
+                <pre>&lt;svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;defs&gt;
+    &lt;linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%"&gt;
+      &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+      &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+    &lt;/linearGradient&gt;
+    
+    &lt;linearGradient id="strokeGradient" x1="0%" y1="100%" x2="100%" y2="0%"&gt;
+      &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+      &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+    &lt;/linearGradient&gt;
+  &lt;/defs&gt;
+  
+  &lt;!-- Thin ring --&gt;
+  &lt;circle cx="100" cy="100" r="85" 
+          stroke="url(#ringGradient)" 
+          stroke-width="4" 
+          fill="none"/&gt;
+  
+  &lt;!-- Left vertical (grounded) --&gt;
+  &lt;path d="M55 130 L55 70" 
+        stroke="#667eea" 
+        stroke-width="9" 
+        stroke-linecap="round" 
+        fill="none"/&gt;
+  
+  &lt;!-- Right vertical (ascending) --&gt;
+  &lt;path d="M145 130 L145 50" 
+        stroke="url(#strokeGradient)" 
+        stroke-width="9" 
+        stroke-linecap="round" 
+        fill="none"/&gt;
+  
+  &lt;!-- Horizontal connector --&gt;
+  &lt;path d="M55 100 L145 100" 
+        stroke="#764ba2" 
+        stroke-width="9" 
+        stroke-linecap="round" 
+        fill="none"/&gt;
+  
+  &lt;!-- Peak dot (animation target) --&gt;
+  &lt;circle cx="145" cy="50" r="9" fill="#764ba2"/&gt;
+&lt;/svg&gt;</pre>
+            </div>
+        </div>
+        
+        <!-- ANIMATION DEMO -->
+        <div class="section">
+            <h2>Loading Screen Animation Demo</h2>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchAnimation('bounce')">Bouncing Dot</button>
+                <button class="tab-button" onclick="switchAnimation('spin')">Spinning Logo</button>
+                <button class="tab-button" onclick="switchAnimation('pulse')">Pulsing Ring</button>
+            </div>
+            
+            <div class="animation-demo">
+                <div id="animationContainer">
+                    <!-- Bounce animation (default) -->
+                    <svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="demoRing" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="demoStroke" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoRing)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        
+                        <circle cx="145" cy="50" r="9" fill="#764ba2" class="bounce-dot"/>
+                    </svg>
+                </div>
+                
+                <div class="loading-stages">
+                    <div class="stage complete">
+                        <div class="stage-icon">✓</div>
+                        <div class="stage-text">Analyzing resume...</div>
+                    </div>
+                    <div class="stage complete">
+                        <div class="stage-icon">✓</div>
+                        <div class="stage-text">Parsing job description...</div>
+                    </div>
+                    <div class="stage active">
+                        <div class="stage-icon"></div>
+                        <div class="stage-text">Calculating fit score...</div>
+                    </div>
+                    <div class="stage">
+                        <div class="stage-icon"></div>
+                        <div class="stage-text">Generating strategy...</div>
+                    </div>
+                    <div class="stage">
+                        <div class="stage-icon"></div>
+                        <div class="stage-text">Tailoring documents...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- IMPLEMENTATION CODE -->
+        <div class="section">
+            <h2>Implementation Code</h2>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">HTML/CSS Animation</h3>
+            <div class="code-block">
+                <pre>&lt;style&gt;
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+  
+  .loading-dot {
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    min-height: 100vh;
+    background: #0a0a0a;
+  }
+&lt;/style&gt;
+
+&lt;div class="loading-container"&gt;
+  &lt;svg width="120" height="120" viewBox="0 0 200 200"&gt;
+    &lt;!-- Ring and H-Mark paths here --&gt;
+    &lt;circle cx="145" cy="50" r="9" fill="#764ba2" class="loading-dot"/&gt;
+  &lt;/svg&gt;
+  
+  &lt;div class="loading-stages"&gt;
+    &lt;!-- Stage items --&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+            </div>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">JavaScript Progressive Stages</h3>
+            <div class="code-block">
+                <pre>const stages = [
+  "Analyzing resume...",
+  "Parsing job description...",
+  "Calculating fit score...",
+  "Generating strategy...",
+  "Tailoring documents..."
+];
+
+let currentStage = 0;
+
+function updateStage() {
+  // Mark previous stages as complete
+  document.querySelectorAll('.stage').forEach((stage, index) => {
+    if (index < currentStage) {
+      stage.classList.add('complete');
+      stage.classList.remove('active');
+    } else if (index === currentStage) {
+      stage.classList.add('active');
+      stage.classList.remove('complete');
+    } else {
+      stage.classList.remove('active', 'complete');
+    }
+  });
+  
+  currentStage++;
+  if (currentStage < stages.length) {
+    setTimeout(updateStage, 2000); // Move to next stage every 2 seconds
+  }
+}
+
+// Start the progression
+updateStage();</pre>
+            </div>
+            
+            <h3 style="color: #fff; margin: 24px 0 12px 0; font-size: 18px;">React Component</h3>
+            <div class="code-block">
+                <pre>import React, { useState, useEffect } from 'react';
+
+const LoadingScreen = ({ stages }) => {
+  const [currentStage, setCurrentStage] = useState(0);
+  
+  useEffect(() => {
+    if (currentStage < stages.length - 1) {
+      const timer = setTimeout(() => {
+        setCurrentStage(prev => prev + 1);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentStage, stages.length]);
+  
+  return (
+    &lt;div className="loading-container"&gt;
+      &lt;svg width="120" height="120" viewBox="0 0 200 200"&gt;
+        {/* Logo SVG */}
+        &lt;circle cx="145" cy="50" r="9" fill="#764ba2" className="loading-dot"/&gt;
+      &lt;/svg&gt;
+      
+      &lt;div className="loading-stages"&gt;
+        {stages.map((stage, index) => (
+          &lt;div 
+            key={index}
+            className={`stage ${
+              index < currentStage ? 'complete' : 
+              index === currentStage ? 'active' : ''
+            }`}
+          &gt;
+            &lt;div className="stage-icon"&gt;
+              {index < currentStage && '✓'}
+            &lt;/div&gt;
+            &lt;div className="stage-text"&gt;{stage}&lt;/div&gt;
+          &lt;/div&gt;
+        ))}
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};
+
+export default LoadingScreen;</pre>
+            </div>
+        </div>
+        
+        <!-- EXPORT SIZES -->
+        <div class="section">
+            <h2>Recommended Export Sizes</h2>
+            
+            <div class="download-section">
+                <div class="download-card">
+                    <div class="download-size">16px</div>
+                    <div class="download-label">Favicon</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">32px</div>
+                    <div class="download-label">Small Icon</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">64px</div>
+                    <div class="download-label">Standard Icon</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">120px</div>
+                    <div class="download-label">Loading Screen</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">128px</div>
+                    <div class="download-label">App Icon</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">256px</div>
+                    <div class="download-label">Large Display</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">512px</div>
+                    <div class="download-label">High-Res</div>
+                </div>
+                <div class="download-card">
+                    <div class="download-size">1024px</div>
+                    <div class="download-label">Marketing</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- USAGE NOTES -->
+        <div class="section">
+            <h2>Implementation Notes</h2>
+            
+            <div class="spec-item" style="margin-bottom: 16px;">
+                <div class="spec-label">Animation Target</div>
+                <div class="spec-note">
+                    The peak dot (circle at 145, 50) is your animation element. Add class "loading-dot" or "bounce-dot" to animate it.
+                </div>
+            </div>
+            
+            <div class="spec-item" style="margin-bottom: 16px;">
+                <div class="spec-label">Scaling</div>
+                <div class="spec-note">
+                    Use viewBox="0 0 200 200" and set width/height in CSS. The logo will scale perfectly at any size while maintaining proportions.
+                </div>
+            </div>
+            
+            <div class="spec-item" style="margin-bottom: 16px;">
+                <div class="spec-label">Colors on Dark Backgrounds</div>
+                <div class="spec-note">
+                    Current gradient (#667eea → #764ba2) works perfectly on #0a0a0a background. No adjustment needed.
+                </div>
+            </div>
+            
+            <div class="spec-item" style="margin-bottom: 16px;">
+                <div class="spec-label">Colors on Light Backgrounds</div>
+                <div class="spec-note">
+                    Gradient remains the same. The contrast is strong enough for both light and dark contexts.
+                </div>
+            </div>
+            
+            <div class="spec-item">
+                <div class="spec-label">Loading Stage Timing</div>
+                <div class="spec-note">
+                    Each stage should progress every 1.5-2.5 seconds. Total loading sequence: 7.5-12.5 seconds for 5 stages. Adjust based on actual API response times.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function switchAnimation(type) {
+            // Update button states
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            const container = document.getElementById('animationContainer');
+            
+            if (type === 'bounce') {
+                container.innerHTML = `
+                    <svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="demoRing" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="demoStroke" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoRing)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        
+                        <circle cx="145" cy="50" r="9" fill="#764ba2" class="bounce-dot"/>
+                    </svg>
+                `;
+            } else if (type === 'spin') {
+                container.innerHTML = `
+                    <svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" class="spin-logo">
+                        <defs>
+                            <linearGradient id="demoRing2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="demoStroke2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoRing2)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke2)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                `;
+            } else if (type === 'pulse') {
+                container.innerHTML = `
+                    <svg width="120" height="120" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="demoRing3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="demoStroke3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoRing3)" stroke-width="4" fill="none" class="pulse-ring"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke3)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                `;
+            }
+        }
+        
+        // Simulate stage progression
+        let stageIndex = 0;
+        const stages = document.querySelectorAll('.stage');
+        
+        function progressStage() {
+            if (stageIndex > 0) {
+                stages[stageIndex - 1].classList.remove('active');
+                stages[stageIndex - 1].classList.add('complete');
+            }
+            
+            if (stageIndex < stages.length) {
+                stages[stageIndex].classList.add('active');
+                stageIndex++;
+                setTimeout(progressStage, 2000);
+            }
+        }
+        
+        // Start after 1 second
+        setTimeout(progressStage, 1000);
+    </script>
+</body>
+</html>

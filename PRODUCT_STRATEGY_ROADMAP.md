@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
-**Date**: December 11, 2025
-**Version**: 1.2
-**Status**: Phase 0 Complete, Resume Level Analysis Complete, Phase 1 In Progress
-**Last Updated**: December 11, 2025, 11:30 PM PST
-**Next Review**: December 18, 2025
+**Date**: December 14, 2025
+**Version**: 1.4
+**Status**: Phase 0 Complete, User Signup/Profile Flow Complete, QA Validation Disabled (pending fixes), Phase 1 In Progress
+**Last Updated**: December 14, 2025
+**Next Review**: December 21, 2025
 
 ---
 
@@ -16,7 +16,7 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 **Current State**: B+ (Foundation strengthened with validation, keyword coverage, conversational wrappers)
 **Target State**: A (Claude-quality experience with recruiter-grade outputs)
 
-### Recent Achievements (Dec 11, 2025)
+### Recent Achievements (Dec 11-12, 2025)
 
 ✅ **Phase 0 COMPLETED** - Foundation Strengthening deployed to production
 - Post-generation validation layer
@@ -37,6 +37,99 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Removed Resume Level Analysis card from overview.html (it's a pre-generation step)
 - Standardized HenryAI logo font (Instrument Serif) across all pages
 - Expanded navigation panel width for better readability
+
+✅ **Beta Access Gate DEPLOYED** (Dec 12, 2025)
+- Created beta-access.html with clean, branded passcode entry UI
+- Hardcoded passcode "BETA2025" (case-insensitive) for beta testers
+- localStorage-based verification persistence
+- Protected all application pages (index, login, dashboard, analyze, tracker, profile-edit, interview-intelligence)
+- Meta tags for noindex/nofollow to prevent search engine indexing
+
+✅ **Dashboard & Tracker Improvements** (Dec 12, 2025)
+- Reality Check section with quality-focused messaging
+- "Why This Matters" button opens Ask Henry chat with personalized explanation
+- Strategic Priority cards now fully clickable (navigate to application overview)
+- Changed "Table/Cards" toggle to "Summary/Detailed" for clarity
+- Fixed "Review Prep Guide" button (no longer opens Add Interview modal incorrectly)
+- Added global `openAskHenry()` and `openAskHenryWithPrompt()` functions for cross-page Ask Henry integration
+
+✅ **Ask Henry Chatbot Enhancements** (Dec 12, 2025)
+- Random tooltip messages appearing every 20-40 seconds (14+ fun prompts)
+- Breathing animation with pulse effects on logo
+- Conversation history persistence (last 20 messages in sessionStorage)
+- Pipeline data integration (tracks applications, calculates interview rates, identifies ghosted apps)
+- 13+ contextual suggestion sets based on current page
+- Personalized greetings using user's first name
+- Page context awareness (12 different contexts)
+- Message formatting (bold, italic, lists)
+- Global functions: `openAskHenry()` and `openAskHenryWithPrompt(prompt)`
+
+✅ **Header & Navigation Improvements** (Dec 12, 2025)
+- Centered HenryHQ logo in header across all 16+ pages
+- Moved navigation panel down (top: 150px) to avoid header overlap
+- Increased navigation panel width to 240px for better readability
+
+✅ **HenryHQ.ai Landing Page Created** (Dec 12, 2025)
+- Created henryhq-landing.html for new HenryHQ.ai domain
+- Animated H logo (same as Ask Henry branding) with fade transition
+- Logo displays for 2 seconds, then fades to "HenryHQ" text
+- Clean black background, Instrument Serif font
+- Ready for Cloudflare Pages deployment
+
+✅ **Domain Acquisition** (Dec 12, 2025)
+- Purchased HenryHQ.ai domain from Cloudflare (locked-in)
+- Landing page ready for deployment
+
+### Recent Achievements (Dec 13-14, 2025)
+
+✅ **New User Signup Flow COMPLETED** (Dec 13, 2025)
+- Profile check on dashboard load redirects new users to onboarding
+- Delete Account functionality with Supabase data clearing
+- Reset Profile functionality (clears data, keeps account)
+- Confirmation modals with type-to-confirm safety (DELETE/RESET)
+
+✅ **Supabase Database Tables Created** (Dec 14, 2025)
+- `candidate_profiles` table for user profiles
+- `applications` table for job tracking
+- `resume_conversations` table for chat history
+- `interviews` table created (new)
+- Row Level Security (RLS) policies on all tables
+
+✅ **QA Validation System Updates** (Dec 14, 2025)
+- Fixed schema mismatch in validation field names
+- Disabled aggressive blocking (false positives on phrases like "improved pipeline")
+- QA validation temporarily disabled for document generation (pending regex fixes)
+- TODO: Re-enable after fixing company/metric detection logic
+
+✅ **API Resilience Improvements** (Dec 14, 2025)
+- Added automatic retry logic for Claude API overload errors (529)
+- Exponential backoff: 2s, 4s, 8s (3 attempts)
+- User-friendly error messages: "Our AI is temporarily busy. Please try again in a moment."
+- Applied to both `call_claude` and `call_claude_streaming` helpers
+
+✅ **Status Banner Component** (Dec 14, 2025)
+- New `status-banner.js` component for service outage communication
+- Easy toggle: `SHOW_STATUS_BANNER = true/false`
+- Personalized message using user's first name ("Ahh damn, Jordan!")
+- Inline alert box (above Today's Focus) - doesn't disrupt page layout
+- Dismissible per session
+- Added to all authenticated pages (17+ pages)
+- Currently **DISABLED** (Anthropic outage resolved)
+
+✅ **Dashboard UI Improvements** (Dec 14, 2025)
+- Removed redundant "You have X active applications" banner
+- Moved Reality Check section below Today's Focus
+- Positioned HenryHQ logo above sidebar navigation (centered, 2rem font)
+- Removed header from dashboard (logo now in sidebar area)
+
+✅ **Profile Settings Improvements** (Dec 14, 2025)
+- Removed alarming "Danger Zone" styling
+- Reset Profile / Delete Account now subtle text links
+- Fixed position in bottom-left corner, stacked vertically
+- 50% opacity, small font - present but not prominent
+
+✅ **Bug Fixes** (Dec 14, 2025)
+- Fixed async/await syntax error in documents.html (commit: `97edb3e`)
 
 ---
 
@@ -348,6 +441,440 @@ function submitAnalysis() {
 - [ ] Fallback to non-streaming if errors exceed 2%
 - [ ] Monitor performance metrics daily during rollout
 - [ ] Collect user feedback via in-app survey
+
+---
+
+### 💬 Phase 1.5: Application Support Features
+
+**Goal**: Prevent silent rejections and enable document refinement
+
+**Priority**: HIGH
+**Effort**: Medium (3-5 days each feature)
+**Impact**: HIGH
+**Timeline**: 2.5 weeks (Jan 2-17, 2026) - EXPEDITED for testing
+**Status**: 📋 PLANNED - Implementation Spec Ready
+**Dependencies**: Phase 1 complete
+
+#### Sprint Overview
+
+| Week | Focus | Deliverables |
+|------|-------|--------------|
+| Week 1 (Jan 2-8) | Core Development | Screening Questions endpoint, Document Refine endpoint, Frontend UI |
+| Week 2 (Jan 9-15) | Beta Testing + Deploy | Internal testing, bug fixes, production deployment |
+| Week 3 (Jan 16-17) | Buffer + Monitoring | Post-deploy monitoring, user feedback collection |
+
+#### Clarification: Ask Henry Chat Status
+
+**What's Already Implemented** (Dec 12, 2025):
+- ✅ Contextual AI assistant (Ask Henry) - 1,058 lines
+- ✅ Full conversation history persistence (last 20 messages)
+- ✅ 13+ page-specific suggestion sets
+- ✅ Pipeline data integration (tracks apps, interview rates, ghosted detection)
+- ✅ Global functions: `openAskHenry()`, `openAskHenryWithPrompt()`
+- ✅ Message formatting (bold, italic, lists)
+- ✅ Personalized greetings, breathing animation, tooltips
+
+**What's NOT Implemented** (actual gaps):
+- ❌ Document regeneration from chat commands ("make this more senior")
+- ❌ Screening questions analysis
+
+#### 1.5.1 Screening Questions Analysis (RECOMMENDED PRIORITY)
+
+**Why this comes first**:
+1. **Critical failure point**: Users pass resume screen, then get auto-rejected for answering "No" to "5+ years Python?" when they have 4.5 years
+2. **100% of online applicants** face screening questions vs ~20% who want granular document control
+3. **No workaround exists** - document iteration has a clunky but functional workaround; screening questions have nothing
+
+**Implementation**:
+- New endpoint: `POST /api/screening-questions/analyze`
+- Input: Array of screening questions with types (yes/no, years of experience, salary, essay)
+- Output: Auto-rejection risk scores + recommended answers
+
+**Files to Create/Modify**:
+- `backend/backend.py`: Add `/api/screening-questions/analyze` endpoint
+- `frontend/screening-questions.html`: New page for question analysis
+
+**Backend Implementation** (Complete Code):
+
+```python
+# Pydantic Models
+from enum import Enum
+
+class QuestionType(str, Enum):
+    YES_NO = "yes_no"
+    EXPERIENCE_YEARS = "experience_years"
+    SALARY = "salary"
+    ESSAY = "essay"
+    MULTIPLE_CHOICE = "multiple_choice"
+    AVAILABILITY = "availability"
+
+class RiskLevel(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class HonestyFlag(str, Enum):
+    TRUTHFUL = "truthful"
+    STRATEGIC_FRAMING = "strategic_framing"
+    BORDERLINE = "borderline"
+
+class ScreeningQuestion(BaseModel):
+    question: str
+    type: QuestionType
+    options: Optional[List[str]] = None
+
+class ScreeningQuestionsRequest(BaseModel):
+    questions: List[ScreeningQuestion]
+    resume_data: Dict[str, Any]
+    jd_analysis: Dict[str, Any]
+    job_description: Optional[str] = None
+
+class QuestionAnalysis(BaseModel):
+    question: str
+    question_type: QuestionType
+    risk_level: RiskLevel
+    risk_reason: str
+    recommended_answer: str
+    justification: str
+    honesty_flag: HonestyFlag
+    knockout_question: bool
+    confidence: float  # 0.0 - 1.0
+
+class ScreeningQuestionsResponse(BaseModel):
+    analysis: List[QuestionAnalysis]
+    overall_risk: RiskLevel
+    auto_reject_flags: int
+    strategic_notes: str
+    conversational_summary: str
+
+@app.post("/api/screening-questions/analyze", response_model=ScreeningQuestionsResponse)
+async def analyze_screening_questions(request: ScreeningQuestionsRequest):
+    """
+    Analyzes screening questions against resume to identify auto-rejection risks
+    and provide strategic, honest answer recommendations.
+    """
+
+    system_prompt = """You are an expert career advisor helping job seekers navigate
+    application screening questions. Your goal is to:
+
+    1. Identify questions that could trigger automatic rejection
+    2. Analyze the candidate's resume to find supporting evidence
+    3. Recommend honest but strategically-framed answers
+    4. Flag any questions where the candidate should be cautious
+
+    CRITICAL RULES:
+    - Never recommend lying or fabricating experience
+    - Always base recommendations on actual resume content
+    - Flag borderline cases honestly (e.g., "4.5 years" for "5+ years required")
+    - Consider how recruiters typically interpret these questions
+    - Prioritize the candidate's long-term reputation over short-term gains
+
+    For each question, provide:
+    - risk_level: "high" (likely auto-reject), "medium" (careful consideration needed), "low" (straightforward)
+    - recommended_answer: The strategic but honest response
+    - justification: Why this answer is appropriate
+    - honesty_flag: "truthful" (100% accurate), "strategic_framing" (true but optimally presented), "borderline" (requires judgment call)
+    - knockout_question: true if this could immediately disqualify the candidate
+
+    Return as JSON matching the ScreeningQuestionsResponse schema.
+    """
+
+    user_message = f"""Analyze these screening questions for this candidate:
+
+SCREENING QUESTIONS:
+{json.dumps([q.dict() for q in request.questions], indent=2)}
+
+CANDIDATE RESUME:
+{json.dumps(request.resume_data, indent=2)}
+
+JOB ANALYSIS:
+{json.dumps(request.jd_analysis, indent=2)}
+
+{f"JOB DESCRIPTION: {request.job_description}" if request.job_description else ""}
+
+Provide analysis for each question with risk assessment and recommended answers.
+Start with a brief conversational summary, then provide the structured analysis.
+"""
+
+    response = call_claude(system_prompt, user_message, max_tokens=4000)
+
+    # Parse response (similar pattern to other endpoints)
+    # ... parsing logic ...
+
+    return parsed_response
+```
+
+**Frontend Implementation** (`screening-questions.html`):
+
+```html
+<!-- Key UI Components -->
+<div class="screening-container">
+    <h1>Screening Questions Analysis</h1>
+    <p class="subtitle">Avoid silent rejections with strategic answer recommendations</p>
+
+    <!-- Question Input Section -->
+    <div class="question-input-section">
+        <h2>Add Your Screening Questions</h2>
+        <div id="questionsList"></div>
+        <button onclick="addQuestion()" class="add-btn">+ Add Question</button>
+    </div>
+
+    <!-- Analysis Results -->
+    <div id="analysisResults" class="hidden">
+        <div class="risk-summary">
+            <div class="overall-risk" id="overallRisk"></div>
+            <div class="auto-reject-count" id="rejectFlags"></div>
+        </div>
+
+        <div id="questionAnalysis"></div>
+    </div>
+</div>
+
+<!-- Risk Level Styling -->
+<style>
+.risk-high { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.1); }
+.risk-medium { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.risk-low { border-left: 4px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+.knockout-badge { background: #dc2626; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+</style>
+```
+
+**Expected Outcome**:
+- Prevent silent auto-rejections from screening question mistakes
+- Users understand which questions are "knockout" questions
+- Provide defensible answers for edge cases
+
+**Success Metrics**:
+- Auto-rejection rate: -30% (measured via user feedback)
+- User confidence in screening answers: 4.5/5
+
+**Testing Checklist**:
+- [ ] Yes/No questions with exact match (have exactly 5 years, need 5 years)
+- [ ] Yes/No questions with near-miss (have 4.5 years, need 5 years)
+- [ ] Salary questions with range detection
+- [ ] Essay questions with keyword coverage
+- [ ] Multiple knockout questions in same application
+- [ ] Resume with gaps vs questions about continuous employment
+
+---
+
+#### 1.5.2 Document Iteration via Chat (SECONDARY)
+
+**Why this is secondary**:
+- Users can already regenerate documents by going back through the flow (clunky but works)
+- Serves ~20% of users who want granular control
+- More complex to implement (version history, UI for comparing v1 vs v2)
+
+**Implementation**:
+- New endpoint: `POST /api/documents/refine`
+- Input: Existing document + chat prompt ("make more senior", "add more ATS keywords")
+- Output: Refined document with diff highlighting
+
+**Files to Create/Modify**:
+- `backend/backend.py`: Add `/api/documents/refine` endpoint
+- `frontend/components/ask-henry.js`: Add "Regenerate" button when user requests changes
+- `frontend/documents.html`: Add iteration history UI (v1, v2, v3)
+
+**Backend Implementation** (Complete Code):
+
+```python
+class DocumentType(str, Enum):
+    RESUME = "resume"
+    COVER_LETTER = "cover_letter"
+    OUTREACH = "outreach"
+
+class RefineDocumentRequest(BaseModel):
+    document_type: DocumentType
+    current_document: Dict[str, Any]
+    refinement_prompt: str
+    resume_data: Dict[str, Any]
+    jd_analysis: Dict[str, Any]
+    version: int = 1
+
+class DocumentChange(BaseModel):
+    section: str
+    before: str
+    after: str
+    change_type: str  # "added", "removed", "modified"
+
+class RefineDocumentResponse(BaseModel):
+    refined_document: Dict[str, Any]
+    changes: List[DocumentChange]
+    change_summary: str
+    version: int
+    validation: Dict[str, Any]
+
+@app.post("/api/documents/refine", response_model=RefineDocumentResponse)
+async def refine_document(request: RefineDocumentRequest):
+    """
+    Refines an existing document based on user feedback while maintaining
+    grounding in the original resume data.
+    """
+
+    system_prompt = f"""You are refining a {request.document_type.value} based on user feedback.
+
+CRITICAL RULES:
+1. Maintain all factual accuracy from the original resume
+2. Only modify based on the user's specific request
+3. Do NOT fabricate new experience, metrics, or achievements
+4. Track all changes for transparency
+5. Ensure ATS optimization is maintained or improved
+
+User's refinement request: "{request.refinement_prompt}"
+
+Provide:
+1. The refined document
+2. A list of specific changes made
+3. A brief summary of what changed and why
+"""
+
+    user_message = f"""Refine this document based on the user's request.
+
+CURRENT DOCUMENT (v{request.version}):
+{json.dumps(request.current_document, indent=2)}
+
+ORIGINAL RESUME DATA (source of truth):
+{json.dumps(request.resume_data, indent=2)}
+
+JOB ANALYSIS:
+{json.dumps(request.jd_analysis, indent=2)}
+
+USER REQUEST: {request.refinement_prompt}
+
+Return the refined document with change tracking.
+"""
+
+    response = call_claude(system_prompt, user_message, max_tokens=6000)
+
+    # Parse and validate
+    # ... parsing logic ...
+
+    # Run validation on refined document
+    validation = validate_document_quality(refined_doc, request.resume_data, request.jd_analysis)
+
+    return RefineDocumentResponse(
+        refined_document=refined_doc,
+        changes=changes,
+        change_summary=summary,
+        version=request.version + 1,
+        validation=validation
+    )
+```
+
+**Frontend Integration** (`ask-henry.js` modifications):
+
+```javascript
+// Add to ask-henry.js - detect refinement requests
+const REFINEMENT_TRIGGERS = [
+    'make it more', 'make this more', 'can you make',
+    'add more', 'remove the', 'change the',
+    'too generic', 'more specific', 'more senior',
+    'less formal', 'more formal', 'shorter', 'longer'
+];
+
+function detectRefinementRequest(message) {
+    const lowerMessage = message.toLowerCase();
+    return REFINEMENT_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+}
+
+async function handleRefinementRequest(message) {
+    const currentPage = window.location.pathname;
+
+    // Only handle refinements on document pages
+    if (!currentPage.includes('documents') && !currentPage.includes('overview')) {
+        return null; // Let normal chat handle it
+    }
+
+    const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
+    const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+
+    // Determine document type from context
+    const documentType = currentPage.includes('cover') ? 'cover_letter' : 'resume';
+
+    const response = await fetch(`${API_BASE_URL}/api/documents/refine`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            document_type: documentType,
+            current_document: documentsData[documentType === 'resume' ? 'resume_output' : 'cover_letter'],
+            refinement_prompt: message,
+            resume_data: analysisData._resume_json,
+            jd_analysis: analysisData,
+            version: documentsData._version || 1
+        })
+    });
+
+    if (!response.ok) throw new Error('Refinement failed');
+
+    const result = await response.json();
+
+    // Update stored documents
+    documentsData[documentType === 'resume' ? 'resume_output' : 'cover_letter'] = result.refined_document;
+    documentsData._version = result.version;
+    sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+    // Show success message with changes
+    return {
+        message: `✅ I've updated your ${documentType.replace('_', ' ')} (now v${result.version}).\n\n${result.change_summary}\n\nRefresh the page to see the changes, or keep chatting to refine further.`,
+        changes: result.changes,
+        showRefreshButton: true
+    };
+}
+
+// Modify sendMessage to check for refinements first
+async function sendMessage(message) {
+    if (detectRefinementRequest(message)) {
+        try {
+            const result = await handleRefinementRequest(message);
+            if (result) {
+                displayAssistantMessage(result.message);
+                if (result.showRefreshButton) {
+                    addRefreshButton();
+                }
+                return;
+            }
+        } catch (error) {
+            console.error('Refinement error:', error);
+            // Fall through to normal chat
+        }
+    }
+
+    // Normal chat handling
+    // ... existing code ...
+}
+```
+
+**Expected Outcome**:
+- Users can refine documents without restarting flow
+- Version history for document iterations
+- Diff view showing what changed
+
+**Success Metrics**:
+- Document edit requests via chat: track adoption
+- Time to final document: -25%
+
+**Testing Checklist**:
+- [ ] "Make it more senior" increases leadership language
+- [ ] "Add more ATS keywords" improves keyword coverage
+- [ ] "Make the summary shorter" reduces summary length
+- [ ] Version tracking increments correctly
+- [ ] Changes are tracked and displayed
+- [ ] Validation runs on refined document
+- [ ] Original resume facts remain unchanged
+
+---
+
+#### Phase 1.5 Deployment Timeline
+
+| Day | Date | Milestone |
+|-----|------|-----------|
+| 1-3 | Jan 2-4 | Screening Questions backend + frontend |
+| 4-5 | Jan 5-6 | Document Refine backend + ask-henry.js integration |
+| 6-7 | Jan 7-8 | Integration testing, bug fixes |
+| 8-10 | Jan 9-11 | Internal beta testing |
+| 11-12 | Jan 12-13 | Bug fixes from beta feedback |
+| 13 | Jan 14 | Production deployment |
+| 14-15 | Jan 15-17 | Monitoring, user feedback collection |
 
 ---
 
@@ -675,6 +1202,48 @@ CREATE TABLE conversations (
 
 ---
 
+#### 5.4 SMS Notifications (Future - Needs Strategic Planning)
+
+**Status**: 📋 CONCEPT - Requires deeper strategic thinking
+
+**Vision**: Move HenryAI from reactive to proactive engagement through SMS notifications.
+
+**Technical Overview**:
+- **Provider**: Twilio (~$0.0079/text US, ~$1/month for phone number)
+- **Effort**: Medium (few hours to set up basic infrastructure)
+- **Cost at scale**: 100 users x 4 texts/month = ~$4/month
+
+**Potential Use Cases**:
+1. **Service Alerts**: "Hey [Name], our AI is back online! Ready when you are."
+2. **Engagement Nudges**: "You haven't checked in for 3 days. Your Headway application needs follow-up."
+3. **Interview Reminders**: "Reminder: Your interview with Headway is tomorrow at 2pm."
+4. **Milestone Celebrations**: "Congrats! You've submitted 5 applications this week."
+5. **Market Insights**: "New roles matching your profile posted today at [Company]."
+
+**Strategic Questions to Answer**:
+- How do we avoid being spammy while still driving engagement?
+- What's the opt-in/opt-out flow?
+- Should SMS be a premium feature or core?
+- How do we personalize messages based on user's emotional state (stressed vs zen)?
+- Can we use SMS to create urgency without anxiety?
+
+**Implementation Requirements**:
+1. Phone number collection in profile-edit.html (optional field)
+2. Phone number storage in Supabase (candidate_profiles table)
+3. Backend `/api/send-sms` endpoint with Twilio integration
+4. Admin interface or automated triggers for sending
+5. Opt-out mechanism (reply STOP)
+
+**Key Insight**: The real value isn't just notifications - it's making HenryAI feel like a proactive coach who reaches out when you need help, not just when you ask for it.
+
+**Next Steps** (when ready to implement):
+1. Define the "proactive coach" persona and tone for SMS
+2. Map user journey moments where SMS adds value (not noise)
+3. Design A/B tests for engagement vs annoyance
+4. Build MVP with manual trigger first, then automate
+
+---
+
 ## Technical Debt & Maintenance
 
 ### Ongoing Maintenance Tasks
@@ -834,5 +1403,5 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 ---
 
 **Document Owner**: Product Team
-**Last Updated**: December 11, 2025
-**Next Review**: January 11, 2026
+**Last Updated**: December 14, 2025
+**Next Review**: December 21, 2025

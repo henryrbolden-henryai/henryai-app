@@ -341,6 +341,12 @@
                 let errorMsg = 'Something went wrong. Please try again.';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
+                } else if (error.message && error.message.includes('temporarily busy')) {
+                    // Friendly message for API overload
+                    errorMsg = error.message;
+                } else if (error.message && error.message.includes('Claude API')) {
+                    // Clean up raw API error messages
+                    errorMsg = 'Our AI is temporarily unavailable. Please try again in a moment.';
                 } else if (error.message) {
                     errorMsg = error.message;
                 }
@@ -352,5 +358,6 @@
         // Start analysis when page loads
         runAnalysis();
     </script>
+    <script src="components/status-banner.js"></script>
 </body>
 </html>

@@ -535,6 +535,9 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
 </head>
 <body>
     <!-- HEADER -->
@@ -1108,7 +1111,7 @@
         }
 
         // Load documents on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             // Get analysis data for candidate name
             const analysisDataStr = sessionStorage.getItem('analysisData');
             if (!analysisDataStr) {
@@ -1117,14 +1120,34 @@
             }
             analysisData = JSON.parse(analysisDataStr);
 
-            // Get documents data - try sessionStorage first, then localStorage fallback
+            // Get documents data - try sessionStorage first, then Supabase, then localStorage fallback
             let documentsDataStr = sessionStorage.getItem('documentsData');
 
-            // If not in sessionStorage, try to load from localStorage using company/role key
+            // If not in sessionStorage, try to load from Supabase or localStorage
             if (!documentsDataStr) {
                 const company = analysisData._company || analysisData.company_name || '';
                 const role = analysisData._role || analysisData.role_title || '';
-                if (company && role) {
+
+                // Try Supabase first
+                if (typeof HenryData !== 'undefined' && company && role) {
+                    try {
+                        const apps = await HenryData.getApplications();
+                        const matchingApp = apps.find(app =>
+                            app.company.toLowerCase() === company.toLowerCase() &&
+                            app.role.toLowerCase() === role.toLowerCase()
+                        );
+                        if (matchingApp && matchingApp.documentsData && Object.keys(matchingApp.documentsData).length > 0) {
+                            documentsDataStr = JSON.stringify(matchingApp.documentsData);
+                            sessionStorage.setItem('documentsData', documentsDataStr);
+                            console.log('Loaded documents from Supabase');
+                        }
+                    } catch (err) {
+                        console.log('Could not load from Supabase:', err);
+                    }
+                }
+
+                // Fallback to localStorage
+                if (!documentsDataStr && company && role) {
                     const documentsKey = `documents_${company}_${role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                     documentsDataStr = localStorage.getItem(documentsKey);
                     console.log('Loaded documents from localStorage:', documentsKey, !!documentsDataStr);
@@ -1264,5 +1287,6 @@ COVER LETTER
     </script>
 <script src="components/ask-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
+    <script src="components/status-banner.js"></script>
 </body>
 </html>

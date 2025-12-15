@@ -152,6 +152,9 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
+    <!-- Supabase Auth -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
 </head>
 <body>
     <div class="logo-container">
@@ -214,7 +217,10 @@
 
     <div class="error-message" id="errorMessage">
         <p id="errorText">Something went wrong. Please try again.</p>
-        <button onclick="goBack()">Go Back</button>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="retryGeneration()">Try Again</button>
+            <button onclick="goBack()" style="background: transparent; border: 1px solid rgba(255, 255, 255, 0.2);">Go Back</button>
+        </div>
     </div>
 
     <script>
@@ -267,6 +273,21 @@
             window.location.href = 'resume-leveling.html';
         }
 
+        function retryGeneration() {
+            // Hide error, reset progress, and try again
+            errorMessage.classList.remove('show');
+            statusText.textContent = 'Crafting your resume...';
+            statusSubtext.textContent = 'This usually takes 30-60 seconds';
+            // Reset dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('active', 'completed');
+            }
+            document.getElementById('dot1').classList.add('active');
+            // Retry
+            generateDocuments();
+        }
+
         // Progress through stages while waiting
         function startProgressAnimation() {
             // Stage 2 after 8 seconds
@@ -298,9 +319,24 @@
             startProgressAnimation();
 
             try {
+                // Parse resume JSON if it's a string (handle double-encoding)
+                let resumeJson = analysisData._resume_json || {};
+                let parseAttempts = 0;
+                while (typeof resumeJson === 'string' && parseAttempts < 3) {
+                    try {
+                        resumeJson = JSON.parse(resumeJson);
+                        parseAttempts++;
+                        console.log(`Parsed resume JSON (attempt ${parseAttempts})`);
+                    } catch (e) {
+                        console.error('Failed to parse resume_json string:', e);
+                        resumeJson = {};
+                        break;
+                    }
+                }
+
                 // Build request payload for document generation
                 const requestPayload = {
-                    resume: analysisData._resume_json || {},
+                    resume: resumeJson,
                     jd_analysis: {
                         role_title: analysisData.role_title || analysisData._role || '',
                         company_name: analysisData._company_name || analysisData._company || '',
@@ -313,12 +349,17 @@
                     preferences: analysisData._profile || {},
                     supplements: supplements.length > 0 ? supplements : undefined,
                     // Include leveling data for level-appropriate document generation
-                    leveling: levelingData ? {
+                    // Only include if all required fields are present
+                    leveling: (levelingData &&
+                               levelingData.current_level &&
+                               levelingData.current_level_id &&
+                               levelingData.detected_function &&
+                               levelingData.language_level) ? {
                         current_level: levelingData.current_level,
                         current_level_id: levelingData.current_level_id,
-                        target_level: levelingData.target_level,
-                        target_level_id: levelingData.target_level_id,
-                        levels_apart: levelingData.levels_apart,
+                        target_level: levelingData.target_level || null,
+                        target_level_id: levelingData.target_level_id || null,
+                        levels_apart: levelingData.levels_apart ?? null,
                         detected_function: levelingData.detected_function,
                         language_level: levelingData.language_level,
                         recommendations: levelingData.recommendations || [],
@@ -327,6 +368,9 @@
                 };
 
                 console.log('Generating documents with payload:', requestPayload);
+                console.log('Resume type:', typeof requestPayload.resume);
+                console.log('Resume keys:', requestPayload.resume ? Object.keys(requestPayload.resume) : 'none');
+                console.log('Leveling data present:', !!requestPayload.leveling);
 
                 const response = await fetch(`${API_BASE_URL}/api/documents/generate`, {
                     method: 'POST',
@@ -335,8 +379,56 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Document generation failed (${response.status})`);
+                    let errorDetail = `Document generation failed (${response.status})`;
+                    let isValidationError = false;
+                    try {
+                        const errorData = await response.json();
+                        console.error('API Error Response (raw):', JSON.stringify(errorData, null, 2));
+
+                        // Check if this is our custom validation error (QA blocked)
+                        if (errorData && errorData.detail && typeof errorData.detail === 'object') {
+                            const detail = errorData.detail;
+                            if (detail.error === 'validation_failed' && detail.user_message) {
+                                // Use the user-friendly message from the backend
+                                errorDetail = detail.user_message;
+                                isValidationError = true;
+                                console.log('QA Validation blocked output:', detail.validation);
+                            } else if (detail.message) {
+                                errorDetail = detail.message;
+                            } else if (Array.isArray(detail)) {
+                                // Pydantic validation errors come as array with loc, msg, type fields
+                                const messages = detail.map(e => {
+                                    if (!e || typeof e !== 'object') return String(e);
+                                    const loc = Array.isArray(e.loc) ? e.loc.join('.') : '';
+                                    const msg = String(e.msg || e.message || '');
+                                    return loc ? `${loc}: ${msg}` : msg || JSON.stringify(e);
+                                });
+                                errorDetail = messages.join('; ') || 'Validation error';
+                            } else {
+                                errorDetail = JSON.stringify(detail);
+                            }
+                        } else if (errorData && errorData.detail) {
+                            if (typeof errorData.detail === 'string') {
+                                errorDetail = errorData.detail;
+                            } else {
+                                errorDetail = JSON.stringify(errorData.detail);
+                            }
+                        } else if (errorData && errorData.message) {
+                            errorDetail = String(errorData.message);
+                        } else if (errorData) {
+                            errorDetail = JSON.stringify(errorData);
+                        }
+                    } catch (parseErr) {
+                        console.error('Could not parse error response:', parseErr);
+                    }
+                    console.error('Final error detail:', errorDetail);
+
+                    // For validation errors, show with retry option
+                    if (isValidationError) {
+                        showError(errorDetail + ' Click "Go Back" to check your resume data, or try generating again.');
+                        return;
+                    }
+                    throw new Error(errorDetail);
                 }
 
                 const documentsData = await response.json();
@@ -356,6 +448,32 @@
                     _generatedAt: new Date().toISOString()
                 }));
 
+                // Sync documents to Supabase (update the application record)
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        const session = await HenryAuth.getSession();
+                        if (session) {
+                            // Find the application for this company/role and update with documents
+                            const apps = await HenryData.getApplications();
+                            const matchingApp = apps.find(app =>
+                                app.company.toLowerCase() === companyName.toLowerCase() &&
+                                app.role.toLowerCase() === roleTitle.toLowerCase()
+                            );
+                            if (matchingApp) {
+                                matchingApp.documentsData = documentsData;
+                                const result = await HenryData.saveApplication(matchingApp);
+                                if (result.error) {
+                                    console.error('Error saving documents to Supabase:', result.error);
+                                } else {
+                                    console.log('Documents synced to Supabase');
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Supabase documents sync error:', err);
+                    }
+                }
+
                 // Clear supplements and leveling data after use
                 sessionStorage.removeItem('supplements');
                 sessionStorage.removeItem('originalGaps');
@@ -370,8 +488,12 @@
                 let errorMsg = 'Something went wrong. Please try again.';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
-                } else if (error.message) {
+                } else if (typeof error === 'string') {
+                    errorMsg = error;
+                } else if (error && typeof error.message === 'string') {
                     errorMsg = error.message;
+                } else if (error && typeof error.detail === 'string') {
+                    errorMsg = error.detail;
                 }
 
                 showError(errorMsg);

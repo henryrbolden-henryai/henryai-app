@@ -1,0 +1,325 @@
+﻿________________
+
+
+HENRYAI INTERVIEW INTELLIGENCE — UX REDESIGN SPEC (Share With Claude)
+________________
+
+
+1. UX PHILOSOPHY (Claude must follow this)
+Interview Intelligence must feel like:
+* A coach, not a dashboard
+
+* A guided flow, not a giant toolbox
+
+* A “prepare for what’s next” system
+
+* A calm, stage-specific layout
+
+* Zero clutter and no mixing of modes
+
+Claude’s old design dumped prep, drills, mock interviews, intro practice, and tabs into one page.
+That is not how real users understand or navigate interviews.
+This redesign replaces that with hierarchy + intentionality.
+________________
+
+
+2. TOP-LEVEL NAVIGATION (Claude must implement this)
+The Interview Intelligence section contains two tabs only:
+[ Practice ]     [ Upcoming Interviews ]
+This is the backbone.
+Nothing else belongs here.
+No sub-tabs, no four-wide navigation buttons, no role confusion.
+________________
+
+
+3. PRACTICE TAB — LAYOUT & COMPONENTS
+The Practice tab is for ongoing skill-building, not tied to real interviews.
+Top of Page — Main CTA (large card):
+Mock Interview Simulator
+“Practice a live, adaptive interview tailored to your role.”
+Button: Start Mock Interview
+This MUST be the first element on the page.
+Mock interview = the hero feature.
+________________
+
+
+Below the Mock Interview CTA — Secondary Tools
+Practice Categories (cards in a 2x2 grid)
+Intro Sell Practice
+Practice your 60–90 second opener.
+Behavioral Drills
+Strengthen your STAR/SCQA stories.
+Strategy Drills
+Practice structured problem-solving.
+Role-Based Drills
+PM, SWE, UX, UI, TA, Leadership drills.
+Each is a card.
+Not tabs.
+Not competing with the Mock Interview.
+________________
+
+
+Footer (optional)
+Simple text:
+“Want tailored prep? Add an upcoming interview.”
+________________
+
+
+4. UPCOMING INTERVIEWS — LAYOUT & COMPONENTS
+This tab shows ONLY interviews the user has logged.
+Empty State:
+“Add an interview to unlock customized prep.”
+Button: Add Interview
+________________
+
+
+Interview List (cards)
+Each card looks like:
+Company Logo or Initial
+Stripe
+Recruiter Screen — Thurs, Jan 4 @ 2:00 PM
+
+
+[ Open Prep Guide ]
+If the user logs multiple interviews, cards stack vertically.
+________________
+
+
+5. PREP GUIDE PAGE (WHEN USER CLICKS OPEN PREP)
+The prep guide is a focused, single-purpose page, not a tab soup.
+Header
+Company → Interview Type Prep
+(e.g., Stripe → Recruiter Screen Prep)
+________________
+
+
+Section 1 — What They Evaluate
+Bullet list, 4–6 items max.
+________________
+
+
+Section 2 — Your 60–90 Second Intro
+Card with:
+   * Tailored intro
+
+   * Word count
+
+   * Button: Regenerate
+
+________________
+
+
+Section 3 — Likely Questions
+Expandable list of 8–12 questions, role-specific.
+________________
+
+
+Section 4 — High-Impact Stories
+3–5 STAR stories customized using:
+      * User’s resume
+
+      * Company
+
+      * JD
+
+Stories are collapsible.
+________________
+
+
+Section 5 — Red Flags to Avoid
+Short list (3–5 bullets).
+________________
+
+
+Section 6 — Strategy Scenarios
+(Only for HM or Technical)
+________________
+
+
+Section 7 — Recommended Drills
+Links to practice cards on the Practice page.
+________________
+
+
+Footer CTA
+Launch Mock Interview (Aligned to This Stage)
+Claude must adapt this:
+         * If Recruiter Screen → Recruiter-style mock
+
+         * If HM → HM-style mock
+
+         * If Technical → Technical mock
+
+________________
+
+
+6. MOCK INTERVIEW PAGE
+This is NOT part of the main layout.
+It’s a separate chat-like page.
+Elements:
+            * Interviewer chat bubble
+
+            * User answer input
+
+            * One question at a time
+
+            * Subtle progress indicator (optional)
+
+            * No system text
+
+            * Natural transitions
+
+At the end → Generate Debrief.
+________________
+
+
+7. DEBRIEF PAGE
+Sections:
+               * Strengths (green tags)
+
+               * Weak Signals (yellow tags)
+
+               * Opportunities (short bullets)
+
+               * Level Estimate
+
+               * Recommended Drills
+
+CTA: Practice Again
+________________
+
+
+8. CONDITIONAL LOGIC (CRITICAL FOR CLAUDE)
+Prep Guides must NEVER show unless:
+                  * User logs an interview
+
+AND
+
+                  * User selects interview_type
+
+________________
+
+
+Practice tools ALWAYS visible
+No login requirements
+No interview requirements
+________________
+
+
+Tabs must NEVER mix real interview prep with practice
+This was the biggest flaw in Claude’s UI.
+________________
+
+
+Intro Sell Practice should NEVER dominate the page
+It is a drill, not a headliner.
+________________
+
+
+The hero section MUST always be Mock Interview (Practice Tab)
+This aligns product positioning:
+HenryAI helps you practice like a real candidate preparing for real interviews.
+________________
+
+
+9. FINAL REDESIGNED WIREFRAMES (TEXT FORM)
+________________
+
+
+Interview Intelligence
+-----------------------------------------
+|  Tabs: [Practice] [Upcoming Interviews] |
+-----------------------------------------
+________________
+
+
+Practice Tab
+[ Mock Interview Simulator ]
+   "Practice a live adaptive interview."
+   [ Start Mock Interview ]
+
+
+[ Intro Sell Practice ]    [ Behavioral Drills ]
+
+
+[ Strategy Drills ]        [ Role-Based Drills ]
+
+
+--------------------------------------------
+Footer: "Have an interview coming up? Add it."
+--------------------------------------------
+________________
+
+
+Upcoming Interviews Tab
+If empty:
+   "Add an interview to unlock customized prep."
+   [ Add Interview ]
+
+
+If populated:
+   [Stripe]
+   Recruiter Screen — Jan 4 @ 2 PM
+   [ Open Prep Guide ]
+
+
+   [Netflix]
+   Hiring Manager — Jan 8 @ 10 AM
+   [ Open Prep Guide ]
+________________
+
+
+Prep Guide Page
+Stripe → Recruiter Screen Prep
+
+
+WHAT THEY'RE EVALUATING
+  - Communication clarity
+  - Experience fit
+  - Motivation
+  - Red flags
+
+
+YOUR 60–90 SECOND INTRO
+  [Generated text]
+  [Regenerate]
+
+
+LIKELY QUESTIONS
+  (Expandable list)
+
+
+YOUR STORIES
+  (3–5 collapsible)
+
+
+RED FLAGS
+  - vague answers
+  - lack of metrics
+
+
+RECOMMENDED DRILLS
+  [Intro Practice] [Mock Interview] [...]
+
+
+[ Start Stage-Specific Mock Interview ]
+________________
+
+
+10. COPY FOR CLAUDE TO IMPLEMENT (Exact Instructions)
+Claude, follow this strictly:
+                     1. Separate “Practice” from “Upcoming Interviews.”
+
+                     2. The Practice tab leads with Mock Interview.
+
+                     3. Drills are secondary cards.
+
+                     4. Prep guides must ONLY appear after a user logs an interview.
+
+                     5. Prep guides must be clean, structured, and stage-specific.
+
+                     6. No tab soup. No multi-mode pages.
+
+                     7. Layout must feel calm, modern, and focused — like a coaching experience.
+
+                     8. Never display Recruiter/HM/Technical prep unless confirmed by the user’s interview tracker.
