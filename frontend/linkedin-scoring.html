@@ -13,25 +13,18 @@
             --color-surface: #141416;
             --color-surface-elevated: #1c1c1f;
             --color-border: rgba(255, 255, 255, 0.08);
-            --color-border-hover: rgba(255, 255, 255, 0.15);
             --color-text: #fafafa;
             --color-text-secondary: #a1a1aa;
             --color-accent: #22d3ee;
-            --color-accent-muted: rgba(34, 211, 238, 0.15);
             --color-success: #4ade80;
             --color-warning: #fbbf24;
             --color-error: #f87171;
             --color-linkedin: #0077b5;
             --font-display: 'Instrument Serif', Georgia, serif;
             --font-body: 'DM Sans', -apple-system, sans-serif;
-            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: var(--font-body);
@@ -43,7 +36,7 @@
         }
 
         main {
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
             padding: 40px 20px;
         }
@@ -58,55 +51,36 @@
             margin-bottom: 24px;
         }
 
-        .back-link:hover {
-            color: var(--color-accent);
-        }
+        .back-link:hover { color: var(--color-accent); }
 
         h1 {
             font-family: var(--font-display);
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 400;
             margin-bottom: 8px;
         }
 
         .subtitle {
             color: var(--color-text-secondary);
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 32px;
         }
 
-        /* Two Column Layout */
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        @media (max-width: 900px) {
-            .two-column {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Score Card */
-        .score-card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 32px;
-            margin-bottom: 24px;
-        }
-
+        /* Score Header */
         .score-header {
             display: flex;
             align-items: center;
             gap: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
         }
 
         .score-circle {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             background: conic-gradient(var(--color-linkedin) calc(var(--score) * 3.6deg), var(--color-surface-elevated) 0deg);
             display: flex;
@@ -119,8 +93,8 @@
         .score-circle::before {
             content: '';
             position: absolute;
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
             background: var(--color-surface);
         }
@@ -128,358 +102,250 @@
         .score-value {
             position: relative;
             z-index: 1;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 600;
             color: var(--color-linkedin);
         }
 
         .score-info h2 {
             font-family: var(--font-display);
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 400;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
-        .score-label {
+        .score-summary {
             color: var(--color-text-secondary);
             font-size: 0.95rem;
         }
 
-        /* Real Talk Banner */
-        .real-talk {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-left: 3px solid var(--color-accent);
-            border-radius: 8px;
-            padding: 20px 24px;
-            margin-bottom: 24px;
-        }
-
-        .real-talk h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--color-accent);
-            margin-bottom: 8px;
-        }
-
-        .real-talk p {
-            color: var(--color-text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin: 0;
-        }
-
-        .real-talk strong {
-            color: var(--color-text);
-        }
-
-        /* Section Cards */
-        .section-card {
+        /* Fix List */
+        .fix-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
             padding: 24px;
-            height: fit-content;
+            margin-bottom: 24px;
         }
 
-        .section-title {
+        .fix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .fix-title {
             font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 20px;
+        }
+
+        .fix-count {
+            background: var(--color-error);
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .fix-count.success {
+            background: var(--color-success);
+        }
+
+        .fix-item {
+            background: var(--color-surface-elevated);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--color-error);
+        }
+
+        .fix-item:last-child { margin-bottom: 0; }
+
+        .fix-item.done {
+            border-left-color: var(--color-success);
+            opacity: 0.6;
+        }
+
+        .fix-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .fix-item-title {
+            font-weight: 600;
+            font-size: 0.95rem;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        /* Breakdown Items - Compact */
-        .breakdown-item {
-            background: var(--color-surface-elevated);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 12px;
-            border-left: 3px solid var(--color-border);
-        }
-
-        .breakdown-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .breakdown-item.success { border-left-color: var(--color-success); }
-        .breakdown-item.warning { border-left-color: var(--color-warning); }
-        .breakdown-item.error { border-left-color: var(--color-error); }
-
-        .breakdown-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .breakdown-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .breakdown-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-
-        .breakdown-icon.success { background: rgba(74, 222, 128, 0.15); }
-        .breakdown-icon.warning { background: rgba(251, 191, 36, 0.15); }
-        .breakdown-icon.error { background: rgba(248, 113, 113, 0.15); }
-
-        .breakdown-label-text {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .breakdown-score {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .breakdown-score.success { color: var(--color-success); }
-        .breakdown-score.warning { color: var(--color-warning); }
-        .breakdown-score.error { color: var(--color-error); }
-
-        .breakdown-why {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-left: 38px;
-        }
-
-        /* Pain Points Section */
-        .pain-points {
-            background: rgba(248, 113, 113, 0.05);
-            border: 1px solid rgba(248, 113, 113, 0.2);
-            border-radius: 16px;
-            padding: 24px;
-        }
-
-        .pain-points .section-title {
+        .fix-item-title .priority {
+            background: rgba(248, 113, 113, 0.15);
             color: var(--color-error);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
         }
 
-        .pain-item {
-            display: flex;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(248, 113, 113, 0.1);
-        }
-
-        .pain-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .pain-icon {
-            color: var(--color-error);
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .pain-content strong {
-            display: block;
-            color: var(--color-text);
-            margin-bottom: 4px;
-        }
-
-        .pain-content p {
+        .fix-item-why {
             color: var(--color-text-secondary);
             font-size: 0.9rem;
-            margin: 0;
+            margin-bottom: 16px;
         }
 
-        /* What to Remove Section */
-        .remove-section {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .remove-item {
-            display: flex;
-            gap: 12px;
-            padding: 14px;
-            background: rgba(248, 113, 113, 0.05);
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-
-        .remove-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .remove-icon {
-            color: var(--color-error);
-            font-size: 1.2rem;
-        }
-
-        .remove-content strong {
-            display: block;
-            color: var(--color-text);
-            margin-bottom: 4px;
-        }
-
-        .remove-content p {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            margin: 0;
-        }
-
-        /* Elite Insights Section */
-        .elite-section {
-            background: linear-gradient(135deg, rgba(34, 211, 238, 0.05) 0%, rgba(167, 139, 250, 0.05) 100%);
-            border: 1px solid rgba(34, 211, 238, 0.2);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .elite-section .section-title {
-            color: var(--color-accent);
-        }
-
-        .elite-grid {
+        /* Before/After */
+        .before-after {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 12px;
         }
 
         @media (max-width: 600px) {
-            .elite-grid {
+            .before-after {
                 grid-template-columns: 1fr;
             }
         }
 
-        .elite-item {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 16px;
+        .before, .after {
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
         }
 
-        .elite-item strong {
-            display: block;
-            color: var(--color-accent);
-            font-size: 0.85rem;
+        .before {
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        .after {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+
+        .before-label, .after-label {
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
-        .elite-item p {
+        .before-label { color: var(--color-error); }
+        .after-label { color: var(--color-success); }
+
+        .before-text, .after-text {
             color: var(--color-text-secondary);
-            font-size: 0.9rem;
-            margin: 0;
             line-height: 1.5;
         }
 
-        /* Action Items */
-        .action-section {
+        .after-text { color: var(--color-text); }
+
+        /* Quick Score Breakdown */
+        .breakdown-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 600px) {
+            .breakdown-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .breakdown-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
         }
 
-        .action-item {
-            padding: 14px;
-            background: var(--color-surface-elevated);
-            border-radius: 8px;
-            margin-bottom: 10px;
-            display: flex;
-            gap: 12px;
-            border-left: 3px solid transparent;
-        }
+        .breakdown-card.good { border-color: rgba(74, 222, 128, 0.3); }
+        .breakdown-card.warning { border-color: rgba(251, 191, 36, 0.3); }
+        .breakdown-card.bad { border-color: rgba(248, 113, 113, 0.3); }
 
-        .action-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .action-item.high {
-            border-left-color: var(--color-error);
-        }
-
-        .action-item.medium {
-            border-left-color: var(--color-warning);
-        }
-
-        .action-priority {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.7rem;
+        .breakdown-score {
+            font-size: 1.4rem;
             font-weight: 600;
-            text-transform: uppercase;
-            flex-shrink: 0;
-            height: fit-content;
-        }
-
-        .action-priority.high {
-            background: rgba(248, 113, 113, 0.15);
-            color: var(--color-error);
-        }
-
-        .action-priority.medium {
-            background: rgba(251, 191, 36, 0.15);
-            color: var(--color-warning);
-        }
-
-        .action-text strong {
-            display: block;
             margin-bottom: 4px;
         }
 
-        .action-text p {
+        .breakdown-card.good .breakdown-score { color: var(--color-success); }
+        .breakdown-card.warning .breakdown-score { color: var(--color-warning); }
+        .breakdown-card.bad .breakdown-score { color: var(--color-error); }
+
+        .breakdown-label {
+            font-size: 0.8rem;
             color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            margin: 0;
         }
 
-        /* CTA Button */
+        /* All Good State */
+        .all-good {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .all-good-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .all-good h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--color-success);
+            margin-bottom: 8px;
+        }
+
+        .all-good p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* CTA */
         .cta-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
             padding: 24px;
             text-align: center;
-            margin-top: 24px;
         }
 
         .cta-section h3 {
             font-family: var(--font-display);
-            font-size: 1.3rem;
-            margin-bottom: 12px;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
         }
 
         .cta-section p {
             color: var(--color-text-secondary);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
         }
 
         .btn-primary {
-            padding: 14px 28px;
+            padding: 12px 24px;
             background: var(--color-accent);
             border: none;
             border-radius: 8px;
             color: #000;
             font-family: var(--font-body);
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
         }
 
         .btn-primary:hover {
@@ -494,18 +360,13 @@
             border-radius: 16px;
             padding: 48px 32px;
             text-align: center;
-            margin-bottom: 24px;
         }
 
-        .upload-icon {
-            font-size: 3rem;
-            margin-bottom: 16px;
-        }
+        .upload-icon { font-size: 3rem; margin-bottom: 16px; }
 
         .upload-prompt h2 {
             font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 400;
+            font-size: 1.4rem;
             margin-bottom: 12px;
         }
 
@@ -520,16 +381,16 @@
         .upload-how-to {
             background: var(--color-surface-elevated);
             border-radius: 8px;
-            padding: 16px;
+            padding: 14px 18px;
             margin-bottom: 24px;
             display: inline-block;
+            font-size: 0.9rem;
         }
 
         .upload-path {
             color: var(--color-text-secondary);
-            font-size: 0.9rem;
             display: block;
-            margin-top: 8px;
+            margin-top: 6px;
         }
 
         .btn-upload {
@@ -542,11 +403,6 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-        }
-
-        .btn-upload:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 119, 181, 0.3);
         }
 
         /* Loading */
@@ -579,105 +435,53 @@
     <main>
         <a href="results.html" class="back-link">← Back to Results</a>
 
-        <h1>LinkedIn Scoring</h1>
-        <p class="subtitle" id="subtitle">What recruiters see in the first 6 seconds—and how to optimize for it</p>
+        <h1>LinkedIn Audit</h1>
+        <p class="subtitle">What to fix before you apply</p>
 
         <div id="mainContent">
             <!-- Upload Prompt -->
             <div class="upload-prompt" id="uploadPrompt">
                 <div class="upload-icon">💼</div>
                 <h2>Upload Your LinkedIn Profile</h2>
-                <p>Get a detailed analysis of what recruiters see and specific actions to improve your visibility.</p>
+                <p>We'll tell you exactly what's hurting your visibility and how to fix it.</p>
 
                 <div class="upload-how-to">
                     <strong>How to get your LinkedIn PDF:</strong>
-                    <span class="upload-path">LinkedIn.com → Your Profile → More → Save to PDF</span>
+                    <span class="upload-path">Your Profile → More → Save to PDF</span>
                 </div>
 
-                <button class="btn-upload" id="uploadBtn">Upload LinkedIn Profile PDF</button>
+                <button class="btn-upload" id="uploadBtn">Upload LinkedIn PDF</button>
                 <input type="file" id="linkedinFile" accept=".pdf" style="display: none;">
             </div>
 
             <!-- Score Content -->
             <div id="scoreContent" style="display: none;">
-                <!-- Real Talk Banner -->
-                <div class="real-talk">
-                    <h3>The 6-Second Reality</h3>
-                    <p>Recruiters aren't reading your profile—they're <strong>scanning</strong>. Headline, current role, last company. That's it for the first pass. Everything below helps you win that 6-second audition.</p>
-                </div>
-
-                <!-- Score Card -->
-                <div class="score-card">
-                    <div class="score-header">
-                        <div class="score-circle" style="--score: 75">
-                            <span class="score-value" id="overallScore">75</span>
-                        </div>
-                        <div class="score-info">
-                            <h2 id="scoreLabel">Good Foundation</h2>
-                            <p class="score-label" id="scoreSummary">Recruiters can find you, but you're not standing out yet.</p>
-                        </div>
+                <!-- Score Header -->
+                <div class="score-header">
+                    <div class="score-circle" style="--score: 68">
+                        <span class="score-value" id="overallScore">68</span>
+                    </div>
+                    <div class="score-info">
+                        <h2 id="scoreLabel">Needs Work</h2>
+                        <p class="score-summary" id="scoreSummary">Recruiters will find you but won't click. Fix the items below.</p>
                     </div>
                 </div>
 
-                <!-- Two Column Layout: What Recruiters Check + Pain Points -->
-                <div class="two-column">
-                    <!-- Left: What Recruiters Check -->
-                    <div class="section-card">
-                        <h3 class="section-title">📊 What Recruiters Check</h3>
-                        <div id="breakdownItems">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-
-                    <!-- Right: Pain Points -->
-                    <div class="pain-points" id="painPointsSection">
-                        <h3 class="section-title">🚨 Immediate Attention Needed</h3>
-                        <div id="painPointsItems">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
+                <!-- Quick Breakdown -->
+                <div class="breakdown-grid" id="breakdownGrid">
+                    <!-- Populated dynamically -->
                 </div>
 
-                <!-- What to Remove Section -->
-                <div class="remove-section">
-                    <h3 class="section-title">🗑️ What to Remove or Fix</h3>
-                    <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;">These common mistakes can hurt your credibility with recruiters:</p>
-                    <div id="removeItems">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Elite Insights -->
-                <div class="elite-section">
-                    <h3 class="section-title">✨ What Top 0.01% Profiles Have</h3>
-                    <p style="color: var(--color-text-secondary); margin-bottom: 16px; font-size: 0.9rem;">What elite recruiters at FAANG, top PE/VC firms, and Fortune 100 companies look for:</p>
-                    <div class="elite-grid" id="eliteInsights">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Action Items -->
-                <div class="two-column">
-                    <div class="action-section">
-                        <h3 class="section-title">🎯 Priority Actions</h3>
-                        <div id="actionItems">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-
-                    <div class="action-section">
-                        <h3 class="section-title">📝 Quick Wins</h3>
-                        <div id="quickWins">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
+                <!-- Fix List or All Good -->
+                <div id="fixListContainer">
+                    <!-- Populated dynamically -->
                 </div>
 
                 <!-- CTA -->
                 <div class="cta-section">
-                    <h3>Ready to Update Your LinkedIn?</h3>
-                    <p>We've generated optimized sections based on your target role. Copy-paste them into your profile.</p>
-                    <a href="documents.html" class="btn-primary" id="viewDocumentsBtn">View Optimized LinkedIn Sections →</a>
+                    <h3>Ready to make these changes?</h3>
+                    <p>We've generated optimized sections you can copy-paste into LinkedIn.</p>
+                    <a href="documents.html" class="btn-primary">Get Your Optimized Sections →</a>
                 </div>
             </div>
         </div>
@@ -686,66 +490,76 @@
     <script>
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
 
-        // Elite insights - what top recruiters look for
-        const ELITE_INSIGHTS = [
-            {
-                title: 'Quantified Impact',
-                description: 'Not "managed team" but "scaled team from 3→15, reduced attrition 40%". Numbers signal credibility.'
+        // Fix items with before/after examples
+        const FIX_TEMPLATES = {
+            weakHeadline: {
+                title: 'Your headline isn\'t working hard enough',
+                why: 'Recruiters decide in 3 seconds if you\'re worth clicking. Your headline needs to show your level and what you\'re known for.',
+                beforeLabel: 'Generic',
+                before: 'Recruiting Professional | Passionate about talent',
+                afterLabel: 'Specific',
+                after: 'Senior Talent Acquisition | Tech & Finance | 200+ hires at scale'
             },
-            {
-                title: 'Clear Positioning',
-                description: 'They know exactly what they do and who they serve. No generic "passionate professional" language.'
+            buzzwords: {
+                title: 'Remove the buzzwords',
+                why: '"Passionate," "driven," and "results-oriented" are invisible to recruiters. They want specifics.',
+                beforeLabel: 'Buzzwords',
+                before: 'Results-driven professional passionate about connecting talent with opportunity',
+                afterLabel: 'Concrete',
+                after: 'I build recruiting teams that scale. Last role: 0 to 12 recruiters, 400 hires in 18 months.'
             },
-            {
-                title: 'Proof of Growth',
-                description: 'Visible promotions, increasing scope, or deliberate lateral moves that make sense.'
+            noNumbers: {
+                title: 'Add numbers to your experience',
+                why: '"Grew revenue 40%" beats "drove growth" every time. Numbers are proof.',
+                beforeLabel: 'Vague',
+                before: 'Led recruiting initiatives and drove hiring growth across the organization',
+                afterLabel: 'Quantified',
+                after: 'Led 8-person recruiting team. 200+ hires/year across engineering, product, and design.'
             },
-            {
-                title: 'Network Quality',
-                description: '500+ connections, recommendations from credible people, engagement on thoughtful content.'
+            thinDescription: {
+                title: 'Beef up your current role',
+                why: 'Your current role gets the most attention. Include scope, team size, and specific wins.',
+                beforeLabel: 'Thin',
+                before: 'Responsible for full-cycle recruiting and managing client relationships.',
+                afterLabel: 'Rich',
+                after: 'Lead full-cycle recruiting for 3 Fortune 500 clients. Manage $2M in annual billings. Placed 45 senior roles (Director+) in 2024.'
             },
-            {
-                title: 'Specificity Over Buzzwords',
-                description: '"Led M&A integration for $200M acquisition" beats "strategic leader driving transformation".'
+            missingSkills: {
+                title: 'Add skills recruiters search for',
+                why: 'If your skills aren\'t listed, you won\'t appear in Boolean searches. Add them everywhere.',
+                beforeLabel: 'Missing',
+                before: 'Skills section empty or generic',
+                afterLabel: 'Searchable',
+                after: 'Executive Search, Talent Mapping, ATS (Greenhouse, Lever), Stakeholder Management, Offer Negotiation'
             },
-            {
-                title: 'Active Presence',
-                description: 'Recent activity, profile photo updated, responding to messages. Shows they\'re engaged, not dormant.'
+            weakSummary: {
+                title: 'Rewrite your About section',
+                why: 'Your summary should answer: What do you do? What are you great at? What\'s your story?',
+                beforeLabel: 'Generic',
+                before: 'I am a dedicated recruiting professional with experience in talent acquisition...',
+                afterLabel: 'Compelling',
+                after: 'I build the teams that build companies. 15 years scaling recruiting functions from startup to IPO. Currently: Head of TA at [Company], where we\'ve grown from 50 to 300 in 2 years.'
+            },
+            staleProfile: {
+                title: 'Update your profile this week',
+                why: 'LinkedIn\'s algorithm favors recently updated profiles. Stale profiles get filtered out.',
+                beforeLabel: 'Status',
+                before: 'Last updated: 6+ months ago',
+                afterLabel: 'Action',
+                after: 'Add a new skill, update a bullet point, or tweak your headline. Any edit refreshes your profile.'
+            },
+            inconsistentDates: {
+                title: 'Sync dates with your resume',
+                why: 'Any mismatch between LinkedIn and resume is an instant red flag. Check every role.',
+                beforeLabel: 'Problem',
+                before: 'LinkedIn: 2019-2022 | Resume: 2020-2022',
+                afterLabel: 'Fixed',
+                after: 'Dates match exactly across LinkedIn and resume. No gaps to explain.'
             }
-        ];
+        };
 
-        // Things to remove from LinkedIn
-        const REMOVE_ITEMS = [
-            {
-                title: 'Buzzword-heavy headline',
-                description: '"Results-driven professional" tells recruiters nothing. Use your actual expertise and level instead.'
-            },
-            {
-                title: 'Generic summary opening',
-                description: '"I am a passionate..." or "With over X years..." - recruiters skip these. Lead with what you actually do.'
-            },
-            {
-                title: 'Outdated roles without context',
-                description: 'Jobs from 10+ years ago don\'t need bullets. Brief context is fine, but don\'t pad your profile.'
-            },
-            {
-                title: 'Skills you can\'t back up',
-                description: 'If you list 50 skills but can\'t discuss half of them, you\'ll look dishonest. Keep your top 10-15.'
-            },
-            {
-                title: 'Personal email in contact',
-                description: 'aol.com, yahoo.com, or joke emails look unprofessional. Use gmail or your personal domain.'
-            },
-            {
-                title: 'Inconsistent dates with resume',
-                description: 'Any mismatch between LinkedIn and resume raises immediate red flags. Sync them exactly.'
-            }
-        ];
-
-        // Check if LinkedIn profile is already uploaded
         document.addEventListener('DOMContentLoaded', async () => {
             const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-
             if (profile.linkedin_profile_uploaded) {
                 showScoreContent();
                 await loadLinkedInScore();
@@ -764,7 +578,6 @@
             document.getElementById('scoreContent').style.display = 'block';
         }
 
-        // File upload handling
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('linkedinFile').click();
         });
@@ -776,7 +589,7 @@
             document.getElementById('uploadPrompt').innerHTML = `
                 <div class="loading">
                     <div class="loading-spinner"></div>
-                    <p>Analyzing your LinkedIn profile...</p>
+                    <p>Analyzing your LinkedIn...</p>
                 </div>
             `;
 
@@ -799,7 +612,6 @@
                 profile.linkedin_parsed = data.parsed_data;
                 localStorage.setItem('userProfile', JSON.stringify(profile));
 
-                // Store scoring data for use in documents page
                 sessionStorage.setItem('linkedinScoringData', JSON.stringify({
                     parsed: data.parsed_data,
                     timestamp: new Date().toISOString()
@@ -810,7 +622,7 @@
 
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('Failed to upload LinkedIn profile. Please try again.');
+                alert('Failed to upload. Please try again.');
                 showUploadPrompt();
             }
         });
@@ -819,353 +631,204 @@
             const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
             const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
 
-            const score = calculateLinkedInScore(profile, analysisData);
-            displayScore(score, analysisData);
+            const result = calculateScore(profile, analysisData);
+            displayScore(result);
 
-            // Store score data for documents page to use
-            sessionStorage.setItem('linkedinScoringResults', JSON.stringify(score));
+            sessionStorage.setItem('linkedinScoringResults', JSON.stringify(result));
         }
 
-        // Scoring logic
-        const BREAKDOWN_COACHING = {
-            headline: {
-                label: 'Headline Impact',
-                why: 'Your headline is the first thing recruiters see. It needs to communicate your level and expertise in 3 seconds.'
-            },
-            careerStory: {
-                label: 'Career Narrative',
-                why: 'Does your progression make sense? Recruiters pattern-match to predict if you\'ll stay and grow.'
-            },
-            credibility: {
-                label: 'Credibility Signals',
-                why: 'Company quality, tenure patterns, and visible achievements build trust before they even message you.'
-            },
-            searchability: {
-                label: 'Search Visibility',
-                why: 'Recruiters use Boolean searches. If your skills aren\'t in the right places, you\'re invisible.'
-            },
-            freshness: {
-                label: 'Profile Freshness',
-                why: 'Recent updates signal intent. Stale profiles get filtered out of recruiter searches.'
-            },
-            completeness: {
-                label: 'Profile Completeness',
-                why: 'Incomplete profiles signal you\'re not serious. All-Star status matters for search ranking.'
-            }
-        };
-
-        function calculateLinkedInScore(profile, analysisData) {
-            const linkedinData = profile.linkedin_parsed || {};
-            const resumeData = analysisData._resume_json || {};
-
+        function calculateScore(profile, analysisData) {
+            const linkedin = profile.linkedin_parsed || {};
+            const fixes = [];
             let scores = {
                 headline: 0,
-                careerStory: 0,
-                credibility: 0,
-                searchability: 0,
+                experience: 0,
+                skills: 0,
                 freshness: 0,
-                completeness: 0
+                completeness: 0,
+                credibility: 0
             };
 
-            let painPoints = [];
+            // Headline (17 pts)
+            if (linkedin.headline) {
+                if (linkedin.headline.length > 50) scores.headline += 10;
+                else if (linkedin.headline.length > 20) scores.headline += 5;
+                else fixes.push('weakHeadline');
 
-            // Headline Impact (17 points)
-            if (linkedinData.headline) {
-                if (linkedinData.headline.length > 50) scores.headline += 8;
-                else if (linkedinData.headline.length > 20) scores.headline += 4;
-                else painPoints.push({ title: 'Weak Headline', description: 'Your headline is too short. You have 220 characters—use them to show your level and expertise.' });
-
-                if (linkedinData.headline.includes('|') || linkedinData.headline.includes('•')) scores.headline += 5;
-                if (!/passionate|driven|professional|seeking/i.test(linkedinData.headline)) scores.headline += 4;
-                else painPoints.push({ title: 'Buzzword Headline', description: 'Remove generic words like "passionate" or "driven". State what you actually do.' });
+                if (!/passionate|driven|professional|seeking|looking/i.test(linkedin.headline)) {
+                    scores.headline += 7;
+                } else {
+                    fixes.push('buzzwords');
+                }
             } else {
-                painPoints.push({ title: 'Missing Headline', description: 'You need a headline. This is the #1 thing recruiters see.' });
+                fixes.push('weakHeadline');
             }
 
-            // Career Story (17 points)
-            const expCount = linkedinData.experience?.length || 0;
-            if (expCount >= 3) scores.careerStory += 6;
-            else if (expCount >= 2) scores.careerStory += 4;
-            else if (expCount >= 1) scores.careerStory += 2;
-            else painPoints.push({ title: 'No Experience Listed', description: 'Add your work experience. Without it, recruiters can\'t assess your background.' });
+            // Experience (17 pts)
+            const expCount = linkedin.experience?.length || 0;
+            if (expCount >= 2) scores.experience += 6;
+            else if (expCount >= 1) scores.experience += 3;
 
-            if (linkedinData.summary && linkedinData.summary.length > 300) scores.careerStory += 6;
-            else if (linkedinData.summary && linkedinData.summary.length > 100) scores.careerStory += 3;
-            else painPoints.push({ title: 'Weak or Missing Summary', description: 'Your About section should tell your career story. What\'s the thread that connects your roles?' });
+            if (linkedin.experience?.length > 0) {
+                const current = linkedin.experience[0];
+                if (current.description?.length > 200) scores.experience += 6;
+                else fixes.push('thinDescription');
 
-            if (linkedinData.education?.length > 0) scores.careerStory += 5;
-
-            // Credibility Signals (17 points)
-            if (linkedinData.experience?.length > 0) {
-                const currentRole = linkedinData.experience[0];
-                if (currentRole.description && currentRole.description.length > 200) scores.credibility += 7;
-                else painPoints.push({ title: 'Thin Current Role Description', description: 'Your current role needs more detail. Include scope, team size, and quantified achievements.' });
-
-                scores.credibility += Math.min(5, linkedinData.experience.length * 1.5);
-
-                // Check for quantified achievements
-                const hasNumbers = linkedinData.experience.some(e =>
-                    /\d+%|\$\d+|\d+x|\d+ (people|team|million|billion)/i.test(e.description || '')
+                const hasNumbers = linkedin.experience.some(e =>
+                    /\d+%|\$\d+|\d+\s*(hires|people|team|million)/i.test(e.description || '')
                 );
-                if (hasNumbers) scores.credibility += 5;
-                else painPoints.push({ title: 'No Quantified Achievements', description: 'Add numbers to your experience. "Grew revenue 40%" beats "drove growth".' });
+                if (hasNumbers) scores.experience += 5;
+                else fixes.push('noNumbers');
             }
 
-            // Search Visibility (17 points)
-            const atsKeywords = analysisData.ats_keywords || analysisData.required_skills || [];
-            const skillCount = linkedinData.skills?.length || 0;
+            // Skills (17 pts)
+            const skillCount = linkedin.skills?.length || 0;
+            const atsKeywords = analysisData.ats_keywords || [];
 
-            if (skillCount >= 15) scores.searchability += 6;
-            else if (skillCount >= 5) scores.searchability += 3;
-            else painPoints.push({ title: 'Not Enough Skills', description: 'Add more skills. Recruiters search by skills—if you don\'t list them, you won\'t appear.' });
+            if (skillCount >= 15) scores.skills += 10;
+            else if (skillCount >= 5) scores.skills += 5;
+            else fixes.push('missingSkills');
 
             if (atsKeywords.length > 0) {
-                const allText = [
-                    linkedinData.headline || '',
-                    linkedinData.summary || '',
-                    ...(linkedinData.experience || []).map(e => e.description || '')
-                ].join(' ').toLowerCase();
-
-                const matchingKeywords = atsKeywords.filter(kw => allText.includes(kw.toLowerCase()));
-                const matchRate = matchingKeywords.length / atsKeywords.length;
-
-                if (matchRate > 0.5) scores.searchability += 8;
-                else if (matchRate > 0.25) scores.searchability += 4;
-                else painPoints.push({ title: 'Missing Key Skills for This Role', description: `Your profile doesn't include many skills recruiters search for in this role: ${atsKeywords.slice(0, 3).join(', ')}.` });
+                const allText = [linkedin.headline, linkedin.summary, ...(linkedin.experience || []).map(e => e.description)].join(' ').toLowerCase();
+                const matches = atsKeywords.filter(kw => allText.includes(kw.toLowerCase()));
+                if (matches.length / atsKeywords.length > 0.3) scores.skills += 7;
+                else if (!fixes.includes('missingSkills')) fixes.push('missingSkills');
             } else {
-                scores.searchability += 4;
+                scores.skills += 4;
             }
 
-            if (linkedinData.headline && atsKeywords.some(kw => linkedinData.headline.toLowerCase().includes(kw.toLowerCase()))) {
-                scores.searchability += 3;
-            }
-
-            // Freshness (17 points)
+            // Freshness (16 pts)
             if (profile.linkedin_last_updated) {
-                const lastUpdated = new Date(profile.linkedin_last_updated);
-                const daysSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60 * 24);
-                if (daysSinceUpdate < 30) scores.freshness = 17;
-                else if (daysSinceUpdate < 90) scores.freshness = 12;
-                else if (daysSinceUpdate < 180) scores.freshness = 6;
+                const days = (Date.now() - new Date(profile.linkedin_last_updated)) / (1000 * 60 * 60 * 24);
+                if (days < 30) scores.freshness = 16;
+                else if (days < 90) scores.freshness = 12;
+                else if (days < 180) scores.freshness = 6;
                 else {
                     scores.freshness = 3;
-                    painPoints.push({ title: 'Stale Profile', description: 'Your profile hasn\'t been updated recently. Recruiters filter for active profiles.' });
+                    fixes.push('staleProfile');
                 }
             } else {
                 scores.freshness = 10;
             }
 
-            // Completeness (15 points)
-            let completenessChecks = 0;
-            if (linkedinData.headline) completenessChecks++;
-            if (linkedinData.summary) completenessChecks++;
-            if (linkedinData.experience?.length > 0) completenessChecks++;
-            if (linkedinData.education?.length > 0) completenessChecks++;
-            if (linkedinData.skills?.length > 0) completenessChecks++;
+            // Completeness (17 pts)
+            let complete = 0;
+            if (linkedin.headline) complete++;
+            if (linkedin.summary?.length > 100) complete++;
+            else fixes.push('weakSummary');
+            if (linkedin.experience?.length > 0) complete++;
+            if (linkedin.education?.length > 0) complete++;
+            if (linkedin.skills?.length > 0) complete++;
+            scores.completeness = Math.round((complete / 5) * 17);
 
-            scores.completeness = Math.round((completenessChecks / 5) * 15);
-            if (completenessChecks < 4) {
-                painPoints.push({ title: 'Incomplete Profile', description: 'Complete all sections: headline, about, experience, education, and skills.' });
-            }
+            // Credibility (16 pts) - bonus for strong signals
+            if (linkedin.summary?.length > 300) scores.credibility += 5;
+            if (expCount >= 3) scores.credibility += 5;
+            if (skillCount >= 10) scores.credibility += 6;
 
             const overall = Object.values(scores).reduce((a, b) => a + b, 0);
 
             return {
                 overall,
-                breakdown: Object.keys(scores).map(key => ({
-                    key,
-                    score: scores[key],
-                    max: key === 'completeness' || key === 'freshness' ? 15 : 17,
-                    ...BREAKDOWN_COACHING[key]
-                })),
-                painPoints,
-                recommendations: generateRecommendations(scores, linkedinData, atsKeywords)
+                scores,
+                fixes: fixes.slice(0, 5) // Max 5 items to avoid overwhelm
             };
         }
 
-        function generateRecommendations(scores, linkedinData, atsKeywords) {
-            const priority = [];
-            const quickWins = [];
+        function displayScore(result) {
+            const { overall, scores, fixes } = result;
 
-            // Priority actions based on lowest scores
-            if (scores.headline < 12) {
-                priority.push({
-                    priority: 'high',
-                    title: 'Rewrite Your Headline',
-                    text: `Use format: "[Level] [Role] | [Specialty] | [Differentiator]". Example: "VP Talent Acquisition | Tech & Finance | Built teams from 0-100".`
-                });
-            }
-
-            if (scores.credibility < 10) {
-                priority.push({
-                    priority: 'high',
-                    title: 'Add Quantified Achievements',
-                    text: 'For each role, include at least 2-3 metrics: team size, budget, revenue impact, cost savings, or growth percentages.'
-                });
-            }
-
-            if (scores.searchability < 10) {
-                priority.push({
-                    priority: 'high',
-                    title: 'Optimize for Search',
-                    text: `Add these skills to your profile: ${atsKeywords.slice(0, 5).join(', ')}. Put the most important ones in your headline and summary too.`
-                });
-            }
-
-            if (scores.careerStory < 10) {
-                priority.push({
-                    priority: 'high',
-                    title: 'Tell Your Career Story',
-                    text: 'Rewrite your About section to explain the "why" behind your career moves. What\'s the thread that connects your experience?'
-                });
-            }
-
-            // Quick wins
-            quickWins.push({
-                priority: 'medium',
-                title: 'Turn on "Open to Work"',
-                text: 'Enable it for recruiters only. This puts you in their search filters for active candidates.'
-            });
-
-            if (scores.freshness < 15) {
-                quickWins.push({
-                    priority: 'medium',
-                    title: 'Update Something Today',
-                    text: 'Even a small edit refreshes your profile in LinkedIn\'s algorithm. Add a skill, tweak a bullet point.'
-                });
-            }
-
-            quickWins.push({
-                priority: 'medium',
-                title: 'Get a Recommendation',
-                text: 'Ask a recent manager or colleague. Recommendations from credible people add social proof.'
-            });
-
-            quickWins.push({
-                priority: 'medium',
-                title: 'Engage with Content',
-                text: 'Comment thoughtfully on industry posts. Active profiles rank higher and show recruiters you\'re engaged.'
-            });
-
-            return { priority, quickWins };
-        }
-
-        function displayScore(scoreData, analysisData) {
-            const { overall, breakdown, painPoints, recommendations } = scoreData;
-
-            // Update overall score
+            // Update score
             document.getElementById('overallScore').textContent = overall;
             document.querySelector('.score-circle').style.setProperty('--score', overall);
 
-            // Set score label
+            // Set label
             let label, summary;
             if (overall >= 85) {
-                label = 'Elite Profile';
-                summary = 'You\'re in the top tier. Recruiters will notice you. Fine-tune the details below.';
+                label = 'Looking Strong';
+                summary = 'You\'re in good shape. A few tweaks below could help you stand out more.';
             } else if (overall >= 70) {
-                label = 'Strong Foundation';
-                summary = 'You\'re showing up in searches. Address the pain points to stand out from the crowd.';
+                label = 'Almost There';
+                summary = 'Recruiters will find you. Fix the items below to get more clicks.';
             } else if (overall >= 50) {
-                label = 'Needs Improvement';
-                summary = 'Recruiters might find you but won\'t click. Focus on the high-priority items first.';
+                label = 'Needs Work';
+                summary = 'Recruiters might scroll past you. Focus on the fixes below.';
             } else {
-                label = 'Invisible to Recruiters';
-                summary = 'Your profile isn\'t optimized for how recruiters search. Start with the pain points below.';
+                label = 'Needs Attention';
+                summary = 'Your profile isn\'t optimized for recruiter search. Start with the top items.';
             }
 
             document.getElementById('scoreLabel').textContent = label;
             document.getElementById('scoreSummary').textContent = summary;
 
-            // Render breakdown (compact version)
-            const breakdownContainer = document.getElementById('breakdownItems');
-            breakdownContainer.innerHTML = breakdown.map(item => {
-                const percentage = Math.round((item.score / item.max) * 100);
-                let status = percentage >= 80 ? 'success' : percentage >= 50 ? 'warning' : 'error';
-                let icon = percentage >= 80 ? '✓' : percentage >= 50 ? '!' : '✗';
+            // Breakdown grid
+            const breakdownLabels = {
+                headline: 'Headline',
+                experience: 'Experience',
+                skills: 'Skills',
+                freshness: 'Freshness',
+                completeness: 'Complete',
+                credibility: 'Credibility'
+            };
 
+            const maxScores = { headline: 17, experience: 17, skills: 17, freshness: 16, completeness: 17, credibility: 16 };
+
+            document.getElementById('breakdownGrid').innerHTML = Object.entries(scores).map(([key, score]) => {
+                const max = maxScores[key];
+                const pct = (score / max) * 100;
+                const status = pct >= 80 ? 'good' : pct >= 50 ? 'warning' : 'bad';
                 return `
-                    <div class="breakdown-item ${status}">
-                        <div class="breakdown-header">
-                            <div class="breakdown-label">
-                                <div class="breakdown-icon ${status}">${icon}</div>
-                                <span class="breakdown-label-text">${item.label}</span>
-                            </div>
-                            <span class="breakdown-score ${status}">${item.score}/${item.max}</span>
-                        </div>
-                        <p class="breakdown-why">${item.why}</p>
+                    <div class="breakdown-card ${status}">
+                        <div class="breakdown-score">${score}/${max}</div>
+                        <div class="breakdown-label">${breakdownLabels[key]}</div>
                     </div>
                 `;
             }).join('');
 
-            // Render pain points
-            const painPointsContainer = document.getElementById('painPointsItems');
-            if (painPoints.length > 0) {
-                painPointsContainer.innerHTML = painPoints.map(point => `
-                    <div class="pain-item">
-                        <span class="pain-icon">⚠️</span>
-                        <div class="pain-content">
-                            <strong>${point.title}</strong>
-                            <p>${point.description}</p>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                painPointsContainer.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: var(--color-success);">
-                        <span style="font-size: 2rem;">✓</span>
-                        <p style="margin-top: 8px;">No critical issues found. Focus on the quick wins to optimize further.</p>
+            // Fix list
+            const container = document.getElementById('fixListContainer');
+
+            if (fixes.length === 0) {
+                container.innerHTML = `
+                    <div class="all-good">
+                        <div class="all-good-icon">✓</div>
+                        <h3>Your profile looks solid</h3>
+                        <p>No major issues found. Keep your profile fresh by updating every 90 days.</p>
                     </div>
                 `;
-                document.getElementById('painPointsSection').style.background = 'rgba(74, 222, 128, 0.05)';
-                document.getElementById('painPointsSection').style.border = '1px solid rgba(74, 222, 128, 0.2)';
-                document.querySelector('#painPointsSection .section-title').style.color = 'var(--color-success)';
-                document.querySelector('#painPointsSection .section-title').textContent = '✓ Looking Good';
+            } else {
+                container.innerHTML = `
+                    <div class="fix-section">
+                        <div class="fix-header">
+                            <span class="fix-title">Your Fix List</span>
+                            <span class="fix-count">${fixes.length} items</span>
+                        </div>
+                        ${fixes.map(fixKey => {
+                            const fix = FIX_TEMPLATES[fixKey];
+                            if (!fix) return '';
+                            return `
+                                <div class="fix-item">
+                                    <div class="fix-item-header">
+                                        <span class="fix-item-title">${fix.title}</span>
+                                    </div>
+                                    <p class="fix-item-why">${fix.why}</p>
+                                    <div class="before-after">
+                                        <div class="before">
+                                            <div class="before-label">${fix.beforeLabel}</div>
+                                            <div class="before-text">${fix.before}</div>
+                                        </div>
+                                        <div class="after">
+                                            <div class="after-label">${fix.afterLabel}</div>
+                                            <div class="after-text">${fix.after}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
             }
-
-            // Render what to remove
-            const removeContainer = document.getElementById('removeItems');
-            removeContainer.innerHTML = REMOVE_ITEMS.map(item => `
-                <div class="remove-item">
-                    <span class="remove-icon">✗</span>
-                    <div class="remove-content">
-                        <strong>${item.title}</strong>
-                        <p>${item.description}</p>
-                    </div>
-                </div>
-            `).join('');
-
-            // Render elite insights
-            const eliteContainer = document.getElementById('eliteInsights');
-            eliteContainer.innerHTML = ELITE_INSIGHTS.map(item => `
-                <div class="elite-item">
-                    <strong>${item.title}</strong>
-                    <p>${item.description}</p>
-                </div>
-            `).join('');
-
-            // Render action items
-            const actionContainer = document.getElementById('actionItems');
-            actionContainer.innerHTML = recommendations.priority.map(rec => `
-                <div class="action-item ${rec.priority}">
-                    <span class="action-priority ${rec.priority}">${rec.priority}</span>
-                    <div class="action-text">
-                        <strong>${rec.title}</strong>
-                        <p>${rec.text}</p>
-                    </div>
-                </div>
-            `).join('');
-
-            // Render quick wins
-            const quickWinsContainer = document.getElementById('quickWins');
-            quickWinsContainer.innerHTML = recommendations.quickWins.map(rec => `
-                <div class="action-item ${rec.priority}">
-                    <span class="action-priority ${rec.priority}">${rec.priority}</span>
-                    <div class="action-text">
-                        <strong>${rec.title}</strong>
-                        <p>${rec.text}</p>
-                    </div>
-                </div>
-            `).join('');
         }
     </script>
 
