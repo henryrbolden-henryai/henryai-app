@@ -1435,7 +1435,7 @@ COVER LETTER
                 featured_suggestions: getFeaturedSuggestions(resumeOutput, analysisData),
                 recommendations_advice: 'Request recommendations from people who can speak to specific achievements. Quality over quantity.',
                 who_to_ask: getWhoToAsk(resumeOutput, analysisData),
-                activity_recommendation: `Engage with ${company || 'industry'} content this week. Like or comment on 2-3 relevant posts to show you're active.`,
+                activity_guidance: getActivityGuidance(analysisData, level),
 
                 // Metadata
                 has_issues: severity === 'CRITICAL' || severity === 'HIGH',
@@ -1958,6 +1958,97 @@ COVER LETTER
                 { person_type: 'Cross-functional partner', what_to_emphasize: 'collaboration and impact' },
                 { person_type: 'Client or stakeholder', what_to_emphasize: 'results delivered' }
             ];
+        }
+
+        // Get activity guidance based on role and seniority
+        function getActivityGuidance(analysisData, level) {
+            const role = analysisData?._role || '';
+            const isSenior = /senior|director|vp|head|lead|principal|chief/i.test(level || '');
+
+            // Base recommendation based on seniority
+            let recommendation = isSenior
+                ? 'For senior roles, position yourself as a strategic advisor. 2-3 thoughtful posts or comments per month beats daily generic engagement.'
+                : 'Engaging with industry content showcases your expertise. Comment with your POV, not just "Great post!"';
+
+            // Topics based on role type
+            let topics = [];
+            if (/recruit|talent/i.test(role)) {
+                topics = [
+                    'Executive search trends and market dynamics',
+                    'Leadership assessment methodologies',
+                    'Talent market intelligence (hiring patterns, compensation shifts)',
+                    'Recruiting technology and AI in hiring',
+                    'Diversity recruiting and inclusive hiring practices'
+                ];
+            } else if (/engineer|developer|software/i.test(role)) {
+                topics = [
+                    'Distributed systems architecture and scaling challenges',
+                    'Best practices for your tech stack',
+                    'Engineering culture and team collaboration',
+                    'Technical leadership and mentorship',
+                    'Industry trends in your domain'
+                ];
+            } else if (/product/i.test(role)) {
+                topics = [
+                    'Product-led growth and go-to-market strategies',
+                    'User research and customer discovery',
+                    'AI/ML product development patterns',
+                    'Cross-functional leadership in product orgs',
+                    'Product strategy and roadmapping'
+                ];
+            } else if (/marketing|sales|gtm/i.test(role)) {
+                topics = [
+                    'Go-to-market strategies and pipeline generation',
+                    'Customer acquisition and retention tactics',
+                    'Sales enablement and revenue operations',
+                    'Brand building and thought leadership',
+                    'Market trends in your industry'
+                ];
+            } else {
+                topics = [
+                    'Industry trends and best practices in your domain',
+                    'Leadership and team management insights',
+                    'Professional development and career growth',
+                    'Cross-functional collaboration strategies',
+                    'Innovation and emerging technologies'
+                ];
+            }
+
+            // Engagement tips (universal)
+            const engagementTips = [
+                'Comment with your POV, not just "Great post!"',
+                'Share what you learned from experience',
+                'Post about trends you are seeing in your domain',
+                'Tag people thoughtfully (colleagues, mentors, industry experts)'
+            ];
+
+            // What to avoid (universal)
+            const avoidList = [
+                'Political content or controversial hot-takes',
+                'Complaining about your industry, clients, or "the market"',
+                'Obvious engagement bait ("Agree or disagree?")',
+                'Over-posting (daily posts look desperate; 2-3/month looks strategic)'
+            ];
+
+            // Positioning statement based on role
+            let positioning = '';
+            if (/recruit|talent/i.test(role)) {
+                positioning = 'Senior recruiters are trusted advisors. Your LinkedIn activity should position you as someone who understands talent strategy, not just fills roles.';
+            } else if (/engineer|developer/i.test(role)) {
+                positioning = 'Strong engineers are known for their technical depth. Your activity should showcase your expertise and thought process.';
+            } else if (/product/i.test(role)) {
+                positioning = 'Great PMs are strategic thinkers. Your activity should demonstrate product sense and customer empathy.';
+            } else {
+                positioning = 'Your LinkedIn activity should position you as a strategic thinker in your domain, not just someone doing the job.';
+            }
+
+            return {
+                recommendation,
+                topics,
+                engagementTips,
+                avoidList,
+                positioning
+            };
         }
 
         // Extract expertise from profile without narrowing to one niche

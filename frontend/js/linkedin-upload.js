@@ -1082,7 +1082,20 @@
 
                             <div class="optional-section-card">
                                 <h5>Activity <span class="section-priority priority-low">Low</span></h5>
-                                <p class="optional-tip">${optimizedData.activity_recommendation || 'Recent engagement shows you\'re active. Like or comment on 2-3 industry posts this week.'}</p>
+                                <p class="optional-tip">${optimizedData.activity_guidance?.recommendation || 'Recent engagement shows you are active. 2-3 thoughtful posts or comments per month beats daily generic engagement.'}</p>
+                                ${optimizedData.activity_guidance?.topics?.length ? `
+                                    <p style="margin-top: 8px; font-weight: 500; font-size: 0.85rem;">Focus your activity on:</p>
+                                    <ul class="who-to-ask-list">${optimizedData.activity_guidance.topics.slice(0, 4).map(t => `<li>• ${t}</li>`).join('')}</ul>
+                                ` : ''}
+                                ${optimizedData.activity_guidance?.engagementTips?.length ? `
+                                    <p style="margin-top: 8px; font-weight: 500; font-size: 0.85rem;">How to engage well:</p>
+                                    <ul class="who-to-ask-list">${optimizedData.activity_guidance.engagementTips.map(t => `<li>• ${t}</li>`).join('')}</ul>
+                                ` : ''}
+                                ${optimizedData.activity_guidance?.avoidList?.length ? `
+                                    <p style="margin-top: 8px; font-weight: 500; font-size: 0.85rem;">What to avoid:</p>
+                                    <ul class="who-to-ask-list">${optimizedData.activity_guidance.avoidList.map(t => `<li>• ${t}</li>`).join('')}</ul>
+                                ` : ''}
+                                ${optimizedData.activity_guidance?.positioning ? `<p class="help-text" style="margin-top: 10px; font-style: italic;">💡 ${optimizedData.activity_guidance.positioning}</p>` : ''}
                             </div>
                         </div>
                     </div>
