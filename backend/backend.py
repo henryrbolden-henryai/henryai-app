@@ -9993,3 +9993,4 @@ if __name__ == "__main__":
     else:
         print("⚠️ Voice features disabled (no OPENAI_API_KEY)")
     uvicorn.run(app, host="0.0.0.0", port=port)
+# Force redeploy Tue Dec 16 18:50:24 EST 2025
