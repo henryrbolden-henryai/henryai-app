@@ -323,11 +323,18 @@
                 return;
             }
 
+            // Generate unique application ID if not already present (prevents duplicates on retry)
+            if (!analysisData._applicationId) {
+                analysisData._applicationId = `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
+            }
+
             console.log('Starting document generation with analysisData:', {
                 hasResumeJson: !!analysisData._resume_json,
                 resumeType: typeof analysisData._resume_json,
                 company: analysisData._company || analysisData._company_name,
-                role: analysisData._role || analysisData.role_title
+                role: analysisData._role || analysisData.role_title,
+                applicationId: analysisData._applicationId
             });
 
             // Get supplements from sessionStorage
@@ -339,6 +346,10 @@
             const levelingData = levelingDataStr ? JSON.parse(levelingDataStr) : null;
 
             startProgressAnimation();
+
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
 
             try {
                 // Parse resume JSON if it's a string (handle double-encoding)
@@ -397,8 +408,11 @@
                 const response = await fetch(`${API_BASE_URL}/api/documents/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestPayload)
+                    body: JSON.stringify(requestPayload),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     let errorDetail = `Document generation failed (${response.status})`;
@@ -505,11 +519,16 @@
                 window.location.href = 'overview.html';
 
             } catch (error) {
+                clearTimeout(timeoutId);
                 console.error('Error generating documents:', error);
 
                 let errorMsg = 'Something went wrong. Please try again.';
-                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Generation is taking longer than expected. Our AI might be busy. Please try again in a few minutes.';
+                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
+                } else if (error.message && error.message.includes('NetworkError')) {
+                    errorMsg = 'Connection lost during generation. Please check your internet and try again.';
                 } else if (typeof error === 'string') {
                     errorMsg = error;
                 } else if (error && typeof error.message === 'string') {

@@ -230,6 +230,19 @@
             color: var(--color-text-secondary);
         }
 
+        .signal-count {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            margin-left: auto;
+        }
+
+        .more-signals {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
         .signal-list {
             list-style: none;
         }
@@ -1173,26 +1186,32 @@
                 }
             ];
 
-            // Count total signals across all categories
+            // Count total signals across all categories (filter out empty/invalid signals)
             let totalSignals = 0;
             signalCategories.forEach(cat => {
-                totalSignals += (levelingData[cat.key] || []).length;
+                const signals = (levelingData[cat.key] || []).filter(s => s && typeof s === 'string' && s.trim() !== '');
+                totalSignals += signals.length;
             });
             document.getElementById('signalsBadge').textContent = `${totalSignals} signal${totalSignals !== 1 ? 's' : ''} found`;
 
             signalsGrid.innerHTML = signalCategories.map(cat => {
-                const signals = levelingData[cat.key] || [];
+                // Filter out empty/invalid signals before rendering
+                const signals = (levelingData[cat.key] || []).filter(s => s && typeof s === 'string' && s.trim() !== '');
+                const displayCount = Math.min(signals.length, 4);
+                const hasMore = signals.length > 4;
                 return `
                     <div class="signal-card">
                         <div class="signal-header">
                             <span class="signal-icon">${cat.icon}</span>
                             <span class="signal-title">${cat.title} Signals</span>
+                            <span class="signal-count">(${signals.length})</span>
                         </div>
                         <p class="signal-description">${cat.description}</p>
                         ${signals.length > 0 ? `
                             <ul class="signal-list">
                                 ${signals.slice(0, 4).map(s => `<li>"${s}"</li>`).join('')}
                             </ul>
+                            ${hasMore ? `<p class="more-signals">+${signals.length - 4} more signals</p>` : ''}
                         ` : '<p class="empty-signal">No strong signals detected</p>'}
                     </div>
                 `;

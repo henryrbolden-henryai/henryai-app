@@ -213,6 +213,62 @@
             color: var(--color-text);
         }
 
+        /* CAREER GAP SECTION */
+        .career-gap-section {
+            background: linear-gradient(135deg, #422006 0%, #1f2937 100%);
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .career-gap-detected {
+            background: rgba(251, 191, 36, 0.1);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .career-gap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .career-gap-item:last-child {
+            border-bottom: none;
+        }
+
+        .career-gap-duration {
+            font-weight: 600;
+            color: #fbbf24;
+        }
+
+        .career-gap-dates {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .career-gap-reason {
+            background: rgba(251, 191, 36, 0.15);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #fbbf24;
+        }
+
+        .career-gap-strategy h4 {
+            color: #fbbf24;
+            font-size: 1rem;
+            margin: 16px 0 8px 0;
+        }
+
+        .career-gap-strategy p {
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
@@ -805,6 +861,14 @@
                         <ul class="bullets gaps" id="gaps"></ul>
                     </div>
 
+                    <!-- 5.5. CAREER GAP STRATEGY (if gaps detected) -->
+                    <div class="section career-gap-section" id="careerGapSection" style="display: none;">
+                        <div class="section-title" style="color: #fbbf24;">⚠️ Career Gap Strategy</div>
+                        <div class="career-gap-content" id="careerGapContent">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
                     <!-- 6. LINKEDIN ALIGNMENT CHECK -->
                     <div class="section linkedin-alignment-section" id="linkedinAlignmentSection">
                         <div class="section-title">LinkedIn Alignment Check</div>
@@ -1192,6 +1256,54 @@
                 li.textContent = gap;
                 gapsList.appendChild(li);
             });
+        }
+
+        // =====================================================================
+        // POPULATE: Career Gap Analysis (if present)
+        // =====================================================================
+        const careerGapSection = document.getElementById('careerGapSection');
+        const careerGapContent = document.getElementById('careerGapContent');
+        const careerGapAnalysis = data.career_gap_analysis;
+
+        if (careerGapAnalysis && careerGapAnalysis.gaps_detected && careerGapAnalysis.gaps_detected.length > 0) {
+            careerGapSection.style.display = 'block';
+
+            let gapsHtml = `
+                <div class="career-gap-detected">
+                    <p style="margin-bottom: 12px;"><strong>We noticed ${careerGapAnalysis.gaps_detected.length} gap(s) in your timeline:</strong></p>
+                    ${careerGapAnalysis.gaps_detected.map(gap => `
+                        <div class="career-gap-item">
+                            <div>
+                                <span class="career-gap-duration">${gap.duration_months} months</span>
+                                <span class="career-gap-dates">(${gap.start_date} → ${gap.end_date})</span>
+                            </div>
+                            <span class="career-gap-reason">${gap.apparent_reason || 'Career transition'}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            if (careerGapAnalysis.strategic_framing) {
+                const framing = careerGapAnalysis.strategic_framing;
+                gapsHtml += `
+                    <div class="career-gap-strategy">
+                        ${framing.honest_positioning ? `
+                            <h4>Strategic Framing</h4>
+                            <p>${framing.honest_positioning}</p>
+                        ` : ''}
+                        ${framing.cover_letter_approach ? `
+                            <h4>In Your Cover Letter</h4>
+                            <p>${framing.cover_letter_approach}</p>
+                        ` : ''}
+                        ${framing.interview_approach ? `
+                            <h4>If Asked in Interview</h4>
+                            <p>${framing.interview_approach}</p>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            careerGapContent.innerHTML = gapsHtml;
         }
 
         // =====================================================================

@@ -467,6 +467,7 @@
 
             /* Hide page headers when strategy-nav is present */
             body.has-strategy-nav header,
+            body.has-strategy-nav .header,
             body.has-strategy-nav .top-nav,
             body.has-strategy-nav .header-container .logo {
                 display: none !important;

@@ -314,6 +314,10 @@
                 // Use backend-extracted company/role if available (more accurate than frontend regex)
                 const extractedCompany = analysisData.company || company;
                 const extractedRole = analysisData.role_title || role;
+
+                // Generate unique application ID to prevent duplicates on retry
+                const applicationId = `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
                 const fullData = {
                     ...analysisData,
                     _resume_json: resumeJson,
@@ -322,7 +326,9 @@
                     _company_name: extractedCompany,  // Also set _company_name for compatibility
                     _role: extractedRole,
                     _jd_text: jobDescription,
-                    _profile: userProfile
+                    _profile: userProfile,
+                    _applicationId: applicationId,
+                    _createdAt: new Date().toISOString()
                 };
 
                 // Store analysis data

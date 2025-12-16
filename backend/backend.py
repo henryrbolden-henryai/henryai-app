@@ -3100,6 +3100,46 @@ When political sensitivity flags are detected, provide specific reframing strate
 
 Include reframing_guidance in the response when political risks are detected
 
+=== CAREER GAP DETECTION (MANDATORY) ===
+
+Analyze the candidate's resume timeline for employment gaps > 3 months between roles.
+
+DETECTION RULES:
+1. Calculate time between end date of one role and start date of next role
+2. Flag gaps > 3 months as requiring strategic framing
+3. Look for context clues that explain gaps:
+   - Education/certifications during gap period
+   - Freelance/consulting work
+   - Startup/entrepreneurial ventures
+   - Career transitions (e.g., healthcare to tech)
+   - Sabbatical/travel references
+   - Personal circumstances (don't speculate)
+
+GAP RISK ASSESSMENT:
+- EXPLAINED GAP: Education, freelancing, startup - requires framing but not high risk
+- INDUSTRY TRANSITION GAP: Healthcare to tech, etc. - frame as intentional pivot
+- UNEXPLAINED GAP > 6 months: Higher risk, needs proactive addressing
+- RECENT GAP (last 12 months): Highest scrutiny, needs strongest framing
+
+OUTPUT FOR EACH GAP:
+- duration_months: Number of months
+- start_date: When gap started (end of previous role)
+- end_date: When gap ended (start of next role)
+- apparent_reason: What it looks like (e.g., "career transition", "startup phase", "unexplained")
+- requires_addressing: true if gap > 3 months
+- risk_level: "low" | "medium" | "high"
+
+STRATEGIC FRAMING GUIDANCE:
+For each gap requiring addressing, provide:
+1. cover_letter_approach: How to proactively address in cover letter (if needed)
+2. interview_approach: Script for when asked "What were you doing during X?"
+3. honest_positioning: How to frame truthfully but positively
+
+Example framings:
+- "I took time to explore entrepreneurial opportunities and validate a startup concept. That experience taught me [X] and confirmed my passion for [Y]."
+- "I invested in transitioning from healthcare to tech, including [certifications/projects]. This background gives me unique insight into [Z]."
+- "I took a strategic pause to reassess my career direction, which led me to focus specifically on [role type] opportunities like this one."
+
 REQUIRED RESPONSE FORMAT - Every field must be populated:
 {
   "intelligence_layer": {
@@ -3202,6 +3242,25 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
     },
     "interview_preparation": {
       "if_asked_about_company": "How to respond if asked about politically sensitive company/role"
+    }
+  },
+  "career_gap_analysis": {
+    "gaps_detected": [
+      {
+        "duration_months": 8,
+        "start_date": "June 2023",
+        "end_date": "February 2024",
+        "apparent_reason": "career transition|startup phase|education|unexplained",
+        "risk_level": "low|medium|high",
+        "requires_addressing": true
+      }
+    ],
+    "total_gap_months": 8,
+    "overall_gap_risk": "low|medium|high",
+    "strategic_framing": {
+      "cover_letter_approach": "How to address in cover letter (if gap is significant). Set to null if no proactive mention needed.",
+      "interview_approach": "Script for when asked 'What were you doing during [gap period]?'",
+      "honest_positioning": "How to frame the gap truthfully but positively"
     }
   },
   "strategic_positioning": "2-3 sentences on how to position candidate",
