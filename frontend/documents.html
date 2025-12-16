@@ -1446,64 +1446,96 @@ COVER LETTER
         }
 
         // Generate comprehensive headline with role, expertise, and differentiators
+        // FORMULA: [Seniority] [Function] | [Specialization] | [Brand Signals] | [Domain Expertise]
+        // NEVER include years of experience or number of hires - these are filler stats
         function generateComprehensiveHeadline(linkedinParsed, resumeOutput, analysisData, level) {
             const role = analysisData?._role || analysisData?.role_title || '';
             const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || analysisData?.required_skills || [];
-            const competencies = resumeOutput.core_competencies || analysisData?.required_skills || [];
-
-            // Extract years of experience
-            const years = extractYearsExperience(linkedinParsed, resumeOutput) || 10;
-
-            // Get key metrics from experience
-            const metrics = extractKeyMetrics(resumeOutput);
 
             // Get experience data for brand signals
             const experience = linkedinParsed.experience || [];
             const companies = experience.map(e => e.company).filter(Boolean);
 
-            // Build headline parts
+            // Build headline following the formula
             const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput) || role;
-            let headline = '';
+            const parts = [];
 
-            // Start with level + functional area
+            // PART 1: Seniority + Function (required)
             if (level && functionalArea) {
-                headline = `${level} ${functionalArea}`;
+                parts.push(`${level} ${functionalArea}`);
             } else if (role) {
-                headline = role;
+                parts.push(role);
             } else {
-                headline = 'Talent Acquisition Leader';
+                parts.push('Talent Acquisition Leader');
             }
 
-            // Add years of experience
-            headline += ` | ${years}+ Years`;
-
-            // Add key differentiators based on metrics
-            if (metrics.hires) {
-                headline += ` | ${metrics.hires}+ Strategic Hires`;
-            } else if (metrics.teamSize) {
-                headline += ` | Built Teams of ${metrics.teamSize}+`;
+            // PART 2: Specialization (what makes them specialized)
+            const specializations = [];
+            if (/executive|senior|leadership|director|vp|c-suite/i.test(role)) {
+                specializations.push('Executive Search & Leadership Talent');
+            } else if (/technical|engineer|software/i.test(role)) {
+                specializations.push('Technical Recruiting at Scale');
+            } else if (/sales|gtm|revenue/i.test(role)) {
+                specializations.push('GTM & Revenue Team Building');
+            } else {
+                // Use top ATS keywords as specialization
+                const topKeywords = atsKeywords
+                    .filter(kw => kw.length > 3 && kw.length < 30 && !/etc|the|and/i.test(kw))
+                    .slice(0, 2);
+                if (topKeywords.length > 0) {
+                    specializations.push(topKeywords.map(k =>
+                        k.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                    ).join(' & '));
+                }
+            }
+            if (specializations.length > 0) {
+                parts.push(specializations[0]);
             }
 
-            // Add brand signals (notable companies)
-            const notableCompanies = companies.filter(c =>
-                /google|meta|facebook|amazon|apple|microsoft|netflix|uber|airbnb|spotify|stripe|salesforce|linkedin/i.test(c)
+            // PART 3: Brand Signals (Ex-Company names - CRITICAL for credibility)
+            // Include ALL notable companies, not just tech giants
+            const allCompanies = companies.slice(0, 3);
+            if (allCompanies.length > 0) {
+                // Format: "Ex-Company1, Company2, Company3" or just company names if current
+                const companyNames = allCompanies.map(c => {
+                    // Clean up company name
+                    return c.replace(/\s*(Inc\.|LLC|Corp\.?|Limited|Ltd\.?)$/i, '').trim();
+                });
+                parts.push(`Ex-${companyNames.join(', ')}`);
+            }
+
+            // PART 4: Domain Expertise (specific competencies)
+            const domainExpertise = [];
+            // Look for scope indicators in ATS keywords
+            const scopeKeywords = atsKeywords.filter(kw =>
+                /fortune|enterprise|global|c-suite|vp|director|scale|startup/i.test(kw)
             );
-            if (notableCompanies.length > 0 && headline.length < 150) {
-                headline += ` | Ex-${notableCompanies[0]}`;
+            if (scopeKeywords.length > 0) {
+                domainExpertise.push(scopeKeywords.slice(0, 2).join(', '));
+            } else {
+                // Add remaining relevant keywords
+                const remainingKeywords = atsKeywords
+                    .filter(kw => kw.length > 3 && kw.length < 25 && !/etc|the|and/i.test(kw))
+                    .slice(2, 4);
+                if (remainingKeywords.length > 0) {
+                    domainExpertise.push(remainingKeywords.join(', '));
+                }
+            }
+            if (domainExpertise.length > 0 && parts.join(' | ').length < 160) {
+                parts.push(domainExpertise[0]);
             }
 
-            // Add top 2 keywords if space permits
-            const relevantKeywords = atsKeywords
-                .filter(kw => kw.length > 3 && kw.length < 25 && !kw.toLowerCase().includes('etc'))
-                .slice(0, 2);
-
-            if (relevantKeywords.length > 0 && headline.length < 160) {
-                headline += ` | ${relevantKeywords.join(', ')}`;
-            }
+            // Combine with pipe separators
+            let headline = parts.join(' | ');
 
             // Ensure we don't exceed 220 characters
             if (headline.length > 220) {
-                headline = headline.substring(0, 217) + '...';
+                // Remove last part if too long
+                parts.pop();
+                headline = parts.join(' | ');
+                if (headline.length > 220) {
+                    headline = headline.substring(0, 217) + '...';
+                }
             }
 
             return headline;
