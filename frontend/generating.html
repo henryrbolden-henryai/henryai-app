@@ -302,11 +302,33 @@
             // Get analysis data
             const analysisDataStr = sessionStorage.getItem('analysisData');
             if (!analysisDataStr) {
-                showError('No analysis data found. Please start over.');
+                showError('No analysis data found. Please go back to the results page and try again.');
+                console.error('Missing analysisData in sessionStorage');
                 return;
             }
 
-            const analysisData = JSON.parse(analysisDataStr);
+            let analysisData;
+            try {
+                analysisData = JSON.parse(analysisDataStr);
+            } catch (e) {
+                showError('Invalid analysis data. Please go back to the results page and try again.');
+                console.error('Failed to parse analysisData:', e);
+                return;
+            }
+
+            // Validate critical fields
+            if (!analysisData._resume_json) {
+                showError('Resume data is missing. Please go back to your profile and re-upload your resume.');
+                console.error('Missing _resume_json in analysisData:', Object.keys(analysisData));
+                return;
+            }
+
+            console.log('Starting document generation with analysisData:', {
+                hasResumeJson: !!analysisData._resume_json,
+                resumeType: typeof analysisData._resume_json,
+                company: analysisData._company || analysisData._company_name,
+                role: analysisData._role || analysisData.role_title
+            });
 
             // Get supplements from sessionStorage
             const supplementsStr = sessionStorage.getItem('supplements');
