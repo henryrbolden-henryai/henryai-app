@@ -1747,39 +1747,75 @@ COVER LETTER
         }
 
         // Get skills recommendations with add/remove
+        // Skills must be SHORT KEYWORDS (2-5 words), not sentences
         function getSkillsRecommendations(linkedinParsed, resumeOutput, analysisData) {
             const currentSkills = linkedinParsed.skills || [];
-            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
-            const requiredSkills = analysisData?.required_skills || [];
+            const role = analysisData?._role || analysisData?.role_title || '';
 
-            // Combine required skills and ATS keywords
-            const targetSkills = [...new Set([...requiredSkills, ...atsKeywords])];
+            // Define skill keyword libraries by role type
+            // These are ACTUAL LinkedIn skill keywords (2-5 words each)
+            const executiveRecruiterSkills = [
+                'Executive Search', 'C-Suite Recruiting', 'Board-Level Search',
+                'Leadership Assessment', 'Succession Planning', 'Retained Search',
+                'Talent Mapping', 'Executive Compensation', 'Stakeholder Management',
+                'Organizational Design', 'Global Recruiting', 'VP-Level Hiring'
+            ];
 
-            // Top skills to pin (most relevant to role)
-            const topSkills = targetSkills
-                .filter(s => s.length > 2)
-                .slice(0, 5);
+            const technicalRecruiterSkills = [
+                'Technical Recruiting', 'Engineering Hiring', 'Boolean Search',
+                'LinkedIn Recruiter', 'ATS Systems', 'Sourcing Strategy',
+                'Tech Talent Acquisition', 'Developer Relations', 'GitHub Sourcing',
+                'Coding Assessment', 'Technical Screening', 'Startup Recruiting'
+            ];
 
-            // Skills to add (in target but not in current)
-            const currentSkillsLower = currentSkills.map(s => s.toLowerCase());
-            const skillsToAdd = targetSkills
-                .filter(s => !currentSkillsLower.includes(s.toLowerCase()))
-                .slice(0, 5);
+            const generalRecruiterSkills = [
+                'Talent Acquisition', 'Full-Cycle Recruiting', 'Employer Branding',
+                'Candidate Experience', 'Diversity Recruiting', 'Campus Recruiting',
+                'Workforce Planning', 'Recruitment Marketing', 'Interview Training',
+                'Offer Negotiation', 'Onboarding Programs', 'HRIS Systems'
+            ];
 
-            // Skills to potentially remove (outdated or irrelevant)
-            const outdatedPatterns = ['microsoft office', 'ms word', 'ms excel', 'typing', 'data entry'];
-            const skillsToRemove = currentSkills
-                .filter(s => outdatedPatterns.some(p => s.toLowerCase().includes(p)))
+            // Select appropriate skill library based on role
+            let skillLibrary = generalRecruiterSkills;
+            if (/executive|leadership|director|vp|c-suite|senior/i.test(role)) {
+                skillLibrary = executiveRecruiterSkills;
+            } else if (/technical|engineer|software|developer/i.test(role)) {
+                skillLibrary = technicalRecruiterSkills;
+            }
+
+            // Get current skills that are actually short keywords (filter out sentences)
+            const currentShortSkills = currentSkills.filter(s => s.split(' ').length <= 5);
+
+            // TOP 3: Best skills for recruiter searches (must be different from current)
+            const currentLower = currentShortSkills.map(s => s.toLowerCase());
+            const topSkills = skillLibrary
+                .filter(s => !currentLower.includes(s.toLowerCase()))
                 .slice(0, 3);
+
+            // ADD THESE: More skills to add (different from top 3)
+            const topSkillsLower = topSkills.map(s => s.toLowerCase());
+            const skillsToAdd = skillLibrary
+                .filter(s => !currentLower.includes(s.toLowerCase()) && !topSkillsLower.includes(s.toLowerCase()))
+                .slice(0, 8);
+
+            // REMOVE THESE: Generic low-signal skills
+            const genericPatterns = [
+                'microsoft office', 'ms word', 'ms excel', 'typing', 'data entry',
+                'communication', 'teamwork', 'leadership', 'problem solving',
+                'time management', 'hard working', 'team player', 'email'
+            ];
+            const skillsToRemove = currentSkills
+                .filter(s => genericPatterns.some(p => s.toLowerCase().includes(p)))
+                .slice(0, 5);
 
             return {
                 topSkills,
                 skillsToAdd,
                 skillsToRemove,
                 skillsWhy: [
-                    'Top 3 skills appear in recruiter search previews',
-                    'Adding role-relevant skills improves search ranking',
-                    'Recruiters use Boolean searches with exact skill names'
+                    'Top 3 are the most recruiter-searched terms for this role type',
+                    'Added skills are specialized competencies that differentiate you',
+                    'Removed skills are generic terms that don\'t improve search ranking'
                 ]
             };
         }
