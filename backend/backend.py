@@ -648,6 +648,22 @@ class ResumeLevelingRequest(BaseModel):
     company: Optional[str] = None
     role_title: Optional[str] = None
 
+class LevelMismatchWarning(BaseModel):
+    """Warning when target level doesn't match assessed level"""
+    target_level: str
+    assessed_level: str
+    gap_explanation: str
+    alternative_recommendation: Optional[str] = None
+
+
+class RoleTypeBreakdown(BaseModel):
+    """Breakdown of years by role type"""
+    pm_years: int = 0
+    engineering_years: int = 0
+    operations_years: int = 0
+    other_years: int = 0
+
+
 class ResumeLevelingResponse(BaseModel):
     """Response containing full resume leveling analysis"""
     # Function detection
@@ -655,10 +671,14 @@ class ResumeLevelingResponse(BaseModel):
     function_confidence: float  # 0-1 confidence score
 
     # Current level assessment
-    current_level: str  # e.g., "Senior Engineer", "Product Manager"
-    current_level_id: str  # e.g., "senior_engineer", "pm"
+    current_level: str  # e.g., "Associate PM", "Mid-Level PM" (NOT inflated titles)
+    current_level_id: str  # e.g., "associate_pm", "mid_pm"
     level_confidence: float  # 0-1 confidence score
     years_experience: int
+
+    # NEW: Strict role-type experience tracking
+    years_in_role_type: Optional[int] = None  # Only years in actual PM/Eng/etc roles
+    role_type_breakdown: Optional[RoleTypeBreakdown] = None
 
     # Evidence for current level
     scope_signals: List[str]  # Scope indicators found
@@ -677,12 +697,19 @@ class ResumeLevelingResponse(BaseModel):
     # Red flags
     red_flags: List[str]  # Issues found (generic claims, inconsistencies, etc.)
 
+    # NEW: Title inflation detection
+    title_inflation_detected: Optional[bool] = None
+    title_inflation_explanation: Optional[str] = None
+
     # Target analysis (if target_title provided)
     target_level: Optional[str] = None
     target_level_id: Optional[str] = None
     levels_apart: Optional[int] = None  # 0 = matches, positive = target is higher
     is_qualified: Optional[bool] = None
     qualification_confidence: Optional[float] = None
+
+    # NEW: Level mismatch warnings
+    level_mismatch_warnings: Optional[List[LevelMismatchWarning]] = None
 
     # Gap analysis (if target provided)
     gaps: Optional[List[LevelingGap]] = None
@@ -2925,12 +2952,153 @@ The strategic_action field should feel like a recruiter giving honest advice, no
 
 After completing the Intelligence Layer and Reality Check, provide standard JD analysis:
 
-FIT SCORING (when resume provided):
+=== FIT SCORING WITH EXPERIENCE PENALTIES (MANDATORY) ===
+
+When calculating fit_score, you MUST apply these penalties:
+
+**STEP 1: Calculate Base Fit Score**
 - 50% responsibilities alignment
 - 30% required experience match
 - 20% industry/domain alignment
-Score range: 0-100
-If no resume: provide fit score of 0 or null
+Score range: 0-100. If no resume: provide fit score of 0 or null.
+
+**STEP 2: Apply MANDATORY Experience Penalties**
+
+1. YEARS OF EXPERIENCE MISMATCH:
+   - Extract required years from JD (e.g., "5+ years", "3-5 years")
+   - Extract candidate's actual years in that role type from resume
+   - Calculate penalty: (required_years - candidate_years) / required_years
+   - Apply penalty: fit_score = base_fit_score * (1 - penalty * 0.5)
+
+   Example:
+   - JD requires: 5 years PM experience
+   - Candidate has: 2 years PM experience
+   - Penalty: (5-2)/5 = 0.6 (60% gap)
+   - Adjusted score: 75% * (1 - 0.6*0.5) = 75% * 0.7 = 52.5%
+
+2. SPECIFIC SUB-EXPERIENCE MISMATCH:
+   - If JD requires specific experience type (e.g., "2-3 years growth PM", "3+ years developer tools")
+   - Check if candidate has ANY of that specific experience
+   - If zero experience: apply additional 30% penalty
+   - If some but insufficient: apply 15% penalty
+
+   Example:
+   - JD requires: 2-3 years growth PM experience
+   - Candidate has: 0 years growth PM experience
+   - Additional penalty: 30%
+   - Adjusted score: 52.5% * 0.7 = 36.75%
+
+3. CAREER LEVEL MISMATCH:
+   - If JD targets "Senior" but candidate has <4 years in role: 20% penalty
+   - If JD targets "Mid-level" but candidate has <2 years in role: 15% penalty
+   - If JD targets "Lead/Staff" but candidate has <6 years in role: 25% penalty
+
+CRITICAL: These penalties are MANDATORY and MULTIPLICATIVE. Apply all relevant penalties before returning fit_score.
+Do NOT inflate scores based on "transferable skills" unless the candidate meets the minimum experience threshold.
+
+=== RECOMMENDATION LOGIC (STRICT THRESHOLDS) ===
+
+Calculate final fit_score AFTER applying all experience penalties, then use these thresholds:
+
+1. fit_score >= 80%: "Strongly Apply"
+   - Candidate meets or exceeds all core requirements
+   - Skills, experience, and scope align well
+   - Minor gaps only, easily addressed
+
+2. fit_score 70-79%: "Apply" (with strategic positioning)
+   - Candidate is competitive but has addressable gaps
+   - MUST include specific positioning guidance
+   - Flag any stretch areas that need emphasis
+
+3. fit_score 55-69%: "Conditional Apply"
+   - Candidate is underqualified for this level
+   - Recommend EITHER:
+     a) Target a lower level at this company (e.g., Associate PM instead of Senior PM)
+     b) Target this level at earlier-stage companies
+     c) Build specific experience first (with timeline)
+
+4. fit_score < 55%: "Do Not Apply"
+   - Candidate is significantly underqualified
+   - Applying would waste time and hurt confidence
+   - Provide clear reasoning and alternative paths
+
+CRITICAL OVERRIDES (Apply Before Recommendation):
+Even if fit_score is 70%+, override to "Conditional Apply" or "Do Not Apply" if:
+- Candidate has <70% of required years of experience
+- Candidate has ZERO experience in a "required" (not "preferred") skill area
+- Candidate is targeting 2+ levels above their current experience (e.g., 2 years experience applying to Staff roles)
+
+=== EXPERIENCE MISMATCH WARNINGS (MANDATORY) ===
+
+After calculating experience penalties, generate explicit warnings in the gaps array:
+
+1. YEARS MISMATCH WARNING (trigger: candidate years < 70% of required):
+   Add to gaps array with warning_type "experience_years_mismatch", severity "critical":
+   "⚠️ EXPERIENCE GAP: This role requires [X] years of [role type] experience. You have [Y] years. This is a [Z%] gap that will likely result in auto-rejection, even if your skills align."
+   Include impact "Auto-rejection risk: HIGH" and mitigation advice.
+
+2. SPECIFIC EXPERIENCE MISSING WARNING (trigger: required sub-experience = 0):
+   Add to gaps array with warning_type "required_experience_missing", severity "critical":
+   "⚠️ CRITICAL GAP: This role specifically requires [X] years of [specific experience type]. You have NONE. This is a knockout criterion."
+   Include impact "Auto-rejection risk: VERY HIGH" and mitigation advice.
+
+3. CAREER LEVEL MISMATCH WARNING (trigger: applying 2+ levels above current):
+   Add to gaps array with warning_type "career_level_mismatch", severity "high":
+   "⚠️ LEVEL MISMATCH: This role targets [Senior/Staff/Lead] level. Your experience positions you at [Associate/Mid-level]. You're applying 2+ levels above your experience."
+   Include impact "Pattern-match rejection risk: HIGH" and mitigation advice.
+
+=== POLITICAL SENSITIVITY DETECTION (PHASE 1.5) ===
+
+Analyze the candidate's resume for politically sensitive content that may impact hiring decisions in the current climate (December 2024).
+
+POLITICALLY SENSITIVE CATEGORIES:
+
+1. DEI/DIVERSITY FOCUS (Risk Level: HIGH):
+   - Company mission includes: "diversity", "inclusion", "equity", "DEI", "underrepresented", "belonging"
+   - Role titles: "Chief Diversity Officer", "DEI Manager", "Inclusion Lead"
+   - Companies explicitly focused on diversity
+
+2. CLIMATE/ENVIRONMENTAL ACTIVISM (Risk Level: MEDIUM):
+   - Company mission includes: "climate justice", "environmental activism"
+   - Role titles: "Climate Organizer", "Sustainability Advocate"
+
+3. POLITICAL CAMPAIGNS/ADVOCACY (Risk Level: MEDIUM):
+   - Worked for political campaigns, PACs, advocacy organizations
+   - Role titles: "Campaign Manager", "Political Organizer"
+
+4. CANNABIS INDUSTRY (Risk Level: MEDIUM):
+   - Worked in cannabis/marijuana industry
+
+5. CRYPTO/WEB3 POST-2022 (Risk Level: LOW-MEDIUM):
+   - Worked in crypto/blockchain during 2022-2024 period
+
+DETECTION LOGIC:
+- Flag if ANY politically sensitive category is detected
+- Weight by risk level: HIGH risk = auto-flag, MEDIUM risk = flag if prominent
+- Consider recency: DEI work from 2020-2023 is higher risk than 2015-2018
+- Consider prominence: "Lead PM at DEI company" is higher risk than "volunteered for DEI committee"
+
+DO NOT FLAG:
+- Generic corporate DEI statements
+- Standard EEOC compliance language
+- Employee resource group participation (unless primary role)
+
+=== POLITICAL REFRAMING GUIDANCE ===
+
+When political sensitivity flags are detected, provide specific reframing strategies:
+
+1. DEI-FOCUSED EXPERIENCE:
+   - Lead with product/technical work, not mission
+   - Describe functionality ("talent matching", "recommendation engine") not ideology
+   - Emphasize business outcomes ("$60K B2B contract", "50% increase in demo requests") not social impact
+   - Avoid words: diversity, inclusion, equity, underrepresented, belonging
+   - Use instead: talent, recruiting, workforce, marketplace, matching
+
+2. COMPANY TARGETING STRATEGY when political sensitivity is HIGH:
+   AVOID: Companies that rolled back DEI initiatives, conservative-leaning industries
+   TARGET: Pro-DEI tech companies, early-stage startups, nonprofit sector
+
+Include reframing_guidance in the response when political risks are detected
 
 REQUIRED RESPONSE FORMAT - Every field must be populated:
 {
@@ -2967,8 +3135,75 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "preferred_skills": ["array of nice-to-have skills"] or [],
   "ats_keywords": ["MUST have 10-15 important keywords for ATS"],
   "fit_score": 85,
+  "fit_score_breakdown": {
+    "base_score": 75,
+    "years_experience_penalty": -15,
+    "specific_experience_penalty": -8,
+    "career_level_penalty": 0,
+    "final_score": 52,
+    "penalty_explanation": "Base score of 75% reduced due to 60% experience gap (5 years required, 2 years actual) and missing growth PM experience."
+  },
+  "recommendation": "Conditional Apply|Do Not Apply|Apply|Strongly Apply",
+  "recommendation_rationale": "1-2 sentences explaining why, referencing specific gaps or strengths",
+  "alternative_actions": ["Action 1 if Conditional Apply or Do Not Apply", "Action 2"],
+  "experience_analysis": {
+    "required_years": 5,
+    "candidate_years_in_role_type": 2,
+    "years_gap_percentage": 60,
+    "specific_experience_required": "growth PM",
+    "candidate_specific_experience_years": 0,
+    "career_level_target": "Senior",
+    "candidate_assessed_level": "Associate"
+  },
   "strengths": ["3-4 candidate strengths matching this role"] or [],
-  "gaps": ["2-3 potential gaps or concerns"] or [],
+  "gaps": [
+    {
+      "description": "gap description",
+      "warning_type": "experience_years_mismatch|required_experience_missing|career_level_mismatch|standard_gap",
+      "severity": "critical|high|medium|low",
+      "impact": "Auto-rejection risk level",
+      "mitigation": "How to address"
+    }
+  ],
+  "political_sensitivity": {
+    "flags": [
+      {
+        "category": "DEI/Diversity Focus|Climate/Environmental|Political Campaigns|Cannabis|Crypto/Web3",
+        "risk_level": "high|medium|low",
+        "detected_in": "Company: [name] or Role: [title]",
+        "explanation": "Why this may be a liability",
+        "affected_companies_percentage": "Estimated % of employers who may filter",
+        "mitigation_required": true
+      }
+    ],
+    "overall_political_risk": "low|medium|high",
+    "political_risk_explanation": "1-2 sentences summarizing overall risk"
+  },
+  "reframing_guidance": {
+    "detected_risk": "What was detected",
+    "reframing_strategy": {
+      "headline_change": "BEFORE: [original] → AFTER: [reframed]",
+      "resume_bullets_changes": [
+        {
+          "before": "original bullet",
+          "after": "reframed bullet",
+          "rationale": "why this change"
+        }
+      ],
+      "company_description_change": {
+        "before": "original description",
+        "after": "reframed description",
+        "rationale": "why this change"
+      }
+    },
+    "company_targeting": {
+      "avoid": ["companies/industries to avoid"],
+      "target": ["safer company types"]
+    },
+    "interview_preparation": {
+      "if_asked_about_company": "How to respond if asked about politically sensitive company/role"
+    }
+  },
   "strategic_positioning": "2-3 sentences on how to position candidate",
   "salary_info": "string if mentioned in JD, otherwise null",
   "interview_prep": {
@@ -6386,7 +6621,68 @@ Your task is to analyze a candidate's resume and determine:
 === RESUME TO ANALYZE ===
 {resume_context}
 
-=== LEVELING FRAMEWORKS ===
+=== CAREER LEVEL ASSESSMENT (STRICT CALIBRATION) ===
+
+Assess the candidate's ACTUAL career level based on these criteria. Be CONSERVATIVE—do not inflate levels.
+
+CRITICAL RULES (APPLY BEFORE LEVELING):
+
+1. YEARS IN ROLE TYPE MATTER MOST:
+   - If candidate has 8 years total experience but only 2 years in PM roles → Associate PM level
+   - Prior experience in other roles (ops, analytics, engineering) does NOT count toward PM level
+   - Only count years in actual PM titles or equivalent product ownership roles
+
+2. SHORT TENURES SIGNAL JUNIOR LEVEL:
+   - If longest PM role is <1 year → Associate PM (max)
+   - If longest PM role is 1-2 years → Associate to Mid-level (max)
+   - Short tenures suggest lack of full product cycle experience
+
+3. TITLE INFLATION AT STARTUPS:
+   - "Lead PM" at unknown startup with 9 months tenure → Treat as Associate PM
+   - "Senior PM" at company <50 people → Treat as Mid-level PM
+   - Only trust levels at established companies (500+ employees) or brand-name startups
+
+4. OPERATIONS/ANALYTICS BACKGROUND ≠ PM LEVEL:
+   - 6 years in healthcare operations + 2 years in PM → Associate/Mid PM level, NOT Senior
+   - Prior non-PM experience is context, not PM level credit
+
+=== LEVELING FRAMEWORKS (STRICT INTERPRETATION) ===
+
+**Product Management Levels (STRICT):**
+- ASSOCIATE PM / IC1-IC2 (0-2 years PM experience):
+  - 0-2 years in product management roles specifically
+  - May have prior experience in other roles (ops, analytics, engineering)
+  - Owns features or small product areas
+  - Contributes to roadmap, doesn't own it
+  - Signals: "Worked with PM team", "Supported product launches", "Analyzed metrics for product decisions"
+
+- MID-LEVEL PM / IC3 (3-5 years PM experience):
+  - 3-5 years in product management roles specifically
+  - Owns full product or major product area
+  - Drives roadmap for their area
+  - Cross-functional leadership within their scope
+  - Signals: "Owned product roadmap", "Led cross-functional team", "Drove 0→1 launch"
+
+- SENIOR PM / IC4 (5-8 years PM experience):
+  - 5-8 years in product management roles specifically
+  - Owns multiple products or large platform area
+  - Sets strategy for their domain
+  - Influences company-wide product decisions
+  - Mentors junior PMs
+  - Signals: "Set product strategy", "Defined multi-year roadmap", "Mentored PMs", "Influenced exec-level decisions"
+
+- STAFF PM / IC5 (8-12 years PM experience):
+  - 8-12 years in product management roles specifically
+  - Owns product area with significant business impact
+  - Sets technical/product direction across teams
+  - Recognized expert internally and externally
+  - Signals: "Defined product vision for [major initiative]", "Led platform strategy", "Published thought leadership"
+
+- PRINCIPAL+ PM / IC6+ (12+ years PM experience):
+  - 12+ years in product management roles specifically
+  - Company-wide strategic influence
+  - Defines category or creates new markets
+  - Recognized industry expert
 
 **Engineering IC Levels:**
 - Engineer I (0-2 years): Individual tasks, learning, needs guidance
@@ -6395,13 +6691,6 @@ Your task is to analyze a candidate's resume and determine:
 - Staff Engineer (8-12 years): Multi-team initiatives, defines standards, org-wide impact
 - Principal Engineer (12+ years): Company-wide technical direction, industry influence
 
-**Product Management Levels:**
-- APM (0-2 years): Supports initiatives, learns product craft
-- PM (2-5 years): Owns product area, drives metrics
-- Senior PM (5-8 years): Major product area, influences strategy, executive communication
-- GPM/Director (8-12 years): Multiple product areas, manages PMs
-- VP Product (12+ years): Company-wide product strategy, board-level
-
 **Corporate Functions (Marketing, Sales, Operations, Finance, HR, etc.):**
 - Coordinator/Associate (0-2 years): Supporting role, learning function
 - Specialist/Analyst (2-4 years): Owns specific area, executes independently
@@ -6409,6 +6698,12 @@ Your task is to analyze a candidate's resume and determine:
 - Senior Manager (7-10 years): Strategic projects, cross-functional leadership
 - Director (10-15 years): Department-level ownership, executive presence
 - VP (15+ years): Function-wide leadership, C-suite collaboration
+
+STRICT LEVEL RULES (MANDATORY):
+- NEVER assess someone as "Senior PM" with <4 years of PM experience
+- NEVER assess someone as "Mid-Level PM" with <2 years of PM experience
+- NEVER inflate level based on "transferable skills" from other functions
+- Always note when candidate's title appears inflated relative to experience
 
 === LANGUAGE PATTERN INDICATORS ===
 
@@ -6452,10 +6747,17 @@ Return a JSON object with this structure:
   "detected_function": "Engineering|Product Management|Marketing|Sales|Operations|Finance|HR|Customer Success|Legal|Data|Design|Project Management",
   "function_confidence": 0.0-1.0,
 
-  "current_level": "Display name like 'Senior Engineer'",
-  "current_level_id": "snake_case identifier like 'senior_engineer'",
+  "current_level": "Display name like 'Associate PM' or 'Mid-Level PM' (NOT inflated titles)",
+  "current_level_id": "snake_case identifier like 'associate_pm' or 'mid_pm'",
   "level_confidence": 0.0-1.0,
   "years_experience": integer,
+  "years_in_role_type": integer,  // CRITICAL: Only count years in actual PM/Eng/etc roles, NOT total years
+  "role_type_breakdown": {{
+    "pm_years": integer,
+    "engineering_years": integer,
+    "operations_years": integer,
+    "other_years": integer
+  }},
 
   "scope_signals": ["quoted phrases showing scope"],
   "impact_signals": ["quoted phrases showing impact"],
@@ -6481,6 +6783,8 @@ Return a JSON object with this structure:
   "quantification_rate": 0.0-1.0,
 
   "red_flags": ["issues found"],
+  "title_inflation_detected": true/false,
+  "title_inflation_explanation": "Explanation if title appears inflated (e.g., 'Senior PM title at early-stage startup with only 18 months tenure')" or null,
 
   "target_level": "Display name or null",
   "target_level_id": "snake_case or null",
@@ -6488,9 +6792,18 @@ Return a JSON object with this structure:
   "is_qualified": true/false or null,
   "qualification_confidence": 0.0-1.0 or null,
 
+  "level_mismatch_warnings": [
+    {{
+      "target_level": "Senior PM",
+      "assessed_level": "Associate PM",
+      "gap_explanation": "You have 2 years of PM experience. Senior PM roles typically require 5-8 years.",
+      "alternative_recommendation": "Target Associate PM or entry-level PM roles at this company"
+    }}
+  ] or null,
+
   "gaps": [
     {{
-      "category": "scope|impact|competency|language",
+      "category": "scope|impact|competency|language|experience_years",
       "description": "what's missing",
       "recommendation": "how to address",
       "priority": "high|medium|low"
@@ -6499,7 +6812,7 @@ Return a JSON object with this structure:
 
   "recommendations": [
     {{
-      "type": "content|language|quantification|scope",
+      "type": "content|language|quantification|scope|level_targeting",
       "priority": "high|medium|low",
       "current": "current state",
       "suggested": "recommended change",
@@ -6507,7 +6820,7 @@ Return a JSON object with this structure:
     }}
   ],
 
-  "summary": "2-3 sentence narrative assessment"
+  "summary": "2-3 sentence narrative assessment that MUST include the years in role type and honest level assessment"
 }}
 
 Your response must be ONLY valid JSON, no additional text."""
@@ -6665,6 +6978,29 @@ Analyze gaps between candidate's current level and the target role requirements.
                 rationale=rec.get('rationale', '')
             ))
 
+        # Build role type breakdown if present
+        role_type_breakdown = None
+        if parsed_data.get('role_type_breakdown'):
+            rtb = parsed_data['role_type_breakdown']
+            role_type_breakdown = RoleTypeBreakdown(
+                pm_years=rtb.get('pm_years', 0),
+                engineering_years=rtb.get('engineering_years', 0),
+                operations_years=rtb.get('operations_years', 0),
+                other_years=rtb.get('other_years', 0)
+            )
+
+        # Build level mismatch warnings if present
+        level_mismatch_warnings = None
+        if parsed_data.get('level_mismatch_warnings'):
+            level_mismatch_warnings = []
+            for warning in parsed_data['level_mismatch_warnings']:
+                level_mismatch_warnings.append(LevelMismatchWarning(
+                    target_level=warning.get('target_level', ''),
+                    assessed_level=warning.get('assessed_level', ''),
+                    gap_explanation=warning.get('gap_explanation', ''),
+                    alternative_recommendation=warning.get('alternative_recommendation')
+                ))
+
         return ResumeLevelingResponse(
             detected_function=parsed_data.get('detected_function', 'Unknown'),
             function_confidence=parsed_data.get('function_confidence', 0.5),
@@ -6672,6 +7008,8 @@ Analyze gaps between candidate's current level and the target role requirements.
             current_level_id=parsed_data.get('current_level_id', 'unknown'),
             level_confidence=parsed_data.get('level_confidence', 0.5),
             years_experience=parsed_data.get('years_experience', 0),
+            years_in_role_type=parsed_data.get('years_in_role_type'),
+            role_type_breakdown=role_type_breakdown,
             scope_signals=parsed_data.get('scope_signals', []),
             impact_signals=parsed_data.get('impact_signals', []),
             leadership_signals=parsed_data.get('leadership_signals', []),
@@ -6681,11 +7019,14 @@ Analyze gaps between candidate's current level and the target role requirements.
             action_verb_distribution=parsed_data.get('action_verb_distribution', {'entry': 0.25, 'mid': 0.5, 'senior': 0.2, 'principal': 0.05}),
             quantification_rate=parsed_data.get('quantification_rate', 0.0),
             red_flags=parsed_data.get('red_flags', []),
+            title_inflation_detected=parsed_data.get('title_inflation_detected'),
+            title_inflation_explanation=parsed_data.get('title_inflation_explanation'),
             target_level=parsed_data.get('target_level'),
             target_level_id=parsed_data.get('target_level_id'),
             levels_apart=parsed_data.get('levels_apart'),
             is_qualified=parsed_data.get('is_qualified'),
             qualification_confidence=parsed_data.get('qualification_confidence'),
+            level_mismatch_warnings=level_mismatch_warnings,
             gaps=gaps,
             recommendations=recommendations,
             summary=parsed_data.get('summary', 'Assessment complete.')
