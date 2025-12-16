@@ -3,6 +3,11 @@
  * Handles authentication and data persistence
  */
 
+// Prevent duplicate initialization
+if (typeof window.HenryAuth !== 'undefined') {
+    console.log('Supabase client already initialized, skipping...');
+} else {
+
 const SUPABASE_URL = 'https://xmbappvomvmanvybdavs.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtYmFwcHZvbXZtYW52eWJkYXZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUzOTczNjEsImV4cCI6MjA4MDk3MzM2MX0.hswKgjSEQalsJCyjPTcs4ngJH_BGrYKhUmAEEx5QmuU';
 
@@ -636,3 +641,5 @@ const HenryData = {
 window.HenryAuth = HenryAuth;
 window.HenryData = HenryData;
 window.supabase = supabase;
+
+} // End of duplicate initialization check
