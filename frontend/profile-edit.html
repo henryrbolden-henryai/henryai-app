@@ -1475,6 +1475,22 @@
             try {
                 if (!profile) profile = {};
 
+                // Merge any LinkedIn data that may have been saved during this session
+                const storedProfile = localStorage.getItem('userProfile');
+                if (storedProfile) {
+                    try {
+                        const parsed = JSON.parse(storedProfile);
+                        // Only merge LinkedIn fields, preserve our resume data
+                        if (parsed.linkedin_profile_uploaded) {
+                            profile.linkedin_profile_uploaded = parsed.linkedin_profile_uploaded;
+                            profile.linkedin_last_updated = parsed.linkedin_last_updated;
+                            profile.linkedin_parsed = parsed.linkedin_parsed;
+                        }
+                    } catch (e) {
+                        console.error('Error merging stored profile:', e);
+                    }
+                }
+
                 profile.compensation = {
                     min: parseCurrency(document.getElementById('compMin').value),
                     target: parseCurrency(document.getElementById('compTarget').value),
