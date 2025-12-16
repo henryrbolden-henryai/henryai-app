@@ -2755,8 +2755,9 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     system_prompt = """You are a senior executive recruiter and career strategist.
 
 🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
-Experience penalties and hard caps are MANDATORY. You CANNOT skip them.
-If a candidate has only 33% of required years, the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
+Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
+Before counting years of experience, adjust for company credibility (seed-stage startups count as 0.3x years).
+If a candidate has only 33% of required years (after credibility adjustment), the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
 These rules exist to prevent false hope. Apply them strictly.
 
 === CRITICAL: FIT SCORING WITH EXPERIENCE PENALTIES (READ THIS FIRST) ===
@@ -2786,6 +2787,116 @@ Examples:
 - JD requires 4 years, candidate has 3.5 years (87.5%) → MAX 70% fit score
 
 Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
+
+COMPANY SCALE & CREDIBILITY ADJUSTMENT (APPLY BEFORE COUNTING YEARS):
+
+Before calculating experience penalties, you MUST adjust the candidate's years of experience based on company credibility signals.
+
+CREDIBILITY SCORING:
+
+**HIGH CREDIBILITY (count 1.0x years - full credit):**
+- Public company or well-known brand
+- Series B+ startup with known funding (>$20M raised, >50 employees)
+- Established company with active website and shipped product
+- Tenure >2 years (proven delivery cycle)
+- Clear product ownership with measurable outcomes
+
+**MEDIUM CREDIBILITY (count 0.7x years - partial credit):**
+- Series A startup (10-50 employees, $3M-$20M raised)
+- Active company but limited scale
+- Tenure 1-2 years (one product cycle)
+- Product shipped but small user base
+
+**LOW CREDIBILITY (count 0.3x years - minimal credit):**
+- Seed/pre-seed startup (<10 employees, <$3M raised)
+- No active website or company appears defunct/shut down
+- Title inflation signals: "Lead PM", "Head of Product" at <10 person company
+- Tenure <1 year (insufficient time to deliver meaningful product)
+- Vague outcomes, no specific metrics or shipped features
+- "Stealth mode" companies with no verifiable product
+
+**FREELANCE/CONSULTING SPECIAL RULES:**
+Freelance PM or consulting work should be evaluated based on substance:
+
+COUNTS AS MEDIUM CREDIBILITY (0.7x):
+- Named clients who are established companies (Series B+, known brands)
+- Specific shipped products/features with measurable outcomes
+- Multiple clients (2+) showing sustained consulting practice
+- Clear deliverables: "Led product launch for X, shipped Y feature for Z"
+- Technical depth demonstrated (not just strategy docs)
+
+COUNTS AS LOW CREDIBILITY (0.3x):
+- Single early-stage client
+- Consulting during unemployment gap with vague outcomes
+- Mostly advisory/strategy work with no shipped products
+- Cannot name clients or outcomes
+
+COUNTS AS ZERO CREDIBILITY (0x):
+- Generic "freelance PM" with no named clients or outcomes
+- Volunteer/side project work
+- Student projects or academic work
+- Consulting that never resulted in shipped product
+
+**ZERO CREDIBILITY (count 0 years - no credit):**
+- Operations/adjacent roles with "PM" title but no product ownership
+- Volunteer/side project work (unless part of legitimate consulting practice)
+- Student projects or academic work
+- Roles that never resulted in shipped product
+
+DETECTION SIGNALS FOR LOW/ZERO CREDIBILITY:
+- "No website" or "defunct" mentioned
+- Company has LinkedIn page with <10 employees
+- Candidate describes company in past tense ("was building", "attempted to")
+- No specific product outcomes mentioned
+- Generic descriptions like "built features" without specifics
+- Short tenure (<12 months) at early-stage startup
+- Title seems inflated for company stage ("VP Product" at 3-person startup)
+
+CREDIBILITY ADJUSTMENT EXAMPLES:
+
+Example 1 - Startup Founder PM:
+- Resume: "Lead PM at Divercity, 1 year"
+- Context: Seed-stage startup, no active website, <10 employees
+- Credibility: LOW (0.3x multiplier)
+- Adjusted experience: 1 year × 0.3 = 0.3 years
+- For JD requiring 3 years: (3-0.3)/3 = 90% gap → hard cap 45%
+
+Example 2 - Big Tech PM:
+- Resume: "PM at Google, 3 years"
+- Context: Public company, active products, measurable outcomes
+- Credibility: HIGH (1.0x multiplier)
+- Adjusted experience: 3 years × 1.0 = 3.0 years
+- For JD requiring 3 years: 100% match → can score 70%+
+
+Example 3 - Series A PM:
+- Resume: "PM at Acme (Series A), 18 months"
+- Context: $10M raised, 30 employees, active product
+- Credibility: MEDIUM (0.7x multiplier)
+- Adjusted experience: 1.5 years × 0.7 = 1.05 years
+- For JD requiring 3 years: (3-1.05)/3 = 65% gap → hard cap 55%
+
+Example 4 - Legitimate Freelance PM:
+- Resume: "Freelance Product Consultant, 12 months"
+- Context: 3 named clients (Series B SaaS companies), shipped 4 features with measurable outcomes
+- Credibility: MEDIUM (0.7x multiplier)
+- Adjusted experience: 1.0 years × 0.7 = 0.7 years
+- For JD requiring 3 years: (3-0.7)/3 = 77% gap → hard cap 55%
+
+Example 5 - Vague Consulting:
+- Resume: "Product Strategy Consultant, 6 months"
+- Context: No named clients, generic descriptions, unemployment gap filler
+- Credibility: LOW (0.3x multiplier)
+- Adjusted experience: 0.5 years × 0.3 = 0.15 years
+- For JD requiring 3 years: (3-0.15)/3 = 95% gap → hard cap 45%
+
+CRITICAL RULES FOR CREDIBILITY ADJUSTMENT:
+1. Apply credibility multiplier to EACH role separately
+2. Sum the adjusted years across all roles to get total credible experience
+3. Use the adjusted total when calculating experience penalties
+4. Note the credibility adjustment in experience_analysis section
+5. Be especially skeptical of inflated titles at tiny startups
+6. If company has no website or appears defunct, default to LOW credibility
+7. Short tenure (<1 year) at early-stage startup = automatically LOW credibility
 
 THEN apply standard penalties:
 
@@ -2915,6 +3026,16 @@ If any penalties were applied, add these warnings to the gaps array:
      "detailed_explanation": "⚠️ This role targets [Senior/Staff/Lead] level candidates. Your experience ([Y] years in [role type]) positions you at [Associate/Mid-level]. You're applying 2+ levels above your current experience, which creates a pattern-match rejection risk.",
      "impact": "Pattern-match rejection risk: HIGH - Even if skills align, recruiters may filter out candidates who don't match the expected seniority profile",
      "mitigation_strategy": "Target [appropriate level] roles, or build [X] more years of experience with progressively increasing scope before targeting [Senior/Staff/Lead] roles."
+   }
+
+4. COMPANY CREDIBILITY WARNING (if credibility_level = "low" for recent roles):
+   {
+     "gap_type": "company_credibility_concern",
+     "severity": "medium",
+     "gap_description": "Limited scale/credibility of recent PM experience",
+     "detailed_explanation": "⚠️ Your most recent PM role at [Company] is at an early-stage/defunct startup with limited scale (<10 employees, no active website). Recruiters may discount this experience. Your adjusted credible PM experience is [X] years (vs [Y] years stated on resume).",
+     "impact": "Experience discounting risk: MEDIUM-HIGH - Hiring managers may not consider early-stage startup PM work equivalent to PM work at established companies",
+     "mitigation_strategy": "Emphasize specific shipped features with measurable outcomes (user counts, revenue, engagement metrics). Highlight technical depth and cross-functional skills gained. Consider targeting roles requiring [adjusted years] of experience rather than [stated years], or gain 1-2 years at a more established company (Series B+, >50 employees) to build credibility."
    }
 
 === NOW: COMPLETE THE INTELLIGENCE LAYER ANALYSIS ===
@@ -3365,23 +3486,39 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "required_skills": ["MUST have array of required skills/experience"],
   "preferred_skills": ["array of nice-to-have skills"] or [],
   "ats_keywords": ["MUST have 10-15 important keywords for ATS"],
-  "fit_score": 85,
+  "fit_score": 42,
   "fit_score_breakdown": {
     "base_score": 75,
-    "years_experience_penalty": -15,
-    "specific_experience_penalty": -8,
+    "years_experience_penalty": -18,
+    "specific_experience_penalty": -15,
     "career_level_penalty": 0,
-    "final_score": 52,
-    "penalty_explanation": "Base score of 75% reduced due to 60% experience gap (5 years required, 2 years actual) and missing growth PM experience."
+    "short_tenure_penalty": 0,
+    "calculated_score": 42,
+    "hard_cap_applied": true,
+    "hard_cap_reason": "Candidate has 12.5% of required years (1/8), hard cap at 45%",
+    "final_score": 42,
+    "penalty_explanation": "Base score of 75% reduced due to 96% experience gap (8 years required, 0.3 years credible PM experience after adjusting for company scale). Divercity experience discounted to 0.3 years due to seed-stage startup with no active website and <1 year tenure. Missing consumer apps experience adds additional penalty. Hard cap of 45% applied."
   },
   "recommendation": "Conditional Apply|Do Not Apply|Apply|Strongly Apply",
   "recommendation_rationale": "1-2 sentences explaining why, referencing specific gaps or strengths",
   "alternative_actions": ["Action 1 if Conditional Apply or Do Not Apply", "Action 2"],
   "experience_analysis": {
-    "required_years": 5,
-    "candidate_years_in_role_type": 2,
-    "years_gap_percentage": 60,
-    "specific_experience_required": "growth PM",
+    "required_years": 8,
+    "candidate_years_in_role_type": 1,
+    "candidate_years_adjusted_for_credibility": 0.3,
+    "credibility_adjustments": [
+      {
+        "company": "Divercity",
+        "role": "Lead PM",
+        "stated_years": 1.0,
+        "credibility_level": "low",
+        "credibility_multiplier": 0.3,
+        "adjusted_years": 0.3,
+        "credibility_reasoning": "Seed-stage startup with no active website, <10 employees, short tenure, title inflation signal"
+      }
+    ],
+    "years_gap_percentage": 96.25,
+    "specific_experience_required": "consumer apps",
     "candidate_specific_experience_years": 0,
     "career_level_target": "Senior",
     "candidate_assessed_level": "Associate"
