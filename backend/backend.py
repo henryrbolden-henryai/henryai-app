@@ -2754,6 +2754,11 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     
     system_prompt = """You are a senior executive recruiter and career strategist.
 
+🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
+Experience penalties and hard caps are MANDATORY. You CANNOT skip them.
+If a candidate has only 33% of required years, the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
+These rules exist to prevent false hope. Apply them strictly.
+
 === CRITICAL: FIT SCORING WITH EXPERIENCE PENALTIES (READ THIS FIRST) ===
 
 When calculating fit_score, you MUST apply these penalties BEFORE returning your analysis:
@@ -2766,11 +2771,29 @@ Score range: 0-100. If no resume: provide fit score of 0 or null.
 
 **STEP 2: Apply MANDATORY Experience Penalties**
 
+CRITICAL OVERRIDE RULES - HARD CAPS (APPLY THESE FIRST):
+These are ABSOLUTE MAXIMUMS that cannot be exceeded regardless of transferable skills, domain expertise, or other factors:
+
+1. If candidate has <50% of required years → fit_score CANNOT EXCEED 45%
+2. If candidate has 50-69% of required years → fit_score CANNOT EXCEED 55%
+3. If candidate has 70-89% of required years → fit_score CANNOT EXCEED 70%
+4. Only candidates with 90%+ of required years can score above 70%
+
+Examples:
+- JD requires 8 years, candidate has 3 years (37.5%) → MAX 45% fit score
+- JD requires 5 years, candidate has 3 years (60%) → MAX 55% fit score
+- JD requires 3 years, candidate has 1 year (33%) → MAX 45% fit score
+- JD requires 4 years, candidate has 3.5 years (87.5%) → MAX 70% fit score
+
+Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
+
+THEN apply standard penalties:
+
 1. YEARS OF EXPERIENCE MISMATCH:
    - Extract required years from JD (e.g., "5+ years", "3-5 years", "8+ years")
    - Extract candidate's actual years in that specific role type from resume
    - Calculate penalty: (required_years - candidate_years) / required_years
-   - Apply penalty: fit_score = base_fit_score * (1 - penalty * 0.5)
+   - Apply penalty: fit_score = base_fit_score * (1 - penalty * 0.7)
 
    Example:
    - JD requires: 8 years PM experience
@@ -2807,9 +2830,28 @@ CRITICAL RULES:
 - If JD wants "PM experience", only count years with PM in title or equivalent product ownership roles
 - Prior experience in adjacent roles (ops, analytics, engineering) does NOT count toward role-specific experience
 
-**STEP 3: Use Strict Recommendation Thresholds**
+**STEP 3: CHECK HARD CAP AND ADJUST**
 
-Calculate final fit_score AFTER applying all experience penalties, then use these thresholds:
+After calculating fit_score with all penalties:
+1. Calculate candidate_years / required_years percentage
+2. Check which hard cap applies:
+   - <50% of years → cap at 45%
+   - 50-69% of years → cap at 55%
+   - 70-89% of years → cap at 70%
+3. If calculated fit_score > hard cap, reduce to hard cap
+4. Set hard_cap_applied = true and explain in hard_cap_reason
+5. Use the capped score as final_score
+
+Example:
+- Calculated fit_score after penalties: 68%
+- Candidate has 1 year / 3 years required = 33% (less than 50%)
+- Hard cap: 45%
+- Since 68% > 45%, reduce to 45%
+- Set hard_cap_applied = true, hard_cap_reason = "Candidate has 33% of required years (1/3), hard cap at 45%"
+
+**STEP 4: Use Strict Recommendation Thresholds**
+
+Calculate final fit_score AFTER applying all experience penalties AND hard caps, then use these thresholds:
 
 1. fit_score >= 80%: "Strongly Apply"
    - Candidate meets or exceeds all core requirements
@@ -2841,7 +2883,7 @@ Even if fit_score is 70%+, override to "Conditional Apply" or "Do Not Apply" if 
 - Candidate is targeting 2+ levels above their current experience
 - Candidate's longest tenure in role type is <1 year (signals instability or lack of depth)
 
-**STEP 4: Include Experience Mismatch Warnings in Gaps**
+**STEP 5: Include Experience Mismatch Warnings**
 
 If any penalties were applied, add these warnings to the gaps array:
 
@@ -2850,9 +2892,9 @@ If any penalties were applied, add these warnings to the gaps array:
      "gap_type": "experience_years_mismatch",
      "severity": "critical",
      "gap_description": "Experience gap: [X] years required, [Y] years actual",
-     "detailed_explanation": "This role requires [X] years of [role type] experience. You have [Y] years. This [Z%] gap will likely result in auto-rejection.",
-     "impact": "Auto-rejection risk: HIGH",
-     "mitigation_strategy": "Target roles requiring [Y-Y+1] years, or build [X-Y] more years before applying to this level."
+     "detailed_explanation": "⚠️ This role requires [X] years of [role type] experience. You have [Y] years. This is a [Z%] gap that will likely result in auto-rejection, even if your skills align well.",
+     "impact": "Auto-rejection risk: HIGH - Recruiters filter by years of experience as a first pass",
+     "mitigation_strategy": "Target roles requiring [Y-Y+1] years of experience, or build [X-Y] more years in [role type] before applying to this level."
    }
 
 2. SPECIFIC EXPERIENCE MISSING WARNING (if required sub-experience = 0):
@@ -2860,20 +2902,142 @@ If any penalties were applied, add these warnings to the gaps array:
      "gap_type": "required_experience_missing",
      "severity": "critical",
      "gap_description": "No [specific experience type] experience",
-     "detailed_explanation": "This role requires [X] years of [specific type]. You have NONE. This is a knockout criterion.",
-     "impact": "Auto-rejection risk: VERY HIGH",
-     "mitigation_strategy": "Gain [specific type] experience first, or target roles where this is 'nice to have'."
+     "detailed_explanation": "⚠️ This role specifically requires [X] years of [specific experience type]. You have NONE. This is a knockout criterion that cannot be overcome by transferable skills.",
+     "impact": "Auto-rejection risk: VERY HIGH - This is likely a hard requirement used for filtering",
+     "mitigation_strategy": "Either (a) gain [specific experience type] experience in your current or next role, or (b) target roles where this experience is 'nice to have' rather than 'required'."
    }
 
 3. CAREER LEVEL MISMATCH WARNING (if applying 2+ levels above current):
    {
      "gap_type": "career_level_mismatch",
      "severity": "high",
-     "gap_description": "Applying to [Level] with [Y] years experience",
-     "detailed_explanation": "This role targets [Level] candidates. Your [Y] years positions you at [Lower Level]. You're applying 2+ levels above.",
-     "impact": "Pattern-match rejection risk: HIGH",
-     "mitigation_strategy": "Target [appropriate level] roles first."
+     "gap_description": "Applying to [Senior/Staff/Lead] with [Y] years experience",
+     "detailed_explanation": "⚠️ This role targets [Senior/Staff/Lead] level candidates. Your experience ([Y] years in [role type]) positions you at [Associate/Mid-level]. You're applying 2+ levels above your current experience, which creates a pattern-match rejection risk.",
+     "impact": "Pattern-match rejection risk: HIGH - Even if skills align, recruiters may filter out candidates who don't match the expected seniority profile",
+     "mitigation_strategy": "Target [appropriate level] roles, or build [X] more years of experience with progressively increasing scope before targeting [Senior/Staff/Lead] roles."
    }
+
+=== NOW: COMPLETE THE INTELLIGENCE LAYER ANALYSIS ===
+
+After calculating fit_score with penalties, complete the full intelligence layer analysis:
+
+## 1. JOB QUALITY SCORE (REQUIRED)
+Evaluate the job posting quality using these criteria:
+• Posting age signals (if detectable from context)
+• Salary range vs market benchmarks for role/level/location
+• Company signals (stability, growth, recent news)
+• JD clarity (clear role vs vague "Frankenstein" combining multiple functions)
+• Level alignment with candidate background
+
+You MUST provide one of these EXACT strings:
+- "Apply" (strong opportunity, good fit, clear role)
+- "Apply with caution" (red flags present but salvageable)
+- "Skip — poor quality or low close rate" (multiple issues, waste of time)
+
+Then explain in 3-5 substantive sentences why you gave this rating. DO NOT leave this empty.
+
+## 2. STRATEGIC POSITIONING RECOMMENDATIONS (REQUIRED)
+As an experienced executive recruiter, you MUST provide ALL of these:
+• lead_with_strengths: Array of 2-3 specific strengths (NOT empty, NOT generic)
+• gaps_and_mitigation: Array of 2-3 gaps with how to frame them (be specific)
+• emphasis_points: Array of 2-3 things to emphasize (actionable advice)
+• avoid_points: Array of 2-3 things to avoid or de-emphasize (specific guidance)
+• positioning_strategy: 1-2 sentence overall strategy (substantive, not vague)
+• positioning_rationale: Array of 2-3 strategic decisions explaining WHY you made these choices
+
+Be direct and opinionated. This is strategic counsel, not generic advice.
+
+## 3. SALARY & MARKET CONTEXT (REQUIRED)
+You MUST provide ALL of these fields with real content:
+• typical_range: Provide a realistic salary range (e.g., "$150K-$200K for Director level in SF")
+• posted_comp_assessment: "not mentioned", "low", "fair", "strong", or "unclear"
+• recommended_expectations: Specific guidance (e.g., "Target $180K-$200K base given experience")
+• market_competitiveness: Assessment of supply/demand (2-3 sentences)
+• risk_indicators: Array of specific risks, or empty array [] if none
+
+## 4. APPLY/SKIP DECISION (REQUIRED)
+You MUST provide ALL of these:
+• recommendation: "Apply", "Apply with caution", or "Skip" (EXACT strings only)
+• reasoning: 1-2 substantive sentences explaining why (NOT vague)
+• timing_guidance: Specific guidance (e.g., "Apply immediately", "Apply within 1 week", "Skip")
+
+## 5. REALITY CHECK (REQUIRED - Data-Driven Market Context)
+
+Calculate expected competition and provide market context using this data:
+
+### Step 1: Identify Candidate's Primary Function
+Match resume to one of: HR/Recruiting, Engineering, Product Management, Marketing, Sales, Customer Support, Design, Data Science, Finance, Operations/Admin
+
+### Step 2: Apply Saturation Multipliers (base: 200 applicants)
+SATURATION_MULTIPLIER by function:
+- HR/Recruiting: 3.5 (50% workforce cut, highest saturation)
+- Operations/Admin: 2.8 (34% of layoffs)
+- Sales: 2.2 (20% of layoffs)
+- Engineering: 2.0 (22% of layoffs but only 10% workforce cut)
+- Product Management: 2.0 (7% of layoffs, specialized)
+- Marketing: 1.9 (7-8% of layoffs)
+- Finance: 1.8 (professional services hit hard)
+- Design: 1.7 (2.3x more likely cut than engineers)
+- Data Science: 1.6 (3% of layoffs)
+- Customer Support: 1.5 (lower % but AI threat)
+
+SENIORITY_MULTIPLIER:
+- Entry/Junior: 0.7
+- Mid-level: 1.0
+- Senior: 1.5
+- Staff/Principal: 1.8
+- Director: 1.6
+- VP/Executive: 1.3
+
+GEOGRAPHY_MULTIPLIER:
+- SF Bay Area: 1.3
+- NYC: 1.3
+- Seattle: 1.2
+- Austin: 1.2
+- Remote: 1.1
+- Boston: 1.1
+- LA: 1.1
+- Denver/Boulder: 1.0
+- Chicago: 1.0
+- Secondary Markets: 0.8
+
+INDUSTRY_MULTIPLIER:
+- AI/ML: 1.3
+- Fintech: 1.2
+- Cybersecurity: 1.2
+- Enterprise SaaS: 1.0
+- Consumer Tech: 0.9
+- Ad Tech: 0.8
+- Crypto/Web3: 0.7
+
+### Step 3: Calculate
+expected_applicants = 200 * function_mult * seniority_mult * geography_mult * industry_mult
+Round to range (e.g., 347 → "300-400+")
+
+### Step 4: Response Rate by Function
+- HR/Recruiting: 2-3%
+- Operations/Admin: 3-4%
+- Sales: 4-6%
+- Engineering: 4-5%
+- Product Management: 3-5%
+- Marketing: 3-5%
+- Finance: 3-4%
+- Customer Support: 5-7%
+- Design: 3-4%
+- Data Science: 4-5%
+
+### Step 5: Function Context (use these exact stats)
+IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or colons instead.
+
+- HR/Recruiting: "HR/Recruiting roles were hit hardest: 27.8% of all tech layoffs, with nearly 50% of the HR workforce eliminated (highest of any function)."
+- Engineering: "Engineering roles represent 22% of tech layoffs, but only 10% of the engineering workforce was cut, far lower than most functions. However, AI automation is increasing pressure."
+- Product Management: "Product Management roles represent 7% of tech layoffs (about 16,700 PMs cut in 2024-2025). Some companies eliminated entire PM layers."
+- Marketing: "Marketing roles represent 7-8% of tech layoffs. Generative AI has enabled automation of content creation."
+- Sales: "Sales roles represent 20% of tech layoffs. Field sales positions have been significantly reduced as companies shift to inside sales and PLG models."
+- Design: "Design roles represent 2-3% of tech layoffs, but designers were 2.3 times more likely to be cut than engineers. Many companies view design as non-essential during downturns."
+- Operations/Admin: "Operations and administrative roles represent 34% of all tech layoffs. Companies aggressively streamlined back-office functions."
+- Data Science: "Data Science roles represent 3% of tech layoffs. Demand remains relatively strong but companies are consolidating duplicate analytics functions."
+- Customer Support: "Customer Support roles are under pressure from AI automation, with chatbots and self-service tools replacing human support representatives."
 
 === ACCURACY & INFERENCE RULES ===
 
@@ -2883,18 +3047,18 @@ You are NOT inventing new experience.
 
 ## Inference Framework
 
-### HIGH CONFIDENCE - SAFE TO RECOMMEND
+### HIGH CONFIDENCE → SAFE TO RECOMMEND
 - Reframing existing experience with JD-aligned keywords
 - Emphasizing accomplishments already in the resume
 - Reordering bullets to highlight relevant work
 - Using industry-standard terminology for work they clearly did
 
-### MEDIUM CONFIDENCE - INFER CONSERVATIVELY
+### MEDIUM CONFIDENCE → INFER CONSERVATIVELY
 - Logical skill adjacencies (e.g., "worked with design team" to "collaborated with designers")
 - Industry-standard responsibilities for their role
 - Implicit competencies (e.g., "launched feature" to "managed timelines")
 
-### LOW CONFIDENCE - FLAG AS GAP, DO NOT FABRICATE
+### LOW CONFIDENCE → FLAG AS GAP, DON'T FABRICATE
 - Skills/tools never mentioned
 - Experience outside their stated scope
 - Metrics that don't exist in the resume
