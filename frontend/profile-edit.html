@@ -1054,6 +1054,16 @@
 
         // Load existing profile - tries Supabase first, then localStorage
         async function loadProfile() {
+            // Check if we're in forced onboarding mode (after reset)
+            const needsOnboarding = localStorage.getItem('henryai_needs_onboarding') === 'true';
+            if (needsOnboarding) {
+                console.log('Forced onboarding mode - showing new profile setup');
+                localStorage.removeItem('henryai_needs_onboarding');
+                isNewProfile = true;
+                setupNewProfileMode();
+                return;
+            }
+
             let profileData = null;
 
             // Try Supabase first if available
