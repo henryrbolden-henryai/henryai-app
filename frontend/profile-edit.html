@@ -1322,31 +1322,25 @@
             fileNameEl.classList.add('show');
             fileUpload.classList.add('has-file');
 
-            parsingStatus.textContent = 'Parsing resume...';
+            parsingStatus.textContent = `Uploading ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`;
             parsingStatus.className = 'parsing-status show';
 
             try {
-                console.log('Starting resume upload:', file.name, file.type, file.size);
-
                 const formData = new FormData();
                 formData.append('file', file);
 
-                console.log('Sending to:', `${API_BASE}/api/resume/parse`);
                 const response = await fetch(`${API_BASE}/api/resume/parse`, {
                     method: 'POST',
                     body: formData
                 });
 
-                console.log('Response status:', response.status);
-
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('API Error:', errorText);
-                    throw new Error(`Failed to parse resume: ${response.status}`);
+                    throw new Error(`Server ${response.status}: ${errorText.substring(0, 100)}`);
                 }
 
+                parsingStatus.textContent = 'Processing...';
                 const parsedResume = await response.json();
-                console.log('Parsed resume:', parsedResume);
 
                 // Initialize profile if new
                 if (!profile) {
@@ -1384,15 +1378,17 @@
 
             } catch (error) {
                 console.error('Parse error:', error);
-                let errorMsg = '✗ Failed to parse resume. ';
-                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                    errorMsg += 'Network error - please check your connection.';
-                } else if (error.message.includes('500')) {
-                    errorMsg += 'Server error - please try again.';
-                } else if (error.message.includes('413')) {
+                let errorMsg = '✗ ';
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Load failed')) {
+                    errorMsg += 'Network error - check your connection and try again.';
+                } else if (error.message.includes('Server 500')) {
+                    errorMsg += 'Server error - please try again in a moment.';
+                } else if (error.message.includes('Server 413')) {
                     errorMsg += 'File too large - please use a smaller file.';
+                } else if (error.message.includes('Server')) {
+                    errorMsg += error.message;
                 } else {
-                    errorMsg += 'Try another format (PDF, DOCX)?';
+                    errorMsg += `Error: ${error.message}. Try PDF or DOCX format.`;
                 }
                 parsingStatus.textContent = errorMsg;
                 parsingStatus.className = 'parsing-status show error';
