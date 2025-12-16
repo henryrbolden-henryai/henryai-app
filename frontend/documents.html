@@ -1376,32 +1376,460 @@ COVER LETTER
 
             const role = analysisData?._role || analysisData?.role_title || '';
             const company = analysisData?._company_name || analysisData?.company_name || '';
-            const level = analysisData?._level || resumeOutput?.detected_level || '';
+            const level = analysisData?._level || resumeOutput?.detected_level || 'Senior';
 
-            // Generate headline that doesn't pigeonhole - focuses on transferable expertise
-            // Use the candidate's actual expertise, not just the target role
-            const currentExpertise = extractExpertise(linkedinParsed, resumeOutput);
-            const headline = generateFlexibleHeadline(currentExpertise, level, analysisData);
+            // Get current LinkedIn content for comparison
+            const currentHeadline = linkedinParsed.headline || '';
+            const currentSummary = linkedinParsed.summary || linkedinParsed.about || '';
 
-            // Generate summary that tells the career story without narrowing focus
-            const summary = generateFlexibleSummary(linkedinParsed, resumeOutput, analysisData);
+            // Generate comprehensive headline with keywords and metrics
+            const headline = generateComprehensiveHeadline(linkedinParsed, resumeOutput, analysisData, level);
 
-            // Get top skills - prioritize transferable skills over role-specific ones
-            const topSkills = getTransferableSkills(resumeOutput, analysisData);
+            // Generate headline explanation
+            const headlineWhy = generateHeadlineWhy(headline, analysisData);
 
-            // Get experience highlights that show breadth
-            const experienceHighlights = getQuantifiedHighlights(resumeOutput, linkedinParsed);
+            // Generate comprehensive summary/about section
+            const summary = generateComprehensiveSummary(linkedinParsed, resumeOutput, analysisData);
+
+            // Generate summary explanation
+            const summaryWhy = generateSummaryWhy(summary, analysisData);
+
+            // Get skills with add/remove recommendations
+            const skillsData = getSkillsRecommendations(linkedinParsed, resumeOutput, analysisData);
+
+            // Get experience optimizations with full structure
+            const experienceOptimizations = getExperienceOptimizations(linkedinParsed, resumeOutput, analysisData);
+
+            // Determine severity based on how much needs updating
+            const severity = determineSeverity(currentHeadline, headline, currentSummary, summary, linkedinParsed);
 
             return {
-                headline,
-                summary,
-                top_skills: topSkills,
-                experience_highlights: experienceHighlights,
-                has_issues: scoringResults?.painPoints?.length > 0,
+                // Severity banner
+                severity: severity,
+                summary_message: getSeverityMessage(severity, role, company),
+                benefits: getSeverityBenefits(severity),
+
+                // Headline section (Critical)
+                current_headline: currentHeadline,
+                headline: headline,
+                headline_why: headlineWhy,
+                headline_update_reason: currentHeadline ? 'Your current headline may not be optimized for recruiter searches' : 'A strong headline is critical for appearing in LinkedIn searches',
+
+                // About section (Critical)
+                current_summary: currentSummary,
+                summary: summary,
+                summary_why: summaryWhy,
+                summary_update_reason: 'First 3 lines show before "see more" - make them count',
+
+                // Experience section (High)
+                experience_optimizations: experienceOptimizations,
+
+                // Skills section (High)
+                top_skills: skillsData.topSkills,
+                skills_to_add: skillsData.skillsToAdd,
+                skills_to_remove: skillsData.skillsToRemove,
+                skills_why: skillsData.skillsWhy,
+
+                // Optional sections
+                featured_recommendation: getFeaturedRecommendation(resumeOutput, analysisData),
+                featured_suggestions: getFeaturedSuggestions(resumeOutput, analysisData),
+                recommendations_advice: 'Request recommendations from people who can speak to specific achievements. Quality over quantity.',
+                who_to_ask: getWhoToAsk(resumeOutput, analysisData),
+                activity_recommendation: `Engage with ${company || 'industry'} content this week. Like or comment on 2-3 relevant posts to show you're active.`,
+
+                // Metadata
+                has_issues: severity === 'CRITICAL' || severity === 'HIGH',
                 pain_points: scoringResults?.painPoints || [],
                 recommendations: scoringResults?.recommendations || {},
                 generated_at: new Date().toISOString()
             };
+        }
+
+        // Generate comprehensive headline with role, expertise, and differentiators
+        function generateComprehensiveHeadline(linkedinParsed, resumeOutput, analysisData, level) {
+            const role = analysisData?._role || analysisData?.role_title || '';
+            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
+            const competencies = resumeOutput.core_competencies || analysisData?.required_skills || [];
+
+            // Extract years of experience
+            const years = extractYearsExperience(linkedinParsed, resumeOutput);
+
+            // Get key metrics from experience
+            const metrics = extractKeyMetrics(resumeOutput);
+
+            // Build headline parts
+            const parts = [];
+
+            // Start with level + functional area
+            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput);
+            if (level && functionalArea) {
+                parts.push(`${level} ${functionalArea}`);
+            } else if (role) {
+                parts.push(role);
+            }
+
+            // Add key differentiators (max 2-3)
+            const differentiators = [];
+            if (metrics.hires) differentiators.push(`${metrics.hires}+ hires`);
+            if (metrics.teamSize) differentiators.push(`Built teams of ${metrics.teamSize}+`);
+            if (metrics.revenue) differentiators.push(metrics.revenue);
+            if (years) differentiators.push(`${years}+ years`);
+
+            // Add top 2-3 keywords that match the role
+            const relevantKeywords = atsKeywords
+                .filter(kw => kw.length > 3 && !kw.toLowerCase().includes('etc'))
+                .slice(0, 3);
+
+            // Combine into headline (max 220 chars)
+            let headline = parts[0] || 'Professional';
+
+            if (differentiators.length > 0) {
+                headline += ` | ${differentiators.slice(0, 2).join(' | ')}`;
+            }
+
+            if (relevantKeywords.length > 0 && headline.length < 150) {
+                headline += ` | ${relevantKeywords.slice(0, 2).join(', ')}`;
+            }
+
+            // Ensure we don't exceed 220 characters
+            if (headline.length > 220) {
+                headline = headline.substring(0, 217) + '...';
+            }
+
+            return headline;
+        }
+
+        // Generate explanation for why the headline works
+        function generateHeadlineWhy(headline, analysisData) {
+            const reasons = [];
+
+            if (headline.includes('|')) {
+                reasons.push('Uses pipe separators for scannability in search results');
+            }
+            if (/\d+/.test(headline)) {
+                reasons.push('Includes quantified achievements that build credibility');
+            }
+            if (headline.length >= 100) {
+                reasons.push('Uses available character space effectively (220 max)');
+            }
+
+            const role = analysisData?._role || '';
+            if (role && headline.toLowerCase().includes(role.toLowerCase().split(' ')[0])) {
+                reasons.push('Contains keywords recruiters search for');
+            }
+
+            if (reasons.length === 0) {
+                reasons.push('Clearly communicates your professional identity');
+                reasons.push('Optimized for recruiter search visibility');
+            }
+
+            return reasons;
+        }
+
+        // Generate comprehensive About/Summary section
+        function generateComprehensiveSummary(linkedinParsed, resumeOutput, analysisData) {
+            const role = analysisData?._role || analysisData?.role_title || '';
+            const company = analysisData?._company_name || '';
+            const years = extractYearsExperience(linkedinParsed, resumeOutput);
+            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput);
+            const metrics = extractKeyMetrics(resumeOutput);
+            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
+
+            // Build a compelling 3-paragraph summary
+            let summary = '';
+
+            // Paragraph 1: Hook + Identity (first 3 lines visible before "see more")
+            const hookLine = `${functionalArea || role} with ${years ? years + '+ years' : 'extensive experience'} driving results through strategic talent initiatives.`;
+
+            // Add key achievement for hook
+            const topAchievement = getTopAchievement(resumeOutput);
+            if (topAchievement) {
+                summary = `${hookLine}\n\n${topAchievement}`;
+            } else {
+                summary = hookLine;
+            }
+
+            // Paragraph 2: What you do + how you create value
+            const valueProps = [];
+            if (metrics.hires) valueProps.push(`Built and scaled teams with ${metrics.hires}+ strategic hires`);
+            if (metrics.reduction) valueProps.push(`Reduced time-to-fill by ${metrics.reduction}`);
+            if (metrics.pipeline) valueProps.push(`Developed talent pipelines that drive organizational growth`);
+
+            if (valueProps.length > 0) {
+                summary += `\n\nWhat I bring to the table:\n• ${valueProps.join('\n• ')}`;
+            }
+
+            // Paragraph 3: Expertise areas (with ATS keywords)
+            if (atsKeywords.length > 0) {
+                const expertiseList = atsKeywords.slice(0, 8).join(' • ');
+                summary += `\n\nCore expertise: ${expertiseList}`;
+            }
+
+            // Add call to action
+            summary += `\n\nLet's connect if you're looking for someone who can ${role ? `excel as a ${role}` : 'drive talent strategy'} and deliver measurable impact.`;
+
+            return summary;
+        }
+
+        // Generate explanation for why the summary works
+        function generateSummaryWhy(summary, analysisData) {
+            const reasons = [];
+
+            if (summary.includes('\n\n')) {
+                reasons.push('Uses white space for easy scanning');
+            }
+            if (/\d+/.test(summary)) {
+                reasons.push('Includes quantified achievements that prove your value');
+            }
+            if (summary.toLowerCase().includes('connect') || summary.toLowerCase().includes('reach out')) {
+                reasons.push('Ends with a clear call to action');
+            }
+            if (summary.includes('•') || summary.includes('-')) {
+                reasons.push('Uses bullet points for key information');
+            }
+
+            // Check for keyword density
+            const atsKeywords = analysisData?.ats_keywords || [];
+            const keywordsFound = atsKeywords.filter(kw =>
+                summary.toLowerCase().includes(kw.toLowerCase())
+            ).length;
+
+            if (keywordsFound >= 3) {
+                reasons.push('Naturally incorporates searchable keywords');
+            }
+
+            if (reasons.length === 0) {
+                reasons.push('First 3 lines hook the reader before "see more"');
+                reasons.push('Tells your professional story with impact');
+            }
+
+            return reasons;
+        }
+
+        // Extract key metrics from resume output
+        function extractKeyMetrics(resumeOutput) {
+            const metrics = {};
+            const allBullets = [];
+
+            // Gather all bullets from experience sections
+            (resumeOutput.experience_sections || []).forEach(exp => {
+                if (exp.bullets) allBullets.push(...exp.bullets);
+            });
+
+            for (const bullet of allBullets) {
+                // Look for hire/placement numbers
+                const hireMatch = bullet.match(/(\d+)\+?\s*(hires|placements|candidates|positions)/i);
+                if (hireMatch && !metrics.hires) {
+                    metrics.hires = hireMatch[1];
+                }
+
+                // Look for team size
+                const teamMatch = bullet.match(/team\s*of\s*(\d+)|(\d+)\s*(person|member|people)\s*team/i);
+                if (teamMatch && !metrics.teamSize) {
+                    metrics.teamSize = teamMatch[1] || teamMatch[2];
+                }
+
+                // Look for revenue/savings
+                const revenueMatch = bullet.match(/\$[\d.]+[MKB]|\d+%\s*(increase|growth|reduction|savings)/i);
+                if (revenueMatch && !metrics.revenue) {
+                    metrics.revenue = revenueMatch[0];
+                }
+
+                // Look for reduction percentages
+                const reductionMatch = bullet.match(/(\d+%)\s*(reduction|decrease|faster|improvement)/i);
+                if (reductionMatch && !metrics.reduction) {
+                    metrics.reduction = reductionMatch[1];
+                }
+
+                // Look for pipeline numbers
+                if (/pipeline|talent pool|candidate pool/i.test(bullet)) {
+                    metrics.pipeline = true;
+                }
+            }
+
+            return metrics;
+        }
+
+        // Get top achievement from resume
+        function getTopAchievement(resumeOutput) {
+            const bullets = resumeOutput.experience_sections?.[0]?.bullets || [];
+
+            // Find bullet with best metrics
+            for (const bullet of bullets) {
+                if (/\$[\d.]+[MKB]|\d+%|\d+\s*(hires|placements|team)/i.test(bullet)) {
+                    return bullet;
+                }
+            }
+
+            return bullets[0] || null;
+        }
+
+        // Get skills recommendations with add/remove
+        function getSkillsRecommendations(linkedinParsed, resumeOutput, analysisData) {
+            const currentSkills = linkedinParsed.skills || [];
+            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
+            const requiredSkills = analysisData?.required_skills || [];
+
+            // Combine required skills and ATS keywords
+            const targetSkills = [...new Set([...requiredSkills, ...atsKeywords])];
+
+            // Top skills to pin (most relevant to role)
+            const topSkills = targetSkills
+                .filter(s => s.length > 2)
+                .slice(0, 5);
+
+            // Skills to add (in target but not in current)
+            const currentSkillsLower = currentSkills.map(s => s.toLowerCase());
+            const skillsToAdd = targetSkills
+                .filter(s => !currentSkillsLower.includes(s.toLowerCase()))
+                .slice(0, 5);
+
+            // Skills to potentially remove (outdated or irrelevant)
+            const outdatedPatterns = ['microsoft office', 'ms word', 'ms excel', 'typing', 'data entry'];
+            const skillsToRemove = currentSkills
+                .filter(s => outdatedPatterns.some(p => s.toLowerCase().includes(p)))
+                .slice(0, 3);
+
+            return {
+                topSkills,
+                skillsToAdd,
+                skillsToRemove,
+                skillsWhy: [
+                    'Top 3 skills appear in recruiter search previews',
+                    'Adding role-relevant skills improves search ranking',
+                    'Recruiters use Boolean searches with exact skill names'
+                ]
+            };
+        }
+
+        // Get experience optimizations with full structure
+        function getExperienceOptimizations(linkedinParsed, resumeOutput, analysisData) {
+            const experienceSections = resumeOutput.experience_sections || [];
+
+            if (experienceSections.length === 0) {
+                return [];
+            }
+
+            // Take top 2-3 most relevant experiences
+            return experienceSections.slice(0, 3).map(exp => {
+                // Filter to best bullets (with metrics)
+                const optimizedBullets = (exp.bullets || [])
+                    .filter(b => /\d+%|\$[\d.]+|\d+\s*(hires|team|people|candidates)/i.test(b) || b.length > 30)
+                    .slice(0, 4);
+
+                // If no metric bullets, take first 3
+                const finalBullets = optimizedBullets.length > 0 ? optimizedBullets : (exp.bullets || []).slice(0, 3);
+
+                return {
+                    title: exp.title || 'Position',
+                    company: exp.company || 'Company',
+                    dates: exp.dates || '',
+                    company_context: exp.overview || '',
+                    bullets: finalBullets,
+                    why_these_work: [
+                        'Lead with impact and results',
+                        'Include specific numbers and metrics',
+                        'Match language from job descriptions'
+                    ]
+                };
+            });
+        }
+
+        // Determine severity level
+        function determineSeverity(currentHeadline, newHeadline, currentSummary, newSummary, linkedinParsed) {
+            let score = 0;
+
+            // No headline or very short = critical
+            if (!currentHeadline || currentHeadline.length < 20) score += 3;
+            else if (currentHeadline.length < 50) score += 1;
+
+            // No summary = critical
+            if (!currentSummary || currentSummary.length < 50) score += 3;
+            else if (currentSummary.length < 200) score += 1;
+
+            // No experience entries
+            if (!linkedinParsed.experience || linkedinParsed.experience.length === 0) score += 2;
+
+            // No skills
+            if (!linkedinParsed.skills || linkedinParsed.skills.length < 5) score += 1;
+
+            if (score >= 5) return 'CRITICAL';
+            if (score >= 3) return 'HIGH';
+            if (score >= 1) return 'MEDIUM';
+            return 'LOW';
+        }
+
+        // Get severity message
+        function getSeverityMessage(severity, role, company) {
+            const target = role ? `for ${role} roles` : 'for your target roles';
+
+            switch (severity) {
+                case 'CRITICAL':
+                    return `Your LinkedIn profile needs significant updates to be competitive ${target}. These changes could dramatically improve your visibility to recruiters.`;
+                case 'HIGH':
+                    return `Several key sections need optimization ${target}. Making these updates will help you appear in more recruiter searches.`;
+                case 'MEDIUM':
+                    return `Your profile is decent but could be stronger ${target}. These refinements will help you stand out.`;
+                case 'LOW':
+                    return `Your profile is in good shape! These minor tweaks will help maximize your visibility ${target}.`;
+                default:
+                    return `Update your LinkedIn to align with ${target}.`;
+            }
+        }
+
+        // Get severity benefits
+        function getSeverityBenefits(severity) {
+            return [
+                'Appear in more recruiter searches',
+                'Make a stronger first impression',
+                'Stand out from other candidates',
+                'Align your profile with your tailored resume'
+            ];
+        }
+
+        // Get featured section recommendation
+        function getFeaturedRecommendation(resumeOutput, analysisData) {
+            const role = analysisData?._role || '';
+
+            if (/recruit|talent/i.test(role)) {
+                return 'Showcase hiring metrics, case studies of successful placements, or testimonials from hiring managers you\'ve partnered with.';
+            }
+            if (/engineer|developer/i.test(role)) {
+                return 'Feature your best projects, open source contributions, technical blog posts, or conference talks.';
+            }
+            if (/marketing|sales/i.test(role)) {
+                return 'Highlight campaign results, case studies, press coverage, or thought leadership content.';
+            }
+
+            return 'Add proof of work: case studies, presentations, press mentions, or portfolio pieces that demonstrate your expertise.';
+        }
+
+        // Get featured suggestions
+        function getFeaturedSuggestions(resumeOutput, analysisData) {
+            return [
+                'Add a link to a relevant project or case study',
+                'Share a presentation or document showcasing your work',
+                'Include any press mentions or awards'
+            ];
+        }
+
+        // Get who to ask for recommendations
+        function getWhoToAsk(resumeOutput, analysisData) {
+            const role = analysisData?._role || '';
+
+            if (/recruit|talent/i.test(role)) {
+                return [
+                    { person_type: 'Hiring Manager', what_to_emphasize: 'your strategic partnership and quality of hires' },
+                    { person_type: 'Candidate you placed', what_to_emphasize: 'your professionalism and career guidance' },
+                    { person_type: 'Team member', what_to_emphasize: 'your leadership and mentorship' }
+                ];
+            }
+
+            return [
+                { person_type: 'Direct manager', what_to_emphasize: 'specific achievements and leadership' },
+                { person_type: 'Cross-functional partner', what_to_emphasize: 'collaboration and impact' },
+                { person_type: 'Client or stakeholder', what_to_emphasize: 'results delivered' }
+            ];
         }
 
         // Extract expertise from profile without narrowing to one niche
