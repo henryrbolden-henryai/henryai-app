@@ -1060,13 +1060,13 @@ class DataQualityValidator:
                         message=f"Required field '{field}' is missing or empty"
                     ))
 
-        # Check contact info specifically
+        # Check contact info specifically - warn but don't block
         contact = resume_data.get("contact", {})
         if isinstance(contact, dict):
             if not contact.get("email") and not contact.get("phone"):
-                issues.append(ValidationIssue(
-                    category=ValidationCategory.MISSING_REQUIRED_FIELD,
-                    severity=ValidationSeverity.HIGH,
+                warnings.append(ValidationIssue(
+                    category=ValidationCategory.INCOMPLETE_DATA,
+                    severity=ValidationSeverity.MEDIUM,
                     field_path="contact",
                     message="No email or phone number found in resume"
                 ))
