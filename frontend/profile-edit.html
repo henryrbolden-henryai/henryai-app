@@ -1337,18 +1337,29 @@
                 if (!response.ok) throw new Error('Failed to parse resume');
 
                 const parsedResume = await response.json();
-                
+
                 // Initialize profile if new
                 if (!profile) {
                     profile = {};
                 }
                 profile.resume = parsedResume;
-                
+
+                // Save resume to localStorage immediately so it persists if page reloads
+                // (e.g., after LinkedIn upload triggers a refresh)
+                try {
+                    const existingProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                    existingProfile.resume = parsedResume;
+                    localStorage.setItem('userProfile', JSON.stringify(existingProfile));
+                    console.log('Resume saved to localStorage');
+                } catch (e) {
+                    console.error('Error saving resume to localStorage:', e);
+                }
+
                 const name = parsedResume.contact?.full_name || parsedResume.full_name || 'Unknown';
                 const firstName = name.split(' ')[0];
                 parsingStatus.textContent = `✓ Got it, ${firstName}!`;
                 parsingStatus.className = 'parsing-status show success';
-                
+
                 // Update display for edit mode
                 resumeName.textContent = name;
                 const expCount = parsedResume.experience?.length || 0;
