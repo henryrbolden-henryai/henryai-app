@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 11, 2025
+**Last Updated:** December 15, 2025
 
 ---
 
@@ -329,9 +329,16 @@ Allow users to upload and manage multiple resumes (up to 5) for multi-track job 
 
 ### LinkedIn Optimization
 
-- **LinkedIn Profile Score** - 0-100 rating with specific fixes
-- **LinkedIn Optimization Module** - Rewrite headline, About, bullets, skills for visibility
+- **LinkedIn Profile Score** ✅ - 0-100 rating with severity-based scoring and specific fixes
+- **LinkedIn Profile Upload** ✅ - Upload LinkedIn PDF for automated parsing and analysis
+- **LinkedIn Optimization Module** ✅ - Comprehensive rewrite of:
+  - Headline (220 char limit enforced, role-appropriate format)
+  - About Section (4 paragraphs, 600-800 words, role-specific content)
+  - Experience Bullets (with severity prioritization)
+  - Skills (role-appropriate keyword recommendations)
+  - Optional Sections (Featured, Recommendations, Activity guidance)
 - **LinkedIn Network Intelligence** ✅ (Partial) - Search queries for hiring managers/recruiters
+- **LinkedIn Alignment Check** ✅ - Compare LinkedIn profile to job requirements
 
 ### Tracker Enhancements
 
@@ -627,3 +634,91 @@ ALTER TABLE applications ADD COLUMN IF NOT EXISTS interview_date DATE;
 - `frontend/mock-interview.html` - Added session_id to respond API call
 - `docs/guides/ROADMAP.md` - Added Multi-Resume to Phase 2, session log
 - `docs/guides/MULTI_RESUME_IMPLEMENTATION.md` - NEW: Full implementation guide for future
+
+---
+
+## Session Log: December 15, 2025
+
+### Completed Today
+
+**1. LinkedIn Profile Score Feature (Complete)**
+- NEW: `linkedin-scoring.html` - Comprehensive LinkedIn audit page
+- 0-100 scoring system with severity-based weighting (CRITICAL, HIGH, MEDIUM, LOW)
+- Visual score display with clear fix prioritization
+- Renamed from "LinkedIn Audit" to "LinkedIn Profile Score"
+- Changed subtitle to "Fix what's costing you interviews"
+
+**2. LinkedIn Optimization Strategy (Documents Page)**
+- Complete LinkedIn optimization output in documents.html LinkedIn tab
+- Optimized Headline: 220 character limit enforced, formula-based structure
+- Optimized About Section: 4 paragraphs, 600-800 words, role-specific
+- Experience Optimizations: Severity-based bullet improvements
+- Skills Recommendations: Role-appropriate keyword libraries
+- Optional Sections: Featured, Recommendations, Activity guidance
+
+**3. Role-Agnostic Output Generation (Critical Bug Fix)**
+- Fixed contamination bug where recruiter terminology bled into non-recruiter profiles
+- All output functions now detect role type (recruiter, engineer, product, marketing, sales)
+- Role-specific content for: Headlines, About sections, Skills recommendations
+- Added skill libraries for: Engineering, Product, Marketing, Sales, Leadership
+
+**4. Headline Character Limit Enforcement**
+- Hard 220 character limit (LinkedIn's max)
+- Skips consultancies, stealth startups, self-employed from brand signals
+- Removes parenthetical explanations like "(Independent Consultancy)"
+- Progressive part removal if over limit
+- Role-appropriate domain expertise (not lowercase skill dumps)
+
+**5. Skills Section Improvements**
+- Short keywords only (2-5 words), not sentences
+- "Pin to Top 3" and "Add These" show different skills (no duplicates)
+- Role-based skill libraries: recruiting, engineering, product, marketing, sales, leadership
+- Generic skills flagged for removal (Microsoft Office, Communication, etc.)
+
+**6. Activity Section Overhaul**
+- Removed hardcoded company names (was showing "Engage with Digital Realty")
+- Role-specific topic recommendations
+- Seniority-aware guidance
+- How to engage well / What to avoid lists
+- Role-specific positioning statements
+
+**7. Grammar and Style Fixes**
+- Removed all em dashes from LinkedIn About section content
+- Replaced with proper punctuation (periods, colons, commas)
+- Prevents AI detection patterns
+
+**8. Profile Edit Enhancements**
+- Added "Replace Resume" button for updating resumes
+- Added "Delete" button for resume removal
+- Proper button styling with hover states
+
+### Key Technical Changes
+
+**Headline Formula:**
+```
+[Seniority] [Function] | [Specialization] | Ex-[Company1, Company2, Company3] | [Domain Expertise]
+```
+
+**Role Detection Pattern:**
+```javascript
+const isRecruiter = /recruit|talent acquisition|sourcer|headhunter/i.test(role);
+const isEngineer = /engineer|developer|software|technical|architect/i.test(role);
+const isProduct = /product manager|product lead|pm\b/i.test(role);
+const isMarketing = /marketing|growth|brand/i.test(role);
+const isSales = /sales|account|business development|revenue/i.test(role);
+```
+
+**Skill Libraries by Role:**
+- Recruiters: Talent Acquisition, Executive Search, Boolean Search, etc.
+- Engineers: Software Development, System Design, API Development, etc.
+- Product: Product Strategy, User Research, A/B Testing, etc.
+- Marketing: Digital Marketing, Content Strategy, SEO, etc.
+- Sales: Sales Strategy, Account Management, Pipeline Management, etc.
+
+### Files Modified
+
+- `frontend/linkedin-scoring.html` - New LinkedIn Profile Score page
+- `frontend/documents.html` - LinkedIn optimization strategy generation
+- `frontend/js/linkedin-upload.js` - Optimized sections rendering
+- `frontend/profile-edit.html` - Resume replace/delete functionality
+- `docs/guides/ROADMAP.md` - Updated with today's features

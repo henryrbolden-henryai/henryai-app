@@ -530,6 +530,22 @@
             box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
         }
 
+        .btn-secondary {
+            padding: 12px 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-surface-hover);
+            border-color: var(--color-primary);
+        }
+
         .btn-danger {
             padding: 16px 24px;
             background: transparent;
@@ -548,8 +564,7 @@
         }
 
         .btn-danger-outline {
-            width: 100%;
-            padding: 14px 24px;
+            padding: 12px 20px;
             background: transparent;
             border: 1px solid var(--color-warning);
             border-radius: 12px;
@@ -758,6 +773,10 @@
                     </div>
                     <div class="resume-info-meta" id="resumeMeta"></div>
                     <a href="resume-discuss.html" class="resume-chat-link">💬 Chat with Henry about your resume</a>
+                    <div class="resume-actions" style="margin-top: 12px; display: flex; gap: 10px;">
+                        <button type="button" class="btn-secondary" id="replaceResumeBtn">Replace Resume</button>
+                        <button type="button" class="btn-danger-outline" id="deleteResumeBtn">Delete</button>
+                    </div>
                 </div>
                 <label class="file-upload" id="fileUpload">
                     <input type="file" id="resumeFile" accept=".pdf,.docx,.doc,.txt">
@@ -1006,6 +1025,8 @@
         const deleteModal = document.getElementById('deleteModal');
         const errorMessage = document.getElementById('errorMessage');
         const successMessage = document.getElementById('successMessage');
+        const replaceResumeBtn = document.getElementById('replaceResumeBtn');
+        const deleteResumeBtn = document.getElementById('deleteResumeBtn');
 
         // Determine if this is new profile or edit
         let isNewProfile = false;
@@ -1224,6 +1245,65 @@
             } else if (responseEl) {
                 responseEl.classList.remove('show');
             }
+        }
+
+        // Replace Resume button handler
+        if (replaceResumeBtn) {
+            replaceResumeBtn.addEventListener('click', () => {
+                // Hide resume info, show upload area
+                resumeInfo.style.display = 'none';
+                fileUpload.style.display = 'flex';
+                parsingStatus.textContent = '';
+                parsingStatus.className = 'parsing-status';
+                // Clear previous file selection
+                resumeFile.value = '';
+                const fileNameEl = document.getElementById('fileName');
+                fileNameEl.textContent = '';
+                fileNameEl.classList.remove('show');
+                fileUpload.classList.remove('has-file');
+            });
+        }
+
+        // Delete Resume button handler
+        if (deleteResumeBtn) {
+            deleteResumeBtn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to delete your resume? This cannot be undone.')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/profile/resume`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Failed to delete resume');
+
+                    // Clear local profile resume data
+                    if (profile) {
+                        profile.resume = null;
+                        profile.resume_output = null;
+                    }
+
+                    // Reset UI to show upload area
+                    resumeInfo.style.display = 'none';
+                    fileUpload.style.display = 'flex';
+                    parsingStatus.textContent = '';
+                    parsingStatus.className = 'parsing-status';
+                    resumeFile.value = '';
+                    const fileNameEl = document.getElementById('fileName');
+                    fileNameEl.textContent = '';
+                    fileNameEl.classList.remove('show');
+                    fileUpload.classList.remove('has-file');
+
+                    showSuccess('Resume deleted successfully');
+                } catch (error) {
+                    console.error('Delete error:', error);
+                    showError('Failed to delete resume. Please try again.');
+                }
+            });
         }
 
         // File upload handler (works for both new and edit)
