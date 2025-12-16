@@ -1446,11 +1446,12 @@ COVER LETTER
         }
 
         // Generate comprehensive headline with role, expertise, and differentiators
-        // FORMULA: [Seniority] [Function] | [Specialization] | [Brand Signals] | [Domain Expertise]
-        // NEVER include years of experience or number of hires - these are filler stats
+        // FORMULA: [Seniority] [Function] | [Specialization] | Ex-[Companies] | [Domain Expertise]
+        // HARD LIMIT: 220 characters (LinkedIn will truncate anything longer)
+        // NEVER include: years of experience, number of hires, parenthetical explanations
         function generateComprehensiveHeadline(linkedinParsed, resumeOutput, analysisData, level) {
+            const MAX_CHARS = 220;
             const role = analysisData?._role || analysisData?.role_title || '';
-            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || analysisData?.required_skills || [];
 
             // Get experience data for brand signals
             const experience = linkedinParsed.experience || [];
@@ -1458,84 +1459,93 @@ COVER LETTER
 
             // Build headline following the formula
             const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput) || role;
-            const parts = [];
 
-            // PART 1: Seniority + Function (required)
+            // PART 1: Seniority + Function (required, 20-40 chars)
+            let part1 = '';
             if (level && functionalArea) {
-                parts.push(`${level} ${functionalArea}`);
+                part1 = `${level} ${functionalArea}`;
             } else if (role) {
-                parts.push(role);
+                part1 = role;
             } else {
-                parts.push('Talent Acquisition Leader');
+                part1 = 'Talent Acquisition Leader';
             }
 
-            // PART 2: Specialization (what makes them specialized)
-            const specializations = [];
+            // PART 2: Specialization (15-35 chars)
+            let part2 = '';
             if (/executive|senior|leadership|director|vp|c-suite/i.test(role)) {
-                specializations.push('Executive Search & Leadership Talent');
+                part2 = 'Executive Search & Leadership Talent';
             } else if (/technical|engineer|software/i.test(role)) {
-                specializations.push('Technical Recruiting at Scale');
+                part2 = 'Technical Recruiting at Scale';
             } else if (/sales|gtm|revenue/i.test(role)) {
-                specializations.push('GTM & Revenue Team Building');
+                part2 = 'GTM & Revenue Team Building';
             } else {
-                // Use top ATS keywords as specialization
-                const topKeywords = atsKeywords
-                    .filter(kw => kw.length > 3 && kw.length < 30 && !/etc|the|and/i.test(kw))
-                    .slice(0, 2);
-                if (topKeywords.length > 0) {
-                    specializations.push(topKeywords.map(k =>
-                        k.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                    ).join(' & '));
-                }
-            }
-            if (specializations.length > 0) {
-                parts.push(specializations[0]);
+                part2 = 'Full-Cycle Talent Acquisition';
             }
 
-            // PART 3: Brand Signals (Ex-Company names - CRITICAL for credibility)
-            // Include ALL notable companies, not just tech giants
-            const allCompanies = companies.slice(0, 3);
-            if (allCompanies.length > 0) {
-                // Format: "Ex-Company1, Company2, Company3" or just company names if current
-                const companyNames = allCompanies.map(c => {
-                    // Clean up company name
-                    return c.replace(/\s*(Inc\.|LLC|Corp\.?|Limited|Ltd\.?)$/i, '').trim();
-                });
-                parts.push(`Ex-${companyNames.join(', ')}`);
+            // PART 3: Brand Signals - Clean company names only
+            // Rules:
+            // - Max 3 companies
+            // - Skip unknown consultancies, stealth startups, self-employed
+            // - Remove parenthetical explanations like "(Independent Consultancy)"
+            // - Format: "Ex-Company1, Company2, Company3"
+            const skipPatterns = /stealth|independent|self-employed|freelance|consultant|consulting|advisory|contract/i;
+            const cleanCompanies = companies
+                .map(c => {
+                    // Remove suffixes and parenthetical content
+                    return c
+                        .replace(/\s*\([^)]*\)/g, '') // Remove (anything in parens)
+                        .replace(/\s*(Inc\.|LLC|Corp\.?|Limited|Ltd\.?|GmbH|SA|BV)$/i, '')
+                        .trim();
+                })
+                .filter(c => c.length > 0 && c.length < 25 && !skipPatterns.test(c))
+                .slice(0, 3);
+
+            let part3 = '';
+            if (cleanCompanies.length > 0) {
+                part3 = `Ex-${cleanCompanies.join(', ')}`;
             }
 
-            // PART 4: Domain Expertise (specific competencies)
-            const domainExpertise = [];
-            // Look for scope indicators in ATS keywords
-            const scopeKeywords = atsKeywords.filter(kw =>
-                /fortune|enterprise|global|c-suite|vp|director|scale|startup/i.test(kw)
-            );
-            if (scopeKeywords.length > 0) {
-                domainExpertise.push(scopeKeywords.slice(0, 2).join(', '));
+            // PART 4: Domain Expertise - Specific scope/level (NOT lowercase skill dump)
+            // Must be capitalized and specific
+            let part4 = '';
+            if (/executive|c-suite|vp|director/i.test(role)) {
+                part4 = 'Fortune 500 & C-Suite Hires';
+            } else if (/technical|engineer/i.test(role)) {
+                part4 = 'Scaling Engineering Teams';
+            } else if (/startup|growth/i.test(role)) {
+                part4 = 'Seed to Series C Growth';
             } else {
-                // Add remaining relevant keywords
-                const remainingKeywords = atsKeywords
-                    .filter(kw => kw.length > 3 && kw.length < 25 && !/etc|the|and/i.test(kw))
-                    .slice(2, 4);
-                if (remainingKeywords.length > 0) {
-                    domainExpertise.push(remainingKeywords.join(', '));
-                }
-            }
-            if (domainExpertise.length > 0 && parts.join(' | ').length < 160) {
-                parts.push(domainExpertise[0]);
+                part4 = 'Enterprise & Growth-Stage';
             }
 
-            // Combine with pipe separators
+            // Build headline with strict character validation
+            // Start with all 4 parts
+            let parts = [part1, part2, part3, part4].filter(p => p.length > 0);
             let headline = parts.join(' | ');
 
-            // Ensure we don't exceed 220 characters
-            if (headline.length > 220) {
-                // Remove last part if too long
+            // If over limit, progressively remove parts from the end
+            while (headline.length > MAX_CHARS && parts.length > 2) {
                 parts.pop();
                 headline = parts.join(' | ');
-                if (headline.length > 220) {
-                    headline = headline.substring(0, 217) + '...';
+            }
+
+            // If still over limit (unlikely), truncate domain expertise
+            if (headline.length > MAX_CHARS) {
+                // Try shorter domain expertise
+                if (parts.length >= 3) {
+                    parts[parts.length - 1] = 'VP & Director Hires';
+                    headline = parts.join(' | ');
                 }
+            }
+
+            // Final safety check - hard truncate if somehow still over
+            if (headline.length > MAX_CHARS) {
+                headline = headline.substring(0, MAX_CHARS - 3) + '...';
+            }
+
+            // VALIDATION: Log warning if headline is suboptimal
+            if (headline.length < 100) {
+                console.warn('Headline may be too short:', headline.length, 'chars');
             }
 
             return headline;
