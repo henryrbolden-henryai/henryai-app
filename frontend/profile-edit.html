@@ -1336,7 +1336,21 @@
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`Server ${response.status}: ${errorText.substring(0, 100)}`);
+                    // Try to parse error detail from JSON response
+                    let errorDetail = errorText.substring(0, 200);
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.detail) {
+                            if (typeof errorJson.detail === 'string') {
+                                errorDetail = errorJson.detail;
+                            } else if (errorJson.detail.missing_fields) {
+                                errorDetail = `Missing: ${errorJson.detail.missing_fields.join(', ')}`;
+                            } else if (errorJson.detail.summary) {
+                                errorDetail = errorJson.detail.summary;
+                            }
+                        }
+                    } catch (e) {}
+                    throw new Error(`Server ${response.status}: ${errorDetail}`);
                 }
 
                 parsingStatus.textContent = 'Processing...';
