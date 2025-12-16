@@ -1,0 +1,630 @@
+<!-- ========================================================================
+     STRATEGIC OPTIONS SECTION - FULL IMPLEMENTATION
+     
+     This section adapts its content based on the candidate's timeline and 
+     emotional state captured during onboarding. It provides contextual 
+     guidance ranging from urgent cash flow options to leverage-building 
+     opportunities.
+     
+     PLACEMENT: Insert between Reality Check section and Pipeline Overview
+     ======================================================================== -->
+
+<!-- STRATEGIC OPTIONS SECTION (Conditional & Adaptive) -->
+<div class="strategic-options-section" id="strategicOptions" style="display: none;">
+    <h2><span class="strategic-icon" id="strategicIcon">💡</span> <span id="strategicTitle">Strategic Options</span></h2>
+    <div class="strategic-card">
+        <div class="strategic-content">
+            <div class="strategic-message" id="strategicMessage"></div>
+            <div class="strategic-benefits" id="strategicBenefits"></div>
+        </div>
+        <div class="strategic-actions">
+            <button class="strategic-btn primary" id="strategicPrimaryCTA" onclick="openStrategicGuidance(); return false;">
+                Show Options
+            </button>
+            <button class="strategic-btn secondary" id="strategicSecondaryCTA" onclick="dismissStrategicOptions(); return false;">
+                Dismiss
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================
+     CSS STYLES
+     Add to existing <style> block in dashboard.html
+     ======================================================================== -->
+<style>
+/* STRATEGIC OPTIONS SECTION */
+.strategic-options-section {
+    margin-bottom: 32px;
+}
+
+.strategic-options-section h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.strategic-icon {
+    font-size: 1.3rem;
+}
+
+.strategic-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: all 0.2s;
+}
+
+.strategic-card:hover {
+    border-color: var(--color-border-hover);
+}
+
+/* Variant styling based on urgency */
+.strategic-card.desperate {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.strategic-card.stressed {
+    background: rgba(251, 191, 36, 0.06);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.strategic-card.standard {
+    background: var(--color-accent-muted);
+    border-color: var(--color-accent);
+}
+
+.strategic-content {
+    margin-bottom: 20px;
+}
+
+.strategic-message {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    white-space: pre-line;
+}
+
+.strategic-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.benefit-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
+}
+
+.benefit-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.benefit-item span:last-child {
+    color: var(--color-text);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.strategic-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.strategic-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.strategic-btn.primary {
+    background: var(--color-accent);
+    color: var(--color-bg);
+}
+
+.strategic-btn.primary:hover {
+    background: #1ac7e0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+}
+
+.strategic-btn.secondary {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+.strategic-btn.secondary:hover {
+    border-color: var(--color-border-hover);
+    color: var(--color-text);
+}
+
+/* Variant-specific CTA colors */
+.strategic-card.desperate .strategic-btn.primary {
+    background: #ef4444;
+    color: #fff;
+}
+
+.strategic-card.desperate .strategic-btn.primary:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.strategic-card.stressed .strategic-btn.primary {
+    background: #fbbf24;
+    color: var(--color-bg);
+}
+
+.strategic-card.stressed .strategic-btn.primary:hover {
+    background: #f59e0b;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .strategic-actions {
+        flex-direction: column;
+    }
+    
+    .strategic-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+
+<!-- ========================================================================
+     JAVASCRIPT IMPLEMENTATION
+     Add to existing <script> block in dashboard.html
+     ======================================================================== -->
+<script>
+// ========================================================================
+// STRATEGIC OPTIONS - CONFIGURATION
+// ========================================================================
+
+const STRATEGIC_CONTENT = {
+    desperate: {
+        icon: '⚡',
+        title: 'Urgent: Cash Flow Options',
+        variant: 'desperate',
+        message: `You need income now, not in 3-6 months. That's real, and waiting isn't viable.
+
+Contract work isn't giving up on your FTE search—it's buying yourself time and reducing desperation energy in interviews.`,
+        benefits: [
+            { 
+                icon: '⚡', 
+                text: 'Faster time-to-income (1-2 weeks vs. 6-8 weeks for FTE)' 
+            },
+            { 
+                icon: '🛡️', 
+                text: 'Reduces desperation energy in FTE interviews' 
+            },
+            { 
+                icon: '📈', 
+                text: 'Shows recent activity on resume (beats employment gaps)' 
+            },
+            { 
+                icon: '💪', 
+                text: 'Builds leverage: "I\'m consulting but open to the right FTE role"' 
+            }
+        ],
+        primaryCTA: 'Show Contract Options',
+        secondaryCTA: 'Not Right Now',
+        guidanceType: 'contract'
+    },
+    
+    stressed: {
+        icon: '🎯',
+        title: 'Tactical Options to Consider',
+        variant: 'stressed',
+        message: `A tight timeline means you need to expand your opportunity set strategically.
+
+Contract work can serve as a bridge while you find the right FTE role. It also reduces the pressure that shows up in interviews.`,
+        benefits: [
+            { 
+                icon: '⏱️', 
+                text: 'Faster interview-to-start timeline than most FTE roles' 
+            },
+            { 
+                icon: '🎯', 
+                text: 'Keeps you in the market while being selective about FTE' 
+            },
+            { 
+                icon: '📊', 
+                text: 'Recent work on resume signals you\'re in-demand' 
+            },
+            { 
+                icon: '🤝', 
+                text: 'Network expansion through contract engagements' 
+            }
+        ],
+        primaryCTA: 'Explore Options',
+        secondaryCTA: 'Dismiss',
+        guidanceType: 'contract'
+    },
+    
+    standard: {
+        icon: '💡',
+        title: 'Other Paths Worth Exploring',
+        variant: 'standard',
+        message: `You've got solid runway. Beyond your core search, here are some options to build leverage and expand your network.`,
+        benefits: [
+            { 
+                icon: '🎯', 
+                text: 'Advisory/consulting work builds credibility and leverage' 
+            },
+            { 
+                icon: '🌐', 
+                text: 'Industry networking groups and communities' 
+            },
+            { 
+                icon: '📚', 
+                text: 'Portfolio/side projects to strengthen positioning' 
+            },
+            { 
+                icon: '🎤', 
+                text: 'Speaking/writing to establish thought leadership' 
+            }
+        ],
+        primaryCTA: 'Learn More',
+        secondaryCTA: 'Not Interested',
+        guidanceType: 'leverage'
+    }
+};
+
+// ========================================================================
+// STRATEGIC OPTIONS - URGENCY CALCULATION
+// ========================================================================
+
+/**
+ * Determines urgency level based on timeline and emotional state
+ * @param {string} timeline - Timeline from profile (urgent, soon, actively_looking, no_rush)
+ * @param {string} holdingUp - Emotional state from profile
+ * @returns {string} Urgency level: 'desperate', 'stressed', 'standard', or 'none'
+ */
+function calculateUrgency(timeline, holdingUp) {
+    // Desperate: urgent timeline OR struggling emotionally
+    if (timeline === 'urgent' || holdingUp === 'struggling') {
+        return 'desperate';
+    }
+    
+    // Stressed: soon timeline OR stressed emotionally
+    if (timeline === 'soon' || holdingUp === 'stressed_but_managing') {
+        return 'stressed';
+    }
+    
+    // Standard: actively looking + managing well
+    if (timeline === 'actively_looking' && 
+        (holdingUp === 'doing_well' || holdingUp === 'rather_not_say')) {
+        return 'standard';
+    }
+    
+    // No guidance needed for no_rush timeline (unless struggling)
+    if (timeline === 'no_rush' && holdingUp === 'doing_well') {
+        return 'none';
+    }
+    
+    // Default to standard for edge cases
+    return 'standard';
+}
+
+// ========================================================================
+// STRATEGIC OPTIONS - RENDERING
+// ========================================================================
+
+/**
+ * Renders the strategic options section based on candidate's situation
+ * Called from renderDashboard()
+ */
+function renderStrategicOptions() {
+    const strategicSection = document.getElementById('strategicOptions');
+    
+    if (!strategicSection) {
+        console.warn('Strategic options section not found in DOM');
+        return;
+    }
+    
+    // Check if user dismissed this section
+    const dismissed = localStorage.getItem('strategicOptionsDismissed');
+    if (dismissed) {
+        strategicSection.style.display = 'none';
+        return;
+    }
+    
+    // Get candidate profile
+    const profile = getCandidateProfile();
+    
+    if (!profile || !profile.situation) {
+        // No profile data yet, hide section
+        strategicSection.style.display = 'none';
+        return;
+    }
+    
+    const timeline = profile.situation.timeline || 'actively_looking';
+    const holdingUp = profile.situation.holdingUp || 'doing_well';
+    
+    // Determine urgency level
+    const urgencyLevel = calculateUrgency(timeline, holdingUp);
+    
+    if (urgencyLevel === 'none') {
+        strategicSection.style.display = 'none';
+        return;
+    }
+    
+    // Show section and update content
+    strategicSection.style.display = 'block';
+    updateStrategicContent(urgencyLevel);
+}
+
+/**
+ * Updates the strategic options content based on urgency level
+ * @param {string} urgencyLevel - 'desperate', 'stressed', or 'standard'
+ */
+function updateStrategicContent(urgencyLevel) {
+    const config = STRATEGIC_CONTENT[urgencyLevel];
+    
+    if (!config) {
+        console.error('Invalid urgency level:', urgencyLevel);
+        return;
+    }
+    
+    // Update section elements
+    const iconEl = document.getElementById('strategicIcon');
+    const titleEl = document.getElementById('strategicTitle');
+    const messageEl = document.getElementById('strategicMessage');
+    const benefitsEl = document.getElementById('strategicBenefits');
+    const primaryCTA = document.getElementById('strategicPrimaryCTA');
+    const secondaryCTA = document.getElementById('strategicSecondaryCTA');
+    const cardEl = document.querySelector('.strategic-card');
+    
+    if (!iconEl || !titleEl || !messageEl || !benefitsEl || !primaryCTA || !secondaryCTA || !cardEl) {
+        console.error('Strategic options DOM elements not found');
+        return;
+    }
+    
+    // Update content
+    iconEl.textContent = config.icon;
+    titleEl.textContent = config.title;
+    messageEl.textContent = config.message;
+    
+    // Update benefits list
+    benefitsEl.innerHTML = config.benefits.map(b => `
+        <div class="benefit-item">
+            <span class="benefit-icon">${b.icon}</span>
+            <span>${b.text}</span>
+        </div>
+    `).join('');
+    
+    // Update CTAs
+    primaryCTA.textContent = config.primaryCTA;
+    secondaryCTA.textContent = config.secondaryCTA;
+    
+    // Store guidance type for later use
+    primaryCTA.setAttribute('data-guidance-type', config.guidanceType);
+    
+    // Update card variant styling
+    cardEl.className = 'strategic-card';
+    cardEl.classList.add(config.variant);
+}
+
+// ========================================================================
+// STRATEGIC OPTIONS - USER ACTIONS
+// ========================================================================
+
+/**
+ * Opens strategic guidance modal or page
+ * Currently opens contract guidance - will be expanded in Phase 2
+ */
+function openStrategicGuidance() {
+    const primaryCTA = document.getElementById('strategicPrimaryCTA');
+    const guidanceType = primaryCTA?.getAttribute('data-guidance-type') || 'contract';
+    
+    // Track engagement
+    trackEvent('strategic_options_clicked', { type: guidanceType });
+    
+    // Phase 1: Open simple modal with resources
+    // Phase 2: Navigate to dedicated guidance page
+    showContractGuidanceModal();
+}
+
+/**
+ * Dismisses the strategic options section
+ * Stores dismissal in localStorage so it doesn't re-appear
+ */
+function dismissStrategicOptions() {
+    localStorage.setItem('strategicOptionsDismissed', 'true');
+    
+    const strategicSection = document.getElementById('strategicOptions');
+    if (strategicSection) {
+        // Fade out animation
+        strategicSection.style.opacity = '0';
+        strategicSection.style.transform = 'translateY(-10px)';
+        strategicSection.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+            strategicSection.style.display = 'none';
+        }, 300);
+    }
+    
+    // Track dismissal
+    trackEvent('strategic_options_dismissed');
+}
+
+/**
+ * Shows contract guidance modal (Phase 1 MVP)
+ * Will be replaced with full guidance page in Phase 2
+ */
+function showContractGuidanceModal() {
+    // For now, create a simple modal with curated resources
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal" style="max-width: 600px;">
+            <h2>Contract Work Resources</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
+                These platforms connect you with contract opportunities. Some move faster than others.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                <a href="https://www.toptal.com/" target="_blank" rel="noopener" class="resource-link">
+                    <strong>Toptal</strong> — Elite freelance network (rigorous vetting, premium rates)
+                </a>
+                <a href="https://www.upwork.com/" target="_blank" rel="noopener" class="resource-link">
+                    <strong>Upwork</strong> — Largest freelance marketplace (broad range, competitive)
+                </a>
+                <a href="https://wellfound.com/jobs" target="_blank" rel="noopener" class="resource-link">
+                    <strong>Wellfound</strong> — Startup jobs (filter by contract roles)
+                </a>
+                <a href="https://www.gun.io/" target="_blank" rel="noopener" class="resource-link">
+                    <strong>Gun.io</strong> — Developer-focused freelance network
+                </a>
+            </div>
+            
+            <div style="background: rgba(34, 211, 238, 0.1); border-left: 3px solid var(--color-accent); padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+                <strong style="color: var(--color-accent);">Positioning Tip:</strong>
+                <p style="margin-top: 8px; font-size: 0.9rem; color: var(--color-text-secondary);">
+                    In FTE interviews, frame it as: "I'm taking on strategic consulting projects while evaluating the right full-time opportunity." 
+                    Shows you're in-demand, not desperate.
+                </p>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeContractGuidanceModal()">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeContractGuidanceModal();
+        }
+    });
+}
+
+function closeContractGuidanceModal() {
+    const modal = document.querySelector('.modal-overlay');
+    if (modal && modal.querySelector('.modal h2')?.textContent === 'Contract Work Resources') {
+        modal.remove();
+    }
+}
+
+// Add resource link styling
+const style = document.createElement('style');
+style.textContent = `
+    .resource-link {
+        display: block;
+        padding: 12px 16px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        color: var(--color-text);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .resource-link:hover {
+        border-color: var(--color-accent);
+        background: var(--color-surface-elevated);
+        transform: translateX(4px);
+    }
+    
+    .resource-link strong {
+        color: var(--color-accent);
+        display: block;
+        margin-bottom: 4px;
+    }
+`;
+document.head.appendChild(style);
+
+// ========================================================================
+// STRATEGIC OPTIONS - EVENT TRACKING (Optional)
+// ========================================================================
+
+/**
+ * Track strategic options events for analytics
+ * @param {string} eventName - Event identifier
+ * @param {object} properties - Additional event properties
+ */
+function trackEvent(eventName, properties = {}) {
+    // Placeholder for analytics integration
+    // Replace with your analytics tool (Mixpanel, PostHog, etc.)
+    console.log('Event:', eventName, properties);
+    
+    // Example integration:
+    // if (typeof mixpanel !== 'undefined') {
+    //     mixpanel.track(eventName, properties);
+    // }
+}
+
+// ========================================================================
+// INTEGRATION WITH DASHBOARD RENDER
+// ========================================================================
+
+// Add this call to your existing renderDashboard() function
+// Place it after Reality Check section render, before Pipeline Overview
+
+// Example integration:
+/*
+function renderDashboard() {
+    // ... existing code ...
+    
+    // Render reality check section
+    renderRealityCheck();
+    
+    // NEW: Render strategic options
+    renderStrategicOptions();
+    
+    // Render pipeline overview
+    renderPipelineOverview();
+    
+    // ... rest of dashboard rendering ...
+}
+*/
+</script>
+
+<!-- ========================================================================
+     USAGE INSTRUCTIONS
+     
+     1. Add the HTML section between Reality Check and Pipeline Overview
+     2. Add the CSS styles to your existing <style> block
+     3. Add the JavaScript to your existing <script> block
+     4. Call renderStrategicOptions() from renderDashboard()
+     5. Ensure getCandidateProfile() returns profile.situation with:
+        - timeline (urgent, soon, actively_looking, no_rush)
+        - holdingUp (doing_well, stressed_but_managing, struggling, rather_not_say)
+     
+     FUTURE ENHANCEMENTS (Phase 2):
+     - Replace showContractGuidanceModal() with dedicated guidance page
+     - Add contract-specific resume generator
+     - Add contract rate calculator
+     - Add contract-to-FTE positioning strategy guide
+     ======================================================================== -->
