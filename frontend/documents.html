@@ -1470,16 +1470,34 @@ COVER LETTER
                 part1 = 'Talent Acquisition Leader';
             }
 
-            // PART 2: Specialization (15-35 chars)
+            // PART 2: Specialization (15-35 chars) - MUST be role-appropriate
             let part2 = '';
-            if (/executive|senior|leadership|director|vp|c-suite/i.test(role)) {
+            // Detect actual role type from role AND current title
+            const isRecruiter = /recruit|talent acquisition|sourcer|headhunter/i.test(role);
+            const isEngineer = /engineer|developer|software|technical|architect/i.test(role);
+            const isProduct = /product manager|product lead|pm\b/i.test(role);
+            const isMarketing = /marketing|growth|brand/i.test(role);
+            const isSales = /sales|account|business development|revenue/i.test(role);
+            const isExecutive = /executive|director|vp|c-suite|head of|chief/i.test(role);
+
+            if (isRecruiter && isExecutive) {
                 part2 = 'Executive Search & Leadership Talent';
-            } else if (/technical|engineer|software/i.test(role)) {
-                part2 = 'Technical Recruiting at Scale';
-            } else if (/sales|gtm|revenue/i.test(role)) {
-                part2 = 'GTM & Revenue Team Building';
-            } else {
+            } else if (isRecruiter) {
                 part2 = 'Full-Cycle Talent Acquisition';
+            } else if (isEngineer) {
+                part2 = 'Building Scalable Systems';
+            } else if (isProduct) {
+                part2 = 'Product Strategy & Execution';
+            } else if (isMarketing) {
+                part2 = 'Growth & Brand Strategy';
+            } else if (isSales) {
+                part2 = 'Revenue Growth & GTM';
+            } else if (isExecutive) {
+                part2 = 'Strategic Leadership';
+            } else {
+                // Use ATS keywords or functional area
+                const topKeyword = (resumeOutput.ats_keywords || [])[0];
+                part2 = topKeyword ? topKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Strategic Execution';
             }
 
             // PART 3: Brand Signals - Clean company names only
@@ -1506,16 +1524,26 @@ COVER LETTER
             }
 
             // PART 4: Domain Expertise - Specific scope/level (NOT lowercase skill dump)
-            // Must be capitalized and specific
+            // Must be capitalized and specific - ROLE APPROPRIATE
             let part4 = '';
-            if (/executive|c-suite|vp|director/i.test(role)) {
+            if (isRecruiter && isExecutive) {
                 part4 = 'Fortune 500 & C-Suite Hires';
-            } else if (/technical|engineer/i.test(role)) {
-                part4 = 'Scaling Engineering Teams';
-            } else if (/startup|growth/i.test(role)) {
-                part4 = 'Seed to Series C Growth';
-            } else {
+            } else if (isRecruiter) {
                 part4 = 'Enterprise & Growth-Stage';
+            } else if (isEngineer) {
+                part4 = 'Distributed Systems & Scale';
+            } else if (isProduct) {
+                part4 = '0-1 & Growth Products';
+            } else if (isMarketing) {
+                part4 = 'B2B & B2C Growth';
+            } else if (isSales) {
+                part4 = 'Enterprise & Mid-Market';
+            } else if (isExecutive) {
+                part4 = 'Strategy & Operations';
+            } else {
+                // Use second ATS keyword or generic
+                const secondKeyword = (resumeOutput.ats_keywords || [])[1];
+                part4 = secondKeyword ? secondKeyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Cross-Functional Leadership';
             }
 
             // Build headline with strict character validation
@@ -1579,9 +1607,9 @@ COVER LETTER
         }
 
         // Generate comprehensive About/Summary section (4 paragraphs, 600-800 words)
+        // CRITICAL: Must be role-agnostic and use ONLY the candidate's actual data
         function generateComprehensiveSummary(linkedinParsed, resumeOutput, analysisData) {
             const role = analysisData?._role || analysisData?.role_title || 'professional';
-            const company = analysisData?._company_name || '';
             const years = extractYearsExperience(linkedinParsed, resumeOutput) || 10;
             const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput) || role;
             const metrics = extractKeyMetrics(resumeOutput);
@@ -1592,7 +1620,7 @@ COVER LETTER
             const currentRole = experience[0] || {};
             const previousRoles = experience.slice(1, 3);
 
-            // Extract key information
+            // Extract key information from ACTUAL candidate data
             const currentTitle = currentRole.title || resumeOutput.experience_sections?.[0]?.title || role;
             const currentCompany = currentRole.company || resumeOutput.experience_sections?.[0]?.company || '';
             const allBullets = [];
@@ -1600,64 +1628,156 @@ COVER LETTER
                 if (exp.bullets) allBullets.push(...exp.bullets);
             });
 
-            // PARAGRAPH 1: Value Proposition (Hook - first 3 lines visible before "see more")
-            let para1 = `I build ${functionalArea.toLowerCase()} functions that become competitive advantages, not bottlenecks. `;
-            para1 += `With ${years}+ years of experience across high-growth startups to Fortune 500 companies, I've learned that the best talent strategies aren't about filling seats. They're about building organizations that can execute on ambitious goals. `;
-            para1 += `My approach combines strategic vision with operational excellence: I architect scalable processes, instrument everything for continuous improvement, and partner with leadership to ensure talent strategy aligns with business outcomes. `;
-            para1 += `The common thread across my career? Transforming recruiting from a reactive function into a proactive strategic advantage.`;
+            // Detect role type for appropriate language
+            const isRecruiter = /recruit|talent acquisition|sourcer|headhunter/i.test(role) ||
+                               /recruit|talent acquisition/i.test(currentTitle);
+            const isEngineer = /engineer|developer|software|technical|architect/i.test(role) ||
+                              /engineer|developer/i.test(currentTitle);
+            const isProduct = /product manager|product lead|pm\b/i.test(role) ||
+                             /product/i.test(currentTitle);
+            const isMarketing = /marketing|growth|brand/i.test(role) ||
+                               /marketing/i.test(currentTitle);
+            const isSales = /sales|account|business development|revenue/i.test(role) ||
+                           /sales|account/i.test(currentTitle);
 
-            // PARAGRAPH 2: Methodology/Approach
-            let para2 = `My approach is ruthlessly prioritized and data-informed. `;
-            para2 += `I don't chase requisitions. I chase outcomes that move the business forward. `;
-            para2 += `I start with the business problem, pressure-test assumptions with market data, and build the minimum viable process that delivers quality hires at scale. `;
-            para2 += `I believe the best hiring decisions come from combining quantitative signals with qualitative insight: not just screening candidates, but understanding the problems they'll solve and the teams they'll join. `;
-            para2 += `I'd rather fill 10 critical roles with A-players than 50 roles with people who won't move the needle. `;
-            para2 += `When something isn't working, I kill it and iterate, ego aside.`;
+            // PARAGRAPH 1: Value Proposition (role-specific hook)
+            let para1 = '';
+            if (isRecruiter) {
+                para1 = `I build ${functionalArea.toLowerCase()} functions that become competitive advantages, not bottlenecks. `;
+                para1 += `With ${years}+ years of experience across high-growth startups to Fortune 500 companies, I've learned that the best talent strategies are about building organizations that can execute on ambitious goals. `;
+                para1 += `My approach combines strategic vision with operational excellence: I architect scalable processes, instrument everything for continuous improvement, and partner with leadership to ensure talent strategy aligns with business outcomes.`;
+            } else if (isEngineer) {
+                para1 = `I build systems that scale and teams that ship. `;
+                para1 += `With ${years}+ years of experience in software engineering, I've developed expertise in designing, building, and operating complex technical systems. `;
+                para1 += `My approach balances technical excellence with pragmatic delivery: I focus on solving real problems, writing maintainable code, and building systems that can evolve with business needs.`;
+            } else if (isProduct) {
+                para1 = `I build products that customers love and businesses depend on. `;
+                para1 += `With ${years}+ years in product management, I've shipped features and products across different stages and scales. `;
+                para1 += `My approach combines deep customer empathy with business acumen: I start with the problem, validate assumptions with data, and ship iteratively to maximize learning and impact.`;
+            } else if (isMarketing) {
+                para1 = `I build brands and drive growth through strategic marketing initiatives. `;
+                para1 += `With ${years}+ years of marketing experience, I've developed expertise in building awareness, generating demand, and driving measurable business results. `;
+                para1 += `My approach combines creative storytelling with data-driven optimization: I believe the best marketing connects authentic brand narrative with customer needs.`;
+            } else if (isSales) {
+                para1 = `I build relationships and close deals that drive business growth. `;
+                para1 += `With ${years}+ years in sales and business development, I've developed expertise in identifying opportunities, building trust, and delivering value to customers. `;
+                para1 += `My approach combines consultative selling with systematic execution: I focus on understanding customer needs and aligning solutions that create mutual value.`;
+            } else {
+                para1 = `I deliver results in ${functionalArea.toLowerCase()} by combining strategic thinking with hands-on execution. `;
+                para1 += `With ${years}+ years of experience, I've developed expertise across multiple aspects of my field. `;
+                para1 += `My approach balances big-picture strategy with attention to detail: I focus on what matters, iterate based on feedback, and deliver outcomes that move the business forward.`;
+            }
 
-            // PARAGRAPH 3: Track Record (with specifics from their data)
+            // PARAGRAPH 2: Methodology/Approach (role-specific)
+            let para2 = '';
+            if (isRecruiter) {
+                para2 = `My approach is ruthlessly prioritized and data-informed. `;
+                para2 += `I don't chase requisitions. I chase outcomes that move the business forward. `;
+                para2 += `I start with the business problem, pressure-test assumptions with market data, and build processes that deliver quality hires at scale. `;
+                para2 += `When something isn't working, I iterate quickly, ego aside.`;
+            } else if (isEngineer) {
+                para2 = `My approach is grounded in fundamentals and focused on outcomes. `;
+                para2 += `I believe good engineering is about making the right tradeoffs: balancing speed with quality, simplicity with flexibility, and innovation with reliability. `;
+                para2 += `I write code that's readable, testable, and maintainable. I document decisions so others can understand the context. `;
+                para2 += `When something breaks, I fix the root cause, not just the symptom.`;
+            } else if (isProduct) {
+                para2 = `My approach is customer-obsessed and outcome-driven. `;
+                para2 += `I believe the best product decisions come from deeply understanding user problems before jumping to solutions. `;
+                para2 += `I use data to inform decisions but recognize that qualitative insight often reveals what metrics miss. `;
+                para2 += `I prioritize ruthlessly: I'd rather ship one great feature than three mediocre ones.`;
+            } else if (isMarketing) {
+                para2 = `My approach balances creativity with accountability. `;
+                para2 += `I believe great marketing tells authentic stories that resonate with the right audience at the right time. `;
+                para2 += `I measure what matters and optimize based on results, not vanity metrics. `;
+                para2 += `I build campaigns that scale: repeatable processes, clear attribution, and continuous learning.`;
+            } else if (isSales) {
+                para2 = `My approach is consultative and relationship-focused. `;
+                para2 += `I believe the best sales outcomes come from genuinely understanding customer challenges and providing real solutions. `;
+                para2 += `I qualify opportunities rigorously, invest time where it matters, and follow up relentlessly. `;
+                para2 += `I track my pipeline systematically and forecast accurately.`;
+            } else {
+                para2 = `My approach is practical and results-oriented. `;
+                para2 += `I believe in understanding the problem deeply before proposing solutions. `;
+                para2 += `I communicate clearly, collaborate effectively, and deliver what I commit to. `;
+                para2 += `When facing challenges, I stay focused on outcomes and adapt my approach as needed.`;
+            }
+
+            // PARAGRAPH 3: Track Record (use ACTUAL candidate data)
             let para3 = '';
             if (currentCompany) {
-                para3 += `At ${currentCompany}, I've ${metrics.hires ? `personally sourced and closed ${metrics.hires}+ critical hires` : 'built scalable talent acquisition processes'} while maintaining bar-raising quality standards. `;
-            }
-
-            // Add metrics if available
-            if (metrics.reduction) {
-                para3 += `I reduced time-to-fill by ${metrics.reduction} through process optimization and proactive pipelining. `;
-            } else {
-                para3 += `I've consistently reduced time-to-fill through process optimization, proactive pipelining, and building strong relationships with hiring managers. `;
-            }
-
-            // Add previous experience
-            if (previousRoles.length > 0) {
-                const prevCompanies = previousRoles.map(r => r.company).filter(Boolean).join(' and ');
-                if (prevCompanies) {
-                    para3 += `Previously at ${prevCompanies}, I built recruiting functions from the ground up, establishing processes that scaled with company growth. `;
+                para3 += `At ${currentCompany}, I've `;
+                // Use role-appropriate language for metrics
+                if (metrics.hires && isRecruiter) {
+                    para3 += `personally sourced and closed ${metrics.hires}+ hires while maintaining quality standards. `;
+                } else if (metrics.revenue) {
+                    para3 += `contributed to ${metrics.revenue} in business impact. `;
+                } else if (metrics.reduction) {
+                    para3 += `achieved ${metrics.reduction} improvement in key metrics. `;
+                } else {
+                    para3 += `delivered meaningful results and grown my impact over time. `;
                 }
             }
 
-            // Add achievement bullet if available
-            const topBullet = allBullets.find(b => /\d+%|\$\d+|\d+ (hires|candidates|team)/i.test(b));
-            if (topBullet) {
-                para3 += topBullet + ' ';
-            } else {
-                para3 += `My track record includes building diverse talent pipelines, improving offer acceptance rates, and creating employer brand strategies that attract passive candidates. `;
+            // Add previous experience from ACTUAL data
+            if (previousRoles.length > 0) {
+                const prevCompanies = previousRoles.map(r => r.company).filter(Boolean).join(' and ');
+                if (prevCompanies) {
+                    para3 += `Previously at ${prevCompanies}, I built on my experience and took on increasing responsibility. `;
+                }
             }
 
-            // PARAGRAPH 4: Current Focus + Call to Action
+            // Add achievement bullet if available from ACTUAL resume data
+            const topBullet = allBullets.find(b => /\d+%|\$\d+|\d+\s*(hires|team|users|customers|revenue|growth)/i.test(b));
+            if (topBullet) {
+                para3 += topBullet + ' ';
+            } else if (allBullets.length > 0) {
+                // Use first actual bullet from their resume
+                para3 += allBullets[0] + ' ';
+            } else {
+                // Generic fallback only if no data available
+                para3 += `My track record demonstrates consistent delivery and progressive responsibility. `;
+            }
+
+            // PARAGRAPH 4: Current Focus + Call to Action (role-specific)
             let para4 = `Currently focused on: `;
 
-            // Add ATS keywords as focus areas
+            // Add ATS keywords as focus areas if available
             if (atsKeywords.length > 0) {
                 const focusAreas = atsKeywords.slice(0, 4).map(kw =>
                     kw.charAt(0).toUpperCase() + kw.slice(1).toLowerCase()
                 );
                 para4 += focusAreas.join(', ') + '. ';
             } else {
-                para4 += `Building scalable talent acquisition strategies, developing high-performing recruiting teams, and partnering with leadership to drive organizational growth. `;
+                // Role-specific fallback
+                if (isRecruiter) {
+                    para4 += `Building scalable talent acquisition strategies and developing high-performing recruiting teams. `;
+                } else if (isEngineer) {
+                    para4 += `Building scalable systems, improving engineering practices, and mentoring the next generation of developers. `;
+                } else if (isProduct) {
+                    para4 += `Shipping products that solve real customer problems and drive measurable business outcomes. `;
+                } else if (isMarketing) {
+                    para4 += `Driving growth through strategic marketing initiatives and building memorable brand experiences. `;
+                } else if (isSales) {
+                    para4 += `Building pipeline, closing deals, and developing customer relationships that drive long-term value. `;
+                } else {
+                    para4 += `Delivering results in my field and continuing to grow my expertise. `;
+                }
             }
 
-            para4 += `I'm excited about the intersection of technology and talent, using data and AI to find better candidates faster while maintaining the human judgment that great hiring requires. `;
-            para4 += `If you're building something ambitious and need someone who can turn talent strategy into competitive advantage, let's connect.`;
+            // Role-appropriate closing
+            if (isRecruiter) {
+                para4 += `If you're building something ambitious and need someone who can turn talent strategy into competitive advantage, let's connect.`;
+            } else if (isEngineer) {
+                para4 += `If you're building something technically interesting and need someone who can ship, let's connect.`;
+            } else if (isProduct) {
+                para4 += `If you're building products that matter and need someone who can drive them forward, let's connect.`;
+            } else if (isMarketing) {
+                para4 += `If you're building a brand that needs to break through the noise, let's connect.`;
+            } else if (isSales) {
+                para4 += `If you're building a sales organization that needs to hit ambitious targets, let's connect.`;
+            } else {
+                para4 += `If you're looking for someone who delivers results, let's connect.`;
+            }
 
             // Combine all paragraphs with double newlines
             return `${para1}\n\n${para2}\n\n${para3}\n\n${para4}`;
@@ -1758,12 +1878,27 @@ COVER LETTER
 
         // Get skills recommendations with add/remove
         // Skills must be SHORT KEYWORDS (2-5 words), not sentences
+        // CRITICAL: Must be role-appropriate - no recruiter skills for engineers, etc.
         function getSkillsRecommendations(linkedinParsed, resumeOutput, analysisData) {
             const currentSkills = linkedinParsed.skills || [];
             const role = analysisData?._role || analysisData?.role_title || '';
 
-            // Define skill keyword libraries by role type
-            // These are ACTUAL LinkedIn skill keywords (2-5 words each)
+            // Detect actual role type
+            const isRecruiter = /recruit|talent acquisition|sourcer|headhunter/i.test(role);
+            const isEngineer = /engineer|developer|software|technical|architect/i.test(role);
+            const isProduct = /product manager|product lead|pm\b/i.test(role);
+            const isMarketing = /marketing|growth|brand/i.test(role);
+            const isSales = /sales|account|business development|revenue/i.test(role);
+            const isExecutive = /executive|director|vp|c-suite|head of|chief/i.test(role);
+
+            // Define skill keyword libraries by ACTUAL role type
+            const recruiterSkills = [
+                'Talent Acquisition', 'Full-Cycle Recruiting', 'Employer Branding',
+                'Candidate Experience', 'Diversity Recruiting', 'Boolean Search',
+                'LinkedIn Recruiter', 'ATS Systems', 'Sourcing Strategy',
+                'Interview Training', 'Offer Negotiation', 'Workforce Planning'
+            ];
+
             const executiveRecruiterSkills = [
                 'Executive Search', 'C-Suite Recruiting', 'Board-Level Search',
                 'Leadership Assessment', 'Succession Planning', 'Retained Search',
@@ -1771,26 +1906,57 @@ COVER LETTER
                 'Organizational Design', 'Global Recruiting', 'VP-Level Hiring'
             ];
 
-            const technicalRecruiterSkills = [
-                'Technical Recruiting', 'Engineering Hiring', 'Boolean Search',
-                'LinkedIn Recruiter', 'ATS Systems', 'Sourcing Strategy',
-                'Tech Talent Acquisition', 'Developer Relations', 'GitHub Sourcing',
-                'Coding Assessment', 'Technical Screening', 'Startup Recruiting'
+            const engineerSkills = [
+                'Software Development', 'System Design', 'API Development',
+                'Cloud Architecture', 'Microservices', 'CI/CD',
+                'Code Review', 'Technical Leadership', 'Agile Development',
+                'Performance Optimization', 'Database Design', 'DevOps'
             ];
 
-            const generalRecruiterSkills = [
-                'Talent Acquisition', 'Full-Cycle Recruiting', 'Employer Branding',
-                'Candidate Experience', 'Diversity Recruiting', 'Campus Recruiting',
-                'Workforce Planning', 'Recruitment Marketing', 'Interview Training',
-                'Offer Negotiation', 'Onboarding Programs', 'HRIS Systems'
+            const productSkills = [
+                'Product Strategy', 'Product Roadmapping', 'User Research',
+                'A/B Testing', 'Data Analysis', 'Agile Methodology',
+                'Stakeholder Management', 'Go-to-Market', 'Product Analytics',
+                'User Experience', 'Feature Prioritization', 'Product Discovery'
             ];
 
-            // Select appropriate skill library based on role
-            let skillLibrary = generalRecruiterSkills;
-            if (/executive|leadership|director|vp|c-suite|senior/i.test(role)) {
+            const marketingSkills = [
+                'Digital Marketing', 'Content Strategy', 'SEO',
+                'Marketing Analytics', 'Brand Strategy', 'Demand Generation',
+                'Marketing Automation', 'Social Media Marketing', 'Campaign Management',
+                'Lead Generation', 'Growth Marketing', 'Email Marketing'
+            ];
+
+            const salesSkills = [
+                'Sales Strategy', 'Account Management', 'Pipeline Management',
+                'Negotiation', 'CRM Systems', 'Sales Forecasting',
+                'Business Development', 'Client Relations', 'Sales Enablement',
+                'Contract Negotiation', 'Consultative Selling', 'Revenue Growth'
+            ];
+
+            const leadershipSkills = [
+                'Strategic Planning', 'Team Leadership', 'Change Management',
+                'Cross-functional Leadership', 'Executive Communication', 'P&L Management',
+                'Organizational Development', 'Business Strategy', 'Board Relations',
+                'Stakeholder Management', 'Budget Management', 'Operations Management'
+            ];
+
+            // Select appropriate skill library based on ACTUAL role
+            let skillLibrary = leadershipSkills; // default
+            if (isRecruiter && isExecutive) {
                 skillLibrary = executiveRecruiterSkills;
-            } else if (/technical|engineer|software|developer/i.test(role)) {
-                skillLibrary = technicalRecruiterSkills;
+            } else if (isRecruiter) {
+                skillLibrary = recruiterSkills;
+            } else if (isEngineer) {
+                skillLibrary = engineerSkills;
+            } else if (isProduct) {
+                skillLibrary = productSkills;
+            } else if (isMarketing) {
+                skillLibrary = marketingSkills;
+            } else if (isSales) {
+                skillLibrary = salesSkills;
+            } else if (isExecutive) {
+                skillLibrary = leadershipSkills;
             }
 
             // Get current skills that are actually short keywords (filter out sentences)
