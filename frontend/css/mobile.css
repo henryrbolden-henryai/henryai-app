@@ -404,3 +404,40 @@ html, body {
 .scrollable {
     -webkit-overflow-scrolling: touch;
 }
+
+/* ============================================
+   SAFARI-SPECIFIC FIXES
+   ============================================ */
+
+/* Safari renders sidebars differently - ensure nav doesn't overlap header */
+@supports (-webkit-touch-callout: none) {
+    /* Safari-only styles */
+    .strategy-nav {
+        top: 150px !important; /* Push nav down to avoid header overlap */
+        z-index: 999 !important; /* Ensure above other content */
+    }
+
+    .strategy-nav-logo {
+        z-index: 1000 !important;
+    }
+}
+
+/* Fallback for all WebKit browsers */
+.strategy-nav {
+    -webkit-transform: translateZ(0); /* Force GPU layer for smoother rendering */
+}
+
+/* Mobile: ensure nav is accessible but not overlapping */
+@media (max-width: 768px) {
+    .strategy-nav {
+        top: auto !important;
+        bottom: 80px !important;
+        z-index: 999 !important;
+    }
+
+    /* Ensure main content has proper spacing */
+    .main-content,
+    .container {
+        margin-left: 0;
+    }
+}
