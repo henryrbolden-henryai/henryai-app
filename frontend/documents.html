@@ -1448,47 +1448,57 @@ COVER LETTER
         // Generate comprehensive headline with role, expertise, and differentiators
         function generateComprehensiveHeadline(linkedinParsed, resumeOutput, analysisData, level) {
             const role = analysisData?._role || analysisData?.role_title || '';
-            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
+            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || analysisData?.required_skills || [];
             const competencies = resumeOutput.core_competencies || analysisData?.required_skills || [];
 
             // Extract years of experience
-            const years = extractYearsExperience(linkedinParsed, resumeOutput);
+            const years = extractYearsExperience(linkedinParsed, resumeOutput) || 10;
 
             // Get key metrics from experience
             const metrics = extractKeyMetrics(resumeOutput);
 
+            // Get experience data for brand signals
+            const experience = linkedinParsed.experience || [];
+            const companies = experience.map(e => e.company).filter(Boolean);
+
             // Build headline parts
-            const parts = [];
+            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput) || role;
+            let headline = '';
 
             // Start with level + functional area
-            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput);
             if (level && functionalArea) {
-                parts.push(`${level} ${functionalArea}`);
+                headline = `${level} ${functionalArea}`;
             } else if (role) {
-                parts.push(role);
+                headline = role;
+            } else {
+                headline = 'Talent Acquisition Leader';
             }
 
-            // Add key differentiators (max 2-3)
-            const differentiators = [];
-            if (metrics.hires) differentiators.push(`${metrics.hires}+ hires`);
-            if (metrics.teamSize) differentiators.push(`Built teams of ${metrics.teamSize}+`);
-            if (metrics.revenue) differentiators.push(metrics.revenue);
-            if (years) differentiators.push(`${years}+ years`);
+            // Add years of experience
+            headline += ` | ${years}+ Years`;
 
-            // Add top 2-3 keywords that match the role
+            // Add key differentiators based on metrics
+            if (metrics.hires) {
+                headline += ` | ${metrics.hires}+ Strategic Hires`;
+            } else if (metrics.teamSize) {
+                headline += ` | Built Teams of ${metrics.teamSize}+`;
+            }
+
+            // Add brand signals (notable companies)
+            const notableCompanies = companies.filter(c =>
+                /google|meta|facebook|amazon|apple|microsoft|netflix|uber|airbnb|spotify|stripe|salesforce|linkedin/i.test(c)
+            );
+            if (notableCompanies.length > 0 && headline.length < 150) {
+                headline += ` | Ex-${notableCompanies[0]}`;
+            }
+
+            // Add top 2 keywords if space permits
             const relevantKeywords = atsKeywords
-                .filter(kw => kw.length > 3 && !kw.toLowerCase().includes('etc'))
-                .slice(0, 3);
+                .filter(kw => kw.length > 3 && kw.length < 25 && !kw.toLowerCase().includes('etc'))
+                .slice(0, 2);
 
-            // Combine into headline (max 220 chars)
-            let headline = parts[0] || 'Professional';
-
-            if (differentiators.length > 0) {
-                headline += ` | ${differentiators.slice(0, 2).join(' | ')}`;
-            }
-
-            if (relevantKeywords.length > 0 && headline.length < 150) {
-                headline += ` | ${relevantKeywords.slice(0, 2).join(', ')}`;
+            if (relevantKeywords.length > 0 && headline.length < 160) {
+                headline += ` | ${relevantKeywords.join(', ')}`;
             }
 
             // Ensure we don't exceed 220 characters
@@ -1526,49 +1536,89 @@ COVER LETTER
             return reasons;
         }
 
-        // Generate comprehensive About/Summary section
+        // Generate comprehensive About/Summary section (4 paragraphs, 600-800 words)
         function generateComprehensiveSummary(linkedinParsed, resumeOutput, analysisData) {
-            const role = analysisData?._role || analysisData?.role_title || '';
+            const role = analysisData?._role || analysisData?.role_title || 'professional';
             const company = analysisData?._company_name || '';
-            const years = extractYearsExperience(linkedinParsed, resumeOutput);
-            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput);
+            const years = extractYearsExperience(linkedinParsed, resumeOutput) || 10;
+            const functionalArea = getBroadFunctionalArea(analysisData, resumeOutput) || role;
             const metrics = extractKeyMetrics(resumeOutput);
-            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || [];
+            const atsKeywords = resumeOutput.ats_keywords || analysisData?.ats_keywords || analysisData?.required_skills || [];
 
-            // Build a compelling 3-paragraph summary
-            let summary = '';
+            // Get experience data from LinkedIn or resume
+            const experience = linkedinParsed.experience || [];
+            const currentRole = experience[0] || {};
+            const previousRoles = experience.slice(1, 3);
 
-            // Paragraph 1: Hook + Identity (first 3 lines visible before "see more")
-            const hookLine = `${functionalArea || role} with ${years ? years + '+ years' : 'extensive experience'} driving results through strategic talent initiatives.`;
+            // Extract key information
+            const currentTitle = currentRole.title || resumeOutput.experience_sections?.[0]?.title || role;
+            const currentCompany = currentRole.company || resumeOutput.experience_sections?.[0]?.company || '';
+            const allBullets = [];
+            (resumeOutput.experience_sections || []).forEach(exp => {
+                if (exp.bullets) allBullets.push(...exp.bullets);
+            });
 
-            // Add key achievement for hook
-            const topAchievement = getTopAchievement(resumeOutput);
-            if (topAchievement) {
-                summary = `${hookLine}\n\n${topAchievement}`;
+            // PARAGRAPH 1: Value Proposition (Hook - first 3 lines visible before "see more")
+            let para1 = `I build ${functionalArea.toLowerCase()} functions that become competitive advantages, not bottlenecks. `;
+            para1 += `With ${years}+ years of experience across high-growth startups to Fortune 500 companies, I've learned that the best talent strategies aren't about filling seats—they're about building organizations that can execute on ambitious goals. `;
+            para1 += `My approach combines strategic vision with operational excellence: I architect scalable processes, instrument everything for continuous improvement, and partner with leadership to ensure talent strategy aligns with business outcomes. `;
+            para1 += `The common thread across my career? Transforming recruiting from a reactive function into a proactive strategic advantage.`;
+
+            // PARAGRAPH 2: Methodology/Approach
+            let para2 = `My approach is ruthlessly prioritized and data-informed. `;
+            para2 += `I don't chase requisitions—I chase outcomes that move the business forward. `;
+            para2 += `I start with the business problem, pressure-test assumptions with market data, and build the minimum viable process that delivers quality hires at scale. `;
+            para2 += `I believe the best hiring decisions come from combining quantitative signals with qualitative insight—not just screening candidates, but understanding the problems they'll solve and the teams they'll join. `;
+            para2 += `I'd rather fill 10 critical roles with A-players than 50 roles with people who won't move the needle. `;
+            para2 += `When something isn't working, I kill it and iterate—ego aside.`;
+
+            // PARAGRAPH 3: Track Record (with specifics from their data)
+            let para3 = '';
+            if (currentCompany) {
+                para3 += `At ${currentCompany}, I've ${metrics.hires ? `personally sourced and closed ${metrics.hires}+ critical hires` : 'built scalable talent acquisition processes'} while maintaining bar-raising quality standards. `;
+            }
+
+            // Add metrics if available
+            if (metrics.reduction) {
+                para3 += `I reduced time-to-fill by ${metrics.reduction} through process optimization and proactive pipelining. `;
             } else {
-                summary = hookLine;
+                para3 += `I've consistently reduced time-to-fill through process optimization, proactive pipelining, and building strong relationships with hiring managers. `;
             }
 
-            // Paragraph 2: What you do + how you create value
-            const valueProps = [];
-            if (metrics.hires) valueProps.push(`Built and scaled teams with ${metrics.hires}+ strategic hires`);
-            if (metrics.reduction) valueProps.push(`Reduced time-to-fill by ${metrics.reduction}`);
-            if (metrics.pipeline) valueProps.push(`Developed talent pipelines that drive organizational growth`);
-
-            if (valueProps.length > 0) {
-                summary += `\n\nWhat I bring to the table:\n• ${valueProps.join('\n• ')}`;
+            // Add previous experience
+            if (previousRoles.length > 0) {
+                const prevCompanies = previousRoles.map(r => r.company).filter(Boolean).join(' and ');
+                if (prevCompanies) {
+                    para3 += `Previously at ${prevCompanies}, I built recruiting functions from the ground up, establishing processes that scaled with company growth. `;
+                }
             }
 
-            // Paragraph 3: Expertise areas (with ATS keywords)
+            // Add achievement bullet if available
+            const topBullet = allBullets.find(b => /\d+%|\$\d+|\d+ (hires|candidates|team)/i.test(b));
+            if (topBullet) {
+                para3 += topBullet + ' ';
+            } else {
+                para3 += `My track record includes building diverse talent pipelines, improving offer acceptance rates, and creating employer brand strategies that attract passive candidates. `;
+            }
+
+            // PARAGRAPH 4: Current Focus + Call to Action
+            let para4 = `Currently focused on: `;
+
+            // Add ATS keywords as focus areas
             if (atsKeywords.length > 0) {
-                const expertiseList = atsKeywords.slice(0, 8).join(' • ');
-                summary += `\n\nCore expertise: ${expertiseList}`;
+                const focusAreas = atsKeywords.slice(0, 4).map(kw =>
+                    kw.charAt(0).toUpperCase() + kw.slice(1).toLowerCase()
+                );
+                para4 += focusAreas.join(', ') + '. ';
+            } else {
+                para4 += `Building scalable talent acquisition strategies, developing high-performing recruiting teams, and partnering with leadership to drive organizational growth. `;
             }
 
-            // Add call to action
-            summary += `\n\nLet's connect if you're looking for someone who can ${role ? `excel as a ${role}` : 'drive talent strategy'} and deliver measurable impact.`;
+            para4 += `I'm excited about the intersection of technology and talent—using data and AI to find better candidates faster while maintaining the human judgment that great hiring requires. `;
+            para4 += `If you're building something ambitious and need someone who can turn talent strategy into competitive advantage, let's connect.`;
 
-            return summary;
+            // Combine all paragraphs with double newlines
+            return `${para1}\n\n${para2}\n\n${para3}\n\n${para4}`;
         }
 
         // Generate explanation for why the summary works
