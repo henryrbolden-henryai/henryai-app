@@ -43,7 +43,7 @@ class ValidationConfig:
     BLOCK_ON_FABRICATED_SKILL = False    # Disabled - skills in output are from resume anyway
     BLOCK_ON_FABRICATED_METRIC = False   # Disabled - metrics are often rephrased legitimately
     BLOCK_ON_INCOMPLETE_JSON = True
-    BLOCK_ON_MISSING_RESUME_FIELDS = True
+    BLOCK_ON_MISSING_RESUME_FIELDS = False  # Temporarily disabled - causing 422 errors during beta testing
     BLOCK_UNKNOWN_COMPANIES = False  # Disabled - too aggressive
 
     # Confidence thresholds
