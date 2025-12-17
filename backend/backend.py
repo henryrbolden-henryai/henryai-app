@@ -3588,13 +3588,19 @@ IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or c
 
 ### Step 7: Strategic Action (based on fit score)
 Write this in FIRST PERSON, directly to the candidate. Be specific and actionable.
-IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or colons instead.
 
-- 70%+ fit: "Apply within 24 hours and immediately find the hiring manager or VP of [function] on LinkedIn. With [X] expected applicants, you cannot rely on the ATS alone. Your [specific strength from resume] gives you an edge. Use it in your outreach."
-- 50-69% fit: "Apply, but do not just submit and hope. You are competing against candidates with more direct experience. Find someone at the company who can refer you internally. That is your only real path here."
-- <50% fit: "I will be direct: this is a long shot. [X]+ better-matched candidates means your cold application probably will not get seen. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit."
+CRITICAL FORMATTING RULES:
+- ALWAYS start with the candidate's FIRST NAME from their resume (e.g., "Rawan, I'll be straight with you:")
+- NEVER use "there" or generic language - always use their actual name
+- Use proper punctuation: periods, commas, colons. NO em dashes (—)
+- Keep it conversational but direct
 
-The strategic_action field should feel like a recruiter giving honest advice, not a form letter.
+Examples by fit score:
+- 70%+ fit: "[FirstName], your move: Apply within 24 hours and immediately find the hiring manager or VP of [function] on LinkedIn. With [X] expected applicants, you cannot rely on the ATS alone. Your [specific strength from resume] gives you an edge. Use it in your outreach."
+- 50-69% fit: "[FirstName], apply, but do not just submit and hope. You are competing against candidates with more direct experience. Find someone at the company who can refer you internally. That is your only real path here."
+- <50% fit: "[FirstName], I'll be straight with you: this is a long shot. [X]+ better-matched candidates means your cold application probably will not get seen. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit."
+
+The strategic_action field should feel like a recruiter giving honest, personalized advice, not a form letter.
 
 === THEN TRADITIONAL JD ANALYSIS ===
 
