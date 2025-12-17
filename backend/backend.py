@@ -2830,7 +2830,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["fit_score_breakdown"]["hard_cap_reason"] = hard_cap_reason
     response_data["fit_score_breakdown"]["final_score"] = capped_score
 
-    # Force-correct recommendation based on capped score (CONSERVATIVE THRESHOLDS)
+    # Force-correct recommendation based on capped score (6-TIER GRADUATED SYSTEM)
     if capped_score < 50:
         correct_recommendation = "Do Not Apply"
         alternative_actions = [
@@ -2839,18 +2839,36 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             "Consider Associate/Junior level roles at this company if available"
         ]
     elif capped_score < 60:
-        correct_recommendation = "Conditional Apply"
+        correct_recommendation = "Do Not Apply"
         alternative_actions = [
-            "Target a lower level at this company (Associate instead of Senior, Mid-level instead of Lead)",
-            "Emphasize transferable skills and specific outcomes in your application",
-            "Network directly with hiring manager rather than applying through ATS"
+            f"You need {required_years - candidate_years:.1f} more years of relevant experience for this role",
+            "Target mid-level instead of senior roles at this experience level",
+            "Only apply if you have a strong internal referral who can advocate for you"
+        ]
+    elif capped_score < 70:
+        correct_recommendation = "Apply with Caution"
+        alternative_actions = [
+            "Focus your energy on roles where you're 70%+ fit instead",
+            "Only apply if you have bandwidth after higher-fit applications",
+            "Network with someone at the company before applying through ATS"
         ]
     elif capped_score < 80:
+        correct_recommendation = "Conditional Apply"
+        alternative_actions = [
+            "Apply and reach out directly to hiring manager on LinkedIn",
+            "Emphasize specific achievements that match the top 3 requirements",
+            "Address experience gaps proactively in your cover letter"
+        ]
+    elif capped_score < 90:
         correct_recommendation = "Apply"
         alternative_actions = []
     else:
-        correct_recommendation = "Apply"  # Removed "Strongly Apply" - too optimistic
-        alternative_actions = []
+        correct_recommendation = "Strongly Apply"
+        alternative_actions = [
+            "Apply immediately - you're a top-tier match",
+            "Connect with hiring manager within 24 hours of applying",
+            "Proactive outreach will help you stand out from other strong candidates"
+        ]
 
     # Override recommendation if Claude gave something too optimistic
     current_recommendation = response_data.get("recommendation", "")
@@ -2858,10 +2876,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     # Map of recommendation severity (lower = more conservative)
     rec_severity = {
         "Do Not Apply": 1,
-        "Conditional Apply": 2,
-        "Apply with caution": 2.5,
-        "Apply": 3,
-        "Strongly Apply": 4
+        "Apply with Caution": 2,
+        "Conditional Apply": 3,
+        "Apply": 4,
+        "Strongly Apply": 5
     }
 
     current_severity = rec_severity.get(current_recommendation, 0)
@@ -2872,8 +2890,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["recommendation"] = correct_recommendation
 
         # Update ALL recommendation fields to ensure UI displays correct value
-        # Map "Do Not Apply" to "Skip" for intelligence_layer format
-        il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
+        # Map recommendations to intelligence_layer format
+        il_mapping = {
+            "Do Not Apply": "Skip",
+            "Apply with Caution": "Apply with caution",
+            "Conditional Apply": "Apply with caution",
+            "Apply": "Apply",
+            "Strongly Apply": "Apply"
+        }
+        il_recommendation = il_mapping.get(correct_recommendation, correct_recommendation)
 
         # Update intelligence_layer.apply_decision.recommendation
         if "intelligence_layer" in response_data:
