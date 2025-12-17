@@ -2737,6 +2737,174 @@ Remember: NO fabrication, NO generic filler, NO clichés."""
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def force_apply_experience_penalties(response_data: dict, resume_data: dict = None) -> dict:
+    """
+    Force-apply experience penalties and hard caps to Claude's response.
+    This ensures penalties are applied even if Claude ignores the prompt instructions.
+
+    Args:
+        response_data: Parsed JSON response from Claude
+        resume_data: Original resume data (optional, for credibility adjustment)
+
+    Returns:
+        Modified response_data with corrected fit_score and recommendation
+    """
+
+    # Extract experience analysis (Claude should have populated this)
+    experience_analysis = response_data.get("experience_analysis", {})
+    required_years = experience_analysis.get("required_years", 0)
+
+    # Skip if no experience requirements detected
+    if required_years == 0:
+        print("🔧 PENALTY ENFORCEMENT: No required_years detected, skipping enforcement")
+        return response_data
+
+    # Try to get adjusted years first, fallback to raw years
+    candidate_years = experience_analysis.get("candidate_years_adjusted_for_credibility")
+    if candidate_years is None:
+        candidate_years = experience_analysis.get("candidate_years_in_role_type", 0)
+
+    # Get current fit score from Claude
+    original_fit_score = response_data.get("fit_score", 0)
+    if original_fit_score is None:
+        original_fit_score = 0
+
+    # Calculate years percentage
+    if required_years > 0:
+        years_percentage = (candidate_years / required_years) * 100
+    else:
+        years_percentage = 100  # No requirement specified
+
+    # Determine hard cap based on years percentage
+    if years_percentage < 50:
+        hard_cap = 45
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 45%"
+    elif years_percentage < 70:
+        hard_cap = 55
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 55%"
+    elif years_percentage < 90:
+        hard_cap = 70
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 70%"
+    else:
+        hard_cap = 100  # No cap for candidates with 90%+ of required years
+        hard_cap_reason = None
+
+    # Apply hard cap if necessary
+    capped_score = min(original_fit_score, hard_cap)
+    hard_cap_applied = (capped_score < original_fit_score)
+
+    # Update fit_score
+    response_data["fit_score"] = capped_score
+
+    # Update fit_score_breakdown if it exists
+    if "fit_score_breakdown" not in response_data:
+        response_data["fit_score_breakdown"] = {}
+
+    response_data["fit_score_breakdown"]["calculated_score"] = original_fit_score
+    response_data["fit_score_breakdown"]["hard_cap_applied"] = hard_cap_applied
+    if hard_cap_reason:
+        response_data["fit_score_breakdown"]["hard_cap_reason"] = hard_cap_reason
+    response_data["fit_score_breakdown"]["final_score"] = capped_score
+
+    # Force-correct recommendation based on capped score
+    if capped_score < 55:
+        correct_recommendation = "Do Not Apply"
+        alternative_actions = [
+            f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience instead of {required_years} years",
+            "Build 1-2 more years of experience at an established company (Series B+, >50 employees) before targeting this level",
+            "Consider Associate/Junior level roles at this company if available"
+        ]
+    elif capped_score < 70:
+        correct_recommendation = "Conditional Apply"
+        alternative_actions = [
+            "Target a lower level at this company (Associate instead of Senior, Mid-level instead of Lead)",
+            "Emphasize transferable skills and specific outcomes in your application",
+            "Network directly with hiring manager rather than applying through ATS"
+        ]
+    elif capped_score < 80:
+        correct_recommendation = "Apply"
+        alternative_actions = []
+    else:
+        correct_recommendation = "Strongly Apply"
+        alternative_actions = []
+
+    # Override recommendation if Claude gave something too optimistic
+    current_recommendation = response_data.get("recommendation", "")
+
+    # Map of recommendation severity (lower = more conservative)
+    rec_severity = {
+        "Do Not Apply": 1,
+        "Conditional Apply": 2,
+        "Apply with caution": 2.5,
+        "Apply": 3,
+        "Strongly Apply": 4
+    }
+
+    current_severity = rec_severity.get(current_recommendation, 0)
+    correct_severity = rec_severity.get(correct_recommendation, 0)
+
+    # Only override if Claude was too optimistic
+    if correct_severity < current_severity:
+        response_data["recommendation"] = correct_recommendation
+
+        # Add penalty override note to recommendation_rationale
+        original_rationale = response_data.get("recommendation_rationale", "")
+        response_data["recommendation_rationale"] = (
+            f"⚠️ Recommendation adjusted from '{current_recommendation}' to '{correct_recommendation}' "
+            f"due to experience gap ({years_percentage:.1f}% of required years). {original_rationale}"
+        )
+
+    # Add alternative actions if not present and should be
+    if alternative_actions and not response_data.get("alternative_actions"):
+        response_data["alternative_actions"] = alternative_actions
+
+    # Add experience gap warning if significant gap exists
+    if years_percentage < 70:
+        gaps = response_data.get("gaps", [])
+        if not isinstance(gaps, list):
+            gaps = []
+
+        # Check if experience gap warning already exists
+        has_experience_warning = any(
+            g.get("gap_type") in ["experience_years_mismatch", "required_experience_missing"]
+            for g in gaps
+            if isinstance(g, dict)
+        )
+
+        if not has_experience_warning:
+            gap_warning = {
+                "gap_type": "experience_years_mismatch",
+                "severity": "critical",
+                "gap_description": f"Experience gap: {required_years} years required, {candidate_years:.1f} years actual",
+                "detailed_explanation": (
+                    f"⚠️ EXPERIENCE GAP: This role requires {required_years} years of experience. "
+                    f"You have {candidate_years:.1f} years (after adjusting for company credibility). "
+                    f"This is a {100 - years_percentage:.1f}% gap that will likely result in auto-rejection, "
+                    f"even if your skills align well."
+                ),
+                "impact": "Auto-rejection risk: HIGH - Recruiters filter by years of experience as a first pass",
+                "mitigation_strategy": (
+                    f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience, "
+                    f"or build {required_years - candidate_years:.1f} more years in this role type before applying to this level."
+                )
+            }
+            gaps.insert(0, gap_warning)  # Add at the beginning for visibility
+            response_data["gaps"] = gaps
+
+    # Log the correction
+    print(f"🔧 PENALTY ENFORCEMENT:")
+    print(f"   Original fit_score: {original_fit_score}%")
+    print(f"   Years percentage: {years_percentage:.1f}% ({candidate_years:.1f}/{required_years} years)")
+    print(f"   Hard cap: {hard_cap}%")
+    print(f"   Final fit_score: {capped_score}%")
+    print(f"   Original recommendation: {current_recommendation}")
+    print(f"   Final recommendation: {response_data['recommendation']}")
+    if hard_cap_applied:
+        print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
+
+    return response_data
+
+
 @app.post("/api/jd/analyze")
 async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     """
@@ -3776,6 +3944,10 @@ Role: {request.role_title}
                 {"field": w.field_path, "message": w.message}
                 for w in qa_validation_result.warnings
             ]
+
+        # CRITICAL: Force-apply experience penalties as a backup
+        # This ensures hard caps are enforced even if Claude ignores the prompt instructions
+        parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -9993,4 +10165,3 @@ if __name__ == "__main__":
     else:
         print("⚠️ Voice features disabled (no OPENAI_API_KEY)")
     uvicorn.run(app, host="0.0.0.0", port=port)
-# Force redeploy Tue Dec 16 18:50:24 EST 2025
