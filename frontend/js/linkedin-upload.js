@@ -236,8 +236,21 @@
         dismissModal() {
             const modal = document.getElementById('linkedinModal');
             if (modal) {
+                // Hide immediately via both class and style
                 modal.classList.remove('show');
-                setTimeout(() => modal.remove(), 300);
+                modal.style.display = 'none';
+                modal.style.opacity = '0';
+                modal.style.visibility = 'hidden';
+
+                // Restore body scroll
+                document.body.style.overflow = '';
+
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    if (modal.parentNode) {
+                        modal.remove();
+                    }
+                }, 300);
             }
             sessionStorage.setItem('linkedin_modal_dismissed', 'true');
         }

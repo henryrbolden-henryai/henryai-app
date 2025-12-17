@@ -2747,6 +2747,78 @@ Remember: NO fabrication, NO generic filler, NO clichés."""
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def detect_career_gap(resume_data: Dict) -> Optional[Dict]:
+    """
+    Calculate career gap from resume dates (post-processing, not prompt-based).
+    Returns gap details if gap >= 3 months, None otherwise.
+    """
+    from dateutil import parser as date_parser
+
+    # Get most recent role end date
+    experience = resume_data.get("experience", [])
+    if not experience:
+        return None
+
+    # Parse dates from most recent role
+    most_recent = experience[0]  # Assumes experience is ordered newest first
+    dates_str = most_recent.get("dates", "")
+
+    # Extract end date from "Start - End" or "Start - Present"
+    if " - " not in dates_str:
+        return None
+
+    end_date_str = dates_str.split(" - ")[1].strip()
+
+    # If "Present", no gap
+    if end_date_str.lower() in ["present", "current", "now", "ongoing"]:
+        return None
+
+    try:
+        # Parse end date
+        end_date = date_parser.parse(end_date_str, fuzzy=True)
+
+        # Current date (December 2024)
+        current_date = datetime(2024, 12, 17)
+
+        # Calculate gap in months
+        gap_months = (current_date.year - end_date.year) * 12 + (current_date.month - end_date.month)
+
+        # Only flag gaps >= 3 months
+        if gap_months < 3:
+            return None
+
+        # Determine severity
+        if gap_months < 6:
+            severity = "low"
+            severity_label = "LOW RISK"
+        elif gap_months < 12:
+            severity = "medium"
+            severity_label = "MEDIUM RISK"
+        else:
+            severity = "high"
+            severity_label = "HIGH RISK"
+
+        # Format dates for display
+        end_month_year = end_date.strftime("%B %Y")
+        company_name = most_recent.get("company", "your last company")
+
+        return {
+            "gap_type": "career_gap",
+            "severity": severity,
+            "description": f"Employment gap: {gap_months} months since last role ({end_month_year} to present)",
+            "detailed_explanation": f"Your most recent role ended in {end_month_year}. This is a {gap_months}-month gap. Hiring managers will ask about this period. Frame proactively rather than defensively.",
+            "impact": f"Interview question certainty: HIGH - You will be asked what you've been doing since {end_month_year}",
+            "mitigation": f"Frame as deliberate career reset after your tenure at {company_name}, not forced circumstance. Emphasize intentional job search and skill development during gap. Position as strategic: 'After working at {company_name}, I wanted to be thoughtful about my next role rather than rush into something that wasn't the right fit.'",
+            "duration_months": gap_months,
+            "start_date": end_month_year,
+            "end_date": "Present"
+        }
+
+    except Exception as e:
+        print(f"⚠️ Could not parse career gap: {e}")
+        return None
+
+
 def force_apply_experience_penalties(response_data: dict, resume_data: dict = None) -> dict:
     """
     Force-apply experience penalties and hard caps to Claude's response.
@@ -4322,27 +4394,37 @@ BAND 1: 0-39% — DO NOT APPLY / LONG SHOT
 
 Goal: Stop bad behavior and redirect momentum
 
-strategic_action MUST answer these 4 questions:
-1. Should I apply? → No. This is not competitive. / This is a significant stretch.
-2. Why not, in plain terms? → [Fundamental mismatch: role level, function, skills, or domain]
-3. What should I do instead? → [Specific role types, companies, or adjacencies where candidate IS competitive]
-4. How does this help me win sooner? → [Reinforce that skipping/redirecting is strategic, not failure]
+CRITICAL TONE RULES:
+- NO awkward "You," constructions (reads like warning label)
+- NO messy repetition ("No backend engineering experience Experience gap...")
+- NO false hope ("only pursue if..." at 15%)
+- NO fear tactics or liability language
+- DO sound like smart recruiter pulling user aside
+- DO be calm, decisive, protective
 
-Structure (75-100 words):
-"[Decision: Do not apply / This is a significant stretch]. [Core gap explained using YOUR voice - never third person]. [What's fundamentally missing]. [Alternative path with specific role types/companies]. [Why this redirection is strategic]."
+Structure for DO NOT APPLY explanation:
+"[State what role requires]. [State candidate's background]. [Explain fundamental mismatch]."
 
-Example (0-24%):
-"Do not apply. This role requires 5+ years of hands-on backend engineering in production systems. Your background is Senior Product Management, not software engineering, making this a fundamental function mismatch. Shift your focus to Senior Product Manager roles where your consumer product leadership is competitive. Target delivery, logistics, or platform-driven companies like Uber, DoorDash, or Instacart where your eight years of experience and cross-functional leadership align."
+Structure for YOUR MOVE:
+"Do not apply. [Direct decision]. [Redirect to appropriate roles]. [No exceptions or caveats for scores below 25%]."
 
-CRITICAL TONE RULES for 0-24%:
-- NO "damage credibility" language (too punitive)
-- NO lectures or over-explanation
-- NO shaming or fear-based language
-- DO be direct and clear about the mismatch
-- DO redirect to specific companies and role types
+Example DO NOT APPLY explanation (use this EXACT structure):
+"This role requires 5+ years of hands-on backend engineering experience. Your background is product management, not software engineering, making this a fundamental function mismatch."
+
+Example YOUR MOVE (use this EXACT structure):
+"Do not apply. This is a significant stretch and not a productive use of your time. Focus on roles aligned with your product leadership experience, where you are competitive and can move the process forward."
+
+CRITICAL RULES for 0-24%:
+- NEVER include percentages, system logic, or internal calculations
+- NEVER say "only pursue if..." for scores below 25%
+- NEVER use awkward "You," to start sentences
+- NO "damage credibility" language
+- NO fear-based or liability language
 
 Example (25-39%):
-"This is a significant stretch. The role requires deep enterprise sales experience, but your background is consumer product management. You'd be competing against candidates with 5-7 years selling directly to Fortune 500 CIOs. Consider building sales experience through product-led growth roles first, or target Account Management positions at companies like Stripe or Salesforce where your product expertise translates more directly."
+"This is a significant stretch. The role requires deep enterprise sales experience, but your background is consumer product management. You'd be competing against candidates with 5-7 years of direct enterprise selling experience. Focus on product-led growth roles or Account Management positions at companies like Stripe or Salesforce where your product expertise translates more directly."
+
+Key principle: If it sounds like HR covering liability, rewrite it. If it sounds like a smart recruiter pulling you aside, you nailed it.
 
 Tone: Protective, decisive, redirecting. Direct but not harsh. No shaming.
 
@@ -4352,20 +4434,38 @@ BAND 2: 40-69% — CONSIDER / APPLY WITH CAUTION
 
 Goal: Surface the conditions that must be met before applying
 
-strategic_action MUST answer these 4 questions:
-1. What must you fix or reframe first? → [Specific resume adjustments, positioning changes, or narrative prep]
-2. How do you neutralize the top objections? → [Concrete mitigation strategies for 2-3 key gaps]
-3. When is it actually okay to apply? → [After X, Y, Z are addressed]
-4. How fast should you move? → [Speed guidance AFTER prep is complete]
+CRITICAL RULES:
+- NEVER expose internal scoring logic ("adjusted from Apply to Conditional Apply")
+- NEVER show percentage math ("133.3% of required years")
+- NEVER sound like a rules engine or audit log
+- DO sound confident, human, tactical
+- DO explain conditions clearly without revealing formulas
 
-Structure (100-125 words):
-"[Decision: Before applying / This is viable IF]. [What must be fixed/reframed first - be specific]. [How to neutralize top 2-3 objections with concrete strategies]. [When it's okay to apply: 'Once positioned correctly...']. [Speed guidance: 'apply within 24 hours and reach out to hiring manager']. [Reality check: 'This is viable if you control the narrative']."
+Structure for CONDITIONAL APPLY card:
+"[Strength acknowledgment]. [Clear gap statement]. [Viability assessment]."
 
-Example (55-69% - Consider):
-"Before applying, adjust your resume and outreach to directly address the gaps. Frame your Ripple work as B2C consumer experience, emphasize adjacent customer support and trust initiatives, and clarify your experimentation scale and leadership scope. Once positioned correctly, apply within 24 hours and reach out to the hiring manager on LinkedIn. This is a viable opportunity if you control the narrative. Do not rely on the ATS alone."
+Structure for YOUR MOVE:
+"Before applying, [specific positioning changes]. [Proof points to lead with]. Once positioned, [timing + outreach strategy]. [Reality check about competition]."
+
+Example CONDITIONAL APPLY (use this EXACT structure):
+"You have strong consumer product experience at scale, but there's a meaningful experience gap relative to this role's requirements. This is a viable opportunity if you control the narrative and lead with the right proof points."
+
+Example YOUR MOVE (use this EXACT structure):
+"Before applying, tighten your resume and outreach to address the gaps directly. Lead with your consumer product work at 2.3M user scale, self-service optimization, and cross-functional collaboration. Once positioned, apply within 24 hours and reach out to the hiring manager on LinkedIn. With heavy competition, you cannot rely on the ATS alone."
+
+CRITICAL: Never include in user-facing copy:
+- "Recommendation adjusted from..."
+- Percentage calculations (133.3%, 50%, etc.)
+- System logic explanations
+- Formula references
+- Internal scoring terminology
+
+These belong in tooltips or backend logs, NOT in recommendations.
 
 Example (40-54% - Apply with Caution):
-"This is viable but challenging. Before applying, reframe your IC work as preparation for leadership, not evidence of junior experience. Add quantifiable scope signals: team sizes influenced, budget managed, cross-functional initiatives led. Update your LinkedIn headline to signal Senior PM, not just PM. Once your positioning is tightened, apply and reach out to the hiring manager explaining how your 8 years of consumer product work translates to their customer support domain. Be ready to defend the skill transfer in the recruiter screen."
+"You have relevant product experience, but the seniority and domain requirements present real challenges. This is viable if you position yourself correctly and don't rely on the application alone. Before applying, reframe your work to emphasize leadership scope and quantifiable impact. Lead with team sizes influenced, budget responsibility, and cross-functional initiatives. Once positioned, apply and reach out to the hiring manager directly. Be prepared to address the skill transfer in your first conversation."
+
+Key principle: Never expose internal scoring logic in user-facing copy. Keep Henry authoritative, human, and trusted.
 
 Tone: Strategic partner. Honest about gaps but solution-focused. NOT generic "apply now" energy.
 
@@ -4593,25 +4693,29 @@ Role: {request.role_title}
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
         parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
 
-        # Debug: Check if career gap was detected
+        # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
+        career_gap = detect_career_gap(request.resume)
+        if career_gap:
+            # Ensure gaps array exists
+            if "gaps" not in parsed_data:
+                parsed_data["gaps"] = []
+
+            # Check if career_gap already exists (avoid duplicates)
+            existing_career_gaps = [g for g in parsed_data["gaps"] if isinstance(g, dict) and g.get("gap_type") == "career_gap"]
+            if not existing_career_gaps:
+                parsed_data["gaps"].append(career_gap)
+                print(f"✅ Career gap detected via post-processing: {career_gap['description']}")
+            else:
+                print(f"ℹ️ Career gap already in gaps array (from prompt)")
+        else:
+            print(f"ℹ️ No career gap detected (most recent role is current or gap <3 months)")
+
+        # Debug: Log final gaps state
         if 'gaps' in parsed_data and isinstance(parsed_data['gaps'], list):
             career_gaps = [g for g in parsed_data['gaps'] if isinstance(g, dict) and g.get('gap_type') == 'career_gap']
             if career_gaps:
-                print(f"✅ Career gap detected: {len(career_gaps)} gap(s)")
-                for cg in career_gaps:
-                    print(f"   - {cg.get('description', cg.get('gap_description', 'No description'))}")
-            else:
-                print(f"⚠️ No career_gap type in gaps array. Total gaps: {len(parsed_data['gaps'])}")
-                print(f"   Gap types present: {[g.get('gap_type', 'no_type') if isinstance(g, dict) else 'string' for g in parsed_data['gaps'][:5]]}")
-        else:
-            print(f"❌ No gaps array in response or not a list")
-
-        # Debug: Check career_gap_analysis
-        if 'career_gap_analysis' in parsed_data:
-            cga = parsed_data['career_gap_analysis']
-            print(f"✅ career_gap_analysis present: gaps_detected={cga.get('gaps_detected', [])}")
-        else:
-            print(f"⚠️ No career_gap_analysis field in response")
+                print(f"✅ Final gaps array contains {len(career_gaps)} career gap(s)")
+            print(f"   Total gaps: {len(parsed_data['gaps'])}, Types: {[g.get('gap_type', 'string') if isinstance(g, dict) else 'string' for g in parsed_data['gaps'][:5]]}")
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -4896,6 +5000,16 @@ Role: {request.role_title}
 
             # Apply experience penalties
             parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+
+            # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
+            career_gap = detect_career_gap(request.resume)
+            if career_gap:
+                if "gaps" not in parsed_data:
+                    parsed_data["gaps"] = []
+                existing_career_gaps = [g for g in parsed_data["gaps"] if isinstance(g, dict) and g.get("gap_type") == "career_gap"]
+                if not existing_career_gaps:
+                    parsed_data["gaps"].append(career_gap)
+                    print(f"✅ [Stream] Career gap detected via post-processing: {career_gap['description']}")
 
             # Send complete data
             yield f"data: {json.dumps({'type': 'complete', 'data': parsed_data})}\n\n"
@@ -8261,6 +8375,23 @@ STRICT LEVEL RULES (MANDATORY):
 5. **Identify Red Flags**: Generic claims, missing quantification, title/evidence mismatch
 6. **Gap Analysis**: If target provided, identify specific gaps to that level
 7. **Recommendations**: Provide specific, actionable resume improvements
+
+=== VOICE AND TONE FOR ANALYSIS (CRITICAL) ===
+
+Write the summary and recommendations in SECOND PERSON - sound like a COACH, not an evaluator:
+- "You're clearly operating at..." NOT "The candidate is operating at..."
+- Sound like a coach, not an evaluator
+- Affirm credibility FIRST, then name gaps WITHOUT judgment
+- Give clear path to level up
+- Feel like guidance from someone on their side
+
+Example of CORRECT voice (use this):
+"You're clearly operating at a strong Senior PM level and flirting with Staff scope in several areas. Your resume shows meaningful scale, ownership, and measurable impact across consumer and B2B products, which puts you in range for Staff consideration. Where you need to tighten your story is domain depth. To strengthen your case, explicitly connect your experimentation, trust, and cross-functional leadership work to customer support outcomes so reviewers don't have to make that leap for you."
+
+Example of INCORRECT voice (DO NOT USE):
+"The candidate demonstrates Senior PM capabilities with emerging Staff-level signals. Resume analysis indicates strong quantitative impact metrics. Gap identified in domain-specific positioning."
+
+CRITICAL: This should feel like a smart recruiter giving you a coffee-shop coaching session, not a performance review being read aloud.
 
 === OUTPUT FORMAT ===
 
