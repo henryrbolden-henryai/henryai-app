@@ -2783,16 +2783,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     else:
         years_percentage = 100  # No requirement specified
 
-    # Determine hard cap based on years percentage
+    # Determine hard cap based on years percentage (AGGRESSIVE CAPS)
     if years_percentage < 50:
         hard_cap = 45
         hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 45%"
     elif years_percentage < 70:
+        hard_cap = 50
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 50%"
+    elif years_percentage < 90:
         hard_cap = 55
         hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 55%"
-    elif years_percentage < 90:
-        hard_cap = 70
-        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 70%"
     else:
         hard_cap = 100  # No cap for candidates with 90%+ of required years
         hard_cap_reason = None
@@ -2814,15 +2814,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["fit_score_breakdown"]["hard_cap_reason"] = hard_cap_reason
     response_data["fit_score_breakdown"]["final_score"] = capped_score
 
-    # Force-correct recommendation based on capped score
-    if capped_score < 55:
+    # Force-correct recommendation based on capped score (CONSERVATIVE THRESHOLDS)
+    if capped_score < 50:
         correct_recommendation = "Do Not Apply"
         alternative_actions = [
             f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience instead of {required_years} years",
             "Build 1-2 more years of experience at an established company (Series B+, >50 employees) before targeting this level",
             "Consider Associate/Junior level roles at this company if available"
         ]
-    elif capped_score < 70:
+    elif capped_score < 60:
         correct_recommendation = "Conditional Apply"
         alternative_actions = [
             "Target a lower level at this company (Associate instead of Senior, Mid-level instead of Lead)",
@@ -2833,7 +2833,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         correct_recommendation = "Apply"
         alternative_actions = []
     else:
-        correct_recommendation = "Strongly Apply"
+        correct_recommendation = "Apply"  # Removed "Strongly Apply" - too optimistic
         alternative_actions = []
 
     # Override recommendation if Claude gave something too optimistic
