@@ -2855,13 +2855,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if correct_severity < current_severity:
         response_data["recommendation"] = correct_recommendation
 
-        # ALSO update intelligence_layer.apply_decision.recommendation
-        if "intelligence_layer" in response_data:
-            if "apply_decision" not in response_data["intelligence_layer"]:
-                response_data["intelligence_layer"]["apply_decision"] = {}
-            # Map "Do Not Apply" to "Skip" for intelligence_layer format
-            il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
-            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
+        # TEMPORARILY COMMENTED OUT - causing JSON parsing issues
+        # if "intelligence_layer" in response_data:
+        #     if "apply_decision" not in response_data["intelligence_layer"]:
+        #         response_data["intelligence_layer"]["apply_decision"] = {}
+        #     # Map "Do Not Apply" to "Skip" for intelligence_layer format
+        #     il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
+        #     response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
 
         # Add penalty override note to recommendation_rationale
         original_rationale = response_data.get("recommendation_rationale", "")
