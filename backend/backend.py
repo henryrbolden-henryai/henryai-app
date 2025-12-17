@@ -3959,7 +3959,7 @@ Role: {request.role_title}
     
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
-    
+
     # Parse JSON response
     try:
         if response.strip().startswith("```"):
@@ -3967,8 +3967,57 @@ Role: {request.role_title}
             if response.startswith("json"):
                 response = response[4:]
             response = response.strip()
-        
-        parsed_data = json.loads(response)
+
+        # AGGRESSIVE JSON REPAIR - fix common issues before parsing
+        import re
+
+        # Remove carriage returns and normalize whitespace
+        response = response.replace('\r\n', ' ').replace('\r', ' ')
+
+        # Fix trailing commas before } or ]
+        response = re.sub(r',(\s*[}\]])', r'\1', response)
+
+        # Emergency repair: if response is very long, simplify problematic fields
+        if len(response) > 15000:
+            # Replace long industry_context with safe placeholder
+            response = re.sub(
+                r'"industry_context"\s*:\s*"[^"]{200,}"',
+                '"industry_context": "Industry analysis available in full report."',
+                response
+            )
+            # Replace long function_context with safe placeholder
+            response = re.sub(
+                r'"function_context"\s*:\s*"[^"]{200,}"',
+                '"function_context": "Function analysis available in full report."',
+                response
+            )
+
+        # Try to parse
+        try:
+            parsed_data = json.loads(response)
+        except json.JSONDecodeError as first_error:
+            print(f"⚠️ First JSON parse failed at char {first_error.pos}, attempting repair...")
+
+            # Try to repair by truncating at error position and closing braces
+            error_pos = first_error.pos if hasattr(first_error, 'pos') else len(response)
+            truncated = response[:error_pos]
+
+            # Find the last complete key-value pair
+            last_comma = truncated.rfind(',')
+            if last_comma > 0:
+                truncated = truncated[:last_comma]
+
+            # Count and close unclosed braces/brackets
+            open_braces = truncated.count('{') - truncated.count('}')
+            open_brackets = truncated.count('[') - truncated.count(']')
+            truncated += ']' * open_brackets + '}' * open_braces
+
+            try:
+                parsed_data = json.loads(truncated)
+                print(f"✅ Salvaged JSON by truncating at position {last_comma}")
+            except json.JSONDecodeError:
+                # Re-raise the original error for the outer handler
+                raise first_error
 
         # Validate and cleanup outreach templates if present
         if "outreach_intelligence" in parsed_data:
