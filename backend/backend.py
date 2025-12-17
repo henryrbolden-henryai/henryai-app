@@ -2928,6 +2928,26 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if hard_cap_applied:
         print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
 
+    # POST-PROCESS: Fix "there" → candidate's first name in reality_check
+    if resume_data:
+        candidate_name = resume_data.get("full_name", "") or ""
+        first_name = candidate_name.split()[0] if candidate_name else ""
+
+        if first_name and "reality_check" in response_data:
+            reality_check = response_data["reality_check"]
+
+            # Fix strategic_action field
+            if "strategic_action" in reality_check:
+                original_action = reality_check["strategic_action"]
+                if "there, I'll" in original_action.lower() or original_action.lower().startswith("there,"):
+                    fixed_action = original_action.replace("there, I'll", f"{first_name}, I'll")
+                    fixed_action = fixed_action.replace("There, I'll", f"{first_name}, I'll")
+                    fixed_action = fixed_action.replace("there,", f"{first_name},")
+                    fixed_action = fixed_action.replace("There,", f"{first_name},")
+                    reality_check["strategic_action"] = fixed_action
+                    response_data["reality_check"] = reality_check
+                    print(f"   🔧 Fixed reality_check: 'there' → '{first_name}'")
+
     return response_data
 
 
