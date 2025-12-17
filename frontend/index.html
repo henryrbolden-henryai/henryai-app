@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>HenryHQ — Your Personal Job Search Strategist</title>
+  <title>HenryHQ - Your Personal Job Search Strategist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -735,9 +735,12 @@
   <!-- Top Navigation -->
   <nav class="top-nav" id="topNav">
     <div class="top-nav-container">
-      <div></div>
+      <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
       <div class="top-nav-links" id="navLinks">
-        <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
+        <a href="#about-henry" class="top-nav-link">About</a>
+        <a href="#how-it-works" class="top-nav-link">How it works</a>
+        <a href="#capabilities" class="top-nav-link">Features</a>
+        <a href="login.html" class="top-nav-link" id="loginLink">Dashboard</a>
       </div>
     </div>
   </nav>
@@ -763,8 +766,12 @@
     .top-nav-logo {
       font-family: var(--font-display);
       font-size: 1.5rem;
-      color: #fff;
+      font-weight: 400;
+      color: var(--color-text);
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .top-nav-logo em {
       font-style: italic;
@@ -930,7 +937,7 @@
           I'm Henry, your personal job search strategist. I'm not here to spit out documents like a resume vending machine. I'm here to cut through the noise with recruiter-grade intelligence.
         </p>
         <p>
-          I was built by someone who's hired at scale—Spotify, Uber, National Grid, Heidrick & Struggles—and I've seen the mess from the inside. Most job search tools lie to you, tell you you're a great fit for anything with a pulse, and pump out generic applications that scream "AI-written."
+          I was built by someone who's hired at scale at Spotify, Uber, National Grid, and Heidrick & Struggles. I've seen the mess from the inside. Most job search tools lie to you, tell you you're a great fit for anything with a pulse, and pump out generic applications that scream "AI-written."
         </p>
         <p>
           I don't do that.
@@ -979,7 +986,7 @@
             <div class="step-content">
               <h3>Building your application strategy</h3>
               <p>
-                For each opportunity, I give you a brutally honest fit assessment—strengths, gaps, and whether you should actually apply. You get resume level analysis, LinkedIn profile scoring, and a Reality Check on competition. If the numbers don't add up, I'll tell you to skip it. If it's worth your time, you receive resumes and cover letters tailored to the specific role along with guidance that keeps everything true to you but clearer and more strategic.
+                For each opportunity, I give you a brutally honest fit assessment: strengths, gaps, and whether you should actually apply. You get resume level analysis, LinkedIn profile scoring, and a Reality Check on competition. If the numbers don't add up, I'll tell you to skip it. If it's worth your time, you receive resumes and cover letters tailored to the specific role along with guidance that keeps everything true to you but clearer and more strategic.
               </p>
             </div>
           </div>
@@ -989,7 +996,7 @@
             <div class="step-content">
               <h3>Showing up confidently at each stage</h3>
               <p>
-                I help you prepare with interview intelligence—company research, behavioral practice, and talking points tailored to the role. After interviews, we debrief what worked and what didn't. From networking outreach through offer negotiation, the goal is to help you improve with each conversation and move through the process with intention.
+                I help you prepare with interview intelligence: company research, behavioral practice, and talking points tailored to the role. After interviews, we debrief what worked and what didn't. From networking outreach through offer negotiation, the goal is to help you improve with each conversation and move through the process with intention.
               </p>
             </div>
           </div>
@@ -1051,32 +1058,32 @@
         <div class="feature-grid">
           <div class="feature-item">
             <div class="feature-icon">📊</div>
-            <span class="feature-text">Fit scoring that tells you NOT to apply—honest assessment with 6-tier recommendations from "Strong Apply" to "Do Not Apply" so you focus on roles you can actually win.</span>
+            <span class="feature-text">Fit scoring that tells you NOT to apply. Honest assessment with 6-tier recommendations from "Strong Apply" to "Do Not Apply" so you focus on roles you can actually win.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">🎯</div>
-            <span class="feature-text">Reality Check on competition—see how many qualified candidates you're competing against and whether the compensation is realistic for the scope.</span>
+            <span class="feature-text">Reality Check on competition. See how many qualified candidates you're competing against and whether the compensation is realistic for the scope.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">💼</div>
-            <span class="feature-text">LinkedIn profile optimization—section-by-section LinkedIn analysis with optimization recommendations to align your public presence with target roles.</span>
+            <span class="feature-text">LinkedIn profile optimization. Section-by-section LinkedIn analysis with optimization recommendations to align your public presence with target roles.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">📝</div>
-            <span class="feature-text">Strategic resumes and cover letters, not templates—every document is tailored to the specific role with positioning strategy built in. No generic outputs, no AI tells.</span>
+            <span class="feature-text">Strategic resumes and cover letters, not templates. Every document is tailored to the specific role with positioning strategy built in. No generic outputs.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">🎤</div>
-            <span class="feature-text">Interview prep and conversational debriefs—company research, talking points, practice sessions, and post-interview conversations to improve with each attempt.</span>
+            <span class="feature-text">Interview prep and conversational debriefs. Company research, talking points, practice sessions, and post-interview conversations to improve with each attempt.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">📈</div>
-            <span class="feature-text">Application tracking and rejection analysis—track your pipeline, identify patterns in rejections, and refine your approach based on what's working.</span>
+            <span class="feature-text">Application tracking and rejection analysis. Track your pipeline, identify patterns in rejections, and refine your approach based on what's working.</span>
           </div>
         </div>
       </div>
@@ -1121,7 +1128,7 @@
     // Show preview banner
     const banner = document.createElement('div');
     banner.className = 'preview-banner';
-    banner.innerHTML = '👁️ Preview Mode — You're viewing the landing page as a logged-out user';
+    banner.innerHTML = '👁️ Preview Mode - You're viewing the landing page as a logged-out user';
     document.body.prepend(banner);
     document.body.classList.add('preview-mode');
 
