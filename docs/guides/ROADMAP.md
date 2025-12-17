@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 15, 2025
+**Last Updated:** December 16, 2025
 
 ---
 
@@ -161,6 +161,9 @@ The foundational workflow that takes a candidate from resume to application-read
 8. **Application Tracker** ✅ - Status tracking with actionable next steps
 9. **Reality Check** ✅ - Honest market context and networking strategies
 10. **Download Package** ✅ - ZIP with resume, cover letter, and outreach templates
+11. **6-Tier Recommendation System** ✅ - Graduated guidance from "Strong Apply" to "Do Not Apply"
+12. **Experience Penalty Hard Caps** ✅ - Backend safety net enforces maximum scores based on experience gaps
+13. **Company Credibility Scoring** ✅ - Adjusts experience credit based on company scale/stage
 
 ### 10-Step Workflow
 
@@ -327,7 +330,7 @@ Allow users to upload and manage multiple resumes (up to 5) for multi-track job 
 - **Adjacent Role Mapping** - Surface related roles candidate may not have considered
 - **Level Mismatch Detection** - Flag when candidate is over/under qualified
 
-### LinkedIn Optimization
+### LinkedIn Optimization ✅ (Complete)
 
 - **LinkedIn Profile Score** ✅ - 0-100 rating with severity-based scoring and specific fixes
 - **LinkedIn Profile Upload** ✅ - Upload LinkedIn PDF for automated parsing and analysis
@@ -337,8 +340,9 @@ Allow users to upload and manage multiple resumes (up to 5) for multi-track job 
   - Experience Bullets (with severity prioritization)
   - Skills (role-appropriate keyword recommendations)
   - Optional Sections (Featured, Recommendations, Activity guidance)
-- **LinkedIn Network Intelligence** ✅ (Partial) - Search queries for hiring managers/recruiters
+- **LinkedIn Network Intelligence** ✅ - Search queries for hiring managers/recruiters
 - **LinkedIn Alignment Check** ✅ - Compare LinkedIn profile to job requirements
+- **Role-Agnostic Output** ✅ - Detects role type (recruiter, engineer, PM, marketing, sales) and generates appropriate content
 
 ### Tracker Enhancements
 
@@ -515,11 +519,25 @@ The best features mean nothing if users don't engage with them. Before adding mo
 | Phase 0: Conversational Resume Builder | **Complete (Wave 1)** | ~70% |
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
-| Phase 1.75: Engagement & Coaching | In Progress | ~50% |
-| Phase 2: Strategic Intelligence | Partial | ~30% |
+| Phase 1.75: Engagement & Coaching | In Progress | ~60% |
+| Phase 2: Strategic Intelligence | Partial | ~45% |
 | Phase 3: Performance Intelligence | Partial | ~20% |
 | Phase 4: Distribution & Ecosystem | Not Started | 0% |
 | Phase 5: Monetization & Scale | Not Started | 0% |
+
+### Recent Feature Additions (Dec 15-16, 2025)
+
+| Feature | Phase | Status |
+|---------|-------|--------|
+| LinkedIn Profile Score (0-100) | 2 | Complete |
+| LinkedIn Optimization Strategy | 2 | Complete |
+| LinkedIn Profile Upload | 2 | Complete |
+| 6-Tier Recommendation System | 1 | Complete |
+| Experience Penalty Hard Caps | 1 | Complete |
+| Company Credibility Scoring | 1 | Complete |
+| Backend Safety Net for Scoring | 1 | Complete |
+| Candidate Identity Fix | 1 | Complete |
+| Streaming Analysis Endpoint | Future | Experimental (Reverted) |
 
 ---
 
@@ -722,3 +740,153 @@ const isSales = /sales|account|business development|revenue/i.test(role);
 - `frontend/js/linkedin-upload.js` - Optimized sections rendering
 - `frontend/profile-edit.html` - Resume replace/delete functionality
 - `docs/guides/ROADMAP.md` - Updated with today's features
+
+---
+
+## Session Log: December 16, 2025
+
+### Completed Today
+
+**1. 6-Tier Graduated Recommendation System**
+- Replaced binary Apply/Skip with nuanced 6-tier system:
+  - **Strong Apply** (70%+ fit) - "This is a strong fit. Apply immediately."
+  - **Apply** (60-69% fit) - "Worth applying with strategic positioning."
+  - **Conditional Apply** (50-59% fit) - "Apply if you can address gaps."
+  - **Cautious Apply** (40-49% fit) - "Only apply if you have inside connections."
+  - **Long Shot** (30-39% fit) - "Focus on building relevant experience first."
+  - **Do Not Apply** (<30% fit) - "This role requires fundamentally different experience."
+- Removed "Strongly Apply" tier - was inflating expectations
+- Updated hard caps: 70-89% of required years now caps at 55% (was 70%)
+
+**2. Experience Penalties - Backend Safety Net**
+- Added `force_apply_experience_penalties()` function as post-processing safety net
+- Calculates PM-specific years from resume data
+- Applies hard caps even if Claude's response missed them:
+  - <50% of required years → cap at 45%
+  - 50-69% → cap at 55%
+  - 70-89% → cap at 55%
+- Updates recommendation field based on capped score
+
+**3. Company Credibility Scoring**
+- Added credibility multipliers for experience calculation:
+  - HIGH (1.0x): Public companies, Series B+, established brands
+  - MEDIUM (0.7x): Series A startups, 10-50 employees
+  - LOW (0.3x): Seed-stage startups, <10 employees, defunct companies
+  - ZERO (0x): Operations roles with PM title, volunteer/side projects
+- Credibility adjustments happen BEFORE experience penalty calculations
+- Example: 1 year at seed-stage startup = 0.3 credible years
+
+**4. Reality Check - Strategic Action Improvements**
+- Fixed "there" contamination in strategic_action field
+- Now uses candidate's first name from resume
+- Removed em dashes (—) from all output - prevents AI detection patterns
+- Made strategic_action FIRST PERSON and conversational
+- Proper punctuation enforcement throughout
+
+**5. Streaming Analysis Endpoint (Experimental)**
+- Created `/api/jd/analyze/stream` endpoint for real-time UI updates
+- Uses Server-Sent Events (SSE) for progressive data delivery
+- Fields stream as they're generated: fit_score → recommendation → strengths → applicants
+- Created `analyzing-stream.html` frontend page with skeleton loading
+- **Status:** Reverted to regular flow - experience penalties weren't reflecting correctly in partial data
+- Files preserved for future iteration: `analyzing-stream.html`, `streaming_test.html`
+
+**6. Candidate Identity Bug Fix**
+- Fixed critical bug where analysis was addressing user as "Henry"
+- Added identity instruction to both `/api/jd/analyze` and `/api/jd/analyze/stream`:
+  - "The candidate is NOT Henry, NOT any template, NOT a generic user"
+  - Use actual candidate name from resume
+  - If no name, use "you/your" (second person)
+- Example: "Rawan, this role is a stretch..." NOT "Henry, this role..."
+
+**7. JSON Repair and Error Handling**
+- Added aggressive JSON repair for common Claude response issues
+- Handles unescaped quotes in strings
+- Handles truncated responses
+- Better error logging for diagnosis
+- Improved validation of required fields
+
+### Key Technical Changes
+
+**Recommendation Tiers (fit_score → recommendation):**
+```python
+if capped_score >= 70:
+    return "Strong Apply"
+elif capped_score >= 60:
+    return "Apply"
+elif capped_score >= 50:
+    return "Conditional Apply"
+elif capped_score >= 40:
+    return "Cautious Apply"
+elif capped_score >= 30:
+    return "Long Shot"
+else:
+    return "Do Not Apply"
+```
+
+**Hard Cap Logic:**
+```python
+if years_percentage < 50:
+    hard_cap = 45
+elif years_percentage < 70:
+    hard_cap = 55
+elif years_percentage < 90:
+    hard_cap = 55  # More aggressive than before
+else:
+    hard_cap = 100  # No cap
+```
+
+**PM-Specific Years Calculation:**
+```python
+def calculate_pm_years_from_resume(resume_data):
+    pm_patterns = ["product manager", "pm", "product lead", ...]
+    for experience in resume_data.get("experience", []):
+        if any(pattern in title.lower() for pattern in pm_patterns):
+            total_years += parse_duration(dates)
+    return total_years
+```
+
+### Files Modified
+
+**Backend:**
+- `backend/backend.py` - Lines 3160-3175: Candidate identity instruction
+- `backend/backend.py` - Lines 4315-4330: Streaming endpoint identity instruction
+- `backend/backend.py` - ~Line 4090: 6-tier recommendation system
+- `backend/backend.py` - ~Line 4100: force_apply_experience_penalties()
+- `backend/backend.py` - ~Line 3000: calculate_pm_years_from_resume()
+
+**Frontend:**
+- `frontend/analyze.html` - Line 1044: Reverted to analyzing.html (was analyzing-stream.html)
+- `frontend/analyzing-stream.html` - NEW: Streaming analysis page (unused)
+- `frontend/streaming_test.html` - NEW: Development test page (unused)
+
+**Documentation:**
+- `docs/guides/STREAMING_INTEGRATION.md` - NEW: Streaming implementation guide
+- `docs/guides/ROADMAP.md` - This session log
+
+### Key Decisions
+
+1. **Reverted Streaming** - Experience penalties only apply to complete data, causing partial fit_score to show uncapped values. Regular flow shows correct penalized scores.
+
+2. **More Aggressive Caps** - 70-89% years now caps at 55% (was 70%). Prevents false hope for candidates with significant experience gaps.
+
+3. **Removed Strongly Apply** - Was creating unrealistic expectations. Strong Apply (70%+) is now the highest tier.
+
+4. **First-Person Strategic Action** - "Apply within 24 hours and find the hiring manager..." feels more like coaching than "The candidate should..."
+
+### Bug Fixes Summary
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| "Henry" appearing in analysis | No identity instruction in prompt | Added explicit candidate identity rules |
+| Strategic action says "there, ..." | Fallback name "there" used as greeting | Use warm generic greeting if no name |
+| Fit score too high for junior candidates | Hard caps not enforced by Claude | Backend safety net applies caps post-hoc |
+| Em dashes in output | Claude uses em dashes by default | Explicit punctuation rules in prompt |
+| JSON parsing failures | Unescaped quotes in Claude response | Aggressive JSON repair function |
+
+### What's Next
+
+1. **Test 6-tier system with users** - Get feedback on new recommendation language
+2. **Monitor cap enforcement** - Ensure backend safety net is catching misses
+3. **Streaming (future)** - Revisit when experience penalties can be applied to partial data
+4. **LinkedIn Profile Upload** - Complete integration with job analysis alignment check
