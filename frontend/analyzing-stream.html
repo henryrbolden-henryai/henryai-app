@@ -337,23 +337,25 @@
         }
 
         function startAnalysis() {
-            // Get data from sessionStorage (set by previous page)
-            const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
-            const jdText = sessionStorage.getItem('jdText') || '';
-            const jdAnalysis = JSON.parse(sessionStorage.getItem('jdAnalysis') || '{}');
-            const preferences = JSON.parse(sessionStorage.getItem('preferences') || '{}');
+            // Get data from sessionStorage (set by analyze.html)
+            const pendingAnalysis = JSON.parse(sessionStorage.getItem('pendingAnalysis') || '{}');
 
-            if (!resumeData.name || !jdText) {
+            if (!pendingAnalysis.requestPayload) {
                 showError('Missing required data. Please go back and start over.');
                 return;
             }
 
-            const payload = {
-                resume: resumeData,
-                jd_text: jdText,
-                jd_analysis: jdAnalysis,
-                preferences: preferences
-            };
+            // Extract only the fields the streaming API expects (exclude 'profile')
+            const { company, role_title, job_description, resume, preferences } = pendingAnalysis.requestPayload;
+            const payload = { company, role_title, job_description, resume, preferences };
+
+            // Debug logging to verify payload
+            console.log('=== REQUEST PAYLOAD ===');
+            console.log('Company:', payload.company);
+            console.log('Role Title:', payload.role_title);
+            console.log('Job Description:', payload.job_description ? payload.job_description.substring(0, 100) + '...' : 'EMPTY');
+            console.log('Resume:', payload.resume);
+            console.log('Full Payload:', JSON.stringify(payload, null, 2));
 
             startTimer();
             updateStatus('Connecting to analysis engine...');
