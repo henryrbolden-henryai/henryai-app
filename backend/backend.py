@@ -3146,18 +3146,24 @@ def apply_credibility_adjustment(resume_data: dict, raw_years: float) -> float:
 async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     """
     Analyze job description with MANDATORY Intelligence Layer
-    
+
     This endpoint performs comprehensive strategic analysis BEFORE any execution:
     1. Job Quality Score (apply/caution/skip)
     2. Strategic Positioning Recommendations
     3. Salary & Market Context
     4. Apply/Skip Decision
     5. Then traditional JD analysis
-    
+
     Returns detailed analysis with intelligence layer and fit score
     """
-    
+
     system_prompt = """You are a senior executive recruiter and career strategist.
+
+🚨 CRITICAL: CANDIDATE IDENTITY 🚨
+The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
+When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
+If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
+Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
 
 🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
 Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
@@ -4307,6 +4313,12 @@ async def analyze_jd_stream(request: JDAnalyzeRequest):
 
     # Use the same system prompt as the regular analyze endpoint
     system_prompt = """You are a senior executive recruiter and career strategist.
+
+🚨 CRITICAL: CANDIDATE IDENTITY 🚨
+The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
+When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
+If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
+Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
 
 🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
 Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
