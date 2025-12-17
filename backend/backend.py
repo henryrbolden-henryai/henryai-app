@@ -2772,6 +2772,22 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
                 response_data["experience_analysis"] = experience_analysis
 
+    # BACKEND SAFETY NET: If Claude reports suspiciously high years, calculate ourselves
+    # This catches cases where Claude counts all experience instead of role-specific
+    if resume_data and candidate_years > 3:
+        # Calculate PM-specific years from resume data
+        backend_pm_years = calculate_role_specific_years(resume_data, "pm")
+        print(f"   🔍 Backend PM years calculation: {backend_pm_years:.1f} years")
+
+        # If our calculation is significantly lower, use ours
+        if backend_pm_years < candidate_years * 0.5:
+            print(f"   ⚠️ Claude overcounted! Using backend calculation: {backend_pm_years:.1f} vs Claude's {candidate_years:.1f}")
+            candidate_years = backend_pm_years
+            experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
+            experience_analysis["backend_override"] = True
+            experience_analysis["backend_override_reason"] = f"Claude reported {raw_years} years but backend calculated {backend_pm_years:.1f} PM-specific years"
+            response_data["experience_analysis"] = experience_analysis
+
     # Get current fit score from Claude
     original_fit_score = response_data.get("fit_score", 0)
     if original_fit_score is None:
@@ -2949,6 +2965,128 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     print(f"   🔧 Fixed reality_check: 'there' → '{first_name}'")
 
     return response_data
+
+
+def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm") -> float:
+    """
+    Calculate years of experience in a specific role type by parsing resume data.
+    This is a backend safety net when Claude miscounts experience.
+
+    Args:
+        resume_data: Parsed resume JSON with experience entries
+        target_role_type: "pm", "engineering", "design", "ops", etc.
+
+    Returns:
+        Years of experience in roles matching the target type
+    """
+    if not resume_data:
+        return 0.0
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return 0.0
+
+    # Role title patterns by type
+    role_patterns = {
+        "pm": [
+            "product manager", "product lead", "product owner", "pm",
+            "product director", "head of product", "vp product", "cpo",
+            "associate product manager", "senior product manager", "staff product",
+            "principal product", "group product manager", "technical pm"
+        ],
+        "engineering": [
+            "engineer", "developer", "swe", "software", "programmer",
+            "cto", "tech lead", "architect", "devops"
+        ],
+        "design": [
+            "designer", "ux", "ui", "product design", "design lead",
+            "head of design", "creative director"
+        ],
+        "ops": [
+            "operations", "ops manager", "chief operating", "coo",
+            "business operations", "strategy & ops"
+        ]
+    }
+
+    patterns = role_patterns.get(target_role_type, role_patterns["pm"])
+    total_years = 0.0
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        dates = (exp.get("dates", "") or "").lower()
+
+        # Check if this role matches the target type
+        matches_role = any(pattern in title for pattern in patterns)
+
+        if matches_role:
+            # Parse duration from dates string
+            years = parse_experience_duration(dates)
+            total_years += years
+            print(f"   📊 Role match: '{exp.get('title', '')}' = {years:.1f} years")
+
+    return total_years
+
+
+def parse_experience_duration(dates_str: str) -> float:
+    """
+    Parse a date range string to calculate years.
+    Handles formats like:
+    - "Jan 2022 - Present"
+    - "2020 - 2023"
+    - "June 2023 - Dec 2024"
+    - "1 year 3 months"
+    """
+    import re
+    from datetime import datetime
+
+    if not dates_str:
+        return 0.0
+
+    dates_str = dates_str.lower().strip()
+
+    # Check for direct duration format (e.g., "1 year 3 months")
+    year_match = re.search(r'(\d+)\s*year', dates_str)
+    month_match = re.search(r'(\d+)\s*month', dates_str)
+    if year_match or month_match:
+        years = int(year_match.group(1)) if year_match else 0
+        months = int(month_match.group(1)) if month_match else 0
+        return years + (months / 12)
+
+    # Try to parse date range
+    # Handle "present" or "current"
+    if "present" in dates_str or "current" in dates_str:
+        end_date = datetime.now()
+    else:
+        # Try to extract end year
+        years_in_str = re.findall(r'20\d{2}', dates_str)
+        if len(years_in_str) >= 2:
+            end_date = datetime(int(years_in_str[-1]), 12, 1)
+        elif len(years_in_str) == 1:
+            end_date = datetime(int(years_in_str[0]), 12, 1)
+        else:
+            return 0.5  # Default to 6 months if can't parse
+
+    # Extract start year
+    years_in_str = re.findall(r'20\d{2}', dates_str)
+    if years_in_str:
+        start_year = int(years_in_str[0])
+        # Try to get month
+        month_names = ["jan", "feb", "mar", "apr", "may", "jun",
+                       "jul", "aug", "sep", "oct", "nov", "dec"]
+        start_month = 1
+        for i, month in enumerate(month_names):
+            if month in dates_str[:20]:  # Check first part of string
+                start_month = i + 1
+                break
+
+        start_date = datetime(start_year, start_month, 1)
+        duration = (end_date - start_date).days / 365.25
+        return max(0, duration)
+
+    return 0.5  # Default
 
 
 def apply_credibility_adjustment(resume_data: dict, raw_years: float) -> float:
