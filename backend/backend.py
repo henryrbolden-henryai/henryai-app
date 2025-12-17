@@ -898,16 +898,21 @@ class SessionHistoryResponse(BaseModel):
 # HELPER FUNCTIONS
 # ============================================================================
 
-def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3) -> str:
-    """Call Claude API with given prompts and automatic retry for overload errors"""
+def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0) -> str:
+    """Call Claude API with given prompts and automatic retry for overload errors.
+
+    Args:
+        temperature: Controls randomness. Use 0 for deterministic scoring, higher for creative tasks.
+    """
     import time
 
     for attempt in range(max_retries):
         try:
-            print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries})")
+            print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
             message = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=max_tokens,
+                temperature=temperature,  # Use temperature=0 for deterministic fit scoring
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}]
             )
@@ -937,16 +942,21 @@ def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, m
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
 
-def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3):
-    """Call Claude API with streaming support - yields chunks of text, with retry for overload"""
+def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0):
+    """Call Claude API with streaming support - yields chunks of text, with retry for overload
+
+    Args:
+        temperature: Controls randomness. Use 0 for deterministic scoring.
+    """
     import time
 
     for attempt in range(max_retries):
         try:
-            print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries})")
+            print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
                 max_tokens=max_tokens,
+                temperature=temperature,  # Use temperature=0 for deterministic fit scoring
                 system=system_prompt,
                 messages=[{"role": "user", "content": user_message}]
             ) as stream:
@@ -2891,12 +2901,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         # Update ALL recommendation fields to ensure UI displays correct value
         # Map recommendations to intelligence_layer format
+        # NOTE: Use "Do Not Apply" consistently (not "Skip") per 6-tier system
         il_mapping = {
-            "Do Not Apply": "Skip",
-            "Apply with Caution": "Apply with caution",
-            "Conditional Apply": "Apply with caution",
+            "Do Not Apply": "Do Not Apply",
+            "Apply with Caution": "Apply with Caution",
+            "Conditional Apply": "Conditional Apply",
             "Apply": "Apply",
-            "Strongly Apply": "Apply"
+            "Strongly Apply": "Strongly Apply"
         }
         il_recommendation = il_mapping.get(correct_recommendation, correct_recommendation)
 
@@ -2969,7 +2980,105 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if hard_cap_applied:
         print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
 
+    # CRITICAL: Validate and fix strategic_action/recommendation consistency
+    response_data = validate_recommendation_consistency(response_data, capped_score)
+
     return response_data
+
+
+def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> dict:
+    """
+    Ensure recommendation and strategic_action match the fit_score tone.
+    Fixes contradictions like "Skip" recommendation but "strong fit" language.
+
+    Args:
+        analysis_data: Parsed response data
+        fit_score: The final capped fit score
+
+    Returns:
+        Modified analysis_data with consistent messaging
+    """
+    recommendation = (analysis_data.get("recommendation") or "").lower()
+    reality_check = analysis_data.get("reality_check", {})
+    strategic_action = (reality_check.get("strategic_action") or "").lower() if reality_check else ""
+
+    # Check for skip-type recommendations
+    skip_signals = ["skip", "do not apply", "not recommended", "pass on this"]
+    is_skip_recommendation = any(signal in recommendation for signal in skip_signals)
+
+    # Check for apply-type language that shouldn't appear in skip scenarios
+    apply_signals = ["strong fit", "strong match", "excellent match", "good fit", "great fit",
+                     "well-positioned", "competitive", "prioritize this", "apply immediately"]
+    has_apply_language = any(signal in strategic_action for signal in apply_signals)
+
+    # Detect contradiction: skip recommendation but apply language
+    if is_skip_recommendation and has_apply_language:
+        print(f"⚠️ CONTRADICTION DETECTED: recommendation={recommendation}, but strategic_action has apply language")
+
+        # Get candidate name for personalized message
+        candidate_name = None
+        if analysis_data.get("_resume_json"):
+            resume = analysis_data.get("_resume_json", {})
+            candidate_name = resume.get("full_name") or resume.get("contact", {}).get("name")
+        if not candidate_name:
+            candidate_name = "You"
+
+        # Get top gaps for explanation
+        gaps = analysis_data.get("gaps", [])
+        gap_descriptions = []
+        for gap in gaps[:2]:
+            if isinstance(gap, dict):
+                gap_descriptions.append(gap.get("gap_description") or gap.get("description", ""))
+            elif isinstance(gap, str):
+                gap_descriptions.append(gap)
+
+        gaps_summary = " ".join(gap_descriptions[:2]) if gap_descriptions else "significant experience gaps exist"
+
+        # Generate a consistent skip message
+        if fit_score < 45:
+            new_strategic_action = (
+                f"{candidate_name}, this role is a significant stretch. {gaps_summary}. "
+                f"Only pursue if you have an inside connection or exceptional circumstances that aren't reflected in your resume."
+            )
+        elif fit_score < 55:
+            new_strategic_action = (
+                f"{candidate_name}, this is a stretch role. {gaps_summary}. "
+                f"Be strategic about positioning if you decide to pursue it. Consider targeting similar roles at earlier-stage companies."
+            )
+        else:
+            new_strategic_action = (
+                f"{candidate_name}, this role has addressable gaps. {gaps_summary}. "
+                f"Focus on roles where you're a stronger fit, or network your way in before applying through the ATS."
+            )
+
+        # Update the strategic_action
+        if reality_check:
+            reality_check["strategic_action"] = new_strategic_action
+            analysis_data["reality_check"] = reality_check
+            print(f"✅ Rewrote strategic_action to match {recommendation} recommendation")
+
+    # Also check recommendation_rationale for contradictions
+    rationale = (analysis_data.get("recommendation_rationale") or "").lower()
+    if is_skip_recommendation and any(signal in rationale for signal in apply_signals):
+        print(f"⚠️ Rationale has contradictory apply language for skip recommendation")
+        # The rationale is usually already updated by force_apply_experience_penalties, but double-check
+        if "adjusted" not in rationale.lower():
+            fit_score_int = int(fit_score)
+            if fit_score_int < 45:
+                tone = "This is a significant stretch. Only pursue if you have an inside connection."
+            elif fit_score_int < 55:
+                tone = "This is a stretch role. Be strategic about positioning if you pursue it."
+            elif fit_score_int < 70:
+                tone = "This is a moderate fit with addressable gaps."
+            elif fit_score_int < 85:
+                tone = "This is a good fit worth pursuing."
+            else:
+                tone = "This is a strong match. Prioritize this application."
+
+            analysis_data["recommendation_rationale"] = tone
+            print(f"✅ Updated recommendation_rationale to: {tone}")
+
+    return analysis_data
 
 
 def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm") -> float:
@@ -3159,11 +3268,42 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
 
     system_prompt = """You are a senior executive recruiter and career strategist.
 
-🚨 CRITICAL: CANDIDATE IDENTITY 🚨
-The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
-When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
-If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
-Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
+🚨🚨🚨 CRITICAL - CANDIDATE IDENTITY & VOICE (READ FIRST) 🚨🚨🚨
+- The candidate is NOT Henry
+- The candidate is NOT a template user
+- The candidate is the ACTUAL PERSON whose resume was uploaded
+
+SECOND-PERSON COACHING TONE (MANDATORY):
+When writing strategic_action, recommendation_rationale, gaps, strengths, and positioning advice:
+- ALWAYS use second person ("you", "your") when addressing the candidate
+- NEVER use third person ("[Name]'s", "the candidate's", "their background")
+- Write as if you're coaching them directly in a 1:1 conversation
+- You may use their first name + "your" (e.g., "Maya, your background...")
+
+Examples of CORRECT voice:
+✅ "Maya, your background is strong in consumer products..."
+✅ "Your eight years of PM experience positions you well..."
+✅ "Focus on your Ripple experience when reaching out..."
+✅ "Before applying, tighten your resume to close these gaps..."
+
+Examples of WRONG voice (NEVER use these):
+❌ "Maya, maya's background is strong..." (third person possessive)
+❌ "Maya's eight years of PM experience positions her well..." (third person)
+❌ "The candidate should focus on their Ripple experience..." (third person)
+❌ "Her background demonstrates..." (third person)
+
+This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy.
+
+🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
+The recommendation_rationale MUST match the fit_score tone:
+- fit_score < 45%: "This is a significant stretch. Only pursue if you have an inside connection or exceptional circumstances."
+- fit_score 45-54%: "This is a stretch role. Be strategic about positioning if you pursue it."
+- fit_score 55-69%: "This is a moderate fit with addressable gaps."
+- fit_score 70-84%: "This is a good fit worth pursuing."
+- fit_score >= 85%: "This is a strong match - prioritize this application."
+
+NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
+NEVER say "this is a stretch" when fit_score is above 70%.
 
 🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
 Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
@@ -3405,6 +3545,28 @@ Even if fit_score is 70%+, override to "Conditional Apply" or "Do Not Apply" if 
 - Candidate is targeting 2+ levels above their current experience
 - Candidate's longest tenure in role type is <1 year (signals instability or lack of depth)
 
+🚨🚨🚨 CRITICAL VALIDATION RULE - MESSAGING MUST MATCH RECOMMENDATION 🚨🚨🚨
+The strategic_action field MUST match the recommendation:
+- If recommendation is "Skip", "Do Not Apply", or "Apply with Caution" → strategic_action must explain WHY to skip/be cautious
+- If recommendation is "Apply" or "Strongly Apply" → strategic_action must encourage application
+- NEVER say "strong fit", "excellent match", or "prioritize this" if the recommendation is to skip
+- NEVER say "skip" or "not recommended" if the recommendation is to apply
+
+Examples:
+❌ BAD: recommendation="Do Not Apply", strategic_action="Strong fit with your engineering leadership..."
+✅ GOOD: recommendation="Do Not Apply", strategic_action="This role requires 8+ years consumer PM experience. Your strength is engineering management, not product..."
+
+❌ BAD: recommendation="Apply", strategic_action="This is a stretch, consider skipping..."
+✅ GOOD: recommendation="Apply", strategic_action="This role aligns with your technical leadership background..."
+
+🚨 GAPS MUST REFLECT FIT SCORE - DO NOT REUSE GAPS FROM PREVIOUS ANALYSES 🚨
+- If fit_score < 50%: Focus on FOUNDATIONAL gaps (experience years, core skills, scope mismatch)
+- If fit_score 50-70%: Focus on SPECIFIC gaps (domain knowledge, tool expertise, team size)
+- If fit_score > 70%: Focus on MINOR gaps (nice-to-haves, preferred qualifications)
+
+The gaps array should be DIFFERENT at 45% fit vs 82% fit for the same candidate/JD pair.
+Always regenerate gaps based on the current fit_score, not cached from previous attempts.
+
 **STEP 5: Include Experience Mismatch Warnings**
 
 If any penalties were applied, add these warnings to the gaps array:
@@ -3447,6 +3609,48 @@ If any penalties were applied, add these warnings to the gaps array:
      "detailed_explanation": "⚠️ Your most recent PM role at [Company] is at an early-stage/defunct startup with limited scale (<10 employees, no active website). Recruiters may discount this experience. Your adjusted credible PM experience is [X] years (vs [Y] years stated on resume).",
      "impact": "Experience discounting risk: MEDIUM-HIGH - Hiring managers may not consider early-stage startup PM work equivalent to PM work at established companies",
      "mitigation_strategy": "Emphasize specific shipped features with measurable outcomes (user counts, revenue, engagement metrics). Highlight technical depth and cross-functional skills gained. Consider targeting roles requiring [adjusted years] of experience rather than [stated years], or gain 1-2 years at a more established company (Series B+, >50 employees) to build credibility."
+   }
+
+5. CAREER GAP WARNING (if gap between most recent role end date and current date):
+   Check the candidate's most recent role end date against the current date (December 2024).
+
+   Gap severity thresholds:
+   - 3-6 months: LOW risk - "Recent career transition"
+   - 6-12 months: MEDIUM risk - "Extended gap requiring explanation"
+   - 12+ months: HIGH risk - "Significant employment gap"
+
+   For gaps 3+ months, include this in gaps array:
+   {
+     "gap_type": "career_gap",
+     "severity": "low" | "medium" | "high",
+     "gap_description": "Employment gap: [X] months since last role ([Month Year] to present)",
+     "detailed_explanation": "⚠️ Your most recent role ended in [Month Year]. This is a [X]-month gap. Hiring managers will ask about this period. Frame proactively rather than defensively.",
+     "impact": "Interview question certainty: HIGH - You will be asked what you've been doing since [Month Year]",
+     "mitigation_strategy": "Frame as deliberate career reset after [tenure] at [Last Company], not forced circumstance. Emphasize intentional job search and skill development during gap. If asked, position as strategic: 'After [X] years at [Company], I wanted to be thoughtful about my next role rather than rush into something that wasn't the right fit.'"
+   }
+
+   Also include in career_gap_analysis field:
+   {
+     "gaps_detected": true | false,
+     "duration_months": [number],
+     "start_date": "[Month Year]",
+     "end_date": "December 2024",
+     "risk_level": "low" | "medium" | "high",
+     "requires_addressing": true | false,
+     "strategic_framing": "How to frame this gap positively",
+     "cover_letter_approach": "How to address in cover letter if at all",
+     "interview_approach": "What to say if asked"
+   }
+
+6. STAFF/PRINCIPAL SCOPE GAP (if role title includes Staff/Principal/Lead/Director):
+   If the JD title includes "Staff", "Principal", "Lead", or "Director" AND the candidate's highest title is "Senior" or lower:
+   {
+     "gap_type": "scope_level_mismatch",
+     "severity": "medium",
+     "gap_description": "Limited [Staff/Principal]-level scope experience",
+     "detailed_explanation": "⚠️ This role requires [Staff/Principal]-level scope: demonstrated ability to shape multi-quarter roadmaps, mentor other PMs, and influence cross-org strategy. Your experience shows strong Senior PM execution but limited evidence of this organizational influence level.",
+     "impact": "Scope mismatch risk: MEDIUM - You may be competing against candidates with demonstrated Staff-level impact",
+     "mitigation_strategy": "Highlight any cross-team initiatives, mentoring experience, or strategic planning work. Position this as part of your growth toward a Staff-level role. Consider targeting Senior PM roles at smaller companies where you can grow into Staff-level scope."
    }
 
 === NOW: COMPLETE THE INTELLIGENCE LAYER ANALYSIS ===
@@ -4088,9 +4292,46 @@ Violations to avoid: exclamation points, em dashes, generic phrases, no specific
     "response_rate": "3-5%",
     "function_context": "Full paragraph about layoffs/market for candidate's function",
     "industry_context": "Full paragraph about the target industry",
-    "strategic_action": "Your move: Apply within 24 hours..."
+    "strategic_action": "See STRATEGIC_ACTION COACHING FRAMEWORK below"
   }
 }
+
+🚨 STRATEGIC_ACTION COACHING FRAMEWORK (MANDATORY) 🚨
+
+The strategic_action field is the most important coaching advice. Use this framework based on fit_score:
+
+85-100% (Strongly Apply):
+- Format: "Apply immediately. [Your strength]. [Differentiation]. [Outreach strategy]."
+- Example: "Apply immediately. Your Ripple consumer wallet experience is exactly what they need. Reach out to the hiring manager on LinkedIn today and lead with that."
+
+70-84% (Apply):
+- Format: "Before applying, tighten your resume to close gaps. [Specific improvements]. Once improved, [outreach strategy]."
+- Example: "Before applying, tighten your resume to close the remaining gaps. Focus on sharpening fintech impact, scale metrics, and consumer growth outcomes to push this into the 80%+ range. Once improved, apply quickly and lead with your Ripple Labs experience in direct outreach."
+- CRITICAL: Always recommend improving resume FIRST for scores 70-84%
+
+55-69% (Consider / Apply with Caution):
+- Format: "You have [strength], but this role favors [what's missing]. The opportunity is viable if [conditions]. Before applying, [specific preparation]."
+- Example: "You have strong consumer product experience at scale and a proven track record of data-driven optimization. However, this role favors candidates with direct customer support products experience. Before applying, update your resume to address gaps head-on."
+
+40-54% (Apply with Caution / Long Shot):
+- Format: "This is a stretch for your current profile. [Gap explanation]. Consider [alternative path or networking strategy]."
+- Example: "This is a stretch for your current profile. The role requires hands-on payments experience you don't have. If you pursue it, network your way in first - cold ATS applications are unlikely to succeed."
+
+25-39% (Long Shot):
+- Format: "This is a significant stretch. [Gap explanation]. Consider [alternative path]."
+- Example: "This is a significant stretch for your current experience level. The role requires 10+ years at Staff/Principal scope. Consider targeting Senior PM roles first to build the organizational influence this level demands."
+
+0-24% (Do Not Apply):
+- Format: "Do not apply to this role. [Clear explanation why]. Focus on [what matches your background]."
+- Example: "Do not apply to this role. This is a Senior Backend Engineer position requiring 5+ years of hands-on development. Your background is Senior Product Management, not engineering. Focus on Senior Product Manager opportunities in delivery, logistics, or platform companies like Uber or DoorDash, where your eight years of product leadership are directly relevant."
+
+KEY COACHING RULES:
+- Always prioritize coaching over urgency
+- For scores 70-84%, ALWAYS recommend improving resume BEFORE applying
+- For scores <55%, be direct about gaps and redirect to better opportunities
+- Use second person ("you/your") throughout
+- Keep it concise (3-5 sentences max)
+- Be honest but respectful - never sugarcoat major gaps
 
 FRONTEND WIRING - REQUIRED JSON FIELDS:
 After you have generated all analysis, interview prep, and outreach content, you MUST also return the interview_prep and outreach objects with the exact structure shown above.
@@ -4314,11 +4555,42 @@ async def analyze_jd_stream(request: JDAnalyzeRequest):
     # Use the same system prompt as the regular analyze endpoint
     system_prompt = """You are a senior executive recruiter and career strategist.
 
-🚨 CRITICAL: CANDIDATE IDENTITY 🚨
-The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
-When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
-If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
-Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
+🚨🚨🚨 CRITICAL - CANDIDATE IDENTITY & VOICE (READ FIRST) 🚨🚨🚨
+- The candidate is NOT Henry
+- The candidate is NOT a template user
+- The candidate is the ACTUAL PERSON whose resume was uploaded
+
+SECOND-PERSON COACHING TONE (MANDATORY):
+When writing strategic_action, recommendation_rationale, gaps, strengths, and positioning advice:
+- ALWAYS use second person ("you", "your") when addressing the candidate
+- NEVER use third person ("[Name]'s", "the candidate's", "their background")
+- Write as if you're coaching them directly in a 1:1 conversation
+- You may use their first name + "your" (e.g., "Maya, your background...")
+
+Examples of CORRECT voice:
+✅ "Maya, your background is strong in consumer products..."
+✅ "Your eight years of PM experience positions you well..."
+✅ "Focus on your Ripple experience when reaching out..."
+✅ "Before applying, tighten your resume to close these gaps..."
+
+Examples of WRONG voice (NEVER use these):
+❌ "Maya, maya's background is strong..." (third person possessive)
+❌ "Maya's eight years of PM experience positions her well..." (third person)
+❌ "The candidate should focus on their Ripple experience..." (third person)
+❌ "Her background demonstrates..." (third person)
+
+This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy.
+
+🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
+The recommendation_rationale MUST match the fit_score tone:
+- fit_score < 45%: "This is a significant stretch. Only pursue if you have an inside connection or exceptional circumstances."
+- fit_score 45-54%: "This is a stretch role. Be strategic about positioning if you pursue it."
+- fit_score 55-69%: "This is a moderate fit with addressable gaps."
+- fit_score 70-84%: "This is a good fit worth pursuing."
+- fit_score >= 85%: "This is a strong match - prioritize this application."
+
+NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
+NEVER say "this is a stretch" when fit_score is above 70%.
 
 🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
 Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.

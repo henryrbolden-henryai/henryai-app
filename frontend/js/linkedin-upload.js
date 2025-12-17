@@ -391,6 +391,29 @@
             // Show a subtle reminder
             if (source === 'job-analysis') {
                 this.showToast('info', 'Reminder: Recruiters will check your LinkedIn. Upload anytime from your Profile page.');
+
+                // Advance to next step in the flow
+                // Determine where to go based on fit score from analysis
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                const fitScore = analysisData.fit_score || 0;
+                const recommendation = (analysisData.recommendation || '').toLowerCase();
+
+                // Short delay to let toast show, then navigate
+                setTimeout(() => {
+                    if (fitScore >= 70 || recommendation.includes('apply')) {
+                        // Proceed to strengthen phase
+                        window.location.href = 'strengthen.html';
+                    } else {
+                        // Skip to level analysis or results for low-fit roles
+                        window.location.href = 'resume-leveling.html';
+                    }
+                }, 1500);
+            } else if (source === 'documents-section') {
+                // Just close - user is already on documents page
+                this.showToast('info', 'No problem. You can update LinkedIn manually using the sections on this page.');
+            } else if (source === 'modal') {
+                // Modal skip - just close, user is on dashboard
+                sessionStorage.setItem('linkedin_modal_dismissed', 'true');
             }
         }
 
