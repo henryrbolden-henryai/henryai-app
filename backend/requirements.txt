@@ -23,5 +23,8 @@ python-multipart>=0.0.6
 # Validation
 pydantic>=2.5.0
 
+# Date parsing
+python-dateutil>=2.8.0
+
 # Optional: Email (for future implementation)
 # aiosmtplib>=2.0.0
