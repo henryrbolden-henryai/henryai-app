@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming Test - HenryHQ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #e5e7eb;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 40px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .card.loading {
+            opacity: 0.5;
+            animation: pulse 2s infinite;
+        }
+
+        .card.populated {
+            opacity: 1;
+            border-color: #60a5fa;
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.7; }
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #60a5fa;
+        }
+
+        .fit-score {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .fit-score.loading {
+            color: #6b7280;
+        }
+
+        .fit-score.populated {
+            background: linear-gradient(135deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #374151 0%, #4b5563 50%, #374151 100%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            height: 20px;
+            margin-bottom: 12px;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton.short {
+            width: 60%;
+        }
+
+        .skeleton.medium {
+            width: 80%;
+        }
+
+        .skeleton.long {
+            width: 100%;
+        }
+
+        .strength-item, .gap-item {
+            padding: 12px;
+            background: #111827;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .strength-item {
+            border-left-color: #10b981;
+        }
+
+        .gap-item {
+            border-left-color: #ef4444;
+        }
+
+        .recommendation {
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .recommendation.loading {
+            background: #374151;
+            color: #6b7280;
+        }
+
+        .recommendation.skip {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            border: 2px solid #ef4444;
+            color: #fca5a5;
+        }
+
+        .recommendation.apply {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+            border: 2px solid #10b981;
+            color: #6ee7b7;
+        }
+
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .log {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 40px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            color: #9ca3af;
+        }
+
+        .log-entry.success {
+            color: #10b981;
+        }
+
+        .log-entry.error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Streaming Analysis Test</h1>
+        <p class="subtitle">Watch results appear in real-time as Claude generates them</p>
+
+        <button id="startBtn" onclick="startStreaming()">Start Analysis</button>
+
+        <div class="timer" id="timer">0.0s</div>
+
+        <div class="results">
+            <!-- Fit Score Card -->
+            <div class="card loading" id="fitScoreCard">
+                <div class="card-title">Fit Score</div>
+                <div class="fit-score loading" id="fitScore">--</div>
+                <div class="recommendation loading" id="recommendation">Analyzing...</div>
+            </div>
+
+            <!-- Strengths Card -->
+            <div class="card loading" id="strengthsCard">
+                <div class="card-title">Your Strengths</div>
+                <div id="strengthsList">
+                    <div class="skeleton long"></div>
+                    <div class="skeleton medium"></div>
+                    <div class="skeleton long"></div>
+                    <div class="skeleton short"></div>
+                </div>
+            </div>
+
+            <!-- Reality Check Card -->
+            <div class="card loading" id="realityCard">
+                <div class="card-title">Reality Check</div>
+                <div id="realityContent">
+                    <div class="skeleton medium"></div>
+                    <div class="skeleton long"></div>
+                    <div class="skeleton short"></div>
+                </div>
+            </div>
+
+            <!-- Gaps Card -->
+            <div class="card loading" id="gapsCard">
+                <div class="card-title">Gaps to Address</div>
+                <div id="gapsList">
+                    <div class="skeleton long"></div>
+                    <div class="skeleton medium"></div>
+                    <div class="skeleton long"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log" id="log">
+            <div class="log-entry">Ready to start streaming analysis...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';  // Update to your Railway URL in production
+        let startTime;
+        let timerInterval;
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('timer').textContent = `${elapsed.toFixed(1)}s`;
+            }, 100);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        }
+
+        function startStreaming() {
+            // Reset UI
+            document.getElementById('fitScore').textContent = '--';
+            document.getElementById('fitScore').className = 'fit-score loading';
+            document.getElementById('recommendation').textContent = 'Analyzing...';
+            document.getElementById('recommendation').className = 'recommendation loading';
+            
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('populated');
+                card.classList.add('loading');
+            });
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('log').innerHTML = '';
+            
+            startTimer();
+            addLog('Starting streaming analysis...');
+
+            // Sample data - replace with actual user data
+            const payload = {
+                resume: {
+                    name: "Rawan Nour",
+                    experience: [{
+                        company: "Divercity",
+                        title: "Lead Product Manager",
+                        dates: "June 2023 - Present",
+                        bullets: ["Led cross-functional team", "Shipped features"]
+                    }]
+                },
+                jd_text: "We're looking for a Product Manager with 5+ years of experience...",
+                jd_analysis: {
+                    company: "Figma",
+                    role_title: "Senior Product Manager"
+                }
+            };
+
+            const eventSource = new EventSource(
+                `${API_BASE_URL}/api/jd/analyze/stream`,
+                { method: 'POST', body: JSON.stringify(payload) }
+            );
+
+            // Note: EventSource doesn't support POST directly, so we'll use fetch with streaming
+            fetch(`${API_BASE_URL}/api/jd/analyze/stream`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                function processStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            stopTimer();
+                            addLog('Stream complete!', 'success');
+                            document.getElementById('startBtn').disabled = false;
+                            return;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        lines.forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                const data = JSON.parse(line.slice(6));
+                                handleStreamEvent(data);
+                            }
+                        });
+
+                        processStream();
+                    }).catch(error => {
+                        stopTimer();
+                        addLog(`Error: ${error.message}`, 'error');
+                        document.getElementById('startBtn').disabled = false;
+                    });
+                }
+
+                processStream();
+            }).catch(error => {
+                stopTimer();
+                addLog(`Error: ${error.message}`, 'error');
+                document.getElementById('startBtn').disabled = false;
+            });
+        }
+
+        function handleStreamEvent(data) {
+            const { type, field, value, message } = data;
+
+            if (type === 'start') {
+                addLog(message);
+            } else if (type === 'partial') {
+                addLog(`Received ${field}: ${JSON.stringify(value)}`);
+
+                if (field === 'fit_score') {
+                    const scoreEl = document.getElementById('fitScore');
+                    scoreEl.textContent = `${value}%`;
+                    scoreEl.classList.remove('loading');
+                    scoreEl.classList.add('populated');
+                    document.getElementById('fitScoreCard').classList.add('populated');
+                }
+
+                if (field === 'recommendation') {
+                    const recEl = document.getElementById('recommendation');
+                    recEl.textContent = value;
+                    recEl.classList.remove('loading');
+                    recEl.classList.add(value.toLowerCase().includes('skip') ? 'skip' : 'apply');
+                }
+
+                if (field === 'strengths' && Array.isArray(value)) {
+                    const listEl = document.getElementById('strengthsList');
+                    listEl.innerHTML = '';
+                    value.forEach(strength => {
+                        const item = document.createElement('div');
+                        item.className = 'strength-item';
+                        item.textContent = strength;
+                        listEl.appendChild(item);
+                    });
+                    document.getElementById('strengthsCard').classList.add('populated');
+                }
+
+                if (field === 'expected_applicants') {
+                    const contentEl = document.getElementById('realityContent');
+                    contentEl.innerHTML = `<p style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">${value} expected applicants</p>`;
+                    document.getElementById('realityCard').classList.add('populated');
+                }
+            } else if (type === 'complete') {
+                addLog('Analysis complete!', 'success');
+                stopTimer();
+                // Handle full data
+                console.log('Complete data:', data.data);
+            } else if (type === 'error') {
+                addLog(`Error: ${message}`, 'error');
+                stopTimer();
+            }
+        }
+    </script>
+</body>
+</html>
