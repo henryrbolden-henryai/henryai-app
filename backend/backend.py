@@ -4430,8 +4430,11 @@ Key principle: If it sounds like HR covering liability, rewrite it. If it sounds
 Tone: Protective, decisive, redirecting. Direct but not harsh. No shaming.
 
 ==============================================
-BAND 2: 40-69% — CONSIDER / APPLY WITH CAUTION
+BAND 2: 40-69% — CONDITIONAL APPLY / APPLY WITH CAUTION
 ==============================================
+
+🚨 THIS BAND ALSO APPLIES WHEN recommendation="Conditional Apply" REGARDLESS OF fit_score 🚨
+If fit_score is 70%+ but recommendation is "Conditional Apply", use THIS band's guidance, not Band 3.
 
 Goal: Surface the conditions that must be met before applying
 
@@ -4439,14 +4442,25 @@ CRITICAL RULES:
 - NEVER expose internal scoring logic ("adjusted from Apply to Conditional Apply")
 - NEVER show percentage math ("133.3% of required years")
 - NEVER sound like a rules engine or audit log
+- NEVER start with candidate's name (no "Maya, strong fit...")
+- NEVER say "Apply within 24 hours" without positioning requirements FIRST
 - DO sound confident, human, tactical
 - DO explain conditions clearly without revealing formulas
+- DO start strategic_action with "Before applying" for this band
 
 Structure for CONDITIONAL APPLY card:
-"[Strength acknowledgment]. [Clear gap statement]. [Viability assessment]."
+"[Strength acknowledgment WITHOUT name]. [Clear gap statement]. [Viability assessment]."
 
-Structure for YOUR MOVE:
+Structure for YOUR MOVE (strategic_action):
 "Before applying, [specific positioning changes]. [Proof points to lead with]. Once positioned, [timing + outreach strategy]. [Reality check about competition]."
+
+🚫 WRONG - Do NOT write this:
+"Maya, strong fit with your consumer product experience translating well to customer support products."
+"Apply within 24 hours and find the hiring manager on LinkedIn. Your fit score gives you an edge."
+
+✅ CORRECT - Write this instead:
+"Strong fit with your consumer product experience translating well to customer support products. Your scale experience and user journey optimization skills directly address their self-service improvement goals."
+"Before applying, tighten your resume and outreach to make the customer support connection explicit. Lead with your consumer product scale, self-service optimization work, and user journey improvements. Once positioned correctly, apply within 24 hours and reach out to the hiring manager on LinkedIn. With heavy competition, you can't rely on the ATS alone."
 
 Example CONDITIONAL APPLY (use this EXACT structure):
 "You have strong consumer product experience at scale, but there's a meaningful experience gap relative to this role's requirements. This is a viable opportunity if you control the narrative and lead with the right proof points."
