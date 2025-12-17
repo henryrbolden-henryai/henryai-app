@@ -1010,11 +1010,80 @@
                 console.log('_resume_json type:', typeof analysisData._resume_json);
                 console.log('_resume_json value:', analysisData._resume_json);
 
-                // Check if we have meaningful resume data to analyze
-                // Handle case where _resume_json might be a string (double-encoded)
-                let resumeJson = analysisData._resume_json || {};
+                // Try multiple sources for resume data (defensive loading)
+                let resumeJson = null;
 
-                // Keep parsing if it's a string (could be multi-level encoded)
+                // Source 1: analysisData._resume_json
+                if (analysisData._resume_json && Object.keys(analysisData._resume_json).length > 0) {
+                    resumeJson = analysisData._resume_json;
+                    console.log('✅ Found resume in analysisData._resume_json');
+                }
+
+                // Source 2: Direct resumeData in sessionStorage
+                if (!resumeJson) {
+                    const resumeDataStr = sessionStorage.getItem('resumeData');
+                    if (resumeDataStr) {
+                        try {
+                            const parsed = JSON.parse(resumeDataStr);
+                            if (parsed && Object.keys(parsed).length > 0) {
+                                resumeJson = parsed;
+                                console.log('✅ Found resume in sessionStorage resumeData');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse resumeData from sessionStorage:', e);
+                        }
+                    }
+                }
+
+                // Source 3: Check if it's nested in analysisData differently
+                if (!resumeJson && analysisData.resume_json) {
+                    resumeJson = analysisData.resume_json;
+                    console.log('✅ Found resume in analysisData.resume_json');
+                }
+
+                // Source 4: Check userData in sessionStorage
+                if (!resumeJson) {
+                    const userDataStr = sessionStorage.getItem('userData');
+                    if (userDataStr) {
+                        try {
+                            const userData = JSON.parse(userDataStr);
+                            if (userData.resume_json && Object.keys(userData.resume_json).length > 0) {
+                                resumeJson = userData.resume_json;
+                                console.log('✅ Found resume in userData.resume_json');
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse userData from sessionStorage:', e);
+                        }
+                    }
+                }
+
+                // If still no resume, try Supabase as last resort
+                if (!resumeJson && typeof HenryData !== 'undefined') {
+                    console.log('⚠️ Resume not in sessionStorage, checking Supabase...');
+                    try {
+                        const session = await HenryAuth.getSession();
+                        if (session) {
+                            const profile = await HenryData.getProfile();
+                            if (profile && profile.resume_json && Object.keys(profile.resume_json).length > 0) {
+                                resumeJson = profile.resume_json;
+                                console.log('✅ Found resume from Supabase profile');
+                                // Cache it for future use
+                                sessionStorage.setItem('resumeData', JSON.stringify(resumeJson));
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Failed to load resume from Supabase:', e);
+                    }
+                }
+
+                // If we still have no resume data, show error
+                if (!resumeJson) {
+                    console.log('❌ No resume data found from any source');
+                    showError('Resume data not available. Please go back to your profile and re-upload your resume, or click "Skip & Continue" to proceed without level analysis.');
+                    return;
+                }
+
+                // Handle case where resumeJson might be a string (double-encoded)
                 let parseAttempts = 0;
                 while (typeof resumeJson === 'string' && parseAttempts < 3) {
                     try {
@@ -1029,7 +1098,7 @@
                 }
 
                 console.log('Final resumeJson type:', typeof resumeJson);
-                console.log('Final resumeJson:', resumeJson);
+                console.log('Final resumeJson keys:', resumeJson ? Object.keys(resumeJson) : 'none');
 
                 const hasExperience = resumeJson.experience && resumeJson.experience.length > 0;
                 const hasName = resumeJson.full_name || resumeJson.contact?.full_name;
@@ -1081,15 +1150,38 @@
         }
 
         function retryAnalysis() {
+            // Clear any error state and reload page to restart flow with fresh data
+            // This is more reliable than just calling performLevelingAnalysis again
+            // because it ensures sessionStorage is re-read and any stale state is cleared
             document.getElementById('errorState').style.display = 'none';
             document.getElementById('loadingState').style.display = 'block';
-            performLevelingAnalysis();
+
+            // Small delay then reload to restart the flow
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
         }
 
         function skipLeveling() {
-            // Skip leveling and go directly to strengthen page
-            // This allows users to continue even if leveling API fails
-            window.location.href = 'strengthen.html';
+            // Skip leveling analysis and proceed based on recommendation
+            console.log('User skipped leveling analysis');
+
+            // Get analysisData to check recommendation
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const recommendation = (analysisData.recommendation || '').toLowerCase();
+
+            // Check if we should proceed to strengthen or skip to results
+            const applyRecommendations = ['apply', 'strong apply', 'strongly apply', 'conditional apply'];
+            const shouldStrengthen = applyRecommendations.some(r => recommendation.includes(r));
+
+            if (shouldStrengthen) {
+                // Proceed to strengthen phase
+                window.location.href = 'strengthen.html';
+            } else {
+                // Skip straight to generating or results
+                // For skip/do not apply, go directly to results
+                window.location.href = 'results.html';
+            }
         }
 
         // Toggle collapsible sections

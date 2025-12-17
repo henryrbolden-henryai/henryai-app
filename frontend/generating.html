@@ -233,6 +233,23 @@
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
 
+        // Browser detection for timeout handling
+        function isFirefox() {
+            return navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+        }
+
+        function isSafari() {
+            return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        }
+
+        // Get appropriate timeout based on browser (Firefox needs longer)
+        function getTimeoutDuration() {
+            if (isFirefox()) {
+                return 180000; // 3 minutes for Firefox
+            }
+            return 120000; // 2 minutes for Chrome/Safari/others
+        }
+
         const stages = [
             { text: 'Crafting your resume...', subtext: 'Tailoring content to the role', dot: 1 },
             { text: 'Writing your cover letter...', subtext: 'Highlighting your strengths', dot: 2 },
@@ -262,7 +279,13 @@
         }
 
         function showError(message) {
-            errorText.textContent = message;
+            // Add browser-specific guidance
+            let enhancedMessage = message;
+            if (isFirefox() && (message.includes('Connection lost') || message.includes('taking longer') || message.includes('AbortError'))) {
+                enhancedMessage = `${message}\n\nFirefox users: This may be a browser timeout issue. Try using Chrome or Safari, or wait a few minutes and try again.`;
+            }
+
+            errorText.textContent = enhancedMessage;
             errorMessage.classList.add('show');
             statusText.textContent = 'Generation failed';
             statusSubtext.textContent = '';
@@ -348,8 +371,11 @@
             startProgressAnimation();
 
             // Create AbortController for timeout handling
+            // Firefox needs longer timeout due to stricter connection handling
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+            const timeoutDuration = getTimeoutDuration();
+            console.log(`🕐 Using ${timeoutDuration/1000}s timeout (Firefox: ${isFirefox()})`);
+            const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
             try {
                 // Parse resume JSON if it's a string (handle double-encoding)
@@ -522,6 +548,7 @@
                 clearTimeout(timeoutId);
                 console.error('Error generating documents:', error);
 
+                // Re-throw with enhanced error message for retry wrapper to handle
                 let errorMsg = 'Something went wrong. Please try again.';
                 if (error.name === 'AbortError') {
                     errorMsg = 'Generation is taking longer than expected. Our AI might be busy. Please try again in a few minutes.';
@@ -537,12 +564,63 @@
                     errorMsg = error.detail;
                 }
 
-                showError(errorMsg);
+                // Re-throw with enhanced message so retry wrapper can handle it
+                const enhancedError = new Error(errorMsg);
+                enhancedError.name = error.name || 'GenerationError';
+                throw enhancedError;
             }
         }
 
-        // Start generation when page loads
-        generateDocuments();
+        // Retry wrapper with exponential backoff
+        async function generateDocumentsWithRetry(maxRetries = 2) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    console.log(`🔄 Generation attempt ${attempt}/${maxRetries}`);
+                    await generateDocuments();
+                    return; // Success, exit
+                } catch (error) {
+                    console.error(`❌ Attempt ${attempt} failed:`, error);
+
+                    // Only retry on network/timeout errors, not validation errors
+                    const isRetryable = error.name === 'AbortError' ||
+                        (error.message && (error.message.includes('NetworkError') ||
+                         error.message.includes('Failed to fetch') ||
+                         error.message.includes('Connection lost')));
+
+                    if (attempt < maxRetries && isRetryable) {
+                        const waitTime = attempt * 5000; // 5s, then 10s
+                        console.log(`⏳ Waiting ${waitTime/1000}s before retry...`);
+
+                        // Update UI to show retry status
+                        statusText.textContent = `Retrying... (attempt ${attempt + 1})`;
+                        statusSubtext.textContent = `Please wait ${waitTime/1000} seconds`;
+
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+
+                        // Reset progress dots
+                        for (let i = 1; i <= 4; i++) {
+                            const dot = document.getElementById(`dot${i}`);
+                            dot.classList.remove('active', 'completed');
+                        }
+                        document.getElementById('dot1').classList.add('active');
+                    } else {
+                        // Final attempt failed or non-retryable error
+                        let finalMsg = 'Generation failed after multiple attempts. Our AI might be overloaded. Please try again in a few minutes.';
+                        if (!isRetryable) {
+                            finalMsg = error.message || 'Generation failed. Please try again.';
+                        }
+                        if (isFirefox()) {
+                            finalMsg += ' Firefox users may have better success with Chrome or Safari.';
+                        }
+                        showError(finalMsg);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Start generation when page loads (with retry support)
+        generateDocumentsWithRetry();
     </script>
 </body>
 </html>
