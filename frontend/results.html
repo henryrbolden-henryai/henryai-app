@@ -477,16 +477,29 @@
             margin: 24px 0;
         }
 
+        /* 6-Tier Recommendation Badge Colors */
+        .recommendation.strong-apply {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
         .recommendation.apply {
             background: linear-gradient(135deg, var(--color-success) 0%, #22c55e 100%);
         }
 
+        .recommendation.consider {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        }
+
         .recommendation.caution {
-            background: linear-gradient(135deg, var(--color-warning) 0%, #f59e0b 100%);
+            background: linear-gradient(135deg, var(--color-warning) 0%, #ea580c 100%);
+        }
+
+        .recommendation.long-shot {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
         }
 
         .recommendation.donotapply {
-            background: linear-gradient(135deg, var(--color-error) 0%, #ef4444 100%);
+            background: linear-gradient(135deg, var(--color-error) 0%, #dc2626 100%);
         }
 
         .recommendation-label {
@@ -1237,24 +1250,63 @@
 
         // =====================================================================
         // POPULATE: Gaps (with mitigation advice if available)
+        // Enhanced to handle career_gap type with special rendering
         // =====================================================================
         const gapsList = document.getElementById('gaps');
         let gaps = data.gaps || [];
-        
+
         // Check for gaps_and_mitigation which includes advice
         let gapsWithMitigation = data.intelligence_layer?.strategic_positioning?.gaps_and_mitigation || [];
-        
-        if (gapsWithMitigation.length > 0) {
-            gapsWithMitigation.slice(0, 4).forEach(gap => {
-                const li = document.createElement('li');
-                li.textContent = gap;
-                gapsList.appendChild(li);
-            });
-        } else if (gaps.length > 0) {
-            gaps.slice(0, 4).forEach(gap => {
-                const li = document.createElement('li');
-                li.textContent = gap;
-                gapsList.appendChild(li);
+
+        // Helper function to get severity badge HTML
+        function getSeverityBadge(severity) {
+            const severityColors = {
+                'LOW': { bg: '#166534', border: '#22c55e', text: '#22c55e', label: 'Low Impact' },
+                'MEDIUM': { bg: '#854d0e', border: '#fbbf24', text: '#fbbf24', label: 'Medium Impact' },
+                'HIGH': { bg: '#991b1b', border: '#f87171', text: '#f87171', label: 'High Impact' }
+            };
+            const sev = severityColors[severity?.toUpperCase()] || severityColors['MEDIUM'];
+            return `<span style="background: ${sev.bg}; border: 1px solid ${sev.border}; color: ${sev.text}; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${sev.label}</span>`;
+        }
+
+        // Helper function to render a career gap card
+        function renderCareerGapCard(gap) {
+            const gapCard = document.createElement('div');
+            gapCard.className = 'career-gap-card';
+            gapCard.style.cssText = 'background: rgba(251, 191, 36, 0.1); border: 1px solid #f59e0b; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin-bottom: 12px;';
+
+            const severityBadge = getSeverityBadge(gap.severity);
+            const duration = gap.duration || gap.duration_months ? `${gap.duration_months || ''} months` : '';
+            const dates = gap.dates || (gap.start_date && gap.end_date ? `${gap.start_date} → ${gap.end_date}` : '');
+
+            gapCard.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: #fbbf24; margin: 0; font-size: 0.95rem;">⏸️ Career Gap Detected</h4>
+                    ${severityBadge}
+                </div>
+                ${duration || dates ? `<p style="color: var(--color-text-secondary); font-size: 0.85rem; margin: 0 0 8px 0;">${duration}${duration && dates ? ' — ' : ''}${dates}</p>` : ''}
+                ${gap.description ? `<p style="color: var(--color-text); font-size: 0.9rem; margin: 0 0 8px 0;">${gap.description}</p>` : ''}
+                ${gap.mitigation ? `<p style="color: #a3e635; font-size: 0.85rem; margin: 0;"><strong>Strategy:</strong> ${gap.mitigation}</p>` : ''}
+            `;
+            return gapCard;
+        }
+
+        // Process gaps - handle both string gaps and structured gap objects
+        const gapsToProcess = gapsWithMitigation.length > 0 ? gapsWithMitigation : gaps;
+
+        if (gapsToProcess.length > 0) {
+            gapsToProcess.slice(0, 4).forEach(gap => {
+                // Check if this is a career_gap type (structured object)
+                if (typeof gap === 'object' && gap.gap_type === 'career_gap') {
+                    // Render special career gap card
+                    const gapCard = renderCareerGapCard(gap);
+                    gapsList.appendChild(gapCard);
+                } else {
+                    // Standard gap rendering (string or simple object)
+                    const li = document.createElement('li');
+                    li.textContent = typeof gap === 'string' ? gap : (gap.description || gap.gap || JSON.stringify(gap));
+                    gapsList.appendChild(li);
+                }
             });
         }
 
@@ -1316,28 +1368,24 @@
         // Get candidate name
         const candidateName = data._candidate_name || '';
 
-        // Try intelligence_layer first
-        if (data.intelligence_layer) {
-            const il = data.intelligence_layer;
-            
-            // Get recommendation label
-            if (il.apply_decision?.recommendation) {
-                recommendationLabel = il.apply_decision.recommendation;
-            } else if (il.job_quality_score) {
-                recommendationLabel = il.job_quality_score;
-            }
-            
-            // Get recommendation text
-            if (il.apply_decision?.reasoning) {
-                recommendationText = il.apply_decision.reasoning;
-            } else if (il.quality_explanation) {
-                recommendationText = il.quality_explanation;
-            }
+        // CRITICAL: Use top-level recommendation field for 6-tier labels
+        // DO NOT use intelligence_layer.apply_decision.recommendation (has old "Skip" mapping)
+        if (data.recommendation) {
+            recommendationLabel = data.recommendation;
+        } else if (data.intelligence_layer?.apply_decision?.recommendation) {
+            // Fallback to intelligence_layer only if top-level not available
+            recommendationLabel = data.intelligence_layer.apply_decision.recommendation;
+        } else if (data.intelligence_layer?.job_quality_score) {
+            recommendationLabel = data.intelligence_layer.job_quality_score;
         }
 
-        // Fallback to top-level if not found
-        if (!recommendationText && data.recommendation) {
-            recommendationText = data.recommendation;
+        // Get recommendation text from intelligence_layer or recommendation_rationale
+        if (data.recommendation_rationale) {
+            recommendationText = data.recommendation_rationale;
+        } else if (data.intelligence_layer?.apply_decision?.reasoning) {
+            recommendationText = data.intelligence_layer.apply_decision.reasoning;
+        } else if (data.intelligence_layer?.quality_explanation) {
+            recommendationText = data.intelligence_layer.quality_explanation;
         }
 
         // Populate Full View recommendation
@@ -1369,19 +1417,25 @@
         document.getElementById('recommendationText').textContent = truncatedText;
         document.getElementById('recommendationTextQuick').textContent = truncatedText;
 
-        // Color recommendation based on label (both views)
+        // Color recommendation based on label (both views) - 6-tier system
         const recommendationQuickEl = document.getElementById('recommendationQuick');
         const labelLower = recommendationLabel.toLowerCase();
-        if (labelLower.includes('skip') || labelLower.includes('do not') || labelLower.includes('don\'t') || labelLower.includes('pass')) {
-            recommendationEl.classList.add('donotapply');
-            recommendationQuickEl.classList.add('donotapply');
-        } else if (labelLower.includes('caution') || labelLower.includes('conditional')) {
-            recommendationEl.classList.add('caution');
-            recommendationQuickEl.classList.add('caution');
-        } else {
-            recommendationEl.classList.add('apply');
-            recommendationQuickEl.classList.add('apply');
+
+        // Get the appropriate CSS class for the 6-tier recommendation
+        function getRecommendationClass(label) {
+            const lower = label.toLowerCase();
+            if (lower.includes('do not apply') || lower === 'do not apply') return 'donotapply';
+            if (lower.includes('long shot')) return 'long-shot';
+            if (lower.includes('apply with caution') || lower.includes('caution')) return 'caution';
+            if (lower.includes('consider') || lower.includes('conditional')) return 'consider';
+            if (lower.includes('strongly apply') || lower.includes('strong apply')) return 'strong-apply';
+            if (lower.includes('apply')) return 'apply';
+            return 'apply'; // default
         }
+
+        const recClass = getRecommendationClass(recommendationLabel);
+        recommendationEl.classList.add(recClass);
+        recommendationQuickEl.classList.add(recClass);
 
         // =====================================================================
         // POPULATE: Quick View "Your Move" section
