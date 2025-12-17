@@ -4015,7 +4015,22 @@ Role: {request.role_title}
 
         return parsed_data
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse Claude response: {str(e)}")
+        # Log the problematic section of Claude's response for debugging
+        error_pos = e.pos if hasattr(e, 'pos') else 0
+        context_start = max(0, error_pos - 200)
+        context_end = min(len(response), error_pos + 200)
+        problem_section = response[context_start:context_end]
+
+        print(f"❌ JSON PARSING ERROR at character {error_pos}:")
+        print(f"   Error: {str(e)}")
+        print(f"   Problematic section (chars {context_start}-{context_end}):")
+        print(f"   ...{problem_section}...")
+        print(f"   Full response length: {len(response)} chars")
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse Claude response. The AI returned malformed JSON. Please try again."
+        )
 
 def generate_resume_full_text(resume_output: dict) -> str:
     """
