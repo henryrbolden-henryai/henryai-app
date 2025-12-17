@@ -3273,26 +3273,37 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
 - The candidate is NOT a template user
 - The candidate is the ACTUAL PERSON whose resume was uploaded
 
-SECOND-PERSON COACHING TONE (MANDATORY):
-When writing strategic_action, recommendation_rationale, gaps, strengths, and positioning advice:
-- ALWAYS use second person ("you", "your") when addressing the candidate
-- NEVER use third person ("[Name]'s", "the candidate's", "their background")
-- Write as if you're coaching them directly in a 1:1 conversation
-- You may use their first name + "your" (e.g., "Maya, your background...")
+MANDATORY SECOND-PERSON VOICE (APPLIES TO ALL SCORE BANDS):
+- ALL explanations, recommendations, and strategic advice MUST use second-person voice
+- Use "you/your" consistently: "You're a product manager..." NOT "Maya is a product manager..."
+- Use "your background" NOT "Maya's background" or "the candidate's background"
+- Use "You have 8 years..." NOT "Maya has 8 years..." or "The candidate has 8 years..."
+
+When to use candidate's name:
+- ONLY in direct address: "Maya, this role requires..." or "Maya, your background..."
+- NEVER in third-person descriptions: NOT "Maya is a product manager with..."
 
 Examples of CORRECT voice:
-✅ "Maya, your background is strong in consumer products..."
-✅ "Your eight years of PM experience positions you well..."
-✅ "Focus on your Ripple experience when reaching out..."
-✅ "Before applying, tighten your resume to close these gaps..."
+✅ "Maya, you're a product manager with 8 years of experience..."
+✅ "Your Ripple background is strong, but you lack engineering depth..."
+✅ "You have solid B2C product experience at scale..."
+✅ "This role requires 5+ years of backend development. Your background is product management, not engineering."
+✅ "Do not apply. Your background is product management, not engineering."
 
-Examples of WRONG voice (NEVER use these):
-❌ "Maya, maya's background is strong..." (third person possessive)
-❌ "Maya's eight years of PM experience positions her well..." (third person)
-❌ "The candidate should focus on their Ripple experience..." (third person)
-❌ "Her background demonstrates..." (third person)
+Examples of INCORRECT voice (DO NOT USE - ESPECIALLY FOR LOW-FIT SCENARIOS):
+❌ "Maya is a product manager with 8 years of experience..." (third person)
+❌ "Maya's background is in product management..." (third person possessive)
+❌ "The candidate has strong B2C experience..." (third person)
+❌ "Maya, maya's background shows strong alignment..." (mixing cases)
+❌ "Her background demonstrates..." (third person pronoun)
+❌ "His experience includes..." (third person pronoun)
 
-This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy.
+CRITICAL: This applies to ALL score bands, ESPECIALLY <40% "Do Not Apply" recommendations.
+Even when delivering hard truth about poor fit, maintain second-person coaching voice.
+When explaining why someone should NOT apply, use: "Your background is [X], this requires [Y]"
+NOT: "Maya is a [X] professional, this requires [Y]"
+
+This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy, apply_decision.reasoning.
 
 🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
 The recommendation_rationale MUST match the fit_score tone:
@@ -4298,40 +4309,119 @@ Violations to avoid: exclamation points, em dashes, generic phrases, no specific
 
 🚨 STRATEGIC_ACTION COACHING FRAMEWORK (MANDATORY) 🚨
 
-The strategic_action field is the most important coaching advice. Use this framework based on fit_score:
+The strategic_action field is the most important coaching advice. It must be specific, actionable, and tone-appropriate for each score band.
 
-85-100% (Strongly Apply):
-- Format: "Apply immediately. [Your strength]. [Differentiation]. [Outreach strategy]."
-- Example: "Apply immediately. Your Ripple consumer wallet experience is exactly what they need. Reach out to the hiring manager on LinkedIn today and lead with that."
+CRITICAL VOICE RULE: ALL strategic actions MUST use second-person voice ("you/your") - see IDENTITY_INSTRUCTION above.
 
-70-84% (Apply):
-- Format: "Before applying, tighten your resume to close gaps. [Specific improvements]. Once improved, [outreach strategy]."
-- Example: "Before applying, tighten your resume to close the remaining gaps. Focus on sharpening fintech impact, scale metrics, and consumer growth outcomes to push this into the 80%+ range. Once improved, apply quickly and lead with your Ripple Labs experience in direct outreach."
-- CRITICAL: Always recommend improving resume FIRST for scores 70-84%
+==============================================
+BAND 1: 0-39% — DO NOT APPLY / LONG SHOT
+==============================================
 
-55-69% (Consider / Apply with Caution):
-- Format: "You have [strength], but this role favors [what's missing]. The opportunity is viable if [conditions]. Before applying, [specific preparation]."
-- Example: "You have strong consumer product experience at scale and a proven track record of data-driven optimization. However, this role favors candidates with direct customer support products experience. Before applying, update your resume to address gaps head-on."
+Goal: Stop bad behavior and redirect momentum
 
-40-54% (Apply with Caution / Long Shot):
-- Format: "This is a stretch for your current profile. [Gap explanation]. Consider [alternative path or networking strategy]."
-- Example: "This is a stretch for your current profile. The role requires hands-on payments experience you don't have. If you pursue it, network your way in first - cold ATS applications are unlikely to succeed."
+strategic_action MUST answer these 4 questions:
+1. Should I apply? → No. This is not competitive. / This is a significant stretch.
+2. Why not, in plain terms? → [Fundamental mismatch: role level, function, skills, or domain]
+3. What should I do instead? → [Specific role types, companies, or adjacencies where candidate IS competitive]
+4. How does this help me win sooner? → [Reinforce that skipping/redirecting is strategic, not failure]
 
-25-39% (Long Shot):
-- Format: "This is a significant stretch. [Gap explanation]. Consider [alternative path]."
-- Example: "This is a significant stretch for your current experience level. The role requires 10+ years at Staff/Principal scope. Consider targeting Senior PM roles first to build the organizational influence this level demands."
+Structure (75-100 words):
+"[Decision: Do not apply / This is a significant stretch]. [Core gap explained using YOUR voice - never third person]. [What's fundamentally missing]. [Alternative path with specific role types/companies]. [Why this redirection is strategic]."
 
-0-24% (Do Not Apply):
-- Format: "Do not apply to this role. [Clear explanation why]. Focus on [what matches your background]."
-- Example: "Do not apply to this role. This is a Senior Backend Engineer position requiring 5+ years of hands-on development. Your background is Senior Product Management, not engineering. Focus on Senior Product Manager opportunities in delivery, logistics, or platform companies like Uber or DoorDash, where your eight years of product leadership are directly relevant."
+Example (0-24%):
+"Do not apply. This role requires 5+ years of backend engineering. Your background is product management with zero engineering experience. Applying would signal you don't understand engineering roles and could damage your credibility with recruiters in your network. Focus on Senior Product Manager roles in delivery, logistics, or platform companies like Uber or DoorDash, where your eight years of product leadership are directly relevant."
 
-KEY COACHING RULES:
-- Always prioritize coaching over urgency
-- For scores 70-84%, ALWAYS recommend improving resume BEFORE applying
-- For scores <55%, be direct about gaps and redirect to better opportunities
-- Use second person ("you/your") throughout
-- Keep it concise (3-5 sentences max)
-- Be honest but respectful - never sugarcoat major gaps
+Example (25-39%):
+"This is a significant stretch. The role requires deep enterprise sales experience, but your background is consumer product management. You'd be competing against candidates with 5-7 years selling directly to Fortune 500 CIOs. Consider building sales experience through product-led growth roles first, or target Account Management positions at companies like Stripe or Salesforce where your product expertise translates more directly."
+
+Tone: Protective, decisive, redirecting. Direct but not harsh. No shaming.
+
+==============================================
+BAND 2: 40-69% — CONSIDER / APPLY WITH CAUTION
+==============================================
+
+Goal: Surface the conditions that must be met before applying
+
+strategic_action MUST answer these 4 questions:
+1. What must you fix or reframe first? → [Specific resume adjustments, positioning changes, or narrative prep]
+2. How do you neutralize the top objections? → [Concrete mitigation strategies for 2-3 key gaps]
+3. When is it actually okay to apply? → [After X, Y, Z are addressed]
+4. How fast should you move? → [Speed guidance AFTER prep is complete]
+
+Structure (100-125 words):
+"[Decision: Before applying / This is viable IF]. [What must be fixed/reframed first - be specific]. [How to neutralize top 2-3 objections with concrete strategies]. [When it's okay to apply: 'Once positioned correctly...']. [Speed guidance: 'apply within 24 hours and reach out to hiring manager']. [Reality check: 'This is viable if you control the narrative']."
+
+Example (55-69% - Consider):
+"Before applying, adjust your resume and outreach to directly address the gaps. Frame your Ripple work as B2C consumer experience, emphasize adjacent customer support and trust initiatives, and clarify your experimentation scale and leadership scope. Once positioned correctly, apply within 24 hours and reach out to the hiring manager on LinkedIn. This is a viable opportunity if you control the narrative. Do not rely on the ATS alone."
+
+Example (40-54% - Apply with Caution):
+"This is viable but challenging. Before applying, reframe your IC work as preparation for leadership, not evidence of junior experience. Add quantifiable scope signals: team sizes influenced, budget managed, cross-functional initiatives led. Update your LinkedIn headline to signal Senior PM, not just PM. Once your positioning is tightened, apply and reach out to the hiring manager explaining how your 8 years of consumer product work translates to their customer support domain. Be ready to defend the skill transfer in the recruiter screen."
+
+Tone: Strategic partner. Honest about gaps but solution-focused. NOT generic "apply now" energy.
+
+CRITICAL: Do NOT say "Apply immediately" for this band. Always lead with prep/positioning requirements FIRST.
+
+==============================================
+BAND 3: 70-84% — APPLY
+==============================================
+
+Goal: Convert fit into action without complacency
+
+strategic_action MUST answer these 4 questions:
+1. Should I apply? → Yes. This is a legitimate match.
+2. What makes me competitive here? → [The 1-2 differentiators that matter most to THIS team]
+3. How do I avoid getting lost in the pile? → [Outreach strategy, narrative angle, or proof points to lead with]
+4. How fast should I move? → [Clear urgency guidance with reasoning]
+
+Structure (75-100 words):
+"[Decision: Apply]. [1-2 specific differentiators that make you competitive]. [How to stand out: outreach strategy + what to lead with]. [Speed guidance with market context]. [Confidence but not overconfidence]."
+
+Example (70-79%):
+"Apply. Your consumer fintech experience at Ripple directly maps to their payments infrastructure focus. Lead with your 2.3M user scale and P2P payments launch in your resume and LinkedIn outreach. Reach out to the hiring manager within 24 hours highlighting your mobile wallet background. With 600+ expected applicants, speed and targeted outreach matter. You're competitive but need to control the narrative early."
+
+Example (80-84%):
+"Apply immediately. Your Ripple consumer wallet experience is exactly what they need. With your 2.3M monthly active users and experimentation framework, you're in the top 10% of applicants for this role. Reach out to the hiring manager on LinkedIn today and lead with your P2P payments launch. The role posted 3 days ago, so apply today or tomorrow to stay in the first wave of candidates."
+
+Tone: Confident, tactical, assertive. Creates urgency without panic.
+
+==============================================
+BAND 4: 85-100% — STRONGLY APPLY
+==============================================
+
+Goal: Maximize odds and treat this as a top-tier target
+
+strategic_action MUST answer these 4 questions:
+1. Is this a top-tier opportunity for me? → Yes. This is near-ideal alignment.
+2. What exactly should I lead with? → [Precise achievements, metrics, or experiences that map 1:1 to their needs]
+3. Who should I engage and how? → [Hiring manager, team member, internal referral strategy if available]
+4. How do I signal seniority and confidence? → [Positioning guidance to avoid under-selling]
+
+Structure (100-125 words):
+"[Decision: This is a priority target]. [Why this is near-ideal alignment - be specific]. [Exact achievements/metrics to lead with]. [Who to engage: hiring manager + strategy]. [How to signal seniority without arrogance]. [Timeline: apply today, reach out within 2 hours]."
+
+Example (90-100%):
+"This is a priority target. Your Ripple consumer wallet background, mobile product expertise, and experimentation framework map 1:1 to what they're looking for. Lead with your 2.3M user scale, 43% faster transaction time, and Day-7 retention increase in your outreach. Apply immediately and reach out to the hiring manager on LinkedIn within 2 hours. Reference their recent blog post on mobile-first payments strategy and explain how your Ripple work directly addresses their challenges. With only 200 expected applicants and your near-perfect fit, you should be in the first 10 candidates they screen."
+
+Example (85-89%):
+"This is a strong match. Your eight years of consumer product work and B2B SaaS experience at Clearbit position you perfectly for this role. Lead with your enrichment API product that served 4M ARR and your cross-functional go-to-market launch. Apply today and reach out to the hiring manager highlighting your scaled product experience. Request an informational chat to discuss their customer support product strategy before the formal interview. With 400+ expected applicants, positioning yourself as a strategic partner (not just another applicant) will move you to the top of the pile."
+
+Tone: Strategic partner, not advisor. Creates confidence without overconfidence.
+
+==============================================
+ONE-LINE SUMMARY (NORTH STAR)
+==============================================
+
+- 0-39% → "Don't apply. Here's where you win instead."
+- 40-69% → "Viable if you fix [X]. Here's how."
+- 70-84% → "Apply. Here's how you stand out."
+- 85-100% → "This is a priority. Execute precisely."
+
+CRITICAL REMINDERS:
+- ALWAYS use second-person voice ("you/your") - NEVER third-person ("Maya is..." / "The candidate has...")
+- Be specific with companies, role types, metrics, and strategies
+- Match tone to score band: protective (low), strategic (medium), confident (high)
+- Never use generic language: "good fit", "strong candidate", "relevant experience"
+- Every strategic_action must pass the "would a human recruiter say this?" test
 
 FRONTEND WIRING - REQUIRED JSON FIELDS:
 After you have generated all analysis, interview prep, and outreach content, you MUST also return the interview_prep and outreach objects with the exact structure shown above.
@@ -4560,26 +4650,37 @@ async def analyze_jd_stream(request: JDAnalyzeRequest):
 - The candidate is NOT a template user
 - The candidate is the ACTUAL PERSON whose resume was uploaded
 
-SECOND-PERSON COACHING TONE (MANDATORY):
-When writing strategic_action, recommendation_rationale, gaps, strengths, and positioning advice:
-- ALWAYS use second person ("you", "your") when addressing the candidate
-- NEVER use third person ("[Name]'s", "the candidate's", "their background")
-- Write as if you're coaching them directly in a 1:1 conversation
-- You may use their first name + "your" (e.g., "Maya, your background...")
+MANDATORY SECOND-PERSON VOICE (APPLIES TO ALL SCORE BANDS):
+- ALL explanations, recommendations, and strategic advice MUST use second-person voice
+- Use "you/your" consistently: "You're a product manager..." NOT "Maya is a product manager..."
+- Use "your background" NOT "Maya's background" or "the candidate's background"
+- Use "You have 8 years..." NOT "Maya has 8 years..." or "The candidate has 8 years..."
+
+When to use candidate's name:
+- ONLY in direct address: "Maya, this role requires..." or "Maya, your background..."
+- NEVER in third-person descriptions: NOT "Maya is a product manager with..."
 
 Examples of CORRECT voice:
-✅ "Maya, your background is strong in consumer products..."
-✅ "Your eight years of PM experience positions you well..."
-✅ "Focus on your Ripple experience when reaching out..."
-✅ "Before applying, tighten your resume to close these gaps..."
+✅ "Maya, you're a product manager with 8 years of experience..."
+✅ "Your Ripple background is strong, but you lack engineering depth..."
+✅ "You have solid B2C product experience at scale..."
+✅ "This role requires 5+ years of backend development. Your background is product management, not engineering."
+✅ "Do not apply. Your background is product management, not engineering."
 
-Examples of WRONG voice (NEVER use these):
-❌ "Maya, maya's background is strong..." (third person possessive)
-❌ "Maya's eight years of PM experience positions her well..." (third person)
-❌ "The candidate should focus on their Ripple experience..." (third person)
-❌ "Her background demonstrates..." (third person)
+Examples of INCORRECT voice (DO NOT USE - ESPECIALLY FOR LOW-FIT SCENARIOS):
+❌ "Maya is a product manager with 8 years of experience..." (third person)
+❌ "Maya's background is in product management..." (third person possessive)
+❌ "The candidate has strong B2C experience..." (third person)
+❌ "Maya, maya's background shows strong alignment..." (mixing cases)
+❌ "Her background demonstrates..." (third person pronoun)
+❌ "His experience includes..." (third person pronoun)
 
-This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy.
+CRITICAL: This applies to ALL score bands, ESPECIALLY <40% "Do Not Apply" recommendations.
+Even when delivering hard truth about poor fit, maintain second-person coaching voice.
+When explaining why someone should NOT apply, use: "Your background is [X], this requires [Y]"
+NOT: "Maya is a [X] professional, this requires [Y]"
+
+This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy, apply_decision.reasoning.
 
 🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
 The recommendation_rationale MUST match the fit_score tone:

@@ -386,34 +386,26 @@
          */
         skipForNow(source) {
             this.trackEvent('linkedin_upload_skipped', { source });
+
+            // Show toast confirmation
+            if (source === 'job-analysis') {
+                this.showToast('info', 'LinkedIn skipped for now. You can upload anytime from your Profile page.');
+            } else if (source === 'documents-section') {
+                this.showToast('info', 'No problem. You can update LinkedIn manually using the sections on this page.');
+            } else {
+                this.showToast('info', 'LinkedIn upload skipped. Upload anytime from your Profile page.');
+            }
+
+            // Just hide the modal - stay on current page (results.html)
+            // User needs to see Apply/Pass buttons, not be navigated away
             this.dismissModal();
 
-            // Show a subtle reminder
-            if (source === 'job-analysis') {
-                this.showToast('info', 'Reminder: Recruiters will check your LinkedIn. Upload anytime from your Profile page.');
-
-                // Advance to next step in the flow
-                // Determine where to go based on fit score from analysis
-                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-                const fitScore = analysisData.fit_score || 0;
-                const recommendation = (analysisData.recommendation || '').toLowerCase();
-
-                // Short delay to let toast show, then navigate
-                setTimeout(() => {
-                    if (fitScore >= 70 || recommendation.includes('apply')) {
-                        // Proceed to strengthen phase
-                        window.location.href = 'strengthen.html';
-                    } else {
-                        // Skip to level analysis or results for low-fit roles
-                        window.location.href = 'resume-leveling.html';
-                    }
-                }, 1500);
-            } else if (source === 'documents-section') {
-                // Just close - user is already on documents page
-                this.showToast('info', 'No problem. You can update LinkedIn manually using the sections on this page.');
-            } else if (source === 'modal') {
-                // Modal skip - just close, user is on dashboard
-                sessionStorage.setItem('linkedin_modal_dismissed', 'true');
+            // Mark in sessionStorage that LinkedIn was skipped (for analytics)
+            try {
+                sessionStorage.setItem('linkedinSkipped', 'true');
+                sessionStorage.setItem('linkedinSkippedAt', new Date().toISOString());
+            } catch (e) {
+                console.warn('Could not save LinkedIn skip state:', e);
             }
         }
 
