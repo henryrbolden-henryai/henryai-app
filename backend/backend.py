@@ -4157,11 +4157,14 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "strengths": ["3-4 candidate strengths matching this role"] or [],
   "gaps": [
     {
+      "gap_type": "experience_years_mismatch|required_experience_missing|career_level_mismatch|career_gap|scope_level_mismatch|standard_gap",
       "description": "gap description",
-      "warning_type": "experience_years_mismatch|required_experience_missing|career_level_mismatch|standard_gap",
       "severity": "critical|high|medium|low",
-      "impact": "Auto-rejection risk level",
-      "mitigation": "How to address"
+      "impact": "Auto-rejection risk level or scope mismatch explanation",
+      "mitigation": "How to address this gap",
+      "duration_months": "Optional: for career_gap type only",
+      "start_date": "Optional: for career_gap type only",
+      "end_date": "Optional: for career_gap type only"
     }
   ],
   "political_sensitivity": {
@@ -4329,7 +4332,14 @@ Structure (75-100 words):
 "[Decision: Do not apply / This is a significant stretch]. [Core gap explained using YOUR voice - never third person]. [What's fundamentally missing]. [Alternative path with specific role types/companies]. [Why this redirection is strategic]."
 
 Example (0-24%):
-"Do not apply. This role requires 5+ years of backend engineering. Your background is product management with zero engineering experience. Applying would signal you don't understand engineering roles and could damage your credibility with recruiters in your network. Focus on Senior Product Manager roles in delivery, logistics, or platform companies like Uber or DoorDash, where your eight years of product leadership are directly relevant."
+"Do not apply. This role requires 5+ years of hands-on backend engineering in production systems. Your background is Senior Product Management, not software engineering, making this a fundamental function mismatch. Shift your focus to Senior Product Manager roles where your consumer product leadership is competitive. Target delivery, logistics, or platform-driven companies like Uber, DoorDash, or Instacart where your eight years of experience and cross-functional leadership align."
+
+CRITICAL TONE RULES for 0-24%:
+- NO "damage credibility" language (too punitive)
+- NO lectures or over-explanation
+- NO shaming or fear-based language
+- DO be direct and clear about the mismatch
+- DO redirect to specific companies and role types
 
 Example (25-39%):
 "This is a significant stretch. The role requires deep enterprise sales experience, but your background is consumer product management. You'd be competing against candidates with 5-7 years selling directly to Fortune 500 CIOs. Consider building sales experience through product-led growth roles first, or target Account Management positions at companies like Stripe or Salesforce where your product expertise translates more directly."
@@ -4377,7 +4387,13 @@ Structure (75-100 words):
 "[Decision: Apply]. [1-2 specific differentiators that make you competitive]. [How to stand out: outreach strategy + what to lead with]. [Speed guidance with market context]. [Confidence but not overconfidence]."
 
 Example (70-79%):
-"Apply. Your consumer fintech experience at Ripple directly maps to their payments infrastructure focus. Lead with your 2.3M user scale and P2P payments launch in your resume and LinkedIn outreach. Reach out to the hiring manager within 24 hours highlighting your mobile wallet background. With 600+ expected applicants, speed and targeted outreach matter. You're competitive but need to control the narrative early."
+"Before applying, adjust your resume and outreach to address your positioning gaps. Frame your Ripple work to emphasize consumer fintech payments specifically, highlight your 2.3M user scale prominently, and ensure your LinkedIn headline signals payments expertise. Once positioned correctly, apply within 24 hours and reach out to the hiring manager. This is a legitimate match if you control the narrative. Do not rely on the ATS alone."
+
+CRITICAL for 70-79% band:
+- ALWAYS lead with "Before applying..." (positioning requirements)
+- NEVER say "Apply immediately" or "Apply now" without conditions
+- Structure: Fix → Position → Apply → Outreach
+- Differentiate from 80-84% which CAN say "Apply immediately"
 
 Example (80-84%):
 "Apply immediately. Your Ripple consumer wallet experience is exactly what they need. With your 2.3M monthly active users and experimentation framework, you're in the top 10% of applicants for this role. Reach out to the hiring manager on LinkedIn today and lead with your P2P payments launch. The role posted 3 days ago, so apply today or tomorrow to stay in the first wave of candidates."
@@ -4497,13 +4513,13 @@ Role: {request.role_title}
             # Replace long industry_context with safe placeholder
             response = re.sub(
                 r'"industry_context"\s*:\s*"[^"]{200,}"',
-                '"industry_context": "Industry analysis available in full report."',
+                '"industry_context": "See market context section above."',
                 response
             )
             # Replace long function_context with safe placeholder
             response = re.sub(
                 r'"function_context"\s*:\s*"[^"]{200,}"',
-                '"function_context": "Function analysis available in full report."',
+                '"function_context": "See gaps section for function-specific insights."',
                 response
             )
 
@@ -4576,6 +4592,26 @@ Role: {request.role_title}
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
         parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+
+        # Debug: Check if career gap was detected
+        if 'gaps' in parsed_data and isinstance(parsed_data['gaps'], list):
+            career_gaps = [g for g in parsed_data['gaps'] if isinstance(g, dict) and g.get('gap_type') == 'career_gap']
+            if career_gaps:
+                print(f"✅ Career gap detected: {len(career_gaps)} gap(s)")
+                for cg in career_gaps:
+                    print(f"   - {cg.get('description', cg.get('gap_description', 'No description'))}")
+            else:
+                print(f"⚠️ No career_gap type in gaps array. Total gaps: {len(parsed_data['gaps'])}")
+                print(f"   Gap types present: {[g.get('gap_type', 'no_type') if isinstance(g, dict) else 'string' for g in parsed_data['gaps'][:5]]}")
+        else:
+            print(f"❌ No gaps array in response or not a list")
+
+        # Debug: Check career_gap_analysis
+        if 'career_gap_analysis' in parsed_data:
+            cga = parsed_data['career_gap_analysis']
+            print(f"✅ career_gap_analysis present: gaps_detected={cga.get('gaps_detected', [])}")
+        else:
+            print(f"⚠️ No career_gap_analysis field in response")
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -4833,12 +4869,12 @@ Role: {request.role_title}
             if len(response) > 15000:
                 response = re.sub(
                     r'"industry_context"\s*:\s*"[^"]{200,}"',
-                    '"industry_context": "Industry analysis available in full report."',
+                    '"industry_context": "See market context section above."',
                     response
                 )
                 response = re.sub(
                     r'"function_context"\s*:\s*"[^"]{200,}"',
-                    '"function_context": "Function analysis available in full report."',
+                    '"function_context": "See gaps section for function-specific insights."',
                     response
                 )
 
