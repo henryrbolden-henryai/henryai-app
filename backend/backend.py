@@ -4286,6 +4286,216 @@ Role: {request.role_title}
             detail=f"Failed to parse Claude response. The AI returned malformed JSON. Please try again."
         )
 
+
+@app.post("/api/jd/analyze/stream")
+async def analyze_jd_stream(request: JDAnalyzeRequest):
+    """
+    Streaming version of job description analysis for real-time UI updates.
+
+    Returns Server-Sent Events (SSE) with progressive data as it's generated:
+    - fit_score (appears ~3s)
+    - recommendation (appears ~4s)
+    - strengths array (appears ~6s)
+    - expected_applicants (appears ~8s)
+    - Full analysis data at completion (~20s)
+
+    This creates the perception of 5s load time instead of 20s by engaging users immediately.
+    """
+    import re
+    import json
+    import asyncio
+
+    # Use the same system prompt as the regular analyze endpoint
+    system_prompt = """You are a senior executive recruiter and career strategist.
+
+🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
+Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
+Before counting years of experience, adjust for company credibility (seed-stage startups count as 0.3x years).
+If a candidate has only 33% of required years (after credibility adjustment), the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
+These rules exist to prevent false hope. Apply them strictly.
+
+=== CRITICAL: FIT SCORING WITH EXPERIENCE PENALTIES (READ THIS FIRST) ===
+
+When calculating fit_score, you MUST apply these penalties BEFORE returning your analysis:
+
+**STEP 1: Calculate Base Fit Score**
+- 50% responsibilities alignment
+- 30% required experience match
+- 20% industry/domain alignment
+Score range: 0-100. If no resume: provide fit score of 0 or null.
+
+**STEP 2: Apply MANDATORY Experience Penalties**
+
+CRITICAL OVERRIDE RULES - HARD CAPS (APPLY THESE FIRST):
+These are ABSOLUTE MAXIMUMS that cannot be exceeded regardless of transferable skills, domain expertise, or other factors:
+
+1. If candidate has <50% of required years → fit_score CANNOT EXCEED 45%
+2. If candidate has 50-69% of required years → fit_score CANNOT EXCEED 55%
+3. If candidate has 70-89% of required years → fit_score CANNOT EXCEED 70%
+4. Only candidates with 90%+ of required years can score above 70%
+
+Examples:
+- JD requires 8 years, candidate has 3 years (37.5%) → MAX 45% fit score
+- JD requires 5 years, candidate has 3 years (60%) → MAX 55% fit score
+- JD requires 3 years, candidate has 1 year (33%) → MAX 45% fit score
+- JD requires 4 years, candidate has 3.5 years (87.5%) → MAX 70% fit score
+
+Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
+
+[REST OF SYSTEM PROMPT - SAME AS REGULAR ENDPOINT]
+
+ABSOLUTE REQUIREMENTS:
+1. Intelligence Layer MUST be complete - NO empty strings, NO empty required arrays
+2. If data truly cannot be determined, provide reasoning (e.g., "Insufficient information in JD")
+3. Use your knowledge to make reasonable estimates for salary ranges
+4. Be direct and opinionated - avoid vague or generic advice
+5. Every array marked "MUST have" cannot be empty
+6. Your response must be ONLY valid JSON with no markdown formatting
+7. Double-check that intelligence_layer has ALL required fields before responding
+8. MUST include complete interview_prep and outreach objects
+9. MUST include changes_summary with specific rationale for resume and cover letter tailoring
+10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
+11. MUST include reality_check with calculated applicant estimates, function context, and strategic action
+12. reality_check.applicant_calculation must show your work (all multipliers used)
+13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
+
+    # Build user message
+    user_message = f"""Job Description:
+Company: {request.company}
+Role: {request.role_title}
+
+{request.job_description}
+"""
+
+    if request.resume:
+        user_message += f"\n\nCandidate Resume Data:\n{json.dumps(request.resume, indent=2)}"
+
+    if request.preferences:
+        user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
+
+    async def event_generator():
+        """Generate Server-Sent Events with progressive data extraction"""
+        buffer = ""
+        fit_score_sent = False
+        recommendation_sent = False
+        strengths_sent = False
+        applicants_sent = False
+
+        try:
+            # Stream Claude's response
+            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096):
+                buffer += chunk
+
+                # Try to extract key fields as they become available
+
+                # Extract fit_score (appears early in JSON)
+                if not fit_score_sent and '"fit_score"' in buffer:
+                    match = re.search(r'"fit_score"\s*:\s*(\d+)', buffer)
+                    if match:
+                        fit_score = int(match.group(1))
+                        yield f"data: {json.dumps({'type': 'partial', 'field': 'fit_score', 'value': fit_score})}\n\n"
+                        fit_score_sent = True
+                        await asyncio.sleep(0)  # Allow event loop to process
+
+                # Extract recommendation
+                if not recommendation_sent and '"recommendation"' in buffer:
+                    match = re.search(r'"recommendation"\s*:\s*"([^"]+)"', buffer)
+                    if match:
+                        recommendation = match.group(1)
+                        yield f"data: {json.dumps({'type': 'partial', 'field': 'recommendation', 'value': recommendation})}\n\n"
+                        recommendation_sent = True
+                        await asyncio.sleep(0)
+
+                # Extract strengths array (look for complete array)
+                if not strengths_sent and '"strengths"' in buffer:
+                    # Try to extract complete strengths array
+                    match = re.search(r'"strengths"\s*:\s*\[((?:[^][]|\[[^\]]*\])*)\]', buffer)
+                    if match:
+                        try:
+                            strengths_json = '[' + match.group(1) + ']'
+                            strengths = json.loads(strengths_json)
+                            if len(strengths) > 0:
+                                yield f"data: {json.dumps({'type': 'partial', 'field': 'strengths', 'value': strengths})}\n\n"
+                                strengths_sent = True
+                                await asyncio.sleep(0)
+                        except:
+                            pass  # Not complete yet, keep buffering
+
+                # Extract expected_applicants from reality_check
+                if not applicants_sent and '"expected_applicants"' in buffer:
+                    match = re.search(r'"expected_applicants"\s*:\s*(\d+)', buffer)
+                    if match:
+                        expected_applicants = int(match.group(1))
+                        yield f"data: {json.dumps({'type': 'partial', 'field': 'expected_applicants', 'value': expected_applicants})}\n\n"
+                        applicants_sent = True
+                        await asyncio.sleep(0)
+
+            # Clean and parse the complete response
+            response = buffer
+
+            # Remove markdown code fences
+            if response.strip().startswith("```"):
+                response = response.strip().split("```")[1]
+                if response.startswith("json"):
+                    response = response[4:]
+                response = response.strip()
+
+            # Aggressive JSON repair
+            response = response.replace('\r\n', ' ').replace('\r', ' ')
+            response = re.sub(r',(\s*[}\]])', r'\1', response)
+
+            # Emergency repair for long responses
+            if len(response) > 15000:
+                response = re.sub(
+                    r'"industry_context"\s*:\s*"[^"]{200,}"',
+                    '"industry_context": "Industry analysis available in full report."',
+                    response
+                )
+                response = re.sub(
+                    r'"function_context"\s*:\s*"[^"]{200,}"',
+                    '"function_context": "Function analysis available in full report."',
+                    response
+                )
+
+            # Parse complete JSON
+            try:
+                parsed_data = json.loads(response)
+            except json.JSONDecodeError as first_error:
+                print(f"⚠️ First JSON parse failed, attempting repair...")
+                error_pos = first_error.pos if hasattr(first_error, 'pos') else len(response)
+                truncated = response[:error_pos]
+                last_comma = truncated.rfind(',')
+                if last_comma > 0:
+                    truncated = truncated[:last_comma]
+                open_braces = truncated.count('{') - truncated.count('}')
+                open_brackets = truncated.count('[') - truncated.count(']')
+                truncated += ']' * open_brackets + '}' * open_braces
+                parsed_data = json.loads(truncated)
+                print(f"✅ Salvaged JSON by truncating")
+
+            # Apply experience penalties
+            parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+
+            # Send complete data
+            yield f"data: {json.dumps({'type': 'complete', 'data': parsed_data})}\n\n"
+
+        except Exception as e:
+            print(f"🔥 Streaming error: {e}")
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Disable nginx buffering
+        }
+    )
+
+
 def generate_resume_full_text(resume_output: dict) -> str:
     """
     Generate formatted full resume text from resume_output structure.
