@@ -387,17 +387,8 @@
         skipForNow(source) {
             this.trackEvent('linkedin_upload_skipped', { source });
 
-            // Show toast confirmation
-            if (source === 'job-analysis') {
-                this.showToast('info', 'LinkedIn skipped for now. You can upload anytime from your Profile page.');
-            } else if (source === 'documents-section') {
-                this.showToast('info', 'No problem. You can update LinkedIn manually using the sections on this page.');
-            } else {
-                this.showToast('info', 'LinkedIn upload skipped. Upload anytime from your Profile page.');
-            }
-
-            // Just hide the modal - stay on current page (results.html)
-            // User needs to see Apply/Pass buttons, not be navigated away
+            // Just hide the modal - no toast, no navigation
+            // User stays on results page with Apply/Pass buttons visible
             this.dismissModal();
 
             // Mark in sessionStorage that LinkedIn was skipped (for analytics)
