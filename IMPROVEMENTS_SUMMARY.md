@@ -990,6 +990,204 @@ HenryAI is now delivering Claude-like responsiveness and recruiter-grade quality
 
 ---
 
+## December 15-16 Enhancements
+
+### 22. ✅ LinkedIn Profile Integration (Dec 15)
+
+**What it does**: Full LinkedIn profile upload, parsing, and optimization.
+
+**Implementation**:
+- `POST /api/linkedin/upload` - Parse LinkedIn PDF via Claude AI
+- `POST /api/linkedin/align` - Compare LinkedIn profile to job requirements
+- `POST /api/linkedin/optimize` - Generate optimized LinkedIn sections
+- Frontend: LinkedIn tab in documents page, profile settings section
+- Dashboard modal announcing feature to existing users
+
+**Features**:
+- LinkedIn Score (0-100) with section-by-section analysis
+- Severity-based scoring (Critical, Important, Nice-to-Have)
+- Role-agnostic optimization (detects PM, engineer, recruiter, sales, marketing)
+- Optimized sections: Headline, About, Experience bullets, Skills
+
+**Impact**:
+- ✅ Complete LinkedIn optimization workflow
+- ✅ Alignment check with job requirements
+- ✅ Professional headline and about section generation
+
+---
+
+### 23. ✅ 6-Tier Graduated Recommendation System (Dec 16)
+
+**What it does**: Replaces binary Apply/Skip with nuanced 6-level guidance.
+
+**Implementation**:
+- Backend: `force_apply_experience_penalties()` function
+- Recommendation tiers based on capped fit score:
+  - **Strong Apply** (85-100): "Strong match - prioritize this application"
+  - **Apply** (70-84): "Good fit - worth pursuing"
+  - **Consider** (55-69): "Moderate fit - apply if interested in company/role"
+  - **Apply with Caution** (40-54): "Stretch role - be strategic about positioning"
+  - **Long Shot** (25-39): "Significant gaps - only if highly motivated"
+  - **Do Not Apply** (0-24): "Not recommended - focus energy elsewhere"
+
+**Impact**:
+- ✅ More nuanced career guidance
+- ✅ Prevents wasted applications on poor fits
+- ✅ Encourages strategic prioritization
+
+---
+
+### 24. ✅ Experience Penalty Hard Caps (Dec 16)
+
+**What it does**: Backend safety net ensures experience gap penalties are enforced.
+
+**Implementation**:
+- Location: `backend/backend.py` - `force_apply_experience_penalties()`
+- PM-specific years calculation using actual PM/Product role titles
+- Hard cap logic based on years percentage:
+  - <50% of required years → Cap at 45
+  - 50-70% of required years → Cap at 60
+  - 70-90% of required years → Cap at 75
+  - ≥90% → No cap
+
+**Impact**:
+- ✅ Prevents inflated scores for underqualified candidates
+- ✅ Consistent scoring regardless of Claude response
+- ✅ Fair assessment for junior candidates
+
+---
+
+### 25. ✅ Company Credibility Scoring (Dec 16)
+
+**What it does**: Adjusts experience credit based on company scale/stage.
+
+**Implementation**:
+- Credibility multipliers:
+  - **HIGH** (1.0x): Public companies, Series B+, established brands
+  - **MEDIUM** (0.7x): Series A startups, 10-50 employees
+  - **LOW** (0.3x): Seed-stage startups, <10 employees, defunct companies
+  - **ZERO** (0x): Operations roles with PM title, volunteer/side projects
+- Applied BEFORE experience penalty calculations
+- Affects reality_check expected_applicants calculation
+
+**Impact**:
+- ✅ More accurate experience assessment
+- ✅ Realistic applicant estimates for obscure companies
+- ✅ Fair evaluation of startup vs. enterprise experience
+
+---
+
+### 26. ✅ Reality Check Improvements (Dec 16)
+
+**What it does**: Strategic action uses candidate's actual name with personalized tone.
+
+**Implementation**:
+- Post-processing regex replacement for name personalization
+- Removed "there" fallback - uses warm generic greeting if no name
+- Made strategic_action first-person and conversational
+- Removed em dashes from output (AI detection pattern)
+
+**Impact**:
+- ✅ More personal, engaging advice
+- ✅ Reduces AI-generated feel
+- ✅ Better user experience
+
+---
+
+### 27. ✅ Candidate Identity Bug Fix (Dec 16)
+
+**What it does**: Fixed "Henry" appearing in analysis explanations for all users.
+
+**Implementation**:
+- Added explicit identity instruction to Claude prompts:
+  - `/api/jd/analyze` endpoint (line 3162-3166)
+  - `/api/jd/analyze/stream` endpoint (line 4317-4321)
+- Instructions: "The candidate is NOT Henry, NOT any template, NOT a generic user"
+- Uses candidate's actual name from resume or "you/your" fallback
+
+**Impact**:
+- ✅ Correct candidate identification in all outputs
+- ✅ Professional, personalized analysis
+- ✅ No more template contamination
+
+---
+
+### 28. ✅ JSON Repair and Error Handling (Dec 16)
+
+**What it does**: Enhanced error handling for malformed Claude responses.
+
+**Implementation**:
+- Enhanced `repair_json()` function
+- Handles unescaped quotes in strings
+- Handles truncated responses
+- Automatic retry with exponential backoff for API failures
+- Graceful degradation when optional fields are missing
+
+**Impact**:
+- ✅ More robust API responses
+- ✅ Fewer user-facing errors
+- ✅ Better reliability
+
+---
+
+### 29. ✅ Streaming Analysis Endpoint (Dec 16) - EXPERIMENTAL
+
+**What it does**: Real-time streaming of analysis results via Server-Sent Events.
+
+**Implementation**:
+- New endpoint: `POST /api/jd/analyze/stream`
+- Uses SSE for progressive data delivery
+- Fields stream as generated: fit_score → recommendation → strengths → applicants
+- Test page: `streaming_test.html`
+- Production page: `analyzing_streaming.html`
+
+**Status**: **REVERTED** - Experience penalties weren't reflecting correctly in partial data
+- Files preserved for future iteration
+
+**Impact (when re-enabled)**:
+- ⏸️ 4x perceived speed improvement
+- ⏸️ User engagement during load (vs. blank screen)
+- ⏸️ Progressive UI updates
+
+---
+
+## Updated API Endpoints (Dec 15-16)
+
+```
+LinkedIn Integration (NEW):
+- POST /api/linkedin/upload (parse LinkedIn PDF)
+- POST /api/linkedin/align (compare to job requirements)
+- POST /api/linkedin/optimize (generate optimized sections)
+
+Streaming (EXPERIMENTAL):
+- POST /api/jd/analyze/stream (real-time analysis via SSE)
+```
+
+---
+
+## Current Status
+
+| Phase | Status | Completion |
+|-------|--------|------------|
+| Phase 0: Foundation Strengthening | ✅ COMPLETE | 100% |
+| Phase 1: Core Application Engine | ✅ COMPLETE | 100% |
+| Phase 1.5: Interview Intelligence | ✅ COMPLETE | 100% |
+| Phase 1.75: Engagement & Coaching | In Progress | ~65% |
+| Phase 2: Strategic Intelligence | Partial | ~55% |
+| Phase 3: Performance Intelligence | Partial | ~20% |
+
+---
+
+## Next Actions
+
+1. **Test 6-tier system with users** - Get feedback on new recommendation language
+2. **Monitor cap enforcement** - Ensure backend safety net is catching misses
+3. **Re-enable streaming** - When experience penalties can be applied to partial data
+4. **Complete LinkedIn integration testing** - Full flow with real LinkedIn PDFs
+5. **Implement Phase 1.5 features** - Screening Questions + Document Refinement
+
+---
+
 **Prepared by**: Engineering Team
-**Date**: December 14, 2025
+**Date**: December 16, 2025
 **Status**: Deployed to Production

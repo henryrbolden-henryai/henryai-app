@@ -1,6 +1,9 @@
 # BACKEND IMPLEMENTATION GUIDE
 ## Phase 1: Strategic Intelligence Features
 
+**Last Updated**: December 16, 2025
+**Status**: Phase 1 COMPLETE, Phase 2 In Progress
+
 This guide covers all backend changes needed to support the new strategic intelligence sections in package.html.
 
 ---
@@ -501,3 +504,270 @@ If you hit any issues during implementation, check:
 4. Are fields displaying correctly? (Check element IDs match)
 
 Good luck! 🚀
+
+---
+
+## **PHASE 2: RECENT ADDITIONS (Dec 15-16, 2025)**
+
+The following features have been implemented and deployed:
+
+### **6-Tier Graduated Recommendation System**
+
+**Location**: `backend/backend.py` - `force_apply_experience_penalties()` function
+
+The system now uses 6 recommendation tiers instead of binary Apply/Skip:
+
+```python
+def get_recommendation_from_score(capped_score: int) -> str:
+    """Maps fit score to 6-tier recommendation."""
+    if capped_score >= 85:
+        return "Strong Apply"
+    elif capped_score >= 70:
+        return "Apply"
+    elif capped_score >= 55:
+        return "Consider"
+    elif capped_score >= 40:
+        return "Apply with Caution"
+    elif capped_score >= 25:
+        return "Long Shot"
+    else:
+        return "Do Not Apply"
+```
+
+---
+
+### **Experience Penalty Hard Caps**
+
+**Location**: `backend/backend.py` - Post-processing safety net
+
+The backend now enforces hard caps on fit scores based on experience gaps:
+
+```python
+def force_apply_experience_penalties(analysis_data: dict, resume_data: dict, jd_analysis: dict) -> dict:
+    """
+    Backend safety net - applies experience penalties even if Claude missed them.
+    """
+    required_years = jd_analysis.get("required_years", 0)
+    candidate_years = calculate_pm_years_from_resume(resume_data)
+
+    if required_years > 0:
+        years_percentage = (candidate_years / required_years) * 100
+
+        # Hard cap logic
+        if years_percentage < 50:
+            hard_cap = 45
+        elif years_percentage < 70:
+            hard_cap = 60
+        elif years_percentage < 90:
+            hard_cap = 75
+        else:
+            hard_cap = 100  # No cap
+
+        # Apply cap
+        original_score = analysis_data.get("fit_score", 0)
+        capped_score = min(original_score, hard_cap)
+
+        if capped_score != original_score:
+            analysis_data["fit_score"] = capped_score
+            analysis_data["recommendation"] = get_recommendation_from_score(capped_score)
+            analysis_data["_experience_cap_applied"] = True
+
+    return analysis_data
+```
+
+---
+
+### **Company Credibility Scoring**
+
+Multiplier system for experience calculation based on company reputation:
+
+```python
+CREDIBILITY_MULTIPLIERS = {
+    "HIGH": 1.0,    # Public companies, Series B+, established brands
+    "MEDIUM": 0.7,  # Series A startups, 10-50 employees
+    "LOW": 0.3,     # Seed-stage startups, <10 employees
+    "ZERO": 0.0     # Operations roles with PM title, volunteer/side projects
+}
+
+def calculate_credible_years(experience: list) -> float:
+    """
+    Calculates experience years adjusted for company credibility.
+    """
+    total = 0.0
+    for role in experience:
+        years = parse_duration(role.get("dates", ""))
+        credibility = assess_company_credibility(role.get("company", ""))
+        total += years * CREDIBILITY_MULTIPLIERS.get(credibility, 0.7)
+    return total
+```
+
+---
+
+### **Candidate Identity Instruction**
+
+**Location**: `backend/backend.py` - Lines 3162-3166 and 4317-4321
+
+Added to both `/api/jd/analyze` and `/api/jd/analyze/stream`:
+
+```python
+IDENTITY_INSTRUCTION = """
+🚨 CRITICAL: CANDIDATE IDENTITY 🚨
+The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
+When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
+If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
+Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
+"""
+```
+
+---
+
+### **Streaming Endpoint (Experimental)**
+
+**Location**: `backend/backend.py` - `/api/jd/analyze/stream`
+
+New SSE streaming endpoint for real-time analysis:
+
+```python
+@app.post("/api/jd/analyze/stream")
+async def analyze_job_description_stream(request: AnalyzeRequest):
+    """
+    Streaming version of JD analysis using Server-Sent Events.
+    Returns partial results as they're generated.
+    """
+    async def event_generator():
+        # Send start event
+        yield f"data: {json.dumps({'type': 'start', 'message': 'Analysis started'})}\n\n"
+
+        # Stream partial results as Claude generates them
+        for field, value in stream_analysis(request):
+            yield f"data: {json.dumps({'type': 'partial', 'field': field, 'value': value})}\n\n"
+
+        # Send complete event
+        yield f"data: {json.dumps({'type': 'complete', 'data': full_analysis})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream"
+    )
+```
+
+**Status**: REVERTED from production (experience penalties not reflecting in partial data)
+**Files preserved**: `streaming_test.html`, `analyzing_streaming.html`
+
+---
+
+### **LinkedIn Integration Endpoints**
+
+**NEW Endpoints** (Dec 15, 2025):
+
+```python
+# Parse LinkedIn PDF
+@app.post("/api/linkedin/upload")
+async def upload_linkedin_pdf(file: UploadFile):
+    """Parse LinkedIn PDF and extract profile data."""
+
+# Compare LinkedIn to job requirements
+@app.post("/api/linkedin/align")
+async def check_linkedin_alignment(request: LinkedInAlignRequest):
+    """Compare LinkedIn profile to job requirements."""
+
+# Generate optimized LinkedIn sections
+@app.post("/api/linkedin/optimize")
+async def optimize_linkedin_profile(request: LinkedInOptimizeRequest):
+    """Generate optimized headline, about, experience, skills."""
+```
+
+---
+
+## **UPDATED API RESPONSE SCHEMA**
+
+The `/api/jd/analyze` endpoint now returns additional fields:
+
+```json
+{
+  "fit_score": 45,
+  "recommendation": "Apply with Caution",
+  "recommendation_details": {
+    "tier": "Apply with Caution",
+    "score_range": "40-54",
+    "guidance": "Stretch role - be strategic about positioning"
+  },
+  "_experience_cap_applied": true,
+  "_original_score": 72,
+  "_candidate_years": 2.5,
+  "_required_years": 5,
+  "_years_percentage": 50,
+
+  "reality_check": {
+    "expected_applicants": 150,
+    "company_credibility": "MEDIUM",
+    "strategic_action": "Rawan, this is a competitive role..."
+  },
+
+  // ... existing fields ...
+}
+```
+
+---
+
+## **TESTING NEW FEATURES**
+
+### Test Experience Caps
+
+```python
+# Test case: Junior candidate (2 years) applying for Senior role (5+ years)
+test_request = {
+    "resume_data": {"experience": [{"years": 2, "title": "Product Manager"}]},
+    "jd_analysis": {"required_years": 5}
+}
+
+response = requests.post("/api/jd/analyze", json=test_request)
+assert response.json()["fit_score"] <= 60  # Hard cap for 40% of required years
+assert "Long Shot" in response.json()["recommendation"] or "Apply with Caution" in response.json()["recommendation"]
+```
+
+### Test Candidate Identity
+
+```python
+# Test case: Analysis should use candidate's name, not "Henry"
+response = requests.post("/api/jd/analyze", json=test_request)
+analysis = response.json()
+
+assert "Henry" not in analysis.get("fit_explanation", "")
+assert "Henry" not in analysis.get("recommendation", "")
+assert "Henry" not in str(analysis.get("reality_check", {}))
+```
+
+### Test 6-Tier Recommendations
+
+```python
+# Test all tiers
+test_scores = [90, 75, 60, 45, 30, 15]
+expected_tiers = ["Strong Apply", "Apply", "Consider", "Apply with Caution", "Long Shot", "Do Not Apply"]
+
+for score, expected_tier in zip(test_scores, expected_tiers):
+    result = get_recommendation_from_score(score)
+    assert result == expected_tier
+```
+
+---
+
+## **DEPLOYMENT CHECKLIST (Dec 16)**
+
+- [x] 6-tier recommendation system deployed
+- [x] Experience penalty hard caps enforced
+- [x] Company credibility scoring active
+- [x] Candidate identity fix deployed
+- [x] LinkedIn endpoints deployed
+- [x] Streaming endpoint deployed (but reverted from frontend)
+- [x] JSON repair function enhanced
+- [x] Error handling improved with exponential backoff
+
+---
+
+## **NEXT STEPS**
+
+1. **Re-enable streaming** - Fix experience penalty application in partial data
+2. **Add credibility detection** - Auto-detect company stage from name/description
+3. **Screening questions endpoint** - Phase 1.5 feature
+4. **Document refinement endpoint** - Phase 1.5 feature
