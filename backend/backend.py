@@ -2761,8 +2761,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
     # Try to get adjusted years first, fallback to raw years
     candidate_years = experience_analysis.get("candidate_years_adjusted_for_credibility")
+    raw_years = experience_analysis.get("candidate_years_in_role_type", 0)
+
     if candidate_years is None:
-        candidate_years = experience_analysis.get("candidate_years_in_role_type", 0)
+        candidate_years = raw_years
+        # Claude didn't apply credibility adjustment, so apply it ourselves
+        if resume_data and raw_years > 0:
+            candidate_years = apply_credibility_adjustment(resume_data, raw_years)
+            if candidate_years != raw_years:
+                experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
+                response_data["experience_analysis"] = experience_analysis
 
     # Get current fit score from Claude
     original_fit_score = response_data.get("fit_score", 0)
@@ -2847,6 +2855,14 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if correct_severity < current_severity:
         response_data["recommendation"] = correct_recommendation
 
+        # ALSO update intelligence_layer.apply_decision.recommendation
+        if "intelligence_layer" in response_data:
+            if "apply_decision" not in response_data["intelligence_layer"]:
+                response_data["intelligence_layer"]["apply_decision"] = {}
+            # Map "Do Not Apply" to "Skip" for intelligence_layer format
+            il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
+            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
+
         # Add penalty override note to recommendation_rationale
         original_rationale = response_data.get("recommendation_rationale", "")
         response_data["recommendation_rationale"] = (
@@ -2903,6 +2919,54 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
 
     return response_data
+
+
+def apply_credibility_adjustment(resume_data: dict, raw_years: float) -> float:
+    """
+    Apply company credibility adjustment if Claude didn't do it.
+
+    This is a simplified version - just checks for obvious red flags:
+    - Very short tenure (<1 year)
+    - Early-stage startup signals
+    """
+    if not resume_data:
+        return raw_years
+
+    # Get most recent experience
+    experience = resume_data.get("experience", [])
+    if not experience:
+        return raw_years
+
+    most_recent = experience[0] if isinstance(experience, list) else {}
+
+    # Extract tenure (rough calculation)
+    dates = most_recent.get("dates", "") or ""
+    company = most_recent.get("company", "") or ""
+
+    # Red flags for low credibility
+    red_flags = 0
+
+    # Check for short tenure signals
+    if "month" in dates.lower() or "1 year" in dates.lower():
+        red_flags += 1
+
+    # Check for startup signals in company name/description
+    startup_signals = ["seed", "stealth", "startup", "pre-seed", "founding"]
+    if any(signal in company.lower() for signal in startup_signals):
+        red_flags += 1
+
+    # Apply adjustment
+    if red_flags >= 2:
+        # Multiple red flags = LOW credibility (0.3x)
+        print(f"   🔍 Credibility adjustment: {red_flags} red flags detected, applying 0.3x multiplier")
+        return raw_years * 0.3
+    elif red_flags == 1:
+        # One red flag = MEDIUM credibility (0.7x)
+        print(f"   🔍 Credibility adjustment: {red_flags} red flag detected, applying 0.7x multiplier")
+        return raw_years * 0.7
+    else:
+        # No red flags = keep original
+        return raw_years
 
 
 @app.post("/api/jd/analyze")
