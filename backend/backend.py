@@ -2855,13 +2855,23 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if correct_severity < current_severity:
         response_data["recommendation"] = correct_recommendation
 
-        # TEMPORARILY COMMENTED OUT - causing JSON parsing issues
-        # if "intelligence_layer" in response_data:
-        #     if "apply_decision" not in response_data["intelligence_layer"]:
-        #         response_data["intelligence_layer"]["apply_decision"] = {}
-        #     # Map "Do Not Apply" to "Skip" for intelligence_layer format
-        #     il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
-        #     response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
+        # Update ALL recommendation fields to ensure UI displays correct value
+        # Map "Do Not Apply" to "Skip" for intelligence_layer format
+        il_recommendation = "Skip" if correct_recommendation == "Do Not Apply" else correct_recommendation
+
+        # Update intelligence_layer.apply_decision.recommendation
+        if "intelligence_layer" in response_data:
+            if "apply_decision" not in response_data["intelligence_layer"]:
+                response_data["intelligence_layer"]["apply_decision"] = {}
+            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
+            print(f"   Updated intelligence_layer.apply_decision.recommendation to: {il_recommendation}")
+
+        # Update top-level apply_decision if it exists separately
+        if "apply_decision" in response_data:
+            response_data["apply_decision"]["recommendation"] = il_recommendation
+            print(f"   Updated apply_decision.recommendation to: {il_recommendation}")
+
+        print(f"   ✅ All recommendation fields updated to: {correct_recommendation}")
 
         # Add penalty override note to recommendation_rationale
         original_rationale = response_data.get("recommendation_rationale", "")
