@@ -2969,26 +2969,6 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if hard_cap_applied:
         print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
 
-    # POST-PROCESS: Fix "there" → candidate's first name in reality_check
-    if resume_data:
-        candidate_name = resume_data.get("full_name", "") or ""
-        first_name = candidate_name.split()[0] if candidate_name else ""
-
-        if first_name and "reality_check" in response_data:
-            reality_check = response_data["reality_check"]
-
-            # Fix strategic_action field
-            if "strategic_action" in reality_check:
-                original_action = reality_check["strategic_action"]
-                if "there, I'll" in original_action.lower() or original_action.lower().startswith("there,"):
-                    fixed_action = original_action.replace("there, I'll", f"{first_name}, I'll")
-                    fixed_action = fixed_action.replace("There, I'll", f"{first_name}, I'll")
-                    fixed_action = fixed_action.replace("there,", f"{first_name},")
-                    fixed_action = fixed_action.replace("There,", f"{first_name},")
-                    reality_check["strategic_action"] = fixed_action
-                    response_data["reality_check"] = reality_check
-                    print(f"   🔧 Fixed reality_check: 'there' → '{first_name}'")
-
     return response_data
 
 
@@ -3772,18 +3752,17 @@ IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or c
 ### Step 7: Strategic Action (based on fit score)
 Write this in FIRST PERSON, directly to the candidate. Be specific and actionable.
 
-CRITICAL FORMATTING RULES:
-- ALWAYS start with the candidate's FIRST NAME from their resume (e.g., "Rawan, I'll be straight with you:")
-- NEVER use "there" or generic language - always use their actual name
+FORMATTING RULES:
+- Start directly with advice (no name greeting needed)
 - Use proper punctuation: periods, commas, colons. NO em dashes (—)
-- Keep it conversational but direct
+- Keep it conversational but direct and honest
 
 Examples by fit score:
-- 70%+ fit: "[FirstName], your move: Apply within 24 hours and immediately find the hiring manager or VP of [function] on LinkedIn. With [X] expected applicants, you cannot rely on the ATS alone. Your [specific strength from resume] gives you an edge. Use it in your outreach."
-- 50-69% fit: "[FirstName], apply, but do not just submit and hope. You are competing against candidates with more direct experience. Find someone at the company who can refer you internally. That is your only real path here."
-- <50% fit: "[FirstName], I'll be straight with you: this is a long shot. [X]+ better-matched candidates means your cold application probably will not get seen. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit."
+- 70%+ fit: "Apply within 24 hours and immediately find the hiring manager or VP of [function] on LinkedIn. With [X] expected applicants, you cannot rely on the ATS alone. Your [specific strength] gives you an edge. Use it in your outreach."
+- 50-69% fit: "Apply, but do not just submit and hope. You are competing against candidates with more direct experience. Find someone at the company who can refer you internally. That is your only real path here."
+- <50% fit: "This is a long shot. [X]+ better-matched candidates means your cold application probably will not get seen. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit."
 
-The strategic_action field should feel like a recruiter giving honest, personalized advice, not a form letter.
+The strategic_action field should feel like a recruiter giving honest, direct advice.
 
 === THEN TRADITIONAL JD ANALYSIS ===
 
