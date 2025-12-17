@@ -4027,6 +4027,33 @@ Role: {request.role_title}
         print(f"   ...{problem_section}...")
         print(f"   Full response length: {len(response)} chars")
 
+        # Try to fix common JSON issues - unescaped quotes in strings
+        try:
+            import re
+            # Fix common patterns of unescaped quotes inside JSON strings
+            # This regex finds string values and escapes internal quotes
+            fixed_response = response
+
+            # Common patterns that break JSON - role titles with quotes
+            patterns_to_escape = [
+                (r'"Lead PM"', r'\\"Lead PM\\"'),
+                (r'"Senior"', r'\\"Senior\\"'),
+                (r'"Associate"', r'\\"Associate\\"'),
+                (r'"Staff"', r'\\"Staff\\"'),
+                (r'"Principal"', r'\\"Principal\\"'),
+            ]
+            for pattern, replacement in patterns_to_escape:
+                fixed_response = fixed_response.replace(pattern, replacement)
+
+            parsed_data = json.loads(fixed_response)
+            print("✅ Fixed JSON by escaping common quote patterns")
+
+            # Continue with penalty enforcement
+            parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+            return parsed_data
+        except Exception as fix_error:
+            print(f"   Fix attempt failed: {fix_error}")
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to parse Claude response. The AI returned malformed JSON. Please try again."
