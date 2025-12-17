@@ -2997,12 +2997,22 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         print(f"   ✅ All recommendation fields updated to: {correct_recommendation}")
 
-        # Add penalty override note to recommendation_rationale
+        # Update recommendation_rationale WITHOUT exposing system math
+        # CRITICAL: Never show "adjusted from X to Y" or percentage calculations to users
         original_rationale = response_data.get("recommendation_rationale", "")
-        response_data["recommendation_rationale"] = (
-            f"⚠️ Recommendation adjusted from '{current_recommendation}' to '{correct_recommendation}' "
-            f"due to experience gap ({years_percentage:.1f}% of required years). {original_rationale}"
-        )
+        if correct_recommendation in ["Do Not Apply", "Long Shot"]:
+            response_data["recommendation_rationale"] = (
+                f"This role requires {required_years}+ years of experience. "
+                f"Your background shows {candidate_years:.0f} years in this domain. {original_rationale}"
+            )
+        elif correct_recommendation == "Apply with Caution":
+            response_data["recommendation_rationale"] = (
+                f"Your experience level is below what this role typically requires. "
+                f"Proceed only with strong positioning. {original_rationale}"
+            )
+        else:
+            # For Conditional Apply or Consider, keep original rationale
+            response_data["recommendation_rationale"] = original_rationale
 
     # Add alternative actions if not present and should be
     if alternative_actions and not response_data.get("alternative_actions"):
@@ -3022,20 +3032,20 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         )
 
         if not has_experience_warning:
+            # CRITICAL: Never expose percentage math or "credibility adjustment" language
             gap_warning = {
                 "gap_type": "experience_years_mismatch",
                 "severity": "critical",
-                "gap_description": f"Experience gap: {required_years} years required, {candidate_years:.1f} years actual",
+                "gap_description": f"This role requires {required_years}+ years; you have {candidate_years:.0f}",
                 "detailed_explanation": (
-                    f"⚠️ EXPERIENCE GAP: This role requires {required_years} years of experience. "
-                    f"You have {candidate_years:.1f} years (after adjusting for company credibility). "
-                    f"This is a {100 - years_percentage:.1f}% gap that will likely result in auto-rejection, "
-                    f"even if your skills align well."
+                    f"This role is looking for {required_years}+ years of direct experience. "
+                    f"Your background shows roughly {candidate_years:.0f} years in this domain. "
+                    f"Recruiters typically filter on years of experience first."
                 ),
-                "impact": "Auto-rejection risk: HIGH - Recruiters filter by years of experience as a first pass",
+                "impact": "You may not pass initial screening filters for this role",
                 "mitigation_strategy": (
-                    f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience, "
-                    f"or build {required_years - candidate_years:.1f} more years in this role type before applying to this level."
+                    f"Consider roles asking for {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience, "
+                    f"where your background will be more competitive."
                 )
             }
             gaps.insert(0, gap_warning)  # Add at the beginning for visibility
@@ -3087,15 +3097,8 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
     if is_skip_recommendation and has_apply_language:
         print(f"⚠️ CONTRADICTION DETECTED: recommendation={recommendation}, but strategic_action has apply language")
 
-        # Get candidate name for personalized message
-        candidate_name = None
-        if analysis_data.get("_resume_json"):
-            resume = analysis_data.get("_resume_json", {})
-            candidate_name = resume.get("full_name") or resume.get("contact", {}).get("name")
-        if not candidate_name:
-            candidate_name = "You"
-
         # Get top gaps for explanation
+        # CRITICAL: Do NOT use candidate names - use second-person voice only
         gaps = analysis_data.get("gaps", [])
         gap_descriptions = []
         for gap in gaps[:2]:
@@ -3106,20 +3109,20 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
 
         gaps_summary = " ".join(gap_descriptions[:2]) if gap_descriptions else "significant experience gaps exist"
 
-        # Generate a consistent skip message
+        # Generate a consistent skip message - SECOND PERSON ONLY, no names
         if fit_score < 45:
             new_strategic_action = (
-                f"{candidate_name}, this role is a significant stretch. {gaps_summary}. "
-                f"Only pursue if you have an inside connection or exceptional circumstances that aren't reflected in your resume."
+                f"This role is a significant stretch. {gaps_summary}. "
+                f"Do not apply. Focus on roles aligned with your background where you are competitive."
             )
         elif fit_score < 55:
             new_strategic_action = (
-                f"{candidate_name}, this is a stretch role. {gaps_summary}. "
+                f"This is a stretch role. {gaps_summary}. "
                 f"Be strategic about positioning if you decide to pursue it. Consider targeting similar roles at earlier-stage companies."
             )
         else:
             new_strategic_action = (
-                f"{candidate_name}, this role has addressable gaps. {gaps_summary}. "
+                f"This role has addressable gaps. {gaps_summary}. "
                 f"Focus on roles where you're a stronger fit, or network your way in before applying through the ATS."
             )
 
@@ -3351,24 +3354,22 @@ MANDATORY SECOND-PERSON VOICE (APPLIES TO ALL SCORE BANDS):
 - Use "your background" NOT "Maya's background" or "the candidate's background"
 - Use "You have 8 years..." NOT "Maya has 8 years..." or "The candidate has 8 years..."
 
-When to use candidate's name:
-- ONLY in direct address: "Maya, this role requires..." or "Maya, your background..."
-- NEVER in third-person descriptions: NOT "Maya is a product manager with..."
+🚫 NEVER USE CANDIDATE NAMES IN STRATEGIC_ACTION 🚫
+- NEVER start strategic_action with the candidate's name ("Maya, this role...")
+- NEVER use names anywhere in strategic_action field
+- START strategic_action with the action/situation: "This role...", "Do not apply...", "Apply immediately...", "Before applying..."
 
-Examples of CORRECT voice:
-✅ "Maya, you're a product manager with 8 years of experience..."
-✅ "Your Ripple background is strong, but you lack engineering depth..."
-✅ "You have solid B2C product experience at scale..."
+Examples of CORRECT strategic_action voice:
 ✅ "This role requires 5+ years of backend development. Your background is product management, not engineering."
-✅ "Do not apply. Your background is product management, not engineering."
+✅ "Do not apply. This is a fundamental function mismatch."
+✅ "Before applying, tighten your resume to address the gaps directly."
+✅ "Apply immediately. Your consumer product experience aligns perfectly."
 
-Examples of INCORRECT voice (DO NOT USE - ESPECIALLY FOR LOW-FIT SCENARIOS):
-❌ "Maya is a product manager with 8 years of experience..." (third person)
-❌ "Maya's background is in product management..." (third person possessive)
+Examples of INCORRECT strategic_action (DO NOT USE):
+❌ "Maya, this role requires..." (starts with name)
+❌ "Maya, this is a significant stretch..." (starts with name)
+❌ "Maya is a product manager..." (third person with name)
 ❌ "The candidate has strong B2C experience..." (third person)
-❌ "Maya, maya's background shows strong alignment..." (mixing cases)
-❌ "Her background demonstrates..." (third person pronoun)
-❌ "His experience includes..." (third person pronoun)
 
 CRITICAL: This applies to ALL score bands, ESPECIALLY <40% "Do Not Apply" recommendations.
 Even when delivering hard truth about poor fit, maintain second-person coaching voice.
@@ -4796,24 +4797,22 @@ MANDATORY SECOND-PERSON VOICE (APPLIES TO ALL SCORE BANDS):
 - Use "your background" NOT "Maya's background" or "the candidate's background"
 - Use "You have 8 years..." NOT "Maya has 8 years..." or "The candidate has 8 years..."
 
-When to use candidate's name:
-- ONLY in direct address: "Maya, this role requires..." or "Maya, your background..."
-- NEVER in third-person descriptions: NOT "Maya is a product manager with..."
+🚫 NEVER USE CANDIDATE NAMES IN STRATEGIC_ACTION 🚫
+- NEVER start strategic_action with the candidate's name ("Maya, this role...")
+- NEVER use names anywhere in strategic_action field
+- START strategic_action with the action/situation: "This role...", "Do not apply...", "Apply immediately...", "Before applying..."
 
-Examples of CORRECT voice:
-✅ "Maya, you're a product manager with 8 years of experience..."
-✅ "Your Ripple background is strong, but you lack engineering depth..."
-✅ "You have solid B2C product experience at scale..."
+Examples of CORRECT strategic_action voice:
 ✅ "This role requires 5+ years of backend development. Your background is product management, not engineering."
-✅ "Do not apply. Your background is product management, not engineering."
+✅ "Do not apply. This is a fundamental function mismatch."
+✅ "Before applying, tighten your resume to address the gaps directly."
+✅ "Apply immediately. Your consumer product experience aligns perfectly."
 
-Examples of INCORRECT voice (DO NOT USE - ESPECIALLY FOR LOW-FIT SCENARIOS):
-❌ "Maya is a product manager with 8 years of experience..." (third person)
-❌ "Maya's background is in product management..." (third person possessive)
+Examples of INCORRECT strategic_action (DO NOT USE):
+❌ "Maya, this role requires..." (starts with name)
+❌ "Maya, this is a significant stretch..." (starts with name)
+❌ "Maya is a product manager..." (third person with name)
 ❌ "The candidate has strong B2C experience..." (third person)
-❌ "Maya, maya's background shows strong alignment..." (mixing cases)
-❌ "Her background demonstrates..." (third person pronoun)
-❌ "His experience includes..." (third person pronoun)
 
 CRITICAL: This applies to ALL score bands, ESPECIALLY <40% "Do Not Apply" recommendations.
 Even when delivering hard truth about poor fit, maintain second-person coaching voice.
