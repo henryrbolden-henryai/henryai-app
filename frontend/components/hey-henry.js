@@ -717,6 +717,41 @@
         }
     }
 
+    // Generate tone guidance based on emotional state for backend
+    function getToneGuidance(emotionalState) {
+        const guidance = [];
+
+        // Tone based on holding_up state
+        const holdingUpGuidance = {
+            'zen': 'Professional and efficient. Get to the point quickly.',
+            'stressed': 'Reassuring but direct. Acknowledge the pressure, then provide clear guidance.',
+            'struggling': 'Supportive and steady. Break things into manageable steps.',
+            'desperate': 'Empathetic but realistic. Acknowledge difficulty, focus on actionable steps.',
+            'crushed': 'Gentle and direct. Acknowledge the pain, but keep moving forward with small wins.'
+        };
+        guidance.push(holdingUpGuidance[emotionalState.holding_up] || holdingUpGuidance['zen']);
+
+        // Strategy based on timeline
+        const timelineGuidance = {
+            'urgent': 'Move fast but smart. Prioritize high-probability opportunities.',
+            'soon': 'Make every application count. No spray-and-pray.',
+            'actively_looking': 'Time to be selective. Focus on quality over quantity.',
+            'no_rush': 'Only roles worth making a move for. Be picky.'
+        };
+        guidance.push(timelineGuidance[emotionalState.timeline] || timelineGuidance['actively_looking']);
+
+        // Support based on confidence
+        const confidenceGuidance = {
+            'low': 'Provide more explanation. Build confidence through logic and facts.',
+            'need_validation': 'Validate their concerns, then redirect to evidence.',
+            'shaky': 'Acknowledge feelings, but anchor responses in facts and progress.',
+            'strong': 'Peer-level conversation. Be direct and strategic.'
+        };
+        guidance.push(confidenceGuidance[emotionalState.confidence] || confidenceGuidance['strong']);
+
+        return guidance.join(' ');
+    }
+
     // Determine which welcome flow state to show
     function determineWelcomeFlowState() {
         const hasProfile = hasUserProfile();
@@ -2112,8 +2147,12 @@ ${confidenceClosing}`,
             const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
             const pipelineData = getPipelineData();
             const userName = getUserName();
+            const emotionalState = getUserEmotionalState();
 
-            const response = await fetch(`${API_BASE}/api/ask-henry`, {
+            // Generate tone guidance based on emotional state
+            const toneGuidance = getToneGuidance(emotionalState);
+
+            const response = await fetch(`${API_BASE}/api/hey-henry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -2127,7 +2166,12 @@ ${confidenceClosing}`,
                         has_analysis: !!analysisData._company_name,
                         has_resume: !!resumeData.name,
                         has_pipeline: !!pipelineData,
-                        user_name: userName
+                        user_name: userName,
+                        // Emotional state for tone adaptation
+                        emotional_state: emotionalState.holding_up,
+                        confidence_level: emotionalState.confidence,
+                        timeline: emotionalState.timeline,
+                        tone_guidance: toneGuidance
                     },
                     analysis_data: analysisData,
                     resume_data: resumeData,
