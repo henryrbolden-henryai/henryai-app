@@ -742,6 +742,377 @@
         'sound more', 'tone down', 'emphasize', 'highlight'
     ];
 
+    // ==========================================
+    // Beta Feedback Collection
+    // ==========================================
+
+    // Triggers that indicate user is providing feedback
+    const FEEDBACK_TRIGGERS = [
+        // Bug reports
+        'bug', 'broken', 'not working', 'doesn\'t work', 'error', 'issue', 'problem',
+        'crashed', 'stuck', 'freezing', 'slow', 'glitch',
+        // Feedback/suggestions
+        'feedback', 'suggestion', 'suggest', 'would be nice', 'wish it could',
+        'should have', 'would love', 'feature request', 'idea for',
+        'could you add', 'can you add', 'please add',
+        // Complaints/confusion
+        'confusing', 'confused', 'don\'t understand', 'unclear', 'hard to use',
+        'frustrating', 'annoying', 'wrong', 'incorrect',
+        // Praise (also valuable)
+        'love this', 'great feature', 'really helpful', 'awesome', 'works great',
+        'thank you', 'thanks for', 'amazing'
+    ];
+
+    // State for feedback flow
+    let pendingFeedback = null;
+    let feedbackFlowState = null; // 'awaiting_details' | 'awaiting_confirmation' | null
+
+    function detectFeedbackIntent(message) {
+        const lowerMessage = message.toLowerCase();
+        return FEEDBACK_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+    }
+
+    function getFollowUpQuestion(feedbackType, originalMessage) {
+        const lowerMessage = originalMessage.toLowerCase();
+
+        if (feedbackType === 'bug') {
+            // Check if they already provided details
+            const hasDetails = lowerMessage.length > 50 ||
+                lowerMessage.includes('when i') ||
+                lowerMessage.includes('after i') ||
+                lowerMessage.includes('tried to');
+
+            if (hasDetails) {
+                return null; // Already detailed enough
+            }
+            return "Can you tell me what you were trying to do when this happened? That'll help the team track it down faster.";
+        }
+
+        if (feedbackType === 'feature_request') {
+            const hasContext = lowerMessage.length > 40 ||
+                lowerMessage.includes('would help') ||
+                lowerMessage.includes('because') ||
+                lowerMessage.includes('so that');
+
+            if (hasContext) {
+                return null;
+            }
+            return "What would that help you accomplish? Understanding the 'why' helps the team prioritize.";
+        }
+
+        if (feedbackType === 'ux_issue') {
+            const hasContext = lowerMessage.length > 40 ||
+                lowerMessage.includes('expected') ||
+                lowerMessage.includes('thought it');
+
+            if (hasContext) {
+                return null;
+            }
+            return "What were you expecting to happen instead? That context really helps.";
+        }
+
+        if (feedbackType === 'praise') {
+            // For praise, we can ask what specifically worked well
+            return "That's great to hear! What specifically made it helpful for you?";
+        }
+
+        // General feedback - ask for more context
+        return "Can you tell me more about that? The more detail, the better the team can act on it.";
+    }
+
+    function categorizeFeedback(message) {
+        const lowerMessage = message.toLowerCase();
+
+        // Bug/Issue
+        if (['bug', 'broken', 'not working', 'doesn\'t work', 'error', 'crashed', 'stuck', 'glitch'].some(t => lowerMessage.includes(t))) {
+            return 'bug';
+        }
+        // Feature request
+        if (['wish', 'could you add', 'can you add', 'please add', 'feature', 'suggestion', 'suggest', 'would be nice', 'should have', 'would love', 'idea'].some(t => lowerMessage.includes(t))) {
+            return 'feature_request';
+        }
+        // Praise
+        if (['love', 'great', 'helpful', 'awesome', 'amazing', 'thank', 'works great'].some(t => lowerMessage.includes(t))) {
+            return 'praise';
+        }
+        // Confusion/UX issue
+        if (['confusing', 'confused', 'don\'t understand', 'unclear', 'hard to use', 'frustrating'].some(t => lowerMessage.includes(t))) {
+            return 'ux_issue';
+        }
+        // General feedback
+        return 'general';
+    }
+
+    // Helper to convert file to base64
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function submitFeedback(feedbackText, feedbackType) {
+        try {
+            // Get recent conversation for context (last 6 messages)
+            const conversationSnippet = conversationHistory.slice(-6).map(m => ({
+                role: m.role,
+                content: m.content.substring(0, 500) // Truncate long messages
+            }));
+
+            const context = getPageContext();
+
+            // Handle screenshot if present
+            let screenshotData = null;
+            if (pendingFeedback?.screenshot) {
+                try {
+                    screenshotData = await fileToBase64(pendingFeedback.screenshot);
+                    console.log('📸 Screenshot attached to feedback');
+                } catch (e) {
+                    console.error('Failed to process screenshot:', e);
+                }
+            }
+
+            // Use HenryData if available, otherwise store locally
+            if (typeof HenryData !== 'undefined' && HenryData.saveFeedback) {
+                const result = await HenryData.saveFeedback({
+                    type: feedbackType,
+                    text: feedbackText,
+                    currentPage: context.name,
+                    context: {
+                        pageDescription: context.description,
+                        url: window.location.href,
+                        userAgent: navigator.userAgent,
+                        timestamp: new Date().toISOString(),
+                        hasScreenshot: !!screenshotData
+                    },
+                    conversationSnippet: conversationSnippet,
+                    screenshot: screenshotData
+                });
+
+                return { success: !result.error, id: result.data?.id };
+            } else {
+                // Fallback: store in localStorage for later sync
+                const storedFeedback = JSON.parse(localStorage.getItem('pendingFeedback') || '[]');
+                storedFeedback.push({
+                    type: feedbackType,
+                    text: feedbackText,
+                    currentPage: context.name,
+                    timestamp: new Date().toISOString(),
+                    conversationSnippet: conversationSnippet,
+                    screenshot: screenshotData
+                });
+                localStorage.setItem('pendingFeedback', JSON.stringify(storedFeedback));
+                console.log('📝 Feedback stored locally (HenryData not available)');
+                return { success: true, local: true };
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    function handleFeedbackConfirmation(confirmed) {
+        if (!pendingFeedback) return;
+
+        // Remove the confirmation buttons
+        const confirmContainer = document.getElementById('feedbackConfirmContainer');
+        if (confirmContainer) confirmContainer.remove();
+
+        if (confirmed) {
+            // Submit the feedback
+            submitFeedback(pendingFeedback.text, pendingFeedback.type).then(result => {
+                if (result.success) {
+                    addMessage('assistant', "Thanks! I've shared your feedback with the Henry team. They review everything and it really helps make HenryHQ better. Is there anything else I can help you with?");
+                    conversationHistory.push({
+                        role: 'assistant',
+                        content: "Thanks! I've shared your feedback with the Henry team. They review everything and it really helps make HenryHQ better. Is there anything else I can help you with?"
+                    });
+                } else {
+                    addMessage('assistant', "I tried to send your feedback but hit a snag. Don't worry though - you can always email the team directly at hello@henryhq.ai. What else can I help with?");
+                    conversationHistory.push({
+                        role: 'assistant',
+                        content: "I tried to send your feedback but hit a snag. Don't worry though - you can always email the team directly at hello@henryhq.ai. What else can I help with?"
+                    });
+                }
+                saveConversationHistory();
+            });
+        } else {
+            // User declined, continue normally
+            addMessage('assistant', "No problem! Is there anything else I can help you with?");
+            conversationHistory.push({ role: 'assistant', content: "No problem! Is there anything else I can help you with?" });
+            saveConversationHistory();
+        }
+
+        // Reset feedback flow state
+        pendingFeedback = null;
+        feedbackFlowState = null;
+    }
+
+    function addFeedbackConfirmation(feedbackType) {
+        const messagesContainer = document.getElementById('askHenryMessages');
+
+        const confirmContainer = document.createElement('div');
+        confirmContainer.id = 'feedbackConfirmContainer';
+        confirmContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 12px 0;
+        `;
+
+        // Screenshot upload area (especially useful for bugs)
+        const screenshotArea = document.createElement('div');
+        screenshotArea.id = 'screenshotUploadArea';
+        screenshotArea.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        screenshotArea.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span style="color: #9ca3af; font-size: 0.85rem;">Add a screenshot (optional)</span>
+        `;
+
+        // Hidden file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.id = 'feedbackScreenshotInput';
+
+        // Screenshot preview container
+        const previewContainer = document.createElement('div');
+        previewContainer.id = 'screenshotPreview';
+        previewContainer.style.cssText = `
+            display: none;
+            position: relative;
+            max-width: 200px;
+        `;
+
+        screenshotArea.onclick = () => fileInput.click();
+        screenshotArea.onmouseenter = () => {
+            screenshotArea.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+            screenshotArea.style.background = 'rgba(255, 255, 255, 0.08)';
+        };
+        screenshotArea.onmouseleave = () => {
+            screenshotArea.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            screenshotArea.style.background = 'rgba(255, 255, 255, 0.05)';
+        };
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Screenshot must be under 5MB');
+                    return;
+                }
+
+                // Store for later submission
+                pendingFeedback.screenshot = file;
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    previewContainer.style.display = 'block';
+                    previewContainer.innerHTML = `
+                        <img src="${event.target.result}" style="max-width: 200px; max-height: 150px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <button id="removeScreenshot" style="
+                            position: absolute;
+                            top: -8px;
+                            right: -8px;
+                            width: 24px;
+                            height: 24px;
+                            border-radius: 50%;
+                            background: #ef4444;
+                            border: none;
+                            color: white;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 14px;
+                        ">×</button>
+                    `;
+                    // Update upload area text
+                    screenshotArea.querySelector('span').textContent = 'Change screenshot';
+
+                    // Add remove handler
+                    document.getElementById('removeScreenshot').onclick = (e) => {
+                        e.stopPropagation();
+                        previewContainer.style.display = 'none';
+                        previewContainer.innerHTML = '';
+                        pendingFeedback.screenshot = null;
+                        fileInput.value = '';
+                        screenshotArea.querySelector('span').textContent = 'Add a screenshot (optional)';
+                    };
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // Button row
+        const buttonRow = document.createElement('div');
+        buttonRow.style.cssText = `
+            display: flex;
+            gap: 10px;
+        `;
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'Yes, send it';
+        yesBtn.style.cssText = `
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        `;
+        yesBtn.onclick = () => handleFeedbackConfirmation(true);
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'No thanks';
+        noBtn.style.cssText = `
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #a0a0a0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        noBtn.onclick = () => handleFeedbackConfirmation(false);
+
+        buttonRow.appendChild(yesBtn);
+        buttonRow.appendChild(noBtn);
+
+        // Only show screenshot option for bugs and ux issues
+        if (feedbackType === 'bug' || feedbackType === 'ux_issue') {
+            confirmContainer.appendChild(screenshotArea);
+            confirmContainer.appendChild(fileInput);
+            confirmContainer.appendChild(previewContainer);
+        }
+        confirmContainer.appendChild(buttonRow);
+
+        messagesContainer.appendChild(confirmContainer);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
     function detectRefinementRequest(message) {
         const lowerMessage = message.toLowerCase();
         return REFINEMENT_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
@@ -1077,6 +1448,80 @@
         addTypingIndicator();
 
         try {
+            // Handle ongoing feedback flow - user is providing additional details
+            if (feedbackFlowState === 'awaiting_details' && pendingFeedback) {
+                // User provided follow-up details - append to feedback and ask for confirmation
+                pendingFeedback.details = message;
+                pendingFeedback.text = `${pendingFeedback.text}\n\nAdditional context: ${message}`;
+                feedbackFlowState = 'awaiting_confirmation';
+
+                removeTypingIndicator();
+
+                // Now ask for confirmation to send
+                let confirmMessage;
+                if (pendingFeedback.type === 'bug') {
+                    confirmMessage = "Got it, that's really helpful. Would you like me to send this to the team so they can look into it?";
+                } else if (pendingFeedback.type === 'feature_request') {
+                    confirmMessage = "That makes sense! Would you like me to pass this along to the Henry team?";
+                } else if (pendingFeedback.type === 'praise') {
+                    confirmMessage = "Love it! Would you like me to share this with the team? They'll appreciate hearing it.";
+                } else {
+                    confirmMessage = "Thanks for the context. Would you like me to send this to the team?";
+                }
+
+                addMessage('assistant', confirmMessage);
+                conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                saveConversationHistory();
+                addFeedbackConfirmation(pendingFeedback.type);
+                isLoading = false;
+                return;
+            }
+
+            // Check for NEW feedback intent (not already in a flow)
+            if (detectFeedbackIntent(message) && !pendingFeedback && !feedbackFlowState) {
+                const feedbackType = categorizeFeedback(message);
+                pendingFeedback = { text: message, type: feedbackType };
+
+                removeTypingIndicator();
+
+                // Check if we need a follow-up question
+                const followUpQuestion = getFollowUpQuestion(feedbackType, message);
+
+                if (followUpQuestion) {
+                    // Ask for more details first
+                    feedbackFlowState = 'awaiting_details';
+                    addMessage('assistant', followUpQuestion);
+                    conversationHistory.push({ role: 'assistant', content: followUpQuestion });
+                    saveConversationHistory();
+                    isLoading = false;
+                    return;
+                }
+
+                // Already has enough detail - go straight to confirmation
+                feedbackFlowState = 'awaiting_confirmation';
+
+                // Craft a contextual response based on feedback type
+                let promptMessage;
+                if (feedbackType === 'bug') {
+                    promptMessage = "That sounds like something the team should know about. Would you like me to send this to them so they can look into it?";
+                } else if (feedbackType === 'feature_request') {
+                    promptMessage = "That's a great idea! Would you like me to pass this suggestion along to the Henry team?";
+                } else if (feedbackType === 'praise') {
+                    promptMessage = "That's awesome to hear! Would you like me to share this with the team? They love knowing what's working well.";
+                } else if (feedbackType === 'ux_issue') {
+                    promptMessage = "Thanks for letting me know - that's helpful feedback. Would you like me to share this with the team so they can improve it?";
+                } else {
+                    promptMessage = "That sounds like valuable feedback. Would you like me to send this to the Henry team?";
+                }
+
+                addMessage('assistant', promptMessage);
+                conversationHistory.push({ role: 'assistant', content: promptMessage });
+                saveConversationHistory();
+                addFeedbackConfirmation(feedbackType);
+                isLoading = false;
+                return;
+            }
+
             // Check for document refinement requests (Phase 1.5)
             if (detectRefinementRequest(message)) {
                 const refinementResult = await handleRefinementRequest(message);

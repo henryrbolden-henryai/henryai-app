@@ -539,6 +539,56 @@ const HenryData = {
     },
 
     /**
+     * Save beta feedback from Ask Henry
+     */
+    async saveFeedback(feedbackData) {
+        const user = await HenryAuth.getUser();
+
+        const { data, error } = await supabase
+            .from('beta_feedback')
+            .insert({
+                user_id: user?.id || null,
+                user_email: user?.email || 'anonymous',
+                feedback_type: feedbackData.type || 'general',
+                feedback_text: feedbackData.text,
+                current_page: feedbackData.currentPage || window.location.pathname,
+                context: feedbackData.context || {},
+                conversation_snippet: feedbackData.conversationSnippet || [],
+                screenshot: feedbackData.screenshot || null,
+                created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving feedback:', error);
+        } else {
+            console.log('✅ Feedback saved:', data.id);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Get user profile data
+     */
+    async getProfile() {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('candidate_profiles')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('Error fetching profile:', error);
+        }
+        return data?.profile_data || null;
+    },
+
+    /**
      * Migrate localStorage data to Supabase (run once on first login)
      */
     async migrateFromLocalStorage() {
