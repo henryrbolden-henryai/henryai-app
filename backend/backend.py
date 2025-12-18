@@ -2854,20 +2854,28 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
                 response_data["experience_analysis"] = experience_analysis
 
-    # BACKEND SAFETY NET: If Claude reports suspiciously high years, calculate ourselves
-    # This catches cases where Claude counts all experience instead of role-specific
-    if resume_data and candidate_years > 3:
-        # Calculate PM-specific years from resume data
-        backend_pm_years = calculate_role_specific_years(resume_data, "pm")
-        print(f"   🔍 Backend PM years calculation: {backend_pm_years:.1f} years")
+    # BACKEND SAFETY NET: Calculate role-specific experience from resume
+    # Detects the role type from JD and uses appropriate experience calculator
+    if resume_data:
+        # Detect the role type from the JD analysis
+        detected_role_type = detect_role_type_from_jd(response_data)
+        print(f"   🔍 Detected role type: {detected_role_type.upper()}")
 
-        # If our calculation is significantly lower, use ours
-        if backend_pm_years < candidate_years * 0.5:
-            print(f"   ⚠️ Claude overcounted! Using backend calculation: {backend_pm_years:.1f} vs Claude's {candidate_years:.1f}")
-            candidate_years = backend_pm_years
+        # Calculate role-specific years from resume data
+        backend_role_years = calculate_role_specific_years(resume_data, detected_role_type)
+        print(f"   🔍 Backend {detected_role_type} years calculation: {backend_role_years:.1f} years")
+
+        # If Claude didn't count role-specific experience OR significantly overcounted, use ours
+        if candidate_years == 0 or (candidate_years > 3 and backend_role_years < candidate_years * 0.5):
+            if candidate_years == 0:
+                print(f"   ✅ Using backend calculation (Claude reported 0): {backend_role_years:.1f} years")
+            else:
+                print(f"   ⚠️ Claude overcounted! Using backend calculation: {backend_role_years:.1f} vs Claude's {candidate_years:.1f}")
+            candidate_years = backend_role_years
             experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
             experience_analysis["backend_override"] = True
-            experience_analysis["backend_override_reason"] = f"Claude reported {raw_years} years but backend calculated {backend_pm_years:.1f} PM-specific years"
+            experience_analysis["backend_override_reason"] = f"Backend calculated {backend_role_years:.1f} {detected_role_type}-specific years"
+            experience_analysis["detected_role_type"] = detected_role_type
             response_data["experience_analysis"] = experience_analysis
 
     # Get current fit score from Claude
@@ -3194,8 +3202,40 @@ def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm
         "ops": [
             "operations", "ops manager", "chief operating", "coo",
             "business operations", "strategy & ops"
-        ]
+        ],
+        "recruiting": [
+            "recruit", "talent acquisition", "ta director", "ta manager",
+            "sourcer", "sourcing", "headhunter", "talent partner",
+            "talent coordinator", "recruiting operations", "recruiting manager",
+            "technical recruiter", "executive recruiter", "hr generalist",
+            "talent lead", "head of talent", "vp talent", "people operations"
+        ],
+        "sales": [
+            "sales", "account executive", "account manager", "business development",
+            "bd", "revenue", "sales engineer", "sales operations", "sales manager",
+            "enterprise sales", "smb sales", "strategic accounts", "ae", "sdr",
+            "bdr", "sales director", "vp sales", "chief revenue"
+        ],
+        "marketing": [
+            "marketing", "growth", "brand", "content", "digital marketing",
+            "product marketing", "demand gen", "campaigns", "seo", "sem",
+            "social media", "community", "communications", "pr", "cmo",
+            "marketing manager", "head of marketing", "vp marketing"
+        ],
+        "general": []  # Empty list means match ALL roles (fallback)
     }
+
+    # For "general" type, count all experience
+    if target_role_type == "general":
+        total_years = 0.0
+        for exp in experience:
+            if not isinstance(exp, dict):
+                continue
+            dates = (exp.get("dates", "") or "").lower()
+            years = parse_experience_duration(dates)
+            total_years += years
+            print(f"   📊 Total experience: '{exp.get('title', '')}' = {years:.1f} years")
+        return total_years
 
     patterns = role_patterns.get(target_role_type, role_patterns["pm"])
     total_years = 0.0
@@ -3217,6 +3257,87 @@ def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm
             print(f"   📊 Role match: '{exp.get('title', '')}' = {years:.1f} years")
 
     return total_years
+
+
+def detect_role_type_from_jd(response_data: dict) -> str:
+    """
+    Detect the role type from the job description analysis.
+    Used to route to the appropriate experience calculator.
+
+    Args:
+        response_data: The Claude response containing role_title and job description
+
+    Returns:
+        Role type string: "recruiting", "pm", "engineering", "sales", "marketing", "ops", or "general"
+    """
+    # Get role title and JD text
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+
+    # Also check intelligence layer if available
+    intel = response_data.get("intelligence_layer", {})
+    role_summary = (intel.get("role_summary", "") or "").lower()
+
+    combined_text = f"{role_title} {jd_text} {role_summary}"
+
+    # Detection patterns - ORDER MATTERS (more specific first)
+    # Recruiting detection (check before engineering to catch "Technical Recruiter")
+    if any(x in combined_text for x in [
+        "recruit", "talent acquisition", "sourcer", "headhunter",
+        "ta director", "ta manager", "talent partner", "head of talent"
+    ]):
+        print(f"   🎯 Detected RECRUITING role from JD")
+        return "recruiting"
+
+    # Product Management detection
+    if any(x in combined_text for x in [
+        "product manager", "product lead", "product owner", "head of product",
+        "vp product", "cpo", "group pm", "technical pm"
+    ]):
+        print(f"   🎯 Detected PRODUCT role from JD")
+        return "pm"
+
+    # Engineering detection
+    if any(x in combined_text for x in [
+        "software engineer", "developer", "swe", "technical lead",
+        "architect", "devops", "backend", "frontend", "full stack"
+    ]):
+        print(f"   🎯 Detected ENGINEERING role from JD")
+        return "engineering"
+
+    # Sales detection
+    if any(x in combined_text for x in [
+        "sales", "account executive", "business development", "revenue",
+        "account manager", "enterprise", "sdr", "bdr"
+    ]):
+        print(f"   🎯 Detected SALES role from JD")
+        return "sales"
+
+    # Marketing detection
+    if any(x in combined_text for x in [
+        "marketing", "growth", "brand manager", "demand gen",
+        "product marketing", "content", "cmo"
+    ]):
+        print(f"   🎯 Detected MARKETING role from JD")
+        return "marketing"
+
+    # Design detection
+    if any(x in combined_text for x in [
+        "designer", "ux", "ui", "product design", "design lead"
+    ]):
+        print(f"   🎯 Detected DESIGN role from JD")
+        return "design"
+
+    # Operations detection
+    if any(x in combined_text for x in [
+        "operations", "ops manager", "coo", "chief operating"
+    ]):
+        print(f"   🎯 Detected OPS role from JD")
+        return "ops"
+
+    # Fallback - use general (will match any experience)
+    print(f"   ⚠️ Could not detect specific role type from JD, using general")
+    return "general"
 
 
 def parse_experience_duration(dates_str: str) -> float:
