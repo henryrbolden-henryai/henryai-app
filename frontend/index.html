@@ -740,7 +740,7 @@
         <a href="#about-henry" class="top-nav-link">About</a>
         <a href="#how-it-works" class="top-nav-link">How it works</a>
         <a href="#capabilities" class="top-nav-link">Features</a>
-        <a href="login.html" class="top-nav-link" id="loginLink">Dashboard</a>
+        <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
       </div>
     </div>
   </nav>
@@ -1120,6 +1120,12 @@
 
 <script src="js/supabase-client.js"></script>
 <script>
+  // Set up CTA buttons immediately (don't wait for auth check)
+  const ctaButton = document.getElementById('ctaButton');
+  const getStartedBtn = document.getElementById('getStartedBtn');
+  if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
+  if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
+
   // Preview mode bypass - add ?preview=true to URL to view landing page when logged in
   const urlParams = new URLSearchParams(window.location.search);
   const isPreviewMode = urlParams.has('preview');
@@ -1132,13 +1138,7 @@
     document.body.prepend(banner);
     document.body.classList.add('preview-mode');
 
-    // Set up CTAs for preview
-    const ctaButton = document.getElementById('ctaButton');
-    const getStartedBtn = document.getElementById('getStartedBtn');
-    if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
-    if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
-
-    // Update login link
+    // Update login link for preview
     const loginLink = document.getElementById('loginLink');
     if (loginLink) {
       loginLink.textContent = 'Dashboard';
@@ -1147,34 +1147,26 @@
   } else {
     // Normal auth check - redirect logged-in users
     (async function() {
-      // Check Supabase session
-      if (typeof HenryAuth !== 'undefined') {
-        const session = await HenryAuth.getSession();
-        if (session) {
+      try {
+        // Check Supabase session
+        if (typeof HenryAuth !== 'undefined') {
+          const session = await HenryAuth.getSession();
+          if (session) {
+            window.location.href = 'dashboard.html';
+            return;
+          }
+        }
+
+        // Check localStorage profile as fallback
+        const profile = localStorage.getItem('userProfile');
+        if (profile) {
           window.location.href = 'dashboard.html';
           return;
         }
+      } catch (error) {
+        console.log('Auth check failed, showing landing page:', error);
       }
-
-      // Check localStorage profile as fallback
-      const profile = localStorage.getItem('userProfile');
-      if (profile) {
-        window.location.href = 'dashboard.html';
-        return;
-      }
-
-      // New user - set up CTAs
-      const ctaButton = document.getElementById('ctaButton');
-      const getStartedBtn = document.getElementById('getStartedBtn');
-      if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
-      if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
-
-      // Update login link
-      const loginLink = document.getElementById('loginLink');
-      if (loginLink) {
-        loginLink.textContent = 'Sign In';
-        loginLink.href = 'login.html';
-      }
+      // New user stays on landing page - buttons already set up
     })();
   }
 </script>
