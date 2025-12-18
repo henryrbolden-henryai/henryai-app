@@ -2109,6 +2109,17 @@
                     return;
                 }
 
+                // IMPORTANT: Validate that localStorage data belongs to this user
+                // If different user logged in, this clears old data
+                await HenryAuth.validateUserData();
+
+                // Check if new user needs onboarding (set during signup)
+                if (localStorage.getItem('henryai_needs_onboarding') === 'true') {
+                    localStorage.removeItem('henryai_needs_onboarding');
+                    window.location.href = 'profile-edit.html';
+                    return;
+                }
+
                 // Get user's name from Supabase for personalized greeting
                 supabaseUserName = await HenryAuth.getUserName();
 

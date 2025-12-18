@@ -84,14 +84,66 @@ const HenryAuth = {
     },
 
     /**
-     * Sign out
+     * Sign out - clears all user-specific data
      */
     async signOut() {
         const { error } = await supabase.auth.signOut();
         if (!error) {
+            // Clear all user-specific localStorage data
+            this.clearUserData();
             window.location.href = 'login.html';
         }
         return { error };
+    },
+
+    /**
+     * Clear all user-specific localStorage data
+     * Called on sign out and when a different user signs in
+     */
+    clearUserData() {
+        const userDataKeys = [
+            'userProfile',
+            'candidateProfile',
+            'trackedApplications',
+            'upcomingInterviews',
+            'completedInterviews',
+            'celebratedMilestones',
+            'strategicOptionsDismissed',
+            'linkedinConnections',
+            'resumeConversation',
+            'lastResumeAnalysis',
+            'interventionState',
+            'henryai_current_user_id',
+            'henryai_needs_onboarding',
+            'henryai_migrated_to_supabase',
+            'beta_verified'
+        ];
+
+        userDataKeys.forEach(key => localStorage.removeItem(key));
+
+        // Also clear sessionStorage
+        sessionStorage.clear();
+
+        console.log('User data cleared from local storage');
+    },
+
+    /**
+     * Check if current user matches stored data, clear if different user
+     */
+    async validateUserData() {
+        const user = await this.getUser();
+        if (!user) return;
+
+        const storedUserId = localStorage.getItem('henryai_current_user_id');
+
+        if (storedUserId && storedUserId !== user.id) {
+            // Different user logged in - clear old data
+            console.log('Different user detected, clearing old data');
+            this.clearUserData();
+        }
+
+        // Store current user ID
+        localStorage.setItem('henryai_current_user_id', user.id);
     },
 
     /**

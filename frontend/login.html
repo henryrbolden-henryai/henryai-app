@@ -466,7 +466,10 @@
                 return;
             }
 
-            // Migrate localStorage data to Supabase
+            // Validate user data - clears localStorage if different user
+            await HenryAuth.validateUserData();
+
+            // Migrate localStorage data to Supabase (if any remains for this user)
             await HenryData.migrateFromLocalStorage();
 
             // Redirect
@@ -498,8 +501,11 @@
                 setLoading('signupBtn', false);
             } else {
                 // Auto-confirmed - new user, send to profile onboarding
+                // Clear any old user data first
+                HenryAuth.clearUserData();
                 // Mark this as a new user so dashboard redirects to profile if they somehow land there
                 localStorage.setItem('henryai_needs_onboarding', 'true');
+                localStorage.setItem('henryai_current_user_id', data.user.id);
                 window.location.href = 'profile-edit.html';
             }
         }
