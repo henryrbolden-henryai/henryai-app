@@ -506,6 +506,10 @@
                 // Mark this as a new user so dashboard redirects to profile if they somehow land there
                 localStorage.setItem('henryai_needs_onboarding', 'true');
                 localStorage.setItem('henryai_current_user_id', data.user.id);
+                // Track signup timestamp for welcome flow timing
+                localStorage.setItem('signupTimestamp', Date.now().toString());
+                localStorage.setItem('hasSeenWelcome', 'false');
+                localStorage.setItem('hasSeenWelcomeBack', 'false');
                 window.location.href = 'profile-edit.html';
             }
         }

@@ -2317,11 +2317,32 @@ I'm always here. If you're unsure about a role or how to position yourself, just
                 }
             }
 
-            // Check if seen welcome back
-            const hasSeenWelcomeBack = localStorage.getItem('hasSeenWelcomeBack');
+            if (!profile || !profile.resume) return; // No profile yet
 
-            if (profile && profile.resume && !hasSeenWelcomeBack) {
-                // Returning user with profile, show welcome back
+            // Check if coming directly from profile setup
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromProfileSetup = urlParams.get('from') === 'profile-setup';
+
+            if (fromProfileSetup) {
+                // First time after profile creation - show action prompt
+                await showFirstActionPrompt(user, profile);
+                // Mark welcome back as seen so it doesn't show on refresh
+                localStorage.setItem('hasSeenWelcomeBack', 'true');
+                // Clean URL
+                window.history.replaceState({}, '', 'dashboard.html');
+                return;
+            }
+
+            // Check if should show welcome back (only on subsequent logins)
+            const hasSeenWelcomeBack = localStorage.getItem('hasSeenWelcomeBack');
+            const signupTime = localStorage.getItem('signupTimestamp');
+            const timeSinceSignup = signupTime ? Date.now() - parseInt(signupTime) : Infinity;
+
+            // Only show welcome back if:
+            // 1. Profile exists
+            // 2. Haven't seen welcome back yet
+            // 3. It's been at least 1 hour since signup (new session)
+            if (!hasSeenWelcomeBack && timeSinceSignup > 3600000) {
                 await showWelcomeBackFlow(user, profile);
             }
         }
@@ -2439,6 +2460,88 @@ ${dynamicClosing}`;
                 if (drawer) drawer.style.display = 'none';
                 if (fab) fab.classList.remove('active');
             }
+        }
+
+        // ==========================================
+        // FIRST ACTION PROMPT (after profile setup)
+        // ==========================================
+
+        async function showFirstActionPrompt(user, profile) {
+            // Wait 500ms for page to settle
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Open chat normally (no genie animation)
+            if (typeof openAskHenry === 'function') {
+                openAskHenry();
+            } else {
+                const drawer = document.getElementById('askHenryDrawer');
+                const fab = document.getElementById('askHenryFab');
+                if (drawer) drawer.style.display = 'flex';
+                if (fab) fab.classList.add('active');
+            }
+
+            // Wait for drawer to open
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Get first name
+            const firstName = profile.resume?.contact?.full_name?.split(' ')[0] ||
+                             user.user_metadata?.full_name?.split(' ')[0] ||
+                             user.email?.split('@')[0] ||
+                             'there';
+
+            const message = `Alright ${firstName}, you're all set. Ready to analyze your first role?`;
+
+            // Display message in chat
+            const messagesContainer = document.getElementById('askHenryMessages');
+            if (messagesContainer) {
+                // Clear existing messages
+                messagesContainer.innerHTML = '';
+
+                // Add message
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'ask-henry-message assistant';
+                messageDiv.innerHTML = message;
+                messagesContainer.appendChild(messageDiv);
+
+                // Add action buttons
+                addFirstActionButtons(messagesContainer);
+
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function addFirstActionButtons(container) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'welcome-button-container';
+            buttonContainer.style.cssText = 'display: flex; gap: 12px; flex-wrap: wrap;';
+
+            const analyzeBtn = document.createElement('button');
+            analyzeBtn.textContent = 'Analyze a Role';
+            analyzeBtn.className = 'btn-welcome';
+            analyzeBtn.style.cssText = 'flex: 1; min-width: 140px;';
+            analyzeBtn.onclick = () => {
+                window.location.href = 'analyze.html';
+            };
+
+            const exploreBtn = document.createElement('button');
+            exploreBtn.textContent = "I'll Look Around First";
+            exploreBtn.className = 'btn-welcome';
+            exploreBtn.style.cssText = 'flex: 1; min-width: 140px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);';
+            exploreBtn.onclick = () => {
+                if (typeof closeAskHenry === 'function') {
+                    closeAskHenry();
+                } else {
+                    const drawer = document.getElementById('askHenryDrawer');
+                    const fab = document.getElementById('askHenryFab');
+                    if (drawer) drawer.style.display = 'none';
+                    if (fab) fab.classList.remove('active');
+                }
+            };
+
+            buttonContainer.appendChild(analyzeBtn);
+            buttonContainer.appendChild(exploreBtn);
+            container.appendChild(buttonContainer);
         }
 
         // ==========================================
