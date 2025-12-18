@@ -5999,17 +5999,17 @@
         }
 
         /**
-         * Open Ask Henry for a specific application
+         * Open Hey Henry for a specific application
          * Sets context and opens the chat drawer with an initial message
          */
-        function openAskHenry(appId) {
+        function openHeyHenry(appId) {
             const app = getApplications().find(a => a.id === appId);
             if (!app) {
                 console.error('Application not found:', appId);
                 return;
             }
 
-            // Store application context for Ask Henry
+            // Store application context for Hey Henry
             const appContext = {
                 company: app.company,
                 role: app.role,
@@ -6020,7 +6020,7 @@
                 notes: app.notes || null,
                 fitScore: app.fitScore || null
             };
-            sessionStorage.setItem('askHenryAppContext', JSON.stringify(appContext));
+            sessionStorage.setItem('heyHenryAppContext', JSON.stringify(appContext));
 
             // Build initial message based on what we know
             let initialMessage = '';
@@ -6040,10 +6040,10 @@
                 initialMessage = `Great, I have the job description for ${app.role} at ${app.company}. What would you like help with?\n\n• Interview prep questions\n• Position strategy (how to pitch yourself)\n• Company research talking points\n\nAlso, I recommend checking out **Leverage Interview Intelligence** for mock interview practice - it's a great way to rehearse before the real thing.`;
             }
 
-            // Store the initial message to show in Ask Henry
-            sessionStorage.setItem('askHenryInitialMessage', initialMessage);
+            // Store the initial message to show in Hey Henry
+            sessionStorage.setItem('heyHenryInitialMessage', initialMessage);
 
-            // Open Ask Henry drawer
+            // Open Hey Henry drawer
             const fab = document.getElementById('askHenryFab');
             if (fab) {
                 fab.click();
@@ -6051,14 +6051,14 @@
 
             // Clear the stored context after a delay (next page load will be fresh)
             setTimeout(() => {
-                // Let Ask Henry component handle the initial message display
+                // Let Hey Henry component handle the initial message display
                 const messagesContainer = document.getElementById('askHenryMessages');
                 if (messagesContainer) {
                     // Clear existing messages and add our contextual greeting
                     messagesContainer.innerHTML = '';
                     const msgEl = document.createElement('div');
                     msgEl.className = 'ask-henry-message assistant';
-                    msgEl.innerHTML = formatAskHenryMessage(initialMessage);
+                    msgEl.innerHTML = formatHeyHenryMessage(initialMessage);
                     messagesContainer.appendChild(msgEl);
 
                     // Hide suggestions since we have context
@@ -6070,8 +6070,8 @@
             }, 100);
         }
 
-        // Simple markdown formatter for Ask Henry messages
-        function formatAskHenryMessage(content) {
+        // Simple markdown formatter for Hey Henry messages
+        function formatHeyHenryMessage(content) {
             return content
                 .split('\n\n').map(para => {
                     if (para.match(/^[•]\s/m)) {
@@ -8479,7 +8479,7 @@ Thanks so much!
     </script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-check.js"></script>
-<script src="components/ask-henry.js"></script>
+<script src="components/hey-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
     <script src="components/status-banner.js"></script>
 </body>

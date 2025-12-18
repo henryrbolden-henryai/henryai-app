@@ -1,5 +1,5 @@
 /**
- * Ask Henry - Floating Chat Widget
+ * Hey Henry - Floating Chat Widget
  * A contextually-aware AI assistant available from any page
  */
 
@@ -12,7 +12,7 @@
 
     // Inject styles
     const styles = `
-        /* Ask Henry Floating Widget */
+        /* Hey Henry Floating Widget */
         .ask-henry-fab {
             position: fixed;
             bottom: 24px;
@@ -34,7 +34,7 @@
             filter: drop-shadow(0 0 12px rgba(102, 126, 234, 0.6));
         }
 
-        /* Ask Henry Tooltip - Now JavaScript controlled */
+        /* Hey Henry Tooltip - Now JavaScript controlled */
         .ask-henry-tooltip {
             position: absolute;
             right: 70px;
@@ -479,7 +479,7 @@
     // Load conversation history from sessionStorage (persists across page navigation)
     function loadConversationHistory() {
         try {
-            const saved = sessionStorage.getItem('askHenryConversation');
+            const saved = sessionStorage.getItem('heyHenryConversation');
             if (saved) {
                 conversationHistory = JSON.parse(saved);
             }
@@ -494,7 +494,7 @@
         try {
             // Keep last 20 messages to avoid storage limits
             const toSave = conversationHistory.slice(-20);
-            sessionStorage.setItem('askHenryConversation', JSON.stringify(toSave));
+            sessionStorage.setItem('heyHenryConversation', JSON.stringify(toSave));
         } catch (e) {
             console.error('Error saving conversation history:', e);
         }
@@ -503,7 +503,7 @@
     // Clear conversation history (for starting fresh)
     function clearConversationHistory() {
         conversationHistory = [];
-        sessionStorage.removeItem('askHenryConversation');
+        sessionStorage.removeItem('heyHenryConversation');
     }
 
     // Get user's first name from profile
@@ -1257,7 +1257,7 @@
         widget.id = 'ask-henry-widget';
         widget.innerHTML = `
             <!-- Floating Action Button -->
-            <button class="ask-henry-fab" id="askHenryFab" aria-label="Ask Henry">
+            <button class="ask-henry-fab" id="askHenryFab" aria-label="Hey Henry">
                 <span class="ask-henry-tooltip" id="askHenryTooltip">Hey, it's Henry!</span>
                 <svg class="ask-henry-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
@@ -1300,7 +1300,7 @@
                             <circle cx="145" cy="50" r="9" fill="#764ba2"/>
                         </svg>
                         <div>
-                            <div class="ask-henry-title-text">Ask Henry</div>
+                            <div class="ask-henry-title-text">Hey Henry</div>
                             <div class="ask-henry-title-context" id="askHenryContext">${context.description}</div>
                         </div>
                     </div>
@@ -1599,7 +1599,7 @@
             saveConversationHistory();
 
         } catch (error) {
-            console.error('Ask Henry error:', error);
+            console.error('Hey Henry error:', error);
             removeTypingIndicator();
             addMessage('assistant', "Sorry, I'm having trouble connecting right now. Try again in a moment!");
         }
@@ -1667,11 +1667,14 @@
     }
 
     // Expose global functions for external access
-    window.openAskHenry = function() {
+    window.openHeyHenry = function() {
         openDrawer();
     };
 
-    window.openAskHenryWithPrompt = function(prompt) {
+    // Keep legacy function for backwards compatibility
+    window.openAskHenry = window.openHeyHenry;
+
+    window.openHeyHenryWithPrompt = function(prompt) {
         openDrawer();
         // Small delay to ensure drawer is open and input is ready
         setTimeout(() => {
@@ -1682,4 +1685,7 @@
             }
         }, 100);
     };
+
+    // Keep legacy function for backwards compatibility
+    window.openAskHenryWithPrompt = window.openHeyHenryWithPrompt;
 })();

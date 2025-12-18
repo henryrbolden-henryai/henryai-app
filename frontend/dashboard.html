@@ -1483,7 +1483,7 @@
                     headline: 'Let\'s get your pipeline working for you',
                     detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Build toward 5-10 quality applications — take it one role at a time.`,
                     primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
-                    secondaryBtn: { text: 'Talk Strategy', action: 'openAskHenry' }
+                    secondaryBtn: { text: 'Talk Strategy', action: 'openHeyHenry' }
                 };
             }
             // Scenario 4: Low confidence + no interviews scheduled
@@ -1524,9 +1524,9 @@
                 if (realityContent.secondaryBtn) {
                     if (realityContent.secondaryBtn.prompt) {
                         // Use data attribute for prompt to avoid quote escaping issues
-                        actionsHTML += `<button class="reality-check-btn secondary" data-prompt="${encodeURIComponent(realityContent.secondaryBtn.prompt)}" onclick="handleAskHenryPrompt(this)">${realityContent.secondaryBtn.text}</button>`;
-                    } else if (realityContent.secondaryBtn.action === 'openAskHenry') {
-                        actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openAskHenry) openAskHenry();">${realityContent.secondaryBtn.text}</button>`;
+                        actionsHTML += `<button class="reality-check-btn secondary" data-prompt="${encodeURIComponent(realityContent.secondaryBtn.prompt)}" onclick="handleHeyHenryPrompt(this)">${realityContent.secondaryBtn.text}</button>`;
+                    } else if (realityContent.secondaryBtn.action === 'openHeyHenry') {
+                        actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openHeyHenry) openHeyHenry();">${realityContent.secondaryBtn.text}</button>`;
                     } else {
                         actionsHTML += `<a href="${realityContent.secondaryBtn.link}" class="reality-check-btn secondary">${realityContent.secondaryBtn.text}</a>`;
                     }
@@ -1649,15 +1649,15 @@
             if (content.primaryBtn) {
                 if (content.primaryBtn.action === 'showContractGuidance') {
                     actionsHTML += `<button class="strategic-options-btn" onclick="showContractGuidanceModal()">${content.primaryBtn.text}</button>`;
-                } else if (content.primaryBtn.action === 'openAskHenry') {
-                    actionsHTML += `<button class="strategic-options-btn" onclick="if(window.openAskHenry) openAskHenry();">${content.primaryBtn.text}</button>`;
+                } else if (content.primaryBtn.action === 'openHeyHenry') {
+                    actionsHTML += `<button class="strategic-options-btn" onclick="if(window.openHeyHenry) openHeyHenry();">${content.primaryBtn.text}</button>`;
                 }
             }
             if (content.secondaryBtn) {
                 if (content.secondaryBtn.action === 'dismiss') {
                     actionsHTML += `<button class="strategic-options-btn secondary" onclick="dismissStrategicOptions()">${content.secondaryBtn.text}</button>`;
-                } else if (content.secondaryBtn.action === 'openAskHenry') {
-                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openAskHenry) openAskHenry();">${content.secondaryBtn.text}</button>`;
+                } else if (content.secondaryBtn.action === 'openHeyHenry') {
+                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openHeyHenry) openHeyHenry();">${content.secondaryBtn.text}</button>`;
                 }
             }
             actions.innerHTML = actionsHTML;
@@ -1994,13 +1994,13 @@
             return STATUSES[status]?.label || status;
         }
 
-        // Handle Ask Henry prompt from button click (avoids quote escaping issues)
-        function handleAskHenryPrompt(button) {
+        // Handle Hey Henry prompt from button click (avoids quote escaping issues)
+        function handleHeyHenryPrompt(button) {
             const prompt = decodeURIComponent(button.dataset.prompt);
-            if (window.openAskHenryWithPrompt) {
-                window.openAskHenryWithPrompt(prompt);
+            if (window.openHeyHenryWithPrompt) {
+                window.openHeyHenryWithPrompt(prompt);
             } else {
-                console.error('openAskHenryWithPrompt not available yet');
+                console.error('openHeyHenryWithPrompt not available yet');
             }
         }
 
@@ -2172,7 +2172,7 @@
             }
         })();
     </script>
-    <script src="components/ask-henry.js"></script>
+    <script src="components/hey-henry.js"></script>
     <script src="components/strategy-nav.js"></script>
 
     <!-- LinkedIn Upload Feature -->

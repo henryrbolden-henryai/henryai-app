@@ -539,7 +539,7 @@ const HenryData = {
     },
 
     /**
-     * Save beta feedback from Ask Henry
+     * Save beta feedback from Hey Henry
      */
     async saveFeedback(feedbackData) {
         const user = await HenryAuth.getUser();
