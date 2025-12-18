@@ -388,6 +388,166 @@
                 right: 16px;
             }
         }
+
+        /* ==========================================
+           GENIE MODE (Welcome Flow) Styles
+           ========================================== */
+
+        /* Dark overlay for genie mode */
+        .ask-henry-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .ask-henry-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Genie mode drawer (centered modal) */
+        .ask-henry-drawer.genie-mode {
+            bottom: 50%;
+            right: 50%;
+            transform: translate(50%, 50%) scale(1);
+            width: 500px;
+            max-width: calc(100vw - 48px);
+            height: auto;
+            max-height: 80vh;
+            border-radius: 24px;
+            transform-origin: center center;
+        }
+
+        .ask-henry-drawer.genie-mode.open {
+            transform: translate(50%, 50%) scale(1);
+        }
+
+        /* Welcome content area */
+        .ask-henry-welcome-content {
+            padding: 32px 28px;
+            text-align: left;
+        }
+
+        .ask-henry-welcome-content h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0 0 20px 0;
+            line-height: 1.3;
+        }
+
+        .ask-henry-welcome-content p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #e5e5e5;
+            margin: 0 0 16px 0;
+        }
+
+        .ask-henry-welcome-content p:last-of-type {
+            margin-bottom: 0;
+        }
+
+        /* Welcome actions area */
+        .ask-henry-welcome-actions {
+            padding: 20px 28px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ask-henry-welcome-btn {
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+
+        .ask-henry-welcome-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .ask-henry-welcome-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .ask-henry-welcome-btn.secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #a0a0a0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ask-henry-welcome-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* FAB pulse animation for welcome */
+        @keyframes fab-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .ask-henry-fab.pulsing {
+            animation: fab-pulse 0.8s ease-in-out 3;
+        }
+
+        /* Genie expand animation */
+        @keyframes genie-expand {
+            0% {
+                bottom: 24px;
+                right: 24px;
+                width: 56px;
+                height: 56px;
+                border-radius: 28px;
+                transform: translate(0, 0) scale(1);
+            }
+            100% {
+                bottom: 50%;
+                right: 50%;
+                width: 500px;
+                height: auto;
+                border-radius: 24px;
+                transform: translate(50%, 50%) scale(1);
+            }
+        }
+
+        .ask-henry-drawer.genie-animating {
+            animation: genie-expand 0.6s ease-out forwards;
+        }
+
+        /* Hide close button in genie mode (for required actions) */
+        .ask-henry-drawer.genie-mode.no-dismiss .ask-henry-close {
+            display: none;
+        }
+
+        /* Mobile genie mode */
+        @media (max-width: 480px) {
+            .ask-henry-drawer.genie-mode {
+                width: calc(100vw - 32px);
+                max-height: 85vh;
+            }
+        }
     `;
 
     // Inject stylesheet
@@ -401,6 +561,8 @@
     let conversationHistory = [];
     let tooltipTimer = null;
     let tooltipHideTimer = null;
+    let welcomeFlowState = null; // 'proactive_welcome' | 'first_action_prompt' | 'welcome_back' | null
+    let isGenieMode = false;
 
     // Fun tooltip messages that randomly appear
     const tooltipMessages = [
@@ -523,6 +685,329 @@
             console.error('Error getting user name:', e);
         }
         return null;
+    }
+
+    // ==========================================
+    // Welcome Flow Detection & Management
+    // ==========================================
+
+    // Check if user has a profile (indicates they've completed setup)
+    function hasUserProfile() {
+        try {
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            // Profile exists if it has a name
+            return !!profile.name;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Get user's emotional state from profile
+    function getUserEmotionalState() {
+        try {
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            return {
+                holding_up: profile.holding_up || 'zen',
+                confidence: profile.confidence || 'strong',
+                timeline: profile.timeline || 'actively_looking'
+            };
+        } catch (e) {
+            return { holding_up: 'zen', confidence: 'strong', timeline: 'actively_looking' };
+        }
+    }
+
+    // Determine which welcome flow state to show
+    function determineWelcomeFlowState() {
+        const hasProfile = hasUserProfile();
+        const hasSeenWelcome = localStorage.getItem('heyHenrySeenWelcome') === 'true';
+        const hasSeenWelcomeBack = sessionStorage.getItem('heyHenrySeenWelcomeBack') === 'true';
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromProfileSetup = urlParams.get('from') === 'profile-setup';
+        const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+
+        // State 2: First-time user (no profile, hasn't seen welcome)
+        // Only trigger on dashboard page
+        if (!hasProfile && !hasSeenWelcome && currentPage === 'dashboard') {
+            return 'proactive_welcome';
+        }
+
+        // State 3: Just completed profile setup
+        if (hasProfile && fromProfileSetup && currentPage === 'dashboard') {
+            return 'first_action_prompt';
+        }
+
+        // State 4: Returning user (has profile, new session, hasn't seen welcome back)
+        if (hasProfile && !hasSeenWelcomeBack && currentPage === 'dashboard') {
+            // Check if enough time has passed since signup (1 hour minimum)
+            const signupTime = localStorage.getItem('heyHenrySignupTime');
+            if (signupTime) {
+                const hoursSinceSignup = (Date.now() - parseInt(signupTime)) / (1000 * 60 * 60);
+                if (hoursSinceSignup >= 1) {
+                    return 'welcome_back';
+                }
+            }
+        }
+
+        return null; // No welcome flow needed
+    }
+
+    // Get welcome content based on state
+    function getWelcomeContent(state) {
+        const userName = getUserName() || 'there';
+        const emotionalState = getUserEmotionalState();
+
+        if (state === 'proactive_welcome') {
+            return {
+                title: `Hey ${userName}, welcome to HenryHQ.`,
+                message: `I'm Henry. I'll be your strategic advisor through this job search.
+
+No mass applying. No fluff. Just honest fit checks, clear positioning, and materials grounded in your real experience. Never fabricated.
+
+To get started, I need your resume, LinkedIn profile, and job search preferences. Takes about 3 to 5 minutes. After that, you're ready to analyze roles and move with intention.
+
+I'm always here. If you're unsure about a role or how to position yourself, just ask.`,
+                primaryCta: { text: 'Create My Profile', action: 'create_profile' },
+                secondaryCta: null, // No secondary - profile required
+                noDismiss: true
+            };
+        }
+
+        if (state === 'first_action_prompt') {
+            return {
+                title: `Alright ${userName}, you're all set.`,
+                message: `Ready to analyze your first role?`,
+                primaryCta: { text: 'Analyze a Role', action: 'analyze_role' },
+                secondaryCta: { text: "I'll Look Around First", action: 'close' },
+                noDismiss: false
+            };
+        }
+
+        if (state === 'welcome_back') {
+            // Timeline-based context
+            const timelineMessages = {
+                'urgent': "I know you're under pressure. Let's find roles that are actually worth your time so you're not spinning your wheels.",
+                'soon': "You need to move fast, so let's make every application count. No spray-and-pray.",
+                'actively_looking': "You've got a solid window. Let's be strategic so you land something good, not just something fast.",
+                'no_rush': "You're in a good position. Let's find roles that are actually worth making a move for."
+            };
+
+            // Confidence-based closing
+            const confidenceMessages = {
+                'low': "If you're ever unsure about a role or how to position yourself, just ask. I'm here to help you see what's actually working.",
+                'need_validation': "If you're ever unsure about a role or how to position yourself, just ask. I'm here to help you see what's actually working.",
+                'shaky': "Look, rejections suck, but they don't mean you're not good enough. They just mean the fit wasn't right. Let's find roles where it is.",
+                'strong': "Got questions about a role or how to position yourself? Just ask. I'm here to help you stay sharp."
+            };
+
+            const timelineContext = timelineMessages[emotionalState.timeline] || timelineMessages['actively_looking'];
+            const confidenceClosing = confidenceMessages[emotionalState.confidence] || confidenceMessages['strong'];
+
+            return {
+                title: `Welcome back, ${userName}!`,
+                message: `${timelineContext}
+
+Here's what you can do:
+• **Analyze New Role:** Paste job description, I'll score fit
+• **Command Center:** Track applications and interviews
+• **Edit Profile:** Update anytime
+
+${confidenceClosing}`,
+                primaryCta: { text: 'Got It', action: 'close' },
+                secondaryCta: null,
+                noDismiss: false
+            };
+        }
+
+        return null;
+    }
+
+    // Show welcome flow with genie animation
+    function showWelcomeFlow(state) {
+        welcomeFlowState = state;
+        const content = getWelcomeContent(state);
+        if (!content) return;
+
+        const drawer = document.getElementById('askHenryDrawer');
+        const fab = document.getElementById('askHenryFab');
+        const messagesContainer = document.getElementById('askHenryMessages');
+        const suggestionsContainer = document.getElementById('askHenrySuggestions');
+        const inputArea = document.querySelector('.ask-henry-input-area');
+
+        // Create overlay if doesn't exist
+        let overlay = document.getElementById('askHenryOverlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'askHenryOverlay';
+            overlay.className = 'ask-henry-overlay';
+            document.getElementById('ask-henry-widget').appendChild(overlay);
+        }
+
+        // Hide normal chat elements
+        if (suggestionsContainer) suggestionsContainer.style.display = 'none';
+        if (inputArea) inputArea.style.display = 'none';
+
+        // Build welcome content
+        const welcomeHTML = `
+            <div class="ask-henry-welcome-content">
+                <h2>${content.title}</h2>
+                ${content.message.split('\n\n').map(p => `<p>${formatWelcomeMessage(p)}</p>`).join('')}
+            </div>
+            <div class="ask-henry-welcome-actions">
+                <button class="ask-henry-welcome-btn primary" data-action="${content.primaryCta.action}">
+                    ${content.primaryCta.text}
+                </button>
+                ${content.secondaryCta ? `
+                <button class="ask-henry-welcome-btn secondary" data-action="${content.secondaryCta.action}">
+                    ${content.secondaryCta.text}
+                </button>
+                ` : ''}
+            </div>
+        `;
+
+        messagesContainer.innerHTML = welcomeHTML;
+
+        // For proactive welcome, use genie animation
+        if (state === 'proactive_welcome') {
+            isGenieMode = true;
+
+            // Pulse FAB first
+            fab.classList.add('pulsing');
+
+            setTimeout(() => {
+                fab.classList.remove('pulsing');
+                fab.classList.add('hidden');
+
+                // Show overlay
+                overlay.classList.add('visible');
+
+                // Enable genie mode on drawer
+                drawer.classList.add('genie-mode');
+                if (content.noDismiss) {
+                    drawer.classList.add('no-dismiss');
+                }
+
+                // Open the drawer
+                drawer.classList.add('open');
+                isOpen = true;
+
+                // Bind welcome action buttons
+                bindWelcomeActions(state);
+            }, 2400); // After 3 pulses (0.8s * 3)
+        } else {
+            // Normal drawer open for other states
+            drawer.classList.add('open');
+            isOpen = true;
+            fab.classList.add('hidden');
+            bindWelcomeActions(state);
+        }
+
+        stopTooltipTimer();
+    }
+
+    // Format welcome message (handle bold, bullets)
+    function formatWelcomeMessage(text) {
+        return text
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^• /gm, '&bull; ');
+    }
+
+    // Bind welcome action button clicks
+    function bindWelcomeActions(state) {
+        document.querySelectorAll('.ask-henry-welcome-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                handleWelcomeAction(action, state);
+            });
+        });
+    }
+
+    // Handle welcome flow action
+    function handleWelcomeAction(action, state) {
+        if (action === 'create_profile') {
+            localStorage.setItem('heyHenrySeenWelcome', 'true');
+            localStorage.setItem('heyHenrySignupTime', Date.now().toString());
+            window.location.href = 'profile-edit.html';
+        } else if (action === 'analyze_role') {
+            // Remove URL param
+            const url = new URL(window.location);
+            url.searchParams.delete('from');
+            window.history.replaceState({}, '', url);
+            sessionStorage.setItem('heyHenrySeenWelcomeBack', 'true');
+            window.location.href = 'analyze.html';
+        } else if (action === 'close') {
+            // Remove URL param if present
+            const url = new URL(window.location);
+            url.searchParams.delete('from');
+            window.history.replaceState({}, '', url);
+            sessionStorage.setItem('heyHenrySeenWelcomeBack', 'true');
+            closeWelcomeFlow();
+        }
+    }
+
+    // Close welcome flow and restore normal chat
+    function closeWelcomeFlow() {
+        const drawer = document.getElementById('askHenryDrawer');
+        const fab = document.getElementById('askHenryFab');
+        const overlay = document.getElementById('askHenryOverlay');
+        const suggestionsContainer = document.getElementById('askHenrySuggestions');
+        const inputArea = document.querySelector('.ask-henry-input-area');
+        const messagesContainer = document.getElementById('askHenryMessages');
+
+        // Hide overlay
+        if (overlay) overlay.classList.remove('visible');
+
+        // Remove genie mode classes
+        drawer.classList.remove('genie-mode', 'no-dismiss', 'genie-animating');
+
+        // Close drawer
+        drawer.classList.remove('open');
+        fab.classList.remove('hidden');
+
+        // Reset state
+        isOpen = false;
+        isGenieMode = false;
+        welcomeFlowState = null;
+
+        // Restore normal chat UI
+        const userName = getUserName();
+        const context = getPageContext();
+        const greeting = getPersonalizedGreeting(userName, context);
+        const suggestions = getContextualSuggestions();
+
+        messagesContainer.innerHTML = `
+            <div class="ask-henry-message assistant">
+                ${greeting}
+            </div>
+        `;
+
+        if (suggestionsContainer) {
+            suggestionsContainer.innerHTML = suggestions.map(s => `<button class="ask-henry-suggestion">${s}</button>`).join('');
+            suggestionsContainer.style.display = '';
+            // Re-bind suggestion clicks
+            document.querySelectorAll('.ask-henry-suggestion').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('askHenryInput').value = btn.textContent;
+                    sendMessage();
+                });
+            });
+        }
+        if (inputArea) inputArea.style.display = '';
+
+        // Restart tooltip timer
+        startTooltipTimer();
+    }
+
+    // Check and trigger welcome flow on init
+    function checkWelcomeFlow() {
+        const state = determineWelcomeFlowState();
+        if (state) {
+            // Small delay to let the page settle
+            setTimeout(() => {
+                showWelcomeFlow(state);
+            }, 500);
+            return true;
+        }
+        return false;
     }
 
     // Get current page context
@@ -1400,6 +1885,9 @@
         fab.addEventListener('mouseleave', () => {
             tooltip.classList.remove('visible');
         });
+
+        // Check if welcome flow should be triggered
+        checkWelcomeFlow();
     }
 
     function toggleDrawer() {

@@ -1577,8 +1577,14 @@
                     localStorage.setItem('trackedApplications', JSON.stringify([]));
                 }
 
-                // Always redirect to analyze page after save
-                window.location.href = 'analyze.html';
+                // Redirect based on whether this is initial profile setup or update
+                if (isNewProfile) {
+                    // First-time profile setup - go to dashboard for Hey Henry first action prompt
+                    window.location.href = 'dashboard.html?from=profile-setup';
+                } else {
+                    // Existing profile update - go to analyze page
+                    window.location.href = 'analyze.html';
+                }
 
             } catch (error) {
                 console.error('Save error:', error);
