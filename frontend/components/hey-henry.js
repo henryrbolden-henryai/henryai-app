@@ -733,8 +733,16 @@
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: center;
-            text-decoration: none;
+            text-decoration: none !important;
             display: block;
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            border: none;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .ask-henry-welcome-btn.primary {
