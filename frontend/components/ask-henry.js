@@ -417,7 +417,12 @@
         "I've got ideas...",
         "Let me help!",
         "Thinking about your next move?",
-        "Just checking in!"
+        "Just checking in!",
+        "Real talk time?",
+        "Between you and me...",
+        "Quick strategy thought...",
+        "Can I be honest for a sec?",
+        "You're doing great, by the way!"
     ];
 
     // Get random tooltip message
@@ -546,7 +551,7 @@
             'profile-edit': { name: 'Profile', description: 'Editing your profile' }
         };
 
-        const context = contexts[page] || { name: 'HenryHQ', description: 'Your personal job search guide' };
+        const context = contexts[page] || { name: 'HenryHQ', description: 'Straight answers, no BS' };
         context.page = page; // Include the page key for greeting lookup
         return context;
     }
@@ -721,9 +726,9 @@
     // Generate personalized greeting
     function getPersonalizedGreeting(userName, context) {
         if (userName) {
-            return `Hey ${userName}! How can I help you?`;
+            return `Hey ${userName}, what's got you stuck right now?`;
         }
-        return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
+        return `Hey, talk to me. What's got you stuck right now?`;
     }
 
     // ==========================================
@@ -1257,7 +1262,7 @@
         widget.id = 'ask-henry-widget';
         widget.innerHTML = `
             <!-- Floating Action Button -->
-            <button class="ask-henry-fab" id="askHenryFab" aria-label="Ask Henry">
+            <button class="ask-henry-fab" id="askHenryFab" aria-label="Hey Henry">
                 <span class="ask-henry-tooltip" id="askHenryTooltip">Hey, it's Henry!</span>
                 <svg class="ask-henry-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
@@ -1300,7 +1305,7 @@
                             <circle cx="145" cy="50" r="9" fill="#764ba2"/>
                         </svg>
                         <div>
-                            <div class="ask-henry-title-text">Ask Henry</div>
+                            <div class="ask-henry-title-text">Hey Henry</div>
                             <div class="ask-henry-title-context" id="askHenryContext">${context.description}</div>
                         </div>
                     </div>
