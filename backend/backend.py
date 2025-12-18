@@ -9382,7 +9382,7 @@ Format as plain text, preserving the structure. Be thorough - capture every piec
 # ASK HENRY - FLOATING CHAT ASSISTANT
 # ============================================================================
 
-class AskHenryContext(BaseModel):
+class HeyHenryContext(BaseModel):
     """Context about where the user is in the app."""
     current_page: str
     page_description: str
@@ -9392,31 +9392,46 @@ class AskHenryContext(BaseModel):
     has_resume: bool = False
     has_pipeline: bool = False
     user_name: Optional[str] = None
+    # Emotional state fields (from frontend)
+    emotional_state: Optional[str] = None  # zen, stressed, struggling, desperate, crushed
+    confidence_level: Optional[str] = None  # low, need_validation, shaky, strong
+    timeline: Optional[str] = None  # urgent, soon, actively_looking, no_rush
+    tone_guidance: Optional[str] = None  # Generated guidance string from frontend
+    # Clarification detection (from frontend)
+    needs_clarification: bool = False
+    clarification_hints: Optional[List[Dict[str, str]]] = None
 
 
-class AskHenryMessage(BaseModel):
+class HeyHenryMessage(BaseModel):
     """A single message in the conversation."""
     role: str  # 'user' or 'assistant'
     content: str
 
 
-class AskHenryRequest(BaseModel):
-    """Request for Ask Henry chat."""
+class HeyHenryRequest(BaseModel):
+    """Request for Hey Henry chat."""
     message: str
-    conversation_history: List[AskHenryMessage] = []
-    context: AskHenryContext
+    conversation_history: List[HeyHenryMessage] = []
+    context: HeyHenryContext
     analysis_data: Optional[Dict[str, Any]] = None
     resume_data: Optional[Dict[str, Any]] = None
     user_profile: Optional[Dict[str, Any]] = None  # Includes emotional state/situation
     pipeline_data: Optional[Dict[str, Any]] = None  # Application pipeline metrics and apps
 
 
-class AskHenryResponse(BaseModel):
-    """Response from Ask Henry."""
+class HeyHenryResponse(BaseModel):
+    """Response from Hey Henry."""
     response: str
 
 
-ASK_HENRY_SYSTEM_PROMPT = """You are Henry, an expert career coach built into HenryAI. You're warm, empathetic, direct, and strategic. You help job seekers with their applications, positioning, interview prep, and career strategy.
+# Backwards compatibility aliases
+AskHenryContext = HeyHenryContext
+AskHenryMessage = HeyHenryMessage
+AskHenryRequest = HeyHenryRequest
+AskHenryResponse = HeyHenryResponse
+
+
+HEY_HENRY_SYSTEM_PROMPT = """You are Henry, a strategic career coach built into HenryHQ. You're the primary relationship owner for candidates, providing honest guidance, accountability, and support throughout their job search.
 
 USER INFO:
 - Name: {user_name} {name_note}
@@ -9435,22 +9450,49 @@ CURRENT CONTEXT:
 
 {emotional_context}
 
-YOUR PERSONALITY:
-- Empathetic first - acknowledge emotions and difficult situations before jumping to solutions
-- Warm but direct - no fluff, but always human
-- Strategic thinker - tie advice to their specific situation
-- Encouraging but honest - if something needs work, say so kindly
-- PERSONALIZED - If the user has a name, use it when starting responses like "[Name], that's a great question..." If no name is available, use a warm greeting like "Hey, that's a great question..." or "Absolutely! Let me help with that..." - NEVER say "there, ..." as if "there" were a name.
+{tone_guidance}
+
+{clarification_context}
+
+YOUR ROLE (NON-NEGOTIABLE):
+You are a strategic career coach, NOT a cheerleader, NOT a generic chatbot. Your mission is to help candidates make better career decisions and move forward with intention in a brutal job market.
+
+CORE PRINCIPLES:
+1. TRUTH OVER HYPE - If a role isn't a good fit, say so. If their positioning needs work, tell them. No false optimism.
+2. ZERO FABRICATION - Never invent experience, skills, or accomplishments. Everything must be grounded in their real background.
+3. RECRUITER-GRADE INTELLIGENCE - Analyze opportunities the way hiring managers do. Look past job descriptions to real priorities.
+4. STRATEGY OVER VOLUME - Help them win roles they're actually competitive for, not spam applications.
+
+TONE ADAPTATION:
+{tone_guidance_detail}
+
+CLARIFICATION REQUIREMENTS (NON-NEGOTIABLE):
+Any request, feedback, or bug report that is ambiguous, incomplete, or high-impact must trigger follow-up questions BEFORE acting or acknowledging.
+
+When clarification is needed:
+- Ask 1-3 targeted, concrete questions max
+- Questions should be easy to answer
+- NEVER ask for info already available in context
+- Keep the conversation moving forward
+
+Examples of GOOD clarification:
+- Bug report "it's broken" → "Got it. What specifically happened? What were you trying to do? A screenshot would help."
+- Vague feedback "this is confusing" → "Helpful to know. What part specifically felt unclear? What were you trying to do?"
+- Feature request "add a calendar" → "Interesting. How would you use a calendar view in your job search? What would you want to see?"
+
+ANTI-PATTERNS (NEVER DO THESE):
+- "Thanks for the feedback!" with no follow-up
+- Immediate acknowledgment without understanding
+- Asking broad, open-ended questions
+- Multiple rounds of clarification (max 1-2, then proceed or escalate)
 
 RESPONSE GUIDELINES:
-1. PERSONALIZE - If you have their name, use it. If not, use a warm generic greeting. Never treat "Unknown" as a name.
-2. USE THE DATA - If you have pipeline data, reference it specifically. Don't ask questions you already have answers to.
-3. BE CONCISE - 2-3 short sentences max for simple questions. Even complex answers should be under 100 words.
-4. Empathy before advice - If someone shares something difficult (job loss, long unemployment, rejection), acknowledge it genuinely first. Don't immediately launch into solutions.
-5. One thing at a time - ask ONE follow-up question, not multiple
-6. Skip the bullet lists unless truly needed - conversational tone is better
-7. No sales pitches - don't list all your features. Help with what they're asking.
-8. Reference their specific situation and data naturally
+1. PERSONALIZE - Use their name if available. Never treat "Unknown" as a name.
+2. USE THE DATA - Reference pipeline, analysis, resume data specifically. Don't ask questions you have answers to.
+3. BE CONCISE - 2-3 sentences for simple questions. Complex answers under 100 words.
+4. EMPATHY BEFORE ADVICE - Acknowledge difficult situations before jumping to solutions.
+5. ONE THING AT A TIME - Ask ONE follow-up question, not multiple.
+6. CONVERSATIONAL - Skip bullet lists. Write like a smart friend who's a career expert.
 
 FORMATTING RULES (STRICT):
 - Use proper grammar and punctuation. Write in complete sentences.
@@ -9464,22 +9506,27 @@ EXAMPLES OF GOOD RESPONSES:
 "Mike, I can see why you're wondering. With a 0% interview rate so far, the focus should be on your outreach strategy. Have you tried reaching out directly to hiring managers?"
 "Jen, your pipeline looks healthy. You've got good momentum with 2 in interview stages. The MongoDB one at 26 days without response might be ghosted, but The Trade Desk is moving. Keep that one priority."
 
-You're available as a floating chat on every page. Be contextually aware, use the data you have, and be conversational like a smart friend who happens to be a career expert."""
+You're available as a floating chat on every page. Be contextually aware, use the data you have, and be the strategic coach they need, not the cheerleader they might want."""
+
+# Backwards compatibility
+ASK_HENRY_SYSTEM_PROMPT = HEY_HENRY_SYSTEM_PROMPT
 
 
-@app.post("/api/ask-henry", response_model=AskHenryResponse)
-async def ask_henry(request: AskHenryRequest):
+@app.post("/api/hey-henry", response_model=HeyHenryResponse)
+async def hey_henry(request: HeyHenryRequest):
     """
-    ASK HENRY: Contextual AI assistant available from any page.
+    HEY HENRY: Strategic career coach available from any page.
 
-    Provides strategic career coaching based on:
+    Provides honest, strategic career coaching based on:
     - Current page/section the user is viewing
     - Their job analysis data (if available)
     - Their resume data (if available)
     - Their pipeline data (if available)
+    - Emotional state and tone guidance
+    - Clarification detection for vague inputs
     - Conversation history for continuity
     """
-    print(f"💬 Ask Henry: {request.context.current_page} - {request.message[:50]}...")
+    print(f"💬 Hey Henry: {request.context.current_page} - {request.message[:50]}...")
 
     # Build analysis context string
     analysis_context = ""
@@ -9523,42 +9570,82 @@ TOP APPLICATIONS IN PIPELINE:
         for app in top_apps:
             pipeline_context += f"- {app.get('role', 'Unknown')} at {app.get('company', 'Unknown')}: {app.get('status', 'Unknown')} ({app.get('fitScore', 'N/A')}% fit, {app.get('daysSinceUpdate', 0)}d since update)\n"
 
-    # Build emotional context from user profile
+    # Build emotional context - prefer direct context fields, fall back to user_profile
     emotional_context = ""
-    if request.user_profile:
+    holding_up = request.context.emotional_state
+    timeline = request.context.timeline
+    confidence = request.context.confidence_level
+
+    # Fall back to user_profile if direct fields not set
+    if not holding_up and request.user_profile:
         situation = request.user_profile.get('situation', {})
         holding_up = situation.get('holding_up')
-        timeline = situation.get('timeline')
-        confidence = situation.get('confidence')
+        timeline = timeline or situation.get('timeline')
+        confidence = confidence or situation.get('confidence')
 
-        if holding_up or timeline or confidence:
-            emotional_context = "USER'S EMOTIONAL STATE (adjust your tone accordingly):\n"
+    if holding_up or timeline or confidence:
+        emotional_context = "USER'S EMOTIONAL STATE (adjust your tone accordingly):\n"
 
-            if holding_up == 'struggling':
-                emotional_context += "- They're struggling emotionally. Be extra gentle and encouraging. Don't be pushy.\n"
-            elif holding_up == 'hanging_in':
-                emotional_context += "- They're hanging in there but it's hard. Be supportive but action-oriented.\n"
-            elif holding_up == 'doing_okay':
-                emotional_context += "- They're doing okay. You can be more direct and strategic.\n"
+        # Enhanced emotional state mapping (spec v2.1 values)
+        holding_up_guidance = {
+            'zen': "- They're doing well emotionally. Be professional and efficient.\n",
+            'stressed': "- They're stressed. Be reassuring but direct. Acknowledge pressure, then provide clear guidance.\n",
+            'struggling': "- They're struggling. Be supportive and steady. Break things into manageable steps.\n",
+            'desperate': "- They're desperate. Be empathetic but realistic. Acknowledge difficulty, focus on actionable steps.\n",
+            'crushed': "- They're crushed emotionally. Be gentle and direct. Acknowledge the pain, focus on small wins.\n",
+            # Legacy mappings
+            'hanging_in': "- They're hanging in there but it's hard. Be supportive but action-oriented.\n",
+            'doing_okay': "- They're doing okay. You can be more direct and strategic.\n",
+        }
+        if holding_up and holding_up in holding_up_guidance:
+            emotional_context += holding_up_guidance[holding_up]
 
-            if timeline == 'urgent':
-                emotional_context += "- URGENT financial pressure. Prioritize speed but don't let them take bad roles out of desperation.\n"
-            elif timeline == 'actively_looking':
-                emotional_context += "- Actively looking with some runway. Balance speed with quality.\n"
-            elif timeline == 'exploring':
-                emotional_context += "- Just exploring, no rush. Can be more strategic and selective.\n"
+        timeline_guidance = {
+            'urgent': "- URGENT timeline. Move fast but smart. Prioritize high-probability opportunities.\n",
+            'soon': "- Need a job soon. Make every application count. No spray-and-pray.\n",
+            'actively_looking': "- Actively looking. Be selective. Focus on quality over quantity.\n",
+            'no_rush': "- No rush. Only roles worth making a move for. Be picky.\n",
+            # Legacy mappings
+            'exploring': "- Just exploring, no rush. Can be more strategic and selective.\n",
+        }
+        if timeline and timeline in timeline_guidance:
+            emotional_context += timeline_guidance[timeline]
 
-            if confidence == 'low':
-                emotional_context += "- Low confidence right now. Be encouraging. Remind them it's the market, not them. Build them up.\n"
-            elif confidence == 'building':
-                emotional_context += "- Confidence is building. Reinforce wins and progress.\n"
-            elif confidence == 'confident':
-                emotional_context += "- They're feeling confident. Match their energy, be direct and strategic.\n"
+        confidence_guidance = {
+            'low': "- Low confidence. Provide more explanation. Build confidence through logic and facts.\n",
+            'need_validation': "- Needs validation. Validate their concerns, then redirect to evidence.\n",
+            'shaky': "- Shaky confidence. Acknowledge feelings, but anchor responses in facts and progress.\n",
+            'strong': "- Strong confidence. Peer-level conversation. Be direct and strategic.\n",
+            # Legacy mappings
+            'building': "- Confidence is building. Reinforce wins and progress.\n",
+            'confident': "- They're feeling confident. Match their energy, be direct and strategic.\n",
+        }
+        if confidence and confidence in confidence_guidance:
+            emotional_context += confidence_guidance[confidence]
+
+    # Build tone guidance context (from frontend getToneGuidance())
+    tone_guidance = ""
+    tone_guidance_detail = ""
+    if request.context.tone_guidance:
+        tone_guidance = f"TONE GUIDANCE FROM CONTEXT:\n{request.context.tone_guidance}"
+        tone_guidance_detail = request.context.tone_guidance
+    else:
+        tone_guidance_detail = "Adapt your tone based on the user's emotional state above."
+
+    # Build clarification context
+    clarification_context = ""
+    if request.context.needs_clarification and request.context.clarification_hints:
+        clarification_context = "⚠️ CLARIFICATION NEEDED - The user's message appears vague. Before responding substantively, ask clarifying questions:\n"
+        for hint in request.context.clarification_hints:
+            hint_type = hint.get('type', 'unknown')
+            hint_text = hint.get('hint', '')
+            clarification_context += f"- [{hint_type}] {hint_text}\n"
+        clarification_context += "\nDo NOT acknowledge vaguely. Ask specific follow-up questions first."
 
     # Format system prompt
     user_name = request.context.user_name
     name_note = "" if user_name else "(name not available - use warm generic greetings)"
-    system_prompt = ASK_HENRY_SYSTEM_PROMPT.format(
+    system_prompt = HEY_HENRY_SYSTEM_PROMPT.format(
         user_name=user_name or "Unknown",
         name_note=name_note,
         current_page=request.context.current_page,
@@ -9570,7 +9657,10 @@ TOP APPLICATIONS IN PIPELINE:
         has_pipeline="Yes" if request.context.has_pipeline else "No",
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
-        emotional_context=emotional_context
+        emotional_context=emotional_context,
+        tone_guidance=tone_guidance,
+        tone_guidance_detail=tone_guidance_detail,
+        clarification_context=clarification_context
     )
 
     # Build messages
@@ -9594,7 +9684,7 @@ TOP APPLICATIONS IN PIPELINE:
         )
 
         assistant_response = response.content[0].text
-        print(f"✅ Ask Henry response: {len(assistant_response)} chars")
+        print(f"✅ Hey Henry response: {len(assistant_response)} chars")
 
         # =================================================================
         # QA VALIDATION: Check chat response for fabrication
@@ -9610,7 +9700,7 @@ TOP APPLICATIONS IN PIPELINE:
             if qa_validation_result.should_block:
                 # Log the blocked response for review
                 print("\n" + "🚫"*20)
-                print("ASK HENRY QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
+                print("HEY HENRY QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
                 print("🚫"*20)
                 print(f"Question: {request.message[:100]}...")
                 for issue in qa_validation_result.issues:
@@ -9619,7 +9709,7 @@ TOP APPLICATIONS IN PIPELINE:
 
                 # Log to file for review
                 ValidationLogger.log_blocked_output(
-                    endpoint="/api/ask-henry",
+                    endpoint="/api/hey-henry",
                     result=qa_validation_result,
                     output={"response": assistant_response},
                     resume_data=request.resume_data,
@@ -9628,13 +9718,20 @@ TOP APPLICATIONS IN PIPELINE:
 
                 # Return a safe fallback response instead of blocking entirely
                 fallback_response = create_chat_fallback_response(qa_validation_result, request.message)
-                return AskHenryResponse(response=fallback_response)
+                return HeyHenryResponse(response=fallback_response)
 
-        return AskHenryResponse(response=assistant_response)
+        return HeyHenryResponse(response=assistant_response)
 
     except Exception as e:
-        print(f"🔥 Ask Henry error: {e}")
+        print(f"🔥 Hey Henry error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get response: {str(e)}")
+
+
+# Backwards compatibility endpoint
+@app.post("/api/ask-henry", response_model=HeyHenryResponse)
+async def ask_henry(request: HeyHenryRequest):
+    """Backwards compatibility alias for /api/hey-henry."""
+    return await hey_henry(request)
 
 
 # ============================================================================
