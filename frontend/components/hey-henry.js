@@ -563,6 +563,7 @@
     let tooltipHideTimer = null;
     let welcomeFlowState = null; // 'proactive_welcome' | 'first_action_prompt' | 'welcome_back' | null
     let isGenieMode = false;
+    let lastGreetingIndex = -1; // Track last greeting to avoid repetition
 
     // Fun tooltip messages that randomly appear
     const tooltipMessages = [
@@ -1083,6 +1084,11 @@ ${confidenceClosing}`,
                 ? Math.round((respondedApps.length / appliedApps.length) * 100)
                 : 0;
 
+            // Calculate days since last activity for stalled detection
+            const lastActivityDates = activeApps.map(a => new Date(a.lastUpdated || a.dateAdded || a.dateApplied));
+            const mostRecentActivity = lastActivityDates.length > 0 ? Math.max(...lastActivityDates) : Date.now();
+            const stalledDays = Math.floor((Date.now() - mostRecentActivity) / (1000 * 60 * 60 * 24));
+
             return {
                 total: apps.length,
                 active: activeApps.length,
@@ -1093,6 +1099,11 @@ ${confidenceClosing}`,
                 hot: hotApps.length,
                 avgFitScore: avgFit,
                 interviewRate: interviewRate,
+                // Aliased properties for greeting function
+                activeCount: activeApps.length,
+                interviewingCount: interviewingApps.length,
+                rejectedCount: rejectedApps.length,
+                stalledDays: stalledDays,
                 // Include details of top apps for context
                 topApps: activeApps.slice(0, 5).map(a => ({
                     company: a.company,
@@ -1203,12 +1214,62 @@ ${confidenceClosing}`,
         return suggestions[page] || suggestions['default'];
     }
 
-    // Generate personalized greeting
+    // Generate personalized greeting with rotation and context-awareness
     function getPersonalizedGreeting(userName, context) {
-        if (userName) {
-            return `Hey ${userName}! How can I help you?`;
+        // No name - first time visitor
+        if (!userName) {
+            return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
         }
-        return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
+
+        // Get emotional state and pipeline data for context-aware greetings
+        const emotionalState = getUserEmotionalState();
+        const pipeline = getPipelineData();
+
+        // Context-aware greetings based on emotional state (highest priority)
+        if (emotionalState.holding_up === 'crushed' || emotionalState.holding_up === 'desperate') {
+            return `Hey ${userName}. This market's brutal. Let's figure out what's not working.`;
+        }
+
+        if (emotionalState.holding_up === 'stressed' || emotionalState.holding_up === 'struggling') {
+            return `Hey ${userName}. I know you're under pressure. What do you need?`;
+        }
+
+        // Context-aware greetings based on pipeline (second priority)
+        if (pipeline) {
+            // Upcoming interviews
+            if (pipeline.interviewingCount > 0) {
+                return `Hey ${userName}! I see you've got ${pipeline.interviewingCount} interview${pipeline.interviewingCount !== 1 ? 's' : ''} lined up. Want to prep?`;
+            }
+
+            // Recent rejections pattern
+            if (pipeline.rejectedCount >= 3) {
+                return `Hey ${userName}. I'm noticing some patterns in your applications. Want to dig into what might be happening?`;
+            }
+
+            // Stalled pipeline (apps but no recent activity)
+            if (pipeline.activeCount > 0 && pipeline.stalledDays >= 3) {
+                return `Hey ${userName}! You've been sitting on a few roles. Want help deciding which are worth your time?`;
+            }
+        }
+
+        // Standard greetings rotation (avoid repetition)
+        const standardGreetings = [
+            `Hey ${userName}! What's on your mind?`,
+            `Hey ${userName}! What are you working on?`,
+            `Hey ${userName}! How can I help?`,
+            `Hey ${userName}! What are you thinking about?`,
+            `Hey ${userName}! What do you need?`,
+            `Hey ${userName}! What's up?`
+        ];
+
+        // Select next greeting, avoiding the last one used
+        let greetingIndex;
+        do {
+            greetingIndex = Math.floor(Math.random() * standardGreetings.length);
+        } while (greetingIndex === lastGreetingIndex && standardGreetings.length > 1);
+
+        lastGreetingIndex = greetingIndex;
+        return standardGreetings[greetingIndex];
     }
 
     // ==========================================
