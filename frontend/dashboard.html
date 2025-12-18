@@ -862,6 +862,42 @@
             }
         }
 
+        /* Welcome Modal Fix - ensures proper height, scrolling, and button clickability */
+        #askHenryContainer.show .chat-container.genie-mode {
+            max-height: 80vh !important;
+            overflow: hidden !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+
+        #askHenryContainer.show .chat-messages {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            max-height: none !important;
+            padding: 24px !important;
+        }
+
+        #askHenryContainer.show .welcome-actions {
+            flex-shrink: 0 !important;
+            position: relative !important;
+            z-index: 10001 !important;
+            padding: 20px 24px !important;
+            background: #1a1a1a !important;
+            border-top: 1px solid #333 !important;
+        }
+
+        #askHenryContainer.show .create-profile-btn {
+            position: relative !important;
+            z-index: 10002 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            width: 100% !important;
+        }
+
+        #askHenryContainer.show .chat-overlay {
+            z-index: 9999 !important;
+        }
+
     </style>
     <!-- Beta Access Gate -->
     <script>
