@@ -565,37 +565,76 @@
     let isGenieMode = false;
     let lastGreetingIndex = -1; // Track last greeting to avoid repetition
 
-    // Fun tooltip messages that randomly appear
-    const tooltipMessages = [
-        "Peek-a-boo!",
-        "Knock knock, it's Henry!",
-        "Hey there!",
-        "Need a hand?",
-        "I'm here if you need me!",
+    // Default tooltip messages (used when no context available)
+    const defaultTooltipMessages = [
         "Got questions?",
-        "Let's chat!",
-        "Psst... over here!",
-        "How's the search going?",
+        "Need strategy help?",
         "Ready when you are!",
-        "I've got ideas...",
         "Let me help!",
-        "Thinking about your next move?",
-        "Just checking in!"
+        "Thinking about your next move?"
     ];
 
-    // Get random tooltip message
-    function getRandomTooltipMessage() {
-        return tooltipMessages[Math.floor(Math.random() * tooltipMessages.length)];
+    // Get context-aware tooltip message (prioritizes meaningful context over random)
+    function getContextAwareTooltip() {
+        const pipeline = getPipelineData();
+        const emotionalState = getUserEmotionalState();
+
+        // Priority 1: Pipeline stalled (apps but no movement)
+        if (pipeline && pipeline.activeCount > 0 && pipeline.stalledDays >= 3) {
+            return `${pipeline.activeCount} app${pipeline.activeCount !== 1 ? 's' : ''}, no movement. Want to review strategy?`;
+        }
+
+        // Priority 2: Upcoming interview (interviewing status)
+        if (pipeline && pipeline.interviewingCount > 0) {
+            const interviewApp = pipeline.topApps?.find(a =>
+                ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                 'Final Round', 'Executive Interview'].includes(a.status)
+            );
+            if (interviewApp) {
+                return `Interview at ${interviewApp.company} coming up. Prepped?`;
+            }
+            return 'Interview coming up. Want to prep?';
+        }
+
+        // Priority 3: Emotional state - struggling
+        if (emotionalState.holding_up === 'crushed' || emotionalState.holding_up === 'desperate') {
+            return "Rough day? Let's talk strategy.";
+        }
+
+        // Priority 4: Recent rejection (check for rejected apps)
+        if (pipeline && pipeline.rejectedCount > 0) {
+            const recentReject = pipeline.topApps?.find(a => a.status === 'Rejected' && a.daysSinceUpdate <= 3);
+            // Only show if we have recent reject data, otherwise use generic
+            if (recentReject) {
+                return `That ${recentReject.company} rejection sucked. Want to talk through it?`;
+            }
+            if (pipeline.rejectedCount >= 3) {
+                return "Noticing some patterns. Want to dig in?";
+            }
+        }
+
+        // Priority 5: No activity in 3+ days (different from stalled - no active apps)
+        if (!pipeline || pipeline.activeCount === 0) {
+            return "Taking a break, or stuck on something?";
+        }
+
+        // Default: Rotate through helpful defaults
+        return defaultTooltipMessages[Math.floor(Math.random() * defaultTooltipMessages.length)];
     }
 
-    // Show tooltip with random message
+    // Alias for backwards compatibility (used in hover event)
+    function getRandomTooltipMessage() {
+        return getContextAwareTooltip();
+    }
+
+    // Show tooltip with context-aware message
     function showRandomTooltip() {
         if (isOpen) return; // Don't show if chat is open
 
         const tooltip = document.getElementById('askHenryTooltip');
         if (!tooltip) return;
 
-        tooltip.textContent = getRandomTooltipMessage();
+        tooltip.textContent = getContextAwareTooltip();
         tooltip.classList.add('visible');
 
         // Hide after 3 seconds
