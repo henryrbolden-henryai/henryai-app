@@ -1477,6 +1477,23 @@
                 return;
             }
 
+            // Check if user is asking HOW to give feedback or attach screenshots
+            const lowerMessage = message.toLowerCase();
+            const askingAboutFeedback = (
+                (lowerMessage.includes('how') || lowerMessage.includes('can i') || lowerMessage.includes('where')) &&
+                (lowerMessage.includes('feedback') || lowerMessage.includes('screenshot') || lowerMessage.includes('report') || lowerMessage.includes('bug') || lowerMessage.includes('attach'))
+            );
+
+            if (askingAboutFeedback && !pendingFeedback && !feedbackFlowState) {
+                removeTypingIndicator();
+                const helpMessage = "To share feedback, just tell me what's on your mind! Say something like 'I found a bug' or 'I have a suggestion' and I'll walk you through it. For bugs and UX issues, you'll get the option to attach a screenshot before sending. What would you like to share?";
+                addMessage('assistant', helpMessage);
+                conversationHistory.push({ role: 'assistant', content: helpMessage });
+                saveConversationHistory();
+                isLoading = false;
+                return;
+            }
+
             // Check for NEW feedback intent (not already in a flow)
             if (detectFeedbackIntent(message) && !pendingFeedback && !feedbackFlowState) {
                 const feedbackType = categorizeFeedback(message);
