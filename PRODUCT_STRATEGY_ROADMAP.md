@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
-**Date**: December 14, 2025
-**Version**: 1.4
-**Status**: Phase 0 Complete, User Signup/Profile Flow Complete, QA Validation Disabled (pending fixes), Phase 1 In Progress
-**Last Updated**: December 14, 2025
-**Next Review**: December 21, 2025
+**Date**: December 16, 2025
+**Version**: 1.5
+**Status**: Phase 0 Complete, Phase 1 Core Engine Complete, Interview Intelligence Complete, Engagement Layer In Progress
+**Last Updated**: December 16, 2025
+**Next Review**: December 23, 2025
 
 ---
 
@@ -130,6 +130,70 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 
 ✅ **Bug Fixes** (Dec 14, 2025)
 - Fixed async/await syntax error in documents.html (commit: `97edb3e`)
+
+### Recent Achievements (Dec 15-16, 2025)
+
+✅ **LinkedIn Profile Integration COMPLETED** (Dec 15, 2025)
+- LinkedIn PDF upload and parsing via Claude AI
+- Dashboard modal announcing feature to existing users
+- LinkedIn section in profile settings page
+- LinkedIn alignment check in job analysis results
+- LinkedIn tab in documents page with optimized sections
+- Backend endpoints: `/api/linkedin/upload`, `/api/linkedin/align`, `/api/linkedin/optimize`
+- LinkedIn Score (0-100) with section-by-section optimization suggestions
+
+✅ **6-Tier Graduated Recommendation System** (Dec 16, 2025)
+- Replaced binary "Apply/Skip" with nuanced 6-level guidance:
+  - **Strong Apply** (85-100): "Strong match - prioritize this application"
+  - **Apply** (70-84): "Good fit - worth pursuing"
+  - **Consider** (55-69): "Moderate fit - apply if interested in company/role"
+  - **Apply with Caution** (40-54): "Stretch role - be strategic about positioning"
+  - **Long Shot** (25-39): "Significant gaps - only if highly motivated"
+  - **Do Not Apply** (0-24): "Not recommended - focus energy elsewhere"
+- Visual badge styling with color-coded indicators
+
+✅ **Experience Penalty Hard Caps** (Dec 16, 2025)
+- Backend safety net ensures experience gap penalties are enforced
+- Hard cap logic based on years percentage:
+  - <50% of required years → Cap at 45
+  - 50-70% of required years → Cap at 60
+  - 70-90% of required years → Cap at 75
+- Prevents inflated scores for underqualified candidates
+- PM-specific calculation using PM/Product years only
+
+✅ **Company Credibility Scoring** (Dec 16, 2025)
+- Multiplier system for company reputation signals:
+  - **HIGH** (1.0x): Well-known companies, Series B+, established brands
+  - **MEDIUM** (0.7x): Growing startups, Series A, regional players
+  - **LOW** (0.3x): Unknown companies, early-stage, limited info
+  - **ZERO** (0x): Red flags, scam indicators, suspicious postings
+- Affects reality_check expected_applicants calculation
+- Prevents unrealistic applicant estimates for obscure companies
+
+✅ **Reality Check Improvements** (Dec 16, 2025)
+- Strategic action now uses candidate's actual name (not "there")
+- Post-processing regex replacement for name personalization
+- Removed name requirement from strategic_action field validation
+
+✅ **Candidate Identity Bug Fix** (Dec 16, 2025)
+- Fixed "Henry" appearing in analysis explanations for all users
+- Added explicit identity instruction to Claude prompts:
+  - `/api/jd/analyze` endpoint (line 3162-3166)
+  - `/api/jd/analyze/stream` endpoint (line 4317-4321)
+- Candidates now see their own name or "you/your" in all outputs
+
+✅ **JSON Repair and Error Handling** (Dec 16, 2025)
+- Enhanced `repair_json()` function for malformed Claude responses
+- Automatic retry with exponential backoff for API failures
+- Graceful degradation when optional fields are missing
+
+✅ **Streaming Analysis Endpoint** (Dec 16, 2025) - EXPERIMENTAL
+- New `/api/jd/analyze/stream` endpoint using Server-Sent Events (SSE)
+- Progressive UI updates as analysis generates
+- Test page: `streaming_test.html`
+- Production page: `analyzing_streaming.html` (ready for integration)
+- **Status**: Reverted from production (experience penalties not reflecting correctly)
+- **Files preserved**: For future re-integration after fixes
 
 ---
 

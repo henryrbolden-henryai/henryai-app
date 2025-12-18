@@ -1,9 +1,9 @@
 # HenryAI Implementation Guide
 
-**Date**: December 14, 2025
-**Version**: 1.3
+**Date**: December 16, 2025
+**Version**: 1.4
 **Audience**: Development Team
-**Last Updated**: December 14, 2025
+**Last Updated**: December 16, 2025
 
 ---
 
@@ -44,6 +44,173 @@ All features below have been implemented and deployed to production:
 17. ✅ **Supabase Database Integration** (Dec 14)
 18. ✅ **QA Validation Updates** (Dec 14) - blocking disabled
 19. ✅ **Async/Await Syntax Fix** (Dec 14) - documents.html
+20. ✅ **LinkedIn Profile Integration** (Dec 15) - upload, parse, align, optimize
+21. ✅ **6-Tier Recommendation System** (Dec 16) - graduated guidance from Strong Apply to Do Not Apply
+22. ✅ **Experience Penalty Hard Caps** (Dec 16) - backend safety net
+23. ✅ **Company Credibility Scoring** (Dec 16) - multipliers for experience calculation
+24. ✅ **Reality Check Improvements** (Dec 16) - candidate name personalization
+25. ✅ **Candidate Identity Bug Fix** (Dec 16) - fixed "Henry" appearing in outputs
+26. ✅ **JSON Repair & Error Handling** (Dec 16) - enhanced robustness
+27. ✅ **Streaming Analysis Endpoint** (Dec 16) - experimental, reverted
+
+---
+
+### LinkedIn Profile Integration (Dec 15, 2025)
+
+**Files Created/Modified**:
+- `backend/backend.py` - New endpoints: `/api/linkedin/upload`, `/api/linkedin/align`, `/api/linkedin/optimize`
+- `frontend/documents.html` - LinkedIn tab with optimized sections
+- `frontend/profile-edit.html` - LinkedIn upload section
+- `frontend/js/linkedin-upload.js` - LinkedIn parsing and rendering
+
+**Features Implemented**:
+
+1. **LinkedIn PDF Upload & Parsing**
+   - Upload LinkedIn PDF export
+   - Claude AI extracts profile data
+   - Stores in sessionStorage alongside resume
+
+2. **LinkedIn Score (0-100)**
+   - Section-by-section analysis
+   - Severity-based scoring (Critical, Important, Nice-to-Have)
+   - Specific improvement suggestions
+
+3. **LinkedIn Alignment Check**
+   - Compare LinkedIn profile to job requirements
+   - Identify gaps between resume and LinkedIn
+   - Alignment score calculation
+
+4. **LinkedIn Optimization**
+   - Generate optimized headline (220 char limit)
+   - Generate optimized About section (600-800 words)
+   - Optimized experience bullets
+   - Role-appropriate skill recommendations
+   - Role-agnostic (PM, engineer, recruiter, sales, marketing)
+
+---
+
+### 6-Tier Recommendation System (Dec 16, 2025)
+
+**Files Modified**:
+- `backend/backend.py` - `force_apply_experience_penalties()` function
+
+**Features Implemented**:
+
+Replaced binary Apply/Skip with nuanced 6-tier guidance:
+
+```python
+def get_recommendation_from_score(capped_score: int) -> str:
+    if capped_score >= 85:
+        return "Strong Apply"      # Strong match - prioritize
+    elif capped_score >= 70:
+        return "Apply"             # Good fit - worth pursuing
+    elif capped_score >= 55:
+        return "Consider"          # Moderate fit - if interested
+    elif capped_score >= 40:
+        return "Apply with Caution" # Stretch role - strategic positioning
+    elif capped_score >= 25:
+        return "Long Shot"         # Significant gaps
+    else:
+        return "Do Not Apply"      # Not recommended
+```
+
+---
+
+### Experience Penalty Hard Caps (Dec 16, 2025)
+
+**Files Modified**:
+- `backend/backend.py` - Post-processing safety net
+
+**Features Implemented**:
+
+Backend enforces hard caps on fit scores based on experience gaps:
+
+```python
+def force_apply_experience_penalties(analysis_data, resume_data, jd_analysis):
+    required_years = jd_analysis.get("required_years", 0)
+    candidate_years = calculate_pm_years_from_resume(resume_data)
+
+    if required_years > 0:
+        years_percentage = (candidate_years / required_years) * 100
+
+        if years_percentage < 50:
+            hard_cap = 45
+        elif years_percentage < 70:
+            hard_cap = 60
+        elif years_percentage < 90:
+            hard_cap = 75
+        else:
+            hard_cap = 100  # No cap
+
+        original_score = analysis_data.get("fit_score", 0)
+        capped_score = min(original_score, hard_cap)
+
+        if capped_score != original_score:
+            analysis_data["fit_score"] = capped_score
+            analysis_data["recommendation"] = get_recommendation_from_score(capped_score)
+            analysis_data["_experience_cap_applied"] = True
+
+    return analysis_data
+```
+
+---
+
+### Company Credibility Scoring (Dec 16, 2025)
+
+**Features Implemented**:
+
+Multiplier system for experience calculation:
+
+```python
+CREDIBILITY_MULTIPLIERS = {
+    "HIGH": 1.0,    # Public companies, Series B+, established brands
+    "MEDIUM": 0.7,  # Series A startups, 10-50 employees
+    "LOW": 0.3,     # Seed-stage startups, <10 employees
+    "ZERO": 0.0     # Operations roles with PM title, volunteer/side projects
+}
+```
+
+Applied BEFORE experience penalty calculations.
+
+---
+
+### Candidate Identity Bug Fix (Dec 16, 2025)
+
+**Files Modified**:
+- `backend/backend.py` - Lines 3162-3166 (`/api/jd/analyze`)
+- `backend/backend.py` - Lines 4317-4321 (`/api/jd/analyze/stream`)
+
+**Issue**: Analysis was addressing all users as "Henry" (template contamination)
+
+**Fix**: Added explicit identity instruction to Claude prompts:
+
+```python
+IDENTITY_INSTRUCTION = """
+🚨 CRITICAL: CANDIDATE IDENTITY 🚨
+The candidate is the person whose resume was uploaded - NOT Henry, NOT any template, NOT a generic user.
+When writing explanations, rationales, or strategic advice, use the candidate's actual name from their resume.
+If no name is available, use "you/your" (second person) - NEVER use "Henry" as the candidate name.
+Example: "Rawan, this role is a stretch..." or "This role is a stretch for your background..." - NOT "Henry, this role..."
+"""
+```
+
+---
+
+### Streaming Analysis Endpoint (Dec 16, 2025) - EXPERIMENTAL
+
+**Files Created**:
+- `backend/backend.py` - `/api/jd/analyze/stream` endpoint
+- `frontend/streaming_test.html` - Development test page
+- `frontend/analyzing_streaming.html` - Production-ready page
+
+**Features**:
+- Server-Sent Events (SSE) for real-time analysis
+- Progressive UI updates as Claude generates
+- Fields stream in order: fit_score → recommendation → strengths → applicants
+
+**Status**: REVERTED from production
+- Experience penalties weren't reflecting correctly in partial data
+- Files preserved for future re-integration
 
 ---
 
@@ -2391,5 +2558,5 @@ For questions about this implementation:
 ---
 
 **Document Maintained By**: Engineering Team
-**Last Updated**: December 14, 2025
-**Next Review**: December 21, 2025
+**Last Updated**: December 16, 2025
+**Next Review**: December 23, 2025

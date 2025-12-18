@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>HenryHQ — Your Personal AI Job Search Strategist</title>
+  <title>HenryHQ - Your Personal Job Search Strategist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -590,9 +590,59 @@
       text-align: center;
     }
 
-    footer p { 
-      color: var(--color-text-secondary); 
+    footer p {
+      color: var(--color-text-secondary);
       font-size: 0.85rem;
+    }
+
+    /* Footer links styling */
+    footer .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .footer-links a {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--color-accent);
+    }
+
+    .footer-links span {
+      color: var(--color-text-secondary);
+      opacity: 0.5;
+    }
+
+    /* Preview mode banner */
+    .preview-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(34, 211, 238, 0.15);
+      border-bottom: 1px solid var(--color-accent);
+      padding: 0.75rem;
+      text-align: center;
+      z-index: 1000;
+      font-size: 0.9rem;
+      color: var(--color-accent);
+      font-weight: 500;
+    }
+
+    body.preview-mode {
+      padding-top: 50px;
     }
 
     /* ========== RESPONSIVE ========== */
@@ -685,9 +735,12 @@
   <!-- Top Navigation -->
   <nav class="top-nav" id="topNav">
     <div class="top-nav-container">
-      <div></div>
+      <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
       <div class="top-nav-links" id="navLinks">
-        <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
+        <a href="#about-henry" class="top-nav-link">About</a>
+        <a href="#how-it-works" class="top-nav-link">How it works</a>
+        <a href="#capabilities" class="top-nav-link">Features</a>
+        <a href="login.html" class="top-nav-link" id="loginLink">Dashboard</a>
       </div>
     </div>
   </nav>
@@ -713,8 +766,12 @@
     .top-nav-logo {
       font-family: var(--font-display);
       font-size: 1.5rem;
-      color: #fff;
+      font-weight: 400;
+      color: var(--color-text);
       text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .top-nav-logo em {
       font-style: italic;
@@ -759,17 +816,8 @@
       <p class="hero-value-prop">Built by a recruiter. No fabrication. No shortcuts. No mass-apply nonsense.</p>
 
       <div class="button-group">
-        <button class="btn-primary" onclick="document.getElementById('about-henry').scrollIntoView({ behavior: 'smooth' })">
-          About Henry
-        </button>
-
-        <button class="btn-secondary" onclick="document.getElementById('how-it-works').scrollIntoView({ behavior: 'smooth' })">
-          Working with Henry
-        </button>
-
-        <button class="btn-secondary" onclick="window.location.href='analyze.html'">
-          Get Started
-        </button>
+        <button class="btn-primary" id="getStartedBtn">Get Started</button>
+        <a href="#about-henry" class="btn-secondary">Learn More</a>
       </div>
     </div>
 
@@ -886,19 +934,22 @@
           Job searching is exhausting. You're spending hours tailoring applications for roles that ghost you, second-guessing your experience, and wondering if you're even targeting the right jobs.
         </p>
         <p>
-          I'm here to cut through that noise. I'm Henry, your personal AI job search strategist, and I'm built to help you run a smarter, more strategic search from start to finish.
+          I'm Henry, your personal job search strategist. I'm not here to spit out documents like a resume vending machine. I'm here to cut through the noise with recruiter-grade intelligence.
         </p>
         <p>
-          I'm not here to spit out documents like a resume vending machine. I'm here to help you think strategically, position yourself clearly, and move through the entire search with precision.
+          I was built by someone who's hired at scale at Spotify, Uber, National Grid, and Heidrick & Struggles. I've seen the mess from the inside. Most job search tools lie to you, tell you you're a great fit for anything with a pulse, and pump out generic applications that scream "AI-written."
         </p>
         <p>
-          I evaluate job descriptions for quality and fit before you waste time applying. I create tailored resumes, cover letters, and outreach messages that position you to win. I track your pipeline, map your LinkedIn network for warm introductions, and coach you through your interview preparation so you walk into every conversation ready to perform.
+          I don't do that.
         </p>
         <p>
-          From the first application to the final offer negotiation, I'm the recruiter in your corner: no fluff, no generic advice, just honest strategic guidance that helps you move faster and with more confidence.
+          My mission: Help serious professionals navigate a broken job market with truth over hype, strategy over volume, and zero fabrication. If you're not competitive for a role, I'll tell you. If your positioning needs work, I'll tell you. No fluff, no false optimism, just honest strategic guidance.
         </p>
         <p>
-          Stop guessing. Start winning. Let's find your next role the right way.
+          This is for people who value quality over quantity, who want to understand the game they're playing, and who are ready to run a smarter search.
+        </p>
+        <p>
+          If that's you, let's go.
         </p>
       </div>
     </section>
@@ -906,7 +957,7 @@
     <!-- ========== HOW WE WORK ========== -->
     <section id="how-it-works">
       <div class="container">
-        <h2>How we work together</h2>
+        <h2>How it works</h2>
 
         <div class="steps">
 
@@ -915,7 +966,7 @@
             <div class="step-content">
               <h3>Start with your story</h3>
               <p>
-                You begin by sharing your resume so I can translate it into a clear and structured view of your experience and strengths. My role is to help you see your impact and capture the parts of your story that matter most to hiring teams.
+                You begin by sharing your resume (and optionally, your LinkedIn profile) so I can translate it into a clear and structured view of your experience and strengths. My role is to help you see your impact and capture the parts of your story that matter most to hiring teams.
               </p>
             </div>
           </div>
@@ -935,7 +986,7 @@
             <div class="step-content">
               <h3>Building your application strategy</h3>
               <p>
-                For each opportunity, I help you decide how to position your experience and which strengths to highlight. You receive resumes and cover letters tailored to the specific role along with guidance that keeps everything true to you but clearer and more strategic.
+                For each opportunity, I give you a brutally honest fit assessment: strengths, gaps, and whether you should actually apply. You get resume level analysis, LinkedIn profile scoring, and a Reality Check on competition. If the numbers don't add up, I'll tell you to skip it. If it's worth your time, you receive resumes and cover letters tailored to the specific role along with guidance that keeps everything true to you but clearer and more strategic.
               </p>
             </div>
           </div>
@@ -945,7 +996,7 @@
             <div class="step-content">
               <h3>Showing up confidently at each stage</h3>
               <p>
-                As you move forward, I support you through outreach, interview preparation, transcript reviews, and next step planning. The goal is to help you stay confident, keep improving, and move through the process with intention instead of guesswork.
+                I help you prepare with interview intelligence: company research, behavioral practice, and talking points tailored to the role. After interviews, we debrief what worked and what didn't. From networking outreach through offer negotiation, the goal is to help you improve with each conversation and move through the process with intention.
               </p>
             </div>
           </div>
@@ -958,31 +1009,40 @@
     <section id="differentiators">
       <div class="container">
         <h2>What makes working with Henry different?</h2>
-        
-        <div class="steps">
-          <div class="step">
+
+        <div class="steps" style="gap: 2rem;">
+          <div class="step" style="grid-template-columns: 1fr;">
+            <div class="step-content">
+              <h3>Honest feedback, real support</h3>
+              <p>
+                I'll tell you when a role isn't worth your time, when your positioning needs work, or when you're not competitive. But I'm not here to discourage you. I'm here to help you improve, focus your energy on winnable opportunities, and show up stronger with each attempt.
+              </p>
+            </div>
+          </div>
+
+          <div class="step" style="grid-template-columns: 1fr;">
             <div class="step-content">
               <h3>Zero fabrication policy</h3>
               <p>
-                Your experience is never exaggerated or invented. Everything remains accurate and grounded in your real background, presented in a clearer and more compelling way.
+                Your experience is never exaggerated or invented. Everything remains accurate and grounded in your real background. I reframe and reposition, but I never lie. If you need more experience to be competitive, I'll tell you that instead of faking it.
               </p>
             </div>
           </div>
 
-          <div class="step">
+          <div class="step" style="grid-template-columns: 1fr;">
             <div class="step-content">
-              <h3>Honest fit scoring</h3>
+              <h3>Recruiter-grade intelligence</h3>
               <p>
-                Each role includes strengths, risks, and a clear view of how well your profile aligns so you can make informed decisions about where to invest your time and energy.
+                I analyze opportunities the way hiring managers and recruiters do. I look past generic job descriptions to identify real priorities, assess your competitive position, and provide strategic guidance that goes beyond surface-level keyword matching.
               </p>
             </div>
           </div>
 
-          <div class="step">
+          <div class="step" style="grid-template-columns: 1fr;">
             <div class="step-content">
-              <h3>ATS first and human ready</h3>
+              <h3>Strategy over volume</h3>
               <p>
-                Your materials are structured so that applicant tracking systems can read them correctly while still sounding natural and thoughtful to hiring managers and recruiters.
+                I'm not here to help you spam 100 applications. I'm here to help you identify 10 roles you're actually competitive for, position yourself strategically, and move through the process with confidence. Quality beats quantity every time.
               </p>
             </div>
           </div>
@@ -994,36 +1054,36 @@
     <section id="capabilities">
       <div class="container">
         <h2>Core capabilities</h2>
-        
+
         <div class="feature-grid">
           <div class="feature-item">
-            <div class="feature-icon">📄</div>
-            <span class="feature-text">Resume parsing into a structured profile you can reuse and refine.</span>
+            <div class="feature-icon">📊</div>
+            <span class="feature-text">Fit scoring that tells you NOT to apply. Honest assessment with 6-tier recommendations from "Strong Apply" to "Do Not Apply" so you focus on roles you can actually win.</span>
           </div>
 
           <div class="feature-item">
-            <div class="feature-icon">📊</div>
-            <span class="feature-text">Job description analysis with clear role summaries and fit insights.</span>
+            <div class="feature-icon">🎯</div>
+            <span class="feature-text">Reality Check on competition. See how many qualified candidates you're competing against and whether the compensation is realistic for the scope.</span>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon">💼</div>
+            <span class="feature-text">LinkedIn profile optimization. Section-by-section LinkedIn analysis with optimization recommendations to align your public presence with target roles.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">📝</div>
-            <span class="feature-text">Resumes and cover letters tailored to each role instead of one generic version.</span>
-          </div>
-
-          <div class="feature-item">
-            <div class="feature-icon">💬</div>
-            <span class="feature-text">Outreach and networking messages that sound like you and respect the recipient's time.</span>
+            <span class="feature-text">Strategic resumes and cover letters, not templates. Every document is tailored to the specific role with positioning strategy built in. No generic outputs.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">🎤</div>
-            <span class="feature-text">Interview preparation, transcript reviews, and answer refinements to help you improve.</span>
+            <span class="feature-text">Interview prep and conversational debriefs. Company research, talking points, practice sessions, and post-interview conversations to improve with each attempt.</span>
           </div>
 
           <div class="feature-item">
             <div class="feature-icon">📈</div>
-            <span class="feature-text">Rejection debriefs and next step strategy so you keep learning and moving forward.</span>
+            <span class="feature-text">Application tracking and rejection analysis. Track your pipeline, identify patterns in rejections, and refine your approach based on what's working.</span>
           </div>
         </div>
       </div>
@@ -1033,9 +1093,11 @@
     <section id="cta-section">
       <div class="container" style="text-align: center;">
         <h2 id="ctaTitle">Ready to get started?</h2>
-        <p class="helper-text" id="ctaSubtitle" style="max-width: 500px; margin: 0 auto 32px;">Drop your resume and a job description. I'll tell you if it's worth your time—and build your application if it is.</p>
+        <p class="helper-text" id="ctaSubtitle" style="max-width: 500px; margin: 0 auto 32px;">
+          Try HenryHQ free. Upload your resume and analyze your first role to see how the platform works. No credit card required.
+        </p>
         <button class="btn-primary" id="ctaButton" style="width: auto; padding: 18px 48px;">
-          Analyze a Role
+          Get Started Free
         </button>
       </div>
     </section>
@@ -1045,44 +1107,76 @@
   <!-- ========== FOOTER ========== -->
   <footer>
     <div class="container">
-      <p>Built by Henry · No data stored · Your resume stays private</p>
+      <p>© 2025 HenryHQ</p>
+      <div class="footer-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <span>·</span>
+        <a href="terms.html">Terms of Service</a>
+        <span>·</span>
+        <a href="contact.html">Contact</a>
+      </div>
     </div>
   </footer>
 
 <script src="js/supabase-client.js"></script>
 <script>
-  // Check if user is logged in - redirect to dashboard
-  (async function() {
-    // First check Supabase session
-    if (typeof HenryAuth !== 'undefined') {
-      const session = await HenryAuth.getSession();
-      if (session) {
-        // User is logged in via Supabase, redirect to dashboard
+  // Preview mode bypass - add ?preview=true to URL to view landing page when logged in
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPreviewMode = urlParams.has('preview');
+
+  if (isPreviewMode) {
+    // Show preview banner
+    const banner = document.createElement('div');
+    banner.className = 'preview-banner';
+    banner.innerHTML = '👁️ Preview Mode - You're viewing the landing page as a logged-out user';
+    document.body.prepend(banner);
+    document.body.classList.add('preview-mode');
+
+    // Set up CTAs for preview
+    const ctaButton = document.getElementById('ctaButton');
+    const getStartedBtn = document.getElementById('getStartedBtn');
+    if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
+    if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
+
+    // Update login link
+    const loginLink = document.getElementById('loginLink');
+    if (loginLink) {
+      loginLink.textContent = 'Dashboard';
+      loginLink.href = 'dashboard.html';
+    }
+  } else {
+    // Normal auth check - redirect logged-in users
+    (async function() {
+      // Check Supabase session
+      if (typeof HenryAuth !== 'undefined') {
+        const session = await HenryAuth.getSession();
+        if (session) {
+          window.location.href = 'dashboard.html';
+          return;
+        }
+      }
+
+      // Check localStorage profile as fallback
+      const profile = localStorage.getItem('userProfile');
+      if (profile) {
         window.location.href = 'dashboard.html';
         return;
       }
-    }
 
-    // Also check localStorage profile as fallback
-    const profile = localStorage.getItem('userProfile');
-    if (profile) {
-      window.location.href = 'dashboard.html';
-      return;
-    }
+      // New user - set up CTAs
+      const ctaButton = document.getElementById('ctaButton');
+      const getStartedBtn = document.getElementById('getStartedBtn');
+      if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
+      if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
 
-    // New user - set up CTA
-    const ctaButton = document.getElementById('ctaButton');
-    if (ctaButton) {
-      ctaButton.onclick = () => window.location.href = 'analyze.html';
-    }
-
-    // Update login link for non-logged-in users
-    const loginLink = document.getElementById('loginLink');
-    if (loginLink) {
-      loginLink.textContent = 'Sign In';
-      loginLink.href = 'login.html';
-    }
-  })();
+      // Update login link
+      const loginLink = document.getElementById('loginLink');
+      if (loginLink) {
+        loginLink.textContent = 'Sign In';
+        loginLink.href = 'login.html';
+      }
+    })();
+  }
 </script>
 <script src="components/ask-henry.js"></script>
 </body>
