@@ -372,6 +372,265 @@
             fill: #ffffff;
         }
 
+        /* Attachment Button */
+        .ask-henry-attach {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ask-henry-attach:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .ask-henry-attach svg {
+            width: 20px;
+            height: 20px;
+            fill: #888888;
+            transition: fill 0.2s;
+        }
+
+        .ask-henry-attach:hover svg {
+            fill: #ffffff;
+        }
+
+        /* Attachment Preview Area */
+        .ask-henry-attachments {
+            display: none;
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.3);
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ask-henry-attachments.has-files {
+            display: flex;
+        }
+
+        .ask-henry-attachment-preview {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 200px;
+        }
+
+        .ask-henry-attachment-preview img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .ask-henry-attachment-preview .file-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 4px;
+            font-size: 1.2rem;
+        }
+
+        .ask-henry-attachment-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ask-henry-attachment-name {
+            font-size: 0.8rem;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ask-henry-attachment-size {
+            font-size: 0.7rem;
+            color: #888888;
+        }
+
+        .ask-henry-attachment-remove {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
+            background: #ff4444;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ask-henry-attachment-remove:hover {
+            background: #ff6666;
+        }
+
+        /* Drag and drop overlay */
+        .ask-henry-drop-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px dashed rgba(102, 126, 234, 0.5);
+            border-radius: 16px;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .ask-henry-drawer.drag-over .ask-henry-drop-overlay {
+            display: flex;
+        }
+
+        /* ==========================================
+           Proactive Check-In Nudge Styles
+           ========================================== */
+        .ask-henry-nudge {
+            position: fixed;
+            bottom: 90px;
+            right: 24px;
+            width: 320px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 9997;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        .ask-henry-nudge.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        .ask-henry-nudge-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .ask-henry-nudge-avatar {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+
+        .ask-henry-nudge-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .ask-henry-nudge-text {
+            flex: 1;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.5;
+            padding-right: 20px;
+        }
+
+        .ask-henry-nudge-dismiss {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s ease;
+        }
+
+        .ask-henry-nudge-dismiss:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .ask-henry-nudge-actions {
+            display: flex;
+            gap: 8px;
+            padding: 0 16px 16px;
+        }
+
+        .ask-henry-nudge-open {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .ask-henry-nudge-open:hover {
+            opacity: 0.9;
+        }
+
+        .ask-henry-nudge-later {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .ask-henry-nudge-later:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        @media (max-width: 480px) {
+            .ask-henry-nudge {
+                right: 16px;
+                left: 16px;
+                width: auto;
+                bottom: 80px;
+            }
+        }
+
         /* Mobile Responsive */
         @media (max-width: 480px) {
             .ask-henry-drawer {
@@ -564,6 +823,148 @@
     let welcomeFlowState = null; // 'proactive_welcome' | 'first_action_prompt' | 'welcome_back' | null
     let isGenieMode = false;
     let lastGreetingIndex = -1; // Track last greeting to avoid repetition
+    let pendingAttachments = []; // Files waiting to be sent with next message
+
+    // Attachment configuration
+    const ATTACHMENT_CONFIG = {
+        maxFileSize: 5 * 1024 * 1024, // 5MB
+        maxFiles: 3,
+        allowedTypes: {
+            images: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
+            documents: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+        }
+    };
+
+    // Get file icon based on type
+    function getFileIcon(mimeType) {
+        if (mimeType.startsWith('image/')) return '🖼️';
+        if (mimeType === 'application/pdf') return '📄';
+        if (mimeType.includes('word')) return '📝';
+        if (mimeType === 'text/plain') return '📃';
+        return '📎';
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // Validate file for attachment
+    function validateAttachment(file) {
+        const allAllowed = [...ATTACHMENT_CONFIG.allowedTypes.images, ...ATTACHMENT_CONFIG.allowedTypes.documents];
+
+        if (!allAllowed.includes(file.type)) {
+            return { valid: false, error: 'File type not supported. Please use images (PNG, JPG, GIF, WebP) or documents (PDF, DOCX, TXT).' };
+        }
+
+        if (file.size > ATTACHMENT_CONFIG.maxFileSize) {
+            return { valid: false, error: 'File is too large. Maximum size is 5MB.' };
+        }
+
+        if (pendingAttachments.length >= ATTACHMENT_CONFIG.maxFiles) {
+            return { valid: false, error: `Maximum ${ATTACHMENT_CONFIG.maxFiles} files per message.` };
+        }
+
+        return { valid: true };
+    }
+
+    // Add attachment to pending list
+    async function addAttachment(file) {
+        const validation = validateAttachment(file);
+        if (!validation.valid) {
+            alert(validation.error);
+            return false;
+        }
+
+        // Create preview data
+        const attachment = {
+            file: file,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            preview: null
+        };
+
+        // Generate preview for images
+        if (file.type.startsWith('image/')) {
+            attachment.preview = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        pendingAttachments.push(attachment);
+        updateAttachmentUI();
+        return true;
+    }
+
+    // Remove attachment from pending list
+    function removeAttachment(index) {
+        pendingAttachments.splice(index, 1);
+        updateAttachmentUI();
+    }
+
+    // Update the attachment preview UI
+    function updateAttachmentUI() {
+        const container = document.getElementById('askHenryAttachments');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (pendingAttachments.length === 0) {
+            container.classList.remove('has-files');
+            return;
+        }
+
+        container.classList.add('has-files');
+
+        pendingAttachments.forEach((attachment, index) => {
+            const preview = document.createElement('div');
+            preview.className = 'ask-henry-attachment-preview';
+
+            const isImage = attachment.type.startsWith('image/');
+
+            preview.innerHTML = `
+                ${isImage && attachment.preview
+                    ? `<img src="${attachment.preview}" alt="${attachment.name}">`
+                    : `<div class="file-icon">${getFileIcon(attachment.type)}</div>`
+                }
+                <div class="ask-henry-attachment-info">
+                    <div class="ask-henry-attachment-name">${attachment.name}</div>
+                    <div class="ask-henry-attachment-size">${formatFileSize(attachment.size)}</div>
+                </div>
+                <button class="ask-henry-attachment-remove" data-index="${index}">×</button>
+            `;
+
+            preview.querySelector('.ask-henry-attachment-remove').onclick = (e) => {
+                e.stopPropagation();
+                removeAttachment(index);
+            };
+
+            container.appendChild(preview);
+        });
+    }
+
+    // Clear all pending attachments
+    function clearAttachments() {
+        pendingAttachments = [];
+        updateAttachmentUI();
+        const fileInput = document.getElementById('askHenryFileInput');
+        if (fileInput) fileInput.value = '';
+    }
+
+    // Convert file to base64 for API
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
 
     // Default tooltip messages (used when no context available)
     const defaultTooltipMessages = [
@@ -676,6 +1077,209 @@
         }
         const tooltip = document.getElementById('askHenryTooltip');
         if (tooltip) tooltip.classList.remove('visible');
+    }
+
+    // ==========================================
+    // Proactive Check-Ins (Phase 1.5)
+    // ==========================================
+
+    let proactiveCheckInTimer = null;
+    let lastCheckInType = null;
+    let checkInDismissedTypes = new Set(); // Types dismissed this session
+
+    // Check-in configuration
+    const PROACTIVE_CONFIG = {
+        checkInterval: 60000, // Check every 60 seconds
+        minTimeBetweenCheckIns: 300000, // 5 minutes between check-ins
+        staleDays: 3, // Days without activity = stalled
+        rejectionThreshold: 3, // Number of rejections to trigger pattern detection
+        highFitThreshold: 85, // Fit score above this = high-stakes
+        lowFitThreshold: 40 // Fit score below this = high-stakes
+    };
+
+    // Proactive check-in messages by type
+    const PROACTIVE_MESSAGES = {
+        momentum_stall: "You've been sitting on a few roles for a bit. Want help deciding which are actually worth your time?",
+        rejection_pattern: "I'm noticing a pattern in the roles you're getting screened out of. Want to dig into it together?",
+        confidence_dip: "Quick check-in. This market's rough. If you want to talk through what's working and what's not, I'm here.",
+        high_stakes_high: "This role's a real inflection point. If you want a second set of eyes live, we can book time.",
+        high_stakes_low: "This role might not be the best fit. Want to talk through whether it's worth your time?",
+        celebration_interview: "Interview booked. That's progress. Want help prepping or just taking the win today?",
+        celebration_milestone: "You're making progress. Nice work staying consistent."
+    };
+
+    // Check if a proactive check-in should be shown
+    function checkForProactiveCheckIn() {
+        // Don't show if chat is already open
+        const drawer = document.getElementById('askHenryDrawer');
+        if (drawer && drawer.classList.contains('open')) return null;
+
+        // Don't show if we recently showed a check-in
+        const lastCheckInTime = sessionStorage.getItem('heyHenryLastCheckIn');
+        if (lastCheckInTime) {
+            const timeSince = Date.now() - parseInt(lastCheckInTime);
+            if (timeSince < PROACTIVE_CONFIG.minTimeBetweenCheckIns) return null;
+        }
+
+        const pipeline = getPipelineData();
+        const emotional = getUserEmotionalState();
+        const currentPage = window.location.pathname;
+
+        // Priority order of check-ins
+
+        // 1. Confidence dip (crushed or desperate)
+        if (['crushed', 'desperate'].includes(emotional.holding_up)) {
+            if (!checkInDismissedTypes.has('confidence_dip')) {
+                return { type: 'confidence_dip', message: PROACTIVE_MESSAGES.confidence_dip };
+            }
+        }
+
+        // 2. High-stakes decision (on results page with extreme fit)
+        if (currentPage.includes('results')) {
+            try {
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                const fitScore = analysisData.fit_score || analysisData.overall_score || 0;
+                if (fitScore >= PROACTIVE_CONFIG.highFitThreshold) {
+                    if (!checkInDismissedTypes.has('high_stakes_high')) {
+                        return { type: 'high_stakes_high', message: PROACTIVE_MESSAGES.high_stakes_high };
+                    }
+                } else if (fitScore > 0 && fitScore <= PROACTIVE_CONFIG.lowFitThreshold) {
+                    if (!checkInDismissedTypes.has('high_stakes_low')) {
+                        return { type: 'high_stakes_low', message: PROACTIVE_MESSAGES.high_stakes_low };
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // 3. Celebration - interview scheduled (check pipeline for recent interview)
+        if (pipeline && pipeline.interviewing > 0) {
+            // Check if this is a new interview (would need to track in sessionStorage)
+            const seenInterviews = parseInt(sessionStorage.getItem('heyHenrySeenInterviews') || '0');
+            if (pipeline.interviewing > seenInterviews) {
+                sessionStorage.setItem('heyHenrySeenInterviews', pipeline.interviewing.toString());
+                if (!checkInDismissedTypes.has('celebration_interview')) {
+                    return { type: 'celebration_interview', message: PROACTIVE_MESSAGES.celebration_interview };
+                }
+            }
+        }
+
+        // 4. Momentum stall (active apps but no recent activity)
+        if (pipeline && pipeline.active > 0) {
+            // Check if any apps have been stale for 3+ days
+            const topApps = pipeline.topApps || [];
+            const staleApps = topApps.filter(app => app.daysSinceUpdate >= PROACTIVE_CONFIG.staleDays);
+            if (staleApps.length >= 2) {
+                if (!checkInDismissedTypes.has('momentum_stall')) {
+                    return { type: 'momentum_stall', message: PROACTIVE_MESSAGES.momentum_stall };
+                }
+            }
+        }
+
+        // 5. Rejection pattern (3+ rejections)
+        if (pipeline && pipeline.rejected >= PROACTIVE_CONFIG.rejectionThreshold) {
+            // Only trigger once per session
+            if (!sessionStorage.getItem('heyHenryRejectionCheckin')) {
+                sessionStorage.setItem('heyHenryRejectionCheckin', 'true');
+                if (!checkInDismissedTypes.has('rejection_pattern')) {
+                    return { type: 'rejection_pattern', message: PROACTIVE_MESSAGES.rejection_pattern };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // Show a proactive check-in nudge
+    function showProactiveCheckIn(checkIn) {
+        if (!checkIn) return;
+
+        lastCheckInType = checkIn.type;
+        sessionStorage.setItem('heyHenryLastCheckIn', Date.now().toString());
+
+        // Create nudge element if it doesn't exist
+        let nudge = document.getElementById('askHenryNudge');
+        if (!nudge) {
+            nudge = document.createElement('div');
+            nudge.id = 'askHenryNudge';
+            nudge.className = 'ask-henry-nudge';
+            nudge.innerHTML = `
+                <div class="ask-henry-nudge-content">
+                    <div class="ask-henry-nudge-avatar">
+                        <img src="/assets/images/henry-logo.png" alt="Henry">
+                    </div>
+                    <div class="ask-henry-nudge-text"></div>
+                    <button class="ask-henry-nudge-dismiss" aria-label="Dismiss">&times;</button>
+                </div>
+                <div class="ask-henry-nudge-actions">
+                    <button class="ask-henry-nudge-open">Let's Talk</button>
+                    <button class="ask-henry-nudge-later">Maybe Later</button>
+                </div>
+            `;
+
+            // Add to body
+            document.body.appendChild(nudge);
+
+            // Add event listeners
+            nudge.querySelector('.ask-henry-nudge-dismiss').addEventListener('click', dismissProactiveCheckIn);
+            nudge.querySelector('.ask-henry-nudge-later').addEventListener('click', dismissProactiveCheckIn);
+            nudge.querySelector('.ask-henry-nudge-open').addEventListener('click', () => {
+                dismissProactiveCheckIn();
+                // Open chat with the check-in context
+                if (window.openHeyHenryWithPrompt) {
+                    window.openHeyHenryWithPrompt(checkIn.message);
+                } else if (window.openHeyHenry) {
+                    window.openHeyHenry();
+                }
+            });
+        }
+
+        // Update message
+        nudge.querySelector('.ask-henry-nudge-text').textContent = checkIn.message;
+
+        // Show with animation
+        setTimeout(() => nudge.classList.add('visible'), 100);
+
+        // Auto-dismiss after 30 seconds
+        setTimeout(() => {
+            if (nudge.classList.contains('visible')) {
+                dismissProactiveCheckIn();
+            }
+        }, 30000);
+    }
+
+    // Dismiss the proactive check-in
+    function dismissProactiveCheckIn() {
+        const nudge = document.getElementById('askHenryNudge');
+        if (nudge) {
+            nudge.classList.remove('visible');
+            // Mark this type as dismissed for the session
+            if (lastCheckInType) {
+                checkInDismissedTypes.add(lastCheckInType);
+            }
+        }
+    }
+
+    // Start proactive check-in monitoring
+    function startProactiveCheckIns() {
+        // Initial check after 30 seconds
+        setTimeout(() => {
+            const checkIn = checkForProactiveCheckIn();
+            if (checkIn) showProactiveCheckIn(checkIn);
+        }, 30000);
+
+        // Then check periodically
+        proactiveCheckInTimer = setInterval(() => {
+            const checkIn = checkForProactiveCheckIn();
+            if (checkIn) showProactiveCheckIn(checkIn);
+        }, PROACTIVE_CONFIG.checkInterval);
+    }
+
+    // Stop proactive check-ins
+    function stopProactiveCheckIns() {
+        if (proactiveCheckInTimer) {
+            clearInterval(proactiveCheckInTimer);
+            proactiveCheckInTimer = null;
+        }
     }
 
     // Load conversation history from sessionStorage (persists across page navigation)
@@ -2028,7 +2632,12 @@ ${confidenceClosing}`,
                     ${suggestions.map(s => `<button class="ask-henry-suggestion">${s}</button>`).join('')}
                 </div>
 
+                <div class="ask-henry-attachments" id="askHenryAttachments"></div>
                 <div class="ask-henry-input-area">
+                    <button class="ask-henry-attach" id="askHenryAttach" aria-label="Attach file">
+                        <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+                    </button>
+                    <input type="file" id="askHenryFileInput" style="display: none;" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,text/plain">
                     <textarea
                         class="ask-henry-input"
                         id="askHenryInput"
@@ -2039,6 +2648,7 @@ ${confidenceClosing}`,
                         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
                 </div>
+                <div class="ask-henry-drop-overlay">Drop files here</div>
             </div>
         `;
 
@@ -2082,6 +2692,49 @@ ${confidenceClosing}`,
         document.getElementById('askHenrySend').addEventListener('click', sendMessage);
         document.getElementById('askHenryInput').addEventListener('keydown', handleKeyDown);
 
+        // Attachment button and file input
+        const attachBtn = document.getElementById('askHenryAttach');
+        const fileInput = document.getElementById('askHenryFileInput');
+
+        attachBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            for (const file of files) {
+                await addAttachment(file);
+            }
+            fileInput.value = ''; // Reset to allow re-selecting same file
+        });
+
+        // Drag and drop support
+        const drawer = document.getElementById('askHenryDrawer');
+
+        drawer.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            drawer.classList.add('drag-over');
+        });
+
+        drawer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        drawer.addEventListener('dragleave', (e) => {
+            // Only remove if leaving the drawer entirely
+            if (!drawer.contains(e.relatedTarget)) {
+                drawer.classList.remove('drag-over');
+            }
+        });
+
+        drawer.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            drawer.classList.remove('drag-over');
+
+            const files = Array.from(e.dataTransfer.files);
+            for (const file of files) {
+                await addAttachment(file);
+            }
+        });
+
         // Suggestion clicks
         document.querySelectorAll('.ask-henry-suggestion').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -2098,6 +2751,9 @@ ${confidenceClosing}`,
 
         // Start random tooltip appearances
         startTooltipTimer();
+
+        // Start proactive check-in monitoring (Phase 1.5)
+        startProactiveCheckIns();
 
         // Also show tooltip on hover as fallback
         const fab = document.getElementById('askHenryFab');
@@ -2285,6 +2941,18 @@ ${confidenceClosing}`,
             // Detect if message needs clarification
             const clarificationNeeds = detectClarificationNeeds(message);
 
+            // Process attachments if any
+            let attachmentsData = null;
+            if (pendingAttachments.length > 0) {
+                attachmentsData = await Promise.all(pendingAttachments.map(async (att) => ({
+                    name: att.name,
+                    type: att.type,
+                    size: att.size,
+                    data: await fileToBase64(att.file)
+                })));
+                clearAttachments(); // Clear after capturing
+            }
+
             const response = await fetch(`${API_BASE}/api/hey-henry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2307,12 +2975,15 @@ ${confidenceClosing}`,
                         tone_guidance: toneGuidance,
                         // Clarification detection
                         needs_clarification: clarificationNeeds.needs_clarification,
-                        clarification_hints: clarificationNeeds.clarification_hints
+                        clarification_hints: clarificationNeeds.clarification_hints,
+                        // Attachment info
+                        has_attachments: !!attachmentsData && attachmentsData.length > 0
                     },
                     analysis_data: analysisData,
                     resume_data: resumeData,
                     user_profile: userProfile,
-                    pipeline_data: pipelineData
+                    pipeline_data: pipelineData,
+                    attachments: attachmentsData
                 })
             });
 

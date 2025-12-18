@@ -9391,6 +9391,7 @@ class HeyHenryContext(BaseModel):
     has_analysis: bool = False
     has_resume: bool = False
     has_pipeline: bool = False
+    has_attachments: bool = False
     user_name: Optional[str] = None
     # Emotional state fields (from frontend)
     emotional_state: Optional[str] = None  # zen, stressed, struggling, desperate, crushed
@@ -9408,6 +9409,14 @@ class HeyHenryMessage(BaseModel):
     content: str
 
 
+class HeyHenryAttachment(BaseModel):
+    """An attachment sent with a Hey Henry message."""
+    name: str
+    type: str  # MIME type
+    size: int
+    data: str  # Base64 encoded
+
+
 class HeyHenryRequest(BaseModel):
     """Request for Hey Henry chat."""
     message: str
@@ -9417,6 +9426,7 @@ class HeyHenryRequest(BaseModel):
     resume_data: Optional[Dict[str, Any]] = None
     user_profile: Optional[Dict[str, Any]] = None  # Includes emotional state/situation
     pipeline_data: Optional[Dict[str, Any]] = None  # Application pipeline metrics and apps
+    attachments: Optional[List[HeyHenryAttachment]] = None  # File attachments (images, documents)
 
 
 class HeyHenryResponse(BaseModel):
@@ -9670,10 +9680,85 @@ TOP APPLICATIONS IN PIPELINE:
             "role": msg.role,
             "content": msg.content
         })
-    messages.append({
-        "role": "user",
-        "content": request.message
-    })
+
+    # Build the user message content - handle attachments if present
+    if request.attachments and len(request.attachments) > 0:
+        # Multi-modal message with attachments
+        user_content = []
+
+        # Process each attachment
+        for attachment in request.attachments:
+            if attachment.type.startswith('image/'):
+                # Image attachment - use Claude's vision format
+                # Map MIME types to Claude's expected format
+                media_type_map = {
+                    'image/png': 'image/png',
+                    'image/jpeg': 'image/jpeg',
+                    'image/gif': 'image/gif',
+                    'image/webp': 'image/webp'
+                }
+                media_type = media_type_map.get(attachment.type, 'image/png')
+
+                user_content.append({
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": attachment.data
+                    }
+                })
+                print(f"📎 Processing image: {attachment.name} ({attachment.type}, {attachment.size} bytes)")
+
+            elif attachment.type == 'application/pdf':
+                # PDF - extract text description (Claude can't read PDFs directly via vision)
+                user_content.append({
+                    "type": "text",
+                    "text": f"[PDF Attachment: {attachment.name}]\n(User uploaded a PDF document. Acknowledge you received it but note that PDF content extraction is not yet implemented. Ask them to copy/paste relevant text if needed.)"
+                })
+                print(f"📎 Processing PDF: {attachment.name} ({attachment.size} bytes)")
+
+            elif attachment.type in ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
+                # Word docs - placeholder
+                user_content.append({
+                    "type": "text",
+                    "text": f"[Document Attachment: {attachment.name}]\n(User uploaded a Word document. Acknowledge you received it but note that document content extraction is not yet implemented. Ask them to copy/paste relevant text if needed.)"
+                })
+                print(f"📎 Processing document: {attachment.name} ({attachment.size} bytes)")
+
+            elif attachment.type == 'text/plain':
+                # Plain text - we can include the content directly
+                try:
+                    import base64
+                    text_content = base64.b64decode(attachment.data).decode('utf-8')
+                    user_content.append({
+                        "type": "text",
+                        "text": f"[Text File: {attachment.name}]\n{text_content}"
+                    })
+                    print(f"📎 Processing text file: {attachment.name} ({attachment.size} bytes)")
+                except Exception as e:
+                    user_content.append({
+                        "type": "text",
+                        "text": f"[Text File: {attachment.name}]\n(Could not decode text file)"
+                    })
+                    print(f"⚠️ Error decoding text file: {e}")
+
+        # Add the user's message text
+        user_content.append({
+            "type": "text",
+            "text": request.message
+        })
+
+        messages.append({
+            "role": "user",
+            "content": user_content
+        })
+        print(f"📎 Total attachments processed: {len(request.attachments)}")
+    else:
+        # Simple text message (no attachments)
+        messages.append({
+            "role": "user",
+            "content": request.message
+        })
 
     try:
         response = client.messages.create(
