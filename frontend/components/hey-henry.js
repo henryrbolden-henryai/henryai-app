@@ -1347,6 +1347,97 @@ ${confidenceClosing}`,
     }
 
     // ==========================================
+    // Clarification Detection
+    // ==========================================
+
+    // Detect if a message is vague and might need clarification
+    function detectClarificationNeeds(message) {
+        const lowerMessage = message.toLowerCase().trim();
+        const needs = [];
+
+        // Vague bug reports - no specifics
+        const vagueIssuePatterns = [
+            /^(it'?s?|this is) (broken|not working|buggy|messed up)\.?$/i,
+            /^(something'?s?|something is) (wrong|off|weird)\.?$/i,
+            /^(doesn'?t|does not|won'?t|will not) work\.?$/i,
+            /^(there'?s|there is) (a|an)? ?(bug|issue|problem)\.?$/i
+        ];
+        if (vagueIssuePatterns.some(p => p.test(lowerMessage))) {
+            needs.push({
+                type: 'vague_bug',
+                hint: 'Ask: What specifically happened? What were you trying to do? A screenshot would help.'
+            });
+        }
+
+        // Vague feedback - no actionable details
+        const vagueFeedbackPatterns = [
+            /^(this is|it'?s?) (confusing|unclear|hard to use)\.?$/i,
+            /^i (don'?t|do not) (get|understand) (it|this)\.?$/i,
+            /^(confusing|unclear|frustrating)\.?$/i
+        ];
+        if (vagueFeedbackPatterns.some(p => p.test(lowerMessage))) {
+            needs.push({
+                type: 'vague_feedback',
+                hint: 'Ask: What part specifically felt unclear? What were you trying to do?'
+            });
+        }
+
+        // Feature requests without use case
+        const featureRequestPatterns = [
+            /^(you should|can you|could you|please) add/i,
+            /^add (a|an|the)/i,
+            /^(i want|i need|i wish)/i
+        ];
+        const hasUseCase = lowerMessage.includes('so i can') ||
+                         lowerMessage.includes('because') ||
+                         lowerMessage.includes('so that') ||
+                         lowerMessage.includes('for when') ||
+                         lowerMessage.includes('to help');
+        if (featureRequestPatterns.some(p => p.test(lowerMessage)) && !hasUseCase && lowerMessage.length < 60) {
+            needs.push({
+                type: 'feature_no_usecase',
+                hint: 'Ask: How would you use this in your job search? What problem would it solve?'
+            });
+        }
+
+        // Very short messages that could mean many things
+        if (lowerMessage.length < 20 && !lowerMessage.includes('?')) {
+            const ambiguousPatterns = [
+                /^help\.?$/i,
+                /^help me\.?$/i,
+                /^i'?m stuck\.?$/i,
+                /^what now\.?$/i,
+                /^what should i do\.?$/i,
+                /^i'?m not sure\.?$/i
+            ];
+            if (ambiguousPatterns.some(p => p.test(lowerMessage))) {
+                needs.push({
+                    type: 'ambiguous_request',
+                    hint: 'Ask: What are you working on right now? What decision or step are you trying to figure out?'
+                });
+            }
+        }
+
+        // Messages with pronouns but no clear referent
+        const pronounOnlyPatterns = [
+            /^(fix|change|update|modify|edit) (it|this|that)\.?$/i,
+            /^(what about|how about) (it|this|that)\??$/i,
+            /^(do|make|try) (it|this|that)\.?$/i
+        ];
+        if (pronounOnlyPatterns.some(p => p.test(lowerMessage))) {
+            needs.push({
+                type: 'unclear_reference',
+                hint: 'Ask: What specifically would you like me to look at or change?'
+            });
+        }
+
+        return {
+            needs_clarification: needs.length > 0,
+            clarification_hints: needs
+        };
+    }
+
+    // ==========================================
     // Document Refinement Detection (Phase 1.5)
     // ==========================================
 
@@ -2191,6 +2282,9 @@ ${confidenceClosing}`,
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
 
+            // Detect if message needs clarification
+            const clarificationNeeds = detectClarificationNeeds(message);
+
             const response = await fetch(`${API_BASE}/api/hey-henry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2210,7 +2304,10 @@ ${confidenceClosing}`,
                         emotional_state: emotionalState.holding_up,
                         confidence_level: emotionalState.confidence,
                         timeline: emotionalState.timeline,
-                        tone_guidance: toneGuidance
+                        tone_guidance: toneGuidance,
+                        // Clarification detection
+                        needs_clarification: clarificationNeeds.needs_clarification,
+                        clarification_hints: clarificationNeeds.clarification_hints
                     },
                     analysis_data: analysisData,
                     resume_data: resumeData,
