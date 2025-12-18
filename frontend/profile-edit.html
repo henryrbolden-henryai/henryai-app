@@ -749,7 +749,7 @@
         <a href="analyze.html" class="back-link" id="backLink" style="display: none;">← Back</a>
 
         <h1 id="pageTitle">Set Up Your Profile</h1>
-        <p class="subtitle" id="pageSubtitle">Tell me about yourself so I can give you better advice.</p>
+        <p class="subtitle" id="pageSubtitle">I need a few details to give you honest fit assessments and strategic positioning.</p>
 
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
@@ -789,6 +789,7 @@
                 <span class="icon">💼</span>
                 LinkedIn Profile
             </div>
+            <p class="section-hint" style="color: #888; font-size: 0.9rem; margin: 8px 0 16px 0; line-height: 1.5;">Optional, but recommended. I'll check for alignment gaps between your resume and LinkedIn, then help you optimize your profile.</p>
             <div id="linkedin-profile-status">
                 <!-- Populated dynamically by linkedin-upload.js -->
             </div>
@@ -891,7 +892,7 @@
                 About You
             </div>
             <div class="form-group">
-                <label>Pronouns (optional, for personalized messaging)</label>
+                <label>Pronouns <span style="color: #888; font-weight: 400;">(optional)</span></label>
                 <input type="text" id="pronouns" placeholder="e.g., she/her, he/him, they/them">
             </div>
         </div>
@@ -1132,7 +1133,7 @@
 
         function setupNewProfileMode() {
             document.getElementById('pageTitle').textContent = 'Set Up Your Profile';
-            document.getElementById('pageSubtitle').textContent = 'Tell me about yourself so I can give you better advice.';
+            document.getElementById('pageSubtitle').textContent = 'I need a few details to give you honest fit assessments and strategic positioning.';
             document.getElementById('backLink').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
             document.getElementById('saveBtn').textContent = 'Save and Start My Job Search';
@@ -1232,7 +1233,7 @@
                 no_rush: "That's the best position to be in. We can be picky.",
                 actively_looking: "Solid timeline. Enough runway to be strategic, not desperate.",
                 soon: "Okay, we need to move. I'll flag roles with faster hiring cycles.",
-                urgent: "Got it. We'll prioritize volume and speed, but I'm not going to let you take something terrible just because it's fast."
+                urgent: "Got it. We'll move fast, but we're not settling for terrible roles just because you need something now."
             },
             confidence: {
                 strong: "Good. You'll need that energy. Let's find roles that deserve it.",
