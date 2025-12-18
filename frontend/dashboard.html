@@ -2153,5 +2153,308 @@
     <!-- LinkedIn Upload Feature -->
     <link rel="stylesheet" href="css/linkedin.css">
     <script src="js/linkedin-upload.js"></script>
+
+    <!-- Welcome Flow for New and Returning Users -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ==========================================
+        // FIRST-TIME USER WELCOME FLOW
+        // ==========================================
+
+        async function checkFirstTimeUser() {
+            // Only run if HenryAuth is available
+            if (typeof HenryAuth === 'undefined') return;
+
+            const user = await HenryAuth.getUser();
+            if (!user) return;
+
+            // Check if profile exists in Supabase
+            let hasProfile = false;
+            if (typeof HenryData !== 'undefined') {
+                try {
+                    const profile = await HenryData.getCandidateProfile();
+                    hasProfile = profile && profile.resume;
+                } catch (e) {
+                    console.log('Could not check profile:', e);
+                }
+            }
+
+            // Check if already seen welcome
+            const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+
+            if (!hasProfile && !hasSeenWelcome) {
+                // First-time user without profile, show welcome
+                await showWelcomeFlow(user);
+            }
+        }
+
+        async function showWelcomeFlow(user) {
+            // Get first name from user metadata or email
+            const firstName = user.user_metadata?.full_name?.split(' ')[0] ||
+                             user.user_metadata?.first_name ||
+                             user.email?.split('@')[0] ||
+                             'there';
+
+            // Wait 1 second for page to settle
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Get FAB element and pulse it
+            const fab = document.getElementById('askHenryFab');
+            if (fab) {
+                fab.classList.add('genie-pulse');
+                await new Promise(resolve => setTimeout(resolve, 900)); // 3 pulses
+                fab.classList.remove('genie-pulse');
+            }
+
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'genie-overlay';
+            overlay.id = 'genieOverlay';
+            document.body.appendChild(overlay);
+
+            // Get drawer and add genie mode
+            const drawer = document.getElementById('askHenryDrawer');
+            if (drawer) {
+                drawer.classList.add('genie-mode');
+                drawer.style.display = 'flex';
+            }
+
+            // Wait for animation
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            // Build welcome message
+            const welcomeMessage = `Hey ${firstName}, welcome to HenryHQ.
+
+I'm Henry. I'll be your strategic advisor through this job search.
+
+No mass applying. No fluff. Just honest fit checks, clear positioning, and materials grounded in your real experience. Never fabricated.
+
+To get started, I need your resume, LinkedIn profile, and job search preferences. Takes about 3–5 minutes. After that, you're ready to analyze roles and move with intention.
+
+I'm always here. If you're unsure about a role or how to position yourself, just ask.`;
+
+            // Display message in chat
+            const messagesContainer = document.getElementById('askHenryMessages');
+            if (messagesContainer) {
+                // Clear existing messages
+                messagesContainer.innerHTML = '';
+
+                // Add welcome message
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'ask-henry-message assistant';
+                messageDiv.innerHTML = welcomeMessage.replace(/\n/g, '<br>');
+                messagesContainer.appendChild(messageDiv);
+
+                // Add "Create My Profile" button
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'welcome-button-container';
+
+                const button = document.createElement('button');
+                button.textContent = 'Create My Profile';
+                button.className = 'btn-welcome';
+                button.onclick = handleCreateProfile;
+
+                buttonContainer.appendChild(button);
+                messagesContainer.appendChild(buttonContainer);
+
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        async function handleCreateProfile() {
+            // Mark as seen
+            localStorage.setItem('hasSeenWelcome', 'true');
+
+            // Get elements
+            const drawer = document.getElementById('askHenryDrawer');
+            const overlay = document.getElementById('genieOverlay');
+
+            // Genie collapse animation
+            if (drawer) {
+                drawer.classList.remove('genie-mode');
+                drawer.classList.add('genie-collapse');
+            }
+
+            if (overlay) {
+                overlay.style.animation = 'genieOverlayFadeOut 0.3s ease forwards';
+            }
+
+            // Wait for animation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Clean up
+            if (overlay) overlay.remove();
+            if (drawer) {
+                drawer.classList.remove('genie-collapse');
+                drawer.style.display = 'none';
+            }
+
+            // Redirect to profile setup
+            window.location.href = 'profile-edit.html';
+        }
+
+        // ==========================================
+        // RETURNING USER WELCOME BACK FLOW
+        // ==========================================
+
+        async function checkReturningUser() {
+            // Only run if HenryAuth is available
+            if (typeof HenryAuth === 'undefined') return;
+
+            const user = await HenryAuth.getUser();
+            if (!user) return;
+
+            // Check if profile exists
+            let profile = null;
+            if (typeof HenryData !== 'undefined') {
+                try {
+                    profile = await HenryData.getCandidateProfile();
+                } catch (e) {
+                    console.log('Could not check profile:', e);
+                }
+            }
+
+            // Check if seen welcome back
+            const hasSeenWelcomeBack = localStorage.getItem('hasSeenWelcomeBack');
+
+            if (profile && profile.resume && !hasSeenWelcomeBack) {
+                // Returning user with profile, show welcome back
+                await showWelcomeBackFlow(user, profile);
+            }
+        }
+
+        async function showWelcomeBackFlow(user, profile) {
+            // Wait 500ms
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Open chat normally using existing function
+            if (typeof openAskHenry === 'function') {
+                openAskHenry();
+            } else {
+                // Fallback: manually open drawer
+                const drawer = document.getElementById('askHenryDrawer');
+                const fab = document.getElementById('askHenryFab');
+                if (drawer) drawer.style.display = 'flex';
+                if (fab) fab.classList.add('active');
+            }
+
+            // Wait for drawer to open
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Build dynamic message
+            const message = buildWelcomeBackMessage(user, profile);
+
+            // Display message in chat
+            const messagesContainer = document.getElementById('askHenryMessages');
+            if (messagesContainer) {
+                // Clear existing messages
+                messagesContainer.innerHTML = '';
+
+                // Add welcome back message
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'ask-henry-message assistant';
+                messageDiv.innerHTML = message.replace(/\n/g, '<br>');
+                messagesContainer.appendChild(messageDiv);
+
+                // Add "Got It" button
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'welcome-button-container';
+
+                const button = document.createElement('button');
+                button.textContent = 'Got It';
+                button.className = 'btn-welcome';
+                button.style.padding = '12px 32px';
+                button.style.fontSize = '0.95rem';
+                button.onclick = handleGotIt;
+
+                buttonContainer.appendChild(button);
+                messagesContainer.appendChild(buttonContainer);
+
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        function buildWelcomeBackMessage(user, profile) {
+            const firstName = profile.resume?.contact?.full_name?.split(' ')[0] ||
+                             user.user_metadata?.full_name?.split(' ')[0] ||
+                             user.email?.split('@')[0] ||
+                             'there';
+
+            const timeline = profile.timeline;
+            const confidence = profile.confidence;
+
+            // Dynamic context based on timeline
+            let dynamicContext = '';
+            if (timeline === 'urgent') {
+                dynamicContext = "I know you're under pressure. Let's find roles that are actually worth your time so you're not spinning your wheels.";
+            } else if (timeline === 'soon') {
+                dynamicContext = "You need to move fast, so let's make every application count. No spray-and-pray.";
+            } else if (timeline === 'actively_looking') {
+                dynamicContext = "You've got a solid window. Let's be strategic so you land something good, not just something fast.";
+            } else if (timeline === 'no_rush') {
+                dynamicContext = "You're in a good position. Let's find roles that are actually worth making a move for.";
+            } else {
+                dynamicContext = "You're all set to start analyzing roles.";
+            }
+
+            // Dynamic closing based on confidence
+            let dynamicClosing = '';
+            if (confidence === 'low' || confidence === 'need_validation') {
+                dynamicClosing = "Quick thing: if you're ever unsure about a role or how to position yourself, just ask. I'm here to help you see what's actually working.";
+            } else if (confidence === 'shaky') {
+                dynamicClosing = "Look, rejections suck, but they don't mean you're not good enough. They just mean the fit wasn't right. Let's find roles where it is.";
+            } else if (confidence === 'strong') {
+                dynamicClosing = "Got questions about a role or how to position yourself? Just ask. I'm here to help you stay sharp.";
+            } else {
+                dynamicClosing = "Got questions about a role? Just ask. I'm here to help.";
+            }
+
+            return `Welcome back, ${firstName}!
+
+Your profile is saved. ${dynamicContext}
+
+Here's what you can do:
+• <strong>Analyze New Role</strong>: Paste a job description, I'll score your fit
+• <strong>Command Center</strong>: Track applications and interviews
+• <strong>Edit Profile</strong>: Update anytime
+
+${dynamicClosing}`;
+        }
+
+        function handleGotIt() {
+            // Mark as seen
+            localStorage.setItem('hasSeenWelcomeBack', 'true');
+
+            // Close chat normally
+            if (typeof closeAskHenry === 'function') {
+                closeAskHenry();
+            } else {
+                // Fallback: manually close drawer
+                const drawer = document.getElementById('askHenryDrawer');
+                const fab = document.getElementById('askHenryFab');
+                if (drawer) drawer.style.display = 'none';
+                if (fab) fab.classList.remove('active');
+            }
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+
+        // Run checks after a short delay to ensure everything is loaded
+        setTimeout(async () => {
+            await checkFirstTimeUser();
+            // Only check returning user if first-time didn't trigger
+            if (!document.getElementById('genieOverlay')) {
+                await checkReturningUser();
+            }
+        }, 500);
+
+    })();
+    </script>
 </body>
 </html>

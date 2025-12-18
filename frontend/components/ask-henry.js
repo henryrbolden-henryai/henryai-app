@@ -388,6 +388,119 @@
                 right: 16px;
             }
         }
+
+        /* ==========================================
+         * Genie Mode - Welcome Flow Animations
+         * ========================================== */
+
+        /* Background overlay for genie mode */
+        .genie-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            animation: genieOverlayFadeIn 0.3s ease;
+        }
+
+        @keyframes genieOverlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes genieOverlayFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* Pulse animation for FAB */
+        @keyframes geniePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .ask-henry-fab.genie-pulse {
+            animation: geniePulse 0.3s ease 3;
+        }
+
+        /* Genie expand - drawer goes to center */
+        .ask-henry-drawer.genie-mode {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            right: auto !important;
+            bottom: auto !important;
+            transform: translate(-50%, -50%) !important;
+            width: 500px !important;
+            height: 600px !important;
+            max-width: 90vw !important;
+            max-height: 85vh !important;
+            z-index: 10001 !important;
+            animation: genieExpand 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes genieExpand {
+            0% {
+                transform: translate(100%, 100%) scale(0.1);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Genie collapse - drawer returns to corner */
+        .ask-henry-drawer.genie-collapse {
+            animation: genieCollapse 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes genieCollapse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(100%, 100%) scale(0.1);
+                opacity: 0;
+            }
+        }
+
+        /* Welcome button styling */
+        .welcome-button-container {
+            display: flex;
+            justify-content: center;
+            padding: 20px 16px;
+            margin-top: 12px;
+        }
+
+        .welcome-button-container .btn-welcome {
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .welcome-button-container .btn-welcome:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Genie mode mobile responsive */
+        @media (max-width: 480px) {
+            .ask-henry-drawer.genie-mode {
+                width: 95vw !important;
+                height: 80vh !important;
+            }
+        }
     `;
 
     // Inject stylesheet
