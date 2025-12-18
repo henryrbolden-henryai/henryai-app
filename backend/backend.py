@@ -206,9 +206,12 @@ class ResumeProfile(BaseModel):
 class JDAnalyzeRequest(BaseModel):
     company: str
     role_title: str
-    job_description: str
+    job_description: Optional[str] = None  # Optional when using provisional_profile
     resume: Optional[Dict[str, Any]] = None
     preferences: Optional[Dict[str, Any]] = None
+    # Command Center v2.0 fields
+    jd_source: Optional[str] = None  # user_provided, url_fetched, inferred, missing
+    provisional_profile: Optional[Dict[str, Any]] = None  # When jd_source is inferred/missing
 
 class JDAnalysis(BaseModel):
     company: str
@@ -414,11 +417,15 @@ class ThankYouResponse(BaseModel):
 class InterviewPrepRequest(BaseModel):
     """Request for generating interview prep materials"""
     resume_json: Dict[str, Any]
-    job_description: str
+    job_description: Optional[str] = None  # Optional when using provisional_profile
     company: str
     role_title: str
     interview_stage: str = Field(..., pattern="^(recruiter_screen|hiring_manager)$")
     jd_analysis: Optional[Dict[str, Any]] = None
+    # Command Center v2.0 fields
+    jd_source: Optional[str] = None  # user_provided, url_fetched, inferred, missing
+    provisional_profile: Optional[Dict[str, Any]] = None  # When jd_source is inferred/missing
+    application_id: Optional[str] = None  # For tracking
 
 class RedFlagMitigation(BaseModel):
     flag: str
@@ -460,6 +467,9 @@ class HiringManagerPrepContent(BaseModel):
 class InterviewPrepResponse(BaseModel):
     interview_stage: str
     prep_content: Dict[str, Any]
+    # Command Center v2.0 fields
+    confidence: Optional[str] = None  # "directional" or "refined"
+    ui_note: Optional[str] = None  # Displayed to user when prep is directional
 
 class IntroSellTemplateRequest(BaseModel):
     """Request for generating intro sell template"""
@@ -893,6 +903,193 @@ class SessionHistoryResponse(BaseModel):
     """Response with session history"""
     sessions: List[MockInterviewSessionSummary]
     improvement_trend: Optional[ImprovementTrend] = None
+
+# ============================================================================
+# COMMAND CENTER MODELS (v2.0)
+# ============================================================================
+
+class JDSource(str, Enum):
+    """Track JD provenance"""
+    USER_PROVIDED = "user_provided"
+    URL_FETCHED = "url_fetched"
+    INFERRED = "inferred"
+    MISSING = "missing"
+    LINK_FAILED = "link_failed"
+
+class ConfidenceLabel(str, Enum):
+    """Trust preservation labels"""
+    DIRECTIONAL = "directional"
+    REFINED = "refined"
+
+class PriorityLevel(str, Enum):
+    """Focus guidance levels"""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    ARCHIVE = "archive"
+
+class UrgencyLevel(str, Enum):
+    """Action urgency levels"""
+    IMMEDIATE = "immediate"
+    SOON = "soon"
+    ROUTINE = "routine"
+    NONE = "none"
+
+class PipelineStatus(str, Enum):
+    """Pipeline health status"""
+    HEALTHY = "healthy"
+    THIN = "thin"
+    OVERLOADED = "overloaded"
+    STALLED = "stalled"
+
+class PipelineTone(str, Enum):
+    """Pipeline recommendation tone"""
+    STEADY = "steady"
+    CAUTION = "caution"
+    URGENT = "urgent"
+
+# --- JD Reconstruct Models ---
+
+class JDReconstructRequest(BaseModel):
+    """Request to generate Provisional Role Profile when JD is missing"""
+    role_title: str
+    company_name: str
+    industry: Optional[str] = None  # Optional, inferred if missing
+    seniority: Optional[str] = None  # Optional, inferred from title
+
+class ProvisionalProfile(BaseModel):
+    """Reconstructed role profile when JD is missing"""
+    role_title: str
+    typical_responsibilities: List[str]
+    common_competencies: List[str]
+    interview_focus_areas: List[str]
+    evaluation_criteria: List[str]
+
+class JDReconstructResponse(BaseModel):
+    """Response from JD reconstruction"""
+    provisional_profile: ProvisionalProfile
+    confidence: ConfidenceLabel = ConfidenceLabel.DIRECTIONAL
+    jd_source: JDSource = JDSource.INFERRED
+
+# --- Tracker Intelligence Models ---
+
+class TrackerApplication(BaseModel):
+    """Application data for tracker intelligence"""
+    id: str
+    status: str
+    company: str
+    role: str
+    date_applied: Optional[str] = None
+    decision_confidence: Optional[int] = None
+    jd_source: Optional[str] = None
+    fit_score: Optional[int] = None
+    last_activity_date: Optional[str] = None
+    days_since_last_activity: Optional[int] = None
+    interview_count: Optional[int] = 0
+    substatus: Optional[str] = None
+    manual_lock: Optional[bool] = False
+    user_override: Optional[bool] = False
+    user_override_reason: Optional[str] = None
+
+class OneClickAction(BaseModel):
+    """One-click action for quick execution"""
+    type: str  # draft_email, archive, open_prep, block_time
+    template: Optional[str] = None
+    application_id: Optional[str] = None
+    confirm: Optional[bool] = False
+
+class PriorityAction(BaseModel):
+    """Priority action for an application"""
+    application_id: str
+    action: str
+    reason: str
+    priority: PriorityLevel
+    one_click_action: Optional[OneClickAction] = None
+
+class PipelineHealth(BaseModel):
+    """Pipeline health assessment"""
+    active_count: int
+    status: PipelineStatus
+    color: str
+    icon: str
+    tone: PipelineTone
+    recommendation: str
+    reason: str
+    priority_count: int = 0
+
+class FocusModeAction(BaseModel):
+    """Action to display in focus mode"""
+    application_id: str
+    company: str
+    action: str
+
+class FocusMode(BaseModel):
+    """Focus mode configuration"""
+    enabled: bool = True
+    top_actions: List[FocusModeAction]
+    dim_others: bool = True
+
+class UISignals(BaseModel):
+    """UI-ready signals for frontend binding"""
+    priority: PriorityLevel
+    confidence: str  # high, medium, low
+    urgency: UrgencyLevel
+    color_code: str  # green, yellow, red, gray
+    icon: str
+    badge: Optional[ConfidenceLabel] = None
+    action_available: bool = False
+    dimmed: bool = False
+
+class TrackerIntelligenceRequest(BaseModel):
+    """Request for tracker intelligence calculation"""
+    user_id: str
+    applications: List[TrackerApplication]
+
+class ApplicationWithIntelligence(BaseModel):
+    """Application with calculated intelligence"""
+    id: str
+    next_action: str
+    next_action_reason: str
+    priority_level: PriorityLevel
+    one_click_action: Optional[OneClickAction] = None
+    ui_signals: UISignals
+    decision_confidence: int
+    days_since_last_activity: int
+    substatus: str
+
+class TrackerIntelligenceResponse(BaseModel):
+    """Response from tracker intelligence engine"""
+    priority_actions: List[PriorityAction]
+    pipeline_health: PipelineHealth
+    focus_mode: FocusMode
+    applications: List[ApplicationWithIntelligence]
+
+# --- Calculate Confidence Models ---
+
+class CalculateConfidenceRequest(BaseModel):
+    """Request to calculate decision confidence"""
+    application_id: str
+    fit_score: int
+    jd_source: str
+    days_since_applied: int
+    status: str
+    interview_count: int = 0
+    response_time_days: Optional[int] = None
+    days_since_last_activity: Optional[int] = None
+
+class ConfidenceFactors(BaseModel):
+    """Factors used in confidence calculation"""
+    alignment_score: int
+    momentum_score: int
+    jd_confidence: int
+
+class CalculateConfidenceResponse(BaseModel):
+    """Response with calculated confidence"""
+    decision_confidence: int
+    label: str  # high, medium, low
+    factors: ConfidenceFactors
+    guidance: str
+
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -1871,6 +2068,409 @@ def extract_docx_text(file_bytes: bytes) -> str:
         raise HTTPException(status_code=400, detail=f"DOCX extraction failed: {str(e)}")
 
 # ============================================================================
+# COMMAND CENTER HELPER FUNCTIONS
+# ============================================================================
+
+def calculate_days_since(date_str: Optional[str]) -> int:
+    """Calculate days since a given date string (ISO format)."""
+    if not date_str:
+        return 0
+    try:
+        date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        if date.tzinfo:
+            date = date.replace(tzinfo=None)
+        return (datetime.now() - date).days
+    except (ValueError, TypeError):
+        return 0
+
+def calculate_momentum_score(
+    has_response: bool,
+    response_time_days: Optional[int],
+    interview_count: int,
+    days_since_last_activity: int
+) -> int:
+    """
+    Calculate momentum score (0-100) based on application progress.
+
+    Factors:
+    - Has there been any response? (+20 if yes)
+    - Response time (faster = higher)
+    - Interview progression (each stage +10)
+    - Days since last activity (staleness penalty)
+    - Confidence decay: -5 points per 10 days of no new signal
+    """
+    score = 50  # Base score
+
+    # Response bonus
+    if has_response:
+        score += 20
+
+    # Response time bonus (faster is better)
+    if response_time_days is not None:
+        if response_time_days <= 3:
+            score += 15
+        elif response_time_days <= 7:
+            score += 10
+        elif response_time_days <= 14:
+            score += 5
+
+    # Interview progression bonus
+    score += min(interview_count * 10, 30)  # Cap at +30
+
+    # Staleness penalty (confidence decay)
+    if days_since_last_activity >= 10:
+        decay_penalty = (days_since_last_activity // 10) * 5
+        score = max(0, score - decay_penalty)
+
+    return min(100, max(0, score))
+
+def calculate_jd_confidence(jd_source: str) -> int:
+    """Get confidence score based on JD source."""
+    confidence_map = {
+        "user_provided": 100,
+        "url_fetched": 100,
+        "inferred": 70,
+        "missing": 50,
+        "link_failed": 50
+    }
+    return confidence_map.get(jd_source, 50)
+
+def calculate_decision_confidence(
+    fit_score: int,
+    momentum_score: int,
+    jd_confidence: int
+) -> int:
+    """
+    Calculate decision confidence score (0-100).
+
+    Formula:
+    decision_confidence = (alignment_score * 0.5) + (momentum_score * 0.3) + (jd_confidence * 0.2)
+    """
+    return int(
+        (fit_score * 0.5) +
+        (momentum_score * 0.3) +
+        (jd_confidence * 0.2)
+    )
+
+def get_confidence_label(decision_confidence: int) -> str:
+    """Get confidence label from score."""
+    if decision_confidence >= 70:
+        return "high"
+    elif decision_confidence >= 40:
+        return "medium"
+    return "low"
+
+def get_confidence_guidance(decision_confidence: int) -> str:
+    """Get guidance text based on confidence."""
+    if decision_confidence >= 70:
+        return "Strong alignment. This is worth energy."
+    elif decision_confidence >= 40:
+        return "Decent fit. Watch for stalls."
+    return "This is low-leverage. Focus better bets."
+
+def determine_action_for_status(
+    status: str,
+    days_since_activity: int,
+    decision_confidence: int,
+    interview_scheduled: bool = False
+) -> tuple[str, str, str]:
+    """
+    Determine next action, reason, and one-click action type based on status and timing.
+
+    Returns: (action, reason, action_type)
+
+    Action Decision Tree from spec:
+    - Applied: Days 0-6 wait, Day 7 follow-up, Day 14 ghosted check, Day 21 archive
+    - Recruiter Screen Scheduled: Review prep
+    - Recruiter Screen Complete: Days 0-5 wait, Days 5+ status check
+    - Hiring Manager Scheduled: Prepare stories
+    - Final Round Scheduled: Practice presence
+    - Final Round Complete: Days 0-3 thank you, Days 7+ request feedback
+    """
+    status_lower = status.lower().replace("_", " ").replace("-", " ")
+
+    # Applied status
+    if "applied" in status_lower:
+        if days_since_activity <= 6:
+            return ("None—wait", "Most responses Days 3-7. Wait.", "none")
+        elif days_since_activity == 7:
+            return ("Send follow-up email", "70% respond by now. Silence = ghosting.", "draft_email")
+        elif days_since_activity <= 14:
+            return ("Mark ghosted or final check-in", "Dead deal. Stop tracking. Move on.", "draft_email")
+        else:  # 21+
+            return ("Archive this application", "You're wasting mental energy. It's over.", "archive")
+
+    # Recruiter screen
+    if "recruiter" in status_lower and "scheduled" in status_lower:
+        return ("Review prep guide now", "Recruiters screen out 60%. Be ready.", "open_prep")
+
+    if "recruiter" in status_lower and ("complete" in status_lower or "done" in status_lower):
+        if days_since_activity <= 5:
+            return ("None—wait for next steps", "Typical response: 3-5 days. Don't follow up.", "none")
+        else:
+            return ("Send status check-in", "They're deciding or ghosting. Force clarity.", "draft_email")
+
+    # Hiring manager
+    if "hiring" in status_lower and "manager" in status_lower and "scheduled" in status_lower:
+        return ("Prepare 3 scope-alignment stories", "This stage kills 40%. Prove you fit.", "open_prep")
+
+    # Technical/Panel
+    if ("technical" in status_lower or "panel" in status_lower) and "scheduled" in status_lower:
+        return ("Practice technical depth questions", "You're competing now. Differentiate or lose.", "open_prep")
+
+    # Final round
+    if "final" in status_lower and "scheduled" in status_lower:
+        return ("Practice executive presence now", "They're testing culture fit. Be confident.", "open_prep")
+
+    if "final" in status_lower and ("complete" in status_lower or "done" in status_lower):
+        if days_since_activity <= 3:
+            return ("Send thank-you + reiterate interest", "Decisions happen Days 3-7. Stay visible.", "draft_email")
+        else:
+            return ("Request feedback or close mentally", "7+ days = probably rejection. Get clarity.", "draft_email")
+
+    # Offer
+    if "offer" in status_lower:
+        return ("None—negotiate or accept thoughtfully", "Don't rush. This locks 2+ years.", "none")
+
+    # Decision confidence guidance
+    if decision_confidence < 40:
+        return ("Deprioritize or withdraw", "This is low-leverage. Focus better bets.", "archive")
+    elif decision_confidence <= 70:
+        return ("Continue but don't overinvest", "Decent fit. Watch for stalls.", "none")
+    else:
+        return ("Prioritize—stay aggressive here", "Strong alignment. This is worth energy.", "none")
+
+def calculate_ui_signals(
+    decision_confidence: int,
+    days_since_activity: int,
+    next_action: str,
+    status: str,
+    jd_source: str,
+    interview_tomorrow: bool = False,
+    focus_mode_enabled: bool = True
+) -> dict:
+    """
+    Calculate UI-ready signals for frontend binding.
+
+    Returns dict with: priority, confidence, urgency, color_code, icon, badge, action_available, dimmed
+    """
+    # Confidence
+    if decision_confidence >= 70:
+        confidence = "high"
+    elif decision_confidence >= 40:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    # Urgency
+    status_lower = status.lower()
+    if "applied" in status_lower and days_since_activity == 7:
+        urgency = "immediate"
+    elif "applied" in status_lower and days_since_activity == 14:
+        urgency = "immediate"
+    elif interview_tomorrow:
+        urgency = "immediate"
+    elif "archive" in next_action.lower():
+        urgency = "immediate"
+    elif next_action == "None—wait" or "wait" in next_action.lower():
+        urgency = "none"
+    elif days_since_activity >= 5 and "complete" in status_lower:
+        urgency = "soon"
+    else:
+        urgency = "routine"
+
+    # Priority
+    if decision_confidence < 40:
+        priority = "low"
+    elif days_since_activity >= 21:
+        priority = "archive"
+    elif next_action != "None—wait" and urgency == "immediate":
+        priority = "high"
+    elif decision_confidence >= 70:
+        priority = "high"
+    else:
+        priority = "medium"
+
+    # Color code
+    if confidence == "high":
+        color_code = "green"
+    elif confidence == "medium":
+        color_code = "yellow"
+    elif confidence == "low":
+        color_code = "red"
+    elif priority == "archive":
+        color_code = "gray"
+    else:
+        color_code = "yellow"
+
+    # Icon
+    if urgency == "immediate":
+        icon = "⚠️"
+    elif priority == "high" and confidence == "high":
+        icon = "🔥"
+    elif priority == "low":
+        icon = "❄️"
+    elif "wait" in next_action.lower():
+        icon = "⏳"
+    elif priority == "archive":
+        icon = "📦"
+    else:
+        icon = "📋"
+
+    # Badge
+    if jd_source in ["inferred", "missing"]:
+        badge = "directional"
+    elif jd_source in ["user_provided", "url_fetched"]:
+        badge = "refined"
+    else:
+        badge = None
+
+    # Action available
+    action_available = next_action not in ["None—wait", "None—wait for next steps", "None—negotiate or accept thoughtfully"]
+
+    # Dimmed (for focus mode)
+    if priority in ["low", "archive"]:
+        dimmed = True
+    elif not focus_mode_enabled:
+        dimmed = False
+    elif priority == "high":
+        dimmed = False
+    else:
+        dimmed = True
+
+    return {
+        "priority": priority,
+        "confidence": confidence,
+        "urgency": urgency,
+        "color_code": color_code,
+        "icon": icon,
+        "badge": badge,
+        "action_available": action_available,
+        "dimmed": dimmed
+    }
+
+def calculate_pipeline_health(
+    applications: list,
+    interview_rate: float = 0.0,
+    days_since_last_application: int = 0
+) -> dict:
+    """
+    Calculate pipeline health metrics.
+
+    Returns dict with: status, color, icon, tone, recommendation, reason, active_count, priority_count
+    """
+    active_count = len([a for a in applications if a.get("status", "").lower() not in ["rejected", "withdrawn", "archived"]])
+
+    # Calculate priority count
+    priority_count = len([a for a in applications if a.get("priority_level") == "high"])
+
+    # Determine status
+    if active_count < 3:
+        status = "thin"
+    elif active_count > 10:
+        status = "overloaded"
+    elif interview_rate < 5 and active_count >= 5:
+        status = "stalled"
+    else:
+        status = "healthy"
+
+    # Color
+    if status == "healthy":
+        color = "green"
+    elif status in ["thin", "overloaded"]:
+        color = "yellow"
+    else:  # stalled
+        color = "red"
+
+    # Icon
+    icon_map = {
+        "healthy": "✅",
+        "thin": "📉",
+        "overloaded": "📈",
+        "stalled": "🚨"
+    }
+    icon = icon_map.get(status, "📊")
+
+    # Tone
+    if status == "stalled":
+        tone = "urgent"
+    elif status == "thin" and days_since_last_application > 7:
+        tone = "urgent"
+    elif status == "overloaded" and interview_rate < 10:
+        tone = "caution"
+    elif active_count >= 3 and interview_rate >= 15:
+        tone = "steady"
+    else:
+        tone = "caution"
+
+    # Recommendation and reason
+    if status == "thin":
+        recommendation = "Apply to 3 new roles now"
+        reason = "Pipeline's too thin. You need momentum."
+    elif status == "healthy":
+        recommendation = "None—maintain pace, focus on interviews"
+        reason = "Good volume. Shift energy to conversion."
+    elif status == "overloaded":
+        recommendation = "Pause applications. Focus on interviews only."
+        reason = "You're spreading thin. Convert what you have."
+    else:  # stalled
+        if interview_rate < 5:
+            recommendation = "Stop applying. Fix your positioning."
+            reason = "Something's broken. Diagnose before continuing."
+        else:
+            recommendation = "Revise resume positioning immediately"
+            reason = "Your applications aren't landing. Fix messaging."
+
+    return {
+        "status": status,
+        "color": color,
+        "icon": icon,
+        "tone": tone,
+        "recommendation": recommendation,
+        "reason": reason,
+        "active_count": active_count,
+        "priority_count": priority_count
+    }
+
+def infer_seniority_from_title(role_title: str) -> str:
+    """Infer seniority level from role title."""
+    title_lower = role_title.lower()
+
+    if any(term in title_lower for term in ["chief", "cto", "cfo", "ceo", "coo", "vp", "vice president", "head of"]):
+        return "executive"
+    elif any(term in title_lower for term in ["director", "principal", "staff"]):
+        return "director"
+    elif any(term in title_lower for term in ["senior", "sr.", "sr ", "lead"]):
+        return "senior"
+    elif any(term in title_lower for term in ["junior", "jr.", "jr ", "associate", "entry"]):
+        return "junior"
+    else:
+        return "mid"
+
+def infer_industry_from_company(company_name: str) -> str:
+    """Infer industry from company name (basic heuristics)."""
+    company_lower = company_name.lower()
+
+    # Fintech
+    if any(term in company_lower for term in ["stripe", "square", "plaid", "robinhood", "coinbase", "paypal", "venmo"]):
+        return "fintech"
+    # Big tech
+    if any(term in company_lower for term in ["google", "meta", "amazon", "apple", "microsoft", "netflix"]):
+        return "big_tech"
+    # Enterprise
+    if any(term in company_lower for term in ["salesforce", "oracle", "sap", "workday", "servicenow"]):
+        return "enterprise_saas"
+    # E-commerce
+    if any(term in company_lower for term in ["shopify", "etsy", "ebay", "wayfair"]):
+        return "ecommerce"
+    # Healthcare
+    if any(term in company_lower for term in ["health", "medical", "pharma", "biotech"]):
+        return "healthcare"
+
+    return "technology"
+
+
+# ============================================================================
 # API ENDPOINTS
 # ============================================================================
 
@@ -1897,7 +2497,11 @@ async def root():
             "/api/interview/feedback",
             "/api/interview/thank_you",
             "/api/prep-guide/generate",
-            "/api/prep-guide/regenerate-intro"
+            "/api/prep-guide/regenerate-intro",
+            # Command Center v2.0 endpoints
+            "/api/jd/reconstruct",
+            "/api/tracker/intelligence",
+            "/api/tracker/calculate-confidence"
         ]
     }
 
@@ -4710,20 +5314,53 @@ ABSOLUTE REQUIREMENTS:
     if calibration_prompt:
         system_prompt += calibration_prompt
 
-    # Build user message
-    user_message = f"""Job Description:
+    # Command Center v2.0: Determine JD source and handle missing JDs
+    jd_source = request.jd_source or ("user_provided" if request.job_description else "missing")
+    use_provisional = jd_source in ["inferred", "missing"] or not request.job_description
+
+    # Build user message based on JD availability
+    if use_provisional and request.provisional_profile:
+        # Use provisional profile when real JD is not available
+        profile = request.provisional_profile
+        user_message = f"""PROVISIONAL ROLE PROFILE (No actual JD available):
 Company: {request.company}
 Role: {request.role_title}
 
-{request.job_description}
+Typical Responsibilities:
+{chr(10).join('- ' + r for r in profile.get('typical_responsibilities', []))}
+
+Common Competencies Assessed:
+{chr(10).join('- ' + c for c in profile.get('common_competencies', []))}
+
+Interview Focus Areas:
+{chr(10).join('- ' + f for f in profile.get('interview_focus_areas', []))}
+
+Typical Evaluation Criteria:
+{chr(10).join('- ' + e for e in profile.get('evaluation_criteria', []))}
+
+NOTE: This is based on typical expectations for this role type. Analyze fit based on these
+typical requirements. Since this is directional guidance, do NOT exceed 75% fit_score even
+if the candidate appears highly qualified - we need real JD data to confirm strong fit.
 """
-    
+        confidence_label = "directional"
+        ui_note = "This is based on typical expectations for Senior PMs at fintech companies. Your actual fit may vary—add JD text anytime to refine."
+    else:
+        # Use real JD
+        user_message = f"""Job Description:
+Company: {request.company}
+Role: {request.role_title}
+
+{request.job_description or 'No job description provided'}
+"""
+        confidence_label = "refined"
+        ui_note = None
+
     if request.resume:
         user_message += f"\n\nCandidate Resume Data:\n{json.dumps(request.resume, indent=2)}"
-    
+
     if request.preferences:
         user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
-    
+
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
 
@@ -4852,6 +5489,32 @@ Role: {request.role_title}
             if career_gaps:
                 print(f"✅ Final gaps array contains {len(career_gaps)} career gap(s)")
             print(f"   Total gaps: {len(parsed_data['gaps'])}, Types: {[g.get('gap_type', 'string') if isinstance(g, dict) else 'string' for g in parsed_data['gaps'][:5]]}")
+
+        # Command Center v2.0: Add confidence_label and ui_note to response
+        parsed_data["confidence_label"] = confidence_label
+        parsed_data["jd_source"] = jd_source
+        if ui_note:
+            parsed_data["ui_note"] = ui_note
+
+        # For directional analysis, cap fit_score at 75%
+        if confidence_label == "directional" and parsed_data.get("fit_score"):
+            original_score = parsed_data["fit_score"]
+            if original_score > 75:
+                parsed_data["fit_score"] = 75
+                print(f"✅ Capped fit_score from {original_score} to 75 (directional analysis)")
+                # Update breakdown if present
+                if "fit_score_breakdown" in parsed_data:
+                    parsed_data["fit_score_breakdown"]["directional_cap_applied"] = True
+                    parsed_data["fit_score_breakdown"]["original_score_before_directional_cap"] = original_score
+                    parsed_data["fit_score_breakdown"]["final_score"] = 75
+
+        # Calculate decision_confidence for the response
+        fit_score = parsed_data.get("fit_score", 50)
+        jd_conf = calculate_jd_confidence(jd_source)
+        # Use basic momentum score (no response data available at analysis time)
+        momentum = 50
+        decision_confidence = calculate_decision_confidence(fit_score, momentum, jd_conf)
+        parsed_data["decision_confidence"] = decision_confidence
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -5774,6 +6437,354 @@ Generate the complete JSON response with ALL required fields populated."""
         raise HTTPException(status_code=500, detail=f"Failed to parse Claude response: {str(e)}")
 
 # ============================================================================
+# COMMAND CENTER ENDPOINTS (v2.0)
+# ============================================================================
+
+@app.post("/api/jd/reconstruct", response_model=JDReconstructResponse)
+async def reconstruct_jd(request: JDReconstructRequest):
+    """
+    COMMAND CENTER: Generate Provisional Role Profile when JD is missing.
+
+    This endpoint reconstructs typical role expectations based on:
+    - Role title
+    - Company name
+    - Industry (optional, inferred if missing)
+    - Seniority (optional, inferred from title)
+
+    Returns a Provisional Profile with typical responsibilities, competencies,
+    interview focus areas, and evaluation criteria.
+    """
+
+    # Infer missing fields
+    seniority = request.seniority or infer_seniority_from_title(request.role_title)
+    industry = request.industry or infer_industry_from_company(request.company_name)
+
+    system_prompt = """You are a recruiter reconstructing typical role expectations.
+
+Given:
+- Role title: {role_title}
+- Company: {company_name}
+- Industry: {industry}
+- Seniority: {seniority}
+
+Generate a Provisional Role Profile with:
+1. typical_responsibilities (3-5 bullets) - What this role typically owns
+2. common_competencies (3-5 items) - Skills typically assessed for this role
+3. interview_focus_areas (3-4 areas) - What interviews likely cover
+4. evaluation_criteria (2-3 questions) - What evaluators are asking themselves
+
+Base this on:
+- Standard expectations for this role at this level
+- Industry norms (e.g., fintech PM vs. enterprise SaaS PM)
+- Company type (startup vs. public company)
+
+Be specific but acknowledge uncertainty. This is directional, not exact.
+
+Return ONLY valid JSON in this format:
+{
+  "provisional_profile": {
+    "role_title": "string",
+    "typical_responsibilities": ["string", "string", ...],
+    "common_competencies": ["string", "string", ...],
+    "interview_focus_areas": ["string", "string", ...],
+    "evaluation_criteria": ["string", "string", ...]
+  }
+}"""
+
+    user_message = f"""Generate a Provisional Role Profile for:
+
+Role title: {request.role_title}
+Company: {request.company_name}
+Industry: {industry}
+Seniority: {seniority}
+
+This profile will be used when no real job description is available, so it should reflect
+typical expectations for this type of role at companies like this."""
+
+    response = call_claude(
+        system_prompt.format(
+            role_title=request.role_title,
+            company_name=request.company_name,
+            industry=industry,
+            seniority=seniority
+        ),
+        user_message,
+        max_tokens=2000
+    )
+
+    try:
+        cleaned = clean_claude_json(response)
+        parsed_data = json.loads(cleaned)
+
+        # Extract provisional profile
+        profile_data = parsed_data.get("provisional_profile", parsed_data)
+        profile_data["role_title"] = request.role_title  # Ensure role_title is set
+
+        return JDReconstructResponse(
+            provisional_profile=ProvisionalProfile(**profile_data),
+            confidence=ConfidenceLabel.DIRECTIONAL,
+            jd_source=JDSource.INFERRED
+        )
+    except (json.JSONDecodeError, Exception) as e:
+        print(f"🔥 Failed to parse JD reconstruct response: {e}")
+        print(f"Raw response: {response[:500]}")
+        raise HTTPException(status_code=500, detail=f"Failed to reconstruct JD: {str(e)}")
+
+
+@app.post("/api/tracker/intelligence", response_model=TrackerIntelligenceResponse)
+async def calculate_tracker_intelligence(request: TrackerIntelligenceRequest):
+    """
+    COMMAND CENTER: Tracker Intelligence Engine.
+
+    Calculates next actions for all applications based on:
+    - Status and substatus
+    - Days since last activity
+    - Decision confidence
+    - Interview progression
+
+    Returns:
+    - Priority actions with one-click actions
+    - Pipeline health assessment
+    - Focus mode configuration
+    - Applications with calculated intelligence
+    """
+
+    priority_actions = []
+    applications_with_intelligence = []
+    focus_mode_actions = []
+
+    for app in request.applications:
+        # Calculate days since last activity
+        days_since = app.days_since_last_activity
+        if days_since is None and app.last_activity_date:
+            days_since = calculate_days_since(app.last_activity_date)
+        elif days_since is None and app.date_applied:
+            days_since = calculate_days_since(app.date_applied)
+        else:
+            days_since = days_since or 0
+
+        # Skip if manually locked
+        if app.manual_lock:
+            # Use existing values
+            applications_with_intelligence.append(ApplicationWithIntelligence(
+                id=app.id,
+                next_action=app.substatus or "User override active",
+                next_action_reason=app.user_override_reason or "Manual lock enabled",
+                priority_level=PriorityLevel.MEDIUM,
+                one_click_action=None,
+                ui_signals=UISignals(
+                    priority=PriorityLevel.MEDIUM,
+                    confidence="medium",
+                    urgency=UrgencyLevel.NONE,
+                    color_code="gray",
+                    icon="🔒",
+                    badge=ConfidenceLabel.DIRECTIONAL if app.jd_source in ["inferred", "missing"] else ConfidenceLabel.REFINED,
+                    action_available=False,
+                    dimmed=False
+                ),
+                decision_confidence=app.decision_confidence or 50,
+                days_since_last_activity=days_since,
+                substatus="manual_lock"
+            ))
+            continue
+
+        # Calculate momentum and decision confidence
+        has_response = app.interview_count and app.interview_count > 0
+        momentum_score = calculate_momentum_score(
+            has_response=has_response,
+            response_time_days=None,  # Would need to track this
+            interview_count=app.interview_count or 0,
+            days_since_last_activity=days_since
+        )
+
+        jd_confidence = calculate_jd_confidence(app.jd_source or "missing")
+        fit_score = app.fit_score or 50
+
+        decision_confidence = app.decision_confidence or calculate_decision_confidence(
+            fit_score=fit_score,
+            momentum_score=momentum_score,
+            jd_confidence=jd_confidence
+        )
+
+        # Determine action based on status and timing
+        action, reason, action_type = determine_action_for_status(
+            status=app.status,
+            days_since_activity=days_since,
+            decision_confidence=decision_confidence,
+            interview_scheduled=False  # Would need to check interviews
+        )
+
+        # Determine substatus
+        substatus = app.substatus
+        if not substatus:
+            if days_since >= 21 and "applied" in app.status.lower():
+                substatus = "ghosted_21d"
+            elif days_since >= 14 and "applied" in app.status.lower():
+                substatus = "ghosted_14d"
+            elif "follow" in action.lower():
+                substatus = "follow_up_needed"
+            elif "prep" in action.lower():
+                substatus = "prep_needed"
+            elif "wait" in action.lower():
+                substatus = "waiting"
+            else:
+                substatus = "active"
+
+        # Build one-click action
+        one_click_action = None
+        if action_type != "none":
+            one_click_action = OneClickAction(
+                type=action_type,
+                template=f"follow_up_day_{days_since}" if action_type == "draft_email" else None,
+                application_id=app.id,
+                confirm=action_type == "archive"
+            )
+
+        # Calculate UI signals
+        ui_signals_dict = calculate_ui_signals(
+            decision_confidence=decision_confidence,
+            days_since_activity=days_since,
+            next_action=action,
+            status=app.status,
+            jd_source=app.jd_source or "missing",
+            interview_tomorrow=False,
+            focus_mode_enabled=True
+        )
+
+        # Map to proper enums
+        ui_signals = UISignals(
+            priority=PriorityLevel(ui_signals_dict["priority"]),
+            confidence=ui_signals_dict["confidence"],
+            urgency=UrgencyLevel(ui_signals_dict["urgency"]),
+            color_code=ui_signals_dict["color_code"],
+            icon=ui_signals_dict["icon"],
+            badge=ConfidenceLabel(ui_signals_dict["badge"]) if ui_signals_dict["badge"] else None,
+            action_available=ui_signals_dict["action_available"],
+            dimmed=ui_signals_dict["dimmed"]
+        )
+
+        # Build application with intelligence
+        app_with_intel = ApplicationWithIntelligence(
+            id=app.id,
+            next_action=action,
+            next_action_reason=reason,
+            priority_level=PriorityLevel(ui_signals_dict["priority"]),
+            one_click_action=one_click_action,
+            ui_signals=ui_signals,
+            decision_confidence=decision_confidence,
+            days_since_last_activity=days_since,
+            substatus=substatus
+        )
+        applications_with_intelligence.append(app_with_intel)
+
+        # Add to priority actions if not waiting
+        if action_type != "none":
+            priority_actions.append(PriorityAction(
+                application_id=app.id,
+                action=action,
+                reason=reason,
+                priority=PriorityLevel(ui_signals_dict["priority"]),
+                one_click_action=one_click_action
+            ))
+
+        # Add to focus mode if high priority
+        if ui_signals_dict["priority"] == "high":
+            focus_mode_actions.append(FocusModeAction(
+                application_id=app.id,
+                company=app.company,
+                action=action
+            ))
+
+    # Sort priority actions by priority level
+    priority_order = {"high": 0, "medium": 1, "low": 2, "archive": 3}
+    priority_actions.sort(key=lambda x: priority_order.get(x.priority.value, 4))
+
+    # Limit to top priority actions
+    priority_actions = priority_actions[:5]
+
+    # Calculate pipeline health
+    pipeline_data = calculate_pipeline_health(
+        applications=[app.model_dump() for app in request.applications],
+        interview_rate=0.0,  # Would need to calculate from historical data
+        days_since_last_application=0
+    )
+
+    pipeline_health = PipelineHealth(
+        active_count=pipeline_data["active_count"],
+        status=PipelineStatus(pipeline_data["status"]),
+        color=pipeline_data["color"],
+        icon=pipeline_data["icon"],
+        tone=PipelineTone(pipeline_data["tone"]),
+        recommendation=pipeline_data["recommendation"],
+        reason=pipeline_data["reason"],
+        priority_count=len(focus_mode_actions)
+    )
+
+    focus_mode = FocusMode(
+        enabled=True,
+        top_actions=focus_mode_actions[:3],
+        dim_others=True
+    )
+
+    return TrackerIntelligenceResponse(
+        priority_actions=priority_actions,
+        pipeline_health=pipeline_health,
+        focus_mode=focus_mode,
+        applications=applications_with_intelligence
+    )
+
+
+@app.post("/api/tracker/calculate-confidence", response_model=CalculateConfidenceResponse)
+async def calculate_confidence_endpoint(request: CalculateConfidenceRequest):
+    """
+    COMMAND CENTER: Calculate decision confidence score for an application.
+
+    Factors:
+    - Alignment score (from fit_score)
+    - Momentum score (based on response and interview progression)
+    - JD confidence (based on source)
+
+    Returns confidence score, label, factors breakdown, and guidance.
+    """
+
+    # Calculate momentum score
+    has_response = request.interview_count > 0 or request.response_time_days is not None
+    days_since = request.days_since_last_activity or request.days_since_applied
+
+    momentum_score = calculate_momentum_score(
+        has_response=has_response,
+        response_time_days=request.response_time_days,
+        interview_count=request.interview_count,
+        days_since_last_activity=days_since
+    )
+
+    # Get JD confidence
+    jd_confidence = calculate_jd_confidence(request.jd_source)
+
+    # Calculate overall decision confidence
+    decision_confidence = calculate_decision_confidence(
+        fit_score=request.fit_score,
+        momentum_score=momentum_score,
+        jd_confidence=jd_confidence
+    )
+
+    # Get label and guidance
+    label = get_confidence_label(decision_confidence)
+    guidance = get_confidence_guidance(decision_confidence)
+
+    return CalculateConfidenceResponse(
+        decision_confidence=decision_confidence,
+        label=label,
+        factors=ConfidenceFactors(
+            alignment_score=request.fit_score,
+            momentum_score=momentum_score,
+            jd_confidence=jd_confidence
+        ),
+        guidance=guidance
+    )
+
+
+# ============================================================================
 # MVP+1 FEATURE ENDPOINTS
 # ============================================================================
 
@@ -6412,10 +7423,50 @@ async def generate_interview_prep(request: InterviewPrepRequest):
     - hiring_manager: Focus on competencies, STAR stories, technical depth
 
     All content is grounded in the candidate's actual resume - NO fabrication.
+
+    Command Center v2.0: Now handles missing JDs using provisional profiles.
+    When jd_source is 'inferred' or 'missing', uses provisional_profile for prep generation.
     """
 
     resume_text = format_resume_for_prompt(request.resume_json)
     fit_analysis_text = json.dumps(request.jd_analysis, indent=2) if request.jd_analysis else "No fit analysis available"
+
+    # Determine if using provisional profile (missing JD scenario)
+    jd_source = request.jd_source or ("user_provided" if request.job_description else "missing")
+    use_provisional = jd_source in ["inferred", "missing"] or not request.job_description
+
+    # Build role context based on JD availability
+    if use_provisional and request.provisional_profile:
+        # Use provisional profile when real JD is not available
+        profile = request.provisional_profile
+        role_context = f"""PROVISIONAL ROLE PROFILE (No actual JD available):
+Company: {request.company}
+Role: {request.role_title}
+
+Typical Responsibilities:
+{chr(10).join('- ' + r for r in profile.get('typical_responsibilities', []))}
+
+Common Competencies Assessed:
+{chr(10).join('- ' + c for c in profile.get('common_competencies', []))}
+
+Interview Focus Areas:
+{chr(10).join('- ' + f for f in profile.get('interview_focus_areas', []))}
+
+Typical Evaluation Criteria:
+{chr(10).join('- ' + e for e in profile.get('evaluation_criteria', []))}
+
+NOTE: This is based on typical expectations for this role type. The actual interview may differ."""
+        confidence = "directional"
+        ui_note = "This prep is based on typical expectations for this role. Add recruiter context anytime to refine it."
+    else:
+        # Use real JD
+        role_context = f"""JOB DESCRIPTION:
+Company: {request.company}
+Role: {request.role_title}
+
+{request.job_description or 'No job description provided'}"""
+        confidence = "refined"
+        ui_note = None
 
     if request.interview_stage == "recruiter_screen":
         system_prompt = """You are generating pre-interview intelligence for a recruiter screen.
@@ -6437,6 +7488,7 @@ CRITICAL RULES:
 - Include specific metrics and achievements from resume
 - Be direct about red flags—provide mitigation strategies
 - No generic advice—everything must be tailored to this candidate and role
+- If working from a provisional profile, base prep on typical expectations for this role type
 
 Return ONLY a valid JSON object with the structure above. No markdown, no preamble."""
     else:  # hiring_manager
@@ -6457,19 +7509,16 @@ Generate structured prep covering:
 STAR EXAMPLES RULES:
 - Every example must come from candidate's actual work history
 - Include specific metrics, timeframes, and outcomes from resume
-- Map each example to a key competency from the job description
+- Map each example to a key competency from the job description (or provisional profile)
 - Use concrete details, not generic scenarios
+- If working from a provisional profile, map to typical competencies for this role type
 
 Return ONLY a valid JSON object with the structure above. No markdown, no preamble."""
 
     user_message = f"""CANDIDATE RESUME:
 {resume_text}
 
-JOB DESCRIPTION:
-Company: {request.company}
-Role: {request.role_title}
-
-{request.job_description}
+{role_context}
 
 FIT ANALYSIS:
 {fit_analysis_text}
@@ -6486,7 +7535,9 @@ Generate the interview prep now."""
 
         return InterviewPrepResponse(
             interview_stage=request.interview_stage,
-            prep_content=prep_content
+            prep_content=prep_content,
+            confidence=confidence,
+            ui_note=ui_note
         )
     except (json.JSONDecodeError, Exception) as e:
         print(f"🔥 Failed to parse interview prep response: {e}")

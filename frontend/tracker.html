@@ -35,6 +35,54 @@
             --color-accent: #22d3ee;
             --color-accent-muted: rgba(34, 211, 238, 0.15);
 
+            /* Command Center: Confidence Colors */
+            --color-confidence-high: #10b981;
+            --color-confidence-medium: #f59e0b;
+            --color-confidence-low: #ef4444;
+
+            /* Command Center: Priority Colors */
+            --color-priority-high: #ef4444;
+            --color-priority-medium: #f59e0b;
+            --color-priority-low: #71717a;
+            --color-priority-archive: #52525b;
+
+            /* Command Center: Urgency Colors */
+            --color-urgent: #dc2626;
+            --color-urgent-muted: rgba(220, 38, 38, 0.15);
+
+            /* Command Center: Override Indicator */
+            --color-override: #f59e0b;
+            --color-override-muted: rgba(251, 191, 36, 0.2);
+
+            /* Command Center: Pipeline Health */
+            --color-healthy: #10b981;
+            --color-caution: #f59e0b;
+            --color-stalled: #ef4444;
+
+            /* Command Center: Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            --space-xxl: 32px;
+
+            /* Command Center: Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+
+            /* Command Center: Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+            /* Command Center: Transitions */
+            --transition-fast: 150ms ease-out;
+            --transition-base: 200ms ease-out;
+            --transition-slow: 300ms ease-out;
+
             /* Typography */
             --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -2825,11 +2873,1016 @@
             color: var(--color-hot);
         }
 
+        /* ================================================================== */
+        /* COMMAND CENTER COMPONENTS (v2.0)                                   */
+        /* ================================================================== */
+
+        /* Daily Pulse Banner - Intelligence Hub */
+        .daily-pulse-v2 {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(96, 165, 250, 0.1));
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .pulse-greeting-v2 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: var(--space-lg);
+        }
+
+        .pulse-actions-row {
+            display: flex;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+
+        .pulse-action-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            min-width: 200px;
+            flex: 1;
+            max-width: 280px;
+        }
+
+        .pulse-action-icon {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .pulse-action-company {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-text);
+            margin-bottom: var(--space-xs);
+        }
+
+        .pulse-action-text {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-md);
+        }
+
+        .pulse-action-btn {
+            background: var(--color-accent);
+            color: #000;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: none;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .pulse-action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .pulse-health {
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .pulse-health.healthy { color: var(--color-healthy); }
+        .pulse-health.caution { color: var(--color-caution); }
+        .pulse-health.urgent { color: var(--color-stalled); }
+
+        .pulse-health-reason {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-left: var(--space-sm);
+        }
+
+        /* View Selector */
+        .view-selector {
+            display: flex;
+            gap: var(--space-xs);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: var(--space-xs);
+            margin-bottom: var(--space-xl);
+            width: fit-content;
+        }
+
+        .view-selector-btn {
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition-base);
+        }
+
+        .view-selector-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-text);
+        }
+
+        .view-selector-btn.active {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* Board View */
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-lg);
+            min-height: 600px;
+        }
+
+        @media (max-width: 1024px) {
+            .board-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .board-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .board-column {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+
+        .board-column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+
+        .board-column-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .board-column-count {
+            background: var(--color-border);
+            color: var(--color-text);
+            padding: 2px var(--space-sm);
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .board-cards {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        /* Application Card with UI Signals */
+        .app-card-v2 {
+            background: var(--color-surface-elevated);
+            border: 2px solid var(--color-confidence-medium);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: all var(--transition-base);
+            cursor: pointer;
+        }
+
+        .app-card-v2:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .app-card-v2.confidence-high { border-color: var(--color-confidence-high); }
+        .app-card-v2.confidence-medium { border-color: var(--color-confidence-medium); }
+        .app-card-v2.confidence-low { border-color: var(--color-confidence-low); }
+
+        .app-card-v2.dimmed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .app-card-v2.priority-high:not(.dimmed) {
+            box-shadow: 0 4px 20px rgba(34, 211, 238, 0.2);
+        }
+
+        .card-header-v2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-md);
+        }
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .card-icon {
+            font-size: 1.2rem;
+        }
+
+        .card-icon.urgent {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .card-title-v2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            line-height: 1.3;
+        }
+
+        .card-header-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .card-badge {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            padding: 2px var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-override-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: var(--space-xs);
+            border-radius: var(--radius-sm);
+            opacity: 0.5;
+            transition: opacity var(--transition-fast), background var(--transition-fast);
+        }
+
+        .card-override-btn:hover {
+            opacity: 1;
+            background: var(--color-surface-elevated);
+        }
+
+        .app-card-v2:hover .card-override-btn {
+            opacity: 0.8;
+        }
+
+        .card-stats-v2 {
+            display: flex;
+            gap: var(--space-lg);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-md);
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .card-stat-v2 {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        /* Next Action Section */
+        .next-action-section {
+            background: rgba(34, 211, 238, 0.08);
+            border-left: 3px solid var(--color-accent);
+            padding: var(--space-md);
+            border-radius: var(--radius-sm);
+            margin-bottom: var(--space-md);
+        }
+
+        .next-action-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: var(--space-xs);
+        }
+
+        .next-action-reason {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        /* One-Click Action Button */
+        .one-click-btn {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            padding: 10px var(--space-lg);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all var(--transition-base);
+        }
+
+        .one-click-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .one-click-btn.secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        /* Override Badge */
+        .override-badge {
+            position: absolute;
+            top: var(--space-sm);
+            right: var(--space-sm);
+            background: var(--color-override-muted);
+            border: 1px solid var(--color-override);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-override);
+        }
+
+        /* Strategic Stop Warning */
+        .strategic-stop {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+            border: 2px solid #ef4444;
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .strategic-stop-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .strategic-stop-body {
+            font-size: 0.95rem;
+            color: var(--color-text);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+        }
+
+        .strategic-stop-actions {
+            list-style: disc;
+            padding-left: var(--space-xl);
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-lg);
+        }
+
+        .strategic-stop-pause {
+            font-size: 0.85rem;
+            color: #fca5a5;
+            font-weight: 600;
+            margin-bottom: var(--space-lg);
+        }
+
+        .strategic-stop-buttons {
+            display: flex;
+            gap: var(--space-md);
+        }
+
+        .strategic-stop-btn-primary {
+            background: #ef4444;
+            color: #fff;
+            padding: var(--space-md) var(--space-xl);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .strategic-stop-btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            padding: var(--space-md) var(--space-xl);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        /* Focus Mode */
+        .focus-mode-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-lg);
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            transition: all var(--transition-base);
+        }
+
+        .focus-mode-toggle:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .focus-mode-toggle.active {
+            background: var(--color-accent-muted);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .view-all-btn {
+            background: transparent;
+            border: 1px dashed var(--color-border);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            width: 100%;
+            margin-top: var(--space-lg);
+            transition: all var(--transition-base);
+        }
+
+        .view-all-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        /* Confidence Pill */
+        .confidence-pill {
+            padding: var(--space-xs) 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .confidence-pill.high {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-confidence-high);
+        }
+
+        .confidence-pill.medium {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--color-confidence-medium);
+        }
+
+        .confidence-pill.low {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-confidence-low);
+        }
+
+        /* Card entrance animation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-card-v2 {
+            animation: slideIn 200ms ease-out;
+        }
+
+        /* Timeline View */
+        .timeline-container {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            min-height: 400px;
+        }
+
+        .timeline-chart-wrapper {
+            height: 300px;
+            margin-bottom: var(--space-xl);
+        }
+
+        .timeline-insights {
+            display: flex;
+            gap: var(--space-lg);
+            justify-content: center;
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+
+        .timeline-insight {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            padding: var(--space-lg) var(--space-xl);
+            border-radius: var(--radius-md);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .timeline-insight .insight-value {
+            display: block;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-accent);
+            margin-bottom: var(--space-xs);
+        }
+
+        .timeline-insight .insight-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .timeline-insight-highlight {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        .timeline-legend {
+            display: flex;
+            gap: var(--space-xl);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.applied { background: #60a5fa; }
+        .legend-dot.interview { background: #f59e0b; }
+        .legend-dot.offer { background: #10b981; }
+        .legend-dot.rejection { background: #ef4444; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px var(--space-xl);
+            background: var(--color-surface);
+            border: 1px dashed var(--color-border);
+            border-radius: var(--radius-lg);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: var(--space-lg);
+        }
+
+        .empty-state-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: var(--space-sm);
+        }
+
+        .empty-state-text {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: var(--space-xl);
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .empty-state-btn {
+            display: inline-block;
+            background: var(--color-accent);
+            color: #000;
+            padding: var(--space-md) var(--space-xl);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            text-decoration: none;
+            transition: all var(--transition-base);
+        }
+
+        .empty-state-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 40px var(--space-xl);
+            background: var(--color-urgent-muted);
+            border: 1px solid var(--color-urgent);
+            border-radius: var(--radius-lg);
+        }
+
+        .error-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .error-state-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: var(--space-sm);
+        }
+
+        .error-state-text {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: var(--space-lg);
+        }
+
+        .error-state-btn {
+            background: var(--color-urgent);
+            color: #fff;
+            padding: var(--space-sm) var(--space-xl);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+
+        .error-state-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Loading Skeleton */
+        .loading-skeleton {
+            padding: var(--space-xl);
+        }
+
+        .skeleton-pulse {
+            height: 120px;
+            background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-elevated) 50%, var(--color-surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--space-xl);
+        }
+
+        .skeleton-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-lg);
+        }
+
+        .skeleton-card {
+            height: 200px;
+            background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-elevated) 50%, var(--color-surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: var(--radius-lg);
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @media (max-width: 768px) {
+            .skeleton-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Offline Indicator */
+        .offline-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-caution);
+            color: #000;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        /* User Override Tooltip */
+        .override-badge {
+            position: absolute;
+            top: var(--space-sm);
+            right: var(--space-sm);
+            background: var(--color-override-muted);
+            border: 1px solid var(--color-override);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-override);
+            cursor: help;
+        }
+
+        .override-tooltip {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: var(--space-xs);
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-md);
+            max-width: 200px;
+            font-size: 0.85rem;
+            box-shadow: var(--shadow-md);
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-fast);
+        }
+
+        .override-badge:hover + .override-tooltip,
+        .override-tooltip:hover {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .override-tooltip-title {
+            font-weight: 600;
+            color: var(--color-override);
+            margin-bottom: var(--space-xs);
+        }
+
+        .override-tooltip-reason {
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        /* User Override Modal */
+        .override-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-base);
+        }
+
+        .override-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .override-modal-content {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .override-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+
+        .override-modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .override-modal-close {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .override-form-group {
+            margin-bottom: var(--space-lg);
+        }
+
+        .override-form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .override-form-select,
+        .override-form-textarea {
+            width: 100%;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            color: var(--color-text);
+            font-size: 0.9rem;
+        }
+
+        .override-form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .override-form-select:focus,
+        .override-form-textarea:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .override-modal-actions {
+            display: flex;
+            gap: var(--space-md);
+            justify-content: flex-end;
+        }
+
+        .override-btn-cancel {
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .override-btn-save {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .override-modal-body {
+            padding: var(--space-lg) 0;
+        }
+
+        .override-modal-current {
+            background: var(--color-surface-elevated);
+            padding: var(--space-md);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+            font-size: 0.9rem;
+        }
+
+        .override-form {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .override-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .override-select {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .override-select:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .override-custom-input {
+            width: 100%;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            font-size: 0.9rem;
+        }
+
+        .override-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            font-size: 0.9rem;
+            resize: vertical;
+        }
+
+        .override-textarea:focus,
+        .override-custom-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        .override-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+
+        .override-checkbox-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--color-accent);
+        }
+
+        /* Keyboard Focus Styles */
+        .app-card-v2:focus-visible,
+        .pulse-action-btn:focus-visible,
+        .one-click-btn:focus-visible,
+        .view-selector-btn:focus-visible,
+        .focus-mode-toggle:focus-visible {
+            outline: 2px solid var(--color-accent);
+            outline-offset: 2px;
+        }
+
+        /* Skip to content link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--color-accent);
+            color: #000;
+            padding: var(--space-sm) var(--space-md);
+            z-index: 1001;
+            transition: top var(--transition-fast);
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- Chart.js for Timeline View -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Command Center Intelligence Module -->
+    <script src="js/command-center.js"></script>
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
@@ -2896,7 +3949,181 @@
             </div>
         </div>
 
-        <!-- VIEW TOGGLE -->
+        <!-- COMMAND CENTER: STRATEGIC STOP WARNING (conditionally shown) -->
+        <div class="strategic-stop" id="strategicStopBanner" style="display: none;">
+            <div class="strategic-stop-header">
+                <span>⛔</span> Strategic Stop Triggered
+            </div>
+            <div class="strategic-stop-body" id="strategicStopReason">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="strategic-stop-actions" id="strategicStopActions">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="strategic-stop-pause" id="strategicStopPause"></div>
+            <div class="strategic-stop-buttons">
+                <button class="strategic-stop-btn-primary" onclick="navigateToStrategy()">Review Strategy</button>
+                <button class="strategic-stop-btn-secondary" onclick="overrideStrategicStop()">Override (not recommended)</button>
+            </div>
+        </div>
+
+        <!-- COMMAND CENTER: DAILY PULSE BANNER -->
+        <div class="daily-pulse-v2" id="dailyPulseV2" style="display: none;">
+            <div class="pulse-greeting-v2" id="pulseGreetingV2">Good morning! Here's what matters today:</div>
+
+            <div class="pulse-actions-row" id="pulseActionsRow">
+                <!-- Dynamically populated with priority action cards -->
+            </div>
+
+            <div class="pulse-health" id="pulseHealthStatus">
+                <span id="pulseHealthIcon">✅</span>
+                <span>Pipeline Health: <strong id="pulseHealthLabel">Healthy</strong></span>
+                <span class="pulse-health-reason" id="pulseHealthReason"></span>
+            </div>
+        </div>
+
+        <!-- COMMAND CENTER: VIEW SELECTOR -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div class="view-selector" id="commandCenterViewSelector">
+                <button class="view-selector-btn active" data-view="board" onclick="setCommandCenterView('board')">Board</button>
+                <button class="view-selector-btn" data-view="list" onclick="setCommandCenterView('list')">List</button>
+                <button class="view-selector-btn" data-view="timeline" onclick="setCommandCenterView('timeline')">Timeline</button>
+            </div>
+
+            <button class="focus-mode-toggle" id="focusModeToggle" onclick="toggleFocusMode()">
+                <span>🎯</span> Focus Mode
+            </button>
+        </div>
+
+        <!-- COMMAND CENTER: BOARD VIEW -->
+        <div class="board-container" id="boardViewContainer" style="display: none;">
+            <div class="board-column" data-status="applied">
+                <div class="board-column-header">
+                    <span class="board-column-title">Applied</span>
+                    <span class="board-column-count" id="boardCountApplied">0</span>
+                </div>
+                <div class="board-cards" id="boardCardsApplied">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="board-column" data-status="screening">
+                <div class="board-column-header">
+                    <span class="board-column-title">Screening</span>
+                    <span class="board-column-count" id="boardCountScreening">0</span>
+                </div>
+                <div class="board-cards" id="boardCardsScreening">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="board-column" data-status="interviewing">
+                <div class="board-column-header">
+                    <span class="board-column-title">Interviews</span>
+                    <span class="board-column-count" id="boardCountInterviewing">0</span>
+                </div>
+                <div class="board-cards" id="boardCardsInterviewing">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+            <div class="board-column" data-status="final">
+                <div class="board-column-header">
+                    <span class="board-column-title">Final</span>
+                    <span class="board-column-count" id="boardCountFinal">0</span>
+                </div>
+                <div class="board-cards" id="boardCardsFinal">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- COMMAND CENTER: TIMELINE VIEW -->
+        <div class="timeline-container" id="timelineViewContainer" style="display: none;">
+            <div class="timeline-chart-wrapper">
+                <canvas id="timelineChart"></canvas>
+            </div>
+            <div class="timeline-insights" id="timelineInsights">
+                <!-- Dynamically populated with insights -->
+            </div>
+            <div class="timeline-legend">
+                <span class="legend-item"><span class="legend-dot applied"></span> Applied</span>
+                <span class="legend-item"><span class="legend-dot interview"></span> Interview</span>
+                <span class="legend-item"><span class="legend-dot offer"></span> Offer</span>
+                <span class="legend-item"><span class="legend-dot rejection"></span> Rejection</span>
+            </div>
+        </div>
+
+        <!-- COMMAND CENTER: EMPTY STATE -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-state-icon">📋</div>
+            <h3 class="empty-state-title">No applications yet</h3>
+            <p class="empty-state-text">Start tracking your job applications to see your pipeline intelligence here.</p>
+            <a href="analyze.html" class="empty-state-btn">Analyze a Job</a>
+        </div>
+
+        <!-- COMMAND CENTER: ERROR STATE -->
+        <div class="error-state" id="errorState" style="display: none;">
+            <div class="error-state-icon">⚠️</div>
+            <h3 class="error-state-title">Unable to load intelligence</h3>
+            <p class="error-state-text" id="errorStateText">Check your connection and try again.</p>
+            <button class="error-state-btn" onclick="retryLoadIntelligence()">Retry</button>
+        </div>
+
+        <!-- COMMAND CENTER: LOADING SKELETON -->
+        <div class="loading-skeleton" id="loadingSkeleton" style="display: none;">
+            <div class="skeleton-pulse"></div>
+            <div class="skeleton-cards">
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+            </div>
+        </div>
+
+        <!-- COMMAND CENTER: OFFLINE INDICATOR -->
+        <div class="offline-indicator" id="offlineIndicator" style="display: none;">
+            <span>📡</span> You're offline. Showing cached data.
+        </div>
+
+        <!-- COMMAND CENTER: USER OVERRIDE MODAL -->
+        <div class="override-modal" id="overrideModal">
+            <div class="override-modal-content">
+                <div class="override-modal-header">
+                    <span class="override-modal-title">Override System Recommendation</span>
+                    <button class="override-modal-close" onclick="closeOverrideModal()">&times;</button>
+                </div>
+                <div class="override-modal-body">
+                    <div class="override-modal-current">
+                        <strong>System Suggests:</strong>
+                        <span id="overrideCurrentAction">-</span>
+                    </div>
+                    <div class="override-form">
+                        <label class="override-label">Select your action:</label>
+                        <select class="override-select" id="overrideActionSelect">
+                            <option value="">-- Choose action --</option>
+                            <option value="wait">Wait (I have inside info)</option>
+                            <option value="follow_up">Follow up now</option>
+                            <option value="archive">Archive this application</option>
+                            <option value="keep_active">Keep as active</option>
+                            <option value="custom">Custom action...</option>
+                        </select>
+                        <div class="override-custom-action" id="overrideCustomWrapper" style="display: none;">
+                            <input type="text" class="override-custom-input" id="overrideCustomAction" placeholder="Enter your custom action...">
+                        </div>
+                        <label class="override-label">Reason (optional):</label>
+                        <textarea class="override-textarea" id="overrideReason" placeholder="Why are you overriding? (e.g., Spoke to recruiter, they said 2 more weeks)"></textarea>
+                        <label class="override-checkbox-label">
+                            <input type="checkbox" id="overrideLock">
+                            Lock this (prevent system from changing until I update)
+                        </label>
+                    </div>
+                </div>
+                <div class="override-modal-actions">
+                    <button class="btn-secondary" onclick="closeOverrideModal()">Cancel</button>
+                    <button class="btn-primary" onclick="saveUserOverride()">Save Override</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW TOGGLE (Legacy) -->
         <div class="view-toggle-container" id="viewToggleContainer" style="display: none;">
             <div class="view-toggle">
                 <button class="view-toggle-btn active" data-view="priorities" onclick="switchView('priorities')">Priorities</button>
@@ -7692,6 +8919,937 @@ Thanks so much!
         }
 
         // ========================================================================
+        // COMMAND CENTER v2.0 FUNCTIONS
+        // ========================================================================
+
+        // State
+        let commandCenterIntelligence = null;
+        let focusModeEnabled = false;
+        let currentCommandCenterView = 'board';
+
+        /**
+         * Initialize Command Center with backend intelligence
+         */
+        async function initCommandCenter(apps) {
+            // Handle empty state
+            if (!apps || apps.length === 0) {
+                console.log('[CommandCenter] No apps to analyze');
+                showEmptyState();
+                return;
+            }
+
+            // Show loading state
+            showLoadingSkeleton();
+
+            try {
+                // Get user ID from localStorage or Supabase session
+                const userId = localStorage.getItem('userId') || 'anonymous';
+
+                // Fetch intelligence from backend
+                commandCenterIntelligence = await CommandCenter.fetchIntelligence(userId, apps);
+
+                // Hide loading state
+                hideStateOverlays();
+
+                // Render Command Center components
+                renderDailyPulseV2(commandCenterIntelligence);
+                renderBoardView(apps, commandCenterIntelligence);
+                checkAndShowStrategicStop(commandCenterIntelligence);
+
+                // Show Command Center UI
+                document.getElementById('dailyPulseV2').style.display = 'block';
+                document.getElementById('commandCenterViewSelector').parentElement.style.display = 'flex';
+
+                // Set default view
+                setCommandCenterView('board');
+
+                // Persist intelligence to Supabase (async, don't wait)
+                batchPersistIntelligence(commandCenterIntelligence).catch(err => {
+                    console.warn('[CommandCenter] Background persist failed:', err);
+                });
+
+            } catch (error) {
+                console.error('[CommandCenter] Init failed:', error);
+                showErrorState('Unable to load pipeline intelligence. Please try again.');
+            }
+        }
+
+        /**
+         * Render Daily Pulse v2 with backend intelligence
+         */
+        function renderDailyPulseV2(intelligence) {
+            if (!intelligence) return;
+
+            const pulseEl = document.getElementById('dailyPulseV2');
+            if (!pulseEl) return;
+
+            // Set greeting
+            const hour = new Date().getHours();
+            let greeting = 'Good morning';
+            if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
+            else if (hour >= 17) greeting = 'Good evening';
+
+            const priorityCount = intelligence.priority_actions?.length || 0;
+            const greetingText = priorityCount > 0
+                ? `${greeting}! Here's what matters today:`
+                : `${greeting}! Your pipeline is on track.`;
+
+            document.getElementById('pulseGreetingV2').textContent = greetingText;
+
+            // Render priority action cards
+            const actionsRow = document.getElementById('pulseActionsRow');
+            actionsRow.innerHTML = '';
+
+            const topActions = intelligence.priority_actions?.slice(0, 3) || [];
+
+            if (topActions.length === 0) {
+                actionsRow.innerHTML = `
+                    <div class="pulse-action-card">
+                        <div class="pulse-action-icon">✅</div>
+                        <div class="pulse-action-company">No urgent actions</div>
+                        <div class="pulse-action-text">Your pipeline is healthy. Keep momentum going.</div>
+                    </div>
+                `;
+            } else {
+                topActions.forEach(action => {
+                    const app = getApplications().find(a => String(a.id) === String(action.application_id));
+                    const btnConfig = CommandCenter.getOneClickButtonConfig(action.one_click_action);
+
+                    const cardHtml = `
+                        <div class="pulse-action-card">
+                            <div class="pulse-action-icon">${action.one_click_action?.type === 'draft_email' ? '✉️' : action.one_click_action?.type === 'open_prep' ? '📋' : '⚡'}</div>
+                            <div class="pulse-action-company">${app?.company || 'Unknown'}</div>
+                            <div class="pulse-action-text">${action.action}</div>
+                            ${btnConfig ? `<button class="pulse-action-btn" onclick="handleOneClickAction('${action.application_id}', '${action.one_click_action?.type}')">${btnConfig.label}</button>` : ''}
+                        </div>
+                    `;
+                    actionsRow.innerHTML += cardHtml;
+                });
+            }
+
+            // Render pipeline health
+            const health = intelligence.pipeline_health;
+            if (health) {
+                document.getElementById('pulseHealthIcon').textContent = health.icon;
+                document.getElementById('pulseHealthLabel').textContent = health.status.charAt(0).toUpperCase() + health.status.slice(1);
+                document.getElementById('pulseHealthReason').textContent = health.reason;
+
+                const healthEl = document.getElementById('pulseHealthStatus');
+                healthEl.className = 'pulse-health ' + (health.tone === 'urgent' ? 'urgent' : health.tone === 'caution' ? 'caution' : 'healthy');
+            }
+
+            pulseEl.style.display = 'block';
+        }
+
+        /**
+         * Render Board View with intelligence
+         */
+        function renderBoardView(apps, intelligence) {
+            const container = document.getElementById('boardViewContainer');
+            if (!container) return;
+
+            // Group apps by status category
+            const statusGroups = {
+                applied: [],
+                screening: [],
+                interviewing: [],
+                final: []
+            };
+
+            apps.forEach(app => {
+                const status = app.status?.toLowerCase() || '';
+                const intel = intelligence?.applications?.find(a => String(a.id) === String(app.id));
+
+                if (status.includes('applied') || status.includes('networking')) {
+                    statusGroups.applied.push({ app, intel });
+                } else if (status.includes('recruiter') || status.includes('screen')) {
+                    statusGroups.screening.push({ app, intel });
+                } else if (status.includes('hiring') || status.includes('technical') || status.includes('panel') || status.includes('interview')) {
+                    statusGroups.interviewing.push({ app, intel });
+                } else if (status.includes('final') || status.includes('executive') || status.includes('offer')) {
+                    statusGroups.final.push({ app, intel });
+                } else if (!['rejected', 'withdrawn', 'archived'].includes(status)) {
+                    statusGroups.applied.push({ app, intel });
+                }
+            });
+
+            // Update counts
+            document.getElementById('boardCountApplied').textContent = statusGroups.applied.length;
+            document.getElementById('boardCountScreening').textContent = statusGroups.screening.length;
+            document.getElementById('boardCountInterviewing').textContent = statusGroups.interviewing.length;
+            document.getElementById('boardCountFinal').textContent = statusGroups.final.length;
+
+            // Render cards for each column
+            Object.entries(statusGroups).forEach(([status, items]) => {
+                const cardsEl = document.getElementById(`boardCards${status.charAt(0).toUpperCase() + status.slice(1)}`);
+                if (!cardsEl) return;
+
+                cardsEl.innerHTML = items.map(({ app, intel }) => renderAppCardV2(app, intel)).join('');
+            });
+        }
+
+        /**
+         * Render a single application card with UI signals
+         */
+        function renderAppCardV2(app, intel) {
+            const ui = intel?.ui_signals || {
+                priority: 'medium',
+                confidence: 'medium',
+                urgency: 'routine',
+                color_code: 'yellow',
+                icon: '📋',
+                badge: null,
+                action_available: false,
+                dimmed: false
+            };
+
+            const confidenceClass = `confidence-${ui.confidence}`;
+            const priorityClass = `priority-${ui.priority}`;
+            const dimmedClass = focusModeEnabled && ui.dimmed ? 'dimmed' : '';
+            const urgentClass = ui.urgency === 'immediate' ? 'urgent' : '';
+
+            const fitScore = app.fitScore || app.fit_score || '--';
+            const daysSince = intel?.days_since_last_activity || getDaysSince(app.dateApplied || app.dateAdded);
+
+            const nextAction = intel?.next_action || 'Review application';
+            const nextReason = intel?.next_action_reason || '';
+
+            const btnConfig = intel?.one_click_action ? CommandCenter.getOneClickButtonConfig(intel.one_click_action) : null;
+
+            return `
+                <div class="app-card-v2 ${confidenceClass} ${priorityClass} ${dimmedClass}"
+                     data-id="${app.id}"
+                     tabindex="0"
+                     role="button"
+                     aria-label="${app.company} - ${app.role || app.roleTitle || 'Role'}"
+                     onclick="navigateWithAnalysis('${app.id}', 'overview.html')">
+                    ${app.user_override ? '<span class="override-badge" title="You have overridden the system recommendation">Manual Override</span>' : ''}
+
+                    <div class="card-header-v2">
+                        <div class="card-title-row">
+                            <span class="card-icon ${urgentClass}">${ui.icon}</span>
+                            <span class="card-title-v2">${app.company} - ${app.role || app.roleTitle || 'Role'}</span>
+                        </div>
+                        <div class="card-header-actions">
+                            ${ui.badge ? `<span class="card-badge">${ui.badge}</span>` : ''}
+                            <button class="card-override-btn"
+                                    onclick="event.stopPropagation(); openOverrideModal('${app.id}')"
+                                    title="Override system recommendation"
+                                    aria-label="Override recommendation">
+                                ⚙️
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-stats-v2">
+                        <span class="card-stat-v2">Fit: ${fitScore}%${ui.badge === 'directional' ? ' (Directional)' : ''}</span>
+                        <span class="card-stat-v2">
+                            <span class="confidence-pill ${ui.confidence}">${ui.confidence}</span>
+                        </span>
+                        <span class="card-stat-v2">${daysSince}d since activity</span>
+                    </div>
+
+                    <div class="next-action-section">
+                        <div class="next-action-text">Next: ${nextAction}</div>
+                        ${nextReason ? `<div class="next-action-reason">${nextReason}</div>` : ''}
+                    </div>
+
+                    ${btnConfig && ui.action_available ? `
+                        <button class="one-click-btn ${btnConfig.class}"
+                                onclick="event.stopPropagation(); handleOneClickAction('${app.id}', '${intel.one_click_action?.type}')">
+                            ${btnConfig.icon} ${btnConfig.label}
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        /**
+         * Handle one-click actions
+         */
+        function handleOneClickAction(appId, actionType) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            switch (actionType) {
+                case 'draft_email':
+                    // Open email composer with template
+                    openFollowUpEmailComposer(appId);
+                    break;
+                case 'archive':
+                    if (confirm(`Archive ${app.company} application? This will move it to your archived list.`)) {
+                        archiveApplication(appId);
+                    }
+                    break;
+                case 'open_prep':
+                    navigateWithAnalysis(appId, 'interview-prep.html');
+                    break;
+                case 'block_time':
+                    // TODO: Calendar integration
+                    alert('Calendar blocking coming soon!');
+                    break;
+                default:
+                    console.log('[CommandCenter] Unknown action:', actionType);
+            }
+        }
+
+        /**
+         * Open follow-up email composer
+         */
+        function openFollowUpEmailComposer(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            // Navigate to reach out functionality or open modal
+            if (typeof window.openReachOutModal === 'function') {
+                window.openReachOutModal(appId);
+            } else {
+                navigateWithAnalysis(appId, 'overview.html');
+            }
+        }
+
+        /**
+         * Archive an application
+         */
+        async function archiveApplication(appId) {
+            try {
+                const apps = getApplications();
+                const appIndex = apps.findIndex(a => String(a.id) === String(appId));
+                if (appIndex === -1) return;
+
+                apps[appIndex].status = 'Archived';
+                apps[appIndex].archivedAt = new Date().toISOString();
+
+                // Save to localStorage/Supabase
+                saveApplications(apps);
+
+                // Refresh UI
+                CommandCenter.invalidateCache();
+                renderAll(apps);
+
+                console.log('[CommandCenter] Application archived:', appId);
+            } catch (error) {
+                console.error('[CommandCenter] Archive failed:', error);
+            }
+        }
+
+        /**
+         * Set Command Center view mode
+         */
+        function setCommandCenterView(view) {
+            currentCommandCenterView = view;
+
+            // Update selector buttons
+            document.querySelectorAll('.view-selector-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+
+            // Show/hide views
+            document.getElementById('boardViewContainer').style.display = view === 'board' ? 'grid' : 'none';
+            document.getElementById('prioritiesView').style.display = view === 'list' ? 'block' : 'none';
+            document.getElementById('detailsView').style.display = view === 'list' ? 'block' : 'none';
+            document.getElementById('timelineViewContainer').style.display = view === 'timeline' ? 'block' : 'none';
+
+            // Initialize timeline view if selected
+            if (view === 'timeline') {
+                const apps = getApplications();
+                renderTimelineView(apps, commandCenterIntelligence);
+            }
+        }
+
+        /**
+         * Toggle Focus Mode
+         */
+        function toggleFocusMode() {
+            focusModeEnabled = !focusModeEnabled;
+
+            const toggle = document.getElementById('focusModeToggle');
+            toggle.classList.toggle('active', focusModeEnabled);
+
+            // Re-render board with focus mode
+            if (commandCenterIntelligence) {
+                renderBoardView(getApplications(), commandCenterIntelligence);
+            }
+
+            console.log('[CommandCenter] Focus mode:', focusModeEnabled ? 'ON' : 'OFF');
+        }
+
+        /**
+         * Check and show Strategic Stop warning
+         */
+        function checkAndShowStrategicStop(intelligence) {
+            if (!intelligence) return;
+
+            // Calculate interview rate
+            const apps = getApplications();
+            const totalApps = apps.filter(a => STATUSES[a.status]?.active).length;
+            const interviews = apps.filter(a => {
+                const status = a.status?.toLowerCase() || '';
+                return status.includes('recruiter') || status.includes('interview') || status.includes('screen');
+            }).length;
+            const interviewRate = totalApps > 0 ? (interviews / totalApps) * 100 : 0;
+
+            const strategicStop = CommandCenter.checkStrategicStop(intelligence.pipeline_health, interviewRate);
+
+            const banner = document.getElementById('strategicStopBanner');
+            if (strategicStop?.triggered) {
+                document.getElementById('strategicStopReason').textContent = strategicStop.reason;
+
+                const actionsHtml = strategicStop.actions.map(a => `<li>${a}</li>`).join('');
+                document.getElementById('strategicStopActions').innerHTML = actionsHtml;
+
+                if (strategicStop.pauseDays > 0) {
+                    document.getElementById('strategicStopPause').textContent =
+                        `Applications paused for ${strategicStop.pauseDays} days.`;
+                }
+
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        /**
+         * Navigate to strategy review
+         */
+        function navigateToStrategy() {
+            window.location.href = 'profile.html';
+        }
+
+        /**
+         * Override strategic stop (user choice)
+         */
+        function overrideStrategicStop() {
+            if (confirm('Are you sure? Overriding this warning may lead to wasted effort on a broken strategy.')) {
+                document.getElementById('strategicStopBanner').style.display = 'none';
+                localStorage.setItem('strategicStopOverride', Date.now());
+            }
+        }
+
+        // ========================================================================
+        // COMMAND CENTER: TIMELINE VIEW
+        // ========================================================================
+
+        let timelineChartInstance = null;
+
+        /**
+         * Render Timeline View with Chart.js
+         */
+        function renderTimelineView(apps, intelligence) {
+            const container = document.getElementById('timelineViewContainer');
+            const canvas = document.getElementById('timelineChart');
+            if (!container || !canvas) return;
+
+            // Destroy existing chart instance
+            if (timelineChartInstance) {
+                timelineChartInstance.destroy();
+            }
+
+            // Process data for timeline
+            const timelineData = processTimelineData(apps);
+
+            // Create chart
+            const ctx = canvas.getContext('2d');
+            timelineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timelineData.labels,
+                    datasets: [
+                        {
+                            label: 'Applications',
+                            data: timelineData.applications,
+                            borderColor: '#22d3ee',
+                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Interviews',
+                            data: timelineData.interviews,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Rejections',
+                            data: timelineData.rejections,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#1c1c1f',
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            titleColor: '#fafafa',
+                            bodyColor: '#a1a1aa',
+                            padding: 12
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#71717a'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#71717a',
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+
+            // Render insights
+            renderTimelineInsights(apps, intelligence);
+        }
+
+        /**
+         * Process application data for timeline chart
+         */
+        function processTimelineData(apps) {
+            // Get last 8 weeks
+            const weeks = [];
+            const today = new Date();
+            for (let i = 7; i >= 0; i--) {
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - (i * 7));
+                weeks.push({
+                    start: new Date(weekStart),
+                    label: `Week ${8 - i}`,
+                    applications: 0,
+                    interviews: 0,
+                    rejections: 0
+                });
+            }
+
+            // Count events per week
+            apps.forEach(app => {
+                const appDate = new Date(app.dateApplied || app.dateAdded || app.createdAt);
+                const status = app.status?.toLowerCase() || '';
+
+                weeks.forEach(week => {
+                    const weekEnd = new Date(week.start);
+                    weekEnd.setDate(week.start.getDate() + 7);
+
+                    if (appDate >= week.start && appDate < weekEnd) {
+                        week.applications++;
+                    }
+                });
+
+                // Track status changes (simplified)
+                if (status.includes('interview') || status.includes('screen') || status.includes('recruiter')) {
+                    weeks[weeks.length - 1].interviews++;
+                }
+                if (status === 'rejected') {
+                    weeks[weeks.length - 1].rejections++;
+                }
+            });
+
+            return {
+                labels: weeks.map(w => w.label),
+                applications: weeks.map(w => w.applications),
+                interviews: weeks.map(w => w.interviews),
+                rejections: weeks.map(w => w.rejections)
+            };
+        }
+
+        /**
+         * Render timeline insights
+         */
+        function renderTimelineInsights(apps, intelligence) {
+            const container = document.getElementById('timelineInsights');
+            if (!container) return;
+
+            const totalApps = apps.length;
+            const activeApps = apps.filter(a => STATUSES[a.status]?.active).length;
+            const interviewRate = totalApps > 0 ?
+                Math.round((apps.filter(a => a.status?.toLowerCase().includes('interview')).length / totalApps) * 100) : 0;
+
+            container.innerHTML = `
+                <div class="timeline-insight">
+                    <span class="insight-value">${totalApps}</span>
+                    <span class="insight-label">Total Applications</span>
+                </div>
+                <div class="timeline-insight">
+                    <span class="insight-value">${activeApps}</span>
+                    <span class="insight-label">Active Pipeline</span>
+                </div>
+                <div class="timeline-insight">
+                    <span class="insight-value">${interviewRate}%</span>
+                    <span class="insight-label">Interview Rate</span>
+                </div>
+            `;
+        }
+
+        // ========================================================================
+        // COMMAND CENTER: EMPTY, ERROR, LOADING, OFFLINE STATES
+        // ========================================================================
+
+        /**
+         * Show empty state
+         */
+        function showEmptyState() {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('loadingSkeleton').style.display = 'none';
+            document.getElementById('boardViewContainer').style.display = 'none';
+            document.getElementById('dailyPulseV2').style.display = 'none';
+        }
+
+        /**
+         * Show error state
+         */
+        function showErrorState(message = 'Unable to load intelligence. Check your connection.') {
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('errorStateText').textContent = message;
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('loadingSkeleton').style.display = 'none';
+        }
+
+        /**
+         * Show loading skeleton
+         */
+        function showLoadingSkeleton() {
+            document.getElementById('loadingSkeleton').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+        }
+
+        /**
+         * Hide all state overlays
+         */
+        function hideStateOverlays() {
+            document.getElementById('loadingSkeleton').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+        }
+
+        /**
+         * Retry loading intelligence after error
+         */
+        async function retryLoadIntelligence() {
+            document.getElementById('errorState').style.display = 'none';
+            showLoadingSkeleton();
+
+            try {
+                const apps = getApplications();
+                CommandCenter.invalidateCache();
+                await initCommandCenter(apps);
+                hideStateOverlays();
+            } catch (error) {
+                console.error('[CommandCenter] Retry failed:', error);
+                showErrorState('Still unable to connect. Please check your internet connection.');
+            }
+        }
+
+        // ========================================================================
+        // COMMAND CENTER: OFFLINE DETECTION
+        // ========================================================================
+
+        let isOffline = false;
+
+        /**
+         * Initialize offline detection
+         */
+        function initOfflineDetection() {
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+
+            // Check initial state
+            if (!navigator.onLine) {
+                handleOffline();
+            }
+        }
+
+        /**
+         * Handle going online
+         */
+        function handleOnline() {
+            isOffline = false;
+            document.getElementById('offlineIndicator').style.display = 'none';
+
+            // Refresh data
+            const apps = getApplications();
+            if (apps.length > 0) {
+                CommandCenter.invalidateCache();
+                initCommandCenter(apps);
+            }
+        }
+
+        /**
+         * Handle going offline
+         */
+        function handleOffline() {
+            isOffline = true;
+            document.getElementById('offlineIndicator').style.display = 'flex';
+        }
+
+        // ========================================================================
+        // COMMAND CENTER: USER OVERRIDE MODAL
+        // ========================================================================
+
+        let currentOverrideAppId = null;
+
+        /**
+         * Open user override modal
+         */
+        function openOverrideModal(appId) {
+            currentOverrideAppId = appId;
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            const intel = commandCenterIntelligence?.applications?.find(a => String(a.id) === String(appId));
+            const currentAction = intel?.next_action || 'No action suggested';
+
+            document.getElementById('overrideCurrentAction').textContent = currentAction;
+            document.getElementById('overrideActionSelect').value = '';
+            document.getElementById('overrideReason').value = app.user_override_reason || '';
+            document.getElementById('overrideLock').checked = app.manual_lock || false;
+            document.getElementById('overrideCustomWrapper').style.display = 'none';
+
+            document.getElementById('overrideModal').classList.add('active');
+        }
+
+        /**
+         * Close user override modal
+         */
+        function closeOverrideModal() {
+            currentOverrideAppId = null;
+            document.getElementById('overrideModal').classList.remove('active');
+        }
+
+        /**
+         * Save user override
+         */
+        async function saveUserOverride() {
+            if (!currentOverrideAppId) return;
+
+            const actionSelect = document.getElementById('overrideActionSelect').value;
+            const customAction = document.getElementById('overrideCustomAction').value;
+            const reason = document.getElementById('overrideReason').value;
+            const lock = document.getElementById('overrideLock').checked;
+
+            const selectedAction = actionSelect === 'custom' ? customAction : actionSelect;
+
+            if (!selectedAction) {
+                alert('Please select an action');
+                return;
+            }
+
+            try {
+                const apps = getApplications();
+                const appIndex = apps.findIndex(a => String(a.id) === String(currentOverrideAppId));
+                if (appIndex === -1) return;
+
+                // Update application with override
+                apps[appIndex].user_override = true;
+                apps[appIndex].user_override_reason = reason;
+                apps[appIndex].manual_lock = lock;
+                apps[appIndex].next_action = selectedAction;
+
+                // Handle specific actions
+                if (selectedAction === 'archive') {
+                    apps[appIndex].status = 'Archived';
+                    apps[appIndex].archivedAt = new Date().toISOString();
+                }
+
+                // Save
+                saveApplications(apps);
+
+                // Refresh UI
+                CommandCenter.invalidateCache();
+                renderAll(apps);
+
+                closeOverrideModal();
+                console.log('[CommandCenter] Override saved for:', currentOverrideAppId);
+            } catch (error) {
+                console.error('[CommandCenter] Override save failed:', error);
+                alert('Failed to save override. Please try again.');
+            }
+        }
+
+        /**
+         * Handle override action select change
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            const actionSelect = document.getElementById('overrideActionSelect');
+            if (actionSelect) {
+                actionSelect.addEventListener('change', function() {
+                    const customWrapper = document.getElementById('overrideCustomWrapper');
+                    customWrapper.style.display = this.value === 'custom' ? 'block' : 'none';
+                });
+            }
+
+            // Initialize offline detection
+            initOfflineDetection();
+        });
+
+        // ========================================================================
+        // COMMAND CENTER: KEYBOARD NAVIGATION
+        // ========================================================================
+
+        /**
+         * Initialize keyboard navigation
+         */
+        function initKeyboardNavigation() {
+            document.addEventListener('keydown', handleKeyboardNavigation);
+        }
+
+        /**
+         * Handle keyboard navigation
+         */
+        function handleKeyboardNavigation(e) {
+            // Skip if typing in an input
+            if (e.target.matches('input, textarea, select')) return;
+
+            switch (e.key) {
+                case 'f':
+                case 'F':
+                    // Toggle focus mode
+                    if (!e.ctrlKey && !e.metaKey) {
+                        toggleFocusMode();
+                        e.preventDefault();
+                    }
+                    break;
+                case '1':
+                    setCommandCenterView('board');
+                    e.preventDefault();
+                    break;
+                case '2':
+                    setCommandCenterView('list');
+                    e.preventDefault();
+                    break;
+                case '3':
+                    setCommandCenterView('timeline');
+                    e.preventDefault();
+                    break;
+                case 'Escape':
+                    closeOverrideModal();
+                    break;
+                case 'ArrowDown':
+                case 'ArrowUp':
+                    navigateCards(e.key === 'ArrowDown' ? 1 : -1);
+                    e.preventDefault();
+                    break;
+                case 'Enter':
+                    // Open selected card
+                    const focused = document.querySelector('.app-card-v2:focus');
+                    if (focused) {
+                        focused.click();
+                    }
+                    break;
+            }
+        }
+
+        /**
+         * Navigate between application cards
+         */
+        function navigateCards(direction) {
+            const cards = Array.from(document.querySelectorAll('.app-card-v2:not(.dimmed)'));
+            if (cards.length === 0) return;
+
+            const currentFocus = document.activeElement;
+            let currentIndex = cards.indexOf(currentFocus);
+
+            if (currentIndex === -1) {
+                currentIndex = direction === 1 ? -1 : cards.length;
+            }
+
+            const nextIndex = Math.max(0, Math.min(cards.length - 1, currentIndex + direction));
+            cards[nextIndex].focus();
+        }
+
+        // Initialize keyboard navigation on load
+        document.addEventListener('DOMContentLoaded', initKeyboardNavigation);
+
+        // ========================================================================
+        // COMMAND CENTER: SUPABASE PERSISTENCE
+        // ========================================================================
+
+        /**
+         * Save intelligence to Supabase
+         */
+        async function persistIntelligenceToSupabase(appId, intel) {
+            if (!window.supabase || !appId || !intel) return;
+
+            try {
+                const { error } = await window.supabase
+                    .from('applications')
+                    .update({
+                        decision_confidence: intel.decision_confidence,
+                        confidence_label: intel.confidence_label,
+                        next_action: intel.next_action,
+                        next_action_reason: intel.next_action_reason,
+                        priority_level: intel.priority_level,
+                        substatus: intel.substatus,
+                        days_since_last_activity: intel.days_since_last_activity,
+                        last_activity_date: new Date().toISOString().split('T')[0]
+                    })
+                    .eq('id', appId);
+
+                if (error) {
+                    console.error('[CommandCenter] Supabase persist error:', error);
+                }
+            } catch (error) {
+                console.error('[CommandCenter] Supabase persist failed:', error);
+            }
+        }
+
+        /**
+         * Batch persist intelligence for all applications
+         */
+        async function batchPersistIntelligence(intelligence) {
+            if (!window.supabase || !intelligence?.applications) return;
+
+            const updates = intelligence.applications.map(intel => ({
+                id: intel.id,
+                decision_confidence: intel.decision_confidence,
+                confidence_label: intel.ui_signals?.confidence || 'medium',
+                next_action: intel.next_action,
+                next_action_reason: intel.next_action_reason,
+                priority_level: intel.priority_level,
+                substatus: intel.substatus,
+                days_since_last_activity: intel.days_since_last_activity
+            }));
+
+            // Supabase doesn't support bulk upsert easily, so we do individual updates
+            // In production, consider using a batch endpoint
+            for (const update of updates) {
+                await persistIntelligenceToSupabase(update.id, update);
+            }
+
+            console.log('[CommandCenter] Intelligence persisted to Supabase');
+        }
+
+        // ========================================================================
         // RENDER ALL
         // ========================================================================
         function renderAll(apps) {
@@ -7721,6 +9879,9 @@ Thanks so much!
 
             // Check for desperation pattern
             checkDesperationIntervention(apps);
+
+            // Initialize Command Center v2.0
+            initCommandCenter(apps);
         }
 
         function checkDesperationIntervention(apps) {
