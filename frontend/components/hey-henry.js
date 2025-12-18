@@ -1644,11 +1644,11 @@ ${confidenceClosing}`,
         if (overlay) overlay.classList.remove('visible');
 
         // Remove genie mode classes
-        drawer.classList.remove('genie-mode', 'no-dismiss', 'genie-animating');
+        if (drawer) drawer.classList.remove('genie-mode', 'no-dismiss', 'genie-animating');
 
         // Close drawer
-        drawer.classList.remove('open');
-        fab.classList.remove('hidden');
+        if (drawer) drawer.classList.remove('open');
+        if (fab) fab.classList.remove('hidden');
 
         // Reset state
         isOpen = false;
@@ -1661,11 +1661,13 @@ ${confidenceClosing}`,
         const greeting = getPersonalizedGreeting(userName, context);
         const suggestions = getContextualSuggestions();
 
-        messagesContainer.innerHTML = `
-            <div class="ask-henry-message assistant">
-                ${greeting}
-            </div>
-        `;
+        if (messagesContainer) {
+            messagesContainer.innerHTML = `
+                <div class="ask-henry-message assistant">
+                    ${greeting}
+                </div>
+            `;
+        }
 
         if (suggestionsContainer) {
             suggestionsContainer.innerHTML = suggestions.map(s => `<button class="ask-henry-suggestion">${s}</button>`).join('');
