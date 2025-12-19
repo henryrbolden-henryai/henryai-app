@@ -5399,6 +5399,47 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["gaps"] = gaps
 
     # ========================================================================
+    # CAPABILITY EVIDENCE CHECK (CEC) - STEP 2.5
+    # Per CEC Spec v1.0: Diagnostic layer that explains HOW resume diverges from JD.
+    #
+    # RUNS AFTER: Eligibility gates (Step 2)
+    # RUNS BEFORE: CAE (Step 3) and LEPE (Step 4)
+    #
+    # HARD CONSTRAINTS:
+    # - Does NOT alter fit score
+    # - Does NOT alter recommendation
+    # - Does NOT trigger caps or multipliers
+    # - Diagnostic output feeds "Gaps to Address" and "Your Move"
+    # ========================================================================
+    capability_evidence_report = None
+
+    # CEC runs if JD and resume parsing succeeded, even before recommendation lock
+    if resume_data and response_data.get("role_title"):
+        print("📊 STEP 2.5: CAPABILITY EVIDENCE CHECK (CEC)")
+
+        # Get leadership extraction if available
+        leadership_extraction = experience_analysis.get("tiered_leadership") or {}
+
+        # Run CEC evaluation
+        capability_evidence_report = evaluate_capability_evidence(
+            response_data=response_data,
+            resume_data=resume_data,
+            leadership_extraction=leadership_extraction
+        )
+
+        # Store CEC output in response (does NOT modify score/recommendation)
+        response_data["capability_evidence_report"] = capability_evidence_report
+
+        # Log CEC summary
+        if capability_evidence_report:
+            summary = capability_evidence_report.get("summary", {})
+            critical_gaps = summary.get("critical_gaps", [])
+            if critical_gaps:
+                print(f"   🔴 CEC identified {len(critical_gaps)} critical capability gap(s)")
+            else:
+                print(f"   ✅ CEC: No critical capability gaps identified")
+
+    # ========================================================================
     # CREDIBILITY ALIGNMENT ENGINE (CAE) - RUNS AFTER ELIGIBILITY
     # Per CAE Spec: "This layer never blocks on its own. It modulates confidence,
     # language, and recommendation strength."
@@ -5716,6 +5757,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     # CRITICAL: Validate and fix strategic_action/recommendation consistency
     response_data = validate_recommendation_consistency(response_data, capped_score)
 
+    # ========================================================================
+    # STEP 6: ENHANCE COACHING WITH CEC DATA
+    # Per CEC Spec: Feed capability_evidence_report into "Gaps to Address"
+    # and "Your Move" for coaching-grade specificity.
+    # ========================================================================
+    if response_data.get("capability_evidence_report"):
+        print("📋 STEP 6: ENHANCING COACHING WITH CEC DATA")
+        response_data = enhance_coaching_with_cec(response_data)
+
     return response_data
 
 
@@ -5827,6 +5877,89 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
             print(f"✅ Updated recommendation_rationale to: {tone}")
 
     return analysis_data
+
+
+def enhance_coaching_with_cec(response_data: dict) -> dict:
+    """
+    Enhance "Gaps to Address" and coaching output with CEC data.
+
+    Per CEC Spec v1.0:
+    - Adds coaching-grade diagnosis to gaps
+    - Enhances "Your Move" with critical gap specificity
+    - Does NOT alter score or recommendation
+
+    Args:
+        response_data: The full Job Fit response with capability_evidence_report
+
+    Returns:
+        Enhanced response_data with CEC-enriched coaching
+    """
+    cec_report = response_data.get("capability_evidence_report")
+    if not cec_report:
+        return response_data
+
+    evaluated_capabilities = cec_report.get("evaluated_capabilities", [])
+    summary = cec_report.get("summary", {})
+    critical_gaps = summary.get("critical_gaps", [])
+
+    # Build CEC-enhanced gaps list
+    cec_gaps = []
+    for cap in evaluated_capabilities:
+        if cap.get("evidence_status") in ["missing", "implicit"]:
+            cec_gap = {
+                "capability_id": cap.get("capability_id"),
+                "capability_name": cap.get("capability_name"),
+                "evidence_status": cap.get("evidence_status"),
+                "diagnosis": cap.get("diagnosis"),
+                "distance": cap.get("distance"),
+                "coachable": cap.get("coachable"),
+                "criticality": cap.get("criticality"),
+                "is_critical": cap.get("capability_id") in critical_gaps
+            }
+            cec_gaps.append(cec_gap)
+
+    # Store CEC gaps for frontend rendering
+    response_data["cec_gaps"] = cec_gaps
+
+    # Enhance reality_check with CEC context
+    reality_check = response_data.get("reality_check", {})
+    recommendation = (response_data.get("recommendation") or "").lower()
+
+    # Find most critical gap for coaching specificity
+    most_critical = None
+    for cap in evaluated_capabilities:
+        if cap.get("evidence_status") == "missing" and cap.get("criticality") == "required":
+            most_critical = cap
+            break
+
+    if most_critical:
+        # Add CEC context to coaching
+        cec_coaching_context = {
+            "critical_gap_name": most_critical.get("capability_name"),
+            "critical_gap_diagnosis": most_critical.get("diagnosis"),
+            "critical_gap_distance": most_critical.get("distance"),
+            "critical_gap_coachable": most_critical.get("coachable")
+        }
+        response_data["cec_coaching_context"] = cec_coaching_context
+
+        # Enhance strategic_action for Do Not Apply scenarios
+        if "do not apply" in recommendation or "skip" in recommendation:
+            if reality_check and most_critical.get("diagnosis"):
+                existing_action = reality_check.get("strategic_action", "")
+                # Prepend specific CEC diagnosis
+                enhanced_action = f"{most_critical.get('diagnosis')} {existing_action}"
+                reality_check["strategic_action"] = enhanced_action
+                reality_check["cec_enhanced"] = True
+                response_data["reality_check"] = reality_check
+
+    # Log enhancement
+    if cec_gaps:
+        print(f"   📋 CEC enhanced coaching: {len(cec_gaps)} capability gaps documented")
+        for gap in cec_gaps[:2]:  # Log first 2
+            status = "🔴" if gap.get("is_critical") else "🟡"
+            print(f"      {status} {gap.get('capability_name')}: {gap.get('evidence_status')}")
+
+    return response_data
 
 
 # ============================================================================
@@ -6273,6 +6406,503 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
     print(f"      Has any leadership: {has_any}")
 
     return result
+
+
+# ============================================================================
+# CAPABILITY EVIDENCE CHECK (CEC)
+# Per CEC Specification v1.0: Diagnostic layer that explains HOW a candidate's
+# resume diverges from a job's requirements. Does NOT alter scoring/recommendations.
+#
+# Purpose: Turn HenryHQ from accurate into coaching-grade by providing specific,
+# evidence-based diagnosis of capability gaps.
+#
+# HARD CONSTRAINTS:
+# ✗ Cannot change fit score
+# ✗ Cannot change recommendation
+# ✗ Cannot trigger LEPE caps or CAE multipliers
+# ✗ Cannot override hard_requirement_failures
+# ============================================================================
+
+def evaluate_capability_evidence(
+    response_data: dict,
+    resume_data: dict,
+    leadership_extraction: dict = None
+) -> dict:
+    """
+    Capability Evidence Check (CEC) - Diagnostic layer for coaching-grade gap analysis.
+
+    Evaluates evidence strength for each JD requirement across 4 dimensions:
+    1. Leadership Scope (local vs global, distributed vs co-located)
+    2. Cross-Functional Depth (Product partnership, roadmap ownership)
+    3. Scale Signals (team size, org size, revenue, users)
+    4. Domain Adjacency (direct vs transferable vs unrelated experience)
+
+    Returns capability_evidence_report for use in "Gaps to Address" and "Your Move".
+    """
+    print("📊 CAPABILITY EVIDENCE CHECK (CEC) - Diagnostic Layer")
+
+    evaluated_capabilities = []
+
+    # Extract JD context
+    role_title = response_data.get("role_title", "")
+    jd_text = response_data.get("job_description", "")
+    requirements = response_data.get("requirements", [])
+    experience_analysis = response_data.get("experience_analysis", {})
+
+    # 1. Evaluate Leadership Scope
+    leadership_eval = evaluate_leadership_scope(
+        response_data, resume_data, leadership_extraction
+    )
+    if leadership_eval:
+        evaluated_capabilities.append(leadership_eval)
+
+    # 2. Evaluate Cross-Functional Depth
+    cross_func_eval = evaluate_cross_functional_depth(response_data, resume_data)
+    if cross_func_eval:
+        evaluated_capabilities.append(cross_func_eval)
+
+    # 3. Evaluate Scale Signals
+    scale_eval = evaluate_scale_signals(response_data, resume_data)
+    if scale_eval:
+        evaluated_capabilities.append(scale_eval)
+
+    # 4. Evaluate Domain Adjacency
+    domain_eval = evaluate_domain_adjacency(response_data, resume_data)
+    if domain_eval:
+        evaluated_capabilities.append(domain_eval)
+
+    # Calculate summary
+    explicit_count = sum(1 for c in evaluated_capabilities if c.get("evidence_status") == "explicit")
+    implicit_count = sum(1 for c in evaluated_capabilities if c.get("evidence_status") == "implicit")
+    missing_count = sum(1 for c in evaluated_capabilities if c.get("evidence_status") == "missing")
+
+    critical_gaps = [
+        c["capability_id"] for c in evaluated_capabilities
+        if c.get("evidence_status") in ["missing", "implicit"]
+        and c.get("criticality") == "required"
+    ]
+
+    capability_evidence_report = {
+        "evaluated_capabilities": evaluated_capabilities,
+        "summary": {
+            "total_capabilities_evaluated": len(evaluated_capabilities),
+            "explicit_count": explicit_count,
+            "implicit_count": implicit_count,
+            "missing_count": missing_count,
+            "critical_gaps": critical_gaps
+        }
+    }
+
+    print(f"   📋 CEC Summary: {explicit_count} explicit, {implicit_count} implicit, {missing_count} missing")
+    if critical_gaps:
+        print(f"   🔴 Critical gaps: {', '.join(critical_gaps)}")
+
+    return capability_evidence_report
+
+
+def evaluate_leadership_scope(
+    response_data: dict,
+    resume_data: dict,
+    leadership_extraction: dict = None
+) -> dict:
+    """
+    Evaluate Leadership Scope capability.
+
+    Checks for:
+    - Local vs regional vs global teams
+    - Distributed vs co-located
+    - Manager of managers vs IC managers
+    """
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+
+    # Check if JD requires leadership scope
+    global_keywords = ["global", "distributed", "multi-region", "international", "worldwide", "remote team"]
+    manager_of_managers_keywords = ["manager of managers", "director", "vp", "head of", "org-level"]
+
+    requires_global = any(kw in jd_text for kw in global_keywords)
+    requires_manager_of_managers = any(kw in role_title or kw in jd_text for kw in manager_of_managers_keywords)
+
+    # Skip if JD doesn't require leadership scope
+    if not requires_global and not requires_manager_of_managers:
+        return None
+
+    # Extract resume evidence
+    resume_experience = resume_data.get("experience", []) if resume_data else []
+    combined_text = ""
+    for exp in resume_experience:
+        if isinstance(exp, dict):
+            combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    # Check for explicit global evidence
+    has_global_evidence = any(kw in combined_text for kw in ["global", "distributed team", "multi-region", "across regions", "worldwide", "international team", "remote team across"])
+    has_mom_evidence = any(kw in combined_text for kw in ["manager of managers", "led managers", "director reports", "managed directors", "org of", "organization of"])
+
+    # Check for local-only evidence
+    has_local_evidence = any(kw in combined_text for kw in ["team of", "managed team", "led team", "direct reports"])
+
+    # Determine evidence status
+    if requires_global:
+        if has_global_evidence:
+            evidence_status = "explicit"
+            resume_evidence = "Resume shows globally distributed team leadership"
+            diagnosis = "Strong evidence of global team leadership."
+            distance = None
+        elif has_local_evidence:
+            evidence_status = "missing"
+            # Extract local context
+            local_context = "local team"
+            if leadership_extraction:
+                years = leadership_extraction.get("people_leadership_years", 0)
+                local_context = f"local team ({years:.1f} years people management)"
+            resume_evidence = f"Resume shows {local_context} but no global scope"
+            diagnosis = f"Resume shows people management but no evidence of globally distributed teams or multi-region ownership. Experience is local only."
+            distance = "Local (single office) → Global (multi-region) leadership gap"
+        else:
+            evidence_status = "missing"
+            resume_evidence = None
+            diagnosis = "No people leadership evidence found. Role requires global team leadership."
+            distance = "No leadership → Global leadership gap"
+
+        return {
+            "capability_id": "leadership_global_scope",
+            "capability_name": "People Leadership – Global Scope",
+            "jd_requirement": "Lead globally distributed teams across multiple regions",
+            "evidence_status": evidence_status,
+            "resume_evidence": resume_evidence,
+            "diagnosis": diagnosis,
+            "distance": distance,
+            "coachable": evidence_status != "missing" or has_local_evidence,
+            "criticality": "required"
+        }
+
+    if requires_manager_of_managers:
+        if has_mom_evidence:
+            evidence_status = "explicit"
+            resume_evidence = "Resume shows manager of managers experience"
+            diagnosis = "Strong evidence of org-level leadership."
+            distance = None
+        elif has_local_evidence:
+            evidence_status = "implicit"
+            resume_evidence = "Resume shows IC management but not manager of managers"
+            diagnosis = "Resume shows people management but no evidence of managing managers (Tier 3 leadership)."
+            distance = "IC Manager → Manager of Managers gap"
+        else:
+            evidence_status = "missing"
+            resume_evidence = None
+            diagnosis = "No people leadership evidence found. Role requires org-level leadership."
+            distance = "No leadership → Org-level leadership gap"
+
+        return {
+            "capability_id": "leadership_org_level",
+            "capability_name": "People Leadership – Org Level",
+            "jd_requirement": "Lead org-level teams, manage managers",
+            "evidence_status": evidence_status,
+            "resume_evidence": resume_evidence,
+            "diagnosis": diagnosis,
+            "distance": distance,
+            "coachable": evidence_status != "missing" or has_local_evidence,
+            "criticality": "required"
+        }
+
+    return None
+
+
+def evaluate_cross_functional_depth(response_data: dict, resume_data: dict) -> dict:
+    """
+    Evaluate Cross-Functional Depth capability.
+
+    Checks for:
+    - Explicit Product partnership
+    - Joint roadmap ownership
+    - Tradeoff and prioritization language
+    """
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+
+    # Check if JD requires cross-functional collaboration with Product
+    product_collab_keywords = ["product management", "product team", "pm partnership", "roadmap", "product strategy", "cross-functional", "collaborate with product"]
+
+    requires_product_collab = any(kw in jd_text for kw in product_collab_keywords)
+
+    # Also check for engineering manager roles which typically require this
+    is_eng_manager = "engineering manager" in role_title or "engineering lead" in role_title
+
+    if not requires_product_collab and not is_eng_manager:
+        return None
+
+    # Extract resume evidence
+    resume_experience = resume_data.get("experience", []) if resume_data else []
+    combined_text = ""
+    for exp in resume_experience:
+        if isinstance(exp, dict):
+            combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    # Check for explicit Product partnership
+    explicit_product = any(kw in combined_text for kw in [
+        "partnered with product", "product partnership", "co-owned roadmap",
+        "collaborated with pm", "product manager", "joint prioritization",
+        "product strategy", "product and engineering"
+    ])
+
+    # Check for adjacent cross-functional work (engineering-only)
+    adjacent_collab = any(kw in combined_text for kw in [
+        "cross-functional", "collaborated with", "worked with", "stakeholder",
+        "devops", "sre", "infrastructure", "platform team"
+    ])
+
+    if explicit_product:
+        return {
+            "capability_id": "cross_functional_product",
+            "capability_name": "Cross-Functional Partnership – Product",
+            "jd_requirement": "Collaborate closely with Product Management on roadmap",
+            "evidence_status": "explicit",
+            "resume_evidence": "Resume demonstrates Product partnership and roadmap collaboration",
+            "diagnosis": "Strong evidence of Product collaboration.",
+            "distance": None,
+            "coachable": None,
+            "criticality": "preferred"
+        }
+    elif adjacent_collab:
+        return {
+            "capability_id": "cross_functional_product",
+            "capability_name": "Cross-Functional Partnership – Product",
+            "jd_requirement": "Collaborate closely with Product Management on roadmap",
+            "evidence_status": "implicit",
+            "resume_evidence": "Resume shows cross-functional collaboration but not explicit Product partnership",
+            "diagnosis": "Cross-functional work is present, but direct Product partnership is not demonstrated.",
+            "distance": "Adjacent functions ≠ Product co-ownership",
+            "coachable": True,
+            "criticality": "preferred"
+        }
+    else:
+        return {
+            "capability_id": "cross_functional_product",
+            "capability_name": "Cross-Functional Partnership – Product",
+            "jd_requirement": "Collaborate closely with Product Management on roadmap",
+            "evidence_status": "missing",
+            "resume_evidence": None,
+            "diagnosis": "No evidence of cross-functional work or Product collaboration.",
+            "distance": "No cross-functional → Product partnership gap",
+            "coachable": True,
+            "criticality": "preferred"
+        }
+
+
+def evaluate_scale_signals(response_data: dict, resume_data: dict) -> dict:
+    """
+    Evaluate Scale Signals capability.
+
+    Checks for:
+    - Team size (5, 12, 50, 200+)
+    - Org size (division, multi-team, enterprise-wide)
+    - Platform complexity (monolith, microservices, distributed)
+    - Revenue, ARR, users, transactions
+    """
+    jd_text = (response_data.get("job_description", "") or "").lower()
+
+    # Extract scale requirements from JD
+    import re
+
+    # Team/org size patterns
+    jd_team_match = re.search(r'team of (\d+)|(\d+)\+?\s*(engineers?|developers?|reports?|people)', jd_text)
+    jd_scale_match = re.search(r'(\d+)m\+?\s*(users?|requests?|transactions?)|(\d+)\+?\s*(million|billion)', jd_text)
+    jd_revenue_match = re.search(r'\$(\d+)m|\$(\d+)\s*million|(\d+)m arr', jd_text)
+
+    requires_large_scale = bool(jd_team_match or jd_scale_match or jd_revenue_match)
+    requires_distributed = any(kw in jd_text for kw in ["distributed systems", "microservices", "kubernetes", "high-scale", "at scale"])
+
+    if not requires_large_scale and not requires_distributed:
+        return None
+
+    # Extract resume evidence
+    resume_experience = resume_data.get("experience", []) if resume_data else []
+    combined_text = ""
+    for exp in resume_experience:
+        if isinstance(exp, dict):
+            combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    # Check for scale evidence in resume
+    resume_team_match = re.search(r'team of (\d+)|managed (\d+)|(\d+)\s*(engineers?|developers?|reports?|people)', combined_text)
+    resume_scale_match = re.search(r'(\d+)m\+?\s*(users?|requests?|transactions?|api)|(\d+)\+?\s*(million|billion)|(\d+)k\s*(users?|requests?)', combined_text)
+    resume_revenue_match = re.search(r'\$(\d+)m|\$(\d+)\s*million|(\d+)m arr', combined_text)
+    resume_distributed = any(kw in combined_text for kw in ["distributed systems", "microservices", "kubernetes", "high-scale", "at scale", "platform"])
+
+    # Determine evidence status
+    has_scale_evidence = bool(resume_scale_match or resume_revenue_match or resume_distributed)
+    has_team_evidence = bool(resume_team_match)
+
+    # Extract specific numbers for diagnosis
+    resume_team_size = None
+    if resume_team_match:
+        for g in resume_team_match.groups():
+            if g and g.isdigit():
+                resume_team_size = int(g)
+                break
+
+    jd_team_size = None
+    if jd_team_match:
+        for g in jd_team_match.groups():
+            if g and g.isdigit():
+                jd_team_size = int(g)
+                break
+
+    if has_scale_evidence:
+        evidence = "Resume demonstrates scale"
+        if resume_scale_match:
+            evidence = f"Resume shows high-scale experience"
+        return {
+            "capability_id": "scale_signals",
+            "capability_name": "Scale Signals – Platform/Org",
+            "jd_requirement": "Experience at scale (large teams, high traffic, enterprise)",
+            "evidence_status": "explicit",
+            "resume_evidence": evidence,
+            "diagnosis": "Strong evidence of scale experience.",
+            "distance": None,
+            "coachable": None,
+            "criticality": "required"
+        }
+    elif has_team_evidence:
+        diagnosis = f"Resume shows team management"
+        if resume_team_size:
+            diagnosis = f"Resume shows team management ({resume_team_size} people)"
+            if jd_team_size and resume_team_size < jd_team_size:
+                diagnosis += f" but JD requires larger scale ({jd_team_size}+ people)"
+        return {
+            "capability_id": "scale_signals",
+            "capability_name": "Scale Signals – Platform/Org",
+            "jd_requirement": "Experience at scale (large teams, high traffic, enterprise)",
+            "evidence_status": "implicit",
+            "resume_evidence": f"Team of {resume_team_size}" if resume_team_size else "Team management experience",
+            "diagnosis": diagnosis,
+            "distance": f"Current scale ({resume_team_size or 'small'}) → Required scale ({jd_team_size or 'large'})" if jd_team_size else "Small → Large scale gap",
+            "coachable": True,
+            "criticality": "required"
+        }
+    else:
+        return {
+            "capability_id": "scale_signals",
+            "capability_name": "Scale Signals – Platform/Org",
+            "jd_requirement": "Experience at scale (large teams, high traffic, enterprise)",
+            "evidence_status": "missing",
+            "resume_evidence": None,
+            "diagnosis": "No scale indicators found in resume. JD requires enterprise or high-scale experience.",
+            "distance": "No scale evidence → Enterprise scale gap",
+            "coachable": True,
+            "criticality": "required"
+        }
+
+
+def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
+    """
+    Evaluate Domain Adjacency capability.
+
+    Checks for:
+    - Direct domain experience (exact match)
+    - Closely adjacent experience (transferable)
+    - Unrelated experience (different domain)
+    """
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+    company = (response_data.get("company", "") or "").lower()
+
+    # Domain mapping - JD keywords to domain categories
+    domain_categories = {
+        "safety": ["safety", "trust & safety", "trust and safety", "content moderation", "abuse", "fraud prevention", "risk"],
+        "fintech": ["fintech", "financial services", "payments", "banking", "lending", "trading", "investment"],
+        "healthcare": ["healthcare", "health tech", "medical", "clinical", "patient", "hipaa"],
+        "ecommerce": ["e-commerce", "ecommerce", "marketplace", "retail", "commerce"],
+        "enterprise": ["enterprise", "b2b", "saas", "business software"],
+        "consumer": ["consumer", "b2c", "social", "mobile app"],
+        "ml_ai": ["machine learning", "ml", "ai", "artificial intelligence", "deep learning", "nlp"],
+        "infrastructure": ["infrastructure", "platform", "devops", "sre", "cloud"]
+    }
+
+    # Detect required domain from JD
+    required_domain = None
+    jd_domain_keywords = []
+    for domain, keywords in domain_categories.items():
+        for kw in keywords:
+            if kw in jd_text or kw in role_title:
+                required_domain = domain
+                jd_domain_keywords.append(kw)
+                break
+        if required_domain:
+            break
+
+    if not required_domain:
+        return None
+
+    # Extract resume domains
+    resume_experience = resume_data.get("experience", []) if resume_data else []
+    combined_text = ""
+    for exp in resume_experience:
+        if isinstance(exp, dict):
+            combined_text += f" {exp.get('title', '')} {exp.get('company', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    resume_domains = set()
+    for domain, keywords in domain_categories.items():
+        for kw in keywords:
+            if kw in combined_text:
+                resume_domains.add(domain)
+                break
+
+    # Check for exact match
+    if required_domain in resume_domains:
+        return {
+            "capability_id": f"domain_{required_domain}",
+            "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
+            "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
+            "evidence_status": "explicit",
+            "resume_evidence": f"Resume shows direct {required_domain.replace('_', ' ')} experience",
+            "diagnosis": f"Strong evidence of {required_domain.replace('_', ' ')} domain expertise.",
+            "distance": None,
+            "coachable": None,
+            "criticality": "required"
+        }
+
+    # Check for adjacent domains (one degree of separation)
+    adjacent_domains = {
+        "safety": ["fintech", "enterprise"],  # fraud/risk adjacent
+        "fintech": ["ecommerce", "enterprise", "safety"],
+        "healthcare": ["enterprise"],
+        "ecommerce": ["fintech", "consumer"],
+        "enterprise": ["fintech", "ecommerce", "infrastructure"],
+        "consumer": ["ecommerce", "enterprise"],
+        "ml_ai": ["infrastructure", "enterprise"],
+        "infrastructure": ["enterprise", "ml_ai"]
+    }
+
+    adjacent_to_required = adjacent_domains.get(required_domain, [])
+    overlapping_adjacent = resume_domains.intersection(set(adjacent_to_required))
+
+    if overlapping_adjacent:
+        adjacent_domain = list(overlapping_adjacent)[0]
+        return {
+            "capability_id": f"domain_{required_domain}",
+            "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
+            "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
+            "evidence_status": "implicit",
+            "resume_evidence": f"Resume shows {adjacent_domain.replace('_', ' ')} experience (adjacent domain)",
+            "diagnosis": f"{adjacent_domain.replace('_', ' ').title()} experience is adjacent to {required_domain.replace('_', ' ')}, but no direct {required_domain.replace('_', ' ')} background.",
+            "distance": f"{adjacent_domain.replace('_', ' ').title()} → {required_domain.replace('_', ' ').title()} domain gap (1 degree)",
+            "coachable": True,
+            "criticality": "required"
+        }
+
+    # No match - missing
+    resume_domain_str = ", ".join([d.replace('_', ' ') for d in resume_domains]) if resume_domains else "general"
+    return {
+        "capability_id": f"domain_{required_domain}",
+        "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
+        "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
+        "evidence_status": "missing",
+        "resume_evidence": None,
+        "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background—unrelated domain.",
+        "distance": f"0 → {required_domain.replace('_', ' ')} domain gap (not coachable in current search)",
+        "coachable": False,
+        "criticality": "required"
+    }
 
 
 # ============================================================================
