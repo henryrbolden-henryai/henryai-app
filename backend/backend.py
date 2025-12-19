@@ -113,6 +113,1529 @@ def load_question_bank():
 load_question_bank()
 
 
+# ============================================================================
+# NON-TRANSFERABLE DOMAINS - GLOBAL CONSTANT
+# Per Eligibility Gate Enforcement Spec: These domains require direct experience.
+# No amount of adjacent experience substitutes for domain-specific expertise.
+# ============================================================================
+NON_TRANSFERABLE_DOMAINS = [
+    # Executive Search at VP+/C-suite level
+    {
+        "domain": "executive_search",
+        "levels": ["vp", "vice president", "c-suite", "chief", "svp", "evp", "cxo"],
+        "description": "Executive Search at VP+ or C-suite level",
+        "keywords": ["executive search", "executive recruiting", "c-suite", "vp-level", "retained search", "executive placement"]
+    },
+    # People Leadership at Director+ level
+    {
+        "domain": "people_leadership",
+        "levels": ["director", "senior director", "vp", "vice president", "head of"],
+        "description": "People Leadership at Director+ level",
+        "keywords": ["people leadership", "direct reports", "team management", "people management", "managing teams"]
+    },
+    # Core Software Engineering (not PM, not design, not adjacent)
+    {
+        "domain": "core_software_engineering",
+        "levels": ["senior", "staff", "principal", "lead", "architect"],
+        "description": "Core Software Engineering (hands-on coding)",
+        "keywords": ["software engineer", "software developer", "backend engineer", "frontend engineer", "full stack", "systems engineer", "platform engineer"]
+    },
+    # ML/AI Research (not just "used AI tools")
+    {
+        "domain": "ml_ai_research",
+        "levels": ["research", "scientist", "senior", "staff", "principal"],
+        "description": "ML/AI Research (publish papers, build models)",
+        "keywords": ["machine learning", "deep learning", "ai research", "ml engineer", "research scientist", "nlp", "computer vision", "neural network"]
+    },
+    # Regulated Clinical or Finance leadership
+    {
+        "domain": "regulated_clinical_finance",
+        "levels": ["director", "vp", "head of", "chief", "senior"],
+        "description": "Regulated Clinical or Finance leadership",
+        "keywords": ["clinical operations", "clinical trials", "fda", "regulatory", "compliance", "finra", "sec", "banking regulation", "healthcare compliance", "hipaa"]
+    }
+]
+
+
+# ============================================================================
+# ROLE PARSER - EXTRACTS STRUCTURED ELIGIBILITY LOGIC FROM JD
+# Per Role Parser Spec: "This parser decides what is non-negotiable vs coachable
+# before scoring ever happens."
+#
+# PARSING ORDER (CRITICAL):
+# 1. Normalize JD text
+# 2. Extract numeric requirements first
+# 3. Bind numbers to verbs and scopes
+# 4. Assign Tier 1 vs Tier 2
+# 5. Extract market context last
+# 6. Return structured output only - NO scoring, NO messaging, NO advice
+# ============================================================================
+
+def parse_role_requirements(job_description: str, role_title: str = "") -> dict:
+    """
+    Role Parser - Converts JD into structured, enforceable eligibility logic.
+
+    This parser decides what is non-negotiable vs coachable BEFORE scoring happens.
+
+    Args:
+        job_description: Raw JD text
+        role_title: Role title if available
+
+    Returns:
+        Structured eligibility object:
+        {
+            "role_id": str,
+            "tier_1_hard_gates": [],      # Binary, non-transferable, failure = DO NOT APPLY
+            "tier_2_conditional_requirements": [],  # Transferable, missing = risk
+            "tier_3_market_signals": [],  # Strategy only, never affects eligibility
+            "confidence_flags": []        # Interpretation risk warnings
+        }
+    """
+    import re
+    import hashlib
+
+    # Normalize text
+    jd_lower = (job_description or "").lower()
+    title_lower = (role_title or "").lower()
+    combined = f"{title_lower} {jd_lower}"
+
+    # Generate role ID for tracking
+    role_id = hashlib.md5(combined.encode()).hexdigest()[:12]
+
+    result = {
+        "role_id": role_id,
+        "tier_1_hard_gates": [],
+        "tier_2_conditional_requirements": [],
+        "tier_3_market_signals": [],
+        "confidence_flags": []
+    }
+
+    # ========================================================================
+    # TIER 1: HARD ELIGIBILITY GATES (Binary, Non-Transferable)
+    # Failure = DO NOT APPLY. No exceptions.
+    # ========================================================================
+
+    # Pattern 1: Years tied to leadership or execution
+    # "7+ years of people leadership", "8+ years executive recruiting"
+    years_patterns = [
+        # People leadership years
+        (r"(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s*(?:people\s*)?(?:leadership|management|managing\s+teams?|managing\s+people|direct\s+reports?)", "people_leadership_years"),
+        # Executive/senior specific experience
+        (r"(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s*(?:executive|vp|director|c-suite|senior)\s*(?:search|recruiting|experience)", "executive_experience_years"),
+        # Domain-specific experience with years
+        (r"(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s*(?:software|engineering|development|coding)\s+experience", "engineering_experience_years"),
+        # Generic senior experience requirements
+        (r"(\d+)\+?\s*(?:years?|yrs?)(?:\s+of)?\s*(?:relevant|related|progressive|hands-on)\s+experience", "domain_experience_years"),
+    ]
+
+    for pattern, req_type in years_patterns:
+        matches = re.findall(pattern, combined)
+        for match in matches:
+            years = int(match) if match else 0
+            if years > 0:
+                result["tier_1_hard_gates"].append({
+                    "type": req_type,
+                    "required": years,
+                    "evidence_required": True,
+                    "source_pattern": pattern
+                })
+
+    # Pattern 2: Scope ownership keywords (automatic Tier 1)
+    ownership_keywords = [
+        ("own", "scope_ownership"),
+        ("accountable for", "scope_ownership"),
+        ("final decision-maker", "decision_authority"),
+        ("ultimate responsibility", "scope_ownership"),
+        ("budget owner", "budget_authority"),
+        ("p&l responsibility", "budget_authority"),
+        ("headcount authority", "hiring_authority"),
+    ]
+
+    for keyword, req_type in ownership_keywords:
+        if keyword in jd_lower:
+            # Extract context around the keyword
+            result["tier_1_hard_gates"].append({
+                "type": req_type,
+                "keyword_detected": keyword,
+                "evidence_required": True
+            })
+
+    # Pattern 3: Level specificity (VP+, C-suite, Board-facing, global)
+    level_keywords = [
+        (r"\bvp\+\b", "vp_plus_level"),
+        (r"\bc-suite\b", "c_suite_level"),
+        (r"\bboard-facing\b", "board_exposure"),
+        (r"\bglobal\s+(?:ownership|responsibility|scope)\b", "global_scope"),
+        (r"\bexecutive\s+(?:team|leadership|committee)\b", "executive_team_membership"),
+    ]
+
+    for pattern, req_type in level_keywords:
+        if re.search(pattern, combined):
+            result["tier_1_hard_gates"].append({
+                "type": req_type,
+                "evidence_required": True,
+                "source_pattern": pattern
+            })
+
+    # Pattern 4: Legal or credential requirements
+    credential_patterns = [
+        (r"\b(?:security\s+)?clearance\s+(?:required|necessary|must\s+have)\b", "security_clearance"),
+        (r"\b(?:cpa|cfa|pe|bar|md|rn|jd)\s+(?:required|license|certification)\b", "professional_license"),
+        (r"\bmust\s+be\s+licensed\b", "professional_license"),
+        (r"\bcertified\s+(?:public\s+accountant|financial\s+analyst)\b", "professional_certification"),
+    ]
+
+    for pattern, req_type in credential_patterns:
+        if re.search(pattern, combined):
+            result["tier_1_hard_gates"].append({
+                "type": req_type,
+                "evidence_required": True,
+                "source_pattern": pattern
+            })
+
+    # Pattern 5: Non-transferable domain detection
+    for domain_config in NON_TRANSFERABLE_DOMAINS:
+        domain = domain_config["domain"]
+        levels = domain_config["levels"]
+        keywords = domain_config["keywords"]
+
+        jd_requires_domain = any(kw in combined for kw in keywords)
+        jd_at_required_level = any(level in combined for level in levels)
+
+        if jd_requires_domain and jd_at_required_level:
+            result["tier_1_hard_gates"].append({
+                "type": f"non_transferable_domain:{domain}",
+                "domain": domain,
+                "description": domain_config["description"],
+                "evidence_required": True
+            })
+
+    # ========================================================================
+    # TIER 2: CONDITIONAL REQUIREMENTS (Transferable, Missing = Risk)
+    # ========================================================================
+
+    # Pattern 1: Industry preference language
+    industry_patterns = [
+        (r"\b(?:experience\s+in|background\s+in)\s+(healthcare|fintech|saas|e-commerce|retail|manufacturing|banking|insurance)\b", "industry_experience"),
+        (r"\b(healthcare|fintech|saas|b2b|enterprise|consumer)\s+(?:preferred|a\s+plus|nice\s+to\s+have)\b", "industry_preference"),
+    ]
+
+    for pattern, req_type in industry_patterns:
+        matches = re.findall(pattern, combined)
+        for match in matches:
+            domain = match if isinstance(match, str) else match[0]
+            result["tier_2_conditional_requirements"].append({
+                "type": req_type,
+                "domain": domain,
+                "transferable": True
+            })
+
+    # Pattern 2: Scale language without numeric enforcement
+    scale_keywords = [
+        ("high-growth", "scale_experience"),
+        ("series c+", "scale_experience"),
+        ("series d", "scale_experience"),
+        ("enterprise scale", "scale_experience"),
+        ("hypergrowth", "scale_experience"),
+        ("rapidly scaling", "scale_experience"),
+    ]
+
+    for keyword, req_type in scale_keywords:
+        if keyword in jd_lower:
+            result["tier_2_conditional_requirements"].append({
+                "type": req_type,
+                "keyword_detected": keyword,
+                "transferable": True
+            })
+
+    # Pattern 3: First-time scope expansion
+    first_time_patterns = [
+        (r"\bbuild\s+from\s+scratch\b", "greenfield_builder"),
+        (r"\bfirst\s+\w+\s+hire\b", "first_hire"),
+        (r"\bestablish\s+the\s+function\b", "function_builder"),
+        (r"\b0\s*(?:to|→)\s*1\b", "zero_to_one"),
+    ]
+
+    for pattern, req_type in first_time_patterns:
+        if re.search(pattern, combined):
+            result["tier_2_conditional_requirements"].append({
+                "type": req_type,
+                "transferable": True,
+                "source_pattern": pattern
+            })
+
+    # Pattern 4: Tooling or domain adjacency
+    tooling_patterns = [
+        (r"\b(?:greenhouse|lever|workday|icims|taleo)\b", "ats_experience"),
+        (r"\b(?:aws|azure|gcp)\s+(?:experience|knowledge)\b", "cloud_platform"),
+        (r"\bregulated\s+environment\b", "regulated_environment"),
+    ]
+
+    for pattern, req_type in tooling_patterns:
+        if re.search(pattern, combined):
+            result["tier_2_conditional_requirements"].append({
+                "type": req_type,
+                "transferable": True,
+                "source_pattern": pattern
+            })
+
+    # ========================================================================
+    # TIER 3: MARKET & CONTEXT SIGNALS (Never affect eligibility)
+    # ========================================================================
+
+    # Funding stage signals
+    funding_patterns = [
+        (r"\bseries\s+[a-e]\b", "funding_stage"),
+        (r"\b(?:seed|pre-seed|angel)\s+(?:stage|funded)\b", "funding_stage"),
+        (r"\bipo\b", "funding_stage"),
+        (r"\bpublic\s+company\b", "funding_stage"),
+    ]
+
+    for pattern, signal_type in funding_patterns:
+        match = re.search(pattern, combined)
+        if match:
+            result["tier_3_market_signals"].append({
+                "type": signal_type,
+                "signal": match.group(0),
+                "affects_eligibility": False
+            })
+
+    # Compensation signals
+    comp_patterns = [
+        (r"\$\d{2,3}k\s*[-–]\s*\$\d{2,3}k", "compensation_range"),
+        (r"\bequity\b", "equity_offered"),
+        (r"\bstock\s+options\b", "equity_offered"),
+    ]
+
+    for pattern, signal_type in comp_patterns:
+        match = re.search(pattern, combined)
+        if match:
+            result["tier_3_market_signals"].append({
+                "type": signal_type,
+                "signal": match.group(0),
+                "affects_eligibility": False
+            })
+
+    # Urgency signals
+    urgency_patterns = [
+        (r"\bimmediately\b", "high_urgency"),
+        (r"\basap\b", "high_urgency"),
+        (r"\burgent\b", "high_urgency"),
+        (r"\bstart\s+date\s+(?:asap|immediately)\b", "high_urgency"),
+    ]
+
+    for pattern, signal_type in urgency_patterns:
+        if re.search(pattern, combined):
+            result["tier_3_market_signals"].append({
+                "type": signal_type,
+                "signal": "high",
+                "affects_eligibility": False
+            })
+
+    # ========================================================================
+    # INDUSTRY ALIGNMENT CLASSIFICATION (Per Industry Alignment Extension Spec)
+    # Industry affects eligibility ONLY when the role makes it unavoidable.
+    # Otherwise, it affects competitiveness, not permission to apply.
+    # ========================================================================
+    industry_alignment = {
+        "required": [],       # Tier 1 - Hard gate (regulated, legal, compliance)
+        "preferred": [],      # Tier 2 - Conditional (nice to have)
+        "agnostic": False,    # True if role is industry-agnostic
+        "confidence_flag": None
+    }
+
+    # Tier 1 Industry - Required (becomes hard gate)
+    # Trigger: "must have", "deep domain expertise", "regulated environment required"
+    # Industries: Healthcare, FinServ (regulated), Government, Energy, Life Sciences
+
+    tier_1_industry_patterns = [
+        # Explicit requirement language
+        (r"\bmust\s+have\s+(?:experience|background)\s+in\s+(healthcare|fintech|financial\s+services|government|energy|life\s+sciences|pharma|biotech|defense|govcon)\b", "required_experience"),
+        (r"\bdeep\s+domain\s+expertise\s+in\s+(healthcare|finance|banking|insurance|government|regulated)\b", "deep_domain"),
+        (r"\bregulated\s+environment\s+(?:experience\s+)?required\b", "regulated_environment"),
+        (r"\bindustry[- ]specific\s+knowledge\s+(?:required|critical|essential)\b", "industry_specific"),
+        # Compliance/legal tied industries
+        (r"\b(hipaa|fda|finra|sec|sox)\s+(?:compliance|experience|knowledge)\s+required\b", "regulatory_compliance"),
+        (r"\b(clinical\s+trials?|drug\s+development|medical\s+device)\s+experience\s+required\b", "life_sciences"),
+    ]
+
+    for pattern, reason_type in tier_1_industry_patterns:
+        match = re.search(pattern, combined)
+        if match:
+            industry = match.group(1) if match.lastindex else "regulated domain"
+            industry_alignment["required"].append({
+                "industry": industry.title().replace("_", " "),
+                "reason": f"Regulated domain experience required ({reason_type})"
+            })
+            # Also add to Tier 1 hard gates
+            result["tier_1_hard_gates"].append({
+                "type": f"industry_requirement:{industry.lower().replace(' ', '_')}",
+                "industry": industry,
+                "evidence_required": True,
+                "reason": "Regulated domain - non-transferable"
+            })
+
+    # Tier 2 Industry - Preferred (conditional, coachable)
+    # Trigger: "preferred", "a plus", "nice to have", "familiarity with"
+    tier_2_industry_patterns = [
+        (r"\b(?:experience|background)\s+in\s+(saas|b2b|b2c|e-commerce|retail|media|adtech|martech|edtech|proptech|consumer|enterprise)\s+(?:preferred|a\s+plus|nice\s+to\s+have|helpful)\b", "preferred"),
+        (r"\b(saas|b2b|enterprise|consumer|fintech)\s+(?:preferred|a\s+plus|background\s+helpful)\b", "preferred"),
+        (r"\bfamiliarity\s+with\s+(healthcare|finance|tech|retail|manufacturing)\b", "familiarity"),
+        (r"\bexperience\s+in\s+(saas|b2b|enterprise|consumer|startup)\s+environment\s+(?:preferred|helpful)\b", "preferred"),
+    ]
+
+    for pattern, reason_type in tier_2_industry_patterns:
+        match = re.search(pattern, combined)
+        if match:
+            industry = match.group(1) if match.lastindex else "general"
+            # Don't add if already in required
+            if not any(req.get("industry", "").lower() == industry.lower() for req in industry_alignment["required"]):
+                industry_alignment["preferred"].append({
+                    "industry": industry.title(),
+                    "transferable": True
+                })
+                result["tier_2_conditional_requirements"].append({
+                    "type": f"industry_preference:{industry.lower()}",
+                    "industry": industry,
+                    "transferable": True
+                })
+
+    # Check for industry-agnostic signals
+    agnostic_patterns = [
+        r"\bany\s+industry\b",
+        r"\bindustry[- ]agnostic\b",
+        r"\bopen\s+to\s+(?:all\s+)?industries\b",
+        r"\bno\s+(?:specific\s+)?industry\s+(?:preference|requirement)\b"
+    ]
+
+    if any(re.search(p, combined) for p in agnostic_patterns):
+        industry_alignment["agnostic"] = True
+
+    # If no industry language detected at all, mark as agnostic
+    if not industry_alignment["required"] and not industry_alignment["preferred"]:
+        # Check if ANY industry-related terms appear
+        industry_terms = r"\b(saas|b2b|b2c|fintech|healthcare|finance|retail|consumer|enterprise|government|regulated|compliance)\b"
+        if not re.search(industry_terms, combined):
+            industry_alignment["agnostic"] = True
+
+    # Confidence flag for ambiguous industry requirements
+    # Emit when industry is mentioned but not clearly required or preferred
+    ambiguous_industry = re.search(r"\bexperience\s+in\s+(?:complex\s+)?(?:industry|industries|domain)\b", combined)
+    mixed_signals = (
+        industry_alignment["agnostic"] and
+        (industry_alignment["required"] or industry_alignment["preferred"])
+    )
+
+    if ambiguous_industry or mixed_signals:
+        industry_alignment["confidence_flag"] = {
+            "type": "AMBIGUOUS_INDUSTRY_REQUIREMENT",
+            "detail": "Industry mentioned without clarity on whether it is mandatory"
+        }
+        result["confidence_flags"].append(industry_alignment["confidence_flag"])
+
+    # Add industry_alignment to result
+    result["industry_alignment"] = industry_alignment
+
+    # ========================================================================
+    # CONFIDENCE FLAGS (Safety Net)
+    # Emit flags when interpretation risk exists
+    # ========================================================================
+
+    # Flag: Leadership mentioned without explicit people management
+    if re.search(r"\bleadership\b", combined) and not re.search(r"\b(?:people|team|direct\s+reports?|managing)\b", combined):
+        result["confidence_flags"].append({
+            "flag": "AMBIGUOUS_LEADERSHIP",
+            "detail": "Leadership mentioned without explicit people management - may be technical or operational leadership"
+        })
+
+    # Flag: Years mentioned without clear scope
+    if re.search(r"\d+\+?\s*years", combined) and not result["tier_1_hard_gates"]:
+        result["confidence_flags"].append({
+            "flag": "AMBIGUOUS_YEARS",
+            "detail": "Years requirement detected but could not bind to specific scope"
+        })
+
+    # Flag: Senior title without scope requirements
+    if re.search(r"\b(?:senior|staff|principal|director|vp)\b", title_lower):
+        if not any(gate.get("type") in ["scope_ownership", "decision_authority", "budget_authority"] for gate in result["tier_1_hard_gates"]):
+            result["confidence_flags"].append({
+                "flag": "TITLE_WITHOUT_SCOPE",
+                "detail": f"Senior title '{role_title}' detected but no explicit scope requirements in JD"
+            })
+
+    # Deduplicate gates and requirements
+    result["tier_1_hard_gates"] = _deduplicate_requirements(result["tier_1_hard_gates"])
+    result["tier_2_conditional_requirements"] = _deduplicate_requirements(result["tier_2_conditional_requirements"])
+
+    print(f"📋 ROLE PARSER OUTPUT:")
+    print(f"   Tier 1 Hard Gates: {len(result['tier_1_hard_gates'])}")
+    print(f"   Tier 2 Conditional: {len(result['tier_2_conditional_requirements'])}")
+    print(f"   Tier 3 Market Signals: {len(result['tier_3_market_signals'])}")
+    print(f"   Confidence Flags: {len(result['confidence_flags'])}")
+
+    return result
+
+
+def _deduplicate_requirements(requirements: list) -> list:
+    """Remove duplicate requirements based on type."""
+    seen = set()
+    unique = []
+    for req in requirements:
+        req_type = req.get("type", "")
+        if req_type not in seen:
+            seen.add(req_type)
+            unique.append(req)
+    return unique
+
+
+def evaluate_candidate_against_role_requirements(resume_data: dict, role_requirements: dict) -> dict:
+    """
+    Evaluate a candidate against parsed role requirements.
+
+    Per Role Parser Spec: "All downstream scoring and messaging must obey
+    Tier 1 output without exception."
+
+    Args:
+        resume_data: Parsed resume
+        role_requirements: Output from parse_role_requirements()
+
+    Returns:
+        Evaluation result with eligibility determination
+    """
+    result = {
+        "eligible": True,
+        "tier_1_failures": [],
+        "tier_2_risks": [],
+        "tier_3_strategy": [],
+        "recommendation": None,
+        "recommendation_locked": False
+    }
+
+    if not resume_data or not role_requirements:
+        return result
+
+    # ========================================================================
+    # TIER 1 EVALUATION - Any failure = DO NOT APPLY (locked)
+    # ========================================================================
+    tier_1_gates = role_requirements.get("tier_1_hard_gates", [])
+
+    for gate in tier_1_gates:
+        gate_type = gate.get("type", "")
+
+        # Check people leadership years
+        if "people_leadership" in gate_type:
+            required_years = gate.get("required", 0)
+            candidate_years = extract_people_leadership_years(resume_data)
+
+            if candidate_years < required_years:
+                result["tier_1_failures"].append({
+                    "gate": gate,
+                    "required": required_years,
+                    "candidate_has": candidate_years,
+                    "gap_type": "missing_experience"
+                })
+
+        # Check non-transferable domains
+        if "non_transferable_domain" in gate_type:
+            domain = gate.get("domain", "")
+            domain_config = next((d for d in NON_TRANSFERABLE_DOMAINS if d["domain"] == domain), None)
+
+            if domain_config:
+                keywords = domain_config["keywords"]
+                experience = resume_data.get("experience", [])
+                combined_resume = " ".join([
+                    f"{exp.get('title', '')} {exp.get('description', '')}"
+                    for exp in experience if isinstance(exp, dict)
+                ]).lower()
+
+                has_domain = any(kw in combined_resume for kw in keywords)
+
+                if not has_domain:
+                    result["tier_1_failures"].append({
+                        "gate": gate,
+                        "domain": domain,
+                        "candidate_has_domain": False,
+                        "gap_type": "missing_experience"
+                    })
+
+        # Check for scope ownership evidence
+        if gate_type in ["scope_ownership", "decision_authority", "budget_authority"]:
+            # Look for ownership language in resume
+            experience = resume_data.get("experience", [])
+            combined_resume = " ".join([
+                f"{exp.get('description', '')} {' '.join(exp.get('highlights', []))}"
+                for exp in experience if isinstance(exp, dict)
+            ]).lower()
+
+            ownership_evidence = any(kw in combined_resume for kw in [
+                "owned", "accountable", "responsible for", "led",
+                "built", "established", "final decision", "p&l", "budget"
+            ])
+
+            if not ownership_evidence:
+                result["tier_1_failures"].append({
+                    "gate": gate,
+                    "evidence_found": False,
+                    "gap_type": "missing_evidence"
+                })
+
+        # Check industry requirements (Tier 1 - regulated domains)
+        if "industry_requirement" in gate_type:
+            industry = gate.get("industry", "")
+            experience = resume_data.get("experience", [])
+            combined_resume = " ".join([
+                f"{exp.get('company', '')} {exp.get('description', '')} {exp.get('title', '')}"
+                for exp in experience if isinstance(exp, dict)
+            ]).lower()
+
+            # Check for industry-specific keywords
+            industry_keywords = {
+                "healthcare": ["healthcare", "hospital", "medical", "clinical", "health tech", "healthtech", "hipaa"],
+                "fintech": ["fintech", "financial services", "banking", "payments", "trading", "finra", "sec"],
+                "financial services": ["financial services", "banking", "investment", "trading", "finra", "sec"],
+                "government": ["government", "federal", "public sector", "govcon", "defense", "dod"],
+                "life sciences": ["pharma", "biotech", "life sciences", "clinical trials", "fda", "drug development"],
+                "energy": ["energy", "utilities", "oil", "gas", "renewable"],
+            }
+
+            industry_lower = industry.lower()
+            relevant_keywords = industry_keywords.get(industry_lower, [industry_lower])
+            has_industry = any(kw in combined_resume for kw in relevant_keywords)
+
+            if not has_industry:
+                result["tier_1_failures"].append({
+                    "gate": gate,
+                    "industry": industry,
+                    "candidate_has_industry": False,
+                    "gap_type": "missing_experience"
+                })
+
+    # ========================================================================
+    # TIER 1 FAILURE = LOCKED DO NOT APPLY
+    # ========================================================================
+    if result["tier_1_failures"]:
+        result["eligible"] = False
+        result["recommendation"] = "Do Not Apply"
+        result["recommendation_locked"] = True
+
+        # Find the most severe failure for the reason
+        primary_failure = result["tier_1_failures"][0]
+        gate = primary_failure.get("gate", {})
+
+        if "people_leadership" in gate.get("type", ""):
+            result["locked_reason"] = (
+                f"This role requires {primary_failure['required']}+ years of people leadership. "
+                f"You have {primary_failure['candidate_has']:.1f} years verified. "
+                f"Operational leadership does not count."
+            )
+        elif "non_transferable_domain" in gate.get("type", ""):
+            domain_desc = gate.get("description", gate.get("domain", "this domain"))
+            result["locked_reason"] = (
+                f"This role requires {domain_desc}. "
+                f"Your background does not include direct experience in this domain. "
+                f"This is a non-transferable requirement."
+            )
+        elif "industry_requirement" in gate.get("type", ""):
+            industry = gate.get("industry", "this industry")
+            result["locked_reason"] = (
+                f"This role requires experience in {industry}. "
+                f"Your background does not show verified experience in this regulated domain. "
+                f"Industry alignment is required for compliance-heavy roles."
+            )
+        else:
+            result["locked_reason"] = (
+                f"This role has requirements you do not meet: {gate.get('type', 'unknown')}."
+            )
+
+        print(f"🚫 TIER 1 GATE FAILURE: {len(result['tier_1_failures'])} gates failed")
+        print(f"   🔒 RECOMMENDATION LOCKED: Do Not Apply")
+        return result
+
+    # ========================================================================
+    # TIER 2 EVALUATION - Risks noted but don't block application
+    # ========================================================================
+    tier_2_reqs = role_requirements.get("tier_2_conditional_requirements", [])
+
+    for req in tier_2_reqs:
+        req_type = req.get("type", "")
+
+        # Check industry experience
+        if "industry" in req_type:
+            domain = req.get("domain", "")
+            experience = resume_data.get("experience", [])
+            combined_resume = " ".join([
+                f"{exp.get('company', '')} {exp.get('description', '')}"
+                for exp in experience if isinstance(exp, dict)
+            ]).lower()
+
+            if domain and domain.lower() not in combined_resume:
+                result["tier_2_risks"].append({
+                    "requirement": req,
+                    "risk_level": "medium",
+                    "note": f"Industry experience in {domain} not verified"
+                })
+
+    # ========================================================================
+    # TIER 3 - Strategy signals (informational only)
+    # ========================================================================
+    result["tier_3_strategy"] = role_requirements.get("tier_3_market_signals", [])
+
+    # Apply confidence flag logic - default conservative if flags exist
+    if role_requirements.get("confidence_flags"):
+        result["confidence_flags"] = role_requirements["confidence_flags"]
+        # Don't allow optimistic phrasing when flags exist
+        result["allow_optimistic_phrasing"] = False
+    else:
+        result["allow_optimistic_phrasing"] = True
+
+    print(f"✅ CANDIDATE ELIGIBLE - No Tier 1 failures")
+    if result["tier_2_risks"]:
+        print(f"   ⚠️ Tier 2 risks: {len(result['tier_2_risks'])}")
+
+    return result
+
+
+# ============================================================================
+# CREDIBILITY ALIGNMENT ENGINE (CAE)
+# Per CAE Spec: "Assess how believable the candidate will look to a hiring manager,
+# not whether they're allowed to apply. This layer never blocks on its own.
+# It modulates confidence, language, and recommendation strength."
+#
+# ONE-LINE RULE: "Credibility modifiers reflect how a hiring manager will perceive
+# the candidate. They must materially affect recommendation strength and messaging
+# tone, even when eligibility is met."
+# ============================================================================
+
+def evaluate_credibility_alignment(resume_data: dict, response_data: dict) -> dict:
+    """
+    Credibility Alignment Engine (CAE) - Runs AFTER eligibility, BEFORE recommendation.
+
+    Purpose: Quantify how much explanation the candidate will need and whether
+    their story is plausible to a hiring manager.
+
+    This is NOT a gate. It modulates:
+    - Recommendation ceiling
+    - Coaching intensity
+    - Language firmness
+    - CTA urgency
+
+    Args:
+        resume_data: Parsed resume
+        response_data: JD analysis response
+
+    Returns:
+        CAE result with credibility assessments for all three dimensions
+    """
+    import re
+
+    result = {
+        "industry_alignment": {
+            "match": "direct",  # direct | adjacent | distant
+            "risk_level": "low",  # low | medium | high
+            "narrative_burden": "low"  # low | medium | high
+        },
+        "company_scale_alignment": {
+            "candidate_scale": None,  # startup | mid | enterprise
+            "target_scale": None,  # startup | mid | enterprise
+            "delta": 0,  # 0 | 1 | 2 | 3
+            "risk_level": "low"  # low | medium | high
+        },
+        "role_scope_alignment": {
+            "title_inflation_risk": "low",  # low | medium | high
+            "scope_gap": "none",  # none | moderate | significant
+            "hm_skepticism": "low"  # low | medium | high
+        },
+        "overall_credibility_risk": "low",  # low | medium | high
+        "recommendation_ceiling": None,  # None = no cap, or "Apply with Caution"
+        "coaching_intensity": "normal",  # normal | moderate | heavy
+        "language_firmness": "confident",  # confident | candid | skeptical
+        "mandatory_reality_check": False,
+        "reality_check_message": None
+    }
+
+    if not resume_data or not response_data:
+        return result
+
+    # Extract job info
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+    combined_jd = f"{role_title} {jd_text}"
+
+    # Extract resume info
+    experience = resume_data.get("experience", [])
+    combined_resume = ""
+    candidate_companies = []
+    candidate_titles = []
+
+    for exp in experience:
+        if isinstance(exp, dict):
+            title = (exp.get("title", "") or "").lower()
+            desc = (exp.get("description", "") or "").lower()
+            company = (exp.get("company", "") or "").lower()
+            highlights = exp.get("highlights", [])
+            if highlights and isinstance(highlights, list):
+                desc += " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+            combined_resume += f" {title} {desc} {company}"
+            candidate_companies.append(company)
+            candidate_titles.append(title)
+
+    high_risk_count = 0
+    medium_risk_count = 0
+
+    # ========================================================================
+    # DIMENSION 1: INDUSTRY ALIGNMENT
+    # Direct → no friction, Adjacent → explainable, Distant → heavy skepticism
+    # ========================================================================
+
+    # Define industry clusters for adjacency mapping
+    industry_clusters = {
+        "tech_saas": ["saas", "software", "tech", "technology", "b2b", "enterprise software", "cloud"],
+        "fintech": ["fintech", "financial services", "banking", "payments", "trading", "investment", "insurance", "finra", "sec"],
+        "healthcare": ["healthcare", "health tech", "healthtech", "medical", "clinical", "hospital", "health", "hipaa", "pharma", "biotech"],
+        "consumer": ["consumer", "b2c", "retail", "e-commerce", "ecommerce", "cpg", "consumer goods", "dtc"],
+        "marketplace": ["marketplace", "platform", "two-sided", "gig economy", "sharing economy"],
+        "media_adtech": ["media", "advertising", "adtech", "martech", "content", "publishing"],
+        "edtech": ["education", "edtech", "learning", "training", "e-learning"],
+        "government": ["government", "federal", "public sector", "govcon", "defense", "dod", "state", "municipal"],
+        "manufacturing": ["manufacturing", "industrial", "hardware", "supply chain", "logistics"],
+    }
+
+    # Detect target industry
+    target_industry = None
+    for industry, keywords in industry_clusters.items():
+        if any(kw in combined_jd for kw in keywords):
+            target_industry = industry
+            break
+
+    # Detect candidate's industry background
+    candidate_industries = []
+    for industry, keywords in industry_clusters.items():
+        if any(kw in combined_resume for kw in keywords):
+            candidate_industries.append(industry)
+
+    # Determine match type
+    if target_industry is None:
+        # Industry-agnostic role
+        result["industry_alignment"]["match"] = "direct"
+        result["industry_alignment"]["risk_level"] = "low"
+        result["industry_alignment"]["narrative_burden"] = "low"
+    elif target_industry in candidate_industries:
+        # Direct match
+        result["industry_alignment"]["match"] = "direct"
+        result["industry_alignment"]["risk_level"] = "low"
+        result["industry_alignment"]["narrative_burden"] = "low"
+    else:
+        # Check for adjacency
+        adjacency_map = {
+            "tech_saas": ["fintech", "marketplace", "media_adtech", "edtech"],
+            "fintech": ["tech_saas", "consumer"],
+            "healthcare": ["tech_saas"],  # Limited adjacency - highly regulated
+            "consumer": ["marketplace", "media_adtech", "tech_saas"],
+            "marketplace": ["consumer", "tech_saas"],
+            "media_adtech": ["consumer", "tech_saas"],
+            "edtech": ["tech_saas", "consumer"],
+            "government": [],  # Very limited adjacency
+            "manufacturing": ["tech_saas"],  # If going digital
+        }
+
+        adjacent_industries = adjacency_map.get(target_industry, [])
+        has_adjacent = any(ind in candidate_industries for ind in adjacent_industries)
+
+        if has_adjacent:
+            result["industry_alignment"]["match"] = "adjacent"
+            result["industry_alignment"]["risk_level"] = "medium"
+            result["industry_alignment"]["narrative_burden"] = "medium"
+            medium_risk_count += 1
+        else:
+            result["industry_alignment"]["match"] = "distant"
+            result["industry_alignment"]["risk_level"] = "high"
+            result["industry_alignment"]["narrative_burden"] = "high"
+            high_risk_count += 1
+
+    # Special handling for regulated industries
+    regulated_industries = ["healthcare", "fintech", "government"]
+    if target_industry in regulated_industries:
+        if result["industry_alignment"]["match"] != "direct":
+            # Regulated industries have higher skepticism
+            result["industry_alignment"]["risk_level"] = "high"
+            result["industry_alignment"]["narrative_burden"] = "high"
+            if result["industry_alignment"]["match"] == "adjacent":
+                high_risk_count += 1
+                medium_risk_count -= 1
+
+    # ========================================================================
+    # DIMENSION 2: COMPANY SCALE ALIGNMENT
+    # Delta 0-1 → normal, Delta 2 → skepticism, Delta 3 → major credibility gap
+    # ========================================================================
+
+    # Detect target company scale from JD
+    enterprise_signals = [
+        "fortune 500", "fortune 100", "global", "enterprise", "multinational",
+        "publicly traded", "10000+", "10,000+", "5000+", "5,000+", "large organization"
+    ]
+    mid_signals = [
+        "growth stage", "series c", "series d", "series e", "scale-up", "scaling",
+        "500+", "1000+", "1,000+", "mid-size", "midsize", "growing"
+    ]
+    startup_signals = [
+        "startup", "early stage", "seed", "series a", "series b", "pre-seed",
+        "founding team", "0 to 1", "zero to one", "greenfield", "first hire",
+        "50 employees", "100 employees", "small team"
+    ]
+
+    target_scale = None
+    if any(sig in combined_jd for sig in enterprise_signals):
+        target_scale = "enterprise"
+    elif any(sig in combined_jd for sig in mid_signals):
+        target_scale = "mid"
+    elif any(sig in combined_jd for sig in startup_signals):
+        target_scale = "startup"
+
+    # Detect candidate's scale from resume
+    # Check for enterprise keywords in company descriptions
+    candidate_scale = None
+    enterprise_company_keywords = ["inc.", "corporation", "corp.", "global", "worldwide"]
+    startup_company_keywords = ["startup", "founded", "co-founder", "early stage"]
+
+    # Analyze company signals
+    enterprise_signal_count = 0
+    startup_signal_count = 0
+    mid_signal_count = 0
+
+    for company in candidate_companies:
+        if any(kw in company for kw in enterprise_company_keywords):
+            enterprise_signal_count += 1
+
+    for exp in experience:
+        if isinstance(exp, dict):
+            desc = (exp.get("description", "") or "").lower()
+            highlights = exp.get("highlights", [])
+            desc_combined = desc + " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+
+            # Check scale signals in experience descriptions
+            if any(sig in desc_combined for sig in ["fortune 500", "enterprise", "global team", "10000+"]):
+                enterprise_signal_count += 1
+            if any(sig in desc_combined for sig in ["series c", "series d", "scale-up", "hypergrowth"]):
+                mid_signal_count += 1
+            if any(sig in desc_combined for sig in ["startup", "founded", "first hire", "0 to 1", "series a", "series b"]):
+                startup_signal_count += 1
+
+    # Determine candidate scale
+    if enterprise_signal_count >= 2:
+        candidate_scale = "enterprise"
+    elif startup_signal_count >= 2:
+        candidate_scale = "startup"
+    elif mid_signal_count >= 1 or (enterprise_signal_count == 1 and startup_signal_count == 1):
+        candidate_scale = "mid"
+    else:
+        # Default to mid if unclear
+        candidate_scale = "mid"
+
+    result["company_scale_alignment"]["candidate_scale"] = candidate_scale
+    result["company_scale_alignment"]["target_scale"] = target_scale
+
+    # Calculate delta (scale distance)
+    scale_order = {"startup": 0, "mid": 1, "enterprise": 2}
+    if target_scale and candidate_scale:
+        delta = abs(scale_order.get(candidate_scale, 1) - scale_order.get(target_scale, 1))
+        result["company_scale_alignment"]["delta"] = delta
+
+        if delta == 0:
+            result["company_scale_alignment"]["risk_level"] = "low"
+        elif delta == 1:
+            result["company_scale_alignment"]["risk_level"] = "low"  # Explainable
+        elif delta == 2:
+            result["company_scale_alignment"]["risk_level"] = "high"
+            high_risk_count += 1
+        elif delta >= 3:
+            result["company_scale_alignment"]["risk_level"] = "high"
+            high_risk_count += 1
+
+    # ========================================================================
+    # DIMENSION 3: ROLE SCOPE VS TITLE INFLATION
+    # "Scope beats title. Always."
+    # ========================================================================
+
+    # Detect title inflation signals
+    # Check if candidate has impressive titles but lacks scope evidence
+    executive_titles = ["vp", "vice president", "director", "head of", "chief", "president", "svp", "evp"]
+    leadership_titles = ["manager", "lead", "senior", "principal", "staff"]
+
+    candidate_highest_level = None
+    for title in candidate_titles:
+        if any(et in title for et in executive_titles):
+            candidate_highest_level = "executive"
+            break
+        elif any(lt in title for lt in leadership_titles):
+            candidate_highest_level = "senior"
+
+    if candidate_highest_level is None:
+        candidate_highest_level = "ic"
+
+    # Check for scope evidence in resume
+    scope_evidence_keywords = [
+        "owned", "led", "built", "scaled", "managed $", "budget", "p&l",
+        "grew team", "hired", "headcount", "revenue", "increased", "reduced",
+        "implemented", "drove", "delivered", "launched"
+    ]
+    strong_scope_evidence = sum(1 for kw in scope_evidence_keywords if kw in combined_resume)
+
+    # Detect target role scope from JD
+    jd_scope_keywords = ["own", "accountable", "budget", "p&l", "final decision", "build from scratch"]
+    jd_scope_weight = sum(1 for kw in jd_scope_keywords if kw in combined_jd)
+
+    # Title inflation assessment
+    if candidate_highest_level == "executive":
+        if strong_scope_evidence < 3:
+            result["role_scope_alignment"]["title_inflation_risk"] = "high"
+            result["role_scope_alignment"]["hm_skepticism"] = "high"
+            high_risk_count += 1
+        elif strong_scope_evidence < 5:
+            result["role_scope_alignment"]["title_inflation_risk"] = "medium"
+            result["role_scope_alignment"]["hm_skepticism"] = "medium"
+            medium_risk_count += 1
+        else:
+            result["role_scope_alignment"]["title_inflation_risk"] = "low"
+            result["role_scope_alignment"]["hm_skepticism"] = "low"
+    elif candidate_highest_level == "senior":
+        if strong_scope_evidence < 2:
+            result["role_scope_alignment"]["title_inflation_risk"] = "medium"
+            result["role_scope_alignment"]["hm_skepticism"] = "medium"
+            medium_risk_count += 1
+        else:
+            result["role_scope_alignment"]["title_inflation_risk"] = "low"
+            result["role_scope_alignment"]["hm_skepticism"] = "low"
+    else:
+        result["role_scope_alignment"]["title_inflation_risk"] = "low"
+        result["role_scope_alignment"]["hm_skepticism"] = "low"
+
+    # Scope gap assessment
+    if jd_scope_weight >= 3:
+        # High scope role
+        if strong_scope_evidence < 3:
+            result["role_scope_alignment"]["scope_gap"] = "significant"
+            if result["role_scope_alignment"]["hm_skepticism"] == "low":
+                result["role_scope_alignment"]["hm_skepticism"] = "medium"
+                medium_risk_count += 1
+        elif strong_scope_evidence < 5:
+            result["role_scope_alignment"]["scope_gap"] = "moderate"
+        else:
+            result["role_scope_alignment"]["scope_gap"] = "none"
+    elif jd_scope_weight >= 1:
+        if strong_scope_evidence < 2:
+            result["role_scope_alignment"]["scope_gap"] = "moderate"
+        else:
+            result["role_scope_alignment"]["scope_gap"] = "none"
+    else:
+        result["role_scope_alignment"]["scope_gap"] = "none"
+
+    # ========================================================================
+    # OVERALL CREDIBILITY ASSESSMENT & RECOMMENDATION CEILING
+    # Any high-risk signal → cap at "Apply with Caution"
+    # Multiple medium risks → also cap at "Apply with Caution"
+    # ========================================================================
+
+    if high_risk_count >= 1:
+        result["overall_credibility_risk"] = "high"
+        result["recommendation_ceiling"] = "Apply with Caution"
+        result["coaching_intensity"] = "heavy"
+        result["language_firmness"] = "skeptical"
+        result["mandatory_reality_check"] = True
+    elif medium_risk_count >= 2:
+        result["overall_credibility_risk"] = "high"
+        result["recommendation_ceiling"] = "Apply with Caution"
+        result["coaching_intensity"] = "heavy"
+        result["language_firmness"] = "candid"
+        result["mandatory_reality_check"] = True
+    elif medium_risk_count == 1:
+        result["overall_credibility_risk"] = "medium"
+        result["recommendation_ceiling"] = None  # No cap
+        result["coaching_intensity"] = "moderate"
+        result["language_firmness"] = "candid"
+        result["mandatory_reality_check"] = False
+    else:
+        result["overall_credibility_risk"] = "low"
+        result["recommendation_ceiling"] = None
+        result["coaching_intensity"] = "normal"
+        result["language_firmness"] = "confident"
+        result["mandatory_reality_check"] = False
+
+    # ========================================================================
+    # MANDATORY REALITY CHECK MESSAGE
+    # Per spec: When credibility risk is high, must include one explicit reality check
+    # ========================================================================
+
+    if result["mandatory_reality_check"]:
+        # Build specific reality check message based on risks
+        risk_factors = []
+
+        if result["industry_alignment"]["risk_level"] == "high":
+            risk_factors.append("industry alignment")
+        if result["company_scale_alignment"]["risk_level"] == "high":
+            risk_factors.append("company scale")
+        if result["role_scope_alignment"]["hm_skepticism"] == "high":
+            risk_factors.append("scope alignment")
+
+        if risk_factors:
+            risk_str = " and ".join(risk_factors)
+            result["reality_check_message"] = (
+                f"Hiring managers in this space typically prioritize candidates who have "
+                f"operated at similar scale and within the same industry. Your background "
+                f"is credible, but you will need to proactively address the {risk_str} gap. "
+                f"Expect skepticism and be prepared to explain your transition story directly."
+            )
+        else:
+            result["reality_check_message"] = (
+                "Hiring managers typically prioritize candidates who have operated at "
+                "similar scale and within the same industry. Your background is credible, "
+                "but you should expect skepticism and be prepared to address it directly."
+            )
+
+    # Log CAE output
+    print(f"🎯 CREDIBILITY ALIGNMENT ENGINE OUTPUT:")
+    print(f"   Industry: {result['industry_alignment']['match']} ({result['industry_alignment']['risk_level']} risk)")
+    print(f"   Scale: {result['company_scale_alignment']['candidate_scale']} → {result['company_scale_alignment']['target_scale']} (delta: {result['company_scale_alignment']['delta']})")
+    print(f"   Title Inflation: {result['role_scope_alignment']['title_inflation_risk']}, Scope Gap: {result['role_scope_alignment']['scope_gap']}")
+    print(f"   Overall Risk: {result['overall_credibility_risk']}")
+    if result["recommendation_ceiling"]:
+        print(f"   ⚠️ RECOMMENDATION CEILING: {result['recommendation_ceiling']}")
+    if result["mandatory_reality_check"]:
+        print(f"   📢 MANDATORY REALITY CHECK REQUIRED")
+
+    return result
+
+
+def apply_credibility_to_recommendation(
+    base_recommendation: str,
+    cae_result: dict,
+    eligibility_locked: bool = False,
+    hard_requirement_failure: bool = False
+) -> dict:
+    """
+    Apply credibility modifiers to the recommendation.
+
+    Per CAE Spec: "Credibility can downgrade, never upgrade."
+
+    CRITICAL: Per Hard Requirement Failure spec:
+    - If hard_requirement_failure is True, CAE cannot soften or override
+    - Recommendation stays locked at "Do Not Apply"
+    - CAE may explain skepticism but cannot change the decision
+
+    Args:
+        base_recommendation: Original recommendation before CAE
+        cae_result: Output from evaluate_credibility_alignment()
+        eligibility_locked: Whether eligibility gate locked the recommendation
+        hard_requirement_failure: Whether a hard requirement failed (leadership, years, etc.)
+
+    Returns:
+        Modified recommendation with adjusted language and ceiling applied
+    """
+    result = {
+        "final_recommendation": base_recommendation,
+        "was_downgraded": False,
+        "downgrade_reason": None,
+        "coaching_intensity": cae_result.get("coaching_intensity", "normal"),
+        "language_firmness": cae_result.get("language_firmness", "confident"),
+        "reality_check_message": cae_result.get("reality_check_message"),
+        "hard_requirement_locked": hard_requirement_failure
+    }
+
+    # HARD REQUIREMENT FAILURE: CAE cannot soften this
+    # The recommendation is locked at "Do Not Apply" - period.
+    if hard_requirement_failure:
+        result["final_recommendation"] = "Do Not Apply"
+        result["cae_override_blocked"] = True
+        print("🔒 CAE BLOCKED: Hard requirement failure - cannot soften recommendation")
+        return result
+
+    # Don't modify if eligibility already locked
+    if eligibility_locked:
+        result["final_recommendation"] = "Do Not Apply"
+        return result
+
+    # Apply recommendation ceiling
+    recommendation_ceiling = cae_result.get("recommendation_ceiling")
+
+    if recommendation_ceiling:
+        # Recommendation hierarchy: Apply > Apply with Caution > Consider with Caveats > Do Not Apply
+        recommendation_rank = {
+            "Apply": 4,
+            "Strong Apply": 4,
+            "Apply with Caution": 3,
+            "Consider with Caveats": 2,
+            "Consider with Reservations": 2,
+            "Do Not Apply": 1
+        }
+
+        base_rank = recommendation_rank.get(base_recommendation, 3)
+        ceiling_rank = recommendation_rank.get(recommendation_ceiling, 3)
+
+        if base_rank > ceiling_rank:
+            result["final_recommendation"] = recommendation_ceiling
+            result["was_downgraded"] = True
+
+            # Build downgrade reason
+            risks = []
+            if cae_result.get("industry_alignment", {}).get("risk_level") == "high":
+                result["downgrade_reason"] = f"industry mismatch ({cae_result['industry_alignment']['match']})"
+                risks.append("industry")
+            if cae_result.get("company_scale_alignment", {}).get("risk_level") == "high":
+                delta = cae_result.get("company_scale_alignment", {}).get("delta", 0)
+                risks.append(f"scale gap (delta: {delta})")
+            if cae_result.get("role_scope_alignment", {}).get("hm_skepticism") == "high":
+                risks.append("scope/title skepticism")
+
+            result["downgrade_reason"] = ", ".join(risks) if risks else "credibility risk"
+
+            print(f"📉 RECOMMENDATION DOWNGRADED: {base_recommendation} → {result['final_recommendation']}")
+            print(f"   Reason: {result['downgrade_reason']}")
+
+    return result
+
+
+def get_cae_coaching_language(cae_result: dict) -> dict:
+    """
+    Get language templates based on CAE risk level.
+
+    Per Language Intensity Spec:
+    - Low Risk: Confident, normal coaching
+    - Medium Risk: Candid, realistic
+    - High Risk: Direct, skeptical, still respectful
+
+    Args:
+        cae_result: Output from evaluate_credibility_alignment()
+
+    Returns:
+        Language templates for use in coaching messages
+    """
+    overall_risk = cae_result.get("overall_credibility_risk", "low")
+
+    if overall_risk == "low":
+        return {
+            "intro": "Apply. Here's how to stand out:",
+            "coaching_tone": "confident",
+            "cta": "You're competitive for this role.",
+            "hedging_allowed": False,
+            "stretch_language_allowed": False  # Never at senior levels
+        }
+    elif overall_risk == "medium":
+        return {
+            "intro": "You can apply, but be prepared to address some questions:",
+            "coaching_tone": "candid",
+            "cta": "Position your experience strategically.",
+            "hedging_allowed": True,
+            "stretch_language_allowed": False  # Never at senior levels
+        }
+    else:  # high
+        return {
+            "intro": "You should expect skepticism due to alignment gaps:",
+            "coaching_tone": "skeptical",
+            "cta": "This will be an uphill battle. Apply only if you have a compelling transition story.",
+            "hedging_allowed": True,
+            "stretch_language_allowed": False,  # 🚫 Never
+            # Per spec: 🚫 No "learning opportunity", 🚫 No "stretch role" at senior levels
+            "banned_phrases": [
+                "learning opportunity",
+                "stretch role",
+                "great chance to grow",
+                "developmental opportunity"
+            ]
+        }
+
+
+def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
+    """
+    ELIGIBILITY GATE - Runs BEFORE scoring.
+    Per Eligibility Gate Enforcement Spec: "Before scoring, determine if the candidate is *eligible*.
+    Eligibility failure overrides score, confidence, and tone."
+
+    Eligibility checks:
+    1. Required domain experience (is the candidate's domain relevant?)
+    2. Required leadership type (people vs operational)
+    3. Required seniority scope (scale, team size, budget)
+    4. Non-transferable domains (hard stop if mismatch)
+
+    Returns:
+        dict with:
+            - eligible: bool - True if candidate passes eligibility gate
+            - reason: str - Why they failed (if applicable)
+            - failed_check: str - Which check failed
+            - locked_recommendation: str - "Do Not Apply" if failed
+            - gap_classification: str - "missing_experience" for non-transferable
+    """
+    result = {
+        "eligible": True,
+        "reason": None,
+        "failed_check": None,
+        "locked_recommendation": None,
+        "gap_classification": None
+    }
+
+    if not resume_data or not response_data:
+        return result
+
+    # Extract job info
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+    combined_jd = f"{role_title} {jd_text}"
+
+    # Extract resume info
+    experience = resume_data.get("experience", [])
+    resume_titles = []
+    resume_descriptions = []
+
+    for exp in experience:
+        if isinstance(exp, dict):
+            title = (exp.get("title", "") or "").lower()
+            desc = (exp.get("description", "") or "").lower()
+            highlights = exp.get("highlights", [])
+            if highlights and isinstance(highlights, list):
+                desc += " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+            resume_titles.append(title)
+            resume_descriptions.append(desc)
+
+    combined_resume = " ".join(resume_titles) + " " + " ".join(resume_descriptions)
+
+    # ========================================================================
+    # CHECK 1: Non-Transferable Domain Detection
+    # ========================================================================
+    for domain_config in NON_TRANSFERABLE_DOMAINS:
+        domain = domain_config["domain"]
+        levels = domain_config["levels"]
+        keywords = domain_config["keywords"]
+        description = domain_config["description"]
+
+        # Check if JD requires this domain
+        jd_requires_domain = any(kw in combined_jd for kw in keywords)
+        jd_at_required_level = any(level in combined_jd for level in levels)
+
+        if jd_requires_domain and jd_at_required_level:
+            # JD requires this non-transferable domain at a senior level
+            # Check if candidate has experience in this exact domain
+            candidate_has_domain = any(kw in combined_resume for kw in keywords)
+
+            if not candidate_has_domain:
+                # HARD STOP - Non-transferable domain mismatch
+                print(f"🚫 ELIGIBILITY GATE FAILED: Non-transferable domain")
+                print(f"   Domain: {description}")
+                print(f"   JD requires: {[kw for kw in keywords if kw in combined_jd]}")
+                print(f"   Candidate lacks domain experience")
+
+                result["eligible"] = False
+                result["reason"] = f"This role requires {description}. Your background does not include direct experience in this domain. This is a non-transferable requirement."
+                result["failed_check"] = f"non_transferable_domain:{domain}"
+                result["locked_recommendation"] = "Do Not Apply"
+                result["gap_classification"] = "missing_experience"
+                return result
+
+    # ========================================================================
+    # CHECK 2: People Leadership vs Operational Leadership
+    # (Delegate to existing function but flag as eligibility)
+    # ========================================================================
+    people_leadership_years = extract_people_leadership_years(resume_data)
+    required_people_leadership, is_hard_requirement = extract_required_people_leadership_years(response_data)
+
+    if is_hard_requirement and required_people_leadership > 0:
+        if people_leadership_years < required_people_leadership:
+            print(f"🚫 ELIGIBILITY GATE FAILED: People leadership requirement")
+            print(f"   Required: {required_people_leadership} years")
+            print(f"   Candidate has: {people_leadership_years} years")
+
+            result["eligible"] = False
+            result["reason"] = f"This role requires {required_people_leadership:.0f}+ years of people leadership experience. You have {people_leadership_years:.1f} years verified. Operational leadership does not count."
+            result["failed_check"] = "people_leadership_requirement"
+            result["locked_recommendation"] = "Do Not Apply"
+            result["gap_classification"] = "missing_experience"
+            return result
+
+    # ========================================================================
+    # CHECK 3: Seniority Scope Mismatch
+    # If JD requires VP-level and candidate is mid-level, fail
+    # ========================================================================
+    executive_levels = ["vp", "vice president", "svp", "evp", "chief", "c-suite", "cxo", "ceo", "cfo", "cto", "coo", "cmo"]
+    director_levels = ["director", "senior director", "head of"]
+
+    jd_requires_executive = any(level in combined_jd for level in executive_levels)
+    jd_requires_director = any(level in combined_jd for level in director_levels)
+
+    # Check candidate's highest level
+    candidate_has_executive = any(level in combined_resume for level in executive_levels)
+    candidate_has_director = any(level in combined_resume for level in director_levels)
+
+    if jd_requires_executive and not candidate_has_executive:
+        # Check if they have at least director level
+        if not candidate_has_director:
+            print(f"🚫 ELIGIBILITY GATE FAILED: Seniority scope - VP+ role, candidate lacks executive/director experience")
+
+            result["eligible"] = False
+            result["reason"] = "This is a VP or executive-level role. Your background does not include executive or director-level experience. Do not apply."
+            result["failed_check"] = "seniority_scope_executive"
+            result["locked_recommendation"] = "Do Not Apply"
+            result["gap_classification"] = "missing_experience"
+            return result
+
+    print(f"✅ ELIGIBILITY GATE PASSED")
+    return result
+
+
+def generate_specific_redirect(resume_data: dict, response_data: dict, eligibility_result: dict = None) -> list:
+    """
+    Generate SPECIFIC role category redirects based on candidate's actual background.
+
+    Per Required Fixes Spec: "You must name realistic role categories where the candidate IS competitive."
+
+    Args:
+        resume_data: Parsed resume
+        response_data: JD analysis response
+        eligibility_result: Result from check_eligibility_gate
+
+    Returns:
+        list: 2-3 specific, actionable redirect recommendations
+    """
+    redirects = []
+
+    if not resume_data:
+        return [
+            "Focus on roles that align with your verified experience",
+            "Target positions where you meet 70%+ of the requirements"
+        ]
+
+    # Extract candidate's actual background
+    experience = resume_data.get("experience", [])
+    titles = []
+    domains = []
+    skills = []
+
+    for exp in experience:
+        if isinstance(exp, dict):
+            title = (exp.get("title", "") or "").lower()
+            desc = (exp.get("description", "") or "").lower()
+            company = (exp.get("company", "") or "").lower()
+            titles.append(title)
+
+            # Detect domains
+            if any(kw in f"{title} {desc}" for kw in ["recruit", "talent", "hiring", "sourcing"]):
+                domains.append("recruiting")
+            if any(kw in f"{title} {desc}" for kw in ["product", "pm", "roadmap"]):
+                domains.append("product")
+            if any(kw in f"{title} {desc}" for kw in ["engineer", "developer", "software", "code"]):
+                domains.append("engineering")
+            if any(kw in f"{title} {desc}" for kw in ["operations", "ops", "process", "systems"]):
+                domains.append("operations")
+            if any(kw in f"{title} {desc}" for kw in ["sales", "revenue", "account"]):
+                domains.append("sales")
+            if any(kw in f"{title} {desc}" for kw in ["marketing", "growth", "brand"]):
+                domains.append("marketing")
+
+    # Unique domains
+    domains = list(set(domains))
+    primary_domain = domains[0] if domains else "your field"
+
+    # Determine candidate's level from titles
+    has_senior = any(kw in " ".join(titles) for kw in ["senior", "sr", "lead", "principal"])
+    has_manager = any(kw in " ".join(titles) for kw in ["manager", "supervisor"])
+    has_director = any(kw in " ".join(titles) for kw in ["director", "head"])
+    has_vp = any(kw in " ".join(titles) for kw in ["vp", "vice president"])
+
+    # Determine why they were rejected
+    failed_check = ""
+    if eligibility_result:
+        failed_check = eligibility_result.get("failed_check", "")
+
+    # Generate specific redirects based on rejection reason and background
+    if "people_leadership" in failed_check:
+        # Rejected for lacking people leadership
+        if "recruiting" in domains:
+            redirects = [
+                "Redirect to Senior Technical Recruiting or Recruiting Operations roles where your infrastructure-building and scaling experience is a direct match",
+                "Target Senior Recruiter or Lead Recruiter positions that value operational excellence without requiring direct reports",
+                "Consider Recruiting Program Manager roles that leverage your process and systems expertise"
+            ]
+        elif "operations" in domains:
+            redirects = [
+                "Redirect to Senior Operations Manager or Operations Lead roles where your process and systems expertise is valued",
+                "Target Program Manager or Technical Program Manager positions that don't require people leadership",
+                "Consider Chief of Staff or Business Operations roles that leverage strategic thinking without direct reports"
+            ]
+        elif "product" in domains:
+            redirects = [
+                "Redirect to Senior Product Manager roles where your product strategy skills are directly applicable",
+                "Target Principal Product Manager or Staff PM positions that value IC excellence",
+                "Consider Product Strategy or Product Operations roles that leverage your expertise"
+            ]
+        elif "engineering" in domains:
+            redirects = [
+                "Redirect to Staff Engineer or Principal Engineer roles where your technical leadership is valued",
+                "Target Technical Lead or Architect positions that don't require people management",
+                "Consider Engineering Program Manager roles that leverage your technical expertise"
+            ]
+        else:
+            redirects = [
+                f"Redirect to Senior {primary_domain.title()} roles where your expertise is a direct match",
+                f"Target Lead or Principal {primary_domain.title()} positions that value IC excellence",
+                "Consider roles that emphasize operational excellence without people management requirements"
+            ]
+
+    elif "seniority_scope" in failed_check:
+        # Rejected for seniority mismatch
+        if has_director:
+            redirects = [
+                "Target Director-level roles rather than VP+ positions",
+                "Consider Head of [Function] roles at smaller companies where scope aligns with your experience",
+                "Focus on Senior Director positions as a stepping stone to VP"
+            ]
+        elif has_manager:
+            redirects = [
+                "Target Senior Manager or Manager roles rather than Director+",
+                "Focus on Lead or Principal IC positions that match your current scope",
+                "Consider smaller companies where your experience level is competitive"
+            ]
+        else:
+            redirects = [
+                "Target Senior IC or Lead positions that align with your experience",
+                "Focus on roles where your current scope is directly applicable",
+                "Build scope at your current level before targeting executive roles"
+            ]
+
+    elif "non_transferable_domain" in failed_check:
+        # Rejected for domain mismatch
+        if domains:
+            redirects = [
+                f"Redirect to {primary_domain.title()} roles where your direct experience applies",
+                f"Target positions in {', '.join(d.title() for d in domains[:2])} where you are competitive",
+                "Focus on roles that value your existing domain expertise"
+            ]
+        else:
+            redirects = [
+                "Target roles in domains where you have verified experience",
+                "Focus on positions that leverage your existing skillset",
+                "Build domain expertise before targeting specialized roles"
+            ]
+
+    else:
+        # Generic redirect based on background
+        if "recruiting" in domains:
+            redirects = [
+                "Target Senior Recruiting or Recruiting Operations roles where your experience is a direct match",
+                "Focus on positions that value your specific recruiting expertise",
+                "Consider roles at companies where your background is competitive"
+            ]
+        elif domains:
+            redirects = [
+                f"Redirect to {primary_domain.title()} roles where your experience is directly applicable",
+                "Target positions that match your verified experience level",
+                "Focus on roles where you meet 70%+ of the requirements"
+            ]
+        else:
+            redirects = [
+                "Target roles that align with your verified experience",
+                "Focus on positions where you are competitive",
+                "Build additional experience before targeting stretch roles"
+            ]
+
+    return redirects[:3]  # Max 3 redirects
+
+
 def get_question_from_bank(role_type: str, category: str, asked_questions: List[str], target_level: str = "mid") -> Optional[Dict]:
     """
     Select an appropriate question from the bank based on role, category, and level.
@@ -3428,6 +4951,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     Force-apply experience penalties and hard caps to Claude's response.
     This ensures penalties are applied even if Claude ignores the prompt instructions.
 
+    Per Eligibility Gate Enforcement Spec:
+    ORDER OF OPERATIONS (MANDATORY):
+    1. Eligibility Gate → 2. Gap Typing → 3. Recommendation Lock → 4. Score Explanation → 5. Coaching
+
     Args:
         response_data: Parsed JSON response from Claude
         resume_data: Original resume data (optional, for credibility adjustment)
@@ -3440,53 +4967,137 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     experience_analysis = response_data.get("experience_analysis", {})
     required_years = experience_analysis.get("required_years", 0)
 
-    # Skip if no experience requirements detected
-    if required_years == 0:
-        print("🔧 PENALTY ENFORCEMENT: No required_years detected, skipping enforcement")
-        return response_data
-
     # ========================================================================
-    # HARD REQUIREMENT GATE - PEOPLE LEADERSHIP
-    # Per constraints: "This is enforcement, not vibes."
-    #
-    # IF JD requires X+ years people leadership
-    # AND candidate has < X years verified people leadership
-    # THEN recommendation MUST be "Do Not Apply"
-    # NO EXCEPTIONS. No "Conditional Apply." No "Apply fast." No soft language.
+    # STEP 1: ELIGIBILITY GATE - RUNS BEFORE EVERYTHING ELSE
+    # Per Eligibility Gate Enforcement Spec: "Before scoring, determine if the
+    # candidate is *eligible*. Eligibility failure overrides score, confidence,
+    # and tone."
     # ========================================================================
     recommendation_locked = False
     locked_recommendation = None
     locked_reason = None
     people_leadership_years = 0.0
     required_people_leadership = 0.0
+    eligibility_result = None
 
     if resume_data:
-        # Extract people leadership years (NOT operational leadership)
-        people_leadership_years = extract_people_leadership_years(resume_data)
+        print("🚪 ELIGIBILITY GATE CHECK (RUNS BEFORE SCORING)")
+        eligibility_result = check_eligibility_gate(resume_data, response_data)
+
+        if not eligibility_result["eligible"]:
+            # ELIGIBILITY FAILED - Lock recommendation immediately
+            recommendation_locked = True
+            locked_recommendation = eligibility_result["locked_recommendation"]
+            locked_reason = eligibility_result["reason"]
+
+            # Store eligibility failure in experience_analysis
+            experience_analysis["eligibility_gate_passed"] = False
+            experience_analysis["eligibility_failed_check"] = eligibility_result["failed_check"]
+            experience_analysis["eligibility_gap_classification"] = eligibility_result["gap_classification"]
+            experience_analysis["recommendation_locked"] = True
+            experience_analysis["locked_reason"] = locked_reason
+            response_data["experience_analysis"] = experience_analysis
+
+            print(f"   🚫 ELIGIBILITY FAILED: {eligibility_result['failed_check']}")
+            print(f"   🔒 RECOMMENDATION LOCKED: {locked_recommendation}")
+
+            # Add the eligibility failure as a critical gap
+            gaps = response_data.get("gaps", [])
+            if not isinstance(gaps, list):
+                gaps = []
+
+            eligibility_gap = {
+                "gap_type": f"eligibility_failure:{eligibility_result['failed_check']}",
+                "gap_classification": "missing_experience",
+                "severity": "critical",
+                "gap_description": locked_reason,
+                "detailed_explanation": locked_reason,
+                "impact": "You will not pass screening for this role",
+                "mitigation_strategy": "Target roles that match your actual experience level and domain"
+            }
+            gaps.insert(0, eligibility_gap)
+            response_data["gaps"] = gaps
+        else:
+            experience_analysis["eligibility_gate_passed"] = True
+            response_data["experience_analysis"] = experience_analysis
+
+    # Skip further enforcement if no experience requirements detected
+    if required_years == 0 and not recommendation_locked:
+        print("🔧 PENALTY ENFORCEMENT: No required_years detected, skipping enforcement")
+        return response_data
+
+    # ========================================================================
+    # STEP 1b: PEOPLE LEADERSHIP CHECK (if not already failed by eligibility)
+    # Per constraints: "This is enforcement, not vibes."
+    #
+    # IF JD requires X+ years people leadership
+    # AND candidate has < X years verified people leadership
+    # THEN recommendation MUST be "Do Not Apply"
+    # NO EXCEPTIONS. No "Conditional Apply." No "Apply fast." No soft language.
+    #
+    # Per Leadership Tiering Spec:
+    # - Leadership must be modeled in tiers (strategic, people, org-level)
+    # - "0 years" ONLY when NO leadership signals exist at all
+    # - "insufficient" when leadership exists but doesn't meet requirement
+    # ========================================================================
+    if resume_data and not recommendation_locked:
+        # Extract TIERED leadership analysis (new model)
+        tiered_leadership = extract_tiered_leadership(resume_data)
+        people_leadership_years = tiered_leadership.get("people_leadership_years", 0.0)
 
         # Check if JD requires people leadership
         required_people_leadership, is_hard_requirement = extract_required_people_leadership_years(response_data)
 
+        # Determine if role requires org-level leadership (VP+, C-suite)
+        role_title = (response_data.get("role_title", "") or "").lower()
+        requires_org_leadership = any(t in role_title for t in ["vp", "vice president", "chief", "c-suite", "head of"])
+        required_org_leadership = 7.0 if requires_org_leadership else 0.0
+
         print(f"🔒 PEOPLE LEADERSHIP CHECK:")
         print(f"   Required: {required_people_leadership} years (hard_requirement={is_hard_requirement})")
-        print(f"   Candidate has: {people_leadership_years} years verified")
+        print(f"   Candidate has: {people_leadership_years} years verified (tiered)")
+        print(f"   Org-level required: {requires_org_leadership} ({required_org_leadership} years)")
+
+        # Get precise gap messaging using tiered analysis
+        leadership_gap_msg = get_leadership_gap_messaging(
+            tiered_leadership,
+            required_people_leadership,
+            required_org_leadership
+        )
+
+        print(f"   Leadership gap status: {leadership_gap_msg['status']}")
+        if leadership_gap_msg['status'] != 'sufficient':
+            print(f"   Leadership gap message: {leadership_gap_msg['message']}")
 
         # HARD GATE: If people leadership required and candidate doesn't meet it
         if is_hard_requirement and required_people_leadership > 0:
             if people_leadership_years < required_people_leadership:
                 recommendation_locked = True
                 locked_recommendation = "Do Not Apply"
-                locked_reason = f"People leadership experience below role requirement ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
+
+                # Use tiered messaging instead of generic "X vs Y years"
+                if leadership_gap_msg['status'] == 'none':
+                    locked_reason = f"No people leadership experience found. This role requires {required_people_leadership:.0f}+ years."
+                elif leadership_gap_msg['status'] == 'insufficient':
+                    if leadership_gap_msg.get('has_lower_tier'):
+                        locked_reason = f"Leadership type mismatch: {leadership_gap_msg['message']}"
+                    else:
+                        locked_reason = f"People leadership experience insufficient ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
+                else:
+                    locked_reason = f"People leadership experience below role requirement ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
 
                 print(f"   🚫 HARD GATE TRIGGERED: {locked_reason}")
                 print(f"   🔒 RECOMMENDATION LOCKED: Do Not Apply (no exceptions)")
 
-                # Store this in experience_analysis for transparency
+                # Store tiered leadership analysis in experience_analysis
                 experience_analysis["people_leadership_years"] = people_leadership_years
                 experience_analysis["required_people_leadership_years"] = required_people_leadership
                 experience_analysis["people_leadership_hard_gate_failed"] = True
                 experience_analysis["recommendation_locked"] = True
                 experience_analysis["locked_reason"] = locked_reason
+                experience_analysis["tiered_leadership"] = tiered_leadership
+                experience_analysis["leadership_gap_messaging"] = leadership_gap_msg
+                experience_analysis["hard_requirement_failure"] = True  # NEW: Explicit flag for CAE
                 response_data["experience_analysis"] = experience_analysis
 
     # Try to get adjusted years first, fallback to raw years
@@ -3780,6 +5391,110 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["gaps"] = gaps
 
     # ========================================================================
+    # CREDIBILITY ALIGNMENT ENGINE (CAE) - RUNS AFTER ELIGIBILITY
+    # Per CAE Spec: "This layer never blocks on its own. It modulates confidence,
+    # language, and recommendation strength."
+    #
+    # CRITICAL: CAE cannot soften or override HARD REQUIREMENT FAILURES.
+    # If eligibility gate failed, CAE may explain skepticism but cannot
+    # change the "Do Not Apply" decision or soften the messaging.
+    # ========================================================================
+    cae_result = None
+    hard_requirement_failure = experience_analysis.get("hard_requirement_failure", False)
+
+    if resume_data and not recommendation_locked:
+        print("🎯 CREDIBILITY ALIGNMENT ENGINE (CAE) CHECK")
+        cae_result = evaluate_credibility_alignment(resume_data, response_data)
+
+        # Store CAE results in response for downstream use
+        response_data["credibility_alignment"] = cae_result
+
+        # Apply CAE to recommendation (may downgrade, never upgrade)
+        if cae_result.get("recommendation_ceiling"):
+            current_rec = response_data.get("recommendation", "")
+            cae_application = apply_credibility_to_recommendation(
+                current_rec,
+                cae_result,
+                eligibility_locked=recommendation_locked,
+                hard_requirement_failure=hard_requirement_failure
+            )
+
+            if cae_application["was_downgraded"]:
+                response_data["recommendation"] = cae_application["final_recommendation"]
+                response_data["recommendation_downgraded_by_cae"] = True
+                response_data["cae_downgrade_reason"] = cae_application["downgrade_reason"]
+
+                # Update intelligence_layer
+                if "intelligence_layer" in response_data:
+                    if "apply_decision" not in response_data["intelligence_layer"]:
+                        response_data["intelligence_layer"]["apply_decision"] = {}
+                    response_data["intelligence_layer"]["apply_decision"]["recommendation"] = cae_application["final_recommendation"]
+                    response_data["intelligence_layer"]["apply_decision"]["credibility_risk"] = cae_result.get("overall_credibility_risk")
+
+        # Add mandatory reality check message if required
+        if cae_result.get("mandatory_reality_check") and cae_result.get("reality_check_message"):
+            # Add to reality_check if it exists
+            if "reality_check" in response_data:
+                existing_action = response_data["reality_check"].get("strategic_action", "")
+                # Prepend the reality check message
+                response_data["reality_check"]["strategic_action"] = (
+                    f"{cae_result['reality_check_message']} {existing_action}"
+                )
+                response_data["reality_check"]["credibility_warning"] = cae_result["reality_check_message"]
+
+            # Store for frontend display
+            response_data["credibility_reality_check"] = cae_result["reality_check_message"]
+
+        # Apply language intensity based on CAE risk level
+        language_templates = get_cae_coaching_language(cae_result)
+        response_data["cae_language_intensity"] = language_templates.get("coaching_tone", "confident")
+
+    # ========================================================================
+    # LEADERSHIP EVALUATION & POSITIONING ENGINE (LEPE)
+    # Per LEPE Spec: Applies ONLY to Manager+ roles.
+    # Provides leadership readiness assessment with positioning guidance.
+    # LEPE constraints final recommendations - cannot be overridden by optimism.
+    # ========================================================================
+    lepe_result = None
+    if resume_data:
+        lepe_result = evaluate_lepe(resume_data, response_data)
+        response_data["lepe_analysis"] = lepe_result
+
+        # If LEPE is applicable and decision is "locked", enforce it
+        if lepe_result.get("lepe_applicable") and not recommendation_locked:
+            positioning = lepe_result.get("positioning_decision", {})
+            lepe_decision = positioning.get("decision", "apply")
+
+            if lepe_decision == "locked":
+                # LEPE locks recommendation for > 4 year gap
+                recommendation_locked = True
+                locked_recommendation = "Do Not Apply"
+                locked_reason = positioning.get("messaging", {}).get("explanation", "Leadership gap too large")
+                experience_analysis["lepe_locked"] = True
+                experience_analysis["hard_requirement_failure"] = True
+                response_data["experience_analysis"] = experience_analysis
+                print(f"   🔒 LEPE LOCKED: {locked_reason}")
+
+            elif lepe_decision == "caution":
+                # LEPE recommends caution - cap at "Apply with Caution"
+                current_rec = response_data.get("recommendation", "")
+                if current_rec in ["Apply", "Strong Apply"]:
+                    response_data["recommendation"] = "Apply with Caution"
+                    response_data["recommendation_downgraded_by_lepe"] = True
+                    response_data["lepe_caution_reason"] = positioning.get("messaging", {}).get("skepticism_warning", "")
+                    print(f"   ⚠️ LEPE CAUTION: Downgraded to Apply with Caution")
+
+            elif lepe_decision == "position":
+                # LEPE positioning mode - add coaching guidance
+                response_data["lepe_positioning_mode"] = True
+                response_data["lepe_coaching"] = positioning.get("messaging", {}).get("coaching_advice", "")
+                print(f"   📝 LEPE POSITIONING: Coaching available")
+
+        # Store accountability record
+        if lepe_result.get("accountability_record"):
+            response_data["leadership_positioning_record"] = lepe_result["accountability_record"]
+
+    # ========================================================================
     # LOCKED RECOMMENDATION ENFORCEMENT
     # If recommendation is locked, override EVERYTHING - no exceptions
     # ========================================================================
@@ -3813,52 +5528,182 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             response_data["fit_score_breakdown"]["locked_cap_applied"] = True
             print(f"   🔒 Score capped to 45% due to locked recommendation")
 
-        # Set locked rationale - SECOND PERSON VOICE, no hedging
-        if required_people_leadership > 0 and people_leadership_years < required_people_leadership:
-            response_data["recommendation_rationale"] = (
-                f"This role requires {required_people_leadership:.0f}+ years of people leadership experience. "
-                f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
-                f"Operational or project leadership does not substitute for people management experience. "
-                f"Do not apply for this role."
-            )
-            # Add specific gap for people leadership
+        # ========================================================================
+        # LANGUAGE CONTRACT FOR "DO NOT APPLY"
+        # Per Required Fixes Spec (UI CONTRACT + MESSAGING CONTRACT):
+        #
+        # STRUCTURE (MANDATORY):
+        # A. Decision: "Do not apply." + state hard mismatch (one sentence)
+        # B. Why: What role requires vs what is missing (plain, non-shaming)
+        # C. Redirect: Name SPECIFIC role categories where candidate IS competitive
+        #
+        # RULES:
+        # - Second person only (you/your)
+        # - No candidate names in output
+        # - No mixed verdict language
+        # - No upside framing
+        # - Coaching ≠ encouragement to apply
+        # ========================================================================
+        print(f"   📝 ENFORCING LANGUAGE CONTRACT FOR 'DO NOT APPLY'")
+
+        # Generate specific redirect based on candidate's actual background
+        redirect_roles = generate_specific_redirect(resume_data, response_data, eligibility_result)
+
+        # Determine the specific reason and build rationale accordingly
+        if eligibility_result and not eligibility_result.get("eligible", True):
+            # Eligibility gate failure - use the eligibility reason
+            failed_check = eligibility_result.get("failed_check", "")
+
+            # A. DECISION (one sentence, direct)
+            # B. WHY (plain, non-shaming)
+            if "non_transferable_domain" in failed_check:
+                domain_name = failed_check.split(":")[-1] if ":" in failed_check else "this domain"
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires direct experience in {domain_name.replace('_', ' ')}. "
+                    f"Your background does not show verified experience in this domain."
+                )
+            elif "people_leadership" in failed_check:
+                # Use tiered leadership messaging if available
+                leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
+                if leadership_gap_msg.get("factual_statement"):
+                    response_data["recommendation_rationale"] = f"Do not apply. {leadership_gap_msg['factual_statement']}"
+                elif leadership_gap_msg.get("status") == "none":
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your resume shows no verified leadership experience at any tier."
+                    )
+                elif leadership_gap_msg.get("status") == "insufficient":
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your people leadership experience ({people_leadership_years:.1f} years) is insufficient."
+                    )
+                else:
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
+                        f"Operational leadership does not count toward this requirement."
+                    )
+            elif "seniority_scope" in failed_check:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This is a VP or executive-level role. "
+                    f"Your background does not include executive or director-level experience."
+                )
+            else:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires experience you do not have. "
+                    f"Your background does not meet the core requirements."
+                )
+
+            # C. REDIRECT (specific, concrete)
+            response_data["alternative_actions"] = redirect_roles
+
+        elif required_people_leadership > 0 and people_leadership_years < required_people_leadership:
+            # People leadership specific failure
+            # Use tiered leadership messaging for accurate "none" vs "insufficient" distinction
+            leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
+            tiered_leadership = experience_analysis.get("tiered_leadership", {})
+
+            # A. DECISION + B. WHY (using tiered messaging)
+            if leadership_gap_msg.get("factual_statement"):
+                response_data["recommendation_rationale"] = f"Do not apply. {leadership_gap_msg['factual_statement']}"
+            elif leadership_gap_msg.get("status") == "none":
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                    f"Your resume shows no verified leadership experience at any tier (strategic, people, or org-level)."
+                )
+            elif leadership_gap_msg.get("status") == "insufficient":
+                if leadership_gap_msg.get("has_lower_tier"):
+                    strategic_years = tiered_leadership.get("strategic_leadership_years", 0)
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your leadership experience ({strategic_years:.1f} years) is strategic/functional only "
+                        f"and does not include managing direct reports."
+                    )
+                else:
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your people leadership experience ({people_leadership_years:.1f} years) is insufficient. "
+                        f"Gap: {leadership_gap_msg.get('gap_years', 0):.1f} years."
+                    )
+            else:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                    f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
+                    f"Operational or project leadership does not substitute for people management."
+                )
+
+            # Add specific gap for people leadership with tiered detail
+            gap_status = leadership_gap_msg.get("status", "unknown")
+            if gap_status == "none":
+                gap_description = f"Requires {required_people_leadership:.0f}+ years people leadership; you have none verified"
+                detailed_explanation = (
+                    f"This role requires people leadership - managing direct reports, building teams, "
+                    f"conducting performance reviews, and making hiring decisions. "
+                    f"Your resume shows no verified leadership at any tier."
+                )
+            elif gap_status == "insufficient" and leadership_gap_msg.get("has_lower_tier"):
+                gap_description = f"Requires {required_people_leadership:.0f}+ years people leadership; you have strategic/functional only"
+                detailed_explanation = (
+                    f"This role requires people leadership - managing direct reports. "
+                    f"Your background shows strategic/functional leadership "
+                    f"({tiered_leadership.get('strategic_leadership_years', 0):.1f} years leading initiatives), "
+                    f"but no verified people management experience."
+                )
+            else:
+                gap_description = f"Requires {required_people_leadership:.0f}+ years people leadership; you have {people_leadership_years:.1f} verified (insufficient)"
+                detailed_explanation = (
+                    f"This role requires people leadership - managing direct reports, building teams, "
+                    f"conducting performance reviews, and making hiring decisions. "
+                    f"Your resume shows {people_leadership_years:.1f} years of verified people leadership, "
+                    f"which is {leadership_gap_msg.get('gap_years', 0):.1f} years short of the requirement."
+                )
+
             people_gap = {
                 "gap_type": "people_leadership_requirement_not_met",
                 "gap_classification": "missing_experience",
                 "severity": "critical",
-                "gap_description": f"This role requires {required_people_leadership:.0f}+ years people leadership; you have {people_leadership_years:.1f} verified",
-                "detailed_explanation": (
-                    f"This role explicitly requires people leadership experience - managing direct reports, "
-                    f"building teams, conducting performance reviews, and making hiring decisions. "
-                    f"Your resume shows {people_leadership_years:.1f} years of verified people leadership experience. "
-                    f"Operational leadership, technical leadership, or program management does not count toward this requirement."
-                ),
+                "gap_description": gap_description,
+                "detailed_explanation": detailed_explanation,
+                "leadership_status": gap_status,  # NEW: "none" vs "insufficient"
+                "tiered_breakdown": tiered_leadership.get("leadership_tier_summary", ""),
                 "impact": "You will not pass screening for this role",
-                "mitigation_strategy": (
-                    f"Target roles that value operational excellence without people leadership requirements, "
-                    f"or build {required_people_leadership - people_leadership_years:.0f}+ more years of people management experience first."
-                )
+                "mitigation_strategy": redirect_roles[0] if redirect_roles else "Target roles that match your experience level"
             }
             gaps = response_data.get("gaps", [])
-            # Add at beginning if not already present
             has_people_gap = any(g.get("gap_type") == "people_leadership_requirement_not_met" for g in gaps if isinstance(g, dict))
             if not has_people_gap:
                 gaps.insert(0, people_gap)
                 response_data["gaps"] = gaps
 
-        # Set alternative actions for locked "Do Not Apply"
-        response_data["alternative_actions"] = [
-            f"Target roles requiring {people_leadership_years:.0f}-{people_leadership_years + 2:.0f} years of people leadership instead",
-            "Focus on roles that value operational excellence without people management requirements",
-            "Build people leadership experience through formal management roles before targeting this level"
-        ]
+            # C. REDIRECT (specific)
+            response_data["alternative_actions"] = redirect_roles
 
-        # Update strategic_action to match locked recommendation
-        if "reality_check" in response_data:
-            response_data["reality_check"]["strategic_action"] = (
-                f"This role is not a fit. You need {required_people_leadership - people_leadership_years:.0f}+ more years of people leadership. "
-                f"Redirect your energy to roles where you are competitive."
+        else:
+            # Generic locked Do Not Apply (e.g., from missing_experience gap)
+            response_data["recommendation_rationale"] = (
+                f"Do not apply. {locked_reason}."
             )
+            response_data["alternative_actions"] = redirect_roles
+
+        # Update strategic_action - NO UPSIDE FRAMING, SPECIFIC REDIRECT
+        if "reality_check" in response_data:
+            # Use the first redirect role for strategic action
+            redirect_text = redirect_roles[0] if redirect_roles else "roles where you are competitive"
+            response_data["reality_check"]["strategic_action"] = (
+                f"This role is not a fit. {redirect_text}"
+            )
+
+        # ========================================================================
+        # REMOVE ANY APPLY CTA OR UPSIDE FRAMING
+        # ========================================================================
+        if "interview_prep" in response_data:
+            del response_data["interview_prep"]
+        if "networking_strategy" in response_data:
+            del response_data["networking_strategy"]
+
+        # Mark as ineligible for UI enforcement
+        response_data["apply_disabled"] = True
+        response_data["apply_disabled_reason"] = "Not eligible for this role"
 
     # CRITICAL: Validate and fix strategic_action/recommendation consistency
     response_data = validate_recommendation_consistency(response_data, capped_score)
@@ -4180,6 +6025,862 @@ def calculate_credibility_adjusted_years(resume_data: dict, target_role_type: st
 # people leadership.
 # ============================================================================
 
+# ============================================================================
+# TIERED LEADERSHIP MODEL
+# Per Leadership Tiering Spec: Leadership must be modeled in tiers, not binary.
+#
+# TIER 1: STRATEGIC / FUNCTIONAL LEADERSHIP
+#   - Cross-functional project leadership, strategic initiatives
+#   - Leading without direct authority (dotted line, matrixed, project-based)
+#   - Evidence: "led initiative", "drove strategy", "cross-functional", "program lead"
+#
+# TIER 2: DIRECT PEOPLE LEADERSHIP
+#   - Managing direct reports, team management, hiring/firing authority
+#   - Evidence: "direct reports", "managed team of X", "built team", "hired/fired"
+#   - This is what most JDs mean when they say "leadership experience required"
+#
+# TIER 3: ORG-LEVEL LEADERSHIP
+#   - Executive/C-suite, board-facing, multi-team/department leadership
+#   - Evidence: "VP", "C-suite", "board", "department head", "divisional"
+#
+# MESSAGING RULES:
+# - "0 years" ONLY when NO leadership signals exist at ALL
+# - "insufficient" when leadership exists but doesn't meet requirement level
+# - Be specific about what tier is missing vs what tier candidate has
+# ============================================================================
+
+
+def extract_tiered_leadership(resume_data: dict) -> dict:
+    """
+    Extract leadership experience across three tiers.
+
+    Returns a structured breakdown of leadership by tier, enabling precise
+    gap messaging ("insufficient" vs "none") and proper tier-to-requirement matching.
+
+    Args:
+        resume_data: Parsed resume dictionary
+
+    Returns:
+        dict: {
+            "strategic_leadership_years": float,  # Tier 1: functional/strategic
+            "people_leadership_years": float,     # Tier 2: direct reports
+            "org_leadership_years": float,        # Tier 3: executive/org-level
+            "total_leadership_years": float,      # Sum of all tiers (max credit)
+            "has_any_leadership": bool,           # At least one tier > 0
+            "leadership_tier_summary": str,       # Human-readable summary
+            "tier_breakdown": list                # Per-role breakdown
+        }
+    """
+    result = {
+        "strategic_leadership_years": 0.0,
+        "people_leadership_years": 0.0,
+        "org_leadership_years": 0.0,
+        "total_leadership_years": 0.0,
+        "has_any_leadership": False,
+        "leadership_tier_summary": "No leadership evidence found",
+        "tier_breakdown": []
+    }
+
+    if not resume_data:
+        return result
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return result
+
+    # ========================================================================
+    # TIER 1: STRATEGIC / FUNCTIONAL LEADERSHIP EVIDENCE
+    # ========================================================================
+    strategic_evidence = [
+        "led initiative", "drove strategy", "cross-functional", "program lead",
+        "strategic initiative", "transformation", "led project", "project lead",
+        "spearheaded", "championed", "orchestrated", "coordinated across",
+        "led cross-functional", "matrixed", "dotted line", "stakeholder management",
+        "led the", "leading the", "drove the", "driving"
+    ]
+
+    # ========================================================================
+    # TIER 2: DIRECT PEOPLE LEADERSHIP EVIDENCE
+    # ========================================================================
+    people_evidence = [
+        "direct report", "direct reports", "managed a team", "led a team",
+        "team of", "people manager", "managed team", "lead a team",
+        "built the team", "grew the team", "hiring manager",
+        "performance review", "promoted", "mentored", "coached team",
+        "developed team", "team lead", "engineering manager", "people management",
+        "hired", "fired", "onboarded", "trained team", "built team"
+    ]
+
+    people_titles = [
+        "manager", "director", "head of", "vp ", "vice president",
+        "chief", "supervisor", "team lead"
+    ]
+
+    # ========================================================================
+    # TIER 3: ORG-LEVEL LEADERSHIP EVIDENCE
+    # ========================================================================
+    org_evidence = [
+        "c-suite", "executive team", "board", "board-facing", "divisional",
+        "department head", "multi-team", "organization-wide", "company-wide",
+        "global leadership", "regional leadership", "p&l", "profit and loss",
+        "budget authority", "headcount authority", "exec team", "leadership team"
+    ]
+
+    org_titles = [
+        "ceo", "cto", "cfo", "coo", "cmo", "cio", "cpo", "cro",
+        "chief", "president", "evp", "svp", "executive vp", "senior vp",
+        "gm", "general manager"
+    ]
+
+    # Operational-only patterns (NO leadership credit)
+    operational_only_patterns = [
+        "program manager", "project manager", "technical lead",
+        "staff engineer", "principal engineer", "architect",
+        "operations lead", "process lead", "systems lead"
+    ]
+
+    tier_breakdown = []
+    strategic_total = 0.0
+    people_total = 0.0
+    org_total = 0.0
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        description = (exp.get("description", "") or "").lower()
+        highlights = exp.get("highlights", [])
+        if highlights and isinstance(highlights, list):
+            highlights_text = " ".join([h.lower() for h in highlights if isinstance(h, str)])
+        else:
+            highlights_text = ""
+
+        combined_text = f"{title} {description} {highlights_text}"
+        dates = (exp.get("dates", "") or "").lower()
+        company = (exp.get("company", "") or "").strip()
+
+        years = parse_experience_duration(dates)
+        if years <= 0:
+            continue
+
+        # Skip operational-only roles unless they have leadership evidence
+        is_operational_only = any(pattern in title for pattern in operational_only_patterns)
+        has_any_leadership_signal = (
+            any(ev in combined_text for ev in strategic_evidence) or
+            any(ev in combined_text for ev in people_evidence) or
+            any(ev in combined_text for ev in org_evidence)
+        )
+
+        if is_operational_only and not has_any_leadership_signal:
+            continue
+
+        # Determine which tiers apply to this role
+        role_tiers = []
+        tier_years = {"strategic": 0.0, "people": 0.0, "org": 0.0}
+
+        # Get credibility multiplier
+        tier = get_company_credibility_tier(company, title)
+        multiplier = get_credibility_multiplier(tier)
+
+        # Check TIER 3 first (org-level) - highest tier
+        has_org_title = any(ot in title for ot in org_titles)
+        has_org_evidence = any(ev in combined_text for ev in org_evidence)
+
+        if has_org_title or has_org_evidence:
+            adjusted = years * multiplier
+            tier_years["org"] = adjusted
+            org_total += adjusted
+            role_tiers.append("org")
+
+        # Check TIER 2 (people leadership)
+        has_people_title = any(pt in title for pt in people_titles)
+        has_people_evidence = any(ev in combined_text for ev in people_evidence)
+
+        if has_people_title and has_people_evidence:
+            # Full credit for verified people leadership
+            adjusted = years * multiplier
+            tier_years["people"] = adjusted
+            people_total += adjusted
+            role_tiers.append("people")
+        elif has_people_evidence:
+            # Evidence without clear title - 70% credit
+            adjusted = years * multiplier * 0.7
+            tier_years["people"] = adjusted
+            people_total += adjusted
+            role_tiers.append("people_partial")
+
+        # Check TIER 1 (strategic/functional) - even if other tiers apply
+        has_strategic_evidence = any(ev in combined_text for ev in strategic_evidence)
+
+        if has_strategic_evidence and "people" not in role_tiers and "org" not in role_tiers:
+            # Strategic-only (no higher tier credit)
+            adjusted = years * multiplier * 0.5  # 50% credit for strategic-only
+            tier_years["strategic"] = adjusted
+            strategic_total += adjusted
+            role_tiers.append("strategic")
+
+        # Record breakdown if any leadership found
+        if role_tiers:
+            tier_breakdown.append({
+                "title": exp.get("title", ""),
+                "company": company,
+                "years": years,
+                "tiers": role_tiers,
+                "tier_years": tier_years
+            })
+
+    # Calculate totals (don't double-count - use max of each role's highest tier)
+    total_leadership = max(strategic_total, people_total, org_total)
+    if people_total > 0:
+        total_leadership = people_total
+    if org_total > 0:
+        total_leadership = max(total_leadership, org_total)
+
+    # Build summary
+    summaries = []
+    if org_total > 0:
+        summaries.append(f"Org-level: {org_total:.1f}y")
+    if people_total > 0:
+        summaries.append(f"People: {people_total:.1f}y")
+    if strategic_total > 0 and people_total == 0 and org_total == 0:
+        summaries.append(f"Strategic/Functional: {strategic_total:.1f}y")
+
+    has_any = org_total > 0 or people_total > 0 or strategic_total > 0
+
+    result.update({
+        "strategic_leadership_years": round(strategic_total, 1),
+        "people_leadership_years": round(people_total, 1),
+        "org_leadership_years": round(org_total, 1),
+        "total_leadership_years": round(total_leadership, 1),
+        "has_any_leadership": has_any,
+        "leadership_tier_summary": " | ".join(summaries) if summaries else "No leadership evidence found",
+        "tier_breakdown": tier_breakdown
+    })
+
+    print(f"   📊 TIERED LEADERSHIP ANALYSIS:")
+    print(f"      Org-level: {org_total:.1f} years")
+    print(f"      People: {people_total:.1f} years")
+    print(f"      Strategic: {strategic_total:.1f} years")
+    print(f"      Has any leadership: {has_any}")
+
+    return result
+
+
+# ============================================================================
+# LEADERSHIP EVALUATION & POSITIONING ENGINE (LEPE)
+# Per LEPE Spec: Canonical System for Manager+ Leadership Readiness
+#
+# Purpose: Evaluate people leadership readiness with recruiter-grade realism,
+# while providing honest, actionable coaching when gaps are addressable.
+#
+# LEPE must:
+# - Be brutally honest without shaming
+# - Separate eligibility from advisability
+# - Detect leadership gaps, title inflation, scope mismatches
+# - Enable positioning strategies when appropriate
+# - Preserve accountability when users proceed against advice
+# ============================================================================
+
+# Manager+ role level indicators
+MANAGER_PLUS_LEVELS = [
+    "manager", "senior manager", "director", "senior director",
+    "vp", "vice president", "head of", "head", "chief",
+    "c-suite", "ceo", "cto", "cfo", "coo", "cmo", "cio", "cpo"
+]
+
+
+def is_manager_plus_role(role_title: str) -> bool:
+    """
+    Determine if a role is Manager+ level.
+
+    LEPE applies ONLY to Manager+ roles. This is non-negotiable.
+    If role_level < manager: skip all LEPE logic.
+
+    Args:
+        role_title: The job title to evaluate
+
+    Returns:
+        bool: True if Manager+ level, False otherwise
+    """
+    if not role_title:
+        return False
+
+    title_lower = role_title.lower().strip()
+
+    # Check for Manager+ indicators
+    for level in MANAGER_PLUS_LEVELS:
+        if level in title_lower:
+            # Exclude false positives like "account manager" (sales IC role)
+            if level == "manager":
+                # These are typically IC roles with "manager" in title
+                ic_manager_roles = [
+                    "account manager", "customer success manager",
+                    "project manager", "program manager", "product manager",
+                    "case manager", "office manager", "facilities manager"
+                ]
+                if any(ic_role in title_lower for ic_role in ic_manager_roles):
+                    # But Director/VP of these are still Manager+
+                    if any(exec_level in title_lower for exec_level in ["director", "vp", "vice president", "head", "chief"]):
+                        return True
+                    return False
+            return True
+
+    return False
+
+
+def extract_leadership_competency_signals(resume_data: dict) -> dict:
+    """
+    Extract leadership signals across 6 competency domains per LEPE spec.
+
+    Core Competency Domains:
+    1. People Management - Hiring, performance management, coaching, exits
+    2. Decision Authority - Hiring approvals, budget ownership, escalation
+    3. Org Design & Scale - Team growth, restructures, span of control
+    4. Strategic Leadership - Direction setting, prioritization, multi-quarter planning
+    5. Cross-Functional Influence - Exec partnership, conflict resolution, alignment
+    6. Accountability & Ownership - Owning outcomes, risk, failure, corrective action
+
+    Args:
+        resume_data: Parsed resume dictionary
+
+    Returns:
+        dict: leadership_competency_analysis with signals per domain
+    """
+    result = {
+        "competency_domains": {
+            "people_management": {"signals": [], "strength": "none", "years": 0.0},
+            "decision_authority": {"signals": [], "strength": "none", "years": 0.0},
+            "org_design_scale": {"signals": [], "strength": "none", "years": 0.0},
+            "strategic_leadership": {"signals": [], "strength": "none", "years": 0.0},
+            "cross_functional_influence": {"signals": [], "strength": "none", "years": 0.0},
+            "accountability_ownership": {"signals": [], "strength": "none", "years": 0.0}
+        },
+        "total_leadership_signals": 0,
+        "strongest_domain": None,
+        "weakest_domain": None,
+        "mixed_scope_roles": []
+    }
+
+    if not resume_data:
+        return result
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return result
+
+    # Signal patterns by domain
+    domain_patterns = {
+        "people_management": {
+            "explicit": [
+                "direct reports", "managed a team", "hired", "fired", "terminated",
+                "performance review", "promoted team members", "coached", "mentored team",
+                "developed team", "built the team", "grew team from", "onboarded",
+                "managed team of", "led a team of", "people manager"
+            ],
+            "implied": [
+                "team lead", "manager", "supervised", "managed staff",
+                "leadership role", "managed engineers", "managed designers"
+            ]
+        },
+        "decision_authority": {
+            "explicit": [
+                "hiring authority", "budget owner", "budget ownership", "p&l",
+                "final decision", "approval authority", "headcount authority",
+                "signing authority", "spending authority"
+            ],
+            "implied": [
+                "owned budget", "managed budget", "allocated resources",
+                "prioritized investments", "approved hires"
+            ]
+        },
+        "org_design_scale": {
+            "explicit": [
+                "restructured", "reorganized", "built the team", "scaled team",
+                "grew team from", "org design", "span of control", "team of",
+                "department of", "organization of"
+            ],
+            "implied": [
+                "expanded team", "hired aggressively", "doubled team",
+                "tripled headcount", "built from scratch"
+            ]
+        },
+        "strategic_leadership": {
+            "explicit": [
+                "set direction", "defined strategy", "roadmap owner",
+                "multi-year vision", "long-term planning", "quarterly planning",
+                "okr owner", "north star", "strategic initiative"
+            ],
+            "implied": [
+                "drove strategy", "led initiative", "spearheaded",
+                "championed", "vision for", "transformed"
+            ]
+        },
+        "cross_functional_influence": {
+            "explicit": [
+                "cross-functional", "exec partnership", "c-suite partnership",
+                "board presentation", "executive alignment", "stakeholder management"
+            ],
+            "implied": [
+                "partnered with", "aligned with", "collaborated across",
+                "influenced", "coordinated with", "matrixed"
+            ]
+        },
+        "accountability_ownership": {
+            "explicit": [
+                "owned outcomes", "accountable for", "responsible for",
+                "drove results", "delivered", "achieved", "exceeded targets"
+            ],
+            "implied": [
+                "led to", "resulted in", "improved by", "reduced by",
+                "increased by", "grew by"
+            ]
+        }
+    }
+
+    # IC signals that indicate mixed scope
+    ic_signals = [
+        "individual contributor", "hands-on coding", "wrote code",
+        "technical implementation", "built features", "debugged",
+        "deployed", "architected", "designed system"
+    ]
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        description = (exp.get("description", "") or "").lower()
+        highlights = exp.get("highlights", [])
+        if highlights and isinstance(highlights, list):
+            highlights_text = " ".join([h.lower() for h in highlights if isinstance(h, str)])
+        else:
+            highlights_text = ""
+
+        combined_text = f"{title} {description} {highlights_text}"
+        dates = (exp.get("dates", "") or "").lower()
+        company = (exp.get("company", "") or "").strip()
+        years = parse_experience_duration(dates)
+
+        if years <= 0:
+            continue
+
+        # Check for IC signals (for mixed-scope detection)
+        has_ic_signals = any(sig in combined_text for sig in ic_signals)
+        has_leadership_signals = False
+        role_domains_found = []
+
+        # Extract signals per domain
+        for domain, patterns in domain_patterns.items():
+            domain_signals = []
+
+            for pattern in patterns["explicit"]:
+                if pattern in combined_text:
+                    domain_signals.append({
+                        "pattern": pattern,
+                        "evidence_type": "explicit",
+                        "strength": "strong",
+                        "role_title": exp.get("title", ""),
+                        "company": company,
+                        "years": years
+                    })
+                    has_leadership_signals = True
+
+            for pattern in patterns["implied"]:
+                if pattern in combined_text:
+                    domain_signals.append({
+                        "pattern": pattern,
+                        "evidence_type": "implied",
+                        "strength": "medium",
+                        "role_title": exp.get("title", ""),
+                        "company": company,
+                        "years": years
+                    })
+                    has_leadership_signals = True
+
+            if domain_signals:
+                result["competency_domains"][domain]["signals"].extend(domain_signals)
+                role_domains_found.append(domain)
+
+        # Track mixed-scope roles
+        if has_ic_signals and has_leadership_signals:
+            result["mixed_scope_roles"].append({
+                "title": exp.get("title", ""),
+                "company": company,
+                "years": years,
+                "domains_found": role_domains_found,
+                "leadership_scope_estimate": 0.5  # Default 50% for mixed roles
+            })
+
+    # Calculate years and strength per domain
+    total_signals = 0
+    domain_years = {}
+
+    for domain, data in result["competency_domains"].items():
+        signals = data["signals"]
+        total_signals += len(signals)
+
+        # Calculate years (with deduplication by role)
+        role_years = {}
+        for sig in signals:
+            role_key = f"{sig['role_title']}@{sig['company']}"
+            if role_key not in role_years:
+                role_years[role_key] = sig["years"]
+
+        domain_total_years = sum(role_years.values())
+        data["years"] = round(domain_total_years, 1)
+        domain_years[domain] = domain_total_years
+
+        # Determine strength
+        explicit_count = len([s for s in signals if s["evidence_type"] == "explicit"])
+        if explicit_count >= 3 or domain_total_years >= 5:
+            data["strength"] = "strong"
+        elif explicit_count >= 1 or domain_total_years >= 2:
+            data["strength"] = "medium"
+        elif signals:
+            data["strength"] = "weak"
+
+    result["total_leadership_signals"] = total_signals
+
+    # Find strongest/weakest domains
+    if domain_years:
+        result["strongest_domain"] = max(domain_years, key=domain_years.get)
+        # Only mark weakest if there's at least one signal
+        domains_with_signals = {d: y for d, y in domain_years.items() if y > 0}
+        if domains_with_signals:
+            result["weakest_domain"] = min(domains_with_signals, key=domains_with_signals.get)
+
+    return result
+
+
+def calculate_leadership_tenure_lepe(resume_data: dict) -> dict:
+    """
+    Calculate leadership tenure per LEPE spec.
+
+    CRITICAL RULES:
+    - Leadership tenure is NEVER derived from total career years
+    - People leadership years = cumulative duration of Tier 2+ signals
+    - Tier 1 signals alone → 0 people leadership years
+    - Partial roles receive proportional credit
+    - Never default to 0 if ANY Tier 1 or partial Tier 2 signals exist
+
+    Args:
+        resume_data: Parsed resume dictionary
+
+    Returns:
+        dict: Leadership tenure breakdown
+    """
+    # Get tiered leadership analysis
+    tiered = extract_tiered_leadership(resume_data)
+    competency = extract_leadership_competency_signals(resume_data)
+
+    # Calculate mixed-scope adjustments
+    mixed_scope_adjustment = 0.0
+    for role in competency.get("mixed_scope_roles", []):
+        # Apply proportional credit (50% for mixed roles)
+        mixed_scope_adjustment += role["years"] * role["leadership_scope_estimate"]
+
+    result = {
+        "people_leadership_years": tiered.get("people_leadership_years", 0.0),
+        "strategic_leadership_years": tiered.get("strategic_leadership_years", 0.0),
+        "org_level_leadership_years": tiered.get("org_leadership_years", 0.0),
+        "mixed_scope_credit": round(mixed_scope_adjustment, 1),
+        "has_any_leadership_signals": tiered.get("has_any_leadership", False) or competency.get("total_leadership_signals", 0) > 0,
+        "competency_breakdown": {
+            domain: {
+                "years": data["years"],
+                "strength": data["strength"]
+            }
+            for domain, data in competency.get("competency_domains", {}).items()
+        },
+        "tier_summary": tiered.get("leadership_tier_summary", ""),
+        "strongest_competency": competency.get("strongest_domain"),
+        "development_area": competency.get("weakest_domain")
+    }
+
+    return result
+
+
+def get_lepe_positioning_decision(
+    leadership_tenure: dict,
+    required_leadership_years: float,
+    role_title: str
+) -> dict:
+    """
+    LEPE Positioning Decision Engine.
+
+    Decision Logic:
+    - Gap ≤ 2 years → Positioning Mode (coaching, narrative building)
+    - Gap 3-4 years → Apply with Caution + skepticism language
+    - Gap > 4 years OR missing core competency → Do Not Apply (Locked)
+
+    Args:
+        leadership_tenure: Output from calculate_leadership_tenure_lepe()
+        required_leadership_years: Years required by the role
+        role_title: The target role title
+
+    Returns:
+        dict: Positioning decision with coaching or lock
+    """
+    people_years = leadership_tenure.get("people_leadership_years", 0.0)
+    has_any_signals = leadership_tenure.get("has_any_leadership_signals", False)
+    strongest = leadership_tenure.get("strongest_competency")
+    development_area = leadership_tenure.get("development_area")
+
+    gap = required_leadership_years - people_years
+
+    result = {
+        "decision": "apply",  # apply | position | caution | locked
+        "gap_years": round(gap, 1),
+        "candidate_years": people_years,
+        "required_years": required_leadership_years,
+        "positioning_mode": False,
+        "coaching_available": False,
+        "skepticism_level": "none",  # none | mild | significant | severe
+        "transition_narrative_possible": False,
+        "messaging": {
+            "headline": "",
+            "explanation": "",
+            "coaching_advice": "",
+            "skepticism_warning": ""
+        }
+    }
+
+    # Determine decision based on gap
+    if gap <= 0:
+        # Meets or exceeds requirement
+        result["decision"] = "apply"
+        result["skepticism_level"] = "none"
+        result["messaging"]["headline"] = "Your leadership experience meets this role's requirements."
+        result["messaging"]["explanation"] = (
+            f"You have {people_years:.1f} years of people leadership experience. "
+            f"This role requires {required_leadership_years:.0f}+ years."
+        )
+
+    elif gap <= 2:
+        # Positioning Mode
+        result["decision"] = "position"
+        result["positioning_mode"] = True
+        result["coaching_available"] = True
+        result["skepticism_level"] = "mild"
+        result["transition_narrative_possible"] = True
+        result["messaging"]["headline"] = "Addressable gap — positioning strategy available."
+        result["messaging"]["explanation"] = (
+            f"You have {people_years:.1f} years of people leadership. "
+            f"This role screens for {required_leadership_years:.0f}+. "
+            f"The {gap:.1f}-year gap is addressable with the right positioning."
+        )
+
+        # Build coaching advice
+        coaching_parts = []
+        if strongest:
+            coaching_parts.append(
+                f"Lead with your strength in {strongest.replace('_', ' ')}."
+            )
+        if development_area:
+            coaching_parts.append(
+                f"Proactively address {development_area.replace('_', ' ')} in your narrative."
+            )
+        coaching_parts.append(
+            "Quantify your leadership impact: team size, outcomes, scope of decisions."
+        )
+        result["messaging"]["coaching_advice"] = " ".join(coaching_parts)
+        result["messaging"]["skepticism_warning"] = (
+            "Hiring managers may probe your leadership depth. Prepare concrete examples."
+        )
+
+    elif gap <= 4:
+        # Apply with Caution
+        result["decision"] = "caution"
+        result["positioning_mode"] = False
+        result["coaching_available"] = True
+        result["skepticism_level"] = "significant"
+        result["messaging"]["headline"] = "Significant leadership gap — apply with realistic expectations."
+        result["messaging"]["explanation"] = (
+            f"You have {people_years:.1f} years of people leadership. "
+            f"This role requires {required_leadership_years:.0f}+. "
+            f"The {gap:.1f}-year gap will raise questions in screening."
+        )
+        result["messaging"]["skepticism_warning"] = (
+            "Hiring managers will likely question whether you're ready for this level. "
+            "Unless you have a strong internal referral or unique differentiator, "
+            "this is an uphill battle."
+        )
+
+        if strongest:
+            result["messaging"]["coaching_advice"] = (
+                f"If you proceed: heavily emphasize {strongest.replace('_', ' ')} "
+                f"and be ready to address the experience gap directly."
+            )
+
+    else:
+        # Gap > 4 years — Locked
+        result["decision"] = "locked"
+        result["positioning_mode"] = False
+        result["coaching_available"] = False
+        result["skepticism_level"] = "severe"
+
+        if not has_any_signals:
+            result["messaging"]["headline"] = "No leadership signals detected. This role is not a fit."
+            result["messaging"]["explanation"] = (
+                f"This role requires {required_leadership_years:.0f}+ years of people leadership. "
+                f"Your resume shows no verified leadership experience at any tier."
+            )
+        else:
+            result["messaging"]["headline"] = "Leadership experience gap too large for this role."
+            result["messaging"]["explanation"] = (
+                f"You have {people_years:.1f} years of people leadership. "
+                f"This role requires {required_leadership_years:.0f}+. "
+                f"The {gap:.1f}-year gap cannot be bridged through positioning alone."
+            )
+
+        result["messaging"]["skepticism_warning"] = (
+            "Recruiters will screen you out based on years alone. "
+            "Focus on roles that match your current experience level."
+        )
+
+    return result
+
+
+def evaluate_lepe(
+    resume_data: dict,
+    response_data: dict
+) -> dict:
+    """
+    Main LEPE evaluation function.
+
+    Runs full Leadership Evaluation & Positioning Engine analysis.
+
+    APPLICABILITY: Only runs for Manager+ roles.
+    If role is below Manager level, returns bypass result.
+
+    Args:
+        resume_data: Parsed resume dictionary
+        response_data: JD analysis response data
+
+    Returns:
+        dict: Complete LEPE analysis including:
+            - lepe_applicable: bool
+            - leadership_competency_analysis: dict
+            - leadership_tenure: dict
+            - positioning_decision: dict
+            - accountability_record: dict
+    """
+    role_title = (response_data.get("role_title", "") or "").strip()
+
+    result = {
+        "lepe_applicable": False,
+        "role_level": "unknown",
+        "leadership_competency_analysis": None,
+        "leadership_tenure": None,
+        "positioning_decision": None,
+        "accountability_record": {
+            "gaps_identified": [],
+            "advice_given": "",
+            "risk_communicated": "",
+            "timestamp": None
+        }
+    }
+
+    # Check applicability
+    if not is_manager_plus_role(role_title):
+        result["role_level"] = "below_manager"
+        print(f"🔄 LEPE BYPASS: Role '{role_title}' is below Manager level")
+        return result
+
+    result["lepe_applicable"] = True
+    result["role_level"] = "manager_plus"
+    print(f"📊 LEPE EVALUATION: Manager+ role detected - '{role_title}'")
+
+    # Extract leadership competency signals
+    competency = extract_leadership_competency_signals(resume_data)
+    result["leadership_competency_analysis"] = competency
+
+    # Calculate leadership tenure
+    tenure = calculate_leadership_tenure_lepe(resume_data)
+    result["leadership_tenure"] = tenure
+
+    # Infer leadership requirement from role level
+    required_years = infer_leadership_requirement(role_title, response_data)
+
+    # Get positioning decision
+    positioning = get_lepe_positioning_decision(tenure, required_years, role_title)
+    result["positioning_decision"] = positioning
+
+    # Build accountability record
+    gaps = []
+    if positioning["gap_years"] > 0:
+        gaps.append(f"People leadership gap: {positioning['gap_years']:.1f} years")
+
+    weakest = tenure.get("development_area")
+    if weakest:
+        gaps.append(f"Development area: {weakest.replace('_', ' ')}")
+
+    result["accountability_record"] = {
+        "gaps_identified": gaps,
+        "advice_given": positioning["messaging"].get("coaching_advice", ""),
+        "risk_communicated": positioning["messaging"].get("skepticism_warning", ""),
+        "decision": positioning["decision"],
+        "timestamp": datetime.now().isoformat()
+    }
+
+    print(f"   Decision: {positioning['decision'].upper()}")
+    print(f"   People leadership years: {tenure.get('people_leadership_years', 0):.1f}")
+    print(f"   Required: {required_years:.0f}+")
+    print(f"   Gap: {positioning['gap_years']:.1f} years")
+
+    return result
+
+
+def infer_leadership_requirement(role_title: str, response_data: dict) -> float:
+    """
+    Infer leadership years requirement from role level when JD is vague.
+
+    Per LEPE spec: When a JD is vague, LEPE must infer expectations
+    based on role level. Inferred requirements are additive, not fabricated.
+
+    Args:
+        role_title: The job title
+        response_data: JD analysis response
+
+    Returns:
+        float: Inferred minimum leadership years requirement
+    """
+    title_lower = (role_title or "").lower()
+
+    # First check if JD explicitly states years
+    required_years, is_hard = extract_required_people_leadership_years(response_data)
+    if required_years > 0:
+        return required_years
+
+    # Infer based on role level
+    # Check C-suite with word boundaries to avoid false positives like "director" -> "cto"
+    import re
+    if re.search(r'\b(chief|ceo|cto|cfo|coo|cmo|cio|cpo)\b', title_lower):
+        return 10.0  # C-suite
+
+    if any(v in title_lower for v in ["vp ", "vp,", "vice president", "svp", "evp"]):
+        return 7.0  # VP level
+
+    if "head of" in title_lower or "head," in title_lower:
+        return 7.0  # Head of X
+
+    if "senior director" in title_lower:
+        return 7.0
+
+    if "director" in title_lower:
+        return 5.0
+
+    if "senior manager" in title_lower:
+        return 4.0
+
+    if "manager" in title_lower:
+        return 2.0
+
+    # Default for ambiguous Manager+ roles
+    return 3.0
+
+
 def extract_people_leadership_years(resume_data: dict) -> float:
     """
     Extract ONLY people leadership years (direct reports, team management).
@@ -4355,10 +7056,172 @@ def extract_required_people_leadership_years(response_data: dict) -> tuple[float
     return required_years, is_hard_requirement
 
 
+def get_leadership_gap_messaging(
+    tiered_leadership: dict,
+    required_people_leadership: float,
+    required_org_leadership: float = 0.0
+) -> dict:
+    """
+    Generate precise leadership gap messaging based on tiered analysis.
+
+    Per Leadership Messaging Rules:
+    - "0 years" ONLY when NO leadership signals exist at ALL
+    - "insufficient" when leadership exists but doesn't meet requirement level
+    - Be specific about what tier is missing vs what tier candidate has
+
+    Args:
+        tiered_leadership: Result from extract_tiered_leadership()
+        required_people_leadership: Required people leadership years
+        required_org_leadership: Required org-level leadership years (for VP+ roles)
+
+    Returns:
+        dict: {
+            "status": "none" | "insufficient" | "sufficient",
+            "message": str,  # Human-readable gap description
+            "factual_statement": str,  # For recommendation_rationale
+            "has_lower_tier": bool,  # Has strategic but not people leadership
+            "gap_years": float,  # How many more years needed
+            "candidate_tier": str  # Highest tier candidate has
+        }
+    """
+    people_years = tiered_leadership.get("people_leadership_years", 0.0)
+    org_years = tiered_leadership.get("org_leadership_years", 0.0)
+    strategic_years = tiered_leadership.get("strategic_leadership_years", 0.0)
+    has_any = tiered_leadership.get("has_any_leadership", False)
+
+    result = {
+        "status": "sufficient",
+        "message": "",
+        "factual_statement": "",
+        "has_lower_tier": False,
+        "gap_years": 0.0,
+        "candidate_tier": "none"
+    }
+
+    # Determine candidate's highest tier
+    if org_years > 0:
+        result["candidate_tier"] = "org"
+    elif people_years > 0:
+        result["candidate_tier"] = "people"
+    elif strategic_years > 0:
+        result["candidate_tier"] = "strategic"
+
+    # Check org-level requirement first (highest tier)
+    if required_org_leadership > 0:
+        if org_years >= required_org_leadership:
+            result["status"] = "sufficient"
+            return result
+
+        # Check if candidate has ANY org-level
+        if org_years > 0:
+            # Insufficient org-level
+            result["status"] = "insufficient"
+            result["gap_years"] = required_org_leadership - org_years
+            result["message"] = (
+                f"Your org-level leadership experience ({org_years:.1f} years) is insufficient "
+                f"for this role's requirement ({required_org_leadership:.0f}+ years)."
+            )
+            result["factual_statement"] = (
+                f"This role requires {required_org_leadership:.0f}+ years of org-level leadership "
+                f"(executive team, C-suite, board-facing). You have {org_years:.1f} years verified."
+            )
+        elif people_years > 0:
+            # Has people leadership but not org-level
+            result["status"] = "insufficient"
+            result["has_lower_tier"] = True
+            result["gap_years"] = required_org_leadership
+            result["message"] = (
+                f"This role requires org-level leadership (executive, C-suite, board-facing). "
+                f"Your experience is at the people leadership tier ({people_years:.1f} years managing direct reports), "
+                f"which does not substitute for executive-level scope."
+            )
+            result["factual_statement"] = (
+                f"This role requires {required_org_leadership:.0f}+ years of org-level leadership. "
+                f"Your background shows {people_years:.1f} years of people leadership, but no executive or C-suite experience."
+            )
+        elif strategic_years > 0:
+            # Has strategic but not people or org
+            result["status"] = "insufficient"
+            result["has_lower_tier"] = True
+            result["gap_years"] = required_org_leadership
+            result["message"] = (
+                f"This role requires org-level leadership. Your experience is at the strategic/functional tier "
+                f"({strategic_years:.1f} years leading initiatives without direct reports). "
+                f"This is 2 tiers below the role requirement."
+            )
+            result["factual_statement"] = (
+                f"This role requires {required_org_leadership:.0f}+ years of org-level leadership. "
+                f"Your background shows strategic/functional leadership but no people management or executive experience."
+            )
+        else:
+            # No leadership at all
+            result["status"] = "none"
+            result["gap_years"] = required_org_leadership
+            result["message"] = "No leadership experience found in your background."
+            result["factual_statement"] = (
+                f"This role requires {required_org_leadership:.0f}+ years of org-level leadership. "
+                f"Your resume shows 0 years of verified leadership at any tier."
+            )
+        return result
+
+    # Check people leadership requirement
+    if required_people_leadership > 0:
+        if people_years >= required_people_leadership:
+            result["status"] = "sufficient"
+            return result
+
+        # Check if candidate has ANY people leadership
+        if people_years > 0:
+            # Insufficient people leadership
+            result["status"] = "insufficient"
+            result["gap_years"] = required_people_leadership - people_years
+            result["message"] = (
+                f"Your people leadership experience ({people_years:.1f} years) is insufficient "
+                f"for this role's requirement ({required_people_leadership:.0f}+ years)."
+            )
+            result["factual_statement"] = (
+                f"This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                f"You have {people_years:.1f} years verified. Gap: {result['gap_years']:.1f} years."
+            )
+        elif strategic_years > 0:
+            # Has strategic but not people leadership
+            result["status"] = "insufficient"
+            result["has_lower_tier"] = True
+            result["gap_years"] = required_people_leadership
+            result["message"] = (
+                f"This role requires people leadership (managing direct reports). "
+                f"Your experience is at the strategic/functional tier ({strategic_years:.1f} years leading initiatives), "
+                f"which does not substitute for people management."
+            )
+            result["factual_statement"] = (
+                f"This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                f"Your background shows {strategic_years:.1f} years of strategic/functional leadership "
+                f"but no verified direct reports or team management."
+            )
+        else:
+            # No leadership at all
+            result["status"] = "none"
+            result["gap_years"] = required_people_leadership
+            result["message"] = "No leadership experience found in your background."
+            result["factual_statement"] = (
+                f"This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                f"Your resume shows 0 years of verified leadership at any tier."
+            )
+        return result
+
+    # No leadership requirement - sufficient by default
+    return result
+
+
 def classify_gap_type(gap: dict, candidate_years: float, required_years: float,
                       people_leadership_years: float, required_people_leadership: float) -> str:
     """
     Classify a gap as missing_evidence, missing_scope, or missing_experience.
+
+    Per Eligibility Gate Enforcement Spec:
+    - missing_experience = The candidate lacks the experience (hard stop, "Do Not Apply")
+    - missing_scope = The candidate has experience but at smaller scale (downgrade possible)
+    - missing_evidence = The candidate may have it but resume doesn't prove it (coachable)
 
     CRITICAL: missing_experience → forces "Do Not Apply". No exceptions.
 
@@ -4375,23 +7238,53 @@ def classify_gap_type(gap: dict, candidate_years: float, required_years: float,
     gap_type = gap.get("gap_type", "")
     gap_description = (gap.get("gap_description", "") or gap.get("description", "")).lower()
 
-    # HARD RULE: People leadership gap is always missing_experience
+    # ========================================================================
+    # RULE 1: Eligibility gate failures are ALWAYS missing_experience
+    # ========================================================================
+    if gap_type.startswith("eligibility_failure:"):
+        return "missing_experience"
+
+    # ========================================================================
+    # RULE 2: Non-transferable domain gaps are ALWAYS missing_experience
+    # ========================================================================
+    non_transferable_keywords = [
+        # Executive search
+        "executive search", "executive recruiting", "retained search",
+        # Core software engineering
+        "software engineer", "software development", "hands-on coding",
+        # ML/AI research
+        "machine learning", "ml research", "ai research", "deep learning",
+        # Regulated domains
+        "clinical", "fda", "regulatory", "finra", "sec", "compliance"
+    ]
+    if any(kw in gap_description for kw in non_transferable_keywords):
+        return "missing_experience"
+
+    # ========================================================================
+    # RULE 3: People leadership gap is ALWAYS missing_experience
+    # ========================================================================
     if required_people_leadership > 0 and people_leadership_years < required_people_leadership:
-        if any(kw in gap_description for kw in ["leadership", "management", "direct report", "team"]):
+        if any(kw in gap_description for kw in ["leadership", "management", "direct report", "team", "people"]):
             return "missing_experience"
 
-    # Years gap below threshold is missing_experience
+    # ========================================================================
+    # RULE 4: Significant years gap is missing_experience
+    # ========================================================================
     if candidate_years < required_years * 0.7:
         if any(kw in gap_description for kw in ["years", "experience", "tenure"]):
             return "missing_experience"
 
-    # Scope gaps - candidate has some experience but not at required level
+    # ========================================================================
+    # RULE 5: Scope gaps - has experience but at smaller scale
+    # ========================================================================
     scope_keywords = ["scale", "scope", "enterprise", "global", "size", "team size",
                       "company size", "revenue", "headcount"]
     if any(kw in gap_description for kw in scope_keywords):
         return "missing_scope"
 
-    # Evidence gaps - candidate may have experience but can't verify
+    # ========================================================================
+    # RULE 6: Evidence gaps - may have experience but can't verify
+    # ========================================================================
     evidence_keywords = ["quantif", "metric", "evidence", "demonstrat", "prove",
                         "unclear", "vague", "specific", "detail"]
     if any(kw in gap_description for kw in evidence_keywords):
@@ -6377,6 +9270,13 @@ Role: {request.role_title}
                 for w in qa_validation_result.warnings
             ]
 
+        # CRITICAL: Ensure parsed_data has job_description and role_title for eligibility checks
+        # These are needed by force_apply_experience_penalties for non-transferable domain detection
+        if "job_description" not in parsed_data and request.job_description:
+            parsed_data["job_description"] = request.job_description
+        if "role_title" not in parsed_data and request.role_title:
+            parsed_data["role_title"] = request.role_title
+
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
         parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
@@ -6465,6 +9365,12 @@ Role: {request.role_title}
 
             parsed_data = json.loads(fixed_response)
             print("✅ Fixed JSON by escaping common quote patterns")
+
+            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            if "job_description" not in parsed_data and request.job_description:
+                parsed_data["job_description"] = request.job_description
+            if "role_title" not in parsed_data and request.role_title:
+                parsed_data["role_title"] = request.role_title
 
             # Continue with penalty enforcement
             parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
@@ -6709,6 +9615,12 @@ Role: {request.role_title}
                 truncated += ']' * open_brackets + '}' * open_braces
                 parsed_data = json.loads(truncated)
                 print(f"✅ Salvaged JSON by truncating")
+
+            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            if "job_description" not in parsed_data and request.job_description:
+                parsed_data["job_description"] = request.job_description
+            if "role_title" not in parsed_data and request.role_title:
+                parsed_data["role_title"] = request.role_title
 
             # Apply experience penalties
             parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
