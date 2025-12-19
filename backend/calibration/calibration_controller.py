@@ -246,7 +246,7 @@ def count_strong_signals(candidate_resume: Dict[str, Any], cec_results: Dict[str
     # 1. Decision Authority Signals
     authority_patterns = [
         (r'hired\s+\d+', 'hiring authority'),
-        (r'built\s+(?:a\s+)?team\s+(?:of\s+)?\d+', 'team building'),
+        (r'built\s+(?:\w+\s+)*(?:a\s+)?team\s+(?:of\s+)?\d+', 'team building'),
         (r'\$[\d.]+[MBK]?\+?\s*(?:budget|p&l|revenue)', 'budget ownership'),
         (r'p&l\s*(?:ownership|responsibility)', 'P&L ownership'),
         (r'(?:own|owned|owning)\s+(?:the\s+)?(?:roadmap|strategy|vision)', 'strategic ownership'),
@@ -339,10 +339,12 @@ def extract_dominant_narrative(
     combined_text = _build_resume_text(candidate_resume)
 
     # Priority 1: Decision Authority
-    hire_match = re.search(r'(?:hired|built\s+(?:a\s+)?team\s+of)\s+(\d+)', combined_text, re.IGNORECASE)
-    if hire_match:
-        count = hire_match.group(1)
-        return f"built and scaled a team of {count}"
+    # Find ALL matches and use the largest number (most impressive)
+    # Pattern allows words between "built" and "team of" (e.g., "built and scaled a team of")
+    hire_matches = re.findall(r'(?:hired|built\s+(?:\w+\s+)*(?:a\s+)?team\s+of)\s+(\d+)', combined_text, re.IGNORECASE)
+    if hire_matches:
+        max_count = max(int(m) for m in hire_matches)
+        return f"built and scaled a team of {max_count}"
 
     budget_match = re.search(r'\$(\d+(?:\.\d+)?)\s*([MBK])\s*(?:budget|p&l)', combined_text, re.IGNORECASE)
     if budget_match:
