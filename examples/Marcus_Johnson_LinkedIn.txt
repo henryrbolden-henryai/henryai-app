@@ -1,0 +1,80 @@
+================================================================================
+LINKEDIN PROFILE: Marcus Johnson
+================================================================================
+
+HEADLINE:
+Engineering Manager | Engineering | Boston, MA
+
+ABOUT:
+Engineering Manager with 9 years leading high-performance teams building distributed systems at scale. Managed teams of 6-15 engineers across backend, infrastructure, and data platforms. Strong technical background in Python, Go, and cloud architecture. Track record scaling systems to 100M+ requests/day while maintaining 99.99% uptime.
+
+EXPERIENCE:
+
+Engineering Manager, Platform
+HubSpot | Mar 2020 - Present
+Cambridge, MA
+
+• Lead team of 12 engineers building core platform services supporting 100K+ customers
+• Reduced infrastructure costs by 40% ($2.5M annually) through optimization and cloud migration strategy
+• Improved deployment frequency from weekly to daily while reducing incident rate by 60%
+• Scaled platform to handle 150M API requests/day (3x growth) maintaining 99.99% uptime
+• Hired and onboarded 8 engineers, establishing technical interview process and career ladder framework
+• Implemented SRE practices including SLOs, error budgets, and incident response protocols
+
+--------------------------------------------------------------------------------
+
+Senior Software Engineer
+Wayfair | Jun 2017 - Feb 2020
+Boston, MA
+
+• Built order processing system handling 50K orders/day during peak seasons
+• Architected microservices migration reducing monolith complexity by 70%
+• Led technical design reviews for critical infrastructure projects
+• Mentored 4 junior engineers on system design and coding best practices
+• On-call rotation lead resolving 95% of incidents within SLA
+
+--------------------------------------------------------------------------------
+
+Software Engineer
+Akamai Technologies | Jul 2014 - May 2017
+Cambridge, MA
+
+• Developed CDN routing algorithms improving latency by 25% for Fortune 500 clients
+• Built monitoring dashboards providing real-time visibility into network performance
+• Contributed to open source projects including Kubernetes and Prometheus
+• Participated in code reviews and design discussions for distributed systems
+• Debugged production incidents in high-pressure environments serving billions of requests
+
+--------------------------------------------------------------------------------
+
+EDUCATION:
+
+MS Computer Science
+MIT
+Graduated: 2014
+Focus: Distributed Systems
+
+BS Computer Science
+Georgia Tech
+Graduated: 2012
+Summa Cum Laude
+
+SKILLS:
+
+• Engineering Leadership
+• Team Building & Mentorship
+• System Architecture
+• Python, Go, Java
+• AWS, Kubernetes, Docker
+• CI/CD & DevOps
+• SRE Practices
+• Distributed Systems
+• Performance Optimization
+• Technical Strategy
+
+CONTACT:
+Email: mjohnson.dev@email.com
+Phone: (617) 555-0298
+LinkedIn: linkedin.com/in/marcusjohnson-eng
+
+================================================================================

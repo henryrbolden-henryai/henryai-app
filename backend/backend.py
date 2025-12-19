@@ -1540,7 +1540,7 @@ def generate_specific_redirect(resume_data: dict, response_data: dict, eligibili
     # Determine why they were rejected
     failed_check = ""
     if eligibility_result:
-        failed_check = eligibility_result.get("failed_check", "")
+        failed_check = eligibility_result.get("failed_check", "") or ""
 
     # Generate specific redirects based on rejection reason and background
     if "people_leadership" in failed_check:
@@ -5560,7 +5560,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         # Determine the specific reason and build rationale accordingly
         if eligibility_result and not eligibility_result.get("eligible", True):
             # Eligibility gate failure - use the eligibility reason
-            failed_check = eligibility_result.get("failed_check", "")
+            failed_check = eligibility_result.get("failed_check", "") or ""
 
             # A. DECISION (one sentence, direct)
             # B. WHY (plain, non-shaming)

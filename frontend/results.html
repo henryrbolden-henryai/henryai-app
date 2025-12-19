@@ -1438,12 +1438,76 @@
         recommendationQuickEl.classList.add(recClass);
 
         // =====================================================================
+        // UI CONTRACT: DISABLE APPLY FOR INELIGIBLE ROLES
+        // Per Required Fixes Spec: If recommendation == "Do Not Apply", the Apply
+        // button must NOT be clickable. Either hide or show disabled state.
+        // =====================================================================
+        const isDoNotApply = labelLower.includes('do not apply') || labelLower === 'do not apply';
+        const applyDisabled = data.apply_disabled === true || isDoNotApply;
+
+        if (applyDisabled) {
+            console.log('🚫 APPLY DISABLED: Recommendation is Do Not Apply');
+
+            // Disable Full View Apply button
+            const applyBtn = document.getElementById('getPackageBtn');
+            if (applyBtn) {
+                applyBtn.disabled = true;
+                applyBtn.classList.add('btn-disabled');
+                applyBtn.textContent = 'Not eligible for this role';
+                applyBtn.style.opacity = '0.5';
+                applyBtn.style.cursor = 'not-allowed';
+                applyBtn.style.background = 'var(--color-surface-elevated)';
+                applyBtn.style.color = 'var(--color-text-secondary)';
+                applyBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                };
+            }
+
+            // Disable Quick View Apply button
+            const applyBtnQuick = document.getElementById('getPackageBtnQuick');
+            if (applyBtnQuick) {
+                applyBtnQuick.disabled = true;
+                applyBtnQuick.classList.add('btn-disabled');
+                applyBtnQuick.textContent = 'Not eligible for this role';
+                applyBtnQuick.style.opacity = '0.5';
+                applyBtnQuick.style.cursor = 'not-allowed';
+                applyBtnQuick.style.background = 'var(--color-surface-elevated)';
+                applyBtnQuick.style.color = 'var(--color-text-secondary)';
+                applyBtnQuick.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                };
+            }
+
+            // Update helper text to remove Apply-related messaging
+            const helperText = document.querySelector('.helper-text');
+            if (helperText) {
+                helperText.innerHTML = `
+                    <strong>This role is not a match.</strong> Review the analysis above to understand why.<br>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">Click "Pass" to return to your tracker and find roles where you are competitive.</span>
+                `;
+            }
+        }
+
+        // =====================================================================
         // POPULATE: Quick View "Your Move" section
+        // SANITY CHECK: Do Not Apply must not show optimistic messaging
         // =====================================================================
         const quickMoveText = document.getElementById('quickMoveText');
         // realityCheckData already declared above
-        
-        if (realityCheckData && realityCheckData.strategic_action) {
+
+        // SANITY CHECK: If recommendation is Do Not Apply, override any optimistic messaging
+        if (applyDisabled) {
+            // Use backend strategic_action if available, otherwise use direct language
+            if (realityCheckData && realityCheckData.strategic_action) {
+                quickMoveText.textContent = realityCheckData.strategic_action;
+            } else {
+                quickMoveText.textContent = 'This role is not a fit. Review the alternative actions below and focus on roles where you are competitive.';
+            }
+        } else if (realityCheckData && realityCheckData.strategic_action) {
             quickMoveText.textContent = realityCheckData.strategic_action;
         } else {
             // Generate a default quick move based on fit score

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center Visual Prototype | HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Core Colors */
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #71717a;
+            --color-text-muted: #52525b;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+
+            /* Signal Colors */
+            --color-confidence-high: #10b981;
+            --color-confidence-medium: #f59e0b;
+            --color-confidence-low: #ef4444;
+            --color-urgent: #dc2626;
+            --color-urgent-muted: rgba(220, 38, 38, 0.15);
+            --color-override: #f59e0b;
+            --color-override-muted: rgba(251, 191, 36, 0.2);
+            
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 24px;
+            --space-xxl: 32px;
+            
+            /* Typography */
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: var(--space-xl);
+        }
+
+        .prototype-header {
+            max-width: 1400px;
+            margin: 0 auto var(--space-xxl);
+            padding-bottom: var(--space-xl);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .prototype-header h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .prototype-header h1 em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .prototype-header p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .component-section {
+            max-width: 1400px;
+            margin: 0 auto var(--space-xxl);
+        }
+
+        .component-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: var(--space-lg);
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .component-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--color-accent);
+            border-radius: 2px;
+        }
+
+        /* DAILY PULSE BANNER */
+        .daily-pulse {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 16px;
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .pulse-greeting {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: var(--space-lg);
+        }
+
+        .pulse-actions {
+            display: flex;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            flex-wrap: wrap;
+        }
+
+        .pulse-action-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .pulse-action-card .icon {
+            font-size: 1.5rem;
+            margin-bottom: var(--space-sm);
+            display: block;
+        }
+
+        .pulse-action-card .company {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: var(--space-xs);
+        }
+
+        .pulse-action-card .action-text {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-md);
+        }
+
+        .pulse-action-card .action-btn {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .pulse-action-card .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .pulse-health {
+            font-size: 0.95rem;
+            color: var(--color-text);
+        }
+
+        .pulse-health .icon {
+            display: inline;
+            margin-right: var(--space-xs);
+        }
+
+        .pulse-health .reason {
+            display: block;
+            color: var(--color-text-secondary);
+            margin-top: var(--space-xs);
+        }
+
+        /* VIEW SELECTOR */
+        .view-selector {
+            display: flex;
+            gap: 4px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: var(--space-xl);
+            width: fit-content;
+        }
+
+        .view-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-text);
+        }
+
+        .view-btn.active {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
+        /* APPLICATION CARDS */
+        .cards-demo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .application-card {
+            background: var(--color-surface-elevated);
+            border: 2px solid var(--color-confidence-medium);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            transition: all 0.2s;
+        }
+
+        .application-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .application-card.high-confidence {
+            border-color: var(--color-confidence-high);
+        }
+
+        .application-card.medium-confidence {
+            border-color: var(--color-confidence-medium);
+        }
+
+        .application-card.low-confidence {
+            border-color: var(--color-confidence-low);
+        }
+
+        .application-card.dimmed {
+            opacity: 0.3;
+            transform: scale(0.98);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--space-md);
+        }
+
+        .card-title-row {
+            flex: 1;
+        }
+
+        .card-icon {
+            font-size: 1.2rem;
+            margin-right: var(--space-sm);
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            display: inline;
+        }
+
+        .card-badges {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .badge {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.override {
+            background: var(--color-override-muted);
+            color: var(--color-override);
+            border: 1px solid var(--color-override);
+        }
+
+        .card-stats {
+            display: flex;
+            gap: var(--space-lg);
+            flex-wrap: wrap;
+            margin-bottom: var(--space-md);
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .next-action-section {
+            background: rgba(34, 211, 238, 0.08);
+            border-left: 3px solid var(--color-accent);
+            padding: var(--space-md);
+            border-radius: 6px;
+            margin-bottom: var(--space-md);
+        }
+
+        .next-action-text {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .action-reason {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .one-click-btn {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .one-click-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* STRATEGIC STOP WARNING */
+        .strategic-stop {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+            border: 2px solid #ef4444;
+            border-radius: 12px;
+            padding: var(--space-xl);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .stop-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ef4444;
+            margin-bottom: var(--space-lg);
+        }
+
+        .stop-body {
+            font-size: 0.95rem;
+            color: var(--color-text);
+            line-height: 1.6;
+            margin-bottom: var(--space-lg);
+        }
+
+        .stop-actions-list {
+            margin-bottom: var(--space-lg);
+        }
+
+        .stop-actions-list h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            color: var(--color-text);
+        }
+
+        .stop-actions-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .stop-actions-list li {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            padding-left: var(--space-lg);
+            position: relative;
+            margin-bottom: var(--space-xs);
+        }
+
+        .stop-actions-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+        }
+
+        .pause-notice {
+            font-size: 0.85rem;
+            color: #fca5a5;
+            font-weight: 600;
+            margin-bottom: var(--space-lg);
+        }
+
+        .stop-buttons {
+            display: flex;
+            gap: var(--space-md);
+        }
+
+        .stop-btn-primary {
+            background: #ef4444;
+            color: #fff;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .stop-btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .stop-btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stop-btn-secondary:hover {
+            border-color: var(--color-border-hover);
+            color: var(--color-text);
+        }
+
+        /* BOARD VIEW */
+        .board-view {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xxl);
+        }
+
+        .board-column {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            min-height: 400px;
+        }
+
+        .column-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: var(--space-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .count-badge {
+            background: var(--color-border);
+            color: var(--color-text);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .board-card {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: var(--space-md);
+            margin-bottom: var(--space-md);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .board-card:hover {
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
+        }
+
+        .board-card-company {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: var(--space-xs);
+        }
+
+        .board-card-role {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .board-card-meta {
+            display: flex;
+            gap: var(--space-md);
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        /* ANIMATIONS */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+        }
+
+        .urgent-icon {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .application-card {
+            animation: slideIn 200ms ease-out;
+        }
+
+        /* FOCUS MODE TOGGLE */
+        .focus-mode-toggle {
+            position: fixed;
+            top: var(--space-xl);
+            right: var(--space-xl);
+            z-index: 100;
+        }
+
+        .focus-toggle-btn {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            padding: 10px 16px;
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .focus-toggle-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .focus-toggle-btn.active {
+            background: var(--color-accent-muted);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        /* OVERRIDE TOOLTIP */
+        .override-tooltip {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: var(--space-sm);
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: var(--space-md);
+            max-width: 200px;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .badge.override:hover + .override-tooltip {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .override-tooltip strong {
+            display: block;
+            margin-bottom: var(--space-xs);
+            color: var(--color-text);
+        }
+    </style>
+</head>
+<body>
+    <div class="focus-mode-toggle">
+        <button class="focus-toggle-btn" onclick="toggleFocusMode()">
+            <span id="focusIcon">👁️</span>
+            <span id="focusLabel">Focus Mode</span>
+        </button>
+    </div>
+
+    <div class="prototype-header">
+        <h1><em>Henry</em>HQ Command Center</h1>
+        <p>Visual Design Prototype — December 18, 2025</p>
+    </div>
+
+    <!-- DAILY PULSE BANNER -->
+    <section class="component-section">
+        <h2 class="component-title">Daily Pulse (Intelligence Hub)</h2>
+        
+        <div class="daily-pulse">
+            <div class="pulse-greeting">
+                Good morning, Jordan! Here's what matters today:
+            </div>
+            
+            <div class="pulse-actions">
+                <div class="pulse-action-card">
+                    <span class="icon">⚠️</span>
+                    <div class="company">Stripe</div>
+                    <div class="action-text">Send follow-up email</div>
+                    <button class="action-btn">Draft Email</button>
+                </div>
+                
+                <div class="pulse-action-card">
+                    <span class="icon urgent-icon">🔥</span>
+                    <div class="company">Plaid</div>
+                    <div class="action-text">Interview prep needed</div>
+                    <button class="action-btn">Review Guide</button>
+                </div>
+            </div>
+            
+            <div class="pulse-health">
+                <span class="icon">✅</span>
+                Pipeline Health: Healthy
+                <span class="reason">Good volume. Shift energy to conversion.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- STRATEGIC STOP WARNING -->
+    <section class="component-section">
+        <h2 class="component-title">Strategic Stop Warning</h2>
+        
+        <div class="strategic-stop">
+            <div class="stop-header">
+                <span>⛔</span>
+                <span>Strategic Stop Triggered</span>
+            </div>
+            
+            <div class="stop-body">
+                You've applied to 10+ roles with &lt;5% interview rate. Something's broken.
+            </div>
+            
+            <div class="stop-actions-list">
+                <h4>Recommended Actions:</h4>
+                <ul>
+                    <li>Review resume positioning</li>
+                    <li>Analyze rejection patterns</li>
+                    <li>Get second-pass analysis</li>
+                </ul>
+            </div>
+            
+            <div class="pause-notice">
+                Applications paused for 7 days.
+            </div>
+            
+            <div class="stop-buttons">
+                <button class="stop-btn-primary">Review Strategy</button>
+                <button class="stop-btn-secondary">Override (not recommended)</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW SELECTOR -->
+    <section class="component-section">
+        <h2 class="component-title">View Selector</h2>
+        
+        <div class="view-selector">
+            <button class="view-btn active">Board</button>
+            <button class="view-btn">List</button>
+            <button class="view-btn">Timeline</button>
+        </div>
+    </section>
+
+    <!-- APPLICATION CARDS -->
+    <section class="component-section">
+        <h2 class="component-title">Application Cards (Focus Mode Demo)</h2>
+        
+        <div class="cards-demo">
+            <!-- High Priority Card -->
+            <div class="application-card high-confidence" data-priority="high">
+                <div class="card-header">
+                    <div class="card-title-row">
+                        <span class="card-icon">🔥</span>
+                        <span class="card-title">Stripe - Senior Product Manager</span>
+                    </div>
+                    <div class="card-badges">
+                        <span class="badge">Directional</span>
+                    </div>
+                </div>
+                
+                <div class="card-stats">
+                    <span class="stat-item">Fit: 72%</span>
+                    <span class="stat-item">Confidence: High</span>
+                    <span class="stat-item">7 days since activity</span>
+                </div>
+                
+                <div class="next-action-section">
+                    <div class="next-action-text">Next: Send follow-up email</div>
+                    <div class="action-reason">70% respond by now. Silence = ghosting.</div>
+                </div>
+                
+                <button class="one-click-btn">Draft Email</button>
+            </div>
+
+            <!-- Medium Priority Card with Override -->
+            <div class="application-card medium-confidence" data-priority="medium">
+                <div class="card-header">
+                    <div class="card-title-row">
+                        <span class="card-icon">⏳</span>
+                        <span class="card-title">Plaid - Product Lead</span>
+                    </div>
+                    <div class="card-badges">
+                        <span class="badge override">Manual Override</span>
+                        <div class="override-tooltip">
+                            <strong>Manual Override Active</strong>
+                            Reason: Strategic relationship. Worth staying on radar.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-stats">
+                    <span class="stat-item">Fit: 68%</span>
+                    <span class="stat-item">Confidence: Medium</span>
+                    <span class="stat-item">2 days since activity</span>
+                </div>
+                
+                <div class="next-action-section">
+                    <div class="next-action-text">Next: Review prep guide</div>
+                    <div class="action-reason">Interview in 2 days. Prep now.</div>
+                </div>
+                
+                <button class="one-click-btn">Open Prep Guide</button>
+            </div>
+
+            <!-- Low Priority Card (will be dimmed in focus mode) -->
+            <div class="application-card low-confidence" data-priority="low">
+                <div class="card-header">
+                    <div class="card-title-row">
+                        <span class="card-icon">❄️</span>
+                        <span class="card-title">Coinbase - PM II</span>
+                    </div>
+                    <div class="card-badges">
+                        <span class="badge">Refined</span>
+                    </div>
+                </div>
+                
+                <div class="card-stats">
+                    <span class="stat-item">Fit: 45%</span>
+                    <span class="stat-item">Confidence: Low</span>
+                    <span class="stat-item">14 days since activity</span>
+                </div>
+                
+                <div class="next-action-section">
+                    <div class="next-action-text">Next: Consider disengaging</div>
+                    <div class="action-reason">Dead deal. Stop tracking. Move on.</div>
+                </div>
+                
+                <button class="one-click-btn">Archive</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOARD VIEW -->
+    <section class="component-section">
+        <h2 class="component-title">Board View Layout</h2>
+        
+        <div class="board-view">
+            <div class="board-column">
+                <div class="column-header">
+                    <span>Applied</span>
+                    <span class="count-badge">3</span>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Stripe</div>
+                    <div class="board-card-role">Senior PM</div>
+                    <div class="board-card-meta">
+                        <span>72% fit</span>
+                        <span>7 days</span>
+                    </div>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Plaid</div>
+                    <div class="board-card-role">Product Lead</div>
+                    <div class="board-card-meta">
+                        <span>68% fit</span>
+                        <span>2 days</span>
+                    </div>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Coinbase</div>
+                    <div class="board-card-role">PM II</div>
+                    <div class="board-card-meta">
+                        <span>45% fit</span>
+                        <span>14 days</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="board-column">
+                <div class="column-header">
+                    <span>Screening</span>
+                    <span class="count-badge">2</span>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Robinhood</div>
+                    <div class="board-card-role">Senior PM</div>
+                    <div class="board-card-meta">
+                        <span>81% fit</span>
+                        <span>3 days</span>
+                    </div>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Block</div>
+                    <div class="board-card-role">Product Lead</div>
+                    <div class="board-card-meta">
+                        <span>75% fit</span>
+                        <span>5 days</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="board-column">
+                <div class="column-header">
+                    <span>Interviews</span>
+                    <span class="count-badge">4</span>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Square</div>
+                    <div class="board-card-role">Lead PM</div>
+                    <div class="board-card-meta">
+                        <span>78% fit</span>
+                        <span>1 day</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="board-column">
+                <div class="column-header">
+                    <span>Final</span>
+                    <span class="count-badge">1</span>
+                </div>
+                
+                <div class="board-card">
+                    <div class="board-card-company">Affirm</div>
+                    <div class="board-card-role">Sr Product Lead</div>
+                    <div class="board-card-meta">
+                        <span>85% fit</span>
+                        <span>2 days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        let focusModeActive = false;
+
+        function toggleFocusMode() {
+            focusModeActive = !focusModeActive;
+            const cards = document.querySelectorAll('.application-card');
+            const focusBtn = document.querySelector('.focus-toggle-btn');
+            const focusIcon = document.getElementById('focusIcon');
+            const focusLabel = document.getElementById('focusLabel');
+            
+            if (focusModeActive) {
+                cards.forEach(card => {
+                    if (card.dataset.priority === 'low') {
+                        card.classList.add('dimmed');
+                    }
+                });
+                focusBtn.classList.add('active');
+                focusIcon.textContent = '🎯';
+                focusLabel.textContent = 'Focus: ON';
+            } else {
+                cards.forEach(card => {
+                    card.classList.remove('dimmed');
+                });
+                focusBtn.classList.remove('active');
+                focusIcon.textContent = '👁️';
+                focusLabel.textContent = 'Focus Mode';
+            }
+        }
+    </script>
+</body>
+</html>

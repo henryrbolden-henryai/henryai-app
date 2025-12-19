@@ -1,0 +1,79 @@
+================================================================================
+LINKEDIN PROFILE: Sarah Chen
+================================================================================
+
+HEADLINE:
+Senior Product Manager | Product Management | San Francisco, CA
+
+ABOUT:
+Senior Product Manager with 7 years building B2B SaaS products at scale. Led product strategy for platforms serving 500K+ users. Expert in roadmap prioritization, stakeholder alignment, and data-driven decision making. Launched 12+ features driving $8M ARR growth.
+
+EXPERIENCE:
+
+Senior Product Manager
+Stripe | Jan 2021 - Present
+San Francisco, CA
+
+• Led product strategy for Stripe Billing, serving 50K+ businesses processing $2B+ annually
+• Shipped usage-based pricing engine enabling customers to launch new billing models in <48 hours (vs 6 weeks prior)
+• Drove 34% increase in product adoption through user research, A/B testing, and iterative feature development
+• Managed cross-functional team of 8 (engineering, design, data) through full product lifecycle
+• Presented quarterly roadmap to C-suite and Board of Directors with data-driven prioritization framework
+
+--------------------------------------------------------------------------------
+
+Product Manager
+Asana | Jun 2018 - Dec 2020
+San Francisco, CA
+
+• Owned Goals product from 0 to 1, reaching 15K MAU within first year post-launch
+• Collaborated with sales and customer success to identify $5M pipeline opportunity through feature gaps
+• Led discovery phase with 40+ customer interviews informing product strategy and feature prioritization
+• Reduced churn by 18% through targeted improvements to onboarding experience
+• Implemented OKR framework for product team improving alignment and velocity by 25%
+
+--------------------------------------------------------------------------------
+
+Associate Product Manager
+LinkedIn | Aug 2016 - May 2018
+Sunnyvale, CA
+
+• Supported flagship Jobs product serving 50M+ monthly active users
+• Shipped 8 A/B tests resulting in 12% lift in job application rate
+• Analyzed user behavior data to identify friction points, informing roadmap prioritization
+• Collaborated with UX research to conduct usability studies with 100+ participants
+• Managed relationships with 15+ external partners for job board integration
+
+--------------------------------------------------------------------------------
+
+EDUCATION:
+
+MBA
+Stanford Graduate School of Business
+Graduated: 2016
+Specialization: Product Management & Strategy
+
+BS Computer Science
+UC Berkeley
+Graduated: 2014
+Honors, 3.8 GPA
+
+SKILLS:
+
+• Product Strategy
+• Roadmap Prioritization
+• Stakeholder Management
+• A/B Testing
+• User Research
+• Data Analysis (SQL, Python)
+• Agile Development
+• Go-to-Market Strategy
+• Cross-Functional Leadership
+• OKRs & KPIs
+
+CONTACT:
+Email: sarah.chen@email.com
+Phone: (415) 555-0142
+LinkedIn: linkedin.com/in/sarahchen-pm
+
+================================================================================
