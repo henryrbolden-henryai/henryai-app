@@ -197,10 +197,20 @@ def generate_your_move(
 
     elif job_fit_recommendation == "Apply":
         # Good match - strategic guidance with proof points
+        # First try dominant_narrative (verb phrase like "drove $8M revenue")
+        dominant_narrative = None
+        if calibrated_gaps:
+            dominant_narrative = calibrated_gaps.get('dominant_narrative')
+
+        if dominant_narrative:
+            # Use "You" + verb phrase format
+            return f"{job_fit_recommendation}: You {dominant_narrative}. Lead with this accomplishment and apply soon."
+
+        # Fall back to key_strength (noun phrase like "track record of building teams")
         key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
 
         if key_strength:
-            # BANNED: "aligns well" - use stronger, more specific language
+            # Use "Your" + noun phrase format
             return f"{job_fit_recommendation}: Your {key_strength} positions you well. Lead with this accomplishment and apply soon."
         else:
             # Fallback without weak phrases
