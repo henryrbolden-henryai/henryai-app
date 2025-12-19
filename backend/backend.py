@@ -9232,6 +9232,9 @@ def detect_role_type_from_jd(response_data: dict) -> str:
     Detect the role type from the job description analysis.
     Used to route to the appropriate experience calculator.
 
+    CRITICAL: Role title takes ABSOLUTE PRECEDENCE over JD content.
+    An "Engineering Manager" is ENGINEERING, even if JD mentions "recruit talent".
+
     Args:
         response_data: The Claude response containing role_title and job description
 
@@ -9246,65 +9249,148 @@ def detect_role_type_from_jd(response_data: dict) -> str:
     intel = response_data.get("intelligence_layer", {})
     role_summary = (intel.get("role_summary", "") or "").lower()
 
-    combined_text = f"{role_title} {jd_text} {role_summary}"
+    # ==========================================================================
+    # PHASE 1: TITLE-BASED DETECTION (TAKES ABSOLUTE PRECEDENCE)
+    # The role title is the deterministic signal. JD content cannot override it.
+    # ==========================================================================
 
-    # Detection patterns - ORDER MATTERS (more specific first)
-    # Recruiting detection (check before engineering to catch "Technical Recruiter")
-    if any(x in combined_text for x in [
-        "recruit", "talent acquisition", "sourcer", "headhunter",
-        "ta director", "ta manager", "talent partner", "head of talent"
+    # Engineering Manager/Lead titles -> ENGINEERING (never recruiting/other)
+    if any(x in role_title for x in [
+        "engineering manager", "eng manager", "software manager",
+        "technical manager", "development manager", "platform manager",
+        "engineering lead", "tech lead", "technical lead",
+        "engineering director", "director of engineering", "vp engineering",
+        "head of engineering", "cto", "chief technology"
     ]):
-        print(f"   🎯 Detected RECRUITING role from JD")
-        return "recruiting"
-
-    # Product Management detection
-    if any(x in combined_text for x in [
-        "product manager", "product lead", "product owner", "head of product",
-        "vp product", "cpo", "group pm", "technical pm"
-    ]):
-        print(f"   🎯 Detected PRODUCT role from JD")
-        return "pm"
-
-    # Engineering detection
-    if any(x in combined_text for x in [
-        "software engineer", "developer", "swe", "technical lead",
-        "architect", "devops", "backend", "frontend", "full stack"
-    ]):
-        print(f"   🎯 Detected ENGINEERING role from JD")
+        print(f"   🎯 TITLE LOCK: '{role_title}' → ENGINEERING (manager/lead detected)")
         return "engineering"
 
-    # Sales detection
-    if any(x in combined_text for x in [
-        "sales", "account executive", "business development", "revenue",
-        "account manager", "enterprise", "sdr", "bdr"
+    # Software/Developer titles -> ENGINEERING
+    if any(x in role_title for x in [
+        "software engineer", "developer", "swe", "programmer",
+        "architect", "devops", "sre", "backend engineer", "frontend engineer",
+        "full stack", "mobile engineer", "data engineer", "ml engineer",
+        "staff engineer", "principal engineer", "senior engineer"
     ]):
-        print(f"   🎯 Detected SALES role from JD")
+        print(f"   🎯 TITLE LOCK: '{role_title}' → ENGINEERING (IC detected)")
+        return "engineering"
+
+    # Product Manager titles -> PM
+    if any(x in role_title for x in [
+        "product manager", "product lead", "product owner", "head of product",
+        "vp product", "cpo", "group pm", "technical pm", "senior pm",
+        "director of product", "product director"
+    ]):
+        print(f"   🎯 TITLE LOCK: '{role_title}' → PRODUCT")
+        return "pm"
+
+    # Recruiting titles -> RECRUITING (only if explicit in title)
+    if any(x in role_title for x in [
+        "recruiter", "talent acquisition", "sourcer", "headhunter",
+        "ta director", "ta manager", "talent partner", "head of talent",
+        "recruiting manager", "recruiting lead", "recruitment"
+    ]):
+        print(f"   🎯 TITLE LOCK: '{role_title}' → RECRUITING")
+        return "recruiting"
+
+    # Sales titles -> SALES
+    if any(x in role_title for x in [
+        "sales", "account executive", "business development", "bdr", "sdr",
+        "account manager", "sales manager", "revenue", "ae "
+    ]):
+        print(f"   🎯 TITLE LOCK: '{role_title}' → SALES")
         return "sales"
 
-    # Marketing detection
-    if any(x in combined_text for x in [
+    # Marketing titles -> MARKETING
+    if any(x in role_title for x in [
         "marketing", "growth", "brand manager", "demand gen",
-        "product marketing", "content", "cmo"
+        "product marketing", "content", "cmo", "marketing manager"
     ]):
-        print(f"   🎯 Detected MARKETING role from JD")
+        print(f"   🎯 TITLE LOCK: '{role_title}' → MARKETING")
         return "marketing"
 
-    # Design detection
-    if any(x in combined_text for x in [
-        "designer", "ux", "ui", "product design", "design lead"
+    # Design titles -> DESIGN
+    if any(x in role_title for x in [
+        "designer", "ux", "ui", "product design", "design lead",
+        "design manager", "head of design"
     ]):
-        print(f"   🎯 Detected DESIGN role from JD")
+        print(f"   🎯 TITLE LOCK: '{role_title}' → DESIGN")
         return "design"
 
-    # Operations detection
-    if any(x in combined_text for x in [
-        "operations", "ops manager", "coo", "chief operating"
+    # Operations titles -> OPS
+    if any(x in role_title for x in [
+        "operations", "ops manager", "coo", "chief operating",
+        "operations manager", "head of operations"
     ]):
-        print(f"   🎯 Detected OPS role from JD")
+        print(f"   🎯 TITLE LOCK: '{role_title}' → OPS")
+        return "ops"
+
+    # ==========================================================================
+    # PHASE 2: JD-BASED DETECTION (FALLBACK ONLY)
+    # Only used if title didn't match anything specific
+    # ==========================================================================
+
+    combined_text = f"{role_title} {jd_text} {role_summary}"
+
+    # Engineering detection from JD
+    if any(x in combined_text for x in [
+        "software engineer", "developer", "swe", "technical lead",
+        "architect", "devops", "backend", "frontend", "full stack",
+        "engineering team", "build software", "write code"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected ENGINEERING from JD content")
+        return "engineering"
+
+    # Product Management detection from JD
+    if any(x in combined_text for x in [
+        "product manager", "product roadmap", "product strategy",
+        "feature prioritization", "product vision"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected PRODUCT from JD content")
+        return "pm"
+
+    # Recruiting detection from JD (STRICT - only clear recruiting roles)
+    # NOTE: "recruit" alone is too broad - catches "we recruit talent" in any JD
+    if any(x in combined_text for x in [
+        "recruiter", "talent acquisition", "sourcing candidates",
+        "hiring pipeline", "candidate experience", "recruitment strategy"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected RECRUITING from JD content")
+        return "recruiting"
+
+    # Sales detection from JD
+    if any(x in combined_text for x in [
+        "quota", "pipeline", "close deals", "sales cycle",
+        "account executive", "business development"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected SALES from JD content")
+        return "sales"
+
+    # Marketing detection from JD
+    if any(x in combined_text for x in [
+        "marketing campaigns", "lead generation", "brand awareness",
+        "demand generation", "content strategy"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected MARKETING from JD content")
+        return "marketing"
+
+    # Design detection from JD
+    if any(x in combined_text for x in [
+        "user experience", "design system", "figma", "prototyping",
+        "user research", "visual design"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected DESIGN from JD content")
+        return "design"
+
+    # Operations detection from JD
+    if any(x in combined_text for x in [
+        "operations strategy", "process improvement", "operational efficiency"
+    ]):
+        print(f"   🎯 JD FALLBACK: Detected OPS from JD content")
         return "ops"
 
     # Fallback - use general (will match any experience)
-    print(f"   ⚠️ Could not detect specific role type from JD, using general")
+    print(f"   ⚠️ Could not detect specific role type, using GENERAL")
     return "general"
 
 

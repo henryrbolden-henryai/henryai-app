@@ -598,7 +598,7 @@ def classify_gap_terminal_vs_coachable(
 
     Terminal gaps (Do Not Apply):
     1. Wrong function (no bridge)
-    2. Wrong domain (zero transferability)
+    2. Wrong domain (zero transferability) - EXCEPTION: Manager-level roles
     3. Wrong level (>2 levels)
     4. Hard requirement missing
     5. Red flag patterns
@@ -614,11 +614,26 @@ def classify_gap_terminal_vs_coachable(
     1. Minor soft requirements
     2. Skills easily learned
     3. Nice-to-haves
+    4. Domain gaps for Manager-level roles (managers can learn domains)
+
+    CRITICAL RULE: Manager-level roles CANNOT have terminal domain gaps.
+    Managers are hired for leadership ability, not domain expertise.
+    Domain gaps for managers are ALWAYS coachable or suppressed.
     """
     capability_id = gap.get('capability_id', '').lower()
     capability_name = gap.get('capability', '').lower()
     evidence_status = gap.get('evidence_status', 'missing')
     criticality = gap.get('criticality', 'preferred')
+
+    # ==========================================================================
+    # CHECK: Is this a Manager-level role?
+    # Manager-level roles have special handling for domain gaps.
+    # ==========================================================================
+    role_title = (job_requirements.get('role_title', '') or job_requirements.get('title', '') or '').lower()
+    is_manager_role = any(x in role_title for x in [
+        'manager', 'director', 'head of', 'vp ', 'vice president',
+        'lead', 'chief', 'cto', 'ceo', 'coo', 'cfo', 'cmo'
+    ])
 
     # Priority 1: Domain gaps
     if 'domain' in capability_id or 'domain' in capability_name:
@@ -627,6 +642,27 @@ def classify_gap_terminal_vs_coachable(
 
         transferability = assess_domain_transferability(candidate_domain, required_domain)
 
+        # ==========================================================================
+        # MANAGER EXCEPTION: Domain gaps are NEVER terminal for manager-level roles
+        # Managers are hired for leadership, not domain expertise.
+        # ==========================================================================
+        if is_manager_role:
+            if transferability == 'zero':
+                # Demote from terminal to coachable for managers
+                print(f"   🔄 MANAGER RULE: Demoting domain gap from terminal → coachable for manager role")
+                return {
+                    'type': 'coachable',
+                    'reason': 'Domain gap coachable for manager-level role (hired for leadership)',
+                    'mitigation': f"Position leadership experience as transferable to {required_domain} domain"
+                }
+            else:
+                # Adjacent or matching domain - suppress for managers
+                return {
+                    'type': 'suppressed',
+                    'reason': 'Domain gap suppressed for manager-level role'
+                }
+
+        # Non-manager roles: standard domain gap handling
         if transferability == 'zero':
             return {
                 'type': 'terminal',
