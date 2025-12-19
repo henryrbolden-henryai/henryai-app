@@ -110,6 +110,114 @@
             border-left: 3px solid var(--color-accent);
         }
 
+        /* How to Read This Section */
+        .how-to-read-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 3px solid var(--color-accent);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .how-to-read-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .how-to-read-header:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .how-to-read-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .how-to-read-title::before {
+            content: "?";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .how-to-read-chevron {
+            color: var(--color-text-secondary);
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .how-to-read-section.collapsed .how-to-read-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .how-to-read-content {
+            padding: 0 20px 20px;
+            transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+            overflow: hidden;
+        }
+
+        .how-to-read-section.collapsed .how-to-read-content {
+            max-height: 0 !important;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+        }
+
+        .how-to-read-content p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .how-to-read-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .how-to-read-content strong {
+            color: var(--color-text);
+        }
+
+        /* What This Means Section */
+        .what-this-means {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .what-this-means-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+        }
+
+        .what-this-means-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--color-text);
+        }
+
         /* Level Assessment Card */
         .level-card {
             background: var(--color-surface);
@@ -463,6 +571,39 @@
             color: var(--color-success);
         }
 
+        /* Priority Labels for Target Recommendations */
+        .priority-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .priority-label.critical {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .priority-label.important {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .priority-label.enhancement {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .priority-description {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
         .gap-description {
             font-size: 0.95rem;
             margin-bottom: 8px;
@@ -525,18 +666,183 @@
             font-style: italic;
         }
 
-        /* Red Flags - now uses collapsible wrapper */
+        /* Red Flags - Enhanced with cause + consequence + fix structure */
         .red-flag-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 8px 0;
-            font-size: 0.9rem;
-            border-bottom: 1px solid rgba(248, 113, 113, 0.1);
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            border-left: 3px solid var(--color-error);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
         }
 
         .red-flag-item:last-child {
-            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .red-flag-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .red-flag-icon {
+            font-size: 1rem;
+            color: var(--color-error);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .red-flag-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .red-flag-instance {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+            padding-left: 24px;
+            margin-bottom: 12px;
+        }
+
+        .red-flag-why {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            padding-left: 24px;
+            margin-bottom: 8px;
+        }
+
+        .red-flag-why::before {
+            content: "→";
+            margin-right: 8px;
+            color: var(--color-text-secondary);
+        }
+
+        .red-flag-fix {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            padding-left: 24px;
+        }
+
+        .red-flag-fix::before {
+            content: "→";
+            margin-right: 8px;
+            color: var(--color-accent);
+        }
+
+        .red-flag-fix-list {
+            list-style: none;
+            padding-left: 32px;
+            margin-top: 8px;
+        }
+
+        .red-flag-fix-list li {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            padding: 4px 0;
+            position: relative;
+        }
+
+        .red-flag-fix-list li::before {
+            content: "•";
+            position: absolute;
+            left: -12px;
+            color: var(--color-accent);
+        }
+
+        /* Senior Readiness Checks - Director+ only */
+        .senior-readiness-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .competency-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .competency-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .competency-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .competency-name {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .competency-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .competency-status.strong {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .competency-status.partial {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .competency-status.missing {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .competency-description {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .competency-evidence {
+            font-size: 0.9rem;
+            color: var(--color-text);
+            padding: 12px;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+
+        .competency-evidence::before {
+            content: "Evidence: ";
+            font-style: normal;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .competency-needed {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+        }
+
+        .competency-needed::before {
+            content: "→ ";
+            color: var(--color-accent);
         }
 
         /* Language Analysis - now uses collapsible wrapper */
@@ -850,6 +1156,19 @@
 
         <!-- Main Content -->
         <div id="mainContent" style="display: none;">
+            <!-- How to Read This Section - Per RESUME_LEVELING_SPEC.md -->
+            <div class="how-to-read-section collapsed" id="howToReadSection">
+                <div class="how-to-read-header" onclick="toggleHowToRead()">
+                    <span class="how-to-read-title">How to Read This Analysis</span>
+                    <span class="how-to-read-chevron">▼</span>
+                </div>
+                <div class="how-to-read-content">
+                    <p>This analysis evaluates how your resume will likely be interpreted by <strong>senior hiring managers and recruiters today</strong>. It looks at scope, credibility, and evidence—not your potential or capability.</p>
+                    <p>Your level assessment reflects <strong>what the market can verify from your resume</strong>, not what you're capable of. A gap here doesn't mean you can't do senior work. It means your resume doesn't show it yet.</p>
+                    <p>Think of this as a reality check from someone who's reviewed thousands of resumes. The feedback is direct because that's what helps. If something sounds harsh, remember: <strong>this is how the market sees it, not how we see you</strong>.</p>
+                </div>
+            </div>
+
             <!-- Framing Statement - Per DEPLOYMENT_READY_SUMMARY.md -->
             <p class="framing-statement">
                 This is how hiring managers level you, not how LinkedIn does.
@@ -874,6 +1193,12 @@
                     </div>
                 </div>
                 <p class="summary-text" id="summaryText">—</p>
+            </div>
+
+            <!-- What This Means Section - Per RESUME_LEVELING_SPEC.md -->
+            <div class="what-this-means" id="whatThisMeansSection">
+                <h4 class="what-this-means-title">What This Means</h4>
+                <p class="what-this-means-text" id="whatThisMeansText">—</p>
             </div>
 
             <!-- Signals Section (Collapsible - Default Collapsed) -->
@@ -927,6 +1252,25 @@
                 </div>
                 <div class="collapsible-content">
                     <div id="redFlagsList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Senior Readiness Checks (Collapsible - Director+ Only) -->
+            <div class="collapsible-section collapsed" id="seniorReadinessSection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('seniorReadinessSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Senior Readiness Assessment</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <span class="collapsible-badge" style="background: rgba(167, 139, 250, 0.15); color: var(--color-purple);" id="seniorReadinessBadge">Director+ Competencies</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <p class="senior-readiness-subtitle">Evidence of Director+ competencies from your resume</p>
+                    <div id="seniorReadinessList">
                         <!-- Populated dynamically -->
                     </div>
                 </div>
@@ -1208,9 +1552,69 @@
             section.classList.toggle('collapsed');
         }
 
+        // Toggle How to Read This section
+        function toggleHowToRead() {
+            const section = document.getElementById('howToReadSection');
+            section.classList.toggle('collapsed');
+            // Remember user preference
+            sessionStorage.setItem('howToReadCollapsed', section.classList.contains('collapsed'));
+        }
+
+        // Check if this is first visit and auto-expand How to Read section
+        function initHowToReadSection() {
+            const hasSeenAnalysis = sessionStorage.getItem('hasSeenLevelAnalysis');
+            const userPref = sessionStorage.getItem('howToReadCollapsed');
+
+            if (!hasSeenAnalysis) {
+                // First visit - expand the section
+                document.getElementById('howToReadSection').classList.remove('collapsed');
+                sessionStorage.setItem('hasSeenLevelAnalysis', 'true');
+            } else if (userPref === 'false') {
+                // User previously expanded it
+                document.getElementById('howToReadSection').classList.remove('collapsed');
+            }
+        }
+
+        // Render "What This Means" contextual section
+        function renderWhatThisMeans() {
+            const currentLevel = levelingData.current_level || 'your current level';
+            const targetLevel = levelingData.target_level;
+            const levelsApart = levelingData.levels_apart || 0;
+            const confidence = (levelingData.level_confidence || 0) * 100;
+
+            let contextText = '';
+
+            // Generate contextual message based on the gap and confidence
+            if (!targetLevel) {
+                // No target specified
+                contextText = `Your resume currently supports ${currentLevel} roles. Upload a job description to see how you compare against a specific target.`;
+            } else if (levelsApart === 0) {
+                // Matched
+                if (confidence >= 85) {
+                    contextText = `Your resume strongly supports ${targetLevel} roles. You have the evidence to compete for positions at this level.`;
+                } else {
+                    contextText = `Your resume supports ${targetLevel} roles, though some evidence could be strengthened. Focus on quantifying your impact more clearly.`;
+                }
+            } else if (levelsApart === 1) {
+                // Stretch role
+                contextText = `Your resume currently supports ${currentLevel} roles. To credibly target ${targetLevel}, you need clearer evidence of increased scope and org-level impact. This is a stretch but achievable with the right positioning.`;
+            } else if (levelsApart > 1) {
+                // Significant gap
+                contextText = `Your resume currently supports ${currentLevel} roles. ${targetLevel} is ${levelsApart} levels above your current positioning. Focus on building evidence of strategic ownership and broader organizational impact before targeting this level.`;
+            } else {
+                // Overqualified
+                contextText = `You're positioned ${Math.abs(levelsApart)} level${Math.abs(levelsApart) > 1 ? 's' : ''} above the ${targetLevel} requirements. Consider whether this role aligns with your career trajectory, or emphasize leadership and strategic elements if targeting senior IC positions.`;
+            }
+
+            document.getElementById('whatThisMeansText').textContent = contextText;
+        }
+
         function renderResults() {
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
+
+            // Initialize How to Read section (auto-expand on first visit)
+            initHowToReadSection();
 
             // Level Card - Confidence-based icon
             const confidence = levelingData.level_confidence * 100;
@@ -1246,6 +1650,9 @@
             document.getElementById('confidenceFill').style.width = `${confidence}%`;
             document.getElementById('summaryText').textContent = levelingData.summary;
 
+            // Populate "What This Means" section
+            renderWhatThisMeans();
+
             // Signals Grid
             renderSignals();
 
@@ -1258,6 +1665,9 @@
             if (levelingData.red_flags && levelingData.red_flags.length > 0) {
                 renderRedFlags();
             }
+
+            // Senior Readiness Checks (Director+ only)
+            renderSeniorReadiness();
 
             // Language Analysis
             renderLanguageAnalysis();
@@ -1383,12 +1793,216 @@
             document.getElementById('redFlagsBadge').textContent = `${flagCount} issue${flagCount !== 1 ? 's' : ''}`;
 
             const redFlagsList = document.getElementById('redFlagsList');
-            redFlagsList.innerHTML = levelingData.red_flags.map(flag => `
-                <div class="red-flag-item">
-                    <span>!</span>
-                    <span>${flag}</span>
-                </div>
-            `).join('');
+
+            // Map common red flag patterns to structured format
+            const redFlagTemplates = {
+                'company not found': {
+                    why: 'This creates a credibility gap because recruiters cannot validate scope or scale.',
+                    fix: ['Add company description (e.g., "Series A SaaS startup, $5M ARR, 20 employees")', 'Link to Crunchbase or LinkedIn Company Page', 'If defunct, note "acquired by [Company]" or "shut down [Year]"']
+                },
+                'title inflation': {
+                    why: 'Inflated titles at small companies raise questions about real scope and authority.',
+                    fix: ['Use functional title that reflects actual scope', 'Emphasize scope in bullets (team size, budget, stakeholders)', 'Add company context (size, stage, funding)']
+                },
+                'generic language': {
+                    why: 'Generic language makes it impossible to assess what you actually did. Senior roles require specificity.',
+                    fix: ['Replace buzzwords with specific skills', 'Quantify responsibilities (how many? how much?)', 'Use PAR framework (Problem, Action, Result)']
+                },
+                'scope mismatch': {
+                    why: 'If your title claims senior level but bullets describe IC work, recruiters will assume title inflation.',
+                    fix: ['Reframe bullets to show strategic ownership', 'Add evidence of leadership and influence', 'Remove or minimize IC-level tasks']
+                },
+                'no quantification': {
+                    why: 'Without metrics, recruiters cannot assess impact. Senior roles require evidence of measurable outcomes.',
+                    fix: ['Add revenue/cost impact numbers', 'Include team sizes and budget figures', 'Quantify efficiency gains or user growth']
+                },
+                'short tenure': {
+                    why: 'Multiple short stints can signal performance issues or lack of commitment.',
+                    fix: ['Group short contract roles together', 'Explain transitions in cover letter', 'Emphasize impact achieved despite short tenure']
+                },
+                'gap': {
+                    why: 'Unexplained gaps raise questions about what happened during that time.',
+                    fix: ['Add relevant activities (consulting, education, personal projects)', 'Be prepared to discuss in interviews', 'Focus narrative on growth and skills gained']
+                }
+            };
+
+            // Helper to find matching template
+            function getRedFlagDetails(flagText) {
+                const lowerFlag = flagText.toLowerCase();
+                for (const [key, details] of Object.entries(redFlagTemplates)) {
+                    if (lowerFlag.includes(key)) {
+                        return details;
+                    }
+                }
+                // Default template for unknown flags
+                return {
+                    why: 'This may raise questions during resume screening or interviews.',
+                    fix: ['Review this area of your resume', 'Add more context or evidence']
+                };
+            }
+
+            redFlagsList.innerHTML = levelingData.red_flags.map(flag => {
+                // Check if flag is already structured (object) or legacy (string)
+                if (typeof flag === 'object' && flag.type) {
+                    // New structured format from backend
+                    const fixItems = flag.how_to_fix || flag.fix || [];
+                    return `
+                        <div class="red-flag-item">
+                            <div class="red-flag-header">
+                                <span class="red-flag-icon">!</span>
+                                <span class="red-flag-title">${flag.type}</span>
+                            </div>
+                            ${flag.instance ? `<div class="red-flag-instance">"${flag.instance}"</div>` : ''}
+                            <div class="red-flag-why">${flag.why_it_matters || flag.why || 'This may impact how recruiters perceive your experience.'}</div>
+                            ${fixItems.length > 0 ? `
+                                <div class="red-flag-fix">How to fix:</div>
+                                <ul class="red-flag-fix-list">
+                                    ${fixItems.map(f => `<li>${f}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    // Legacy string format - parse and enhance
+                    const flagText = typeof flag === 'string' ? flag : String(flag);
+                    const details = getRedFlagDetails(flagText);
+
+                    // Extract instance from flag text if present (look for quoted text)
+                    const instanceMatch = flagText.match(/"([^"]+)"/);
+                    const instance = instanceMatch ? instanceMatch[1] : null;
+
+                    // Clean up the title (remove quoted instance from it)
+                    const title = instance ? flagText.replace(`"${instance}"`, '').trim() : flagText;
+
+                    return `
+                        <div class="red-flag-item">
+                            <div class="red-flag-header">
+                                <span class="red-flag-icon">!</span>
+                                <span class="red-flag-title">${title}</span>
+                            </div>
+                            ${instance ? `<div class="red-flag-instance">"${instance}"</div>` : ''}
+                            <div class="red-flag-why">${details.why}</div>
+                            <div class="red-flag-fix">How to fix:</div>
+                            <ul class="red-flag-fix-list">
+                                ${details.fix.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+
+        // Check if target level is Director+ (requires senior readiness checks)
+        function isDirectorPlusLevel(level) {
+            if (!level) return false;
+            const directorPlusLevels = ['director', 'vp', 'vice president', 'c-suite', 'ceo', 'cto', 'cfo', 'coo', 'cmo', 'cpo', 'chief', 'svp', 'evp', 'head of', 'principal'];
+            const lowerLevel = level.toLowerCase();
+            return directorPlusLevels.some(dl => lowerLevel.includes(dl));
+        }
+
+        function renderSeniorReadiness() {
+            const targetLevel = levelingData.target_level || '';
+            const currentLevel = levelingData.current_level || '';
+
+            // Only show for Director+ target levels
+            if (!isDirectorPlusLevel(targetLevel) && !isDirectorPlusLevel(currentLevel)) {
+                return;
+            }
+
+            const section = document.getElementById('seniorReadinessSection');
+            section.style.display = 'block';
+
+            // Competency framework per RESUME_LEVELING_SPEC.md
+            const competencies = [
+                {
+                    key: 'strategy_ownership',
+                    name: 'Strategy Ownership',
+                    description: 'Evidence of setting direction, not just executing. Multi-quarter or multi-year planning. Trade-off decisions with business impact.',
+                    strongSignals: ['defined', 'led strategy', 'roadmap', 'vision', 'prioritiz', 'trade-off', 'multi-year', 'strategic'],
+                    weakSignals: ['contributed to', 'supported', 'assisted', 'helped with']
+                },
+                {
+                    key: 'org_level_impact',
+                    name: 'Org-Level Impact',
+                    description: 'Influence beyond direct team. Cross-functional initiatives. Company-wide impact.',
+                    strongSignals: ['company-wide', 'organization', 'cross-functional', 'enterprise', 'multiple teams', 'department', 'business unit'],
+                    weakSignals: ['team project', 'within team', 'my team']
+                },
+                {
+                    key: 'decision_authority',
+                    name: 'Decision-Making Authority',
+                    description: 'Budget ownership. Hiring decisions. Go/no-go authority. Trade-off decisions.',
+                    strongSignals: ['owned', 'decided', 'approved', 'budget', 'hired', 'built team', 'final call', 'authority'],
+                    weakSignals: ['recommended', 'suggested', 'proposed', 'input on']
+                }
+            ];
+
+            // Check for senior readiness data from backend
+            const backendReadiness = levelingData.senior_readiness;
+
+            const readinessHtml = competencies.map(comp => {
+                let status = 'missing';
+                let evidence = '';
+                let recommendation = '';
+
+                if (backendReadiness && backendReadiness.competencies && backendReadiness.competencies[comp.key]) {
+                    // Use backend data
+                    const compData = backendReadiness.competencies[comp.key];
+                    status = (compData.assessment || '').toLowerCase();
+                    evidence = compData.evidence || '';
+                    recommendation = compData.recommendation || '';
+                } else {
+                    // Infer from signals (fallback)
+                    const allSignals = [
+                        ...(levelingData.scope_signals || []),
+                        ...(levelingData.impact_signals || []),
+                        ...(levelingData.leadership_signals || [])
+                    ].join(' ').toLowerCase();
+
+                    const hasStrong = comp.strongSignals.some(s => allSignals.includes(s.toLowerCase()));
+                    const hasWeak = comp.weakSignals.some(s => allSignals.includes(s.toLowerCase()));
+
+                    if (hasStrong) {
+                        status = 'strong';
+                        evidence = 'Evidence detected in your resume signals.';
+                        recommendation = 'Continue emphasizing this competency.';
+                    } else if (hasWeak) {
+                        status = 'partial';
+                        evidence = 'Some related evidence found, but could be stronger.';
+                        recommendation = 'Reframe to show ownership rather than participation.';
+                    } else {
+                        status = 'missing';
+                        evidence = 'No clear evidence found in resume.';
+                        recommendation = getCompetencyRecommendation(comp.key);
+                    }
+                }
+
+                const statusLabel = status === 'strong' ? 'Strong' : status === 'partial' ? 'Partial' : 'Missing';
+                const statusIcon = status === 'strong' ? '✓' : status === 'partial' ? '!' : '✗';
+
+                return `
+                    <div class="competency-card">
+                        <div class="competency-header">
+                            <span class="competency-name">${comp.name}</span>
+                            <span class="competency-status ${status}">${statusIcon} ${statusLabel}</span>
+                        </div>
+                        <p class="competency-description">${comp.description}</p>
+                        ${evidence ? `<div class="competency-evidence">${evidence}</div>` : ''}
+                        ${recommendation ? `<p class="competency-needed">${recommendation}</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('seniorReadinessList').innerHTML = readinessHtml;
+        }
+
+        function getCompetencyRecommendation(key) {
+            const recommendations = {
+                'strategy_ownership': 'Add examples of defining roadmaps, making strategic trade-offs, or setting multi-quarter priorities.',
+                'org_level_impact': 'Highlight initiatives that impacted multiple teams or the entire organization, not just your direct team.',
+                'decision_authority': 'Emphasize budget ownership, hiring decisions, or moments where you had final authority on key decisions.'
+            };
+            return recommendations[key] || 'Add evidence of this competency to your resume.';
         }
 
         function renderLanguageAnalysis() {
@@ -1427,17 +2041,45 @@
             const recCount = Math.min(levelingData.recommendations.length, 5);
             document.getElementById('recsBadge').textContent = `${recCount} item${recCount !== 1 ? 's' : ''}`;
 
-            recsList.innerHTML = levelingData.recommendations.slice(0, 5).map(rec => `
-                <div class="rec-item">
-                    <div class="rec-meta">
-                        <span class="rec-type">${rec.type}</span>
-                        <span class="gap-priority ${rec.priority}">${rec.priority}</span>
+            // Priority label mapping per RESUME_LEVELING_SPEC.md
+            const priorityConfig = {
+                'high': {
+                    class: 'critical',
+                    icon: '!',
+                    label: 'Critical Gap',
+                    description: 'Without this, you\'ll struggle to pass senior screens'
+                },
+                'medium': {
+                    class: 'important',
+                    icon: '*',
+                    label: 'Important',
+                    description: 'This makes your case more competitive'
+                },
+                'low': {
+                    class: 'enhancement',
+                    icon: '+',
+                    label: 'Enhancement',
+                    description: 'This rounds out your profile'
+                }
+            };
+
+            recsList.innerHTML = levelingData.recommendations.slice(0, 5).map(rec => {
+                const priority = (rec.priority || 'medium').toLowerCase();
+                const config = priorityConfig[priority] || priorityConfig['medium'];
+
+                return `
+                    <div class="rec-item">
+                        <div class="rec-meta">
+                            <span class="rec-type">${rec.type}</span>
+                            <span class="priority-label ${config.class}">${config.icon} ${config.label}</span>
+                        </div>
+                        <p class="priority-description">${config.description}</p>
+                        ${rec.current ? `<div class="rec-current"><strong>Current:</strong> ${rec.current}</div>` : ''}
+                        <div class="rec-suggested"><strong>Suggested:</strong> ${rec.suggested}</div>
+                        <p class="rec-rationale">${rec.rationale}</p>
                     </div>
-                    ${rec.current ? `<div class="rec-current"><strong>Current:</strong> ${rec.current}</div>` : ''}
-                    <div class="rec-suggested"><strong>Suggested:</strong> ${rec.suggested}</div>
-                    <p class="rec-rationale">${rec.rationale}</p>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // Navigation
