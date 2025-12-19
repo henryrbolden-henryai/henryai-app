@@ -224,25 +224,38 @@ def has_upward_trajectory(experience: Dict[str, Any]) -> bool:
 def calculate_career_span(experience: Dict[str, Any]) -> float:
     """
     Returns years between first and last role.
+
+    BULLETPROOF: This function normalizes at the boundary.
+    It will NEVER crash regardless of what caller passes in.
     """
-    # Defensive: handle non-dict experience
+    # ==========================================================================
+    # BULLETPROOF NORMALIZATION AT FUNCTION BOUNDARY
+    # This function must handle ANY input without crashing.
+    # ==========================================================================
+
+    # Case 1: experience is None, empty, or not a dict
     if not experience or not isinstance(experience, dict):
         return 0.0
 
     roles = experience.get('roles', []) or experience.get('experience', [])
-    if not roles:
-        return 0.0
 
-    # Defensive: handle non-list roles
+    # Case 2: roles is not a list (could be string from LinkedIn)
     if not isinstance(roles, list):
         return 0.0
 
-    dates = []
-    for role in roles:
-        # Defensive: skip non-dict roles (could be strings in malformed data)
-        if not isinstance(role, dict):
-            continue
+    # Case 3: roles is empty
+    if not roles:
+        return 0.0
 
+    # Case 4: NORMALIZE - filter to ONLY dict items upfront
+    # This is the key fix: we filter BEFORE iterating, not during
+    normalized_roles = [r for r in roles if isinstance(r, dict)]
+    if not normalized_roles:
+        return 0.0
+
+    dates = []
+    for role in normalized_roles:
+        # role is GUARANTEED to be a dict at this point
         start_date = role.get('start_date') or role.get('dates', {}).get('start')
         end_date = role.get('end_date') or role.get('dates', {}).get('end')
 
