@@ -6574,14 +6574,23 @@ def calculate_leadership_tenure_lepe(resume_data: dict) -> dict:
     tiered = extract_tiered_leadership(resume_data)
     competency = extract_leadership_competency_signals(resume_data)
 
-    # Calculate mixed-scope adjustments
+    # Calculate mixed-scope adjustments for IC/leadership hybrid roles
+    # These roles get proportional credit (e.g., 50% for player-coach)
     mixed_scope_adjustment = 0.0
     for role in competency.get("mixed_scope_roles", []):
         # Apply proportional credit (50% for mixed roles)
         mixed_scope_adjustment += role["years"] * role["leadership_scope_estimate"]
 
+    # Base people leadership from tiered analysis
+    base_people_years = tiered.get("people_leadership_years", 0.0)
+
+    # Add mixed-scope credit to people leadership total
+    # This ensures gradual leadership transitions get appropriate credit
+    total_people_years = base_people_years + mixed_scope_adjustment
+
     result = {
-        "people_leadership_years": tiered.get("people_leadership_years", 0.0),
+        "people_leadership_years": round(total_people_years, 1),
+        "people_leadership_years_base": round(base_people_years, 1),
         "strategic_leadership_years": tiered.get("strategic_leadership_years", 0.0),
         "org_level_leadership_years": tiered.get("org_leadership_years", 0.0),
         "mixed_scope_credit": round(mixed_scope_adjustment, 1),
