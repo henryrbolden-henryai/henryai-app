@@ -544,8 +544,8 @@
         }
 
         .ask-henry-nudge-avatar {
-            width: 40px;
-            height: 40px;
+            width: 128px;
+            height: 128px;
             flex-shrink: 0;
         }
 
