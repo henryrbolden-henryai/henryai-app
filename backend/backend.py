@@ -5742,8 +5742,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 calibration_result = calibrate_technical_role(candidate_experience, role_requirements)
                 calibration_type = 'technical'
 
-            # Detect red flags
-            calibration_red_flags = detect_red_flags(candidate_experience)
+            # Detect red flags - wrapped in try/except because red flags are ADVISORY
+            # If they crash, they lose the right to speak. Never derail the pipeline.
+            try:
+                calibration_red_flags = detect_red_flags(candidate_experience)
+            except Exception as e:
+                print(f"   ⚠️ Red flag detection failed (non-blocking): {e}")
+                calibration_red_flags = []
 
             # Store calibration results (for logging/debugging)
             response_data["calibration_result"] = {

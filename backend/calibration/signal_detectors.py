@@ -221,40 +221,47 @@ def has_upward_trajectory(experience: Dict[str, Any]) -> bool:
     return improvements >= len(ranks_chronological) // 2
 
 
-def calculate_career_span(experience: Dict[str, Any]) -> float:
+def calculate_career_span(roles_or_experience) -> float:
     """
     Returns years between first and last role.
 
     BULLETPROOF: This function normalizes at the boundary.
     It will NEVER crash regardless of what caller passes in.
+
+    Accepts either:
+    - Dict with 'roles' or 'experience' key
+    - List of role dicts directly
+    - Anything else returns 0.0
     """
     # ==========================================================================
-    # BULLETPROOF NORMALIZATION AT FUNCTION BOUNDARY
+    # SELF-SEALING FUNCTION BOUNDARY - FIRST LINES, NO EXCEPTIONS
     # This function must handle ANY input without crashing.
     # ==========================================================================
 
-    # Case 1: experience is None, empty, or not a dict
-    if not experience or not isinstance(experience, dict):
+    # Step 1: Extract roles list from whatever we received
+    if isinstance(roles_or_experience, list):
+        roles = roles_or_experience
+    elif isinstance(roles_or_experience, dict):
+        roles = roles_or_experience.get('roles', []) or roles_or_experience.get('experience', [])
+    else:
+        # Not a list or dict - bail immediately
         return 0.0
 
-    roles = experience.get('roles', []) or experience.get('experience', [])
-
-    # Case 2: roles is not a list (could be string from LinkedIn)
+    # Step 2: Ensure roles is actually a list
     if not isinstance(roles, list):
         return 0.0
 
-    # Case 3: roles is empty
+    # Step 3: Filter to ONLY dict items - this catches LinkedIn string roles
+    roles = [r for r in roles if isinstance(r, dict)]
     if not roles:
         return 0.0
 
-    # Case 4: NORMALIZE - filter to ONLY dict items upfront
-    # This is the key fix: we filter BEFORE iterating, not during
-    normalized_roles = [r for r in roles if isinstance(r, dict)]
-    if not normalized_roles:
-        return 0.0
+    # ==========================================================================
+    # SAFE TO ITERATE - roles is guaranteed List[Dict] at this point
+    # ==========================================================================
 
     dates = []
-    for role in normalized_roles:
+    for role in roles:
         # role is GUARANTEED to be a dict at this point
         start_date = role.get('start_date') or role.get('dates', {}).get('start')
         end_date = role.get('end_date') or role.get('dates', {}).get('end')
