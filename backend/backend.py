@@ -3445,6 +3445,50 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         print("🔧 PENALTY ENFORCEMENT: No required_years detected, skipping enforcement")
         return response_data
 
+    # ========================================================================
+    # HARD REQUIREMENT GATE - PEOPLE LEADERSHIP
+    # Per constraints: "This is enforcement, not vibes."
+    #
+    # IF JD requires X+ years people leadership
+    # AND candidate has < X years verified people leadership
+    # THEN recommendation MUST be "Do Not Apply"
+    # NO EXCEPTIONS. No "Conditional Apply." No "Apply fast." No soft language.
+    # ========================================================================
+    recommendation_locked = False
+    locked_recommendation = None
+    locked_reason = None
+    people_leadership_years = 0.0
+    required_people_leadership = 0.0
+
+    if resume_data:
+        # Extract people leadership years (NOT operational leadership)
+        people_leadership_years = extract_people_leadership_years(resume_data)
+
+        # Check if JD requires people leadership
+        required_people_leadership, is_hard_requirement = extract_required_people_leadership_years(response_data)
+
+        print(f"🔒 PEOPLE LEADERSHIP CHECK:")
+        print(f"   Required: {required_people_leadership} years (hard_requirement={is_hard_requirement})")
+        print(f"   Candidate has: {people_leadership_years} years verified")
+
+        # HARD GATE: If people leadership required and candidate doesn't meet it
+        if is_hard_requirement and required_people_leadership > 0:
+            if people_leadership_years < required_people_leadership:
+                recommendation_locked = True
+                locked_recommendation = "Do Not Apply"
+                locked_reason = f"People leadership experience below role requirement ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
+
+                print(f"   🚫 HARD GATE TRIGGERED: {locked_reason}")
+                print(f"   🔒 RECOMMENDATION LOCKED: Do Not Apply (no exceptions)")
+
+                # Store this in experience_analysis for transparency
+                experience_analysis["people_leadership_years"] = people_leadership_years
+                experience_analysis["required_people_leadership_years"] = required_people_leadership
+                experience_analysis["people_leadership_hard_gate_failed"] = True
+                experience_analysis["recommendation_locked"] = True
+                experience_analysis["locked_reason"] = locked_reason
+                response_data["experience_analysis"] = experience_analysis
+
     # Try to get adjusted years first, fallback to raw years
     candidate_years = experience_analysis.get("candidate_years_adjusted_for_credibility")
     raw_years = experience_analysis.get("candidate_years_in_role_type", 0)
@@ -3694,6 +3738,128 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if hard_cap_applied:
         print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
 
+    # ========================================================================
+    # GAP CLASSIFICATION AND STRENGTH-GAP CONFLICT RESOLUTION
+    # Per constraints: Classify gaps and resolve conflicts
+    # ========================================================================
+
+    # Classify all gaps
+    gaps = response_data.get("gaps", [])
+    if gaps and isinstance(gaps, list):
+        has_missing_experience_gap = False
+        for gap in gaps:
+            if isinstance(gap, dict):
+                gap_classification = classify_gap_type(
+                    gap,
+                    candidate_years,
+                    required_years,
+                    people_leadership_years,
+                    required_people_leadership
+                )
+                gap["gap_classification"] = gap_classification
+                if gap_classification == "missing_experience":
+                    has_missing_experience_gap = True
+                    print(f"   🔴 GAP CLASSIFIED: missing_experience - {gap.get('gap_description', '')[:50]}")
+
+        response_data["gaps"] = gaps
+
+        # HARD RULE: Any missing_experience gap forces "Do Not Apply"
+        if has_missing_experience_gap and not recommendation_locked:
+            print(f"   🚫 MISSING_EXPERIENCE GAP DETECTED: Forcing Do Not Apply")
+            recommendation_locked = True
+            locked_recommendation = "Do Not Apply"
+            locked_reason = "Critical experience gap identified"
+
+    # Resolve strength-gap conflicts
+    strengths = response_data.get("strengths", [])
+    if strengths and gaps:
+        cleaned_strengths, gaps = resolve_strength_gap_conflicts(strengths, gaps)
+        if len(cleaned_strengths) < len(strengths):
+            print(f"   ⚠️ REMOVED {len(strengths) - len(cleaned_strengths)} conflicting strengths")
+        response_data["strengths"] = cleaned_strengths
+        response_data["gaps"] = gaps
+
+    # ========================================================================
+    # LOCKED RECOMMENDATION ENFORCEMENT
+    # If recommendation is locked, override EVERYTHING - no exceptions
+    # ========================================================================
+    if recommendation_locked and locked_recommendation:
+        print(f"🔒 LOCKED RECOMMENDATION OVERRIDE:")
+        print(f"   Previous recommendation: {response_data.get('recommendation')}")
+        print(f"   Locked recommendation: {locked_recommendation}")
+        print(f"   Reason: {locked_reason}")
+
+        # Override the recommendation
+        response_data["recommendation"] = locked_recommendation
+
+        # Update ALL recommendation fields to ensure UI displays correct value
+        if "intelligence_layer" in response_data:
+            if "apply_decision" not in response_data["intelligence_layer"]:
+                response_data["intelligence_layer"]["apply_decision"] = {}
+            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = locked_recommendation
+            response_data["intelligence_layer"]["apply_decision"]["locked"] = True
+            response_data["intelligence_layer"]["apply_decision"]["locked_reason"] = locked_reason
+
+        if "apply_decision" in response_data:
+            response_data["apply_decision"]["recommendation"] = locked_recommendation
+            response_data["apply_decision"]["locked"] = True
+            response_data["apply_decision"]["locked_reason"] = locked_reason
+
+        # Cap score at 45 for locked Do Not Apply
+        if locked_recommendation == "Do Not Apply" and capped_score > 45:
+            capped_score = 45
+            response_data["fit_score"] = capped_score
+            response_data["fit_score_breakdown"]["final_score"] = capped_score
+            response_data["fit_score_breakdown"]["locked_cap_applied"] = True
+            print(f"   🔒 Score capped to 45% due to locked recommendation")
+
+        # Set locked rationale - SECOND PERSON VOICE, no hedging
+        if required_people_leadership > 0 and people_leadership_years < required_people_leadership:
+            response_data["recommendation_rationale"] = (
+                f"This role requires {required_people_leadership:.0f}+ years of people leadership experience. "
+                f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
+                f"Operational or project leadership does not substitute for people management experience. "
+                f"Do not apply for this role."
+            )
+            # Add specific gap for people leadership
+            people_gap = {
+                "gap_type": "people_leadership_requirement_not_met",
+                "gap_classification": "missing_experience",
+                "severity": "critical",
+                "gap_description": f"This role requires {required_people_leadership:.0f}+ years people leadership; you have {people_leadership_years:.1f} verified",
+                "detailed_explanation": (
+                    f"This role explicitly requires people leadership experience - managing direct reports, "
+                    f"building teams, conducting performance reviews, and making hiring decisions. "
+                    f"Your resume shows {people_leadership_years:.1f} years of verified people leadership experience. "
+                    f"Operational leadership, technical leadership, or program management does not count toward this requirement."
+                ),
+                "impact": "You will not pass screening for this role",
+                "mitigation_strategy": (
+                    f"Target roles that value operational excellence without people leadership requirements, "
+                    f"or build {required_people_leadership - people_leadership_years:.0f}+ more years of people management experience first."
+                )
+            }
+            gaps = response_data.get("gaps", [])
+            # Add at beginning if not already present
+            has_people_gap = any(g.get("gap_type") == "people_leadership_requirement_not_met" for g in gaps if isinstance(g, dict))
+            if not has_people_gap:
+                gaps.insert(0, people_gap)
+                response_data["gaps"] = gaps
+
+        # Set alternative actions for locked "Do Not Apply"
+        response_data["alternative_actions"] = [
+            f"Target roles requiring {people_leadership_years:.0f}-{people_leadership_years + 2:.0f} years of people leadership instead",
+            "Focus on roles that value operational excellence without people management requirements",
+            "Build people leadership experience through formal management roles before targeting this level"
+        ]
+
+        # Update strategic_action to match locked recommendation
+        if "reality_check" in response_data:
+            response_data["reality_check"]["strategic_action"] = (
+                f"This role is not a fit. You need {required_people_leadership - people_leadership_years:.0f}+ more years of people leadership. "
+                f"Redirect your energy to roles where you are competitive."
+            )
+
     # CRITICAL: Validate and fix strategic_action/recommendation consistency
     response_data = validate_recommendation_consistency(response_data, capped_score)
 
@@ -3705,6 +3871,9 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
     Ensure recommendation and strategic_action match the fit_score tone.
     Fixes contradictions like "Skip" recommendation but "strong fit" language.
 
+    RESPECTS LOCKED RECOMMENDATIONS - if recommendation is locked, this function
+    will NOT soften the messaging.
+
     Args:
         analysis_data: Parsed response data
         fit_score: The final capped fit score
@@ -3712,6 +3881,13 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
     Returns:
         Modified analysis_data with consistent messaging
     """
+    # Check if recommendation is locked (from hard requirement gate)
+    experience_analysis = analysis_data.get("experience_analysis", {})
+    is_locked = experience_analysis.get("recommendation_locked", False)
+    intelligence_layer = analysis_data.get("intelligence_layer", {})
+    apply_decision = intelligence_layer.get("apply_decision", {})
+    is_locked = is_locked or apply_decision.get("locked", False)
+
     recommendation = (analysis_data.get("recommendation") or "").lower()
     reality_check = analysis_data.get("reality_check", {})
     strategic_action = (reality_check.get("strategic_action") or "").lower() if reality_check else ""
@@ -3742,7 +3918,14 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
         gaps_summary = " ".join(gap_descriptions[:2]) if gap_descriptions else "significant experience gaps exist"
 
         # Generate a consistent skip message - SECOND PERSON ONLY, no names
-        if fit_score < 45:
+        # LOCKED recommendations get STRONGER messaging - no hedging
+        if is_locked:
+            new_strategic_action = (
+                f"This role is not a fit. {gaps_summary}. "
+                f"Do not apply. Redirect your energy to roles where you meet the core requirements."
+            )
+            print(f"   🔒 Using LOCKED messaging for strategic_action")
+        elif fit_score < 45:
             new_strategic_action = (
                 f"This role is a significant stretch. {gaps_summary}. "
                 f"Do not apply. Focus on roles aligned with your background where you are competitive."
@@ -3771,7 +3954,12 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
         # The rationale is usually already updated by force_apply_experience_penalties, but double-check
         if "adjusted" not in rationale.lower():
             fit_score_int = int(fit_score)
-            if fit_score_int < 45:
+
+            # LOCKED recommendations get DIRECT messaging - no hedging, no softening
+            if is_locked:
+                tone = "This role is not a fit. You do not meet the core requirements. Do not apply."
+                print(f"   🔒 Using LOCKED messaging for rationale")
+            elif fit_score_int < 45:
                 tone = "This is a significant stretch. Only pursue if you have an inside connection."
             elif fit_score_int < 55:
                 tone = "This is a stretch role. Be strategic about positioning if you pursue it."
@@ -3976,6 +4164,308 @@ def calculate_credibility_adjusted_years(resume_data: dict, target_role_type: st
             print(f"   📊 {company} ({title}): {years:.1f}y × {multiplier} ({tier}) = {adjusted:.1f}y")
 
     return round(adjusted_years, 1), round(raw_years, 1), breakdown
+
+
+# ============================================================================
+# PEOPLE LEADERSHIP vs OPERATIONAL LEADERSHIP - HARD CONSTRAINT
+# Per JOB_FIT_SCORING constraints: "This is enforcement, not vibes."
+#
+# CRITICAL DISTINCTION:
+# - PEOPLE LEADERSHIP: Direct reports, team management, hiring/firing authority
+# - OPERATIONAL LEADERSHIP: Systems, processes, programs (NO direct reports)
+#
+# These are DISTINCT signals. Operational leadership does NOT substitute for
+# people leadership requirements. A candidate with 15 years operational excellence
+# but 0 people leadership years CANNOT qualify for a role requiring 7+ years
+# people leadership.
+# ============================================================================
+
+def extract_people_leadership_years(resume_data: dict) -> float:
+    """
+    Extract ONLY people leadership years (direct reports, team management).
+
+    HARD RULE: Only count roles where the candidate had direct reports.
+    Operational leadership (systems, programs, processes) does NOT count.
+
+    Evidence keywords for people leadership:
+    - "direct reports", "team of X", "managed X people", "led a team"
+    - "hiring", "fired", "performance reviews", "promoted", "developed team"
+    - "people manager", "built the team", "grew the team from X to Y"
+
+    Args:
+        resume_data: Parsed resume dictionary
+
+    Returns:
+        float: Total verified people leadership years
+    """
+    if not resume_data:
+        return 0.0
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return 0.0
+
+    # PEOPLE leadership indicators - must show direct reports/team management
+    people_leadership_evidence = [
+        "direct report", "direct reports", "managed a team", "led a team",
+        "team of", "people manager", "managed team", "lead a team",
+        "built the team", "grew the team", "hiring manager",
+        "performance review", "promoted", "mentored", "coached team",
+        "developed team", "team lead", "engineering manager", "people management"
+    ]
+
+    # Title patterns that typically indicate people leadership
+    people_leadership_titles = [
+        "manager", "director", "head of", "vp ", "vice president",
+        "chief", "lead", "supervisor", "team lead"
+    ]
+
+    # Explicitly NOT people leadership (operational/systems leadership)
+    operational_only_patterns = [
+        "program manager", "project manager", "technical lead",
+        "staff engineer", "principal engineer", "architect",
+        "operations lead", "process lead", "systems lead"
+    ]
+
+    total_people_years = 0.0
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        description = (exp.get("description", "") or "").lower()
+        highlights = exp.get("highlights", [])
+        if highlights and isinstance(highlights, list):
+            highlights_text = " ".join([h.lower() for h in highlights if isinstance(h, str)])
+        else:
+            highlights_text = ""
+
+        combined_text = f"{title} {description} {highlights_text}"
+        dates = (exp.get("dates", "") or "").lower()
+        company = (exp.get("company", "") or "").strip()
+
+        years = parse_experience_duration(dates)
+
+        # Skip if clearly operational-only role
+        is_operational_only = any(pattern in title for pattern in operational_only_patterns)
+        if is_operational_only and not any(ev in combined_text for ev in people_leadership_evidence):
+            print(f"   ⏭️ Skipping operational role (no people evidence): {exp.get('title', '')} @ {company}")
+            continue
+
+        # Check for people leadership evidence
+        has_people_title = any(pattern in title for pattern in people_leadership_titles)
+        has_people_evidence = any(ev in combined_text for ev in people_leadership_evidence)
+
+        # HARD RULE: Must have title AND evidence, or strong evidence alone
+        if has_people_title and has_people_evidence:
+            # Full credit for verified people leadership
+            tier = get_company_credibility_tier(company, title)
+            multiplier = get_credibility_multiplier(tier)
+            adjusted = years * multiplier
+            total_people_years += adjusted
+            print(f"   ✅ PEOPLE LEADERSHIP: {exp.get('title', '')} @ {company}: {years:.1f}y × {multiplier} = {adjusted:.1f}y")
+        elif has_people_evidence:
+            # Evidence without clear title - 70% credit
+            tier = get_company_credibility_tier(company, title)
+            multiplier = get_credibility_multiplier(tier) * 0.7
+            adjusted = years * multiplier
+            total_people_years += adjusted
+            print(f"   🟡 LIKELY PEOPLE LEADERSHIP: {exp.get('title', '')} @ {company}: {years:.1f}y × {multiplier:.2f} = {adjusted:.1f}y")
+        else:
+            print(f"   ❌ NO PEOPLE LEADERSHIP EVIDENCE: {exp.get('title', '')} @ {company}")
+
+    return round(total_people_years, 1)
+
+
+def extract_required_people_leadership_years(response_data: dict) -> tuple[float, bool]:
+    """
+    Extract required people leadership years from JD analysis.
+
+    Args:
+        response_data: Claude response containing role analysis
+
+    Returns:
+        tuple: (required_years, is_hard_requirement)
+            - required_years: Number of people leadership years required (0 if none)
+            - is_hard_requirement: True if this is a non-negotiable requirement
+    """
+    import re
+
+    jd_text = (response_data.get("job_description", "") or "").lower()
+    role_title = (response_data.get("role_title", "") or "").lower()
+    experience_analysis = response_data.get("experience_analysis", {})
+
+    combined = f"{role_title} {jd_text}"
+
+    # Hard requirement indicators for people leadership
+    hard_requirement_patterns = [
+        r"(\d+)\+?\s*years?\s*(?:of\s*)?(?:people\s*)?(?:leadership|management|managing)",
+        r"(?:leadership|management|managing).*?(\d+)\+?\s*years?",
+        r"(\d+)\+?\s*years?\s*(?:of\s*)?direct\s*reports?",
+        r"manage[d]?\s*team[s]?\s*of\s*(\d+)",
+        r"(\d+)\+?\s*years?\s*(?:people\s*)?manager"
+    ]
+
+    # People leadership specific keywords that make it a hard requirement
+    people_leadership_keywords = [
+        "people leadership", "people management", "direct reports",
+        "manage a team", "build a team", "lead a team", "team management",
+        "management experience required", "leadership experience required",
+        "managing people", "people manager"
+    ]
+
+    # Check if JD explicitly requires people leadership
+    requires_people_leadership = any(kw in combined for kw in people_leadership_keywords)
+
+    # Extract years requirement
+    required_years = 0.0
+    for pattern in hard_requirement_patterns:
+        matches = re.findall(pattern, combined)
+        for match in matches:
+            try:
+                years = float(match) if isinstance(match, str) else float(match[0]) if match else 0
+                if years > required_years:
+                    required_years = years
+            except (ValueError, TypeError):
+                continue
+
+    # Check title for implicit requirements
+    leadership_titles = ["director", "head of", "vp", "vice president", "manager"]
+    has_leadership_title = any(lt in role_title for lt in leadership_titles)
+
+    # If title suggests leadership but no explicit years, assume 3+ years
+    if has_leadership_title and required_years == 0 and requires_people_leadership:
+        required_years = 3.0
+
+    # Director+ typically requires 5+ years people leadership
+    if "director" in role_title and required_years < 5:
+        required_years = 5.0
+        requires_people_leadership = True
+
+    # VP/Head typically requires 7+ years
+    if ("vp" in role_title or "vice president" in role_title or "head of" in role_title) and required_years < 7:
+        required_years = 7.0
+        requires_people_leadership = True
+
+    is_hard_requirement = requires_people_leadership and required_years > 0
+
+    print(f"   🎯 PEOPLE LEADERSHIP REQUIREMENT: {required_years} years, hard_requirement={is_hard_requirement}")
+
+    return required_years, is_hard_requirement
+
+
+def classify_gap_type(gap: dict, candidate_years: float, required_years: float,
+                      people_leadership_years: float, required_people_leadership: float) -> str:
+    """
+    Classify a gap as missing_evidence, missing_scope, or missing_experience.
+
+    CRITICAL: missing_experience → forces "Do Not Apply". No exceptions.
+
+    Args:
+        gap: Gap dictionary
+        candidate_years: Total relevant years
+        required_years: Required years from JD
+        people_leadership_years: Verified people leadership years
+        required_people_leadership: Required people leadership years
+
+    Returns:
+        str: "missing_evidence", "missing_scope", or "missing_experience"
+    """
+    gap_type = gap.get("gap_type", "")
+    gap_description = (gap.get("gap_description", "") or gap.get("description", "")).lower()
+
+    # HARD RULE: People leadership gap is always missing_experience
+    if required_people_leadership > 0 and people_leadership_years < required_people_leadership:
+        if any(kw in gap_description for kw in ["leadership", "management", "direct report", "team"]):
+            return "missing_experience"
+
+    # Years gap below threshold is missing_experience
+    if candidate_years < required_years * 0.7:
+        if any(kw in gap_description for kw in ["years", "experience", "tenure"]):
+            return "missing_experience"
+
+    # Scope gaps - candidate has some experience but not at required level
+    scope_keywords = ["scale", "scope", "enterprise", "global", "size", "team size",
+                      "company size", "revenue", "headcount"]
+    if any(kw in gap_description for kw in scope_keywords):
+        return "missing_scope"
+
+    # Evidence gaps - candidate may have experience but can't verify
+    evidence_keywords = ["quantif", "metric", "evidence", "demonstrat", "prove",
+                        "unclear", "vague", "specific", "detail"]
+    if any(kw in gap_description for kw in evidence_keywords):
+        return "missing_evidence"
+
+    # Default based on severity
+    severity = gap.get("severity", "").lower()
+    if severity == "critical" and candidate_years < required_years:
+        return "missing_experience"
+    elif severity == "critical":
+        return "missing_scope"
+    else:
+        return "missing_evidence"
+
+
+def resolve_strength_gap_conflicts(strengths: list, gaps: list) -> tuple[list, list]:
+    """
+    CONSTRAINT: Same signal cannot appear in both strengths and gaps.
+
+    Rule: If a signal appears in both, gaps win (conservative approach).
+
+    Args:
+        strengths: List of strength dictionaries
+        gaps: List of gap dictionaries
+
+    Returns:
+        tuple: (cleaned_strengths, cleaned_gaps)
+    """
+    if not strengths or not gaps:
+        return strengths or [], gaps or []
+
+    # Extract key signals from gaps
+    gap_signals = set()
+    for gap in gaps:
+        if not isinstance(gap, dict):
+            continue
+        gap_text = (
+            (gap.get("gap_description", "") or "") + " " +
+            (gap.get("description", "") or "") + " " +
+            (gap.get("gap_type", "") or "")
+        ).lower()
+
+        # Key signal words
+        signal_words = [
+            "leadership", "management", "experience", "years", "scale",
+            "enterprise", "team", "stakeholder", "executive", "strategy",
+            "technical", "product", "operations", "people"
+        ]
+        for word in signal_words:
+            if word in gap_text:
+                gap_signals.add(word)
+
+    # Remove strengths that conflict with gaps
+    cleaned_strengths = []
+    for strength in strengths:
+        if not isinstance(strength, dict):
+            continue
+
+        strength_text = (
+            (strength.get("description", "") or "") + " " +
+            (strength.get("strength", "") or "") + " " +
+            (strength.get("area", "") or "")
+        ).lower()
+
+        # Check if this strength conflicts with any gap signal
+        conflicts = [signal for signal in gap_signals if signal in strength_text]
+
+        if conflicts:
+            print(f"   ⚠️ CONFLICT RESOLVED: Removing strength that conflicts with gap: {conflicts}")
+            # Don't add this strength - gap wins
+        else:
+            cleaned_strengths.append(strength)
+
+    return cleaned_strengths, gaps
 
 
 # ============================================================================
