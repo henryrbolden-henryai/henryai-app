@@ -57,6 +57,13 @@ def calibrate_gaps(
     CRITICAL: This function does NOT override Job Fit recommendation.
     It only interprets and prioritizes gaps for coaching output.
     """
+    # === LOGGING: ENTRY ===
+    print("\n" + "=" * 80)
+    print("🎯 CALIBRATION CONTROLLER - ENTRY")
+    print("=" * 80)
+    print(f"   Job Fit Recommendation: {job_fit_recommendation}")
+    print(f"   CEC Results Present: {bool(cec_results)}")
+
     # ==========================================================================
     # STEP 0: EVIDENCE SANITY CHECK (Recruiter Reality Assertion)
     # If candidate shows ≥3 strong signals, they're credible. Don't nitpick.
@@ -65,10 +72,35 @@ def calibrate_gaps(
     explicit_capabilities = count_explicit_capabilities(cec_results)
     dominant_narrative = extract_dominant_narrative(candidate_resume, job_requirements)
 
+    print(f"   Strong Signals Total: {strong_signals.get('total', 0)}")
+    print(f"   Explicit Capabilities: {explicit_capabilities}")
+    print(f"   Dominant Narrative: {dominant_narrative[:50] if dominant_narrative else 'None'}...")
+
+    def _log_and_return(result: Dict[str, Any], exit_reason: str) -> Dict[str, Any]:
+        """Helper to log calibration result before returning."""
+        print("\n" + "-" * 80)
+        print("🎯 CALIBRATION CONTROLLER - EXIT")
+        print("-" * 80)
+        print(f"   Exit Reason: {exit_reason}")
+        primary = result.get('primary_gap')
+        if primary:
+            gap_name = primary.get('gap', {}).get('capability', 'Unknown')
+            gap_class = primary.get('classification', 'Unknown')
+            print(f"   Primary Gap: {gap_name} ({gap_class})")
+        else:
+            print(f"   Primary Gap: None")
+        print(f"   Secondary Gaps: {len(result.get('secondary_gaps', []))}")
+        print(f"   Redirect Reason: {result.get('redirect_reason', 'None')[:50] if result.get('redirect_reason') else 'None'}")
+        print(f"   Suppress Gaps Section: {result.get('suppress_gaps_section')}")
+        print(f"   Suppressed Gaps: {len(result.get('suppressed_gaps', []))}")
+        print(f"   Recruiter Override: {result.get('recruiter_override', 'None')}")
+        print("=" * 80 + "\n")
+        return result
+
     # Recruiter Reality Assertion:
     # If Job Fit = "Strong Apply" AND ≥2 capabilities are explicit, suppress all gaps
     if job_fit_recommendation == "Strong Apply" and explicit_capabilities >= 2:
-        return {
+        return _log_and_return({
             'primary_gap': None,
             'secondary_gaps': [],
             'redirect_reason': None,
@@ -77,10 +109,11 @@ def calibrate_gaps(
             'strong_signals': strong_signals,
             'dominant_narrative': dominant_narrative,
             'recruiter_override': 'strong_explicit_evidence'
-        }
+        }, "Strong Apply + ≥2 explicit capabilities")
 
     # Extract all gaps from CEC results
     all_gaps = extract_all_gaps_from_cec(cec_results)
+    print(f"   Total Gaps Extracted from CEC: {len(all_gaps)}")
 
     # Step 1: Classify each gap, respecting strong signal overrides
     classified_gaps = []
@@ -109,10 +142,16 @@ def calibrate_gaps(
             'mitigation': classification.get('mitigation')
         })
 
+    # Log classification counts
+    terminal_count = sum(1 for g in classified_gaps if g['classification'] == 'terminal')
+    coachable_count = sum(1 for g in classified_gaps if g['classification'] == 'coachable')
+    suppressed_count = sum(1 for g in classified_gaps if g['classification'] == 'suppressed')
+    print(f"   Gap Classification: {terminal_count} terminal, {coachable_count} coachable, {suppressed_count} suppressed")
+
     # Step 2: Filter by Job Fit decision
     # If "Strong Apply", suppress gaps section (but allow strategic guidance)
     if job_fit_recommendation == "Strong Apply":
-        return {
+        return _log_and_return({
             'primary_gap': None,
             'secondary_gaps': [],
             'redirect_reason': None,
@@ -120,11 +159,11 @@ def calibrate_gaps(
             'suppressed_gaps': classified_gaps,
             'strong_signals': strong_signals,
             'dominant_narrative': dominant_narrative
-        }
+        }, "Strong Apply (standard path)")
 
     # If "Apply", check if strong signals warrant gap suppression
     if job_fit_recommendation == "Apply" and strong_signals.get('total', 0) >= 3:
-        return {
+        return _log_and_return({
             'primary_gap': None,
             'secondary_gaps': [],
             'redirect_reason': None,
@@ -133,7 +172,7 @@ def calibrate_gaps(
             'strong_signals': strong_signals,
             'dominant_narrative': dominant_narrative,
             'recruiter_override': 'strong_signals_apply'
-        }
+        }, "Apply + ≥3 strong signals")
 
     # If "Do Not Apply", only terminal gaps matter for coaching explanation
     if job_fit_recommendation == "Do Not Apply":
@@ -170,7 +209,7 @@ def calibrate_gaps(
         redirect_reason = None
         suppress_gaps_section = True
 
-    return {
+    return _log_and_return({
         'primary_gap': primary_gap,
         'secondary_gaps': secondary_gaps,
         'redirect_reason': redirect_reason,
@@ -178,7 +217,7 @@ def calibrate_gaps(
         'suppressed_gaps': suppressed_gaps,
         'strong_signals': strong_signals,
         'dominant_narrative': dominant_narrative
-    }
+    }, f"Standard path ({job_fit_recommendation})")
 
 
 def count_strong_signals(candidate_resume: Dict[str, Any], cec_results: Dict[str, Any]) -> Dict[str, Any]:

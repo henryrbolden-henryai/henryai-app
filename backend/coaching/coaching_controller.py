@@ -41,9 +41,19 @@ def generate_coaching_output(
             'accountability_message': str or None
         }
     """
+    # === LOGGING: ENTRY ===
+    print("\n" + "=" * 80)
+    print("💬 COACHING CONTROLLER - ENTRY")
+    print("=" * 80)
+    print(f"   Job Fit Recommendation: {job_fit_recommendation}")
+    print(f"   User Proceeded Anyway: {user_proceeded_anyway}")
+    print(f"   Primary Gap Present: {bool(calibrated_gaps.get('primary_gap'))}")
+    print(f"   Suppress Gaps Section: {calibrated_gaps.get('suppress_gaps_section')}")
+    print(f"   Dominant Narrative: {calibrated_gaps.get('dominant_narrative', 'None')[:50] if calibrated_gaps.get('dominant_narrative') else 'None'}...")
+
     # Handle proceed-anyway scenario first
     if user_proceeded_anyway:
-        return {
+        result = {
             'your_move': None,
             'gaps_to_address': None,
             'show_accountability_banner': True,
@@ -52,6 +62,12 @@ def generate_coaching_output(
                 calibrated_gaps.get('redirect_reason')
             )
         }
+        print("\n" + "-" * 80)
+        print("💬 COACHING CONTROLLER - EXIT (Proceed Anyway)")
+        print("-" * 80)
+        print(f"   Accountability Banner: {result['accountability_message'][:80]}...")
+        print("=" * 80 + "\n")
+        return result
 
     # Generate "Your Move" (ALWAYS generate, even with silence)
     # CORRECTED: Silence suppresses gaps, not "Your Move"
@@ -83,12 +99,23 @@ def generate_coaching_output(
         else:
             gaps_to_address = None
 
-    return {
+    result = {
         'your_move': your_move,
         'gaps_to_address': gaps_to_address,
         'show_accountability_banner': False,
         'accountability_message': None
     }
+
+    # === LOGGING: EXIT ===
+    print("\n" + "-" * 80)
+    print("💬 COACHING CONTROLLER - EXIT")
+    print("-" * 80)
+    print(f"   Your Move: {result['your_move'][:100] if result['your_move'] else 'None'}...")
+    print(f"   Gaps to Address: {len(result['gaps_to_address']) if result['gaps_to_address'] else 0}")
+    print(f"   Show Accountability Banner: {result['show_accountability_banner']}")
+    print("=" * 80 + "\n")
+
+    return result
 
 
 def generate_your_move(
