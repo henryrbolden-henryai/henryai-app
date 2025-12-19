@@ -720,6 +720,29 @@
         .nav-link:hover {
             color: var(--color-accent);
         }
+
+        /* SINGLE SOURCE OF TRUTH: Proceed Anyway Button */
+        .proceed-anyway-btn {
+            background: transparent;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .proceed-anyway-btn:hover {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.6);
+        }
+
+        .proceed-anyway-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
 </head>
@@ -1483,11 +1506,56 @@
             }
 
             // Update helper text to remove Apply-related messaging
+            // Per QA Spec: User must have agency to proceed, but with accountability
             const helperText = document.querySelector('.helper-text');
             if (helperText) {
                 helperText.innerHTML = `
                     <strong>This role is not a match.</strong> Review the analysis above to understand why.<br>
                     <span style="font-size: 0.85rem; opacity: 0.8;">Click "Pass" to return to your tracker and find roles where you are competitive.</span>
+                    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+                        <button id="proceedAnywayBtn" class="proceed-anyway-btn" onclick="proceedDespiteGuidance()">
+                            Proceed Anyway
+                        </button>
+                        <span style="font-size: 0.8rem; color: var(--color-text-secondary); display: block; margin-top: 8px;">
+                            You can still access Resume Leveling and LinkedIn Analysis, but HenryHQ recommends focusing elsewhere.
+                        </span>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * SINGLE SOURCE OF TRUTH: Accountability Record
+         * Per QA Spec: If candidate clicks "Pass" on "Do Not Apply" screen, log it
+         * and show accountability warning on downstream pages.
+         */
+        function proceedDespiteGuidance() {
+            // Set accountability flag in sessionStorage
+            sessionStorage.setItem('proceeded_despite_guidance', 'true');
+
+            // Log for debugging
+            console.log('⚠️ ACCOUNTABILITY: User chose to proceed despite "Do Not Apply" guidance');
+
+            // Update UI to show acknowledgment
+            const btn = document.getElementById('proceedAnywayBtn');
+            if (btn) {
+                btn.textContent = 'Acknowledged - Proceeding';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            }
+
+            // Show confirmation message
+            const helperText = document.querySelector('.helper-text');
+            if (helperText) {
+                const existingContent = helperText.innerHTML;
+                helperText.innerHTML = `
+                    <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <strong style="color: #fbbf24;">Acknowledged</strong>
+                        <p style="color: var(--color-text-secondary); font-size: 0.85rem; margin: 4px 0 0 0;">
+                            You've chosen to proceed despite HenryHQ's guidance. Resume Leveling and LinkedIn Analysis are now available, but will show a reminder of this decision.
+                        </p>
+                    </div>
+                    ${existingContent.replace(/<div style="margin-top: 16px;[\s\S]*?<\/div>\s*<\/div>/, '')}
                 `;
             }
         }

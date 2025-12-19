@@ -15929,6 +15929,11 @@ class LinkedInOptimizeRequest(BaseModel):
     job_description: Optional[str] = None
     target_role: Optional[str] = None
     linkedin_data: Optional[Dict[str, Any]] = None  # Current LinkedIn profile data
+    # Single Source of Truth: Job Fit decision fields
+    job_fit_recommendation: Optional[str] = None  # "Do Not Apply", "Apply with Caution", etc.
+    recommendation_locked: Optional[bool] = False
+    locked_reason: Optional[str] = None
+    proceeded_despite_guidance: Optional[bool] = False  # User clicked "Pass Anyway"
 
 class LinkedInExperienceOptimization(BaseModel):
     """Optimized content for a single experience entry"""
@@ -16250,7 +16255,44 @@ async def optimize_linkedin_profile(
     - Experience bullets for multiple roles
     - Skills prioritization and recommendations
     - Optional section recommendations (Featured, Recommendations, Activity)
+
+    SINGLE SOURCE OF TRUTH ENFORCEMENT:
+    - If Job Fit recommendation is "Do Not Apply" AND user has NOT proceeded despite guidance,
+      this endpoint will refuse to optimize for that specific role.
+    - HenryHQ does not coach candidates toward roles they are not qualified for.
     """
+
+    # =========================================================================
+    # SINGLE SOURCE OF TRUTH: Respect Job Fit Decision
+    # Per QA Spec Rule 6: "Downstream pages = mirrors, not judges"
+    # LinkedIn optimization MUST NOT offer role-specific optimization when
+    # Job Fit has determined "Do Not Apply" - unless user explicitly proceeds.
+    # =========================================================================
+    job_fit_rec = (request.job_fit_recommendation or "").lower().strip()
+    is_do_not_apply = job_fit_rec in ["do not apply", "skip"]
+
+    if is_do_not_apply and not request.proceeded_despite_guidance:
+        # Block optimization for this specific role
+        locked_reason = request.locked_reason or "You are not qualified for this role based on Job Fit analysis."
+        print(f"🚫 LinkedIn Optimize BLOCKED: Job Fit = 'Do Not Apply', user has not proceeded")
+        print(f"   Locked reason: {locked_reason}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error": "optimization_blocked_by_job_fit",
+                "message": "LinkedIn optimization is not available for roles where HenryHQ recommends 'Do Not Apply'.",
+                "locked_reason": locked_reason,
+                "guidance": "Your profile is optimized for roles that match your experience. Focus on higher-fit opportunities.",
+                "can_proceed": True,
+                "proceed_action": "If you choose to proceed anyway, acknowledge this guidance first."
+            }
+        )
+
+    if is_do_not_apply and request.proceeded_despite_guidance:
+        # User acknowledged and proceeded - log for accountability
+        print(f"⚠️ LinkedIn Optimize: User proceeded despite 'Do Not Apply' guidance")
+        print(f"   Target role: {request.target_role}")
+        print(f"   Locked reason was: {request.locked_reason}")
 
     if not request.resume_json and not request.job_description:
         raise HTTPException(

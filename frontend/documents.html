@@ -539,6 +539,49 @@
         .nav-link:hover {
             color: #22d3ee;
         }
+
+        /* SINGLE SOURCE OF TRUTH: Job Fit Warning Banner */
+        .job-fit-warning-banner {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.08));
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .job-fit-warning-banner.proceeded {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .job-fit-warning-banner .warning-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .job-fit-warning-banner .warning-content {
+            flex: 1;
+        }
+
+        .job-fit-warning-banner strong {
+            display: block;
+            color: #f87171;
+            margin-bottom: 4px;
+        }
+
+        .job-fit-warning-banner.proceeded strong {
+            color: #fbbf24;
+        }
+
+        .job-fit-warning-banner p {
+            color: #a1a1aa;
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.5;
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase Auth -->
@@ -554,6 +597,15 @@
     </header>
 
     <div class="container">
+        <!-- SINGLE SOURCE OF TRUTH: Job Fit Accountability Banner -->
+        <div id="jobFitWarningBanner" class="job-fit-warning-banner" style="display: none;">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+                <strong id="warningTitle">HenryHQ Guidance</strong>
+                <p id="warningMessage"></p>
+            </div>
+        </div>
+
         <h1>
             <span>📄</span> Your Tailored Documents
         </h1>
@@ -1135,6 +1187,43 @@
             `;
         }
 
+        /**
+         * SINGLE SOURCE OF TRUTH: Display Job Fit warning banner
+         * Per QA Spec: Documents page MUST reference Job Fit decision
+         */
+        function checkAndDisplayJobFitWarning(analysisData) {
+            const banner = document.getElementById('jobFitWarningBanner');
+            const title = document.getElementById('warningTitle');
+            const message = document.getElementById('warningMessage');
+
+            if (!banner) return;
+
+            const recommendation = (analysisData.recommendation || '').toLowerCase();
+            const lockedReason = analysisData.experience_analysis?.locked_reason ||
+                                 analysisData.locked_reason || '';
+            const proceededDespiteGuidance = sessionStorage.getItem('proceeded_despite_guidance') === 'true';
+            const targetRole = analysisData.role_title || analysisData._role || 'this role';
+
+            // Check for "Do Not Apply" recommendation
+            if (recommendation === 'do not apply' || recommendation === 'skip') {
+                banner.style.display = 'flex';
+
+                if (proceededDespiteGuidance) {
+                    banner.classList.add('proceeded');
+                    title.textContent = 'You Chose to Proceed Despite Guidance';
+                    message.textContent = `HenryHQ recommended "Do Not Apply" for "${targetRole}". ` +
+                        `These documents are generated, but we recommend focusing your energy on higher-fit roles.`;
+                } else {
+                    title.textContent = 'Not Recommended for This Role';
+                    message.textContent = lockedReason ||
+                        `HenryHQ recommends "Do Not Apply" for "${targetRole}". ` +
+                        `Generating documents for this role is not advised.`;
+                }
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
         // Load documents on page load
         window.addEventListener('DOMContentLoaded', async () => {
             // Get analysis data for candidate name
@@ -1144,6 +1233,12 @@
                 return;
             }
             analysisData = JSON.parse(analysisDataStr);
+
+            // =========================================================================
+            // SINGLE SOURCE OF TRUTH: Check and display Job Fit decision
+            // Per QA Spec Rule 6: Documents page MUST reference Job Fit decision
+            // =========================================================================
+            checkAndDisplayJobFitWarning(analysisData);
 
             // Get documents data - try sessionStorage first, then Supabase, then localStorage fallback
             let documentsDataStr = sessionStorage.getItem('documentsData');

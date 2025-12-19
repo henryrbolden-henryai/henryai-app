@@ -848,6 +848,55 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* SINGLE SOURCE OF TRUTH: Job Fit Warning Banner */
+        .job-fit-warning-banner {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.08));
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .job-fit-warning-banner.caution {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.08));
+            border-color: rgba(251, 191, 36, 0.4);
+        }
+
+        .job-fit-warning-banner.proceeded {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .job-fit-warning-banner .warning-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .job-fit-warning-banner .warning-content {
+            flex: 1;
+        }
+
+        .job-fit-warning-banner strong {
+            display: block;
+            color: #f87171;
+            margin-bottom: 4px;
+        }
+
+        .job-fit-warning-banner.caution strong,
+        .job-fit-warning-banner.proceeded strong {
+            color: #fbbf24;
+        }
+
+        .job-fit-warning-banner p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.5;
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="css/linkedin.css">
@@ -856,6 +905,15 @@
 </head>
 <body>
     <main>
+        <!-- SINGLE SOURCE OF TRUTH: Accountability Banner -->
+        <div id="jobFitWarningBanner" class="job-fit-warning-banner" style="display: none;">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+                <strong id="warningTitle">HenryHQ Guidance</strong>
+                <p id="warningMessage"></p>
+            </div>
+        </div>
+
         <a href="results.html" class="back-link">← Back to Results</a>
 
         <h1>LinkedIn Profile Score</h1>
@@ -1144,10 +1202,68 @@
             const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
             const resume = JSON.parse(localStorage.getItem('lastResumeAnalysis') || '{}');
 
+            // =========================================================================
+            // SINGLE SOURCE OF TRUTH: Check Job Fit Decision
+            // Per QA Spec Rule 6: Downstream pages consume Job Fit decision, never override
+            // =========================================================================
+            checkAndDisplayJobFitWarning(analysisData);
+
             const result = calculateScore(profile, analysisData, resume);
             displayScore(result);
 
             sessionStorage.setItem('linkedinScoringResults', JSON.stringify(result));
+        }
+
+        /**
+         * SINGLE SOURCE OF TRUTH: Display Job Fit warning banner
+         * Per QA Spec: LinkedIn Analysis MUST reference Job Fit decision
+         */
+        function checkAndDisplayJobFitWarning(analysisData) {
+            const banner = document.getElementById('jobFitWarningBanner');
+            const title = document.getElementById('warningTitle');
+            const message = document.getElementById('warningMessage');
+
+            if (!banner) return;
+
+            const recommendation = (analysisData.recommendation || '').toLowerCase();
+            const lockedReason = analysisData.experience_analysis?.locked_reason ||
+                                 analysisData.locked_reason || '';
+            const proceededDespiteGuidance = sessionStorage.getItem('proceeded_despite_guidance') === 'true';
+            const targetRole = analysisData.role_title || 'this role';
+
+            // Check for "Do Not Apply" recommendation
+            if (recommendation === 'do not apply' || recommendation === 'skip') {
+                banner.style.display = 'flex';
+
+                if (proceededDespiteGuidance) {
+                    // User acknowledged and proceeded
+                    banner.classList.add('proceeded');
+                    title.textContent = 'You Chose to Proceed';
+                    message.textContent = `You acknowledged HenryHQ's guidance against applying to "${targetRole}" and chose to proceed. ` +
+                        `We recommend focusing your energy on higher-fit roles. ` +
+                        (lockedReason ? `Original guidance: ${lockedReason}` : '');
+                } else {
+                    // Hard stop - user hasn't acknowledged
+                    banner.classList.remove('proceeded', 'caution');
+                    title.textContent = 'Not Recommended for This Role';
+                    message.textContent = lockedReason ||
+                        `HenryHQ recommends "Do Not Apply" for "${targetRole}". ` +
+                        `Your profile is optimized for roles that match your experience. ` +
+                        `Focus on higher-fit opportunities instead.`;
+                }
+            }
+            // Check for "Apply with Caution" recommendation
+            else if (recommendation === 'apply with caution' || recommendation === 'conditional apply') {
+                banner.style.display = 'flex';
+                banner.classList.add('caution');
+                title.textContent = 'Apply with Strategic Positioning';
+                message.textContent = `This is a stretch role. Focus your LinkedIn optimization on emphasizing your strongest alignment points. ` +
+                    (lockedReason ? `Key consideration: ${lockedReason}` : '');
+            }
+            // Good fit - hide banner
+            else {
+                banner.style.display = 'none';
+            }
         }
 
         function calculateScore(profile, analysisData, resume) {
