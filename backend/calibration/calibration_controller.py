@@ -340,8 +340,18 @@ def extract_dominant_narrative(
 
     # Priority 1: Decision Authority
     # Find ALL matches and use the largest number (most impressive)
-    # Pattern allows words between "built" and "team of" (e.g., "built and scaled a team of")
-    hire_matches = re.findall(r'(?:hired|built\s+(?:\w+\s+)*(?:a\s+)?team\s+of)\s+(\d+)', combined_text, re.IGNORECASE)
+    # Patterns:
+    # - "hired X" or "hired and onboarded X"
+    # - "built a team of X" or "built and scaled a team of X"
+    # - "lead/led team of X engineers"
+    hire_patterns = [
+        r'hired\s+(?:\w+\s+)*(\d+)',  # "hired 8", "hired and onboarded 8"
+        r'built\s+(?:\w+\s+)*(?:a\s+)?team\s+(?:of\s+)?(\d+)',  # "built and scaled a team of 40"
+        r'(?:lead|led)\s+(?:a\s+)?team\s+(?:of\s+)?(\d+)',  # "lead team of 12"
+    ]
+    hire_matches = []
+    for pattern in hire_patterns:
+        hire_matches.extend(re.findall(pattern, combined_text, re.IGNORECASE))
     if hire_matches:
         max_count = max(int(m) for m in hire_matches)
         return f"built and scaled a team of {max_count}"
