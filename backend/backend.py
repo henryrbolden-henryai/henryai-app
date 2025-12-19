@@ -210,6 +210,39 @@ NON_TRANSFERABLE_DOMAINS = [
 
 
 # ============================================================================
+# EXPERIENCE NORMALIZATION HELPER
+# CRITICAL INVARIANT: All experience data must be List[Dict] - NOTHING ELSE
+# This helper ensures downstream functions never crash on strings or mixed types
+# ============================================================================
+
+def normalize_experience(resume_data: dict) -> list:
+    """
+    Normalize experience to guaranteed List[Dict].
+
+    This is THE canonical normalization function. All code paths that access
+    resume_data.get("experience") should use this instead.
+
+    Returns:
+        List of dict experience items. Empty list if input is invalid.
+    """
+    if not resume_data or not isinstance(resume_data, dict):
+        return []
+
+    experience = resume_data.get("experience", [])
+
+    # Case 1: String (LinkedIn free text)
+    if isinstance(experience, str):
+        return []
+
+    # Case 2: Not a list
+    if not isinstance(experience, list):
+        return []
+
+    # Case 3: List but may contain non-dict items - filter to only dicts
+    return [exp for exp in experience if isinstance(exp, dict)]
+
+
+# ============================================================================
 # ROLE PARSER - EXTRACTS STRUCTURED ELIGIBILITY LOGIC FROM JD
 # Per Role Parser Spec: "This parser decides what is non-negotiable vs coachable
 # before scoring ever happens."
@@ -1448,20 +1481,20 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
     jd_text = (response_data.get("job_description", "") or "").lower()
     combined_jd = f"{role_title} {jd_text}"
 
-    # Extract resume info
-    experience = resume_data.get("experience", [])
+    # Extract resume info - USE NORMALIZED EXPERIENCE
+    experience = normalize_experience(resume_data)
     resume_titles = []
     resume_descriptions = []
 
     for exp in experience:
-        if isinstance(exp, dict):
-            title = (exp.get("title", "") or "").lower()
-            desc = (exp.get("description", "") or "").lower()
-            highlights = exp.get("highlights", [])
-            if highlights and isinstance(highlights, list):
-                desc += " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
-            resume_titles.append(title)
-            resume_descriptions.append(desc)
+        # No need to check isinstance(exp, dict) - normalize_experience guarantees it
+        title = (exp.get("title", "") or "").lower()
+        desc = (exp.get("description", "") or "").lower()
+        highlights = exp.get("highlights", [])
+        if highlights and isinstance(highlights, list):
+            desc += " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+        resume_titles.append(title)
+        resume_descriptions.append(desc)
 
     combined_resume = " ".join(resume_titles) + " " + " ".join(resume_descriptions)
 
@@ -5647,14 +5680,31 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         try:
             # Prepare candidate experience for calibration
-            # DEFENSIVE: Ensure experience is always a list, never a string
+            # ==========================================================================
+            # CRITICAL INVARIANT: Experience must be List[Dict] - NOTHING ELSE
+            # This is the SINGLE upstream normalization point. All downstream
+            # functions (detect_red_flags, calculate_career_span, etc.) can now
+            # assume they receive valid List[Dict] and won't crash on strings.
+            # ==========================================================================
             raw_experience = resume_data.get('experience', [])
+
+            # Case 1: Experience is a string (LinkedIn free text)
             if isinstance(raw_experience, str):
-                # LinkedIn free text - wrap in empty list to avoid str.get() crashes
-                print(f"   ⚠️ GUARDRAIL: Experience is string (LinkedIn free text), wrapping for safety")
+                print(f"   ⚠️ INVARIANT: Experience is string - normalizing to []")
                 raw_experience = []
+
+            # Case 2: Experience is not a list at all
             elif not isinstance(raw_experience, list):
+                print(f"   ⚠️ INVARIANT: Experience is {type(raw_experience).__name__} - normalizing to []")
                 raw_experience = []
+
+            # Case 3: Experience is a list but contains non-dict items
+            # Filter to ONLY dict items - this catches mixed lists like [str, dict, str]
+            else:
+                filtered_experience = [exp for exp in raw_experience if isinstance(exp, dict)]
+                if len(filtered_experience) != len(raw_experience):
+                    print(f"   ⚠️ INVARIANT: Experience list contained {len(raw_experience) - len(filtered_experience)} non-dict items - filtered out")
+                raw_experience = filtered_experience
 
             candidate_experience = {
                 'roles': raw_experience,
