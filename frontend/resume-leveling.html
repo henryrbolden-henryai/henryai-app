@@ -216,6 +216,100 @@
             font-size: 0.95rem;
             line-height: 1.6;
             color: var(--color-text);
+            margin-bottom: 12px;
+        }
+
+        .what-this-means-encouragement {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--color-success);
+            font-style: italic;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* Quick Win Section */
+        .quick-win {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(34, 211, 238, 0.1));
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .quick-win-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .quick-win-icon {
+            font-size: 1.2rem;
+        }
+
+        .quick-win-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-success);
+        }
+
+        .quick-win-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--color-text);
+        }
+
+        /* Strengths Section */
+        .strengths-section {
+            background: rgba(74, 222, 128, 0.05);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-left: 3px solid var(--color-success);
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .strengths-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .strengths-icon {
+            color: var(--color-success);
+            font-size: 1rem;
+        }
+
+        .strengths-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--color-success);
+        }
+
+        .strengths-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .strengths-list li {
+            font-size: 0.9rem;
+            color: var(--color-text);
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .strengths-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--color-success);
+            font-weight: 600;
         }
 
         /* Level Assessment Card */
@@ -1199,6 +1293,27 @@
             <div class="what-this-means" id="whatThisMeansSection">
                 <h4 class="what-this-means-title">What This Means</h4>
                 <p class="what-this-means-text" id="whatThisMeansText">—</p>
+                <p class="what-this-means-encouragement" id="whatThisMeansEncouragement"></p>
+            </div>
+
+            <!-- Strengths Section - What's working well -->
+            <div class="strengths-section" id="strengthsSection" style="display: none;">
+                <div class="strengths-header">
+                    <span class="strengths-icon">★</span>
+                    <span class="strengths-title">What's Working</span>
+                </div>
+                <ul class="strengths-list" id="strengthsList">
+                    <!-- Populated dynamically -->
+                </ul>
+            </div>
+
+            <!-- Quick Win Section - Highest impact single fix -->
+            <div class="quick-win" id="quickWinSection" style="display: none;">
+                <div class="quick-win-header">
+                    <span class="quick-win-icon">⚡</span>
+                    <span class="quick-win-title">Your Quick Win</span>
+                </div>
+                <p class="quick-win-text" id="quickWinText">—</p>
             </div>
 
             <!-- Signals Section (Collapsible - Default Collapsed) -->
@@ -1331,7 +1446,10 @@
             <!-- Action Section -->
             <div class="action-section">
                 <p class="action-text" id="actionText">
-                    Ready to apply these insights and strengthen your application?
+                    You now know exactly how the market sees your resume. Let's close the gaps.
+                </p>
+                <p class="action-subtext" id="actionSubtext" style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+                    The next step will help you reframe your experience for maximum impact.
                 </p>
                 <div class="action-buttons">
                     <button class="btn-primary" id="continueBtn">Strengthen Your Resume</button>
@@ -1575,7 +1693,7 @@
             }
         }
 
-        // Render "What This Means" contextual section
+        // Render "What This Means" contextual section with encouragement
         function renderWhatThisMeans() {
             const currentLevel = levelingData.current_level || 'your current level';
             const targetLevel = levelingData.target_level;
@@ -1583,30 +1701,110 @@
             const confidence = (levelingData.level_confidence || 0) * 100;
 
             let contextText = '';
+            let encouragement = '';
 
             // Generate contextual message based on the gap and confidence
             if (!targetLevel) {
-                // No target specified
                 contextText = `Your resume currently supports ${currentLevel} roles. Upload a job description to see how you compare against a specific target.`;
+                encouragement = "Every resume can be strengthened. The recommendations below will help you present your experience more powerfully.";
             } else if (levelsApart === 0) {
-                // Matched
                 if (confidence >= 85) {
                     contextText = `Your resume strongly supports ${targetLevel} roles. You have the evidence to compete for positions at this level.`;
+                    encouragement = "You're well-positioned for this role. The polish items below can help you stand out even more.";
                 } else {
                     contextText = `Your resume supports ${targetLevel} roles, though some evidence could be strengthened. Focus on quantifying your impact more clearly.`;
+                    encouragement = "You have the foundation. A few targeted improvements will make your case even stronger.";
                 }
             } else if (levelsApart === 1) {
-                // Stretch role
                 contextText = `Your resume currently supports ${currentLevel} roles. To credibly target ${targetLevel}, you need clearer evidence of increased scope and org-level impact. This is a stretch but achievable with the right positioning.`;
+                encouragement = "Many successful candidates close a one-level gap through strategic resume positioning. The fixes below are your roadmap.";
             } else if (levelsApart > 1) {
-                // Significant gap
                 contextText = `Your resume currently supports ${currentLevel} roles. ${targetLevel} is ${levelsApart} levels above your current positioning. Focus on building evidence of strategic ownership and broader organizational impact before targeting this level.`;
+                encouragement = "This is a meaningful gap, but gaps are meant to be closed. Start with the high-priority items and build from there.";
             } else {
-                // Overqualified
                 contextText = `You're positioned ${Math.abs(levelsApart)} level${Math.abs(levelsApart) > 1 ? 's' : ''} above the ${targetLevel} requirements. Consider whether this role aligns with your career trajectory, or emphasize leadership and strategic elements if targeting senior IC positions.`;
+                encouragement = "Your experience exceeds this role's requirements. Consider if this is a strategic step, or look for roles that match your level.";
             }
 
             document.getElementById('whatThisMeansText').textContent = contextText;
+            document.getElementById('whatThisMeansEncouragement').textContent = encouragement;
+        }
+
+        // Render strengths section - celebrate what's working
+        function renderStrengths() {
+            const strengths = [];
+
+            // Check for strong signals in each category
+            const scopeSignals = levelingData.scope_signals || [];
+            const impactSignals = levelingData.impact_signals || [];
+            const leadershipSignals = levelingData.leadership_signals || [];
+            const technicalSignals = levelingData.technical_signals || [];
+
+            if (scopeSignals.length >= 2) {
+                strengths.push(`Strong scope signals (${scopeSignals.length} found) - you're showing the scale of your work`);
+            }
+            if (impactSignals.length >= 2) {
+                strengths.push(`Clear impact evidence (${impactSignals.length} found) - you're quantifying your results`);
+            }
+            if (leadershipSignals.length >= 2) {
+                strengths.push(`Leadership indicators (${leadershipSignals.length} found) - you're demonstrating influence`);
+            }
+            if (technicalSignals.length >= 2) {
+                strengths.push(`Technical depth (${technicalSignals.length} found) - you're showing domain expertise`);
+            }
+
+            // Check confidence and years
+            const confidence = (levelingData.level_confidence || 0) * 100;
+            if (confidence >= 80) {
+                strengths.push("High confidence assessment - your experience is well-documented");
+            }
+
+            const quantRate = (levelingData.quantification_rate || 0) * 100;
+            if (quantRate >= 50) {
+                strengths.push(`${Math.round(quantRate)}% quantified bullets - above average for specificity`);
+            }
+
+            // Only show if we have strengths to celebrate
+            if (strengths.length > 0) {
+                const section = document.getElementById('strengthsSection');
+                section.style.display = 'block';
+                document.getElementById('strengthsList').innerHTML = strengths.map(s => `<li>${s}</li>`).join('');
+            }
+        }
+
+        // Render quick win - highest impact single fix
+        function renderQuickWin() {
+            let quickWin = '';
+
+            // Priority order for quick wins (highest impact first)
+            const quantRate = (levelingData.quantification_rate || 0) * 100;
+            const recommendations = levelingData.recommendations || [];
+            const redFlags = levelingData.red_flags || [];
+            const highPriorityRec = recommendations.find(r => (r.priority || '').toLowerCase() === 'high');
+
+            if (quantRate < 30) {
+                quickWin = "Add metrics to your top 3 bullet points. Numbers like revenue impact, team size, or efficiency gains immediately signal seniority. Even estimates like 'improved efficiency by ~20%' are better than no numbers.";
+            } else if (redFlags.length > 0) {
+                const firstFlag = typeof redFlags[0] === 'string' ? redFlags[0] : redFlags[0].type || '';
+                if (firstFlag.toLowerCase().includes('company')) {
+                    quickWin = "Add a brief company description to your most recent role. Example: 'Acme Corp (Series B SaaS, $20M ARR, 150 employees)' - this instantly validates your scope.";
+                } else if (firstFlag.toLowerCase().includes('title')) {
+                    quickWin = "Reframe your title to reflect actual scope. If you were 'VP' at a 5-person startup, consider 'Head of Product' or 'Product Lead' with scope details in your bullets.";
+                } else if (firstFlag.toLowerCase().includes('generic')) {
+                    quickWin = "Replace one generic phrase with a specific achievement. Change 'team player' to 'collaborated with 5 cross-functional stakeholders to ship feature X'.";
+                }
+            } else if (highPriorityRec) {
+                quickWin = highPriorityRec.suggested || '';
+            }
+
+            if (!quickWin && recommendations.length > 0) {
+                quickWin = recommendations[0].suggested || "Review your most recent role and add one quantified achievement that shows business impact.";
+            }
+
+            if (quickWin) {
+                document.getElementById('quickWinSection').style.display = 'block';
+                document.getElementById('quickWinText').textContent = quickWin;
+            }
         }
 
         function renderResults() {
@@ -1650,8 +1848,14 @@
             document.getElementById('confidenceFill').style.width = `${confidence}%`;
             document.getElementById('summaryText').textContent = levelingData.summary;
 
-            // Populate "What This Means" section
+            // Populate "What This Means" section with encouragement
             renderWhatThisMeans();
+
+            // Render strengths - celebrate what's working
+            renderStrengths();
+
+            // Render quick win - highest impact single fix
+            renderQuickWin();
 
             // Signals Grid
             renderSignals();
@@ -1674,6 +1878,56 @@
 
             // Recommendations
             renderRecommendations();
+
+            // Update action section based on results
+            updateActionSection();
+        }
+
+        // Update action section with dynamic, empowering messaging
+        function updateActionSection() {
+            const confidence = (levelingData.level_confidence || 0) * 100;
+            const levelsApart = levelingData.levels_apart || 0;
+            const hasRedFlags = (levelingData.red_flags || []).length > 0;
+            const recCount = (levelingData.recommendations || []).length;
+
+            let mainText = '';
+            let subText = '';
+            let primaryBtnText = 'Strengthen Your Resume';
+
+            if (confidence >= 85 && levelsApart <= 0) {
+                // Strong position
+                mainText = "Your resume is already well-positioned. A few polish items can make it exceptional.";
+                subText = "Small refinements often make the difference between getting an interview and getting the offer.";
+                primaryBtnText = "Add Final Polish";
+            } else if (levelsApart === 1) {
+                // Stretch role - achievable
+                mainText = "You're one level away. Strategic positioning can close this gap.";
+                subText = "Let's reframe your experience to highlight the scope and impact that supports your target level.";
+                primaryBtnText = "Close the Gap";
+            } else if (levelsApart > 1) {
+                // Significant gap
+                mainText = "This is a stretch, but every gap starts somewhere. Let's build the foundation.";
+                subText = "Focus on the high-priority items first. Each improvement compounds your positioning.";
+                primaryBtnText = "Start Building";
+            } else if (hasRedFlags) {
+                // Has issues to fix
+                mainText = "You now know exactly how the market sees your resume. Let's fix the red flags.";
+                subText = "Addressing these issues first will have the biggest impact on how recruiters perceive you.";
+                primaryBtnText = "Fix Red Flags";
+            } else if (recCount > 0) {
+                // Has recommendations
+                mainText = "You have clear next steps. Let's implement them.";
+                subText = `${recCount} recommendation${recCount > 1 ? 's' : ''} to strengthen your positioning.`;
+                primaryBtnText = "Strengthen Your Resume";
+            } else {
+                // Default
+                mainText = "You now know exactly how the market sees your resume. Let's close the gaps.";
+                subText = "The next step will help you reframe your experience for maximum impact.";
+            }
+
+            document.getElementById('actionText').textContent = mainText;
+            document.getElementById('actionSubtext').textContent = subText;
+            document.getElementById('continueBtn').textContent = primaryBtnText;
         }
 
         function renderSignals() {
