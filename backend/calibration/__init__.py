@@ -29,8 +29,9 @@ from .signal_detectors import (
 from .executive_calibration import calibrate_executive_role
 from .technical_calibration import calibrate_technical_role
 from .gtm_calibration import calibrate_gtm_role
-from .gap_classifier import classify_gap, assess_domain_transferability
+from .gap_classifier import classify_gap, assess_domain_transferability, calculate_level_distance
 from .red_flag_detector import detect_red_flags
+from .calibration_controller import calibrate_gaps
 
 __all__ = [
     # Signal detectors
@@ -60,4 +61,7 @@ __all__ = [
     'assess_domain_transferability',
     # Red flags
     'detect_red_flags',
+    # Control layer
+    'calibrate_gaps',
+    'calculate_level_distance',
 ]

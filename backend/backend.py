@@ -43,7 +43,8 @@ from qa_validation import (
 )
 
 # Recruiter Calibration module for gap classification and red flag detection
-# Per Calibration Spec v1.0: Recruiter-grade judgment framework
+# Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
+# CRITICAL: Calibration explains gaps, does NOT override Job Fit recommendation
 try:
     from calibration import (
         calibrate_executive_role,
@@ -52,11 +53,26 @@ try:
         classify_gap,
         assess_domain_transferability,
         detect_red_flags,
+        calibrate_gaps,  # Control layer for gap classification
     )
     CALIBRATION_AVAILABLE = True
 except ImportError:
     CALIBRATION_AVAILABLE = False
     print("⚠️ Calibration module not available - using fallback behavior")
+
+# Coaching Controller module for "Your Move" and "Gaps to Address" sections
+# Per Selective Coaching Moments Spec v1.0 (REVISED)
+# CRITICAL: Silence suppresses gaps, NOT "Your Move"
+try:
+    from coaching import (
+        generate_coaching_output,
+        generate_your_move,
+        extract_primary_strength,
+    )
+    COACHING_AVAILABLE = True
+except ImportError:
+    COACHING_AVAILABLE = False
+    print("⚠️ Coaching module not available - using fallback behavior")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -5457,27 +5473,30 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
     # ========================================================================
     # RECRUITER CALIBRATION LAYER - STEP 2.6
-    # Per Calibration Spec v1.0: Recruiter-grade judgment framework
+    # Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
     #
     # RUNS AFTER: CEC (Step 2.5)
     # RUNS BEFORE: CAE (Step 3) and LEPE (Step 4)
     #
     # PURPOSE:
     # - Apply function-specific calibration (executive, technical, GTM)
-    # - Detect terminal vs coachable gaps
+    # - Classify gaps as terminal vs coachable for coaching output
     # - Detect red flags (stop_search vs proceed_with_caution)
-    # - Override recommendation if terminal gaps or stop_search red flags found
+    # - Generate calibrated_gaps for coaching controller
     #
-    # HARD CONSTRAINTS:
-    # - Terminal gap = "Do Not Apply" (overrides coachable gaps)
+    # HARD CONSTRAINTS (REVISED):
+    # - Does NOT override Job Fit recommendation
+    # - Calibration EXPLAINS a "Do Not Apply," it does NOT create one
+    # - locked_reason comes from Job Fit only
+    # - redirect_reason is for coaching, not for changing recommendation
     # - Multiple implicit signals do NOT equal one explicit signal
-    # - When ambiguous, downgrade confidence, not recommendation
     # ========================================================================
     calibration_result = None
     calibration_red_flags = []
+    calibrated_gaps = None  # For coaching controller
 
-    if CALIBRATION_AVAILABLE and resume_data and response_data.get("role_title") and not recommendation_locked:
-        print("🎯 STEP 2.6: RECRUITER CALIBRATION LAYER")
+    if CALIBRATION_AVAILABLE and resume_data and response_data.get("role_title"):
+        print("🎯 STEP 2.6: RECRUITER CALIBRATION LAYER (Interpretive Only)")
 
         try:
             # Prepare candidate experience for calibration
@@ -5497,6 +5516,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 'team_size_min': response_data.get('team_size_requirement', 0),
                 'domain': response_data.get('target_domain', ''),
                 'function': response_data.get('role_function', ''),
+                'job_description': response_data.get('job_description', ''),
+                'role_title': response_data.get('role_title', ''),
                 'global_scope': any(kw in role_title for kw in ['global', 'distributed', 'multi-region']),
                 'requires_pnl': any(kw in role_title for kw in ['vp', 'director', 'head', 'c-suite']),
             }
@@ -5518,7 +5539,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # Detect red flags
             calibration_red_flags = detect_red_flags(candidate_experience)
 
-            # Store calibration results
+            # Store calibration results (for logging/debugging)
             response_data["calibration_result"] = {
                 'type': calibration_type,
                 'actual_level': calibration_result.get('actual_level'),
@@ -5537,43 +5558,47 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             print(f"   📋 Calibration: {len(terminal_gaps)} terminal, {len(coachable_gaps)} coachable gaps")
             print(f"   🚩 Red flags: {len(stop_search_flags)} stop_search, {len(caution_flags)} proceed_with_caution")
 
-            # CRITICAL: Override recommendation if terminal gaps or stop-search red flags exist
-            # Per Calibration Spec v1.0: "Terminal always overrides coachable"
-            if terminal_gaps or stop_search_flags:
-                # Determine locked reason
-                if terminal_gaps:
-                    first_terminal = terminal_gaps[0]
-                    locked_reason = first_terminal.get('reason', 'Terminal gap identified')
-                    print(f"   🔒 TERMINAL GAP: {locked_reason}")
-                elif stop_search_flags:
-                    first_flag = stop_search_flags[0]
-                    locked_reason = first_flag.get('reason', 'Stop-search red flag detected')
-                    print(f"   🔒 STOP SEARCH FLAG: {locked_reason}")
+            # REVISED: Use calibrate_gaps control layer to prioritize gaps for coaching
+            # This does NOT override Job Fit recommendation
+            cec_results = response_data.get("capability_evidence_report", {})
+            job_fit_recommendation = response_data.get("recommendation", "Apply")
 
-                # Lock recommendation
-                recommendation_locked = True
-                locked_recommendation = "Do Not Apply"
+            # Map Job Fit recommendation to coaching-compatible format
+            recommendation_map = {
+                "Strongly Apply": "Strong Apply",
+                "Apply": "Apply",
+                "Apply with caution": "Apply with Caution",
+                "Conditional Apply": "Apply with Caution",
+                "Skip": "Do Not Apply",
+                "Do Not Apply": "Do Not Apply",
+            }
+            normalized_recommendation = recommendation_map.get(job_fit_recommendation, job_fit_recommendation)
 
-                # Update experience_analysis
-                experience_analysis["recommendation_locked"] = True
-                experience_analysis["locked_reason"] = locked_reason
-                experience_analysis["calibration_locked"] = True
+            calibrated_gaps = calibrate_gaps(
+                cec_results=cec_results,
+                job_fit_recommendation=normalized_recommendation,
+                candidate_resume=candidate_experience,
+                job_requirements=role_requirements
+            )
 
-                # Update response_data
-                response_data["recommendation"] = locked_recommendation
-                response_data["apply_decision"] = {
-                    "recommendation": locked_recommendation,
-                    "locked_reason": locked_reason,
-                    "locked_by": "calibration"
-                }
+            # Store calibrated_gaps for coaching controller (Step 6.5)
+            response_data["calibrated_gaps"] = calibrated_gaps
 
-                if "intelligence_layer" in response_data:
-                    response_data["intelligence_layer"]["apply_decision"] = {
-                        "recommendation": locked_recommendation,
-                        "locked_reason": locked_reason
-                    }
+            # Log calibrated gaps summary
+            if calibrated_gaps:
+                primary = calibrated_gaps.get('primary_gap')
+                secondary = calibrated_gaps.get('secondary_gaps', [])
+                suppress = calibrated_gaps.get('suppress_gaps_section', False)
+                redirect = calibrated_gaps.get('redirect_reason')
 
-                print(f"   🔴 Recommendation LOCKED by calibration: {locked_recommendation}")
+                if primary:
+                    print(f"   🎯 Primary gap: {primary.get('gap', {}).get('capability', 'Unknown')}")
+                if secondary:
+                    print(f"   📋 Secondary gaps: {len(secondary)}")
+                if suppress:
+                    print(f"   🔇 Gaps section suppressed (Strong Apply)")
+                if redirect:
+                    print(f"   ↪️  Redirect reason: {redirect[:50]}...")
 
             # Apply confidence threshold per Selective Coaching Spec
             # One explicit signal > five implicit signals
@@ -5583,6 +5608,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         except Exception as e:
             print(f"   ⚠️ Calibration error (non-blocking): {e}")
+            import traceback
+            traceback.print_exc()
             # Calibration errors are non-blocking - continue with existing flow
 
     # ========================================================================
@@ -5911,6 +5938,85 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     if response_data.get("capability_evidence_report"):
         print("📋 STEP 6: ENHANCING COACHING WITH CEC DATA")
         response_data = enhance_coaching_with_cec(response_data)
+
+    # ========================================================================
+    # STEP 6.5: COACHING CONTROLLER
+    # Per Selective Coaching Moments Spec v1.0 (REVISED)
+    #
+    # PURPOSE:
+    # - Generate "Your Move" section (ALWAYS generated, even with silence)
+    # - Generate "Gaps to Address" section (suppressed by silence)
+    # - Handle proceed-anyway accountability banner
+    #
+    # HARD CONSTRAINTS:
+    # - Silence suppresses gaps, NOT "Your Move"
+    # - No vague language ("some gaps," "most requirements")
+    # - Max 3 sentences in "Your Move"
+    # - One action only: Apply, Redirect, or Position
+    # - Strong Apply still gets strategic guidance
+    # ========================================================================
+    if COACHING_AVAILABLE and response_data.get("calibrated_gaps"):
+        print("🎯 STEP 6.5: COACHING CONTROLLER")
+
+        try:
+            calibrated_gaps = response_data.get("calibrated_gaps", {})
+            job_fit_recommendation = response_data.get("recommendation", "Apply")
+
+            # Map Job Fit recommendation to coaching-compatible format
+            recommendation_map = {
+                "Strongly Apply": "Strong Apply",
+                "Apply": "Apply",
+                "Apply with caution": "Apply with Caution",
+                "Conditional Apply": "Apply with Caution",
+                "Skip": "Do Not Apply",
+                "Do Not Apply": "Do Not Apply",
+            }
+            normalized_recommendation = recommendation_map.get(job_fit_recommendation, job_fit_recommendation)
+
+            # Prepare candidate resume data for coaching
+            candidate_resume = {
+                'summary': resume_data.get('summary', '') if resume_data else '',
+                'experience': resume_data.get('experience', []) if resume_data else [],
+                'domain': response_data.get('experience_analysis', {}).get('domain', ''),
+            }
+
+            # Prepare job requirements for coaching
+            job_requirements = {
+                'role_title': response_data.get('role_title', ''),
+                'job_description': response_data.get('job_description', ''),
+            }
+
+            # Generate coaching output
+            coaching_output = generate_coaching_output(
+                calibrated_gaps=calibrated_gaps,
+                job_fit_recommendation=normalized_recommendation,
+                candidate_resume=candidate_resume,
+                job_requirements=job_requirements,
+                user_proceeded_anyway=False  # TODO: Wire this from request
+            )
+
+            # Store coaching output in response
+            response_data["coaching_output"] = coaching_output
+
+            # Log coaching output
+            your_move = coaching_output.get('your_move')
+            gaps_to_address = coaching_output.get('gaps_to_address')
+            show_banner = coaching_output.get('show_accountability_banner', False)
+
+            if your_move:
+                print(f"   📣 Your Move: {your_move[:80]}...")
+            if gaps_to_address:
+                print(f"   📋 Gaps to Address: {len(gaps_to_address)} gap(s)")
+            else:
+                print(f"   🔇 Gaps to Address: suppressed")
+            if show_banner:
+                print(f"   ⚠️ Accountability banner: displayed")
+
+        except Exception as e:
+            print(f"   ⚠️ Coaching controller error (non-blocking): {e}")
+            import traceback
+            traceback.print_exc()
+            # Coaching errors are non-blocking - continue with existing flow
 
     return response_data
 
