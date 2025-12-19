@@ -3460,14 +3460,32 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
     # BACKEND SAFETY NET: Calculate role-specific experience from resume
     # Detects the role type from JD and uses appropriate experience calculator
+    # Enhanced with credibility scoring and leadership vs IC distinction
     if resume_data:
         # Detect the role type from the JD analysis
         detected_role_type = detect_role_type_from_jd(response_data)
         print(f"   🔍 Detected role type: {detected_role_type.upper()}")
 
-        # Calculate role-specific years from resume data
-        backend_role_years = calculate_role_specific_years(resume_data, detected_role_type)
-        print(f"   🔍 Backend {detected_role_type} years calculation: {backend_role_years:.1f} years")
+        # Check if JD requires leadership (for recruiting roles)
+        requires_leadership = jd_requires_leadership(response_data)
+        if detected_role_type == "recruiting":
+            print(f"   🔍 JD requires leadership: {requires_leadership}")
+
+        # Calculate role-specific years with appropriate method
+        if detected_role_type == "recruiting" and requires_leadership:
+            # Use leadership-aware recruiting calculator
+            backend_role_years = calculate_recruiting_leadership_years(resume_data, requires_leadership)
+            print(f"   🔍 Backend recruiting LEADERSHIP years: {backend_role_years:.1f} years")
+        else:
+            # Use credibility-adjusted calculation
+            backend_role_years, raw_years, breakdown = calculate_credibility_adjusted_years(
+                resume_data, detected_role_type
+            )
+            print(f"   🔍 Backend {detected_role_type} years: {backend_role_years:.1f} (raw: {raw_years:.1f})")
+
+            # Store credibility breakdown for debugging
+            if breakdown:
+                experience_analysis["credibility_breakdown"] = breakdown
 
         # If Claude didn't count role-specific experience OR significantly overcounted, use ours
         if candidate_years == 0 or (candidate_years > 3 and backend_role_years < candidate_years * 0.5):
@@ -3478,8 +3496,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             candidate_years = backend_role_years
             experience_analysis["candidate_years_adjusted_for_credibility"] = candidate_years
             experience_analysis["backend_override"] = True
-            experience_analysis["backend_override_reason"] = f"Backend calculated {backend_role_years:.1f} {detected_role_type}-specific years"
+            experience_analysis["backend_override_reason"] = f"Backend calculated {backend_role_years:.1f} {detected_role_type}-specific years (credibility-adjusted)"
             experience_analysis["detected_role_type"] = detected_role_type
+            if detected_role_type == "recruiting":
+                experience_analysis["leadership_required"] = requires_leadership
             response_data["experience_analysis"] = experience_analysis
 
     # Get current fit score from Claude
@@ -3766,6 +3786,306 @@ def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> 
             print(f"✅ Updated recommendation_rationale to: {tone}")
 
     return analysis_data
+
+
+# ============================================================================
+# COMPANY CREDIBILITY SCORING (4-TIER SYSTEM)
+# Per JOB_FIT_SCORING_SPEC.md and COMPETENCY_DIAGNOSTICS_INTEGRATION.md
+# ============================================================================
+
+# Well-known companies that get HIGH credibility (1.0x multiplier)
+HIGH_CREDIBILITY_COMPANIES = [
+    # FAANG / Big Tech
+    "google", "facebook", "meta", "amazon", "apple", "microsoft", "netflix",
+    # Other major tech
+    "uber", "airbnb", "stripe", "spotify", "linkedin", "twitter", "x corp",
+    "dropbox", "salesforce", "oracle", "adobe", "intuit", "workday", "servicenow",
+    "snowflake", "databricks", "figma", "notion", "slack", "zoom", "square", "block",
+    "coinbase", "robinhood", "plaid", "chime", "doordash", "instacart", "lyft",
+    # Enterprise / B2B
+    "ibm", "cisco", "vmware", "dell", "hp", "intel", "nvidia", "amd", "qualcomm",
+    "sap", "atlassian", "hubspot", "zendesk", "twilio", "datadog", "splunk",
+    # Finance
+    "goldman sachs", "goldman", "jp morgan", "jpmorgan", "morgan stanley",
+    "blackrock", "citadel", "two sigma", "jane street", "bridgewater",
+    "bank of america", "wells fargo", "citi", "citibank", "capital one",
+    # Consulting
+    "mckinsey", "bain", "bcg", "boston consulting", "deloitte", "accenture",
+    "pwc", "ey", "ernst & young", "kpmg",
+    # Other large companies
+    "disney", "warner", "comcast", "verizon", "att", "t-mobile",
+    "walmart", "target", "costco", "home depot", "nike", "coca-cola", "pepsico",
+    # Known startups / Series C+
+    "rippling", "ramp", "brex", "gusto", "deel", "remote", "lattice", "drata",
+    "retool", "vercel", "supabase", "planetscale", "neon", "linear", "raycast",
+    "headway", "heidrick", "heidrick & struggles"
+]
+
+
+def get_company_credibility_tier(company: str, title: str = "") -> str:
+    """
+    Determine company credibility tier based on company name and title.
+
+    Tiers:
+    - HIGH (1.0x): Public companies, Series B+, well-known brands, >50 employees
+    - MEDIUM (0.7x): Series A startups, 10-50 employees, regional players
+    - LOW (0.3x): Seed-stage (<10 employees), defunct companies, limited presence
+    - ZERO (0.0x): Title inflation (operations + PM/Eng), volunteer, side projects
+
+    Returns:
+        str: "HIGH", "MEDIUM", "LOW", or "ZERO"
+    """
+    company_lower = (company or "").lower().strip()
+    title_lower = (title or "").lower().strip()
+
+    # ZERO tier: Title inflation detection
+    # Operations/coordinator titles combined with PM/Engineering claims
+    operations_signals = ["operations", "coordinator", "assistant", "admin", "associate"]
+    pm_eng_titles = ["product manager", "engineer", "developer", "pm"]
+
+    has_ops_signal = any(op in title_lower for op in operations_signals)
+    claims_pm_eng = any(pm in title_lower for pm in pm_eng_titles)
+
+    if has_ops_signal and claims_pm_eng:
+        print(f"   🚨 Title inflation detected: '{title}' - ZERO credibility")
+        return "ZERO"
+
+    # ZERO tier: Volunteer/side project work
+    if "volunteer" in title_lower or "side project" in company_lower:
+        print(f"   🚨 Volunteer/side project: '{company}' - ZERO credibility")
+        return "ZERO"
+
+    # ZERO tier: Personal branding entities (solo consultancies presenting as companies)
+    if any(x in company_lower for x in ["consulting llc", "solutions llc", "ventures llc"]) and \
+       any(x in title_lower for x in ["founder", "ceo", "owner", "principal"]):
+        # This catches "John Smith Consulting LLC" type entries
+        print(f"   🚨 Personal branding entity suspected: '{company}' - ZERO credibility")
+        return "ZERO"
+
+    # HIGH tier: Well-known companies
+    if any(known in company_lower for known in HIGH_CREDIBILITY_COMPANIES):
+        return "HIGH"
+
+    # HIGH tier: Public company indicators
+    if any(x in company_lower for x in ["inc.", "corp.", "corporation", "plc", "publicly traded"]):
+        return "HIGH"
+
+    # HIGH tier: Series B+ indicators
+    if any(x in company_lower for x in ["series b", "series c", "series d", "series e"]):
+        return "HIGH"
+
+    # LOW tier: Seed/early stage indicators
+    if any(x in company_lower for x in ["seed", "pre-seed", "stealth", "founding team", "defunct", "shutdown", "bankrupt"]):
+        return "LOW"
+
+    # Default: MEDIUM (legitimate but not tier 1)
+    return "MEDIUM"
+
+
+def get_credibility_multiplier(tier: str) -> float:
+    """
+    Map credibility tier to experience multiplier.
+
+    Returns:
+        float: 1.0, 0.7, 0.3, or 0.0
+    """
+    multipliers = {
+        "HIGH": 1.0,
+        "MEDIUM": 0.7,
+        "LOW": 0.3,
+        "ZERO": 0.0
+    }
+    return multipliers.get(tier, 0.7)
+
+
+def calculate_credibility_adjusted_years(resume_data: dict, target_role_type: str = "pm") -> tuple:
+    """
+    Calculate role-specific years with company credibility adjustments.
+
+    Args:
+        resume_data: Parsed resume JSON with experience entries
+        target_role_type: Role type to calculate experience for
+
+    Returns:
+        tuple: (adjusted_years, raw_years, breakdown_list)
+    """
+    if not resume_data:
+        return 0.0, 0.0, []
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return 0.0, 0.0, []
+
+    # Role title patterns by type (same as calculate_role_specific_years)
+    role_patterns = {
+        "pm": ["product manager", "product lead", "product owner", "pm", "product director",
+               "head of product", "vp product", "cpo", "associate product manager",
+               "senior product manager", "staff product", "principal product",
+               "group product manager", "technical pm"],
+        "engineering": ["engineer", "developer", "swe", "software", "programmer",
+                       "cto", "tech lead", "architect", "devops"],
+        "recruiting": ["recruit", "talent acquisition", "ta director", "ta manager",
+                      "sourcer", "sourcing", "headhunter", "talent partner",
+                      "recruiting manager", "technical recruiter", "executive recruiter",
+                      "talent lead", "head of talent", "vp talent"],
+        "sales": ["sales", "account executive", "account manager", "business development",
+                 "revenue", "enterprise sales", "sales director", "vp sales"],
+        "marketing": ["marketing", "growth", "brand", "content", "digital marketing",
+                     "product marketing", "demand gen", "cmo", "head of marketing"],
+        "general": []
+    }
+
+    patterns = role_patterns.get(target_role_type, [])
+    raw_years = 0.0
+    adjusted_years = 0.0
+    breakdown = []
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").strip()
+        company = (exp.get("company", "") or "").strip()
+        dates = (exp.get("dates", "") or "").lower()
+
+        # Check if this role matches the target type (or general = all roles)
+        if target_role_type == "general":
+            matches_role = True
+        else:
+            matches_role = any(pattern in title.lower() for pattern in patterns)
+
+        if matches_role:
+            years = parse_experience_duration(dates)
+            raw_years += years
+
+            # Get credibility tier and multiplier
+            tier = get_company_credibility_tier(company, title)
+            multiplier = get_credibility_multiplier(tier)
+            adjusted = years * multiplier
+            adjusted_years += adjusted
+
+            breakdown.append({
+                "company": company,
+                "title": title,
+                "raw_years": years,
+                "tier": tier,
+                "multiplier": multiplier,
+                "adjusted_years": adjusted
+            })
+
+            print(f"   📊 {company} ({title}): {years:.1f}y × {multiplier} ({tier}) = {adjusted:.1f}y")
+
+    return round(adjusted_years, 1), round(raw_years, 1), breakdown
+
+
+# ============================================================================
+# LEADERSHIP VS IC DISTINCTION FOR RECRUITING ROLES
+# Per JOB_FIT_SCORING_SPEC.md
+# ============================================================================
+
+def calculate_recruiting_leadership_years(resume_data: dict, requires_leadership: bool = True) -> float:
+    """
+    Calculate recruiting experience with leadership vs IC distinction.
+
+    Leadership roles get full credit.
+    Senior IC roles get 70% credit for leadership requirements.
+    IC roles get 0% credit for leadership requirements.
+
+    Args:
+        resume_data: Parsed resume dictionary
+        requires_leadership: Whether the target JD requires leadership
+
+    Returns:
+        float: Total recruiting years (adjusted for leadership level)
+    """
+    if not resume_data:
+        return 0.0
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return 0.0
+
+    # Pattern definitions
+    leadership_patterns = [
+        "director", "head of", "vp", "vice president", "manager", "lead", "principal"
+    ]
+    senior_ic_patterns = [
+        "senior talent partner", "senior recruiter", "senior ta",
+        "staff recruiter", "principal recruiter"
+    ]
+    recruiting_patterns = [
+        "recruit", "talent acquisition", "sourcer", "headhunter",
+        "talent partner", "executive search", "ta "
+    ]
+
+    total_years = 0.0
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        company = (exp.get("company", "") or "").strip()
+        dates = (exp.get("dates", "") or "").lower()
+
+        # Skip if not a recruiting role
+        if not any(pattern in title for pattern in recruiting_patterns):
+            continue
+
+        years = parse_experience_duration(dates)
+
+        # Get company credibility for additional adjustment
+        tier = get_company_credibility_tier(company, title)
+        credibility_multiplier = get_credibility_multiplier(tier)
+
+        # Apply leadership/IC multipliers
+        is_leadership = any(pattern in title for pattern in leadership_patterns)
+        is_senior_ic = any(pattern in title for pattern in senior_ic_patterns)
+
+        if is_leadership:
+            # Leadership roles: full credit × credibility
+            level_multiplier = 1.0
+            level_label = "LEADERSHIP"
+        elif is_senior_ic:
+            # Senior IC: 70% credit if leadership required × credibility
+            level_multiplier = 0.7 if requires_leadership else 1.0
+            level_label = "SENIOR IC"
+        else:
+            # IC roles: no credit for leadership requirements
+            level_multiplier = 0.0 if requires_leadership else 1.0
+            level_label = "IC"
+
+        adjusted = years * level_multiplier * credibility_multiplier
+        total_years += adjusted
+
+        print(f"   📊 Recruiting: {exp.get('title', '')} @ {company}")
+        print(f"      {years:.1f}y × {level_multiplier} ({level_label}) × {credibility_multiplier} ({tier}) = {adjusted:.1f}y")
+
+    return round(total_years, 1)
+
+
+def jd_requires_leadership(response_data: dict) -> bool:
+    """
+    Detect if the JD requires leadership/management experience.
+
+    Args:
+        response_data: Claude response containing role analysis
+
+    Returns:
+        bool: True if leadership is required
+    """
+    role_title = (response_data.get("role_title", "") or "").lower()
+    jd_text = (response_data.get("job_description", "") or "").lower()
+
+    combined = f"{role_title} {jd_text}"
+
+    leadership_indicators = [
+        "director", "head of", "vp", "vice president", "manager",
+        "leadership", "lead a team", "manage a team", "build a team",
+        "people management", "direct reports", "team of"
+    ]
+
+    return any(indicator in combined for indicator in leadership_indicators)
 
 
 def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm") -> float:
@@ -4768,20 +5088,125 @@ IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or c
 - Manufacturing: "Production rebalancing and automation reduced operations and admin roles."
 - Media/Entertainment: "Cord-cutting and mergers drove cuts. Disney and Paramount each eliminated approximately 7K roles."
 
-### Step 7: Strategic Action (based on fit score)
-Write this in FIRST PERSON, directly to the candidate. Be specific and actionable.
+### Step 7: Strategic Action Framework (by score band)
+Write this in SECOND PERSON, directly to the candidate. Be specific and actionable.
 
 FORMATTING RULES:
 - Start directly with advice (no name greeting needed)
 - Use proper punctuation: periods, commas, colons. NO em dashes (—)
 - Keep it conversational but direct and honest
+- Use SECOND PERSON: "your background" NOT "Maya's background"
 
-Examples by fit score:
-- 70%+ fit: "Apply within 24 hours and immediately find the hiring manager or VP of [function] on LinkedIn. With [X] expected applicants, you cannot rely on the ATS alone. Your [specific strength] gives you an edge. Use it in your outreach."
-- 50-69% fit: "Apply, but do not just submit and hope. You are competing against candidates with more direct experience. Find someone at the company who can refer you internally. That is your only real path here."
-- <50% fit: "This is a long shot. [X]+ better-matched candidates means your cold application probably will not get seen. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit."
+=== STRATEGIC ACTION BY SCORE BAND ===
+
+**Band 1: 85-100% (Strong Apply)**
+Goal: Convert strength into immediate action
+Format: "Apply immediately. [Specific strength]. [Differentiation]. [Outreach strategy]."
+Length: 50-75 words
+Tone: Confident, action-oriented, no hesitation
+Example: "Apply immediately. Your Ripple consumer wallet experience is exactly what they need for this fintech payments role. Reach out to the hiring manager on LinkedIn today and lead with your 2.3M user scale."
+
+**Band 2: 70-84% (Apply)**
+Goal: Tighten positioning BEFORE applying
+Format: "Before applying, tighten your resume to close the remaining gaps. [Specific improvements to make]. Once improved, apply quickly and [outreach strategy]. Don't rely on the ATS alone."
+CRITICAL: MUST start with "Before applying" for this band
+Length: 75-100 words
+Tone: Coaching-first, strategic, solution-focused
+Example: "Before applying, tighten your resume to close the remaining gaps. Focus on sharpening fintech impact metrics, emphasizing scale (2.3M+ users), and highlighting cross-functional leadership in payments infrastructure. Once improved, apply within 24 hours and reach out to the hiring manager with your Ripple Labs experience. Don't rely on the ATS to do the work."
+
+**Band 3: 55-69% (Consider) or 40-54% (Apply with Caution)**
+Goal: Honest assessment + concrete weekly action plan
+Format includes YOUR MOVE THIS WEEK section with specific alternatives
+Length: 125-150 words
+Tone: Honest about gaps, solution-focused, strategic
+Example:
+"You have strong consumer product experience at scale, but this role favors candidates with direct customer support product ownership and chatbot experience. The opportunity is viable if you clearly position your consumer impact and experimentation depth.
+
+YOUR MOVE THIS WEEK:
+1. Target these roles: Consumer PM at Intercom, Growth PM at Zendesk, Product Manager at Help Scout
+2. Add this evidence: Quantify any customer-facing features you owned, emphasize cross-functional work with support teams
+3. If still interested in THIS role: Add self-service initiatives and chatbot exposure to your resume
+
+Before applying to this role, update your resume to emphasize customer problem-solving and support team partnerships. Once positioned correctly, apply and reach out to the hiring manager."
+
+**Band 4: 25-39% (Long Shot)**
+Goal: Reality check + concrete alternative path
+Format: Includes timeline and specific readiness milestones
+Length: 100-125 words
+Tone: Direct, honest, helpful redirection with timeline
+Example:
+"This is a significant stretch for your current experience level. The role requires 10+ years at Staff/Principal scope with multi-product platform ownership. You're at 8 years Senior-level with single-product focus.
+
+YOUR MOVE THIS WEEK:
+1. Target these roles: Senior PM at Stripe, Atlassian, Datadog; Staff PM at smaller Series B companies
+2. Build this evidence: Lead a multi-quarter platform initiative, partner with 3+ product teams, influence at VP level
+3. Deprioritize: Stop applying to Principal/Staff roles at FAANG immediately
+
+Timeline: You'll be competitive for Staff PM in 12-18 months with multi-product platform scope and proven organizational influence."
+
+**Band 5: 0-24% (Do Not Apply)**
+Goal: Clear "no" + immediate redirection
+Format: "Do not apply to this role. [Clear explanation why]. YOUR MOVE THIS WEEK: [3 specific matching roles]."
+Length: 75-100 words
+Tone: Direct, no ambiguity, helpful redirection
+Example:
+"Do not apply to this role. This is a Senior Backend Engineer position requiring 5+ years of hands-on backend development. Your background is Senior Product Management, not backend engineering.
+
+YOUR MOVE THIS WEEK:
+1. Target these roles: Senior PM at Uber, DoorDash, Instacart; Group PM at Square, Stripe
+2. Focus on: Delivery, logistics, or platform companies where your 8 years of product leadership are directly relevant
+3. Deprioritize: Engineering, data science, or technical IC roles entirely"
 
 The strategic_action field should feel like a recruiter giving honest, direct advice.
+
+=== CANONICAL MESSAGING PATTERNS (SENSITIVE FEEDBACK) ===
+
+Use these EXACT phrasings for sensitive topics. Single, repeatable voice for consistency.
+
+**Pattern 1: Title Inflation**
+Use when: Resume title exceeds demonstrated scope
+Canonical phrasing:
+"Hiring managers will evaluate this experience at a different scope than the title suggests. That gap affects senior-level competitiveness."
+When to add context:
+- If unverifiable company: Add "because the company cannot be validated at scale"
+- If missing scope signals: Add "because your resume doesn't show [team size/budget/roadmap]"
+NEVER say: "Your title is inflated", "This looks suspicious", "Companies won't believe this"
+
+**Pattern 2: Unverifiable Company**
+Use when: Cannot validate company at claimed scale
+Canonical phrasing:
+"This company cannot be validated at the scale your role implies. Hiring managers will evaluate your experience as individual contribution rather than senior leadership. Lead with verifiable scale companies in your positioning."
+NEVER say: "This company doesn't exist", "This looks like a fake company", "This is a red flag"
+
+**Pattern 3: Career Switcher (Adjacent vs Direct)**
+Use when: Resume shows adjacent exposure, not direct ownership
+Canonical phrasing:
+"Your background shows adjacent exposure to [function], not direct ownership. Senior roles require demonstrated decision-making in [specific area]."
+NEVER say: "You're not a real [role]", "This isn't legitimate experience"
+
+**Pattern 4: Competency Gap**
+Use when: Demonstrated level < Required level
+Canonical phrasing:
+"This role requires [required level] competencies. Your background shows [demonstrated level] evidence. The gap is in [specific dimensions]."
+NEVER say: "You're not senior enough", "You're underqualified", "You don't have the skills"
+
+=== FORBIDDEN LANGUAGE (NEVER USE) ===
+- "You're not good enough"
+- "This is toxic to your career"
+- "Companies won't hire you because..."
+- "You should be more confident"
+- Any moral judgments about work choices
+- Political framing
+- Identity-based commentary
+
+=== APPROVED LANGUAGE (USE INSTEAD) ===
+- "This role requires X. Your background shows Y."
+- "Market reality: Companies prioritize Z."
+- "Your positioning should lead with A, not B."
+- "Target these specific roles to close gaps."
+- Assessment of market alignment, not personal worth
+- Second-person coaching tone
+- Receipts-based logic
 
 === THEN TRADITIONAL JD ANALYSIS ===
 

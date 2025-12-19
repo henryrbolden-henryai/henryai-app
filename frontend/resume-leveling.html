@@ -97,6 +97,19 @@
             margin-bottom: 40px;
         }
 
+        /* Framing Statement */
+        .framing-statement {
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+            margin-bottom: 24px;
+            text-align: center;
+            padding: 12px 20px;
+            background: rgba(34, 211, 238, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid var(--color-accent);
+        }
+
         /* Level Assessment Card */
         .level-card {
             background: var(--color-surface);
@@ -837,6 +850,11 @@
 
         <!-- Main Content -->
         <div id="mainContent" style="display: none;">
+            <!-- Framing Statement - Per DEPLOYMENT_READY_SUMMARY.md -->
+            <p class="framing-statement">
+                This is how hiring managers level you, not how LinkedIn does.
+            </p>
+
             <!-- Level Assessment Card -->
             <div class="level-card" id="levelCard">
                 <div class="level-header">
