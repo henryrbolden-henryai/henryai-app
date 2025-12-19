@@ -1483,12 +1483,50 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
     # ========================================================================
     # CHECK 3: Seniority Scope Mismatch
     # If JD requires VP-level and candidate is mid-level, fail
+    #
+    # CRITICAL FIX: Check ROLE TITLE first, not full JD text
+    # Role titles like "Engineering Manager" should NOT trigger VP+ detection
+    # even if the JD mentions "chief architect" in requirements
     # ========================================================================
+
+    # Manager-level role titles that should NEVER trigger VP+ detection
+    manager_level_titles = [
+        "engineering manager", "product manager", "program manager", "project manager",
+        "senior manager", "manager of", "team lead", "tech lead", "technical lead",
+        "staff engineer", "senior engineer", "principal engineer", "senior staff",
+        "senior product manager", "group product manager", "staff product manager"
+    ]
+
+    # Check if role title indicates Manager-level (NOT VP+)
+    is_manager_level_role = any(title in role_title for title in manager_level_titles)
+
+    if is_manager_level_role:
+        # GUARDRAIL: Manager-level roles NEVER trigger VP+ eligibility failure
+        print(f"✅ Role title '{role_title}' is Manager-level - skipping VP+ check")
+        print(f"✅ ELIGIBILITY GATE PASSED")
+        return result
+
+    # Only check for VP+ requirements if role title suggests executive level
     executive_levels = ["vp", "vice president", "svp", "evp", "chief", "c-suite", "cxo", "ceo", "cfo", "cto", "coo", "cmo"]
     director_levels = ["director", "senior director", "head of"]
 
-    jd_requires_executive = any(level in combined_jd for level in executive_levels)
-    jd_requires_director = any(level in combined_jd for level in director_levels)
+    # Check ROLE TITLE first for executive level, not full JD
+    # This prevents false positives from JD text mentioning "chief architect" etc.
+    jd_requires_executive = any(level in role_title for level in executive_levels)
+
+    # Only fall back to JD text if role title is ambiguous AND title contains director+
+    if not jd_requires_executive:
+        jd_requires_director = any(level in role_title for level in director_levels)
+        # If it's a Director role, don't require executive experience
+        if jd_requires_director:
+            print(f"✅ Role title is Director-level - not requiring VP+ experience")
+            print(f"✅ ELIGIBILITY GATE PASSED")
+            return result
+
+    # Log what triggered the executive detection
+    if jd_requires_executive:
+        triggering_level = [level for level in executive_levels if level in role_title]
+        print(f"🔍 Executive level detected in role title: {triggering_level}")
 
     # Check candidate's highest level
     candidate_has_executive = any(level in combined_resume for level in executive_levels)
@@ -1498,6 +1536,8 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
         # Check if they have at least director level
         if not candidate_has_director:
             print(f"🚫 ELIGIBILITY GATE FAILED: Seniority scope - VP+ role, candidate lacks executive/director experience")
+            print(f"   Role title: {role_title}")
+            print(f"   Triggering level: {[l for l in executive_levels if l in role_title]}")
 
             result["eligible"] = False
             result["reason"] = "This is a VP or executive-level role. Your background does not include executive or director-level experience. Do not apply."

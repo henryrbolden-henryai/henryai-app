@@ -36,6 +36,10 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
     Returns:
         List of red flags with severity (stop_search | proceed_with_caution)
     """
+    # Defensive: handle non-dict input
+    if not candidate_experience or not isinstance(candidate_experience, dict):
+        return []
+
     flags = []
 
     # =========================================================================
@@ -178,13 +182,25 @@ def detect_fabrication_risk(experience: Dict[str, Any]) -> bool:
     - Responsibilities exceed typical scope
     - Scale claims inconsistent internally
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return False
+
     # Already implemented in signal_detectors, but add additional checks here
     if detect_scale_inconsistency(experience):
         return True
 
     roles = experience.get('roles', []) or experience.get('experience', [])
 
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list):
+        return False
+
     for role in roles:
+        # Defensive: skip non-dict roles
+        if not isinstance(role, dict):
+            continue
+
         company_size = role.get('company_size', 0)
         claimed_impact = extract_revenue_impact(role)
 
@@ -201,6 +217,10 @@ def detect_fabrication_risk(experience: Dict[str, Any]) -> bool:
     # Check timeline math
     total_years_claimed = 0
     for role in roles:
+        # Defensive: skip non-dict roles
+        if not isinstance(role, dict):
+            continue
+
         duration = role.get('duration', 0)
         if isinstance(duration, (int, float)):
             total_years_claimed += duration
@@ -225,13 +245,21 @@ def analyze_tenure_pattern(experience: Dict[str, Any]) -> Dict[str, Any]:
             'pattern': 'stable'|'mixed'|'hopping'
         }
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return {'avg_tenure': 0, 'consecutive_short': 0, 'pattern': 'unknown'}
+
     roles = experience.get('roles', []) or experience.get('experience', [])
 
-    if not roles:
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list) or not roles:
         return {'avg_tenure': 0, 'consecutive_short': 0, 'pattern': 'unknown'}
 
     tenures = []
     for role in roles:
+        # Defensive: skip non-dict roles
+        if not isinstance(role, dict):
+            continue
         duration = role.get('duration')
         if duration is not None:
             tenures.append(float(duration))
@@ -275,11 +303,23 @@ def detect_title_inflation(experience: Dict[str, Any]) -> Dict[str, Any]:
             'actual_level': str
         }
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return {'detected': False, 'reason': '', 'actual_level': ''}
+
     from .signal_detectors import extract_team_size
 
     roles = experience.get('roles', []) or experience.get('experience', [])
 
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list):
+        return {'detected': False, 'reason': '', 'actual_level': ''}
+
     for role in roles:
+        # Defensive: skip non-dict roles
+        if not isinstance(role, dict):
+            continue
+
         title = (role.get('title', '') or '').lower()
         company_size = role.get('company_size', 0)
         team_size = extract_team_size({'roles': [role]})
@@ -336,15 +376,25 @@ def detect_overqualified_risk(experience: Dict[str, Any]) -> Dict[str, Any]:
     """
     Detects if candidate might be perceived as overqualified.
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return {'detected': False, 'reason': ''}
+
     from .signal_detectors import extract_team_size, detect_org_level_influence
 
     roles = experience.get('roles', []) or experience.get('experience', [])
 
-    if not roles:
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list) or not roles:
         return {'detected': False, 'reason': ''}
 
     # Check most recent role scope
     recent_role = roles[0] if roles else {}
+
+    # Defensive: skip if recent_role is not a dict
+    if not isinstance(recent_role, dict):
+        return {'detected': False, 'reason': ''}
+
     recent_title = (recent_role.get('title', '') or '').lower()
     recent_team_size = extract_team_size({'roles': [recent_role]})
 
@@ -367,13 +417,18 @@ def detect_career_gaps(experience: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     Returns list of gaps > 6 months.
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return []
+
     import re
     from datetime import datetime
 
     roles = experience.get('roles', []) or experience.get('experience', [])
     gaps = []
 
-    if len(roles) < 2:
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list) or len(roles) < 2:
         return gaps
 
     def parse_date(date_str):
@@ -400,6 +455,10 @@ def detect_career_gaps(experience: Dict[str, Any]) -> List[Dict[str, Any]]:
     for i in range(len(roles) - 1):
         current_role = roles[i]
         previous_role = roles[i + 1]
+
+        # Defensive: skip non-dict roles
+        if not isinstance(current_role, dict) or not isinstance(previous_role, dict):
+            continue
 
         current_start = parse_date(
             current_role.get('start_date') or
@@ -428,6 +487,10 @@ def detect_decreasing_responsibility(experience: Dict[str, Any]) -> bool:
     """
     Detects if responsibility/scope has decreased over career.
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return False
+
     from .signal_detectors import analyze_scope_trajectory
 
     trajectory = analyze_scope_trajectory(experience)
@@ -442,13 +505,21 @@ def analyze_company_pattern(experience: Dict[str, Any]) -> Dict[str, Any]:
     - All FAANG → tiny startup
     - All startup → big tech
     """
+    # Defensive: handle non-dict input
+    if not experience or not isinstance(experience, dict):
+        return {'extreme_mismatch': False, 'reason': '', 'detail': ''}
+
     roles = experience.get('roles', []) or experience.get('experience', [])
 
-    if len(roles) < 2:
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list) or len(roles) < 2:
         return {'extreme_mismatch': False, 'reason': '', 'detail': ''}
 
     company_sizes = []
     for role in roles:
+        # Defensive: skip non-dict roles
+        if not isinstance(role, dict):
+            continue
         size = role.get('company_size')
         if size:
             company_sizes.append(size)
@@ -460,9 +531,11 @@ def analyze_company_pattern(experience: Dict[str, Any]) -> Dict[str, Any]:
 
     # Check for big tech only background
     big_tech_names = ['google', 'meta', 'facebook', 'amazon', 'apple', 'microsoft', 'netflix']
-    all_big_tech = all(
+    # Defensive: filter to only dict roles
+    dict_roles = [r for r in roles if isinstance(r, dict)]
+    all_big_tech = dict_roles and all(
         any(bt in (role.get('company', '') or '').lower() for bt in big_tech_names)
-        for role in roles
+        for role in dict_roles
     )
 
     if all_big_tech:
