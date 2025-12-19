@@ -581,6 +581,241 @@
             margin-top: 6px;
         }
 
+        /* How Recruiters Search Section */
+        .how-recruiters-search {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 3px solid var(--color-linkedin);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .how-recruiters-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .how-recruiters-header:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .how-recruiters-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .how-recruiters-title::before {
+            content: "?";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 119, 181, 0.2);
+            color: var(--color-linkedin);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .how-recruiters-chevron {
+            color: var(--color-text-secondary);
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .how-recruiters-search.collapsed .how-recruiters-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .how-recruiters-content {
+            padding: 0 20px 20px;
+            transition: max-height 0.3s ease, opacity 0.2s ease;
+            overflow: hidden;
+        }
+
+        .how-recruiters-search.collapsed .how-recruiters-content {
+            max-height: 0 !important;
+            padding-top: 0;
+            padding-bottom: 0;
+            opacity: 0;
+        }
+
+        .how-recruiters-content p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .how-recruiters-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .how-recruiters-content strong {
+            color: var(--color-text);
+        }
+
+        .three-second-test {
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+
+        .three-second-test h4 {
+            font-size: 0.85rem;
+            color: var(--color-linkedin);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .three-second-test ol {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .three-second-test li {
+            margin-bottom: 4px;
+        }
+
+        /* What This Score Means Section */
+        .score-context {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .score-context-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+        }
+
+        .score-context-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--color-text);
+            margin-bottom: 8px;
+        }
+
+        .score-context-encouragement {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--color-success);
+            font-style: italic;
+        }
+
+        /* Profile Gaps Section */
+        .profile-gaps-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-warning);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .profile-gaps-header {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            color: var(--color-text);
+        }
+
+        .profile-gaps-intro {
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .gap-item {
+            background: var(--color-surface-elevated);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .gap-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .gap-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .gap-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .gap-icon.scope { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .gap-icon.evidence { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .gap-icon.credibility { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .gap-icon.positioning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .gap-icon.recency { background: rgba(34, 211, 238, 0.2); color: #22d3ee; }
+
+        .gap-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .gap-description {
+            color: var(--color-text);
+            margin-bottom: 12px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .gap-why {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            padding-left: 16px;
+            border-left: 2px solid var(--color-border);
+            line-height: 1.5;
+        }
+
+        .gap-fix {
+            color: var(--color-text);
+            font-size: 0.9rem;
+            padding: 12px;
+            background: rgba(34, 211, 238, 0.1);
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .gap-fix strong {
+            color: var(--color-accent);
+            font-weight: 600;
+        }
+
         .btn-upload {
             padding: 14px 28px;
             background: var(--color-linkedin);
@@ -644,6 +879,26 @@
 
             <!-- Score Content -->
             <div id="scoreContent" style="display: none;">
+                <!-- How Recruiters Search Section -->
+                <div class="how-recruiters-search collapsed" id="howRecruitersSearch">
+                    <div class="how-recruiters-header" onclick="toggleHowRecruitersSearch()">
+                        <span class="how-recruiters-title">How Recruiters Use LinkedIn</span>
+                        <span class="how-recruiters-chevron">▼</span>
+                    </div>
+                    <div class="how-recruiters-content">
+                        <p>Recruiters use LinkedIn like a search engine. They type keywords (e.g., "product manager fintech") and scan the first 20 results. <strong>Your score reflects how likely you are to (1) show up in that search and (2) get clicked.</strong></p>
+                        <div class="three-second-test">
+                            <h4>The 3-Second Test</h4>
+                            <ol>
+                                <li><strong>Headline:</strong> Does this person do what I'm hiring for?</li>
+                                <li><strong>Experience:</strong> Do I recognize these companies?</li>
+                                <li><strong>Recency:</strong> Is this profile active or stale?</li>
+                            </ol>
+                        </div>
+                        <p style="margin-top: 12px;">If you pass the 3-second test, they read your About section and skim your bullets. This is where they decide whether to message you.</p>
+                    </div>
+                </div>
+
                 <!-- Score Header -->
                 <div class="score-header">
                     <div class="score-circle" style="--score: 68">
@@ -652,6 +907,22 @@
                     <div class="score-info">
                         <h2 id="scoreLabel">Needs Work</h2>
                         <p class="score-summary" id="scoreSummary">Recruiters will find you but won't click. Fix the items below.</p>
+                    </div>
+                </div>
+
+                <!-- What This Score Means Section -->
+                <div class="score-context" id="scoreContextSection">
+                    <h4 class="score-context-title">What This Score Means</h4>
+                    <p class="score-context-text" id="scoreContextText">—</p>
+                    <p class="score-context-encouragement" id="scoreContextEncouragement"></p>
+                </div>
+
+                <!-- Profile Gaps Section (if any detected) -->
+                <div class="profile-gaps-section" id="profileGapsSection" style="display: none;">
+                    <h3 class="profile-gaps-header">What's Missing From Your Profile</h3>
+                    <p class="profile-gaps-intro" id="profileGapsIntro">Your profile has gaps that are limiting recruiter engagement:</p>
+                    <div id="profileGapsList">
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
 
@@ -682,6 +953,26 @@
 
     <script>
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // Toggle How Recruiters Search section
+        function toggleHowRecruitersSearch() {
+            const section = document.getElementById('howRecruitersSearch');
+            section.classList.toggle('collapsed');
+            sessionStorage.setItem('howRecruitersCollapsed', section.classList.contains('collapsed'));
+        }
+
+        // Initialize How Recruiters Search section (expand on first visit)
+        function initHowRecruitersSection() {
+            const hasSeenScore = sessionStorage.getItem('hasSeenLinkedInScore');
+            const userPref = sessionStorage.getItem('howRecruitersCollapsed');
+
+            if (!hasSeenScore) {
+                document.getElementById('howRecruitersSearch').classList.remove('collapsed');
+                sessionStorage.setItem('hasSeenLinkedInScore', 'true');
+            } else if (userPref === 'false') {
+                document.getElementById('howRecruitersSearch').classList.remove('collapsed');
+            }
+        }
 
         // Section configuration with weights and scoring criteria
         const SECTION_CONFIG = {
@@ -1219,16 +1510,117 @@
             // Sort fixes by severity
             fixes.sort((a, b) => SEVERITY[a.severity].order - SEVERITY[b.severity].order);
 
+            // ============ DETECT PROFILE GAPS ============
+            const profileGaps = detectProfileGaps(linkedin, sectionScores, experience);
+
             return {
                 overall,
                 sectionScores,
                 sectionDetails,
-                fixes: fixes.slice(0, 8) // Max 8 fixes to avoid overwhelm
+                fixes: fixes.slice(0, 8), // Max 8 fixes to avoid overwhelm
+                profileGaps: profileGaps.slice(0, 5) // Max 5 gaps
             };
         }
 
+        // Detect strategic profile gaps per LINKEDIN_SCORING_SPEC.md
+        function detectProfileGaps(linkedin, sectionScores, experience) {
+            const gaps = [];
+
+            // 1. SCOPE GAP - Senior titles without evidence of scale
+            const seniorTitles = /\b(senior|lead|staff|principal|director|vp|head|chief|manager)\b/i;
+            const currentTitle = experience[0]?.title || linkedin.headline || '';
+            const hasSeniorTitle = seniorTitles.test(currentTitle);
+
+            if (hasSeniorTitle) {
+                const allBullets = experience.map(e => e.description || '').join(' ');
+                const hasScope = /\b(\d+[-\s]person|\d+\s*team|led\s+\d+|managed\s+\d+|\$\d+[MBK]?\s*(budget|revenue)|cross-functional|org-wide|company-wide)/i.test(allBullets);
+
+                if (!hasScope) {
+                    gaps.push({
+                        type: 'Scope',
+                        icon: '!',
+                        description: 'Your profile does not demonstrate senior-level ownership or decision-making authority.',
+                        why: 'Recruiters use LinkedIn to quickly assess scope. Without clear signals of scale and authority, senior roles are less likely to convert to outreach.',
+                        fix: "Add bullets that quantify team size, budget, or geographic scope. Use ownership language: 'Led 12-person team', 'Owned $5M budget', 'Drove company-wide initiative'."
+                    });
+                }
+            }
+
+            // 2. EVIDENCE GAP - Lack of quantified outcomes
+            const allBullets = experience.map(e => e.description || '').join(' ');
+            const hasMetrics = /\d+[%+]?|\$\d+[MBK]?|\d+x|\d+\s*(people|hires|team|revenue|growth|million|billion|users|customers)/i.test(allBullets);
+
+            if (!hasMetrics && experience.length > 0) {
+                gaps.push({
+                    type: 'Evidence',
+                    icon: '?',
+                    description: 'Your experience describes what you worked on, but not the outcomes you drove.',
+                    why: 'Recruiters rely on quantified results to validate impact. Without metrics, they assume your work had limited business effect.',
+                    fix: "Rewrite bullets to follow PAR format (Problem, Action, Result). Add specific metrics: revenue impact, cost savings, efficiency gains, user growth. Example: 'Increased user engagement by 40% (500K→700K MAU) through product roadmap prioritization'."
+                });
+            }
+
+            // 3. CREDIBILITY GAP - Unverifiable companies or mismatches
+            const smallCompanySignals = experience.filter(e => {
+                const desc = (e.description || '').toLowerCase();
+                const company = (e.company || '').toLowerCase();
+                return !e.company_url && !company.includes('google') && !company.includes('meta') && !company.includes('amazon');
+            }).length;
+
+            if (smallCompanySignals >= 2) {
+                gaps.push({
+                    type: 'Credibility',
+                    icon: '✗',
+                    description: 'Some roles on your profile are difficult to validate, which weakens recruiter confidence in scope and scale.',
+                    why: 'Recruiters verify company legitimacy to assess the quality of your experience. Unverifiable companies raise questions about title inflation or exaggeration.',
+                    fix: "Add company URLs to all roles. If the company is defunct or very small, add context in your bullet: 'Series A fintech startup, $3M funding, 15 employees' or 'Acquired by [Company] in 2022'."
+                });
+            }
+
+            // 4. POSITIONING GAP - Headline and About don't clearly answer "what you do"
+            const headline = linkedin.headline || '';
+            const about = linkedin.summary || '';
+            const hasFunction = /\b(manager|director|lead|senior|engineer|developer|analyst|specialist|consultant|head|vp|chief|founder|recruiter|designer)\b/i.test(headline);
+            const hasSpecialization = /\b(saas|b2b|fintech|healthcare|enterprise|growth|platform|infrastructure|mobile|web|data|product|marketing|sales|engineering)\b/i.test(headline + ' ' + about);
+
+            if (!hasFunction || (!hasSpecialization && headline.length > 0)) {
+                gaps.push({
+                    type: 'Positioning',
+                    icon: '◎',
+                    description: 'Your profile does not clearly position you for a specific role or niche, making it harder for recruiters to match you to open roles.',
+                    why: "Recruiters search for specific terms like 'product manager fintech' or 'backend engineer python'. Generic positioning makes you invisible in search and unclear in fit.",
+                    fix: "Choose a primary function (Product Manager, not 'PM/Engineer/Consultant') and specialize it (B2B SaaS, Healthcare Tech, Fintech). Update your headline, About, and skills to consistently reinforce this positioning."
+                });
+            }
+
+            // 5. RECENCY GAP - Profile appears inactive
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            let daysSinceUpdate = 999;
+            if (profile.linkedin_last_updated) {
+                daysSinceUpdate = (Date.now() - new Date(profile.linkedin_last_updated)) / (1000 * 60 * 60 * 24);
+            }
+
+            const currentRoleDates = experience[0]?.dates || '';
+            const hasCurrentRole = /present|current|now|\d{4}\s*-\s*$/i.test(currentRoleDates);
+
+            if (daysSinceUpdate > 180 || (!hasCurrentRole && experience.length > 0)) {
+                gaps.push({
+                    type: 'Recency',
+                    icon: '⏱',
+                    description: 'Your profile appears inactive, which reduces how often it is surfaced in recruiter searches.',
+                    why: "LinkedIn's algorithm prioritizes active profiles in search results. Stale profiles rank lower and signal to recruiters that you may not be actively looking or engaged.",
+                    fix: "Update your profile monthly (even small changes like adding a skill or tweaking a bullet). Engage with content (like, comment, share) at least once per week. If you're between roles, add a 'current' entry like 'Open to Product Management Opportunities'."
+                });
+            }
+
+            return gaps;
+        }
+
         function displayScore(result) {
-            const { overall, sectionScores, sectionDetails, fixes } = result;
+            const { overall, sectionScores, sectionDetails, fixes, profileGaps } = result;
+
+            // Initialize How Recruiters Search section
+            initHowRecruitersSection();
 
             // Update overall score
             document.getElementById('overallScore').textContent = overall;
@@ -1267,6 +1659,12 @@
             document.getElementById('scoreLabel').textContent = label;
             document.getElementById('scoreSummary').textContent = summary;
 
+            // Render score context section (What This Score Means)
+            renderScoreContext(overall);
+
+            // Render profile gaps section
+            renderProfileGaps(profileGaps);
+
             // Render section cards
             renderSectionCards(sectionScores, sectionDetails);
 
@@ -1282,6 +1680,58 @@
                     header.closest('.section-card').classList.toggle('expanded');
                 });
             });
+        }
+
+        // Render "What This Score Means" with outcome-based messaging
+        function renderScoreContext(score) {
+            let contextText = '';
+            let encouragement = '';
+
+            if (score >= 80) {
+                contextText = "You're in the top 20% of profiles. Recruiters will find you, click your profile, and likely reach out. Focus on staying fresh (update every 30 days).";
+                encouragement = "You're well-positioned for inbound recruiter interest. The polish items below can make you exceptional.";
+            } else if (score >= 60) {
+                contextText = "You're findable but not compelling. Recruiters will see you in search results but may skip to the next person. Fix the high-priority items to stand out.";
+                encouragement = "A few targeted improvements will significantly increase your click-through rate from recruiter searches.";
+            } else if (score >= 40) {
+                contextText = "You're barely visible. Most recruiters won't find you in search, and if they do, they won't click. Fix the critical issues to start getting noticed.";
+                encouragement = "The fixes below are your roadmap to visibility. Start with the critical items—they'll have the biggest impact.";
+            } else {
+                contextText = "Your profile is essentially invisible. LinkedIn's algorithm won't surface you in recruiter searches. Start with the critical items immediately.";
+                encouragement = "Don't be discouraged—every profile starts somewhere. Focus on the basics and you'll see improvement quickly.";
+            }
+
+            document.getElementById('scoreContextText').textContent = contextText;
+            document.getElementById('scoreContextEncouragement').textContent = encouragement;
+        }
+
+        // Render profile gaps section
+        function renderProfileGaps(gaps) {
+            if (!gaps || gaps.length === 0) {
+                document.getElementById('profileGapsSection').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('profileGapsSection').style.display = 'block';
+            document.getElementById('profileGapsIntro').textContent =
+                `Your profile has ${gaps.length} strategic gap${gaps.length > 1 ? 's' : ''} that ${gaps.length > 1 ? 'are' : 'is'} limiting recruiter engagement:`;
+
+            const gapsHtml = gaps.map(gap => {
+                const gapTypeClass = gap.type.toLowerCase();
+                return `
+                    <div class="gap-item">
+                        <div class="gap-header">
+                            <span class="gap-icon ${gapTypeClass}">${gap.icon}</span>
+                            <span class="gap-title">${gap.type} Gap</span>
+                        </div>
+                        <p class="gap-description">${gap.description}</p>
+                        <p class="gap-why">${gap.why}</p>
+                        <div class="gap-fix"><strong>How to fix:</strong> ${gap.fix}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('profileGapsList').innerHTML = gapsHtml;
         }
 
         function renderSectionCards(sectionScores, sectionDetails) {
