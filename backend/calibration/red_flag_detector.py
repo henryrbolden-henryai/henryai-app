@@ -36,8 +36,22 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
     Returns:
         List of red flags with severity (stop_search | proceed_with_caution)
     """
-    # Defensive: handle non-dict input
+    # ==========================================================================
+    # HARD BAIL: This module is DIAGNOSTIC ONLY - must be crash-proof
+    # If input is invalid, return empty list immediately. No partial parsing.
+    # ==========================================================================
     if not candidate_experience or not isinstance(candidate_experience, dict):
+        return []
+
+    # HARD BAIL: Validate experience/roles is List[Dict]
+    roles = candidate_experience.get('roles', []) or candidate_experience.get('experience', [])
+    if not isinstance(roles, list):
+        # Not a list - bail immediately
+        return []
+
+    # HARD BAIL: If roles contains ANY non-dict items, bail
+    # This catches LinkedIn free text and malformed data
+    if roles and not all(isinstance(r, dict) for r in roles):
         return []
 
     flags = []

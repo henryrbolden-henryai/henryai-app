@@ -149,6 +149,10 @@ load_question_bank()
 # NON-TRANSFERABLE DOMAINS - GLOBAL CONSTANT
 # Per Eligibility Gate Enforcement Spec: These domains require direct experience.
 # No amount of adjacent experience substitutes for domain-specific expertise.
+#
+# CRITICAL FIX: Only fire on EXPLICIT requirement language, not mentions.
+# Mentions ≠ Requirements. These gates are now DISABLED for Manager-level roles
+# and require ownership language (e.g., "FDA compliance lead", "SOX owner").
 # ============================================================================
 NON_TRANSFERABLE_DOMAINS = [
     # Executive Search at VP+/C-suite level
@@ -156,35 +160,51 @@ NON_TRANSFERABLE_DOMAINS = [
         "domain": "executive_search",
         "levels": ["vp", "vice president", "c-suite", "chief", "svp", "evp", "cxo"],
         "description": "Executive Search at VP+ or C-suite level",
-        "keywords": ["executive search", "executive recruiting", "c-suite", "vp-level", "retained search", "executive placement"]
+        # EXPLICIT ownership keywords only - must indicate primary role responsibility
+        "keywords": ["executive search", "executive recruiting", "retained search", "executive placement"],
+        # Keywords that REQUIRE context (not standalone matches)
+        "require_ownership": True
     },
     # People Leadership at Director+ level
     {
         "domain": "people_leadership",
         "levels": ["director", "senior director", "vp", "vice president", "head of"],
         "description": "People Leadership at Director+ level",
-        "keywords": ["people leadership", "direct reports", "team management", "people management", "managing teams"]
+        "keywords": ["people leadership", "direct reports", "team management", "people management", "managing teams"],
+        "require_ownership": True
     },
     # Core Software Engineering (not PM, not design, not adjacent)
     {
         "domain": "core_software_engineering",
         "levels": ["senior", "staff", "principal", "lead", "architect"],
         "description": "Core Software Engineering (hands-on coding)",
-        "keywords": ["software engineer", "software developer", "backend engineer", "frontend engineer", "full stack", "systems engineer", "platform engineer"]
+        "keywords": ["software engineer", "software developer", "backend engineer", "frontend engineer", "full stack", "systems engineer", "platform engineer"],
+        "require_ownership": False  # Title match is sufficient
     },
     # ML/AI Research (not just "used AI tools")
     {
         "domain": "ml_ai_research",
         "levels": ["research", "scientist", "senior", "staff", "principal"],
         "description": "ML/AI Research (publish papers, build models)",
-        "keywords": ["machine learning", "deep learning", "ai research", "ml engineer", "research scientist", "nlp", "computer vision", "neural network"]
+        "keywords": ["machine learning engineer", "deep learning engineer", "ai research", "ml engineer", "research scientist", "computer vision engineer"],
+        "require_ownership": True
     },
     # Regulated Clinical or Finance leadership
+    # CRITICAL: This gate was firing on garbage like "sec" matching "security"
+    # Now requires EXPLICIT ownership language
     {
         "domain": "regulated_clinical_finance",
-        "levels": ["director", "vp", "head of", "chief", "senior"],
+        "levels": ["director", "vp", "head of", "chief"],  # Removed "senior" - too broad
         "description": "Regulated Clinical or Finance leadership",
-        "keywords": ["clinical operations", "clinical trials", "fda", "regulatory", "compliance", "finra", "sec", "banking regulation", "healthcare compliance", "hipaa"]
+        # FIXED: Removed short tokens like "sec", "fda" - too many false positives
+        # Now requires explicit ownership phrases
+        "keywords": [
+            "clinical operations lead", "clinical trials manager", "fda compliance",
+            "regulatory affairs", "compliance officer", "finra licensed",
+            "sec reporting", "banking regulation", "healthcare compliance officer",
+            "hipaa compliance", "sox compliance", "regulatory compliance lead"
+        ],
+        "require_ownership": True
     }
 ]
 
@@ -326,21 +346,38 @@ def parse_role_requirements(job_description: str, role_title: str = "") -> dict:
             })
 
     # Pattern 5: Non-transferable domain detection
-    for domain_config in NON_TRANSFERABLE_DOMAINS:
-        domain = domain_config["domain"]
-        levels = domain_config["levels"]
-        keywords = domain_config["keywords"]
+    # CRITICAL FIX: Only add to tier_1 if ownership language is present
+    # Manager-level roles skip this entirely (handled in eligibility gate)
+    manager_level_exemptions = [
+        "engineering manager", "product manager", "program manager", "project manager",
+        "senior manager", "team lead", "tech lead", "staff engineer", "senior engineer"
+    ]
+    is_manager_level = any(exempt in title_lower for exempt in manager_level_exemptions)
 
-        jd_requires_domain = any(kw in combined for kw in keywords)
-        jd_at_required_level = any(level in combined for level in levels)
+    if not is_manager_level:
+        for domain_config in NON_TRANSFERABLE_DOMAINS:
+            domain = domain_config["domain"]
+            levels = domain_config["levels"]
+            keywords = domain_config["keywords"]
+            require_ownership = domain_config.get("require_ownership", True)
 
-        if jd_requires_domain and jd_at_required_level:
-            result["tier_1_hard_gates"].append({
-                "type": f"non_transferable_domain:{domain}",
-                "domain": domain,
-                "description": domain_config["description"],
-                "evidence_required": True
-            })
+            jd_requires_domain = any(kw in combined for kw in keywords)
+            jd_at_required_level = any(level in combined for level in levels)
+
+            # Check for ownership context if required
+            if require_ownership:
+                ownership_phrases = ["required", "must have", "requirements:", "you will own", "responsible for"]
+                has_ownership_context = any(phrase in jd_lower for phrase in ownership_phrases)
+                if not has_ownership_context:
+                    continue
+
+            if jd_requires_domain and jd_at_required_level:
+                result["tier_1_hard_gates"].append({
+                    "type": f"non_transferable_domain:{domain}",
+                    "domain": domain,
+                    "description": domain_config["description"],
+                    "evidence_required": True
+                })
 
     # ========================================================================
     # TIER 2: CONDITIONAL REQUIREMENTS (Transferable, Missing = Risk)
@@ -1430,35 +1467,67 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
 
     # ========================================================================
     # CHECK 1: Non-Transferable Domain Detection
+    #
+    # CRITICAL FIX: This gate was firing on garbage matches (e.g., "sec" in "security")
+    # Now requires:
+    # 1. Manager-level roles are EXEMPT from this gate entirely
+    # 2. Only fires on explicit ownership language, not mentions
     # ========================================================================
-    for domain_config in NON_TRANSFERABLE_DOMAINS:
-        domain = domain_config["domain"]
-        levels = domain_config["levels"]
-        keywords = domain_config["keywords"]
-        description = domain_config["description"]
 
-        # Check if JD requires this domain
-        jd_requires_domain = any(kw in combined_jd for kw in keywords)
-        jd_at_required_level = any(level in combined_jd for level in levels)
+    # Manager-level role titles are EXEMPT from non-transferable domain gates
+    manager_level_exemptions = [
+        "engineering manager", "product manager", "program manager", "project manager",
+        "senior manager", "manager of", "team lead", "tech lead", "technical lead",
+        "staff engineer", "senior engineer", "principal engineer", "senior staff",
+        "senior product manager", "group product manager", "staff product manager",
+        "engineering lead", "senior software engineer"
+    ]
+    is_manager_level = any(exempt in role_title for exempt in manager_level_exemptions)
 
-        if jd_requires_domain and jd_at_required_level:
-            # JD requires this non-transferable domain at a senior level
-            # Check if candidate has experience in this exact domain
-            candidate_has_domain = any(kw in combined_resume for kw in keywords)
+    if is_manager_level:
+        print(f"✅ Manager-level role detected: '{role_title}' - SKIPPING non-transferable domain gates")
+    else:
+        for domain_config in NON_TRANSFERABLE_DOMAINS:
+            domain = domain_config["domain"]
+            levels = domain_config["levels"]
+            keywords = domain_config["keywords"]
+            description = domain_config["description"]
+            require_ownership = domain_config.get("require_ownership", True)
 
-            if not candidate_has_domain:
-                # HARD STOP - Non-transferable domain mismatch
-                print(f"🚫 ELIGIBILITY GATE FAILED: Non-transferable domain")
-                print(f"   Domain: {description}")
-                print(f"   JD requires: {[kw for kw in keywords if kw in combined_jd]}")
-                print(f"   Candidate lacks domain experience")
+            # Check if JD EXPLICITLY requires this domain with ownership language
+            # Must find FULL keyword phrase, not partial token matches
+            jd_requires_domain = any(kw in combined_jd for kw in keywords)
+            jd_at_required_level = any(level in combined_jd for level in levels)
 
-                result["eligible"] = False
-                result["reason"] = f"This role requires {description}. Your background does not include direct experience in this domain. This is a non-transferable requirement."
-                result["failed_check"] = f"non_transferable_domain:{domain}"
-                result["locked_recommendation"] = "Do Not Apply"
-                result["gap_classification"] = "missing_experience"
-                return result
+            # ADDITIONAL CHECK: For require_ownership domains, must have explicit requirement language
+            if require_ownership:
+                ownership_phrases = [
+                    "required", "must have", "requirements:", "you will own",
+                    "you will lead", "responsible for", "accountable for"
+                ]
+                has_ownership_context = any(phrase in jd_text for phrase in ownership_phrases)
+                if not has_ownership_context:
+                    # Mention without ownership context - skip this gate
+                    continue
+
+            if jd_requires_domain and jd_at_required_level:
+                # JD requires this non-transferable domain at a senior level
+                # Check if candidate has experience in this exact domain
+                candidate_has_domain = any(kw in combined_resume for kw in keywords)
+
+                if not candidate_has_domain:
+                    # HARD STOP - Non-transferable domain mismatch
+                    print(f"🚫 ELIGIBILITY GATE FAILED: Non-transferable domain")
+                    print(f"   Domain: {description}")
+                    print(f"   JD requires: {[kw for kw in keywords if kw in combined_jd]}")
+                    print(f"   Candidate lacks domain experience")
+
+                    result["eligible"] = False
+                    result["reason"] = f"This role requires {description}. Your background does not include direct experience in this domain. This is a non-transferable requirement."
+                    result["failed_check"] = f"non_transferable_domain:{domain}"
+                    result["locked_recommendation"] = "Do Not Apply"
+                    result["gap_classification"] = "missing_experience"
+                    return result
 
     # ========================================================================
     # CHECK 2: People Leadership vs Operational Leadership
