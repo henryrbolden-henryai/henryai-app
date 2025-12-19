@@ -2253,6 +2253,14 @@ class ResumeLevelingResponse(BaseModel):
     # Summary
     summary: str  # Brief narrative assessment
 
+    # LEPE Integration (for Manager+ roles)
+    lepe_applicable: Optional[bool] = None  # True if target is Manager+
+    lepe_decision: Optional[str] = None  # apply | position | caution | locked
+    lepe_coaching: Optional[str] = None  # Coaching advice if positioning mode
+    lepe_skepticism_warning: Optional[str] = None  # Warning if caution/locked
+    leadership_tenure: Optional[Dict[str, Any]] = None  # From LEPE analysis
+    accountability_record: Optional[Dict[str, Any]] = None  # LEPE accountability
+
 # ============================================================================
 # PREP GUIDE MODELS
 # ============================================================================
@@ -13676,6 +13684,47 @@ Analyze gaps between candidate's current level and the target role requirements.
                     alternative_recommendation=warning.get('alternative_recommendation')
                 ))
 
+        # ====================================================================
+        # LEPE INTEGRATION
+        # Per LEPE Spec: Resume Leveling must reference LEPE outputs and
+        # must not independently assess leadership readiness for Manager+ roles.
+        # ====================================================================
+        lepe_applicable = False
+        lepe_decision = None
+        lepe_coaching = None
+        lepe_skepticism_warning = None
+        leadership_tenure = None
+        accountability_record = None
+
+        target_title = request.target_title or request.role_title
+        if target_title and is_manager_plus_role(target_title):
+            lepe_applicable = True
+            print(f"   📊 LEPE: Manager+ target detected - running leadership evaluation")
+
+            # Build mock response_data for LEPE (it needs role_title)
+            lepe_response_data = {
+                "role_title": target_title,
+                "job_description": request.job_description or ""
+            }
+
+            # Run LEPE evaluation
+            lepe_result = evaluate_lepe(resume_json, lepe_response_data)
+
+            if lepe_result.get("lepe_applicable"):
+                positioning = lepe_result.get("positioning_decision", {})
+                lepe_decision = positioning.get("decision")
+                leadership_tenure = lepe_result.get("leadership_tenure")
+                accountability_record = lepe_result.get("accountability_record")
+
+                # Extract messaging based on decision
+                messaging = positioning.get("messaging", {})
+                if lepe_decision == "position":
+                    lepe_coaching = messaging.get("coaching_advice")
+                elif lepe_decision in ["caution", "locked"]:
+                    lepe_skepticism_warning = messaging.get("skepticism_warning")
+
+                print(f"   📊 LEPE Decision: {lepe_decision}")
+
         return ResumeLevelingResponse(
             detected_function=parsed_data.get('detected_function', 'Unknown'),
             function_confidence=parsed_data.get('function_confidence', 0.5),
@@ -13704,7 +13753,14 @@ Analyze gaps between candidate's current level and the target role requirements.
             level_mismatch_warnings=level_mismatch_warnings,
             gaps=gaps,
             recommendations=recommendations,
-            summary=parsed_data.get('summary', 'Assessment complete.')
+            summary=parsed_data.get('summary', 'Assessment complete.'),
+            # LEPE fields
+            lepe_applicable=lepe_applicable,
+            lepe_decision=lepe_decision,
+            lepe_coaching=lepe_coaching,
+            lepe_skepticism_warning=lepe_skepticism_warning,
+            leadership_tenure=leadership_tenure,
+            accountability_record=accountability_record
         )
 
     except json.JSONDecodeError as e:
@@ -15924,6 +15980,14 @@ class LinkedInOptimizeResponse(BaseModel):
     issue_count: int = 0
     generated_at: str
 
+    # LEPE Integration (for Manager+ target roles)
+    lepe_applicable: Optional[bool] = None  # True if target is Manager+
+    lepe_decision: Optional[str] = None  # apply | position | caution | locked
+    lepe_coaching: Optional[str] = None  # Coaching advice if positioning mode
+    lepe_skepticism_warning: Optional[str] = None  # Warning if caution/locked
+    leadership_tenure: Optional[Dict[str, Any]] = None  # From LEPE analysis
+    accountability_record: Optional[Dict[str, Any]] = None  # LEPE accountability
+
 # ============================================================================
 # LINKEDIN API ENDPOINTS
 # ============================================================================
@@ -16380,6 +16444,55 @@ Remember: Use ONLY information from the resume. Every number and claim must trac
         if experience_opts:
             experience_highlights = experience_opts[0].bullets[:4]
 
+        # ====================================================================
+        # LEPE INTEGRATION
+        # Per LEPE Spec: LinkedIn Scoring must reference LEPE outputs and
+        # must not independently assess leadership readiness for Manager+ roles.
+        # ====================================================================
+        lepe_applicable = False
+        lepe_decision = None
+        lepe_coaching = None
+        lepe_skepticism_warning = None
+        leadership_tenure = None
+        accountability_record = None
+
+        if target_role and is_manager_plus_role(target_role):
+            lepe_applicable = True
+            print(f"   📊 LEPE: Manager+ target detected - running leadership evaluation")
+
+            # Get resume data from request
+            resume_json = request.resume_json
+            if isinstance(resume_json, str):
+                try:
+                    resume_json = json.loads(resume_json)
+                except json.JSONDecodeError:
+                    resume_json = {}
+
+            if resume_json:
+                # Build response_data for LEPE
+                lepe_response_data = {
+                    "role_title": target_role,
+                    "job_description": request.job_description or ""
+                }
+
+                # Run LEPE evaluation
+                lepe_result = evaluate_lepe(resume_json, lepe_response_data)
+
+                if lepe_result.get("lepe_applicable"):
+                    positioning = lepe_result.get("positioning_decision", {})
+                    lepe_decision = positioning.get("decision")
+                    leadership_tenure = lepe_result.get("leadership_tenure")
+                    accountability_record = lepe_result.get("accountability_record")
+
+                    # Extract messaging based on decision
+                    messaging = positioning.get("messaging", {})
+                    if lepe_decision == "position":
+                        lepe_coaching = messaging.get("coaching_advice")
+                    elif lepe_decision in ["caution", "locked"]:
+                        lepe_skepticism_warning = messaging.get("skepticism_warning")
+
+                    print(f"   📊 LEPE Decision: {lepe_decision}")
+
         return LinkedInOptimizeResponse(
             # Severity and summary
             severity=parsed.get("severity", "MEDIUM"),
@@ -16418,7 +16531,15 @@ Remember: Use ONLY information from the resume. Every number and claim must trac
             experience_highlights=experience_highlights,
             has_issues=parsed.get("severity", "MEDIUM") in ["CRITICAL", "HIGH"],
             issue_count=1 if parsed.get("severity", "MEDIUM") in ["CRITICAL", "HIGH"] else 0,
-            generated_at=datetime.utcnow().isoformat()
+            generated_at=datetime.utcnow().isoformat(),
+
+            # LEPE fields
+            lepe_applicable=lepe_applicable,
+            lepe_decision=lepe_decision,
+            lepe_coaching=lepe_coaching,
+            lepe_skepticism_warning=lepe_skepticism_warning,
+            leadership_tenure=leadership_tenure,
+            accountability_record=accountability_record
         )
 
     except json.JSONDecodeError as e:
