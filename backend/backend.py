@@ -42,6 +42,22 @@ from qa_validation import (
     ValidationLogger
 )
 
+# Recruiter Calibration module for gap classification and red flag detection
+# Per Calibration Spec v1.0: Recruiter-grade judgment framework
+try:
+    from calibration import (
+        calibrate_executive_role,
+        calibrate_technical_role,
+        calibrate_gtm_role,
+        classify_gap,
+        assess_domain_transferability,
+        detect_red_flags,
+    )
+    CALIBRATION_AVAILABLE = True
+except ImportError:
+    CALIBRATION_AVAILABLE = False
+    print("⚠️ Calibration module not available - using fallback behavior")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
@@ -5440,6 +5456,136 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 print(f"   ✅ CEC: No critical capability gaps identified")
 
     # ========================================================================
+    # RECRUITER CALIBRATION LAYER - STEP 2.6
+    # Per Calibration Spec v1.0: Recruiter-grade judgment framework
+    #
+    # RUNS AFTER: CEC (Step 2.5)
+    # RUNS BEFORE: CAE (Step 3) and LEPE (Step 4)
+    #
+    # PURPOSE:
+    # - Apply function-specific calibration (executive, technical, GTM)
+    # - Detect terminal vs coachable gaps
+    # - Detect red flags (stop_search vs proceed_with_caution)
+    # - Override recommendation if terminal gaps or stop_search red flags found
+    #
+    # HARD CONSTRAINTS:
+    # - Terminal gap = "Do Not Apply" (overrides coachable gaps)
+    # - Multiple implicit signals do NOT equal one explicit signal
+    # - When ambiguous, downgrade confidence, not recommendation
+    # ========================================================================
+    calibration_result = None
+    calibration_red_flags = []
+
+    if CALIBRATION_AVAILABLE and resume_data and response_data.get("role_title") and not recommendation_locked:
+        print("🎯 STEP 2.6: RECRUITER CALIBRATION LAYER")
+
+        try:
+            # Prepare candidate experience for calibration
+            candidate_experience = {
+                'roles': resume_data.get('experience', []),
+                'experience': resume_data.get('experience', []),
+                'summary': resume_data.get('summary', ''),
+                'skills': resume_data.get('skills', []),
+                'domain': response_data.get('experience_analysis', {}).get('domain', ''),
+                'level': response_data.get('experience_analysis', {}).get('level', ''),
+            }
+
+            # Prepare role requirements for calibration
+            role_title = response_data.get('role_title', '').lower()
+            role_requirements = {
+                'level': response_data.get('role_level', ''),
+                'team_size_min': response_data.get('team_size_requirement', 0),
+                'domain': response_data.get('target_domain', ''),
+                'function': response_data.get('role_function', ''),
+                'global_scope': any(kw in role_title for kw in ['global', 'distributed', 'multi-region']),
+                'requires_pnl': any(kw in role_title for kw in ['vp', 'director', 'head', 'c-suite']),
+            }
+
+            # Detect role function and apply appropriate calibration
+            if any(kw in role_title for kw in ['vp', 'director', 'head of', 'chief', 'c-suite', 'senior director']):
+                print("   📊 Applying EXECUTIVE calibration")
+                calibration_result = calibrate_executive_role(candidate_experience, role_requirements)
+                calibration_type = 'executive'
+            elif any(kw in role_title for kw in ['sales', 'account executive', 'ae', 'customer success', 'bdr', 'sdr', 'bizdev']):
+                print("   📊 Applying GTM calibration")
+                calibration_result = calibrate_gtm_role(candidate_experience, role_requirements)
+                calibration_type = 'gtm'
+            else:
+                print("   📊 Applying TECHNICAL calibration")
+                calibration_result = calibrate_technical_role(candidate_experience, role_requirements)
+                calibration_type = 'technical'
+
+            # Detect red flags
+            calibration_red_flags = detect_red_flags(candidate_experience)
+
+            # Store calibration results
+            response_data["calibration_result"] = {
+                'type': calibration_type,
+                'actual_level': calibration_result.get('actual_level'),
+                'terminal_gaps': calibration_result.get('terminal_gaps', []),
+                'coachable_gaps': calibration_result.get('coachable_gaps', []),
+                'confidence': calibration_result.get('confidence', 1.0),
+                'red_flags': calibration_red_flags
+            }
+
+            # Log calibration results
+            terminal_gaps = calibration_result.get('terminal_gaps', [])
+            coachable_gaps = calibration_result.get('coachable_gaps', [])
+            stop_search_flags = [f for f in calibration_red_flags if f.get('severity') == 'stop_search']
+            caution_flags = [f for f in calibration_red_flags if f.get('severity') == 'proceed_with_caution']
+
+            print(f"   📋 Calibration: {len(terminal_gaps)} terminal, {len(coachable_gaps)} coachable gaps")
+            print(f"   🚩 Red flags: {len(stop_search_flags)} stop_search, {len(caution_flags)} proceed_with_caution")
+
+            # CRITICAL: Override recommendation if terminal gaps or stop-search red flags exist
+            # Per Calibration Spec v1.0: "Terminal always overrides coachable"
+            if terminal_gaps or stop_search_flags:
+                # Determine locked reason
+                if terminal_gaps:
+                    first_terminal = terminal_gaps[0]
+                    locked_reason = first_terminal.get('reason', 'Terminal gap identified')
+                    print(f"   🔒 TERMINAL GAP: {locked_reason}")
+                elif stop_search_flags:
+                    first_flag = stop_search_flags[0]
+                    locked_reason = first_flag.get('reason', 'Stop-search red flag detected')
+                    print(f"   🔒 STOP SEARCH FLAG: {locked_reason}")
+
+                # Lock recommendation
+                recommendation_locked = True
+                locked_recommendation = "Do Not Apply"
+
+                # Update experience_analysis
+                experience_analysis["recommendation_locked"] = True
+                experience_analysis["locked_reason"] = locked_reason
+                experience_analysis["calibration_locked"] = True
+
+                # Update response_data
+                response_data["recommendation"] = locked_recommendation
+                response_data["apply_decision"] = {
+                    "recommendation": locked_recommendation,
+                    "locked_reason": locked_reason,
+                    "locked_by": "calibration"
+                }
+
+                if "intelligence_layer" in response_data:
+                    response_data["intelligence_layer"]["apply_decision"] = {
+                        "recommendation": locked_recommendation,
+                        "locked_reason": locked_reason
+                    }
+
+                print(f"   🔴 Recommendation LOCKED by calibration: {locked_recommendation}")
+
+            # Apply confidence threshold per Selective Coaching Spec
+            # One explicit signal > five implicit signals
+            if calibration_result.get('confidence', 1.0) < 0.6:
+                response_data["calibration_low_confidence"] = True
+                print(f"   ⚠️ Low calibration confidence ({calibration_result.get('confidence', 1.0):.2f})")
+
+        except Exception as e:
+            print(f"   ⚠️ Calibration error (non-blocking): {e}")
+            # Calibration errors are non-blocking - continue with existing flow
+
+    # ========================================================================
     # CREDIBILITY ALIGNMENT ENGINE (CAE) - RUNS AFTER ELIGIBILITY
     # Per CAE Spec: "This layer never blocks on its own. It modulates confidence,
     # language, and recommendation strength."
@@ -6482,6 +6628,53 @@ def evaluate_capability_evidence(
         and c.get("criticality") == "required"
     ]
 
+    # ========================================================================
+    # CONFIDENCE THRESHOLD CALCULATION
+    # Per Selective Coaching Spec v1.0:
+    # - One explicit signal > five implicit signals
+    # - Multiple implicit signals do NOT sum to explicit
+    # - When ambiguous, downgrade confidence, not recommendation
+    # ========================================================================
+
+    # Add confidence score to each capability based on evidence status
+    for cap in evaluated_capabilities:
+        evidence_status = cap.get("evidence_status", "missing")
+        if evidence_status == "explicit":
+            cap["confidence"] = 1.0  # Full confidence
+        elif evidence_status == "implicit":
+            cap["confidence"] = 0.6  # Cap implicit at 60% per spec
+        else:
+            cap["confidence"] = 0.0  # No confidence for missing
+
+    # Calculate overall CEC confidence
+    # Explicit signals count fully, implicit capped at 0.6 each
+    if evaluated_capabilities:
+        # Weight by criticality
+        required_caps = [c for c in evaluated_capabilities if c.get("criticality") == "required"]
+        preferred_caps = [c for c in evaluated_capabilities if c.get("criticality") != "required"]
+
+        if required_caps:
+            # Required capabilities weight heavily
+            required_confidence = sum(c.get("confidence", 0) for c in required_caps) / len(required_caps)
+        else:
+            required_confidence = 1.0
+
+        if preferred_caps:
+            preferred_confidence = sum(c.get("confidence", 0) for c in preferred_caps) / len(preferred_caps)
+        else:
+            preferred_confidence = 1.0
+
+        # Overall: 70% weight on required, 30% on preferred
+        overall_confidence = (required_confidence * 0.7) + (preferred_confidence * 0.3)
+    else:
+        overall_confidence = 1.0  # No capabilities evaluated = full confidence
+
+    # Flag if all signals are implicit (low confidence situation)
+    all_implicit = explicit_count == 0 and implicit_count > 0
+    if all_implicit:
+        # Cap overall confidence at 0.6 per spec
+        overall_confidence = min(overall_confidence, 0.6)
+
     capability_evidence_report = {
         "evaluated_capabilities": evaluated_capabilities,
         "summary": {
@@ -6489,11 +6682,14 @@ def evaluate_capability_evidence(
             "explicit_count": explicit_count,
             "implicit_count": implicit_count,
             "missing_count": missing_count,
-            "critical_gaps": critical_gaps
+            "critical_gaps": critical_gaps,
+            "overall_confidence": round(overall_confidence, 2),
+            "all_signals_implicit": all_implicit
         }
     }
 
     print(f"   📋 CEC Summary: {explicit_count} explicit, {implicit_count} implicit, {missing_count} missing")
+    print(f"   📊 CEC Confidence: {overall_confidence:.2f}" + (" (all implicit - capped)" if all_implicit else ""))
     if critical_gaps:
         print(f"   🔴 Critical gaps: {', '.join(critical_gaps)}")
 
