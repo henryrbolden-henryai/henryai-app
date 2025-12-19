@@ -6500,18 +6500,257 @@ def evaluate_capability_evidence(
     return capability_evidence_report
 
 
+# ============================================================================
+# CEC v1.1 HELPER FUNCTIONS
+# Sub-signal detection for recruiter-grade capability assessment
+# ============================================================================
+
+def detect_decision_authority(experience_text: str) -> str:
+    """
+    Detects decision-making authority level from experience text.
+
+    Returns:
+        'explicit' - Clear decision ownership language
+        'implicit' - Influencer/partner language
+        'missing' - No authority signals
+    """
+    try:
+        experience_lower = experience_text.lower()
+
+        # Explicit decision authority verbs
+        explicit_patterns = [
+            'decided', 'owned', 'set direction', 'determined',
+            'established', 'defined strategy', 'made decision',
+            'chose to', 'selected', 'approved', 'vetoed'
+        ]
+
+        # Implicit authority (influencer, not decider)
+        implicit_patterns = [
+            'partnered with', 'collaborated', 'supported',
+            'contributed to', 'advised', 'recommended',
+            'influenced', 'consulted', 'helped shape'
+        ]
+
+        explicit_count = sum(1 for pattern in explicit_patterns if pattern in experience_lower)
+        implicit_count = sum(1 for pattern in implicit_patterns if pattern in experience_lower)
+
+        if explicit_count >= 2:
+            return 'explicit'
+        elif implicit_count >= 2 or explicit_count == 1:
+            return 'implicit'
+        else:
+            return 'missing'
+    except Exception as e:
+        print(f"Warning: Decision authority detection failed: {e}")
+        return 'missing'
+
+
+def detect_org_design_signals(experience_text: str) -> str:
+    """
+    Detects organizational design ownership from experience text.
+
+    Returns:
+        'explicit' - Built teams, restructured org, designed structure
+        'implicit' - Hired people, grew team
+        'missing' - No org design signals
+    """
+    try:
+        experience_lower = experience_text.lower()
+
+        # Explicit org design
+        explicit_patterns = [
+            'built team', 'built org', 'designed org',
+            'restructured', 'defined roles', 'created structure',
+            'established hiring plan', 'shaped organization',
+            'org design', 'organizational structure'
+        ]
+
+        # Implicit (hiring/growth without design)
+        implicit_patterns = [
+            'grew team', 'hired', 'expanded team',
+            'increased headcount', 'team growth',
+            'added engineers', 'scaled team'
+        ]
+
+        if any(pattern in experience_lower for pattern in explicit_patterns):
+            return 'explicit'
+        elif any(pattern in experience_lower for pattern in implicit_patterns):
+            return 'implicit'
+        else:
+            return 'missing'
+    except Exception as e:
+        print(f"Warning: Org design detection failed: {e}")
+        return 'missing'
+
+
+def detect_partnership_tier(experience_text: str) -> str:
+    """
+    Detects cross-functional partnership quality.
+
+    Returns:
+        'tier_1_joint' - Co-owned decisions, shared KPIs
+        'tier_2_coordination' - Regular sync, alignment
+        'tier_3_adjacency' - Works with adjacent functions only
+    """
+    try:
+        experience_lower = experience_text.lower()
+
+        # Tier 1: Joint ownership with Product
+        tier_1_patterns = [
+            'co-owned roadmap', 'joint ownership', 'shared kpi',
+            'product partnership', 'partnered with pm',
+            'product manager', 'roadmap ownership',
+            'quarterly planning', 'backlog prioritization'
+        ]
+
+        # Tier 2: Coordination
+        tier_2_patterns = [
+            'partnered with', 'collaborated with',
+            'worked with engineering', 'cross-functional',
+            'alignment meetings', 'sync with'
+        ]
+
+        # Check for Product-specific mentions
+        has_product_mention = any(word in experience_lower for word in ['product', 'pm', 'roadmap', 'backlog'])
+
+        tier_1_match = any(pattern in experience_lower for pattern in tier_1_patterns)
+        tier_2_match = any(pattern in experience_lower for pattern in tier_2_patterns)
+
+        if tier_1_match or (has_product_mention and tier_2_match):
+            return 'tier_1_joint'
+        elif tier_2_match:
+            return 'tier_2_coordination'
+        else:
+            return 'tier_3_adjacency'
+    except Exception as e:
+        print(f"Warning: Partnership tier detection failed: {e}")
+        return 'tier_3_adjacency'
+
+
+def detect_financial_ownership(experience_text: str) -> Dict[str, Any]:
+    """
+    Detects P&L, budget, or financial ownership.
+
+    Returns:
+        {
+            'level': 'explicit' | 'implicit' | 'missing',
+            'amount': int | None,
+            'type': 'p&l' | 'budget' | 'revenue' | None
+        }
+    """
+    try:
+        import re
+        experience_lower = experience_text.lower()
+
+        # Extract dollar amounts
+        money_pattern = r'\$(\d+(?:,\d{3})*(?:\.\d+)?)\s*([mkb])?'
+        money_matches = re.findall(money_pattern, experience_lower, re.IGNORECASE)
+
+        amounts = []
+        for amount, multiplier in money_matches:
+            base = float(amount.replace(',', ''))
+            if multiplier and multiplier.lower() == 'k':
+                amounts.append(int(base * 1000))
+            elif multiplier and multiplier.lower() == 'm':
+                amounts.append(int(base * 1000000))
+            elif multiplier and multiplier.lower() == 'b':
+                amounts.append(int(base * 1000000000))
+            else:
+                amounts.append(int(base))
+
+        # Explicit ownership patterns
+        explicit_patterns = [
+            'owned p&l', 'p&l owner', 'budget owner',
+            'managed budget', 'revenue owner',
+            'owned budget', 'financial owner'
+        ]
+
+        # Implicit patterns
+        implicit_patterns = [
+            'within budget', 'budget constraint',
+            'managed spend', 'cost optimization'
+        ]
+
+        has_explicit = any(pattern in experience_lower for pattern in explicit_patterns)
+        has_implicit = any(pattern in experience_lower for pattern in implicit_patterns)
+
+        ownership_type = None
+        if 'p&l' in experience_lower:
+            ownership_type = 'p&l'
+        elif 'budget' in experience_lower:
+            ownership_type = 'budget'
+        elif 'revenue' in experience_lower:
+            ownership_type = 'revenue'
+
+        return {
+            'level': 'explicit' if has_explicit else ('implicit' if has_implicit else 'missing'),
+            'amount': max(amounts) if amounts else None,
+            'type': ownership_type
+        }
+    except Exception as e:
+        print(f"Warning: Financial ownership detection failed: {e}")
+        return {'level': 'missing', 'amount': None, 'type': None}
+
+
+def detect_domain_depth(experience_text: str, domain: str) -> str:
+    """
+    Detects domain expertise depth.
+
+    Returns:
+        'explicit' - Certifications, speaking, deep terminology
+        'implicit' - Domain mentioned, generic language
+        'missing' - No domain presence
+    """
+    try:
+        experience_lower = experience_text.lower()
+        domain_lower = domain.lower() if domain else ''
+
+        # Explicit depth indicators
+        explicit_patterns = [
+            'certified', 'certification', 'speaker at',
+            'published', 'thought leader', 'expert in',
+            'specialized in', 'domain expertise'
+        ]
+
+        # Check for domain-specific terminology density
+        has_domain = domain_lower in experience_lower if domain_lower else False
+        has_explicit = any(pattern in experience_lower for pattern in explicit_patterns)
+
+        # Count domain-specific terms (varies by domain)
+        domain_term_count = experience_lower.count(domain_lower) if domain_lower else 0
+
+        if has_explicit and has_domain:
+            return 'explicit'
+        elif domain_term_count >= 2 or has_domain:
+            return 'implicit'
+        else:
+            return 'missing'
+    except Exception as e:
+        print(f"Warning: Domain depth detection failed: {e}")
+        return 'missing'
+
+
+# ============================================================================
+# CEC v1.0 CAPABILITY EVALUATORS (Enhanced in v1.1)
+# ============================================================================
+
 def evaluate_leadership_scope(
     response_data: dict,
     resume_data: dict,
     leadership_extraction: dict = None
 ) -> dict:
     """
-    Evaluate Leadership Scope capability.
+    Evaluate Leadership Scope capability (CEC v1.1 Enhanced).
 
     Checks for:
     - Local vs regional vs global teams
     - Distributed vs co-located
     - Manager of managers vs IC managers
+
+    v1.1 Sub-signals:
+    - Decision authority (hiring, budget, firing, reorg)
+    - Org design signals (team charter, scaling, structure)
+    - Legacy indicators (succession, mentorship lineage)
     """
     role_title = (response_data.get("role_title", "") or "").lower()
     jd_text = (response_data.get("job_description", "") or "").lower()
@@ -6527,12 +6766,22 @@ def evaluate_leadership_scope(
     if not requires_global and not requires_manager_of_managers:
         return None
 
-    # Extract resume evidence
+    # Extract resume evidence - collect all experience text for sub-signal analysis
     resume_experience = resume_data.get("experience", []) if resume_data else []
     combined_text = ""
     for exp in resume_experience:
         if isinstance(exp, dict):
             combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    # v1.1: Detect sub-signals using helper functions
+    decision_authority = detect_decision_authority(combined_text)
+    org_design = detect_org_design_signals(combined_text)
+
+    # v1.1: Detect legacy indicators (succession planning, mentorship lineage)
+    legacy_keywords = ["promoted to", "grew into", "succession", "mentored who became",
+                       "developed leaders", "built leadership pipeline", "talent development"]
+    has_legacy_signals = any(kw in combined_text for kw in legacy_keywords)
+    legacy_status = "explicit" if has_legacy_signals else "missing"
 
     # Check for explicit global evidence
     has_global_evidence = any(kw in combined_text for kw in ["global", "distributed team", "multi-region", "across regions", "worldwide", "international team", "remote team across"])
@@ -6541,23 +6790,54 @@ def evaluate_leadership_scope(
     # Check for local-only evidence
     has_local_evidence = any(kw in combined_text for kw in ["team of", "managed team", "led team", "direct reports"])
 
+    # v1.1: Build sub-signals summary for enhanced diagnosis
+    sub_signals = []
+    if decision_authority == "explicit":
+        sub_signals.append("hiring/firing authority")
+    elif decision_authority == "implicit":
+        sub_signals.append("implied decision-making")
+
+    if org_design == "explicit":
+        sub_signals.append("org design experience")
+    elif org_design == "implicit":
+        sub_signals.append("team structuring hints")
+
+    if legacy_status == "explicit":
+        sub_signals.append("leadership legacy/succession")
+
     # Determine evidence status
     if requires_global:
         if has_global_evidence:
             evidence_status = "explicit"
             resume_evidence = "Resume shows globally distributed team leadership"
-            diagnosis = "Strong evidence of global team leadership."
+            # v1.1: Enhance diagnosis with sub-signals
+            if sub_signals:
+                diagnosis = f"Strong evidence of global team leadership. Sub-signals detected: {', '.join(sub_signals)}."
+            else:
+                diagnosis = "Strong evidence of global team leadership."
             distance = None
         elif has_local_evidence:
-            evidence_status = "missing"
-            # Extract local context
-            local_context = "local team"
-            if leadership_extraction:
-                years = leadership_extraction.get("people_leadership_years", 0)
-                local_context = f"local team ({years:.1f} years people management)"
-            resume_evidence = f"Resume shows {local_context} but no global scope"
-            diagnosis = f"Resume shows people management but no evidence of globally distributed teams or multi-region ownership. Experience is local only."
-            distance = "Local (single office) → Global (multi-region) leadership gap"
+            # v1.1: Check if sub-signals provide implicit global readiness
+            if decision_authority == "explicit" or org_design == "explicit":
+                evidence_status = "implicit"
+                local_context = "local team with leadership maturity signals"
+                if leadership_extraction:
+                    years = leadership_extraction.get("people_leadership_years", 0)
+                    local_context = f"local team ({years:.1f} years people management) with leadership maturity signals"
+                resume_evidence = f"Resume shows {local_context}"
+                diagnosis = f"No explicit global scope but strong leadership indicators suggest readiness. Sub-signals: {', '.join(sub_signals) if sub_signals else 'decision authority or org design'}."
+                distance = "Local (single office) → Global (multi-region) leadership gap (may be coachable)"
+            else:
+                evidence_status = "missing"
+                local_context = "local team"
+                if leadership_extraction:
+                    years = leadership_extraction.get("people_leadership_years", 0)
+                    local_context = f"local team ({years:.1f} years people management)"
+                resume_evidence = f"Resume shows {local_context} but no global scope"
+                diagnosis = f"Resume shows people management but no evidence of globally distributed teams or multi-region ownership. Experience is local only."
+                if sub_signals:
+                    diagnosis += f" Limited sub-signals: {', '.join(sub_signals)}."
+                distance = "Local (single office) → Global (multi-region) leadership gap"
         else:
             evidence_status = "missing"
             resume_evidence = None
@@ -6580,13 +6860,26 @@ def evaluate_leadership_scope(
         if has_mom_evidence:
             evidence_status = "explicit"
             resume_evidence = "Resume shows manager of managers experience"
-            diagnosis = "Strong evidence of org-level leadership."
+            # v1.1: Enhance diagnosis with sub-signals
+            if sub_signals:
+                diagnosis = f"Strong evidence of org-level leadership. Sub-signals detected: {', '.join(sub_signals)}."
+            else:
+                diagnosis = "Strong evidence of org-level leadership."
             distance = None
         elif has_local_evidence:
-            evidence_status = "implicit"
-            resume_evidence = "Resume shows IC management but not manager of managers"
-            diagnosis = "Resume shows people management but no evidence of managing managers (Tier 3 leadership)."
-            distance = "IC Manager → Manager of Managers gap"
+            # v1.1: Check if sub-signals strengthen implicit evidence
+            if decision_authority == "explicit" and org_design in ["explicit", "implicit"]:
+                evidence_status = "implicit"
+                resume_evidence = "Resume shows IC management with strong leadership maturity signals"
+                diagnosis = f"IC management with evidence of leadership maturity. Sub-signals: {', '.join(sub_signals)}. May be ready for promotion to manager of managers."
+                distance = "IC Manager → Manager of Managers gap (strong indicators)"
+            else:
+                evidence_status = "implicit"
+                resume_evidence = "Resume shows IC management but not manager of managers"
+                diagnosis = "Resume shows people management but no evidence of managing managers (Tier 3 leadership)."
+                if sub_signals:
+                    diagnosis += f" Partial sub-signals: {', '.join(sub_signals)}."
+                distance = "IC Manager → Manager of Managers gap"
         else:
             evidence_status = "missing"
             resume_evidence = None
@@ -6610,12 +6903,17 @@ def evaluate_leadership_scope(
 
 def evaluate_cross_functional_depth(response_data: dict, resume_data: dict) -> dict:
     """
-    Evaluate Cross-Functional Depth capability.
+    Evaluate Cross-Functional Depth capability (CEC v1.1 Enhanced).
 
     Checks for:
     - Explicit Product partnership
     - Joint roadmap ownership
     - Tradeoff and prioritization language
+
+    v1.1 Sub-signals:
+    - Partnership tier (Tier 1 joint ownership, Tier 2 coordination, Tier 3 adjacency)
+    - Influence signals (escalation navigation, exec alignment)
+    - Conflict navigation (tradeoff language, no pushback resolution)
     """
     role_title = (response_data.get("role_title", "") or "").lower()
     jd_text = (response_data.get("job_description", "") or "").lower()
@@ -6638,6 +6936,23 @@ def evaluate_cross_functional_depth(response_data: dict, resume_data: dict) -> d
         if isinstance(exp, dict):
             combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
 
+    # v1.1: Detect partnership tier using helper function
+    partnership_tier = detect_partnership_tier(combined_text)
+
+    # v1.1: Detect influence signals (escalation navigation, exec alignment)
+    influence_keywords = ["exec", "executive", "leadership", "stakeholder buy-in",
+                          "escalation", "aligned with", "presented to", "c-suite",
+                          "board", "decision-makers", "senior leadership"]
+    has_influence_signals = any(kw in combined_text for kw in influence_keywords)
+    influence_status = "explicit" if has_influence_signals else "missing"
+
+    # v1.1: Detect conflict navigation (tradeoff language, disagreement resolution)
+    conflict_keywords = ["tradeoff", "trade-off", "prioritized", "deprioritized",
+                         "pushed back", "negotiated", "balanced", "competing priorities",
+                         "resolved conflict", "disagreement", "aligned stakeholders"]
+    has_conflict_signals = any(kw in combined_text for kw in conflict_keywords)
+    conflict_status = "explicit" if has_conflict_signals else "missing"
+
     # Check for explicit Product partnership
     explicit_product = any(kw in combined_text for kw in [
         "partnered with product", "product partnership", "co-owned roadmap",
@@ -6651,27 +6966,58 @@ def evaluate_cross_functional_depth(response_data: dict, resume_data: dict) -> d
         "devops", "sre", "infrastructure", "platform team"
     ])
 
+    # v1.1: Build sub-signals summary for enhanced diagnosis
+    sub_signals = []
+    if partnership_tier == "tier_1_joint":
+        sub_signals.append("Tier 1 joint ownership")
+    elif partnership_tier == "tier_2_coordination":
+        sub_signals.append("Tier 2 coordination")
+    elif partnership_tier == "tier_3_adjacency":
+        sub_signals.append("Tier 3 adjacency only")
+
+    if influence_status == "explicit":
+        sub_signals.append("exec-level influence")
+
+    if conflict_status == "explicit":
+        sub_signals.append("conflict/tradeoff navigation")
+
     if explicit_product:
+        # v1.1: Enhance diagnosis with sub-signals
+        if sub_signals:
+            diagnosis = f"Strong evidence of Product collaboration. Sub-signals: {', '.join(sub_signals)}."
+        else:
+            diagnosis = "Strong evidence of Product collaboration."
         return {
             "capability_id": "cross_functional_product",
             "capability_name": "Cross-Functional Partnership – Product",
             "jd_requirement": "Collaborate closely with Product Management on roadmap",
             "evidence_status": "explicit",
             "resume_evidence": "Resume demonstrates Product partnership and roadmap collaboration",
-            "diagnosis": "Strong evidence of Product collaboration.",
+            "diagnosis": diagnosis,
             "distance": None,
             "coachable": None,
             "criticality": "preferred"
         }
     elif adjacent_collab:
+        # v1.1: Check if sub-signals strengthen implicit evidence
+        if partnership_tier == "tier_2_coordination" and (influence_status == "explicit" or conflict_status == "explicit"):
+            resume_evidence = "Resume shows cross-functional coordination with strong influence indicators"
+            diagnosis = f"Cross-functional coordination with maturity signals. Sub-signals: {', '.join(sub_signals)}. May have Product partnership readiness."
+            distance = "Coordination → Co-ownership gap (strong indicators)"
+        else:
+            resume_evidence = "Resume shows cross-functional collaboration but not explicit Product partnership"
+            diagnosis = "Cross-functional work is present, but direct Product partnership is not demonstrated."
+            if sub_signals:
+                diagnosis += f" Detected: {', '.join(sub_signals)}."
+            distance = "Adjacent functions ≠ Product co-ownership"
         return {
             "capability_id": "cross_functional_product",
             "capability_name": "Cross-Functional Partnership – Product",
             "jd_requirement": "Collaborate closely with Product Management on roadmap",
             "evidence_status": "implicit",
-            "resume_evidence": "Resume shows cross-functional collaboration but not explicit Product partnership",
-            "diagnosis": "Cross-functional work is present, but direct Product partnership is not demonstrated.",
-            "distance": "Adjacent functions ≠ Product co-ownership",
+            "resume_evidence": resume_evidence,
+            "diagnosis": diagnosis,
+            "distance": distance,
             "coachable": True,
             "criticality": "preferred"
         }
@@ -6691,13 +7037,18 @@ def evaluate_cross_functional_depth(response_data: dict, resume_data: dict) -> d
 
 def evaluate_scale_signals(response_data: dict, resume_data: dict) -> dict:
     """
-    Evaluate Scale Signals capability.
+    Evaluate Scale Signals capability (CEC v1.1 Enhanced).
 
     Checks for:
     - Team size (5, 12, 50, 200+)
     - Org size (division, multi-team, enterprise-wide)
     - Platform complexity (monolith, microservices, distributed)
     - Revenue, ARR, users, transactions
+
+    v1.1 Sub-signals:
+    - Financial ownership (P&L, budget, cost reduction)
+    - Time horizon (quarterly, annual, multi-year)
+    - Ops intensity (uptime, incident management, SLA)
     """
     jd_text = (response_data.get("job_description", "") or "").lower()
 
@@ -6721,6 +7072,28 @@ def evaluate_scale_signals(response_data: dict, resume_data: dict) -> dict:
     for exp in resume_experience:
         if isinstance(exp, dict):
             combined_text += f" {exp.get('title', '')} {exp.get('description', '')} {' '.join(exp.get('highlights', []) or exp.get('bullets', []) or [])}".lower()
+
+    # v1.1: Detect financial ownership using helper function
+    financial_ownership = detect_financial_ownership(combined_text)
+
+    # v1.1: Detect time horizon (quarterly, annual, multi-year planning)
+    time_horizon_keywords = {
+        "multi_year": ["multi-year", "3-year", "5-year", "long-term strategy", "strategic roadmap", "vision"],
+        "annual": ["annual", "yearly", "fiscal year", "year-long", "annual planning"],
+        "quarterly": ["quarterly", "q1", "q2", "q3", "q4", "okr", "sprint planning"]
+    }
+    time_horizon = "missing"
+    for horizon, keywords in time_horizon_keywords.items():
+        if any(kw in combined_text for kw in keywords):
+            time_horizon = horizon
+            break
+
+    # v1.1: Detect ops intensity (uptime, incident management, SLA)
+    ops_intensity_keywords = ["uptime", "incident", "sla", "on-call", "reliability",
+                              "availability", "pager", "outage", "disaster recovery",
+                              "99.9", "five nines", "production"]
+    has_ops_intensity = any(kw in combined_text for kw in ops_intensity_keywords)
+    ops_intensity = "explicit" if has_ops_intensity else "missing"
 
     # Check for scale evidence in resume
     resume_team_match = re.search(r'team of (\d+)|managed (\d+)|(\d+)\s*(engineers?|developers?|reports?|people)', combined_text)
@@ -6747,35 +7120,69 @@ def evaluate_scale_signals(response_data: dict, resume_data: dict) -> dict:
                 jd_team_size = int(g)
                 break
 
+    # v1.1: Build sub-signals summary for enhanced diagnosis
+    sub_signals = []
+    if financial_ownership["level"] == "full":
+        sub_signals.append(f"P&L ownership ({financial_ownership['type'] or 'budget'})")
+    elif financial_ownership["level"] == "partial":
+        sub_signals.append("cost accountability")
+
+    if time_horizon == "multi_year":
+        sub_signals.append("multi-year planning")
+    elif time_horizon == "annual":
+        sub_signals.append("annual planning")
+    elif time_horizon == "quarterly":
+        sub_signals.append("quarterly planning")
+
+    if ops_intensity == "explicit":
+        sub_signals.append("ops/reliability ownership")
+
     if has_scale_evidence:
         evidence = "Resume demonstrates scale"
         if resume_scale_match:
             evidence = f"Resume shows high-scale experience"
+        # v1.1: Enhance diagnosis with sub-signals
+        if sub_signals:
+            diagnosis = f"Strong evidence of scale experience. Sub-signals: {', '.join(sub_signals)}."
+        else:
+            diagnosis = "Strong evidence of scale experience."
         return {
             "capability_id": "scale_signals",
             "capability_name": "Scale Signals – Platform/Org",
             "jd_requirement": "Experience at scale (large teams, high traffic, enterprise)",
             "evidence_status": "explicit",
             "resume_evidence": evidence,
-            "diagnosis": "Strong evidence of scale experience.",
+            "diagnosis": diagnosis,
             "distance": None,
             "coachable": None,
             "criticality": "required"
         }
     elif has_team_evidence:
-        diagnosis = f"Resume shows team management"
-        if resume_team_size:
-            diagnosis = f"Resume shows team management ({resume_team_size} people)"
-            if jd_team_size and resume_team_size < jd_team_size:
-                diagnosis += f" but JD requires larger scale ({jd_team_size}+ people)"
+        # v1.1: Check if sub-signals strengthen implicit evidence
+        if financial_ownership["level"] == "full" or (time_horizon in ["multi_year", "annual"] and ops_intensity == "explicit"):
+            diagnosis = f"Team management with executive-level scale signals"
+            if resume_team_size:
+                diagnosis = f"Team of {resume_team_size} with executive-level signals. Sub-signals: {', '.join(sub_signals)}."
+            resume_evidence = f"Team of {resume_team_size} with scale maturity indicators" if resume_team_size else "Team management with scale maturity"
+            distance = f"Current scale ({resume_team_size or 'small'}) → Required scale ({jd_team_size or 'large'}) (strong indicators)" if jd_team_size else "Small → Large scale gap (strong indicators)"
+        else:
+            diagnosis = f"Resume shows team management"
+            if resume_team_size:
+                diagnosis = f"Resume shows team management ({resume_team_size} people)"
+                if jd_team_size and resume_team_size < jd_team_size:
+                    diagnosis += f" but JD requires larger scale ({jd_team_size}+ people)"
+            if sub_signals:
+                diagnosis += f" Partial sub-signals: {', '.join(sub_signals)}."
+            resume_evidence = f"Team of {resume_team_size}" if resume_team_size else "Team management experience"
+            distance = f"Current scale ({resume_team_size or 'small'}) → Required scale ({jd_team_size or 'large'})" if jd_team_size else "Small → Large scale gap"
         return {
             "capability_id": "scale_signals",
             "capability_name": "Scale Signals – Platform/Org",
             "jd_requirement": "Experience at scale (large teams, high traffic, enterprise)",
             "evidence_status": "implicit",
-            "resume_evidence": f"Team of {resume_team_size}" if resume_team_size else "Team management experience",
+            "resume_evidence": resume_evidence,
             "diagnosis": diagnosis,
-            "distance": f"Current scale ({resume_team_size or 'small'}) → Required scale ({jd_team_size or 'large'})" if jd_team_size else "Small → Large scale gap",
+            "distance": distance,
             "coachable": True,
             "criticality": "required"
         }
@@ -6795,12 +7202,17 @@ def evaluate_scale_signals(response_data: dict, resume_data: dict) -> dict:
 
 def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
     """
-    Evaluate Domain Adjacency capability.
+    Evaluate Domain Adjacency capability (CEC v1.1 Enhanced).
 
     Checks for:
     - Direct domain experience (exact match)
     - Closely adjacent experience (transferable)
     - Unrelated experience (different domain)
+
+    v1.1 Sub-signals:
+    - Domain depth (years, projects, specialization)
+    - Transferability signals (cross-domain patterns, methodology familiarity)
+    - Context awareness (regulatory, compliance, industry-specific)
     """
     role_title = (response_data.get("role_title", "") or "").lower()
     jd_text = (response_data.get("job_description", "") or "").lower()
@@ -6847,15 +7259,54 @@ def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
                 resume_domains.add(domain)
                 break
 
+    # v1.1: Detect domain depth using helper function
+    domain_depth = detect_domain_depth(combined_text, required_domain)
+
+    # v1.1: Detect transferability signals (cross-domain patterns)
+    transferability_keywords = ["cross-functional", "multiple domains", "diverse industries",
+                                "consulting", "transferred", "applied to", "adapted",
+                                "methodology", "framework", "best practices", "playbook"]
+    has_transferability = any(kw in combined_text for kw in transferability_keywords)
+    transferability_status = "explicit" if has_transferability else "missing"
+
+    # v1.1: Detect context awareness (regulatory, compliance, industry-specific)
+    context_keywords = {
+        "regulatory": ["regulatory", "compliance", "audit", "sox", "pci", "gdpr", "ccpa", "sec"],
+        "industry_specific": ["industry-specific", "vertical", "sector", "domain expert"],
+        "policy": ["policy", "governance", "standards", "certification"]
+    }
+    context_signals = []
+    for context_type, keywords in context_keywords.items():
+        if any(kw in combined_text for kw in keywords):
+            context_signals.append(context_type.replace("_", " "))
+
+    # v1.1: Build sub-signals summary
+    sub_signals = []
+    if domain_depth == "explicit":
+        sub_signals.append("deep domain expertise")
+    elif domain_depth == "implicit":
+        sub_signals.append("some domain exposure")
+
+    if transferability_status == "explicit":
+        sub_signals.append("transferability signals")
+
+    if context_signals:
+        sub_signals.append(f"context awareness ({', '.join(context_signals)})")
+
     # Check for exact match
     if required_domain in resume_domains:
+        # v1.1: Enhance diagnosis with sub-signals
+        if sub_signals:
+            diagnosis = f"Strong evidence of {required_domain.replace('_', ' ')} domain expertise. Sub-signals: {', '.join(sub_signals)}."
+        else:
+            diagnosis = f"Strong evidence of {required_domain.replace('_', ' ')} domain expertise."
         return {
             "capability_id": f"domain_{required_domain}",
             "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
             "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
             "evidence_status": "explicit",
             "resume_evidence": f"Resume shows direct {required_domain.replace('_', ' ')} experience",
-            "diagnosis": f"Strong evidence of {required_domain.replace('_', ' ')} domain expertise.",
+            "diagnosis": diagnosis,
             "distance": None,
             "coachable": None,
             "criticality": "required"
@@ -6878,14 +7329,25 @@ def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
 
     if overlapping_adjacent:
         adjacent_domain = list(overlapping_adjacent)[0]
+        # v1.1: Check if sub-signals strengthen adjacency case
+        if transferability_status == "explicit" or context_signals:
+            resume_evidence = f"Resume shows {adjacent_domain.replace('_', ' ')} experience with strong transferability signals"
+            diagnosis = f"{adjacent_domain.replace('_', ' ').title()} experience is adjacent to {required_domain.replace('_', ' ')} with transferability indicators. Sub-signals: {', '.join(sub_signals)}."
+            distance = f"{adjacent_domain.replace('_', ' ').title()} → {required_domain.replace('_', ' ').title()} domain gap (strong bridge)"
+        else:
+            resume_evidence = f"Resume shows {adjacent_domain.replace('_', ' ')} experience (adjacent domain)"
+            diagnosis = f"{adjacent_domain.replace('_', ' ').title()} experience is adjacent to {required_domain.replace('_', ' ')}, but no direct {required_domain.replace('_', ' ')} background."
+            if sub_signals:
+                diagnosis += f" Detected: {', '.join(sub_signals)}."
+            distance = f"{adjacent_domain.replace('_', ' ').title()} → {required_domain.replace('_', ' ').title()} domain gap (1 degree)"
         return {
             "capability_id": f"domain_{required_domain}",
             "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
             "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
             "evidence_status": "implicit",
-            "resume_evidence": f"Resume shows {adjacent_domain.replace('_', ' ')} experience (adjacent domain)",
-            "diagnosis": f"{adjacent_domain.replace('_', ' ').title()} experience is adjacent to {required_domain.replace('_', ' ')}, but no direct {required_domain.replace('_', ' ')} background.",
-            "distance": f"{adjacent_domain.replace('_', ' ').title()} → {required_domain.replace('_', ' ').title()} domain gap (1 degree)",
+            "resume_evidence": resume_evidence,
+            "diagnosis": diagnosis,
+            "distance": distance,
             "coachable": True,
             "criticality": "required"
         }
