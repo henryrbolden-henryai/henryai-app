@@ -83,8 +83,8 @@
         }
 
         .ask-henry-logo {
-            width: 56px;
-            height: 56px;
+            width: 72px;
+            height: 72px;
             transition: filter 0.3s ease;
         }
 
