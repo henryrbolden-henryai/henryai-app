@@ -57,6 +57,14 @@ def calibrate_gaps(
     CRITICAL: This function does NOT override Job Fit recommendation.
     It only interprets and prioritizes gaps for coaching output.
     """
+    # Defensive: ensure inputs are dicts, not strings
+    if not isinstance(cec_results, dict):
+        cec_results = {}
+    if not isinstance(candidate_resume, dict):
+        candidate_resume = {}
+    if not isinstance(job_requirements, dict):
+        job_requirements = {}
+
     # === LOGGING: ENTRY ===
     print("\n" + "=" * 80)
     print("🎯 CALIBRATION CONTROLLER - ENTRY")
@@ -232,6 +240,12 @@ def count_strong_signals(candidate_resume: Dict[str, Any], cec_results: Dict[str
 
     Returns dict with signal counts and specific proof points.
     """
+    # Defensive: ensure inputs are dicts
+    if not isinstance(candidate_resume, dict):
+        candidate_resume = {}
+    if not isinstance(cec_results, dict):
+        cec_results = {}
+
     signals = {
         'decision_authority': [],
         'scale': [],
@@ -311,14 +325,26 @@ def count_explicit_capabilities(cec_results: Dict[str, Any]) -> int:
     """
     Counts capabilities with explicit evidence status.
     """
+    # Defensive: ensure cec_results is a dict
+    if not isinstance(cec_results, dict):
+        return 0
+
     if 'capability_evidence_report' in cec_results:
-        evaluated = cec_results['capability_evidence_report'].get('evaluated_capabilities', [])
+        report = cec_results.get('capability_evidence_report')
+        if isinstance(report, dict):
+            evaluated = report.get('evaluated_capabilities', [])
+        else:
+            evaluated = []
     elif 'evaluated_capabilities' in cec_results:
         evaluated = cec_results.get('evaluated_capabilities', [])
     else:
         return 0
 
-    return sum(1 for cap in evaluated if cap.get('evidence_status') == 'explicit')
+    # Defensive: ensure evaluated is a list
+    if not isinstance(evaluated, list):
+        return 0
+
+    return sum(1 for cap in evaluated if isinstance(cap, dict) and cap.get('evidence_status') == 'explicit')
 
 
 def extract_dominant_narrative(
@@ -336,6 +362,12 @@ def extract_dominant_narrative(
 
     Returns a specific, concrete statement, NOT a generic phrase.
     """
+    # Defensive: ensure inputs are dicts
+    if not isinstance(candidate_resume, dict):
+        candidate_resume = {}
+    if not isinstance(job_requirements, dict):
+        job_requirements = {}
+
     combined_text = _build_resume_text(candidate_resume)
 
     # Priority 1: Decision Authority
@@ -409,17 +441,35 @@ def should_suppress_gap_due_to_strong_signals(
     Rule: If candidate has ≥3 strong signals (scope + scale + authority),
     suppress all coachable gaps for that capability.
     """
+    # Defensive: ensure inputs are dicts
+    if not isinstance(gap, dict):
+        return False
+    if not isinstance(strong_signals, dict):
+        strong_signals = {}
+    if not isinstance(cec_results, dict):
+        cec_results = {}
+
     capability_id = gap.get('capability_id', '').lower()
 
     # Check if this capability has explicit evidence
     if 'capability_evidence_report' in cec_results:
-        evaluated = cec_results['capability_evidence_report'].get('evaluated_capabilities', [])
+        report = cec_results.get('capability_evidence_report')
+        if isinstance(report, dict):
+            evaluated = report.get('evaluated_capabilities', [])
+        else:
+            evaluated = []
     elif 'evaluated_capabilities' in cec_results:
         evaluated = cec_results.get('evaluated_capabilities', [])
     else:
         evaluated = []
 
+    # Defensive: ensure evaluated is a list
+    if not isinstance(evaluated, list):
+        evaluated = []
+
     for cap in evaluated:
+        if not isinstance(cap, dict):
+            continue
         if cap.get('capability_id', '').lower() == capability_id:
             if cap.get('evidence_status') == 'explicit':
                 return True  # Explicit evidence overrides implicit/missing
@@ -448,25 +498,42 @@ def should_suppress_gap_due_to_strong_signals(
 
 def _build_resume_text(candidate_resume: Dict[str, Any]) -> str:
     """Build combined text from resume for pattern matching."""
+    # Defensive: handle string or None input
+    if not candidate_resume:
+        return ''
+    if isinstance(candidate_resume, str):
+        return candidate_resume
+    if not isinstance(candidate_resume, dict):
+        return str(candidate_resume)
+
     parts = []
 
     summary = candidate_resume.get('summary', '')
-    if summary:
+    if summary and isinstance(summary, str):
         parts.append(summary)
 
     experience = candidate_resume.get('experience', []) or []
-    for exp in experience:
-        if isinstance(exp, dict):
-            parts.append(exp.get('title', ''))
-            parts.append(exp.get('company', ''))
-            parts.append(exp.get('description', ''))
-            # Also check bullets/achievements
-            bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
-            for bullet in bullets:
-                if isinstance(bullet, str):
-                    parts.append(bullet)
-                elif isinstance(bullet, dict):
-                    parts.append(bullet.get('text', ''))
+    # Handle case where experience is a string
+    if isinstance(experience, str):
+        parts.append(experience)
+    elif isinstance(experience, list):
+        for exp in experience:
+            if isinstance(exp, dict):
+                parts.append(exp.get('title', '') or '')
+                parts.append(exp.get('company', '') or '')
+                parts.append(exp.get('description', '') or '')
+                # Also check bullets/achievements
+                bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
+                if isinstance(bullets, str):
+                    parts.append(bullets)
+                elif isinstance(bullets, list):
+                    for bullet in bullets:
+                        if isinstance(bullet, str):
+                            parts.append(bullet)
+                        elif isinstance(bullet, dict):
+                            parts.append(bullet.get('text', '') or '')
+            elif isinstance(exp, str):
+                parts.append(exp)
 
     return ' '.join(filter(None, parts))
 
@@ -477,17 +544,32 @@ def extract_all_gaps_from_cec(cec_results: Dict[str, Any]) -> List[Dict[str, Any
 
     Returns: list of gap dicts with capability info
     """
+    # Defensive: ensure cec_results is a dict
+    if not isinstance(cec_results, dict):
+        return []
+
     gaps = []
 
     # Handle capability_evidence_report structure
     if 'capability_evidence_report' in cec_results:
-        evaluated = cec_results['capability_evidence_report'].get('evaluated_capabilities', [])
+        report = cec_results.get('capability_evidence_report')
+        if isinstance(report, dict):
+            evaluated = report.get('evaluated_capabilities', [])
+        else:
+            evaluated = []
     elif 'evaluated_capabilities' in cec_results:
         evaluated = cec_results.get('evaluated_capabilities', [])
     else:
         evaluated = []
 
+    # Defensive: ensure evaluated is a list
+    if not isinstance(evaluated, list):
+        return []
+
     for cap in evaluated:
+        # Defensive: ensure cap is a dict
+        if not isinstance(cap, dict):
+            continue
         evidence_status = cap.get('evidence_status', '')
         # Only include gaps (not explicit matches)
         if evidence_status in ['implicit', 'missing']:
