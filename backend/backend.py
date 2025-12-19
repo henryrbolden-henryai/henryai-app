@@ -5560,8 +5560,14 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
             # REVISED: Use calibrate_gaps control layer to prioritize gaps for coaching
             # This does NOT override Job Fit recommendation
+            # CRITICAL: Use locked_recommendation if set, otherwise use current recommendation
+            # This ensures calibration sees the FINAL recommendation, not the pre-lock one
             cec_results = response_data.get("capability_evidence_report", {})
-            job_fit_recommendation = response_data.get("recommendation", "Apply")
+            if recommendation_locked and locked_recommendation:
+                job_fit_recommendation = locked_recommendation
+                print(f"   🔒 Using LOCKED recommendation for calibration: {locked_recommendation}")
+            else:
+                job_fit_recommendation = response_data.get("recommendation", "Apply")
 
             # Map Job Fit recommendation to coaching-compatible format
             recommendation_map = {

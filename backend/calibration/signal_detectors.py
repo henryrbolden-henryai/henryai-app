@@ -169,8 +169,17 @@ def has_upward_trajectory(experience: Dict[str, Any]) -> bool:
 
     Returns: bool
     """
+    # Defensive: handle non-dict experience
+    if not experience or not isinstance(experience, dict):
+        return False
+
     roles = experience.get('roles', []) or experience.get('experience', [])
-    if not roles or len(roles) < 2:
+
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list):
+        return False
+
+    if len(roles) < 2:
         return False
 
     # Level hierarchy (lower = more senior)
@@ -194,7 +203,11 @@ def has_upward_trajectory(experience: Dict[str, Any]) -> bool:
         return 7  # Default to mid-level
 
     # Check if titles show progression (decreasing rank = more senior)
-    ranks = [get_level_rank(role.get('title', '')) for role in roles]
+    # Defensive: skip non-dict roles
+    ranks = [get_level_rank(role.get('title', '')) for role in roles if isinstance(role, dict)]
+
+    if len(ranks) < 2:
+        return False
 
     # Roles are typically listed newest first, so we reverse
     ranks_chronological = list(reversed(ranks))
@@ -212,18 +225,30 @@ def calculate_career_span(experience: Dict[str, Any]) -> float:
     """
     Returns years between first and last role.
     """
+    # Defensive: handle non-dict experience
+    if not experience or not isinstance(experience, dict):
+        return 0.0
+
     roles = experience.get('roles', []) or experience.get('experience', [])
     if not roles:
         return 0.0
 
+    # Defensive: handle non-list roles
+    if not isinstance(roles, list):
+        return 0.0
+
     dates = []
     for role in roles:
+        # Defensive: skip non-dict roles (could be strings in malformed data)
+        if not isinstance(role, dict):
+            continue
+
         start_date = role.get('start_date') or role.get('dates', {}).get('start')
         end_date = role.get('end_date') or role.get('dates', {}).get('end')
 
         if start_date:
             dates.append(_parse_date(start_date))
-        if end_date and end_date.lower() != 'present':
+        if end_date and isinstance(end_date, str) and end_date.lower() != 'present':
             dates.append(_parse_date(end_date))
 
     # Filter out None dates
@@ -751,12 +776,29 @@ def _build_experience_text(experience: Dict[str, Any]) -> str:
     if not experience:
         return ""
 
+    # Defensive: handle string input
+    if isinstance(experience, str):
+        return experience
+
+    # Defensive: handle non-dict input
+    if not isinstance(experience, dict):
+        return str(experience)
+
     parts = []
 
     # Handle roles/experience list
     roles = experience.get('roles', []) or experience.get('experience', [])
-    for role in roles:
-        parts.append(_build_role_text(role))
+
+    # Defensive: handle non-list roles
+    if isinstance(roles, str):
+        parts.append(roles)
+    elif isinstance(roles, list):
+        for role in roles:
+            # Defensive: skip non-dict roles
+            if isinstance(role, dict):
+                parts.append(_build_role_text(role))
+            elif isinstance(role, str):
+                parts.append(role)
 
     # Handle summary
     if experience.get('summary'):
@@ -777,6 +819,14 @@ def _build_role_text(role: Dict[str, Any]) -> str:
     if not role:
         return ""
 
+    # Defensive: handle string input
+    if isinstance(role, str):
+        return role
+
+    # Defensive: handle non-dict input
+    if not isinstance(role, dict):
+        return str(role)
+
     parts = []
 
     if role.get('title'):
@@ -788,8 +838,10 @@ def _build_role_text(role: Dict[str, Any]) -> str:
 
     # Handle bullets/highlights
     bullets = role.get('highlights', []) or role.get('bullets', [])
-    if bullets:
-        parts.extend(str(b) for b in bullets)
+    if isinstance(bullets, str):
+        parts.append(bullets)
+    elif isinstance(bullets, list):
+        parts.extend(str(b) for b in bullets if b)
 
     return ' '.join(parts)
 
