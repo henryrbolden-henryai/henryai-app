@@ -5248,18 +5248,44 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     else:
         years_percentage = 100  # No requirement specified
 
-    # Determine hard cap based on years percentage (AGGRESSIVE CAPS)
-    if years_percentage < 50:
-        hard_cap = 45
-        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 45%"
-    elif years_percentage < 70:
-        hard_cap = 50
-        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 50%"
-    elif years_percentage < 90:
+    # ========================================================================
+    # HARD CAP LOGIC - REVISED PER RECRUITER CALIBRATION
+    #
+    # ONLY apply hard caps if:
+    # 1. Experience is explicitly marked as a HARD requirement in JD
+    # 2. AND candidate years < requirement by >40% (years_percentage < 60)
+    #
+    # Otherwise: downgrade to "Apply with Caution", NOT "Do Not Apply"
+    #
+    # This prevents false negatives for candidates like Marcus (9 years total,
+    # 5.8 years EM) when JD asks for 7+ years.
+    # ========================================================================
+
+    # Check if experience requirement is explicitly hard (must have, required, etc.)
+    jd_text = (response_data.get("job_description", "") or "").lower()
+    experience_is_hard_requirement = any(phrase in jd_text for phrase in [
+        "must have", "required:", "requirements:", "minimum of",
+        "at least", "years required", "mandatory", "non-negotiable"
+    ])
+
+    # Determine hard cap based on years percentage
+    # REVISED: Only apply aggressive caps for hard requirements AND >40% gap
+    if years_percentage < 60 and experience_is_hard_requirement and not recommendation_locked:
+        # Significant gap (>40%) on hard requirement - cap at 55 (Apply with Caution)
         hard_cap = 55
-        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard cap at 55%"
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), hard requirement gap"
+        print(f"   ⚠️ HARD CAP (experience hard requirement, >40% gap): 55%")
+    elif years_percentage < 60 and not experience_is_hard_requirement:
+        # Significant gap but NOT a hard requirement - soft cap at 60 (Apply with Caution threshold)
+        hard_cap = 60
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), preferred not hard requirement"
+        print(f"   📝 SOFT CAP (experience preferred, not hard requirement): 60%")
+    elif years_percentage < 80:
+        # Moderate gap - light cap at 70
+        hard_cap = 70
+        hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years})"
     else:
-        hard_cap = 100  # No cap for candidates with 90%+ of required years
+        hard_cap = 100  # No cap for candidates with 80%+ of required years
         hard_cap_reason = None
 
     # Apply hard cap if necessary
@@ -5279,20 +5305,32 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["fit_score_breakdown"]["hard_cap_reason"] = hard_cap_reason
     response_data["fit_score_breakdown"]["final_score"] = capped_score
 
-    # Force-correct recommendation based on capped score (6-TIER GRADUATED SYSTEM)
-    if capped_score < 50:
+    # Force-correct recommendation based on capped score (REVISED - LESS AGGRESSIVE)
+    # Per Recruiter Calibration: Only "Do Not Apply" if recommendation_locked or eligibility failed
+    # Experience gaps should result in "Apply with Caution", not "Do Not Apply"
+    if capped_score < 50 and recommendation_locked:
+        # Only force "Do Not Apply" if already locked by eligibility/leadership gate
         correct_recommendation = "Do Not Apply"
         alternative_actions = [
             f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience instead of {required_years} years",
             "Build 1-2 more years of experience at an established company (Series B+, >50 employees) before targeting this level",
             "Consider Associate/Junior level roles at this company if available"
         ]
-    elif capped_score < 60:
-        correct_recommendation = "Do Not Apply"
+    elif capped_score < 50:
+        # Score < 50 but NOT locked - downgrade to Apply with Caution, not Do Not Apply
+        correct_recommendation = "Apply with Caution"
         alternative_actions = [
-            f"You need {required_years - candidate_years:.1f} more years of relevant experience for this role",
-            "Target mid-level instead of senior roles at this experience level",
-            "Only apply if you have a strong internal referral who can advocate for you"
+            f"You have {candidate_years:.1f} years vs {required_years} required - this is a stretch",
+            "Lead with your strongest, most relevant accomplishments",
+            "Consider reaching out to someone at the company before applying"
+        ]
+    elif capped_score < 60:
+        # Experience gap but not disqualifying
+        correct_recommendation = "Apply with Caution"
+        alternative_actions = [
+            f"Experience gap: {candidate_years:.1f} years vs {required_years} required",
+            "Position adjacent experience carefully in your materials",
+            "Network with someone at the company to strengthen your candidacy"
         ]
     elif capped_score < 70:
         correct_recommendation = "Apply with Caution"
@@ -5540,9 +5578,18 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         try:
             # Prepare candidate experience for calibration
+            # DEFENSIVE: Ensure experience is always a list, never a string
+            raw_experience = resume_data.get('experience', [])
+            if isinstance(raw_experience, str):
+                # LinkedIn free text - wrap in empty list to avoid str.get() crashes
+                print(f"   ⚠️ GUARDRAIL: Experience is string (LinkedIn free text), wrapping for safety")
+                raw_experience = []
+            elif not isinstance(raw_experience, list):
+                raw_experience = []
+
             candidate_experience = {
-                'roles': resume_data.get('experience', []),
-                'experience': resume_data.get('experience', []),
+                'roles': raw_experience,
+                'experience': raw_experience,
                 'summary': resume_data.get('summary', ''),
                 'skills': resume_data.get('skills', []),
                 'domain': response_data.get('experience_analysis', {}).get('domain', ''),
@@ -7702,6 +7749,39 @@ def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
 
     # No match - missing
     resume_domain_str = ", ".join([d.replace('_', ' ') for d in resume_domains]) if resume_domains else "general"
+
+    # =========================================================================
+    # GUARDRAIL: Auto-downgrade healthcare domain gap for manager-level roles
+    # Per Calibration Fix: If role title is manager-level AND domain gap is
+    # healthcare AND JD does NOT explicitly mention healthcare keywords,
+    # downgrade from terminal (coachable: False) to coachable (coachable: True)
+    # =========================================================================
+    manager_level_keywords = ["engineering manager", "product manager", "program manager",
+                              "project manager", "senior manager", "staff", "senior",
+                              "team lead", "tech lead", "technical lead"]
+    healthcare_keywords = ["healthcare", "health tech", "medical", "clinical", "patient", "hipaa"]
+
+    is_manager_level = any(kw in role_title for kw in manager_level_keywords)
+    jd_explicitly_requires_healthcare = any(kw in jd_text for kw in healthcare_keywords)
+
+    # If healthcare domain gap but JD doesn't explicitly require healthcare
+    # AND this is a manager-level role, make it coachable
+    if required_domain == "healthcare" and is_manager_level and not jd_explicitly_requires_healthcare:
+        print(f"   ⚠️ GUARDRAIL: Healthcare domain gap detected but JD does NOT explicitly require healthcare")
+        print(f"      Role title: {role_title} (manager-level: {is_manager_level})")
+        print(f"      Auto-downgrading from terminal → coachable")
+        return {
+            "capability_id": f"domain_{required_domain}",
+            "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
+            "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
+            "evidence_status": "missing",
+            "resume_evidence": None,
+            "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background. Note: JD does not explicitly require healthcare—domain gap auto-downgraded to coachable.",
+            "distance": f"0 → {required_domain.replace('_', ' ')} domain gap (auto-downgraded to coachable)",
+            "coachable": True,  # Auto-downgraded per guardrail
+            "criticality": "preferred"  # Downgrade criticality too
+        }
+
     return {
         "capability_id": f"domain_{required_domain}",
         "capability_name": f"Domain Expertise – {required_domain.replace('_', ' ').title()}",
