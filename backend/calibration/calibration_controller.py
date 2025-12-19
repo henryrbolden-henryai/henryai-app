@@ -11,9 +11,15 @@
 # - Calibration explains a "Do Not Apply," it does NOT create one
 # - locked_reason comes from Job Fit only
 # - Calibration provides redirect_reason for coaching, not for changing recommendation
+#
+# RECRUITER REALITY CHECK:
+# - If candidate shows ≥3 strong signals, suppress coachable gaps for that capability
+# - Explicit outcomes override missing keyword patterns
+# - Think like a recruiter, not a rule engine
 # ============================================================================
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
+import re
 from .gap_classifier import (
     classify_gap,
     assess_domain_transferability,
@@ -43,18 +49,53 @@ def calibrate_gaps(
             'secondary_gaps': list (max 2, coachable only),
             'redirect_reason': str or None (if terminal exists),
             'suppress_gaps_section': bool (if silence appropriate),
-            'suppressed_gaps': list (for internal logging)
+            'suppressed_gaps': list (for internal logging),
+            'strong_signals': dict (for coaching controller),
+            'dominant_narrative': str or None (for Strong Apply)
         }
 
     CRITICAL: This function does NOT override Job Fit recommendation.
     It only interprets and prioritizes gaps for coaching output.
     """
+    # ==========================================================================
+    # STEP 0: EVIDENCE SANITY CHECK (Recruiter Reality Assertion)
+    # If candidate shows ≥3 strong signals, they're credible. Don't nitpick.
+    # ==========================================================================
+    strong_signals = count_strong_signals(candidate_resume, cec_results)
+    explicit_capabilities = count_explicit_capabilities(cec_results)
+    dominant_narrative = extract_dominant_narrative(candidate_resume, job_requirements)
+
+    # Recruiter Reality Assertion:
+    # If Job Fit = "Strong Apply" AND ≥2 capabilities are explicit, suppress all gaps
+    if job_fit_recommendation == "Strong Apply" and explicit_capabilities >= 2:
+        return {
+            'primary_gap': None,
+            'secondary_gaps': [],
+            'redirect_reason': None,
+            'suppress_gaps_section': True,
+            'suppressed_gaps': [],
+            'strong_signals': strong_signals,
+            'dominant_narrative': dominant_narrative,
+            'recruiter_override': 'strong_explicit_evidence'
+        }
+
     # Extract all gaps from CEC results
     all_gaps = extract_all_gaps_from_cec(cec_results)
 
-    # Step 1: Classify each gap
+    # Step 1: Classify each gap, respecting strong signal overrides
     classified_gaps = []
     for gap in all_gaps:
+        # Check if this capability has strong explicit evidence that overrides the gap
+        if should_suppress_gap_due_to_strong_signals(gap, strong_signals, cec_results):
+            classified_gaps.append({
+                'gap': gap,
+                'classification': 'suppressed',
+                'reason': 'Overridden by strong explicit signals',
+                'redirect': None,
+                'mitigation': None
+            })
+            continue
+
         classification = classify_gap_terminal_vs_coachable(
             gap=gap,
             candidate_resume=candidate_resume,
@@ -71,26 +112,38 @@ def calibrate_gaps(
     # Step 2: Filter by Job Fit decision
     # If "Strong Apply", suppress gaps section (but allow strategic guidance)
     if job_fit_recommendation == "Strong Apply":
-        # CORRECTED: Silence suppresses gaps, not "Your Move"
         return {
             'primary_gap': None,
             'secondary_gaps': [],
             'redirect_reason': None,
-            'suppress_gaps_section': True,  # Hide gaps section
-            'suppressed_gaps': classified_gaps  # Log what we suppressed
+            'suppress_gaps_section': True,
+            'suppressed_gaps': classified_gaps,
+            'strong_signals': strong_signals,
+            'dominant_narrative': dominant_narrative
+        }
+
+    # If "Apply", check if strong signals warrant gap suppression
+    if job_fit_recommendation == "Apply" and strong_signals.get('total', 0) >= 3:
+        return {
+            'primary_gap': None,
+            'secondary_gaps': [],
+            'redirect_reason': None,
+            'suppress_gaps_section': True,
+            'suppressed_gaps': classified_gaps,
+            'strong_signals': strong_signals,
+            'dominant_narrative': dominant_narrative,
+            'recruiter_override': 'strong_signals_apply'
         }
 
     # If "Do Not Apply", only terminal gaps matter for coaching explanation
     if job_fit_recommendation == "Do Not Apply":
         relevant_gaps = [g for g in classified_gaps if g['classification'] == 'terminal']
     elif job_fit_recommendation in ["Apply with Caution", "Apply"]:
-        # Include coachable gaps only (terminal already handled by Job Fit)
         relevant_gaps = [g for g in classified_gaps if g['classification'] in ['terminal', 'coachable']]
     else:
         relevant_gaps = classified_gaps
 
     # Step 3: Apply gap hierarchy (Priority order)
-    # Terminal > coachable
     terminal_gaps = [g for g in relevant_gaps if g['classification'] == 'terminal']
     coachable_gaps = [g for g in relevant_gaps if g['classification'] == 'coachable']
     suppressed_gaps = [g for g in classified_gaps if g['classification'] == 'suppressed']
@@ -101,23 +154,17 @@ def calibrate_gaps(
 
     # Step 5: Select primary gap and secondary gaps
     if prioritized_terminal:
-        # Terminal gap exists - it's the only thing that matters
         primary_gap = prioritized_terminal[0]
-        secondary_gaps = []  # Terminal overrides everything
+        secondary_gaps = []
         redirect_reason = primary_gap.get('redirect')
         suppress_gaps_section = False
     elif prioritized_coachable:
-        # Multiple coachable gaps scenario
         primary_gap = prioritized_coachable[0]
-        secondary_gaps = prioritized_coachable[1:3]  # Max 2 additional gaps
-
-        # Assertion for safety
+        secondary_gaps = prioritized_coachable[1:3]
         assert len(secondary_gaps) <= 2, "Secondary gaps must not exceed 2"
-
         redirect_reason = None
         suppress_gaps_section = False
     else:
-        # No significant gaps
         primary_gap = None
         secondary_gaps = []
         redirect_reason = None
@@ -128,8 +175,249 @@ def calibrate_gaps(
         'secondary_gaps': secondary_gaps,
         'redirect_reason': redirect_reason,
         'suppress_gaps_section': suppress_gaps_section,
-        'suppressed_gaps': suppressed_gaps  # For internal logging/QA
+        'suppressed_gaps': suppressed_gaps,
+        'strong_signals': strong_signals,
+        'dominant_narrative': dominant_narrative
     }
+
+
+def count_strong_signals(candidate_resume: Dict[str, Any], cec_results: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Counts strong signals from resume that indicate credibility.
+
+    Signal hierarchy (in order of strength):
+    1. Decision authority (hiring, budget, P&L ownership)
+    2. Scale (users, traffic, revenue, uptime)
+    3. Business impact (cost savings, growth percentage, launch outcomes)
+    4. Org scope (team size, platform ownership, multi-team influence)
+
+    Returns dict with signal counts and specific proof points.
+    """
+    signals = {
+        'decision_authority': [],
+        'scale': [],
+        'business_impact': [],
+        'org_scope': [],
+        'total': 0
+    }
+
+    # Build combined text from resume
+    combined_text = _build_resume_text(candidate_resume)
+
+    # 1. Decision Authority Signals
+    authority_patterns = [
+        (r'hired\s+\d+', 'hiring authority'),
+        (r'built\s+(?:a\s+)?team\s+(?:of\s+)?\d+', 'team building'),
+        (r'\$[\d.]+[MBK]?\+?\s*(?:budget|p&l|revenue)', 'budget ownership'),
+        (r'p&l\s*(?:ownership|responsibility)', 'P&L ownership'),
+        (r'(?:own|owned|owning)\s+(?:the\s+)?(?:roadmap|strategy|vision)', 'strategic ownership'),
+        (r'(?:led|leading|lead)\s+(?:the\s+)?(?:decision|initiative|transformation)', 'decision authority'),
+        (r'(?:approved|approving)\s+(?:budget|headcount|spend)', 'approval authority'),
+    ]
+    for pattern, label in authority_patterns:
+        if re.search(pattern, combined_text, re.IGNORECASE):
+            signals['decision_authority'].append(label)
+
+    # 2. Scale Signals
+    scale_patterns = [
+        (r'(\d+(?:\.\d+)?)\s*(?:million|M)\s*(?:users|customers|DAU|MAU)', 'user scale'),
+        (r'(\d+(?:\.\d+)?)\s*(?:billion|B)\s*(?:requests|transactions)', 'traffic scale'),
+        (r'\$(\d+(?:\.\d+)?)\s*(?:million|M|billion|B)\s*(?:revenue|ARR|GMV)', 'revenue scale'),
+        (r'(\d{2,})\s*%\s*(?:uptime|availability|SLA)', 'reliability scale'),
+        (r'(?:scaled|grew|increased)\s+(?:from\s+)?\d+\s*(?:to|→)\s*\d+', 'growth trajectory'),
+        (r'(\d+)k\+?\s*(?:users|customers|transactions)', 'K-scale users'),
+    ]
+    for pattern, label in scale_patterns:
+        if re.search(pattern, combined_text, re.IGNORECASE):
+            signals['scale'].append(label)
+
+    # 3. Business Impact Signals
+    impact_patterns = [
+        (r'(?:saved|reduced)\s*\$?(\d+(?:\.\d+)?)\s*(?:million|M|K)', 'cost savings'),
+        (r'(\d+)\s*%\s*(?:increase|growth|improvement)', 'percentage growth'),
+        (r'launched\s+(?:\w+\s+)*(?:product|feature|platform)', 'product launch'),
+        (r'(?:drove|achieved|delivered)\s+\$?(\d+)', 'revenue impact'),
+        (r'(?:reduced|improved)\s+(?:\w+\s+)*by\s+(\d+)\s*%', 'efficiency gain'),
+        (r'(?:0|zero)\s*(?:to|→)\s*(?:\$?\d+|launch)', 'zero-to-one'),
+    ]
+    for pattern, label in impact_patterns:
+        if re.search(pattern, combined_text, re.IGNORECASE):
+            signals['business_impact'].append(label)
+
+    # 4. Org Scope Signals
+    scope_patterns = [
+        (r'(?:team|org)\s*(?:of\s+)?(\d{2,})\s*(?:people|engineers|members)?', 'large team'),
+        (r'(?:managed|led|oversaw)\s+(\d+)\s*(?:direct|reports|engineers)', 'direct reports'),
+        (r'(?:cross-functional|multi-team|org-wide)', 'org influence'),
+        (r'(?:platform|infrastructure|core)\s*(?:team|org)', 'platform scope'),
+        (r'(?:global|international|multi-region)', 'global scope'),
+        (r'(?:VP|Director|Head\s+of)', 'executive level'),
+    ]
+    for pattern, label in scope_patterns:
+        if re.search(pattern, combined_text, re.IGNORECASE):
+            signals['org_scope'].append(label)
+
+    # Calculate total unique signals
+    signals['total'] = (
+        min(len(signals['decision_authority']), 2) +  # Cap each category
+        min(len(signals['scale']), 2) +
+        min(len(signals['business_impact']), 2) +
+        min(len(signals['org_scope']), 2)
+    )
+
+    return signals
+
+
+def count_explicit_capabilities(cec_results: Dict[str, Any]) -> int:
+    """
+    Counts capabilities with explicit evidence status.
+    """
+    if 'capability_evidence_report' in cec_results:
+        evaluated = cec_results['capability_evidence_report'].get('evaluated_capabilities', [])
+    elif 'evaluated_capabilities' in cec_results:
+        evaluated = cec_results.get('evaluated_capabilities', [])
+    else:
+        return 0
+
+    return sum(1 for cap in evaluated if cap.get('evidence_status') == 'explicit')
+
+
+def extract_dominant_narrative(
+    candidate_resume: Dict[str, Any],
+    job_requirements: Dict[str, Any]
+) -> Optional[str]:
+    """
+    Extracts ONE dominant narrative for Strong Apply coaching.
+
+    Hierarchy:
+    1. Decision authority (hiring, budget, ownership)
+    2. Scale (users, traffic, revenue, uptime)
+    3. Business impact (cost savings, growth)
+    4. Org scope (team size, platform ownership)
+
+    Returns a specific, concrete statement, NOT a generic phrase.
+    """
+    combined_text = _build_resume_text(candidate_resume)
+
+    # Priority 1: Decision Authority
+    hire_match = re.search(r'(?:hired|built\s+(?:a\s+)?team\s+of)\s+(\d+)', combined_text, re.IGNORECASE)
+    if hire_match:
+        count = hire_match.group(1)
+        return f"built and scaled a team of {count}"
+
+    budget_match = re.search(r'\$(\d+(?:\.\d+)?)\s*([MBK])\s*(?:budget|p&l)', combined_text, re.IGNORECASE)
+    if budget_match:
+        amount, unit = budget_match.groups()
+        return f"owned ${amount}{unit} P&L"
+
+    # Priority 2: Scale
+    user_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:million|M)\s*(?:users|customers|DAU|MAU)', combined_text, re.IGNORECASE)
+    if user_match:
+        count = user_match.group(1)
+        return f"scaled product to {count}M users"
+
+    revenue_match = re.search(r'\$(\d+(?:\.\d+)?)\s*(?:million|M|billion|B)\s*(?:revenue|ARR)', combined_text, re.IGNORECASE)
+    if revenue_match:
+        amount = revenue_match.group(1)
+        unit = 'B' if 'billion' in combined_text.lower() else 'M'
+        return f"drove ${amount}{unit} revenue"
+
+    # Priority 3: Business Impact
+    savings_match = re.search(r'(?:saved|reduced)\s*\$(\d+(?:\.\d+)?)\s*([MK])', combined_text, re.IGNORECASE)
+    if savings_match:
+        amount, unit = savings_match.groups()
+        return f"delivered ${amount}{unit} in cost savings"
+
+    growth_match = re.search(r'(\d+)\s*%\s*(?:increase|growth|improvement)\s+(?:in\s+)?(\w+)', combined_text, re.IGNORECASE)
+    if growth_match:
+        pct, metric = growth_match.groups()
+        return f"drove {pct}% {metric} growth"
+
+    # Priority 4: Org Scope
+    team_match = re.search(r'(?:led|managed|oversaw)\s+(?:a\s+)?(?:team\s+of\s+)?(\d+)\s*(?:\+\s*)?(?:engineers|people|reports)', combined_text, re.IGNORECASE)
+    if team_match:
+        count = team_match.group(1)
+        return f"led a team of {count}"
+
+    # Fallback: Look for platform/product ownership
+    if re.search(r'(?:owned|own)\s+(?:the\s+)?(?:platform|product|roadmap)', combined_text, re.IGNORECASE):
+        return "owned the product roadmap end-to-end"
+
+    return None
+
+
+def should_suppress_gap_due_to_strong_signals(
+    gap: Dict[str, Any],
+    strong_signals: Dict[str, Any],
+    cec_results: Dict[str, Any]
+) -> bool:
+    """
+    Determines if a gap should be suppressed because candidate has strong
+    explicit signals in that capability area.
+
+    Rule: If candidate has ≥3 strong signals (scope + scale + authority),
+    suppress all coachable gaps for that capability.
+    """
+    capability_id = gap.get('capability_id', '').lower()
+
+    # Check if this capability has explicit evidence
+    if 'capability_evidence_report' in cec_results:
+        evaluated = cec_results['capability_evidence_report'].get('evaluated_capabilities', [])
+    elif 'evaluated_capabilities' in cec_results:
+        evaluated = cec_results.get('evaluated_capabilities', [])
+    else:
+        evaluated = []
+
+    for cap in evaluated:
+        if cap.get('capability_id', '').lower() == capability_id:
+            if cap.get('evidence_status') == 'explicit':
+                return True  # Explicit evidence overrides implicit/missing
+
+    # Check if strong signals override this gap type
+    total_signals = strong_signals.get('total', 0)
+
+    if total_signals >= 3:
+        # Leadership gaps suppressed if decision authority signals exist
+        if 'leadership' in capability_id or 'scope' in capability_id:
+            if strong_signals.get('decision_authority') or strong_signals.get('org_scope'):
+                return True
+
+        # Scale gaps suppressed if scale signals exist
+        if 'scale' in capability_id:
+            if strong_signals.get('scale'):
+                return True
+
+        # Cross-functional gaps suppressed if org scope signals exist
+        if 'cross_functional' in capability_id:
+            if strong_signals.get('org_scope'):
+                return True
+
+    return False
+
+
+def _build_resume_text(candidate_resume: Dict[str, Any]) -> str:
+    """Build combined text from resume for pattern matching."""
+    parts = []
+
+    summary = candidate_resume.get('summary', '')
+    if summary:
+        parts.append(summary)
+
+    experience = candidate_resume.get('experience', []) or []
+    for exp in experience:
+        if isinstance(exp, dict):
+            parts.append(exp.get('title', ''))
+            parts.append(exp.get('company', ''))
+            parts.append(exp.get('description', ''))
+            # Also check bullets/achievements
+            bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
+            for bullet in bullets:
+                if isinstance(bullet, str):
+                    parts.append(bullet)
+                elif isinstance(bullet, dict):
+                    parts.append(bullet.get('text', ''))
+
+    return ' '.join(filter(None, parts))
 
 
 def extract_all_gaps_from_cec(cec_results: Dict[str, Any]) -> List[Dict[str, Any]]:

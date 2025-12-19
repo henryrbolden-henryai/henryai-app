@@ -55,12 +55,14 @@ def generate_coaching_output(
 
     # Generate "Your Move" (ALWAYS generate, even with silence)
     # CORRECTED: Silence suppresses gaps, not "Your Move"
+    # Pass full calibrated_gaps for dominant_narrative and strong_signals access
     your_move = generate_your_move(
         primary_gap=calibrated_gaps.get('primary_gap'),
         job_fit_recommendation=job_fit_recommendation,
         redirect_reason=calibrated_gaps.get('redirect_reason'),
         candidate_resume=candidate_resume,
-        job_requirements=job_requirements
+        job_requirements=job_requirements,
+        calibrated_gaps=calibrated_gaps  # For dominant_narrative
     )
 
     # Determine "Gaps to Address" visibility
@@ -94,7 +96,8 @@ def generate_your_move(
     job_fit_recommendation: str,
     redirect_reason: Optional[str],
     candidate_resume: Dict[str, Any],
-    job_requirements: Dict[str, Any]
+    job_requirements: Dict[str, Any],
+    calibrated_gaps: Optional[Dict[str, Any]] = None
 ) -> str:
     """
     Generates "Your Move" section per Selective Coaching Spec.
@@ -104,12 +107,13 @@ def generate_your_move(
     - One action only: Apply, Redirect, or Position
     - No mixed signals
     - If terminal gap: no positioning advice, direct redirect only
-    - CORRECTED: No vague language like "some gaps"
+    - NO vague language: "aligns well", "relevant experience", "some gaps"
+    - Strong Apply REQUIRES concrete proof point from resume
 
     Structure:
-    [Job Fit Recommendation]: [Reason from CEC if terminal].
+    [Job Fit Recommendation]: [Specific proof point].
     [What to do]: [Specific action].
-    [Expectation]: [Reality check on competitiveness].
+    [Expectation]: [Reality check].
     """
     if redirect_reason:
         # Terminal gap - redirect only, no positioning
@@ -117,13 +121,11 @@ def generate_your_move(
 
     elif job_fit_recommendation == "Do Not Apply":
         # No terminal gap from calibration but fit is poor
-        # Must be specific, use primary gap if available
         if primary_gap:
             gap_reason = primary_gap.get('reason', '')
             gap_diagnosis = primary_gap.get('gap', {}).get('diagnosis', gap_reason)
             return f"{job_fit_recommendation}: {gap_diagnosis} Focus on roles that match your domain expertise and experience level."
         else:
-            # No gap survived calibration - use general redirect
             return f"{job_fit_recommendation}: Your background does not align with this role's core requirements. Focus on roles that match your domain expertise and experience level."
 
     elif job_fit_recommendation == "Apply with Caution":
@@ -138,29 +140,44 @@ def generate_your_move(
             elif gap_diagnosis:
                 return f"{job_fit_recommendation}: {gap_diagnosis} Position your relevant experience carefully. This is a stretch—you'll compete with candidates who have direct experience."
             else:
-                # Fallback without vague language
                 return f"{job_fit_recommendation}: Position your strengths carefully. This is a stretch—you'll compete with candidates who have direct experience."
         else:
-            # CORRECTED: If no gap survived calibration, don't invent one
-            # Still give actionable guidance without vague language
             return f"{job_fit_recommendation}: Position your strengths carefully and set realistic expectations about competitiveness."
 
     elif job_fit_recommendation == "Strong Apply":
-        # CORRECTED: Strong match still gets strategic guidance
-        # Extract specific strengths to lead with
-        key_strength = extract_primary_strength(candidate_resume, job_requirements)
+        # RECRUITER REALITY: Strong Apply MUST have a concrete proof point
+        # No hedging allowed. Reference specific accomplishment.
+
+        # First try dominant_narrative from calibration (most specific)
+        dominant_narrative = None
+        if calibrated_gaps:
+            dominant_narrative = calibrated_gaps.get('dominant_narrative')
+
+        if dominant_narrative:
+            # Use the pre-computed dominant narrative
+            return f"{job_fit_recommendation}: You {dominant_narrative}. Lead with this in your application and apply within 24 hours."
+
+        # Fall back to extract_primary_strength with calibrated_gaps
+        key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
+
         if key_strength:
-            return f"{job_fit_recommendation}: Your {key_strength} aligns strongly with this role's requirements. Lead with your most relevant accomplishments and apply within 24 hours."
+            # BANNED: "aligns strongly", "aligns well", "relevant experience"
+            # USE: Concrete statement about their accomplishment
+            return f"{job_fit_recommendation}: Your {key_strength} is exactly what this role needs. Apply within 24 hours and reference this directly in your outreach."
         else:
-            return f"{job_fit_recommendation}: Your background aligns strongly with this role. Lead with your most relevant accomplishments and apply within 24 hours."
+            # Even without specific strength, don't use weak language
+            return f"{job_fit_recommendation}: You're competitive for this role. Apply within 24 hours and lead with your highest-impact accomplishment."
 
     elif job_fit_recommendation == "Apply":
-        # Good match - strategic guidance
-        key_strength = extract_primary_strength(candidate_resume, job_requirements)
+        # Good match - strategic guidance with proof points
+        key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
+
         if key_strength:
-            return f"{job_fit_recommendation}: Your {key_strength} aligns well with this role. Emphasize your most relevant experience and apply soon."
+            # BANNED: "aligns well" - use stronger, more specific language
+            return f"{job_fit_recommendation}: Your {key_strength} positions you well. Lead with this accomplishment and apply soon."
         else:
-            return f"{job_fit_recommendation}: Your background aligns well with this role. Emphasize your most relevant experience and apply soon."
+            # Fallback without weak phrases
+            return f"{job_fit_recommendation}: You're a solid match. Lead with your highest-impact accomplishment and apply soon."
 
     else:
         # Fallback - should rarely hit
@@ -263,53 +280,132 @@ def generate_accountability_banner(
 
 def extract_primary_strength(
     candidate_resume: Dict[str, Any],
-    job_requirements: Dict[str, Any]
+    job_requirements: Dict[str, Any],
+    calibrated_gaps: Optional[Dict[str, Any]] = None
 ) -> Optional[str]:
     """
     Extracts the most relevant strength to lead with.
 
-    Returns: str (e.g., "cross-functional leadership experience", "B2B SaaS background")
-    """
-    # Extract from resume summary or experience
-    summary = candidate_resume.get('summary', '') or ''
-    experience = candidate_resume.get('experience', []) or []
+    UPGRADED: Uses ranked signal hierarchy, returns concrete proof points.
 
-    # Build combined text
-    combined = summary.lower()
+    Hierarchy (in order):
+    1. Decision authority (hiring, budget, P&L ownership)
+    2. Scale (users, traffic, revenue, uptime)
+    3. Business impact (cost savings, growth)
+    4. Org scope (team size, platform ownership)
+
+    Returns: str with SPECIFIC accomplishment, NOT generic phrases.
+
+    BANNED phrases (never return these):
+    - "aligns well", "relevant experience", "strong background"
+    - "cross-functional experience", "leadership experience" (without specifics)
+    """
+    import re
+
+    # Check if calibrated_gaps has a dominant_narrative (pre-computed)
+    if calibrated_gaps and calibrated_gaps.get('dominant_narrative'):
+        return calibrated_gaps['dominant_narrative']
+
+    # Build combined text from resume
+    combined_text = _build_resume_text_for_strength(candidate_resume)
+
+    # Priority 1: Decision Authority - Most impressive signal
+    hire_match = re.search(r'(?:hired|built\s+(?:a\s+)?team\s+of)\s+(\d+)', combined_text, re.IGNORECASE)
+    if hire_match:
+        count = hire_match.group(1)
+        return f"track record of building teams ({count}+ hires)"
+
+    budget_match = re.search(r'\$(\d+(?:\.\d+)?)\s*([MBK])\s*(?:budget|p&l)', combined_text, re.IGNORECASE)
+    if budget_match:
+        amount, unit = budget_match.groups()
+        return f"P&L ownership (${amount}{unit})"
+
+    # Priority 2: Scale - Quantified impact
+    user_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:million|M)\s*(?:users|customers|DAU|MAU)', combined_text, re.IGNORECASE)
+    if user_match:
+        count = user_match.group(1)
+        return f"experience scaling to {count}M+ users"
+
+    revenue_match = re.search(r'\$(\d+(?:\.\d+)?)\s*(?:million|M|billion|B)\s*(?:revenue|ARR|GMV)', combined_text, re.IGNORECASE)
+    if revenue_match:
+        amount = revenue_match.group(1)
+        unit = 'B' if 'billion' in combined_text.lower() else 'M'
+        return f"${amount}{unit} revenue impact"
+
+    # Priority 3: Business Impact
+    savings_match = re.search(r'(?:saved|reduced)\s*\$(\d+(?:\.\d+)?)\s*([MK])', combined_text, re.IGNORECASE)
+    if savings_match:
+        amount, unit = savings_match.groups()
+        return f"${amount}{unit} cost reduction track record"
+
+    growth_match = re.search(r'(\d+)\s*%\s*(?:increase|growth|improvement)\s+(?:in\s+)?(\w+)', combined_text, re.IGNORECASE)
+    if growth_match:
+        pct, metric = growth_match.groups()
+        return f"{pct}% {metric} growth"
+
+    launch_match = re.search(r'launched\s+(?:(\w+)\s+)?(?:product|platform|feature)', combined_text, re.IGNORECASE)
+    if launch_match:
+        product = launch_match.group(1)
+        if product and product.lower() not in ['a', 'the', 'new', 'major']:
+            return f"shipped {product} to market"
+        return "zero-to-one product launch experience"
+
+    # Priority 4: Org Scope
+    team_match = re.search(r'(?:led|managed|oversaw)\s+(?:a\s+)?(?:team\s+of\s+)?(\d+)\s*(?:\+\s*)?(?:engineers|people|reports|members)', combined_text, re.IGNORECASE)
+    if team_match:
+        count = team_match.group(1)
+        return f"leadership of {count}+ person team"
+
+    # Priority 5: Platform/Product ownership (still specific)
+    if re.search(r'(?:owned|own)\s+(?:the\s+)?(?:platform|product|roadmap)', combined_text, re.IGNORECASE):
+        return "end-to-end product ownership"
+
+    # Priority 6: Company-specific experience (use actual company names)
+    experience = candidate_resume.get('experience', []) or []
+    notable_companies = []
+    faang_like = ['google', 'meta', 'facebook', 'amazon', 'apple', 'microsoft', 'netflix', 'stripe', 'airbnb', 'uber', 'lyft', 'doordash', 'coinbase', 'square', 'block']
+
     for exp in experience:
         if isinstance(exp, dict):
-            combined += f" {exp.get('title', '')} {exp.get('description', '')}".lower()
+            company = (exp.get('company', '') or '').lower()
+            for notable in faang_like:
+                if notable in company:
+                    return f"{exp.get('company', '')} experience"
 
-    # Extract from job requirements
-    role_title = job_requirements.get('role_title', '') or ''
-    jd_text = job_requirements.get('job_description', '') or ''
-    jd_combined = f"{role_title} {jd_text}".lower()
-
-    # Strength categories in priority order
-    strength_patterns = [
-        ('cross-functional leadership', ['cross-functional', 'cross functional', 'stakeholder']),
-        ('B2B SaaS experience', ['b2b', 'saas', 'enterprise software']),
-        ('product management experience', ['product manager', 'product management', 'pm']),
-        ('engineering leadership', ['engineering manager', 'tech lead', 'led engineers']),
-        ('distributed systems expertise', ['distributed', 'microservices', 'at scale']),
-        ('data-driven approach', ['data-driven', 'analytics', 'metrics']),
-        ('customer-facing experience', ['customer', 'client', 'stakeholder']),
-        ('technical depth', ['architect', 'designed', 'built']),
-    ]
-
-    # Find first matching strength that's relevant to role
-    for strength_name, keywords in strength_patterns:
-        # Check if candidate has this strength
-        has_strength = any(kw in combined for kw in keywords)
-        # Check if role wants this
-        role_wants = any(kw in jd_combined for kw in keywords)
-
-        if has_strength and role_wants:
-            return strength_name
-
-    # Fallback to generic domain match
+    # Last resort: Use domain but make it specific
     domain = candidate_resume.get('domain', '')
     if domain:
-        return f"{domain} background"
+        # Try to find years in domain
+        years_match = re.search(r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:experience|in)', combined_text, re.IGNORECASE)
+        if years_match:
+            years = years_match.group(1)
+            return f"{years}+ years in {domain}"
+        return f"deep {domain} expertise"
 
+    # If nothing specific found, return None (don't return weak phrases)
     return None
+
+
+def _build_resume_text_for_strength(candidate_resume: Dict[str, Any]) -> str:
+    """Build combined text from resume for strength extraction."""
+    parts = []
+
+    summary = candidate_resume.get('summary', '')
+    if summary:
+        parts.append(summary)
+
+    experience = candidate_resume.get('experience', []) or []
+    for exp in experience:
+        if isinstance(exp, dict):
+            parts.append(exp.get('title', ''))
+            parts.append(exp.get('company', ''))
+            parts.append(exp.get('description', ''))
+            # Also check bullets/achievements
+            bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
+            for bullet in bullets:
+                if isinstance(bullet, str):
+                    parts.append(bullet)
+                elif isinstance(bullet, dict):
+                    parts.append(bullet.get('text', ''))
+
+    return ' '.join(filter(None, parts))
