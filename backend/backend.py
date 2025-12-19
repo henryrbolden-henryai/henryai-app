@@ -5746,8 +5746,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # If they crash, they lose the right to speak. Never derail the pipeline.
             try:
                 calibration_red_flags = detect_red_flags(candidate_experience)
-            except Exception as e:
-                print(f"   ⚠️ Red flag detection failed (non-blocking): {e}")
+            except Exception:
+                # Silently fail - red flags are advisory, crash is contained
                 calibration_red_flags = []
 
             # Store calibration results (for logging/debugging)
