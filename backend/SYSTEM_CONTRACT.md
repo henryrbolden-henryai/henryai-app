@@ -179,3 +179,9 @@ See these files for enforcement:
 - `backend/coaching/coaching_controller.py` - JD-First Narrative Ordering (§5), Strength Failure Handling (§8)
 - `backend/calibration/calibration_controller.py` - Gap Classification, Staff+ PM Rules
 - `backend/backend.py` - Analysis Flow, Controller Integration
+
+---
+
+## Related Contracts
+
+- `docs/guides/FRONTEND_CONTRACT.md` - Frontend rendering, tone, and UI behavior standards
