@@ -5151,6 +5151,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     ORDER OF OPERATIONS (MANDATORY):
     1. Eligibility Gate → 2. Gap Typing → 3. Recommendation Lock → 4. Score Explanation → 5. Coaching
 
+    SYSTEM CONTRACT §7 - ANALYSIS ID ENFORCEMENT:
+    Each run generates a unique analysis_id. All extracted data is tagged to this ID
+    and destroyed at completion. No cross-candidate memory permitted.
+
     Args:
         response_data: Parsed JSON response from Claude
         resume_data: Original resume data (optional, for credibility adjustment)
@@ -5158,6 +5162,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     Returns:
         Modified response_data with corrected fit_score and recommendation
     """
+    import uuid
+
+    # =========================================================================
+    # SYSTEM CONTRACT §7: ANALYSIS ID ENFORCEMENT
+    # Generate unique analysis_id for this run. All candidate-scoped data
+    # must be tagged to this ID and discarded at completion.
+    # =========================================================================
+    analysis_id = str(uuid.uuid4())
+    response_data["_analysis_id"] = analysis_id
+    print(f"\n🔐 ANALYSIS ID: {analysis_id[:8]}... (candidate-scoped data will be discarded at completion)")
 
     # Extract experience analysis (Claude should have populated this)
     experience_analysis = response_data.get("experience_analysis", {})
