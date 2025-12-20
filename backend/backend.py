@@ -11026,7 +11026,15 @@ ABSOLUTE REQUIREMENTS:
 10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
 11. MUST include reality_check with calculated applicant estimates, function context, and strategic action
 12. reality_check.applicant_calculation must show your work (all multipliers used)
-13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
+13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions
+
+=== FINAL REMINDER: STRICT JSON OUTPUT MODE ===
+Your response MUST be ONLY a JSON object.
+- Start with { (no text before)
+- End with } (no text after)
+- No markdown, no explanation, no commentary
+- If you write anything other than JSON, the system breaks
+=== END FINAL REMINDER ==="""
 
     # Inject candidate state calibration if available
     situation = None
@@ -11542,7 +11550,15 @@ ABSOLUTE REQUIREMENTS:
 10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
 11. MUST include reality_check with calculated applicant estimates, function context, and strategic action
 12. reality_check.applicant_calculation must show your work (all multipliers used)
-13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
+13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions
+
+=== FINAL REMINDER: STRICT JSON OUTPUT MODE ===
+Your response MUST be ONLY a JSON object.
+- Start with { (no text before)
+- End with } (no text after)
+- No markdown, no explanation, no commentary
+- If you write anything other than JSON, the system breaks
+=== END FINAL REMINDER ==="""
 
     # Build user message
     user_message = f"""Job Description:
