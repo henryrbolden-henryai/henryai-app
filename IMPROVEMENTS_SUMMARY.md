@@ -1,8 +1,8 @@
 # HenryAI Improvements Summary
 
-**Date**: December 14, 2025
-**Sprint**: Foundation Strengthening + User Experience Polish
-**Status**: ✅ COMPLETED (Phase 0 + Dec 12-14 Enhancements)
+**Date**: December 20, 2025
+**Sprint**: Foundation Strengthening + User Experience Polish + Reality Check System
+**Status**: ✅ COMPLETED (Phase 0 + Dec 12-20 Enhancements)
 
 ---
 
@@ -13,6 +13,44 @@ This document summarizes the comprehensive improvements made to HenryAI to achie
 ---
 
 ## Completed Improvements
+
+### 0. ✅ Reality Check System + Ask Henry for Better Paths (Dec 20, 2025)
+
+**What it does**: Surfaces market-truth signals for low-fit roles and routes users to conversational guidance via Hey Henry chat.
+
+**Implementation**:
+- Location: `backend/reality_check/` (new module)
+- Frontend: `frontend/results.html` - "Ask Henry for better paths" CTA
+- Documentation: Aligned to 4-tier recommendation system
+
+**Key Features**:
+1. **Reality Check Module**: Detects market signals (layoff context, competitive talent pools, role risk indicators)
+2. **Signal Classes**: MARKET_BIAS, MARKET_CLIMATE, ROLE_RISK - message-only overlays that NEVER modify scoring
+3. **Ask Henry CTA**: When `fit_score < 60` OR recommendation is "Conditional Apply"/"Do Not Apply", shows single CTA
+4. **Conversational Guidance**: Routes to Hey Henry with full context (strengths, gaps, source job, alternative hints)
+
+**Trigger Conditions**:
+```javascript
+const shouldShow = fitScore < 60 ||
+    recommendationLabel.includes('Conditional Apply') ||
+    recommendationLabel.includes('Do Not Apply');
+```
+
+**Context Passed to Hey Henry**:
+```javascript
+{
+    type: 'better_paths_request',
+    sourceJob: { company, role, fitScore, recommendation },
+    candidateStrengths: [...],
+    candidateGaps: [...],
+    candidateName: '...',
+    alternativeHints: [...] // Backend suggestions as hints
+}
+```
+
+**Status**: ✅ Deployed to production (Dec 20, 2025)
+
+---
 
 ### 1. ✅ Post-Generation Validation Layer
 
