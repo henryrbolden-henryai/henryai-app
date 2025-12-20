@@ -74,6 +74,20 @@ except ImportError:
     COACHING_AVAILABLE = False
     print("⚠️ Coaching module not available - using fallback behavior")
 
+# Final Recommendation Controller - SINGLE SOURCE OF TRUTH
+# Per Architecture Simplification Spec v1.0:
+# - One recommendation, one score, no later overrides
+# - All other layers (CEC, Calibration, Coaching) are advisory only
+try:
+    from recommendation.final_controller import (
+        FinalRecommendationController,
+        compute_final_recommendation,
+    )
+    FINAL_CONTROLLER_AVAILABLE = True
+except ImportError:
+    FINAL_CONTROLLER_AVAILABLE = False
+    print("⚠️ Final Recommendation Controller not available - using legacy behavior")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
@@ -5407,121 +5421,123 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         response_data["fit_score_breakdown"]["hard_cap_reason"] = hard_cap_reason
     response_data["fit_score_breakdown"]["final_score"] = capped_score
 
-    # Force-correct recommendation based on capped score (REVISED - LESS AGGRESSIVE)
-    # Per Recruiter Calibration: Only "Do Not Apply" if recommendation_locked or eligibility failed
-    # Experience gaps should result in "Apply with Caution", not "Do Not Apply"
-    if capped_score < 50 and recommendation_locked:
-        # Only force "Do Not Apply" if already locked by eligibility/leadership gate
-        correct_recommendation = "Do Not Apply"
-        alternative_actions = [
-            f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience instead of {required_years} years",
-            "Build 1-2 more years of experience at an established company (Series B+, >50 employees) before targeting this level",
-            "Consider Associate/Junior level roles at this company if available"
-        ]
-    elif capped_score < 50:
-        # Score < 50 but NOT locked - downgrade to Apply with Caution, not Do Not Apply
-        correct_recommendation = "Apply with Caution"
-        alternative_actions = [
-            f"You have {candidate_years:.1f} years vs {required_years} required - this is a stretch",
-            "Lead with your strongest, most relevant accomplishments",
-            "Consider reaching out to someone at the company before applying"
-        ]
-    elif capped_score < 60:
-        # Experience gap but not disqualifying
-        correct_recommendation = "Apply with Caution"
-        alternative_actions = [
-            f"Experience gap: {candidate_years:.1f} years vs {required_years} required",
-            "Position adjacent experience carefully in your materials",
-            "Network with someone at the company to strengthen your candidacy"
-        ]
-    elif capped_score < 70:
-        correct_recommendation = "Apply with Caution"
-        alternative_actions = [
-            "Focus your energy on roles where you're 70%+ fit instead",
-            "Only apply if you have bandwidth after higher-fit applications",
-            "Network with someone at the company before applying through ATS"
-        ]
-    elif capped_score < 80:
-        correct_recommendation = "Conditional Apply"
-        alternative_actions = [
-            "Apply and reach out directly to hiring manager on LinkedIn",
-            "Emphasize specific achievements that match the top 3 requirements",
-            "Address experience gaps proactively in your cover letter"
-        ]
-    elif capped_score < 90:
-        correct_recommendation = "Apply"
-        alternative_actions = []
-    else:
-        correct_recommendation = "Strongly Apply"
-        alternative_actions = [
-            "Apply immediately - you're a top-tier match",
-            "Connect with hiring manager within 24 hours of applying",
-            "Proactive outreach will help you stand out from other strong candidates"
-        ]
+    # ========================================================================
+    # FINAL RECOMMENDATION CONTROLLER - SINGLE SOURCE OF TRUTH
+    # Per Architecture Simplification Spec v1.0:
+    # - Recommendation is set ONCE and locked
+    # - Score is set ONCE and locked
+    # - No downstream layer may mutate these values
+    # ========================================================================
 
-    # Override recommendation if Claude gave something too optimistic
-    current_recommendation = response_data.get("recommendation", "")
+    # Detect manager-level role
+    role_title = (response_data.get('role_title', '') or '').lower()
+    is_manager_role = any(x in role_title for x in [
+        'manager', 'director', 'head of', 'vp ', 'vice president',
+        'lead', 'chief', 'cto', 'ceo', 'coo', 'cfo', 'cmo'
+    ])
+    is_vp_plus_role = any(x in role_title for x in ['vp', 'vice president', 'director', 'chief', 'c-suite'])
 
-    # Map of recommendation severity (lower = more conservative)
-    rec_severity = {
-        "Do Not Apply": 1,
-        "Apply with Caution": 2,
-        "Conditional Apply": 3,
-        "Apply": 4,
-        "Strongly Apply": 5
-    }
+    # Check for domain gap (from CEC or calibration if available)
+    domain_gap_detected = False
+    capability_evidence_report = response_data.get("capability_evidence_report", {})
+    if capability_evidence_report:
+        cec_summary = capability_evidence_report.get("summary", {})
+        critical_gaps = cec_summary.get("critical_gaps", [])
+        domain_gap_detected = any("domain" in (g.get("capability_id", "") or "").lower() for g in critical_gaps)
 
-    current_severity = rec_severity.get(current_recommendation, 0)
-    correct_severity = rec_severity.get(correct_recommendation, 0)
+    if FINAL_CONTROLLER_AVAILABLE:
+        # Use the new single-authority controller
+        controller = FinalRecommendationController()
 
-    # Only override if Claude was too optimistic
-    if correct_severity < current_severity:
-        response_data["recommendation"] = correct_recommendation
+        print("\n" + "=" * 80)
+        print("🔒 FINAL RECOMMENDATION CONTROLLER - SINGLE SOURCE OF TRUTH")
+        print("=" * 80)
 
-        # Update ALL recommendation fields to ensure UI displays correct value
-        # Map recommendations to intelligence_layer format
-        # NOTE: Use "Do Not Apply" consistently (not "Skip") per 6-tier system
-        il_mapping = {
-            "Do Not Apply": "Do Not Apply",
-            "Apply with Caution": "Apply with Caution",
-            "Conditional Apply": "Conditional Apply",
-            "Apply": "Apply",
-            "Strongly Apply": "Strongly Apply"
-        }
-        il_recommendation = il_mapping.get(correct_recommendation, correct_recommendation)
+        decision = controller.compute_recommendation(
+            fit_score=capped_score,
+            eligibility_passed=not recommendation_locked,
+            eligibility_reason=locked_reason or "",
+            is_manager_role=is_manager_role,
+            is_vp_plus_role=is_vp_plus_role,
+            domain_gap_detected=domain_gap_detected
+        )
 
-        # Update intelligence_layer.apply_decision.recommendation
-        if "intelligence_layer" in response_data:
-            if "apply_decision" not in response_data["intelligence_layer"]:
-                response_data["intelligence_layer"]["apply_decision"] = {}
-            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = il_recommendation
-            print(f"   Updated intelligence_layer.apply_decision.recommendation to: {il_recommendation}")
+        correct_recommendation = decision.recommendation
 
-        # Update top-level apply_decision if it exists separately
-        if "apply_decision" in response_data:
-            response_data["apply_decision"]["recommendation"] = il_recommendation
-            print(f"   Updated apply_decision.recommendation to: {il_recommendation}")
-
-        print(f"   ✅ All recommendation fields updated to: {correct_recommendation}")
-
-        # Update recommendation_rationale WITHOUT exposing system math
-        # CRITICAL: Never show "adjusted from X to Y" or percentage calculations to users
-        original_rationale = response_data.get("recommendation_rationale", "")
-        if correct_recommendation in ["Do Not Apply", "Long Shot"]:
-            response_data["recommendation_rationale"] = (
-                f"This role requires {required_years}+ years of experience. "
-                f"Your background shows {candidate_years:.0f} years in this domain. {original_rationale}"
-            )
+        # Generate alternative actions based on recommendation
+        if correct_recommendation == "Do Not Apply":
+            alternative_actions = [
+                f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience",
+                "Build 1-2 more years of experience at an established company",
+                "Consider Associate/Junior level roles at this company if available"
+            ]
         elif correct_recommendation == "Apply with Caution":
-            response_data["recommendation_rationale"] = (
-                f"Your experience level is below what this role typically requires. "
-                f"Proceed only with strong positioning. {original_rationale}"
-            )
+            alternative_actions = [
+                "Position adjacent experience carefully in your materials",
+                "Network with someone at the company to strengthen your candidacy",
+                "Lead with your strongest, most relevant accomplishments"
+            ]
+        elif correct_recommendation == "Conditional Apply":
+            alternative_actions = [
+                "Apply and reach out directly to hiring manager on LinkedIn",
+                "Emphasize specific achievements that match the top 3 requirements",
+                "Address experience gaps proactively in your cover letter"
+            ]
         else:
-            # For Conditional Apply or Consider, keep original rationale
-            response_data["recommendation_rationale"] = original_rationale
+            alternative_actions = []
 
-    # Add alternative actions if not present and should be
+        print(f"   Score: {capped_score}%")
+        print(f"   Eligibility: {'PASSED' if not recommendation_locked else 'FAILED'}")
+        print(f"   Manager Role: {is_manager_role}")
+        print(f"   Domain Gap: {domain_gap_detected} {'(suppressed for manager)' if is_manager_role and domain_gap_detected else ''}")
+        print(f"   Final Recommendation: {correct_recommendation}")
+        print("=" * 80 + "\n")
+
+        # Store controller decision for downstream access
+        response_data["final_decision_controller"] = controller.to_dict()
+    else:
+        # Fallback to legacy mapping if controller not available
+        if capped_score < 50 and recommendation_locked:
+            correct_recommendation = "Do Not Apply"
+            alternative_actions = [
+                f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience",
+                "Build 1-2 more years of experience at an established company",
+                "Consider Associate/Junior level roles at this company if available"
+            ]
+        elif capped_score < 50:
+            correct_recommendation = "Apply with Caution"
+            alternative_actions = ["Lead with your strongest, most relevant accomplishments"]
+        elif capped_score < 70:
+            correct_recommendation = "Apply with Caution"
+            alternative_actions = ["Network with someone at the company before applying"]
+        elif capped_score < 80:
+            correct_recommendation = "Conditional Apply"
+            alternative_actions = ["Apply and reach out directly to hiring manager on LinkedIn"]
+        elif capped_score < 90:
+            correct_recommendation = "Apply"
+            alternative_actions = []
+        else:
+            correct_recommendation = "Strong Apply"
+            alternative_actions = ["Apply immediately - you're a top-tier match"]
+
+    # ========================================================================
+    # SET RECOMMENDATION - THIS IS THE FINAL IMMUTABLE VALUE
+    # ========================================================================
+    response_data["recommendation"] = correct_recommendation
+    response_data["recommendation_locked"] = True  # Mark as locked
+
+    # Update ALL recommendation fields to ensure UI displays correct value
+    if "intelligence_layer" in response_data:
+        if "apply_decision" not in response_data["intelligence_layer"]:
+            response_data["intelligence_layer"]["apply_decision"] = {}
+        response_data["intelligence_layer"]["apply_decision"]["recommendation"] = correct_recommendation
+        response_data["intelligence_layer"]["apply_decision"]["locked"] = True
+
+    if "apply_decision" in response_data:
+        response_data["apply_decision"]["recommendation"] = correct_recommendation
+        response_data["apply_decision"]["locked"] = True
+
+    # Add alternative actions if present
     if alternative_actions and not response_data.get("alternative_actions"):
         response_data["alternative_actions"] = alternative_actions
 
@@ -5594,12 +5610,12 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         response_data["gaps"] = gaps
 
-        # HARD RULE: Any missing_experience gap forces "Do Not Apply"
-        if has_missing_experience_gap and not recommendation_locked:
-            print(f"   🚫 MISSING_EXPERIENCE GAP DETECTED: Forcing Do Not Apply")
-            recommendation_locked = True
-            locked_recommendation = "Do Not Apply"
-            locked_reason = "Critical experience gap identified"
+        # INFORMATIONAL: Log missing_experience gap detection
+        # Note: Recommendation is already locked by Final Recommendation Controller
+        # This is for debugging/visibility only
+        if has_missing_experience_gap:
+            print(f"   🔴 MISSING_EXPERIENCE GAP DETECTED (informational - controller already decided)")
+            response_data["has_missing_experience_gap"] = True
 
     # Resolve strength-gap conflicts
     strengths = response_data.get("strengths", [])
@@ -5859,15 +5875,17 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             )
 
             if cae_application["was_downgraded"]:
-                response_data["recommendation"] = cae_application["final_recommendation"]
-                response_data["recommendation_downgraded_by_cae"] = True
+                # CAE is ADVISORY ONLY - it cannot override the Final Recommendation Controller
+                # Log the suggestion but do NOT mutate recommendation
+                print(f"   ⚠️ CAE ADVISORY: Would downgrade to {cae_application['final_recommendation']}")
+                print(f"   → BLOCKED: Recommendation is locked by Final Recommendation Controller")
+                response_data["cae_advisory_downgrade"] = cae_application["final_recommendation"]
                 response_data["cae_downgrade_reason"] = cae_application["downgrade_reason"]
 
-                # Update intelligence_layer
+                # Store credibility risk for UI display (advisory only)
                 if "intelligence_layer" in response_data:
                     if "apply_decision" not in response_data["intelligence_layer"]:
                         response_data["intelligence_layer"]["apply_decision"] = {}
-                    response_data["intelligence_layer"]["apply_decision"]["recommendation"] = cae_application["final_recommendation"]
                     response_data["intelligence_layer"]["apply_decision"]["credibility_risk"] = cae_result.get("overall_credibility_risk")
 
         # Add mandatory reality check message if required
@@ -5915,13 +5933,14 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 print(f"   🔒 LEPE LOCKED: {locked_reason}")
 
             elif lepe_decision == "caution":
-                # LEPE recommends caution - cap at "Apply with Caution"
+                # LEPE is ADVISORY ONLY - it cannot override the Final Recommendation Controller
+                # Log the suggestion but do NOT mutate recommendation
                 current_rec = response_data.get("recommendation", "")
                 if current_rec in ["Apply", "Strong Apply"]:
-                    response_data["recommendation"] = "Apply with Caution"
-                    response_data["recommendation_downgraded_by_lepe"] = True
+                    print(f"   ⚠️ LEPE ADVISORY: Would downgrade {current_rec} to Apply with Caution")
+                    print(f"   → BLOCKED: Recommendation is locked by Final Recommendation Controller")
+                    response_data["lepe_advisory_downgrade"] = "Apply with Caution"
                     response_data["lepe_caution_reason"] = positioning.get("messaging", {}).get("skepticism_warning", "")
-                    print(f"   ⚠️ LEPE CAUTION: Downgraded to Apply with Caution")
 
             elif lepe_decision == "position":
                 # LEPE positioning mode - add coaching guidance
@@ -5934,38 +5953,29 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             response_data["leadership_positioning_record"] = lepe_result["accountability_record"]
 
     # ========================================================================
-    # LOCKED RECOMMENDATION ENFORCEMENT
-    # If recommendation is locked, override EVERYTHING - no exceptions
+    # LOCKED RECOMMENDATION VERIFICATION (NOT OVERRIDE)
+    # The Final Recommendation Controller already handled locking.
+    # This block only VERIFIES consistency and logs for debugging.
+    # It does NOT change the recommendation - that was set once and is final.
     # ========================================================================
     if recommendation_locked and locked_recommendation:
-        print(f"🔒 LOCKED RECOMMENDATION OVERRIDE:")
-        print(f"   Previous recommendation: {response_data.get('recommendation')}")
-        print(f"   Locked recommendation: {locked_recommendation}")
-        print(f"   Reason: {locked_reason}")
+        current_rec = response_data.get('recommendation')
+        if current_rec != locked_recommendation:
+            # Log the discrepancy but do NOT override - controller is authoritative
+            print(f"   ⚠️ LOCKED RECOMMENDATION DISCREPANCY DETECTED (informational only):")
+            print(f"      Controller set: {current_rec}")
+            print(f"      Eligibility wanted: {locked_recommendation}")
+            print(f"      Reason: {locked_reason}")
+            print(f"      → Controller decision is FINAL, no override")
+        else:
+            print(f"   ✅ LOCKED RECOMMENDATION VERIFIED: {current_rec} (Reason: {locked_reason})")
 
-        # Override the recommendation
-        response_data["recommendation"] = locked_recommendation
-
-        # Update ALL recommendation fields to ensure UI displays correct value
+        # Ensure locked_reason is stored for UI display (advisory only)
         if "intelligence_layer" in response_data:
-            if "apply_decision" not in response_data["intelligence_layer"]:
-                response_data["intelligence_layer"]["apply_decision"] = {}
-            response_data["intelligence_layer"]["apply_decision"]["recommendation"] = locked_recommendation
-            response_data["intelligence_layer"]["apply_decision"]["locked"] = True
-            response_data["intelligence_layer"]["apply_decision"]["locked_reason"] = locked_reason
-
+            if "apply_decision" in response_data.get("intelligence_layer", {}):
+                response_data["intelligence_layer"]["apply_decision"]["locked_reason"] = locked_reason
         if "apply_decision" in response_data:
-            response_data["apply_decision"]["recommendation"] = locked_recommendation
-            response_data["apply_decision"]["locked"] = True
             response_data["apply_decision"]["locked_reason"] = locked_reason
-
-        # Cap score at 45 for locked Do Not Apply
-        if locked_recommendation == "Do Not Apply" and capped_score > 45:
-            capped_score = 45
-            response_data["fit_score"] = capped_score
-            response_data["fit_score_breakdown"]["final_score"] = capped_score
-            response_data["fit_score_breakdown"]["locked_cap_applied"] = True
-            print(f"   🔒 Score capped to 45% due to locked recommendation")
 
         # ========================================================================
         # LANGUAGE CONTRACT FOR "DO NOT APPLY"
@@ -6243,6 +6253,48 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             import traceback
             traceback.print_exc()
             # Coaching errors are non-blocking - continue with existing flow
+
+    # ========================================================================
+    # FINAL SUMMARY (Consolidated 3-Section Log)
+    # Per Architecture Simplification Spec: Reduce logging noise to 3 sections
+    # ========================================================================
+    print("\n" + "=" * 80)
+    print("📊 FINAL SUMMARY")
+    print("=" * 80)
+
+    # Section 1: Eligibility Gate
+    eligibility_status = "PASSED" if not recommendation_locked else "FAILED"
+    print(f"\n1. ELIGIBILITY GATE: {eligibility_status}")
+    if recommendation_locked:
+        print(f"   Reason: {locked_reason}")
+
+    # Section 2: Scoring Summary
+    final_score = response_data.get("fit_score", 0)
+    print(f"\n2. SCORING SUMMARY:")
+    print(f"   Final Score: {final_score}%")
+    if response_data.get("fit_score_breakdown", {}).get("hard_cap_applied"):
+        print(f"   Hard Cap Applied: Yes ({response_data.get('fit_score_breakdown', {}).get('hard_cap_reason', '')})")
+
+    # Section 3: Final Decision
+    final_rec = response_data.get("recommendation", "Unknown")
+    print(f"\n3. FINAL DECISION: {final_rec}")
+    print(f"   Locked: {response_data.get('recommendation_locked', False)}")
+
+    # Advisory signals (non-blocking)
+    advisory_notes = []
+    if response_data.get("cae_advisory_downgrade"):
+        advisory_notes.append(f"CAE suggested {response_data['cae_advisory_downgrade']}")
+    if response_data.get("lepe_advisory_downgrade"):
+        advisory_notes.append(f"LEPE suggested {response_data['lepe_advisory_downgrade']}")
+    if response_data.get("has_missing_experience_gap"):
+        advisory_notes.append("Missing experience gap detected")
+
+    if advisory_notes:
+        print(f"\n   🧠 Advisory Signals (Non-blocking):")
+        for note in advisory_notes:
+            print(f"      - {note}")
+
+    print("\n" + "=" * 80 + "\n")
 
     return response_data
 
