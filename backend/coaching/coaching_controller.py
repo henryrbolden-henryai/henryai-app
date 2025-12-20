@@ -77,7 +77,7 @@ def generate_coaching_output(
     # CORRECTED: Silence suppresses gaps, not "Your Move"
     # Pass full calibrated_gaps for dominant_narrative and strong_signals access
     # NEW: Also pass strengths and role_title for role-specific binding
-    your_move = generate_your_move(
+    your_move_raw = generate_your_move(
         primary_gap=calibrated_gaps.get('primary_gap'),
         job_fit_recommendation=job_fit_recommendation,
         redirect_reason=calibrated_gaps.get('redirect_reason'),
@@ -87,6 +87,9 @@ def generate_coaching_output(
         strengths=strengths,
         role_title=role_title
     )
+
+    # Sanitize: Remove em dashes and enforce clean sentence structure
+    your_move = _sanitize_your_move(your_move_raw)
 
     # Determine "Gaps to Address" visibility
     # CORRECTED: Use suppress_gaps_section flag
@@ -184,7 +187,7 @@ def generate_your_move(
             # Check for dominant_narrative from calibration
             dominant_narrative = calibrated_gaps.get('dominant_narrative') if calibrated_gaps else None
             if dominant_narrative:
-                return (f"Position as a proven leader—you {dominant_narrative}. "
+                return (f"Position yourself as a proven leader. You {dominant_narrative}. "
                        f"Lead with outcomes, not credentials. "
                        f"Apply within 24 hours with a targeted note positioning yourself as a platform-first leader.")
             else:
@@ -222,7 +225,7 @@ def generate_your_move(
             # Experience years gap - lead with impact density
             return (f"Position on impact density, not tenure. "
                    f"Lead with your biggest outcomes; remove date-heavy formatting. "
-                   f"Apply within 24 hours—speed matters when competing on results.")
+                   f"Apply within 24 hours. Speed matters when competing on results.")
 
         elif 'mobile' in gap_capability or 'web' in gap_capability or 'surface' in gap_capability:
             # Surface/platform gap (mobile, web, ads)
@@ -266,7 +269,7 @@ def generate_your_move(
                 positioning = f"Your {signal_text} directly matches this role's core requirements."
 
             action = f"Emphasize this experience prominently in your resume and outreach."
-            timing = "Apply now and prioritize a direct message to the hiring manager—ATS volume is high."
+            timing = "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
 
             return f"{positioning} {action} {timing}"
 
@@ -274,13 +277,13 @@ def generate_your_move(
             # Fall back to dominant narrative but tie to role
             role_context = _get_role_context(role_title or '', job_requirements)
             if role_context:
-                return (f"You {dominant_narrative}—this aligns with {role_context}. "
+                return (f"You {dominant_narrative}. This aligns with {role_context}. "
                        f"Lead with this proof point in your application. "
                        f"Apply now and reach out directly to bypass ATS filtering.")
             else:
                 return (f"You {dominant_narrative}. "
                        f"Lead with this accomplishment in your application and outreach. "
-                       f"Apply now—strong matches move fast.")
+                       f"Apply now. Strong matches move fast.")
 
         else:
             # Last resort - extract from resume text
@@ -701,3 +704,33 @@ def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
         return f"{company}'s team needs"
 
     return None  # No specific context available
+
+
+def _sanitize_your_move(text: str) -> str:
+    """
+    Sanitize "Your Move" text to enforce direct, tactical style.
+
+    HARD RULES:
+    - No em dashes (—)
+    - No en dashes (–)
+    - Replace with periods for clean sentence breaks
+
+    This is a final safety net. Primary fix is in the generation code.
+    """
+    if not text:
+        return text
+
+    # Check for em/en dashes
+    if '—' in text or '–' in text:
+        print("   ⚠️ Em/en dash detected in Your Move. Sanitizing.")
+        # Replace em dash with period + space (creates new sentence)
+        text = text.replace('—', '. ')
+        text = text.replace('–', '. ')
+        # Clean up double periods and extra spaces
+        text = text.replace('..', '.')
+        text = text.replace('.  ', '. ')
+        # Capitalize after new periods
+        import re
+        text = re.sub(r'\.\s+([a-z])', lambda m: '. ' + m.group(1).upper(), text)
+
+    return text
