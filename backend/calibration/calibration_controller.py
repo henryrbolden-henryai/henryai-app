@@ -171,6 +171,49 @@ def calibrate_gaps(
 
     # If "Apply", check if strong signals warrant gap suppression
     if job_fit_recommendation == "Apply" and strong_signals.get('total', 0) >= 3:
+        # =====================================================================
+        # STAFF+ PM CALIBRATION MODIFIER
+        # For Staff+ PM roles, require at least one system-level signal
+        # to reach "Apply". Otherwise cap at "Conditional Apply".
+        # =====================================================================
+        role_title = (job_requirements.get('role_title', '') or '').lower()
+        is_staff_plus_pm = (
+            ('staff' in role_title or 'principal' in role_title or 'senior' in role_title) and
+            ('product' in role_title or 'pm' in role_title)
+        )
+
+        if is_staff_plus_pm:
+            # Check for system-level signals in JD
+            jd_text = (job_requirements.get('job_description', '') or '').lower()
+            system_level_patterns = [
+                'attribution', 'governance', 'internal platform', 'org-wide',
+                'company-wide', 'strategic initiative', 'executive', 'c-suite',
+                'system design', 'architecture'
+            ]
+            jd_has_system_signals = any(p in jd_text for p in system_level_patterns)
+
+            # Check for candidate system-level evidence
+            resume_text = _build_resume_text(candidate_resume).lower()
+            candidate_has_system_evidence = any(p in resume_text for p in system_level_patterns)
+
+            if jd_has_system_signals and not candidate_has_system_evidence:
+                print(f"   ⚠️ STAFF+ PM RULE: System-level signals required but not found in resume")
+                print(f"      JD requires: {[p for p in system_level_patterns if p in jd_text][:3]}")
+                print(f"      Capping at Conditional Apply (not blocking Apply recommendation)")
+                # Don't suppress gaps - let them inform coaching
+                # This affects coaching tone, not the recommendation itself
+                return _log_and_return({
+                    'primary_gap': None,
+                    'secondary_gaps': [],
+                    'redirect_reason': None,
+                    'suppress_gaps_section': False,  # Show gaps for Staff+ PM
+                    'suppressed_gaps': classified_gaps,
+                    'strong_signals': strong_signals,
+                    'dominant_narrative': dominant_narrative,
+                    'recruiter_override': 'staff_pm_system_signals_missing',
+                    'staff_pm_warning': 'System-level signals required but not found'
+                }, "Apply + Staff+ PM without system signals")
+
         return _log_and_return({
             'primary_gap': None,
             'secondary_gaps': [],

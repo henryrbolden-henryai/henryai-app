@@ -73,17 +73,37 @@ def generate_coaching_output(
         print("=" * 80 + "\n")
         return result
 
+    # =========================================================================
+    # CRITICAL: Gap suppression vs gap influence separation
+    #
+    # - suppress_gaps_section = UI visibility only (what user sees)
+    # - gaps still influence coaching tone and tactical advice
+    #
+    # Even when gaps are suppressed for display, they sharpen "Your Move"
+    # =========================================================================
+
+    # HARD FAILURE: Empty strengths extraction is a bug, not a fallback case
+    if strengths is not None and len(strengths) == 0:
+        print("   🚨 ERROR: Strengths extraction returned 0 items - this is a bug")
+        print("   🚨 Blocking coaching generation. Do not fall back to defaults.")
+        # Return minimal output with error flag
+        return {
+            'your_move': "Analysis incomplete. Please try again.",
+            'gaps_to_address': None,
+            'show_accountability_banner': False,
+            'accountability_message': None,
+            '_error': 'empty_strengths_extraction'
+        }
+
     # Generate "Your Move" (ALWAYS generate, even with silence)
-    # CORRECTED: Silence suppresses gaps, not "Your Move"
-    # Pass full calibrated_gaps for dominant_narrative and strong_signals access
-    # NEW: Also pass strengths and role_title for role-specific binding
+    # Gaps influence the tone even when suppressed from display
     your_move_raw = generate_your_move(
         primary_gap=calibrated_gaps.get('primary_gap'),
         job_fit_recommendation=job_fit_recommendation,
         redirect_reason=calibrated_gaps.get('redirect_reason'),
         candidate_resume=candidate_resume,
         job_requirements=job_requirements,
-        calibrated_gaps=calibrated_gaps,
+        calibrated_gaps=calibrated_gaps,  # Gaps still influence coaching tone
         strengths=strengths,
         role_title=role_title
     )
@@ -91,10 +111,13 @@ def generate_coaching_output(
     # Sanitize: Remove em dashes and enforce clean sentence structure
     your_move = _sanitize_your_move(your_move_raw)
 
-    # Determine "Gaps to Address" visibility
-    # CORRECTED: Use suppress_gaps_section flag
+    # =========================================================================
+    # GAP SUPPRESSION (UI visibility only)
+    # This affects what the user SEES, not what influences the coaching
+    # =========================================================================
     if calibrated_gaps.get('suppress_gaps_section', False):
         gaps_to_address = None
+        print("   🔇 Gaps suppressed from UI (but still influenced coaching tone)")
     else:
         show_gaps = should_show_gaps_section(
             job_fit_recommendation=job_fit_recommendation,
@@ -710,6 +733,98 @@ def _compute_candidate_signal_profile(candidate_resume: Optional[Dict[str, Any]]
     return profile
 
 
+def _extract_jd_signal_profile(job_requirements: Dict[str, Any], role_title: str) -> Dict[str, Any]:
+    """
+    Extract role-specific signal profile FROM THE JD, not from a global list.
+
+    This prevents candidate → candidate contamination by deriving keywords
+    per-JD instead of using a shared global keyword list.
+
+    Returns:
+        {
+            'jd_keywords': list of keywords extracted from JD,
+            'role_type': 'technical' | 'product' | 'data' | 'general',
+            'system_level_signals': list of Staff+ level signals if present
+        }
+    """
+    jd_text = (job_requirements.get('job_description', '') or '').lower()
+    role_lower = (role_title or '').lower()
+
+    # =========================================================================
+    # JD-SCOPED KEYWORD EXTRACTION
+    # Keywords are derived from THIS JD, not a global list
+    # =========================================================================
+
+    # Technical signal patterns to look for in JD
+    technical_patterns = [
+        'kubernetes', 'k8s', 'openshift', 'rosa', 'sre', 'reliability',
+        'distributed system', 'microservice', 'container', 'docker',
+        'infrastructure', 'platform', 'devops', 'cloud', 'aws', 'gcp', 'azure',
+        'incident response', 'on-call', 'backend', 'api'
+    ]
+
+    # Product signal patterns
+    product_patterns = [
+        'product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
+        'a/b test', 'experimentation', 'discovery', 'launch', 'growth',
+        'attribution', 'conversion', 'funnel', 'retention'
+    ]
+
+    # Data signal patterns
+    data_patterns = [
+        'data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
+        'warehouse', 'etl', 'sql', 'python', 'modeling', 'attribution model'
+    ]
+
+    # Scale patterns (apply to all roles)
+    scale_patterns = [
+        'million', '100m', '150m', 'requests/day', 'traffic', 'uptime',
+        '99.9', 'latency', 'throughput', 'scale', 'high-volume'
+    ]
+
+    # Staff+ system-level signals (for PM calibration)
+    staff_level_patterns = [
+        'attribution', 'governance', 'internal platform', 'cross-functional',
+        'system design', 'architecture', 'org-wide', 'company-wide',
+        'strategic initiative', 'executive', 'c-suite'
+    ]
+
+    # Extract keywords that actually appear in the JD
+    jd_keywords = []
+    for pattern in technical_patterns + product_patterns + data_patterns + scale_patterns:
+        if pattern in jd_text:
+            jd_keywords.append(pattern)
+
+    # Detect system-level signals for Staff+ roles
+    system_level_signals = [p for p in staff_level_patterns if p in jd_text]
+
+    # Detect role type from title AND JD content
+    role_type = 'general'
+    tech_count = sum(1 for p in technical_patterns if p in jd_text or p in role_lower)
+    product_count = sum(1 for p in product_patterns if p in jd_text or p in role_lower)
+    data_count = sum(1 for p in data_patterns if p in jd_text or p in role_lower)
+
+    if tech_count >= product_count and tech_count >= data_count and tech_count > 0:
+        role_type = 'technical'
+    elif product_count >= tech_count and product_count >= data_count and product_count > 0:
+        role_type = 'product'
+    elif data_count > 0:
+        role_type = 'data'
+
+    profile = {
+        'jd_keywords': jd_keywords,
+        'role_type': role_type,
+        'system_level_signals': system_level_signals
+    }
+
+    print(f"   📋 JD Signal Profile:")
+    print(f"      Role type: {role_type}")
+    print(f"      JD keywords: {jd_keywords[:5]}..." if len(jd_keywords) > 5 else f"      JD keywords: {jd_keywords}")
+    print(f"      Staff+ signals: {system_level_signals}")
+
+    return profile
+
+
 def _extract_role_signals(
     strengths: List[str],
     role_title: str,
@@ -719,156 +834,118 @@ def _extract_role_signals(
     """
     Extract role-specific signals from strengths list.
 
-    PRIORITY: Evidence-weighted signals > generic leadership
-    For Apply/Strong Apply, we want to surface things like:
-    - Kubernetes, SRE, ROSA, OpenShift (for infra roles)
-    - Distributed systems, API scale, reliability
-    - Team scaling metrics
+    CRITICAL: Keywords are JD-scoped, not global.
+    This prevents Marcus → Sarah contamination.
 
-    CANDIDATE SCOPING (prevents overfitting):
-    - Keyword must exist in JD AND candidate evidence to elevate
-    - If keyword in JD only → do NOT elevate (it's a gap, not a strength)
-    - Cross-candidate safety: If top signals don't exist in resume, fallback to leadership
-    - Dynamic weighting: signal_weight = JD_relevance × candidate_evidence_confidence
+    ORDERING:
+    1. Resume-verified signals that map to JD keywords (highest priority)
+    2. Scale signals verified in both JD and resume
+    3. Leadership fallback (only when JD-aligned evidence insufficient)
 
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
     if not strengths:
-        print("   ⚠️ _extract_role_signals: No strengths provided")
+        print("   🚨 ERROR: _extract_role_signals called with no strengths - this is a bug")
         return []
 
-    role_lower = (role_title or '').lower()
-    domain = (job_requirements.get('domain', '') or '').lower()
+    # =========================================================================
+    # STEP 1: Extract JD signal profile (JD-scoped, not global)
+    # =========================================================================
+    jd_profile = _extract_jd_signal_profile(job_requirements, role_title)
+    jd_keywords = jd_profile['jd_keywords']
+    role_type = jd_profile['role_type']
 
-    # Compute candidate signal profile for evidence-based filtering
+    if not jd_keywords:
+        print("   ⚠️ No JD keywords extracted - falling back to role-type detection")
+        # Minimal fallback based on role title only
+        role_lower = (role_title or '').lower()
+        if 'sre' in role_lower or 'platform' in role_lower or 'infrastructure' in role_lower:
+            jd_keywords = ['reliability', 'infrastructure', 'platform']
+        elif 'product' in role_lower or 'pm' in role_lower:
+            jd_keywords = ['product', 'roadmap', 'metrics']
+        elif 'data' in role_lower:
+            jd_keywords = ['data', 'analytics', 'pipeline']
+
+    # =========================================================================
+    # STEP 2: Build candidate evidence (resume-first)
+    # =========================================================================
     candidate_profile = _compute_candidate_signal_profile(candidate_resume)
     candidate_evidence = _build_candidate_evidence_text(candidate_resume) if candidate_resume else ""
     candidate_evidence_lower = candidate_evidence.lower()
 
-    print(f"   🔍 Extracting role signals from {len(strengths)} strengths for role: '{role_title}'")
-
-    # Define role-specific keywords to look for (EXPANDED)
-    # Order matters - more specific keywords first
-    role_keywords = {
-        'technical': [
-            # Very specific (highest priority)
-            'openshift', 'rosa', 'kubernetes', 'k8s', 'sre',
-            # Specific
-            'distributed system', 'microservice', 'container', 'docker',
-            'reliability', 'incident response', 'on-call',
-            # General technical
-            'platform', 'infrastructure', 'backend', 'api',
-            'aws', 'gcp', 'azure', 'cloud'
-        ],
-        'product': ['product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
-                   'a/b test', 'experimentation', 'discovery', 'launch'],
-        'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
-                'warehouse', 'etl', 'sql', 'python'],
-        'leadership': ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
-                      'managed', 'cross-functional'],
-        'scale': ['150m', '100m', 'million', 'requests/day', 'requests per day',
-                 'api requests', 'traffic', 'uptime', '99.9', '99.', 'latency', 'throughput',
-                 'scale', 'scaling']
-    }
-
-    # Detect what type of role this is
-    role_type = 'general'
-    if any(k in role_lower for k in ['sre', 'reliability', 'platform', 'infrastructure', 'devops', 'cloud', 'rosa', 'openshift']):
-        role_type = 'technical'
-    elif any(k in role_lower for k in ['product', 'pm', 'growth']):
-        role_type = 'product'
-    elif any(k in role_lower for k in ['data', 'analytics', 'ml', 'machine learning']):
-        role_type = 'data'
-
-    print(f"   📊 Detected role type: {role_type}")
+    print(f"   🔍 Extracting role signals from {len(strengths)} strengths")
+    print(f"   📊 Role type: {role_type}")
     if candidate_evidence_lower:
-        print(f"   📄 Candidate evidence available ({len(candidate_evidence_lower)} chars)")
+        print(f"   📄 Candidate evidence: {len(candidate_evidence_lower)} chars")
+
+    # Leadership keywords (for fallback only)
+    leadership_keywords = ['team of', 'engineers', 'reports', 'hired', 'built team',
+                          'grew team', 'managed', 'cross-functional']
 
     # =========================================================================
-    # EVIDENCE-WEIGHTED SIGNAL SCORING (replaces hardcoded priority)
+    # RESUME-FIRST EVIDENCE SELECTION
     #
-    # Formula: signal_weight = JD_relevance × candidate_evidence_confidence
+    # Priority order:
+    # 1. JD keywords that exist in BOTH strength AND candidate resume (weight 1.0)
+    # 2. Scale keywords in both (weight 0.7)
+    # 3. Leadership keywords (fallback only, weight 0.5)
     #
-    # JD_relevance:
-    #   - 1.0 if keyword matches role_type exactly
-    #   - 0.7 if keyword is in scale category
-    #   - 0.5 for leadership keywords
-    #
-    # candidate_evidence_confidence:
-    #   - 1.0 if keyword exists in candidate resume
-    #   - 0.0 if keyword NOT in candidate resume (disqualified)
+    # Dominant narrative is FALLBACK ONLY when JD-aligned evidence insufficient
     # =========================================================================
 
     scored_signals = []  # List of (signal, weight, keyword)
 
-    # Build combined keywords with their JD relevance scores
-    keywords_with_relevance = []
-    for kw in role_keywords.get(role_type, []):
-        keywords_with_relevance.append((kw, 1.0, 'role'))
-    for kw in role_keywords.get('scale', []):
-        keywords_with_relevance.append((kw, 0.7, 'scale'))
-    for kw in role_keywords.get('leadership', []):
-        keywords_with_relevance.append((kw, 0.5, 'leadership'))
-
+    # STEP 3: Score signals using JD-derived keywords (not global list)
     for strength in strengths:
         if not isinstance(strength, str) or not strength.strip():
             continue
 
         strength_lower = strength.lower()
 
-        for keyword, jd_relevance, category in keywords_with_relevance:
+        # Check JD keywords first (highest priority)
+        for keyword in jd_keywords:
             if keyword in strength_lower:
-                # CANDIDATE SCOPING: Verify keyword exists in candidate evidence
-                # If no evidence available, give benefit of doubt (confidence = 1.0)
-                if candidate_evidence_lower:
-                    if keyword not in candidate_evidence_lower:
-                        print(f"   ⚠️ Keyword '{keyword}' in strength but NOT in candidate resume. Evidence confidence = 0.")
-                        continue  # Disqualified
-                    evidence_confidence = 1.0
-                else:
-                    evidence_confidence = 1.0  # No evidence to check against
+                # CANDIDATE SCOPING: Must exist in resume too
+                if candidate_evidence_lower and keyword not in candidate_evidence_lower:
+                    print(f"   ⚠️ JD keyword '{keyword}' in strength but NOT in resume. Skipping.")
+                    continue
 
-                # Calculate weighted score
-                signal_weight = jd_relevance * evidence_confidence
-
-                # Extract a clean signal phrase
                 signal = _clean_signal_phrase(strength, keyword)
                 if signal:
-                    # Check for duplicates
-                    existing_signals = [s[0] for s in scored_signals]
-                    if signal not in existing_signals:
-                        scored_signals.append((signal, signal_weight, keyword))
-                        print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}', category: {category}, weight: {signal_weight:.2f})")
-                        break  # Only one signal per strength
+                    existing = [s[0] for s in scored_signals]
+                    if signal not in existing:
+                        scored_signals.append((signal, 1.0, keyword))
+                        print(f"   ✅ JD-aligned signal: '{signal}' (keyword: '{keyword}')")
+                        break
 
-    # Sort by weight (highest first) and take top 2
+    # Sort by weight and take top 2
     scored_signals.sort(key=lambda x: x[1], reverse=True)
     signals = [s[0] for s in scored_signals[:2]]
 
-    # CROSS-CANDIDATE SAFETY CHECK
-    # If we have candidate evidence but found no signals, log warning
-    if candidate_evidence_lower and not signals:
-        print("   ⚠️ Role-specific framing skipped due to insufficient candidate evidence")
+    # =========================================================================
+    # LEADERSHIP FALLBACK (only when JD-aligned evidence insufficient)
+    # This is step 3 in the ordering rule - only used if JD-aligned signals
+    # don't exist. If JD signals exist, leadership fallback is NOT allowed.
+    # =========================================================================
+    if not signals:
+        print("   ⚠️ No JD-aligned signals found. Checking leadership fallback.")
+        if candidate_profile.get('leadership_context'):
+            for strength in strengths:
+                if not isinstance(strength, str) or not strength.strip():
+                    continue
 
-    # GUARDRAIL: If no weighted signals survived, check if we should fall back to leadership
-    if not signals and candidate_profile.get('leadership_context'):
-        print("   ⚠️ No role-specific signals found, checking leadership fallback")
-        for strength in strengths:
-            if not isinstance(strength, str) or not strength.strip():
-                continue
+                strength_lower = strength.lower()
 
-            strength_lower = strength.lower()
+                for keyword in leadership_keywords:
+                    if keyword in strength_lower:
+                        signal = _clean_signal_phrase(strength, keyword)
+                        if signal and signal not in signals:
+                            signals.append(signal)
+                            print(f"   ✅ Leadership fallback signal: '{signal}'")
+                            break
 
-            for keyword in role_keywords.get('leadership', []):
-                if keyword in strength_lower:
-                    signal = _clean_signal_phrase(strength, keyword)
-                    if signal and signal not in signals:
-                        signals.append(signal)
-                        print(f"   ✅ Found leadership fallback signal: '{signal}'")
-                        break
-
-            if len(signals) >= 2:
-                break
+                if len(signals) >= 2:
+                    break
 
     print(f"   📋 Extracted {len(signals)} signals: {signals}")
     return signals
