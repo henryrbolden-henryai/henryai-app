@@ -2020,7 +2020,7 @@
         // Per REALITY_CHECK_SPEC.md: Market-truth interventions
         // Market Bias and Market Climate signals are message-only overlays
         // =====================================================================
-        const realityCheckData = data.reality_check;
+        // Note: realityCheckData already declared above at line ~1937
         if (realityCheckData && realityCheckData.display_checks && realityCheckData.display_checks.length > 0) {
             const marketSignalsSection = document.getElementById('marketSignalsSection');
             const marketSignalsContent = document.getElementById('marketSignalsContent');

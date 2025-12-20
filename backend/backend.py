@@ -11993,11 +11993,22 @@ Role: {request.role_title}
                 for w in qa_validation_result.warnings
             ]
 
-        # CRITICAL: Ensure parsed_data has job_description and role_title for eligibility checks
+        # CRITICAL: Ensure parsed_data has job_description, company, and role_title
         # These are needed by force_apply_experience_penalties for non-transferable domain detection
+        # USER INPUT TAKES PRECEDENCE: If user provided company/role_title, use those over Claude's extraction
         if "job_description" not in parsed_data and request.job_description:
             parsed_data["job_description"] = request.job_description
-        if "role_title" not in parsed_data and request.role_title:
+
+        # Company: User input takes precedence over Claude's extraction
+        if request.company:
+            if parsed_data.get("company") != request.company:
+                print(f"📋 [{analysis_id}] Overriding company: '{parsed_data.get('company')}' → '{request.company}' (user provided)")
+            parsed_data["company"] = request.company
+
+        # Role title: User input takes precedence over Claude's extraction
+        if request.role_title:
+            if parsed_data.get("role_title") != request.role_title:
+                print(f"📋 [{analysis_id}] Overriding role_title: '{parsed_data.get('role_title')}' → '{request.role_title}' (user provided)")
             parsed_data["role_title"] = request.role_title
 
         # CRITICAL: Inject isolated role detection data for downstream use
@@ -12068,87 +12079,125 @@ Role: {request.role_title}
         decision_confidence = calculate_decision_confidence(fit_score, momentum, jd_conf)
         parsed_data["decision_confidence"] = decision_confidence
 
-        # =================================================================
-        # REALITY CHECK SYSTEM - Market-truth interventions
-        # Per REALITY_CHECK_SPEC.md: Surfaces risk and market patterns
-        # CRITICAL: NEVER modifies fit_score. Message-only overlays.
-        # =================================================================
-        if REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED:
-            try:
-                # Capture fit_score BEFORE Reality Check for assertion
-                pre_reality_check_score = parsed_data.get("fit_score")
+        # DEBUG: Log critical fields being returned to frontend
+        print(f"\n📤 API RESPONSE DEBUG:")
+        print(f"   fit_score: {parsed_data.get('fit_score', 'MISSING')}")
+        print(f"   recommendation: {parsed_data.get('recommendation', 'MISSING')}")
+        print(f"   recommendation_locked: {parsed_data.get('recommendation_locked', 'MISSING')}")
+        print(f"   Total keys in response: {len(parsed_data.keys())}")
 
-                # Build inputs for Reality Check analysis
-                resume_data = request.resume if request.resume else {}
-                jd_data = {
-                    "role_title": request.role_title or parsed_data.get("role_title", ""),
-                    "company": request.company or parsed_data.get("company", ""),
-                    "job_description": request.job_description or "",
+        # =================================================================
+        # UNIFIED POST-PROCESSING PIPELINE
+        # Applies: Reality Check, Strategic Redirects, Voice Guide
+        # All processors are rule-based (no additional LLM calls)
+        # CRITICAL: NEVER modifies fit_score
+        # =================================================================
+        try:
+            from backend.postprocessors import apply_all_postprocessors, PostProcessorConfig
+
+            # Build inputs for post-processors
+            resume_data = request.resume if request.resume else {}
+            jd_data = {
+                "role_title": request.role_title or parsed_data.get("role_title", ""),
+                "company": request.company or parsed_data.get("company", ""),
+                "job_description": request.job_description or "",
+            }
+
+            # Gather pre-computed analysis results
+            eligibility_result = None
+            if parsed_data.get("eligibility_gate"):
+                eligibility_result = {
+                    "eligible": parsed_data["eligibility_gate"].get("passed", True),
+                    "reason": parsed_data["eligibility_gate"].get("reason", ""),
+                    "failed_check": parsed_data["eligibility_gate"].get("failed_check", ""),
                 }
 
-                # Gather pre-computed analysis results for Reality Check
-                eligibility_result = None
-                if parsed_data.get("eligibility_gate"):
-                    eligibility_result = {
-                        "eligible": parsed_data["eligibility_gate"].get("passed", True),
-                        "reason": parsed_data["eligibility_gate"].get("reason", ""),
-                        "failed_check": parsed_data["eligibility_gate"].get("failed_check", ""),
+            fit_details = None
+            if parsed_data.get("fit_score_breakdown"):
+                fit_details = {
+                    "years_gap": parsed_data["fit_score_breakdown"].get("experience_gap_years", 0),
+                }
+
+            credibility_result = None
+            risk_analysis = None
+            if parsed_data.get("calibration_result"):
+                cal = parsed_data["calibration_result"]
+                credibility_result = {
+                    "title_inflation": cal.get("title_inflation", {}),
+                    "fabrication_risk": cal.get("fabrication_risk", False),
+                    "press_release_pattern": cal.get("press_release_pattern", False),
+                }
+                risk_analysis = {
+                    "job_hopping": cal.get("job_hopping", {}),
+                    "career_gaps": cal.get("career_gaps", []),
+                    "overqualified": cal.get("overqualified", {}),
+                    "company_pattern": cal.get("company_pattern", {}),
+                }
+
+            gap_analysis = {
+                "primary_gap": parsed_data.get("primary_gap", ""),
+                "secondary_gap": parsed_data.get("secondary_gap", ""),
+                "specific_gaps": parsed_data.get("gaps", []),
+            }
+
+            # Configure post-processors
+            config = PostProcessorConfig(
+                reality_check_enabled=REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED,
+                strategic_redirects_enabled=True,
+                voice_guide_enabled=True,
+                voice_guide_strict=False,
+                debug_mode=False,
+            )
+
+            # Get fit_score and recommendation for post-processors
+            fit_score = parsed_data.get("fit_score", 50)
+            recommendation = parsed_data.get("recommendation", "Apply")
+
+            # Apply all post-processors
+            parsed_data = apply_all_postprocessors(
+                response=parsed_data,
+                resume_data=resume_data,
+                jd_data=jd_data,
+                fit_score=fit_score,
+                recommendation=recommendation,
+                config=config,
+                eligibility_result=eligibility_result,
+                fit_details=fit_details,
+                credibility_result=credibility_result,
+                risk_analysis=risk_analysis,
+                gap_analysis=gap_analysis,
+            )
+
+            print(f"✅ Post-processing pipeline completed")
+
+        except ImportError as e:
+            print(f"⚠️ Post-processors not available: {str(e)}")
+            # Fall back to legacy Reality Check if post-processors fail to import
+            if REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED:
+                try:
+                    pre_score = parsed_data.get("fit_score")
+                    resume_data = request.resume if request.resume else {}
+                    jd_data = {
+                        "role_title": request.role_title or parsed_data.get("role_title", ""),
+                        "company": request.company or parsed_data.get("company", ""),
+                        "job_description": request.job_description or "",
                     }
+                    reality_result = analyze_reality_checks(
+                        resume_data=resume_data,
+                        jd_data=jd_data,
+                        fit_score=pre_score,
+                        feature_flag=REALITY_CHECK_ENABLED,
+                    )
+                    parsed_data["reality_check"] = reality_result
+                    if parsed_data.get("fit_score") != pre_score:
+                        parsed_data["fit_score"] = pre_score
+                except Exception as rc_e:
+                    print(f"⚠️ Legacy Reality Check also failed: {str(rc_e)}")
 
-                fit_details = None
-                if parsed_data.get("fit_score_breakdown"):
-                    fit_details = {
-                        "years_gap": parsed_data["fit_score_breakdown"].get("experience_gap_years", 0),
-                    }
-
-                credibility_result = None
-                if parsed_data.get("calibration_result"):
-                    cal = parsed_data["calibration_result"]
-                    credibility_result = {
-                        "title_inflation": cal.get("title_inflation", {}),
-                        "fabrication_risk": cal.get("fabrication_risk", False),
-                        "press_release_pattern": cal.get("press_release_pattern", False),
-                    }
-
-                risk_analysis = None
-                if parsed_data.get("calibration_result"):
-                    cal = parsed_data["calibration_result"]
-                    risk_analysis = {
-                        "job_hopping": cal.get("job_hopping", {}),
-                        "career_gaps": cal.get("career_gaps", []),
-                        "overqualified": cal.get("overqualified", {}),
-                        "company_pattern": cal.get("company_pattern", {}),
-                    }
-
-                # Run Reality Check analysis
-                reality_check_result = analyze_reality_checks(
-                    resume_data=resume_data,
-                    jd_data=jd_data,
-                    fit_score=fit_score,
-                    eligibility_result=eligibility_result,
-                    fit_details=fit_details,
-                    credibility_result=credibility_result,
-                    risk_analysis=risk_analysis,
-                    feature_flag=REALITY_CHECK_ENABLED,
-                )
-
-                # Add Reality Check to response
-                parsed_data["reality_check"] = reality_check_result
-
-                # CRITICAL ASSERTION: Verify fit_score was NOT modified
-                post_reality_check_score = parsed_data.get("fit_score")
-                if pre_reality_check_score != post_reality_check_score:
-                    print(f"🚨 REALITY CHECK GUARDRAIL VIOLATION: Score changed from {pre_reality_check_score} to {post_reality_check_score}")
-                    # Restore original score
-                    parsed_data["fit_score"] = pre_reality_check_score
-                    parsed_data["reality_check"]["_guardrail_violation"] = True
-
-                print(f"✅ Reality Check completed: {len(reality_check_result.get('display_checks', []))} checks to display")
-
-            except Exception as e:
-                print(f"⚠️ Reality Check failed (non-blocking): {str(e)}")
-                # Reality Check failure should not block the response
-                parsed_data["reality_check"] = {"error": str(e), "checks": []}
+        except Exception as e:
+            print(f"⚠️ Post-processing failed (non-blocking): {str(e)}")
+            import traceback
+            traceback.print_exc()
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -12185,10 +12234,13 @@ Role: {request.role_title}
             parsed_data = json.loads(fixed_response)
             print("✅ Fixed JSON by escaping common quote patterns")
 
-            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            # Ensure job_description, company, and role_title are in parsed_data
+            # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and request.job_description:
                 parsed_data["job_description"] = request.job_description
-            if "role_title" not in parsed_data and request.role_title:
+            if request.company:
+                parsed_data["company"] = request.company
+            if request.role_title:
                 parsed_data["role_title"] = request.role_title
 
             # Continue with penalty enforcement
@@ -12478,10 +12530,13 @@ Role: {request.role_title}
                 parsed_data = json.loads(truncated)
                 print(f"✅ Salvaged JSON by truncating")
 
-            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            # Ensure job_description, company, and role_title are in parsed_data
+            # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and request.job_description:
                 parsed_data["job_description"] = request.job_description
-            if "role_title" not in parsed_data and request.role_title:
+            if request.company:
+                parsed_data["company"] = request.company
+            if request.role_title:
                 parsed_data["role_title"] = request.role_title
 
             # Apply experience penalties

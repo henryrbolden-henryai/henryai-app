@@ -308,6 +308,8 @@
 
                 const analysisData = await analyzeResponse.json();
                 console.log('Analysis response:', analysisData);
+                console.log('🔍 DEBUG - fit_score from API:', analysisData.fit_score);
+                console.log('🔍 DEBUG - recommendation from API:', analysisData.recommendation);
 
                 // Build full data for results page
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
