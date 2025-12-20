@@ -1690,27 +1690,7 @@
             window.location.href = 'analyze.html';
         }
 
-        // =====================================================================
-        // 🚨 DIAGNOSTIC LOGGING - PROVE WHAT PAYLOAD THE UI IS BINDING TO
-        // =====================================================================
-        console.log("🚨 FINAL API PAYLOAD", JSON.stringify(data, null, 2));
-        console.log("🔍 CRITICAL FIELDS CHECK:", {
-            has_final_recommendation: 'final_recommendation' in data,
-            final_recommendation_value: data.final_recommendation,
-            has_recommendation: 'recommendation' in data,
-            recommendation_value: data.recommendation,
-            has_fit_score: 'fit_score' in data,
-            fit_score_value: data.fit_score,
-            fit_score_type: typeof data.fit_score,
-            has_strengths: 'strengths' in data,
-            strengths_value: data.strengths,
-            strengths_is_array: Array.isArray(data.strengths),
-            strengths_length: Array.isArray(data.strengths) ? data.strengths.length : 'N/A',
-            has_your_move: 'your_move' in data,
-            your_move_value: data.your_move,
-            all_top_level_keys: Object.keys(data)
-        });
-        console.log("⏱️ DIAGNOSTIC TIMESTAMP:", new Date().toISOString());
+        console.log('Results page data:', data);
 
         // =====================================================================
         // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
@@ -1720,14 +1700,6 @@
         const lockedDoNotApply = finalDecision === 'Do Not Apply';
         const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
         const strengths = Array.isArray(data.strengths) ? data.strengths : [];
-
-        // CONTRACT ASSERTION (dev-only debugging)
-        console.log('🔒 IMMUTABLE UI STATE:', {
-            finalDecision,
-            lockedDoNotApply,
-            fitScore,
-            strengthsCount: strengths.length
-        });
 
         // =====================================================================
         // VIEW TOGGLE LOGIC
