@@ -630,6 +630,86 @@ def _build_candidate_evidence_text(candidate_resume: Optional[Dict[str, Any]]) -
     return ' '.join(filter(None, parts))
 
 
+def _compute_candidate_signal_profile(candidate_resume: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compute a per-candidate signal profile before prioritization.
+
+    This prevents overfitting to a single candidate by ensuring we only
+    elevate signals that exist in the candidate's actual background.
+
+    Returns:
+        {
+            'primary_domains': ['infra', 'sre', ...],
+            'secondary_domains': ['product', ...],
+            'scale_context': ['150m requests', ...],
+            'leadership_context': ['team of 12', ...],
+            'evidence_keywords': set of all lowercase keywords found
+        }
+    """
+    if not candidate_resume:
+        return {
+            'primary_domains': [],
+            'secondary_domains': [],
+            'scale_context': [],
+            'leadership_context': [],
+            'evidence_keywords': set()
+        }
+
+    evidence_text = _build_candidate_evidence_text(candidate_resume).lower()
+
+    # Domain detection patterns
+    domain_patterns = {
+        'infra': ['infrastructure', 'platform', 'sre', 'devops', 'cloud', 'kubernetes', 'k8s', 'docker', 'container'],
+        'backend': ['backend', 'api', 'server', 'microservice', 'distributed'],
+        'frontend': ['frontend', 'react', 'vue', 'angular', 'javascript', 'typescript', 'ui', 'ux'],
+        'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline', 'etl'],
+        'product': ['product', 'roadmap', 'strategy', 'discovery', 'user research'],
+        'mobile': ['mobile', 'ios', 'android', 'swift', 'kotlin'],
+    }
+
+    # Scale detection patterns
+    scale_patterns = ['million', '100m', '150m', 'requests/day', 'requests per day', 'users', 'traffic',
+                     '99.9', 'uptime', 'latency', 'throughput', 'scale']
+
+    # Leadership detection patterns
+    leadership_patterns = ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
+                          'managed', 'led', 'directed', 'head of', 'director', 'vp']
+
+    # Detect domains
+    primary_domains = []
+    secondary_domains = []
+    for domain, patterns in domain_patterns.items():
+        matches = sum(1 for p in patterns if p in evidence_text)
+        if matches >= 3:
+            primary_domains.append(domain)
+        elif matches >= 1:
+            secondary_domains.append(domain)
+
+    # Detect scale context
+    scale_context = [p for p in scale_patterns if p in evidence_text]
+
+    # Detect leadership context
+    leadership_context = [p for p in leadership_patterns if p in evidence_text]
+
+    # Build evidence keyword set (all words for fast lookup)
+    evidence_keywords = set(evidence_text.split())
+
+    profile = {
+        'primary_domains': primary_domains,
+        'secondary_domains': secondary_domains,
+        'scale_context': scale_context,
+        'leadership_context': leadership_context,
+        'evidence_keywords': evidence_keywords
+    }
+
+    print(f"   👤 Candidate Signal Profile:")
+    print(f"      Primary domains: {primary_domains}")
+    print(f"      Secondary domains: {secondary_domains}")
+    print(f"      Scale context: {scale_context[:3]}..." if len(scale_context) > 3 else f"      Scale context: {scale_context}")
+
+    return profile
+
+
 def _extract_role_signals(
     strengths: List[str],
     role_title: str,
@@ -639,7 +719,7 @@ def _extract_role_signals(
     """
     Extract role-specific signals from strengths list.
 
-    PRIORITY: Role-specific capabilities > generic leadership
+    PRIORITY: Evidence-weighted signals > generic leadership
     For Apply/Strong Apply, we want to surface things like:
     - Kubernetes, SRE, ROSA, OpenShift (for infra roles)
     - Distributed systems, API scale, reliability
@@ -649,6 +729,7 @@ def _extract_role_signals(
     - Keyword must exist in JD AND candidate evidence to elevate
     - If keyword in JD only → do NOT elevate (it's a gap, not a strength)
     - Cross-candidate safety: If top signals don't exist in resume, fallback to leadership
+    - Dynamic weighting: signal_weight = JD_relevance × candidate_evidence_confidence
 
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
@@ -659,7 +740,8 @@ def _extract_role_signals(
     role_lower = (role_title or '').lower()
     domain = (job_requirements.get('domain', '') or '').lower()
 
-    # Build candidate evidence text for cross-validation
+    # Compute candidate signal profile for evidence-based filtering
+    candidate_profile = _compute_candidate_signal_profile(candidate_resume)
     candidate_evidence = _build_candidate_evidence_text(candidate_resume) if candidate_resume else ""
     candidate_evidence_lower = candidate_evidence.lower()
 
@@ -702,11 +784,31 @@ def _extract_role_signals(
     if candidate_evidence_lower:
         print(f"   📄 Candidate evidence available ({len(candidate_evidence_lower)} chars)")
 
-    signals = []
-    signals_from_evidence = []  # Track which signals are grounded in candidate resume
+    # =========================================================================
+    # EVIDENCE-WEIGHTED SIGNAL SCORING (replaces hardcoded priority)
+    #
+    # Formula: signal_weight = JD_relevance × candidate_evidence_confidence
+    #
+    # JD_relevance:
+    #   - 1.0 if keyword matches role_type exactly
+    #   - 0.7 if keyword is in scale category
+    #   - 0.5 for leadership keywords
+    #
+    # candidate_evidence_confidence:
+    #   - 1.0 if keyword exists in candidate resume
+    #   - 0.0 if keyword NOT in candidate resume (disqualified)
+    # =========================================================================
 
-    # First pass: Look for role-type specific keywords (highest priority)
-    keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', [])
+    scored_signals = []  # List of (signal, weight, keyword)
+
+    # Build combined keywords with their JD relevance scores
+    keywords_with_relevance = []
+    for kw in role_keywords.get(role_type, []):
+        keywords_with_relevance.append((kw, 1.0, 'role'))
+    for kw in role_keywords.get('scale', []):
+        keywords_with_relevance.append((kw, 0.7, 'scale'))
+    for kw in role_keywords.get('leadership', []):
+        keywords_with_relevance.append((kw, 0.5, 'leadership'))
 
     for strength in strengths:
         if not isinstance(strength, str) or not strength.strip():
@@ -714,36 +816,43 @@ def _extract_role_signals(
 
         strength_lower = strength.lower()
 
-        for keyword in keywords_to_check:
+        for keyword, jd_relevance, category in keywords_with_relevance:
             if keyword in strength_lower:
                 # CANDIDATE SCOPING: Verify keyword exists in candidate evidence
-                if candidate_evidence_lower and keyword not in candidate_evidence_lower:
-                    print(f"   ⚠️ Keyword '{keyword}' in strength but NOT in candidate resume. Skipping.")
-                    continue
+                # If no evidence available, give benefit of doubt (confidence = 1.0)
+                if candidate_evidence_lower:
+                    if keyword not in candidate_evidence_lower:
+                        print(f"   ⚠️ Keyword '{keyword}' in strength but NOT in candidate resume. Evidence confidence = 0.")
+                        continue  # Disqualified
+                    evidence_confidence = 1.0
+                else:
+                    evidence_confidence = 1.0  # No evidence to check against
+
+                # Calculate weighted score
+                signal_weight = jd_relevance * evidence_confidence
 
                 # Extract a clean signal phrase
                 signal = _clean_signal_phrase(strength, keyword)
-                if signal and signal not in signals:
-                    signals.append(signal)
-                    signals_from_evidence.append(signal)
-                    print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}', grounded in resume: {bool(candidate_evidence_lower)})")
-                    break  # Only one signal per strength
+                if signal:
+                    # Check for duplicates
+                    existing_signals = [s[0] for s in scored_signals]
+                    if signal not in existing_signals:
+                        scored_signals.append((signal, signal_weight, keyword))
+                        print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}', category: {category}, weight: {signal_weight:.2f})")
+                        break  # Only one signal per strength
 
-        if len(signals) >= 2:
-            break
+    # Sort by weight (highest first) and take top 2
+    scored_signals.sort(key=lambda x: x[1], reverse=True)
+    signals = [s[0] for s in scored_signals[:2]]
 
     # CROSS-CANDIDATE SAFETY CHECK
-    # If we have candidate evidence but top signals don't exist in resume, fallback to leadership
-    if candidate_evidence_lower and len(signals) >= 2:
-        # Verify top 2 signals are grounded in candidate evidence
-        ungrounded_signals = [s for s in signals[:2] if s not in signals_from_evidence]
-        if ungrounded_signals:
-            print(f"   ⚠️ Role signals suppressed due to insufficient candidate evidence: {ungrounded_signals}")
-            signals = []  # Reset and fall through to leadership
+    # If we have candidate evidence but found no signals, log warning
+    if candidate_evidence_lower and not signals:
+        print("   ⚠️ Role-specific framing skipped due to insufficient candidate evidence")
 
-    # Second pass: If no role-specific signals, check leadership as fallback
-    if not signals:
-        print("   ⚠️ No role-specific signals found (or suppressed), checking leadership keywords")
+    # GUARDRAIL: If no weighted signals survived, check if we should fall back to leadership
+    if not signals and candidate_profile.get('leadership_context'):
+        print("   ⚠️ No role-specific signals found, checking leadership fallback")
         for strength in strengths:
             if not isinstance(strength, str) or not strength.strip():
                 continue
@@ -755,7 +864,7 @@ def _extract_role_signals(
                     signal = _clean_signal_phrase(strength, keyword)
                     if signal and signal not in signals:
                         signals.append(signal)
-                        print(f"   ✅ Found leadership signal: '{signal}'")
+                        print(f"   ✅ Found leadership fallback signal: '{signal}'")
                         break
 
             if len(signals) >= 2:
