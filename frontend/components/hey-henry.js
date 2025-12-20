@@ -186,18 +186,74 @@
             margin-top: 2px;
         }
 
+        .ask-henry-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .ask-henry-close {
-            background: none;
+            background: rgba(255, 255, 255, 0.05);
             border: none;
             color: #9ca3af;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             cursor: pointer;
-            padding: 4px;
-            transition: color 0.2s;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            line-height: 1;
         }
 
         .ask-henry-close:hover {
             color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ask-henry-expand {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ask-henry-expand:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ask-henry-expand svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* Expanded/Popped-out Mode */
+        .ask-henry-drawer.expanded {
+            width: 600px;
+            max-width: calc(100vw - 48px);
+            height: 80vh;
+            max-height: calc(100vh - 100px);
+        }
+
+        .ask-henry-drawer.expanded .ask-henry-expand svg {
+            transform: rotate(180deg);
+        }
+
+        /* Mobile-friendly expanded state */
+        @media (max-width: 640px) {
+            .ask-henry-drawer.expanded {
+                width: calc(100vw - 24px);
+                height: calc(100vh - 100px);
+                bottom: 12px;
+                right: 12px;
+                border-radius: 16px;
+            }
         }
 
         /* Messages Area */
@@ -316,12 +372,12 @@
 
         /* Input Area */
         .ask-henry-input-area {
-            padding: 16px;
+            padding: 12px 16px;
             border-top: 1px solid rgba(255, 255, 255, 0.06);
             background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
             display: flex;
-            gap: 12px;
-            align-items: flex-end;
+            gap: 8px;
+            align-items: center;
         }
 
         .ask-henry-input {
@@ -329,13 +385,14 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             color: #ffffff;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             line-height: 1.4;
             resize: none;
-            min-height: 48px;
-            max-height: 120px;
+            min-height: 44px;
+            max-height: 100px;
+            order: 0; /* Input first */
         }
 
         .ask-henry-input:focus {
@@ -351,15 +408,16 @@
         .ask-henry-send {
             background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            width: 48px;
-            height: 48px;
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
+            order: 2; /* Send button last */
         }
 
         .ask-henry-send:hover {
@@ -373,40 +431,40 @@
         }
 
         .ask-henry-send svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             fill: #ffffff;
         }
 
-        /* Attachment Button */
+        /* Attachment Button - compact, positioned after input */
         .ask-henry-attach {
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            width: 48px;
-            height: 48px;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
+            order: 1; /* Move after textarea in flex layout */
         }
 
         .ask-henry-attach:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .ask-henry-attach svg {
-            width: 20px;
-            height: 20px;
-            fill: #888888;
+            width: 16px;
+            height: 16px;
+            fill: #666666;
             transition: fill 0.2s;
         }
 
         .ask-henry-attach:hover svg {
-            fill: #ffffff;
+            fill: #999999;
         }
 
         /* Attachment Preview Area */
@@ -2669,7 +2727,12 @@ ${confidenceClosing}`,
                             <div class="ask-henry-title-context" id="askHenryContext">${context.description}</div>
                         </div>
                     </div>
-                    <button class="ask-henry-close" id="askHenryClose" aria-label="Close">×</button>
+                    <div class="ask-henry-header-actions">
+                        <button class="ask-henry-expand" id="askHenryExpand" aria-label="Expand" title="Expand chat">
+                            <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+                        </button>
+                        <button class="ask-henry-close" id="askHenryClose" aria-label="Close" title="Close chat">×</button>
+                    </div>
                 </div>
 
                 <div class="ask-henry-messages" id="askHenryMessages">
@@ -2684,16 +2747,16 @@ ${confidenceClosing}`,
 
                 <div class="ask-henry-attachments" id="askHenryAttachments"></div>
                 <div class="ask-henry-input-area">
-                    <button class="ask-henry-attach" id="askHenryAttach" aria-label="Attach file">
-                        <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
-                    </button>
-                    <input type="file" id="askHenryFileInput" style="display: none;" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,text/plain">
                     <textarea
                         class="ask-henry-input"
                         id="askHenryInput"
                         placeholder="Ask me anything..."
                         rows="1"
                     ></textarea>
+                    <button class="ask-henry-attach" id="askHenryAttach" aria-label="Attach file" title="Attach file">
+                        <svg viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+                    </button>
+                    <input type="file" id="askHenryFileInput" style="display: none;" multiple accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,.doc,.docx,text/plain">
                     <button class="ask-henry-send" id="askHenrySend" aria-label="Send">
                         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
@@ -2741,6 +2804,9 @@ ${confidenceClosing}`,
         document.getElementById('askHenryClose').addEventListener('click', closeDrawer);
         document.getElementById('askHenrySend').addEventListener('click', sendMessage);
         document.getElementById('askHenryInput').addEventListener('keydown', handleKeyDown);
+
+        // Expand/collapse button
+        document.getElementById('askHenryExpand').addEventListener('click', toggleExpanded);
 
         // Attachment button and file input
         const attachBtn = document.getElementById('askHenryAttach');
@@ -2837,8 +2903,19 @@ ${confidenceClosing}`,
     function closeDrawer() {
         isOpen = false;
         document.getElementById('askHenryDrawer').classList.remove('open');
+        document.getElementById('askHenryDrawer').classList.remove('expanded'); // Also collapse when closing
         document.getElementById('askHenryFab').classList.remove('hidden');
         startTooltipTimer(); // Resume random tooltips when chat is closed
+    }
+
+    function toggleExpanded() {
+        const drawer = document.getElementById('askHenryDrawer');
+        const expandBtn = document.getElementById('askHenryExpand');
+        const isExpanded = drawer.classList.toggle('expanded');
+
+        // Update button title
+        expandBtn.title = isExpanded ? 'Collapse chat' : 'Expand chat';
+        expandBtn.setAttribute('aria-label', isExpanded ? 'Collapse' : 'Expand');
     }
 
     function handleKeyDown(e) {

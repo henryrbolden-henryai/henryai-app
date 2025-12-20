@@ -2642,11 +2642,12 @@
                     ? `I just analyzed ${roleTitle} at ${companyName} and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`
                     : `I just analyzed a ${roleTitle} role and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`;
 
-                // Open Hey Henry with the conversation starter
-                if (typeof window.openHeyHenry === 'function') {
-                    window.openHeyHenry(initialPrompt);
-                } else if (typeof window.HeyHenry !== 'undefined' && window.HeyHenry.open) {
-                    window.HeyHenry.open(initialPrompt);
+                // Open Hey Henry with the conversation starter and send the message
+                if (typeof window.openHeyHenryWithPrompt === 'function') {
+                    window.openHeyHenryWithPrompt(initialPrompt);
+                } else if (typeof window.openHeyHenry === 'function') {
+                    window.openHeyHenry();
+                    // Fallback: just open the chat if prompt function not available
                 } else {
                     // Fallback: navigate to hey-henry page with context
                     window.location.href = 'hey-henry.html?context=better_paths';

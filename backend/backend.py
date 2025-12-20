@@ -8718,7 +8718,14 @@ def extract_people_leadership_years(resume_data: dict) -> float:
         "team of", "people manager", "managed team", "lead a team",
         "built the team", "grew the team", "hiring manager",
         "performance review", "promoted", "mentored", "coached team",
-        "developed team", "team lead", "engineering manager", "people management"
+        "developed team", "team lead", "engineering manager", "people management",
+        # Additional patterns from real resumes
+        "built and led", "led marketing team", "led team", "scaled marketing",
+        "scaled team", "scaled function", "team from", "grew from",
+        "marketing team of", "engineering team of", "led the team",
+        "managed budget", "annual budget", "led organization",
+        "built organization", "reporting to", "reports to me",
+        "oversaw team", "supervised", "led cross-functional"
     ]
 
     # Title patterns that typically indicate people leadership
@@ -8727,11 +8734,29 @@ def extract_people_leadership_years(resume_data: dict) -> float:
         "chief", "lead", "supervisor", "team lead"
     ]
 
+    # STRONG leadership titles that inherently imply people management at established companies
+    # VP/Director at real companies = you manage people (no explicit evidence needed)
+    strong_leadership_titles = [
+        "vp ", "vice president", "vp,", "director", "head of", "chief"
+    ]
+
     # Explicitly NOT people leadership (operational/systems leadership)
     operational_only_patterns = [
         "program manager", "project manager", "technical lead",
         "staff engineer", "principal engineer", "architect",
         "operations lead", "process lead", "systems lead"
+    ]
+
+    # Well-known companies where VP/Director definitely means people leadership
+    established_companies = [
+        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
+        "uber", "lyft", "airbnb", "stripe", "square", "twilio", "segment",
+        "salesforce", "adobe", "oracle", "sap", "ibm", "cisco", "intel",
+        "linkedin", "twitter", "x corp", "snap", "pinterest", "dropbox",
+        "slack", "atlassian", "asana", "notion", "figma", "canva",
+        "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
+        "new relic", "mparticle", "amplitude", "mixpanel", "braze",
+        "intercom", "drift", "gong", "outreach", "salesloft",
     ]
 
     total_people_years = 0.0
@@ -8742,7 +8767,9 @@ def extract_people_leadership_years(resume_data: dict) -> float:
 
         title = (exp.get("title", "") or "").lower()
         description = (exp.get("description", "") or "").lower()
-        highlights = exp.get("highlights", [])
+
+        # Check both highlights and bullets fields (parsers use different names)
+        highlights = exp.get("highlights", []) or exp.get("bullets", []) or []
         if highlights and isinstance(highlights, list):
             highlights_text = " ".join([h.lower() for h in highlights if isinstance(h, str)])
         else:
@@ -8751,6 +8778,7 @@ def extract_people_leadership_years(resume_data: dict) -> float:
         combined_text = f"{title} {description} {highlights_text}"
         dates = (exp.get("dates", "") or "").lower()
         company = (exp.get("company", "") or "").strip()
+        company_lower = company.lower()
 
         years = parse_experience_duration(dates)
 
@@ -8762,10 +8790,30 @@ def extract_people_leadership_years(resume_data: dict) -> float:
 
         # Check for people leadership evidence
         has_people_title = any(pattern in title for pattern in people_leadership_titles)
+        has_strong_title = any(pattern in title for pattern in strong_leadership_titles)
         has_people_evidence = any(ev in combined_text for ev in people_leadership_evidence)
 
-        # HARD RULE: Must have title AND evidence, or strong evidence alone
-        if has_people_title and has_people_evidence:
+        # Check if company is established (VP/Director definitely means people leadership)
+        is_established_company = any(ec in company_lower for ec in established_companies)
+        # Also check for acquisition mentions (e.g., "Segment (acquired by Twilio)")
+        if "acquired by" in company_lower or "twilio" in company_lower:
+            is_established_company = True
+
+        # CREDITING RULES:
+        # 1. Strong title at established company = full credit (VP at Segment = people leader)
+        # 2. Strong title + evidence = full credit
+        # 3. Regular leadership title + evidence = full credit
+        # 4. Evidence alone = 70% credit
+        # 5. Strong title at unknown company = 50% credit (might be startup title inflation)
+
+        if has_strong_title and is_established_company:
+            # VP/Director at established company = full credit, no evidence needed
+            tier = get_company_credibility_tier(company, title)
+            multiplier = get_credibility_multiplier(tier)
+            adjusted = years * multiplier
+            total_people_years += adjusted
+            print(f"   ✅ PEOPLE LEADERSHIP (established co): {exp.get('title', '')} @ {company}: {years:.1f}y × {multiplier} = {adjusted:.1f}y")
+        elif has_people_title and has_people_evidence:
             # Full credit for verified people leadership
             tier = get_company_credibility_tier(company, title)
             multiplier = get_credibility_multiplier(tier)
@@ -8779,6 +8827,13 @@ def extract_people_leadership_years(resume_data: dict) -> float:
             adjusted = years * multiplier
             total_people_years += adjusted
             print(f"   🟡 LIKELY PEOPLE LEADERSHIP: {exp.get('title', '')} @ {company}: {years:.1f}y × {multiplier:.2f} = {adjusted:.1f}y")
+        elif has_strong_title:
+            # Strong title at unknown company - 50% credit (might be startup inflation)
+            tier = get_company_credibility_tier(company, title)
+            multiplier = get_credibility_multiplier(tier) * 0.5
+            adjusted = years * multiplier
+            total_people_years += adjusted
+            print(f"   🟡 POSSIBLE LEADERSHIP (unverified co): {exp.get('title', '')} @ {company}: {years:.1f}y × {multiplier:.2f} = {adjusted:.1f}y")
         else:
             print(f"   ❌ NO PEOPLE LEADERSHIP EVIDENCE: {exp.get('title', '')} @ {company}")
 
@@ -9481,11 +9536,41 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
 
     print(f"📋 [{analysis_id}] Extracting role title from JD...")
 
+    # Navigation/UI text to skip (common when copying from job boards)
+    skip_patterns = [
+        r'^back to',
+        r'^apply now',
+        r'^save job',
+        r'^share',
+        r'^home\s*[>/]',
+        r'^jobs\s*[>/]',
+        r'^search',
+        r'^menu',
+        r'^sign in',
+        r'^log in',
+        r'^posted',
+        r'^×',
+        r'^\d+ days? ago',
+        r'^view all jobs',
+        r'^similar jobs',
+    ]
+
+    def is_navigation_text(text: str) -> bool:
+        """Check if text is likely navigation/UI element."""
+        text_lower = text.lower().strip()
+        for pattern in skip_patterns:
+            if re.match(pattern, text_lower):
+                return True
+        # Also skip very short lines that are likely nav
+        if len(text) < 5:
+            return True
+        return False
+
     # Strategy 1: Look for explicit markers
     patterns = [
         r'(?:job title|position|role):\s*([^\n]+)',
         r'^([^\n]+)(?:\s*-\s*(?:corporate|hybrid|remote|full.time))',
-        r'^([A-Z][^\n]{10,80})$',
+        r'(?:hiring|hiring a|we\'re hiring|is hiring)\s+(?:a\s+)?([^\n\.]+)',
     ]
 
     for pattern in patterns:
@@ -9498,17 +9583,33 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 title,
                 flags=re.IGNORECASE
             )
-            if 5 < len(title) < 100:
+            if 5 < len(title) < 100 and not is_navigation_text(title):
                 print(f"  ✅ Extracted: '{title}'")
                 return title
 
-    # Strategy 2: First non-empty line
+    # Strategy 2: Find first line that looks like a job title (skip nav text)
     lines = [line.strip() for line in jd_text.split('\n') if line.strip()]
-    if lines:
-        first_line = lines[0]
-        if 5 < len(first_line) < 100 and first_line[0].isupper():
-            print(f"  ✅ Extracted from first line: '{first_line}'")
-            return first_line
+    for line in lines[:10]:  # Check first 10 lines
+        if is_navigation_text(line):
+            continue
+        # Must start with capital, reasonable length, and contain job-related words
+        if 10 < len(line) < 100 and line[0].isupper():
+            # Bonus: Check if it contains job-title-like words
+            job_title_indicators = ['manager', 'director', 'engineer', 'analyst', 'lead',
+                                    'coordinator', 'specialist', 'vp', 'vice president',
+                                    'head of', 'senior', 'junior', 'associate', 'chief',
+                                    'officer', 'developer', 'designer', 'architect',
+                                    'recruiter', 'marketing', 'sales', 'product', 'operations']
+            line_lower = line.lower()
+            if any(indicator in line_lower for indicator in job_title_indicators):
+                print(f"  ✅ Extracted from content: '{line}'")
+                return line
+
+    # Strategy 3: First substantial non-nav line as fallback
+    for line in lines[:10]:
+        if not is_navigation_text(line) and 5 < len(line) < 100:
+            print(f"  ✅ Extracted from first valid line: '{line}'")
+            return line
 
     # Fallback
     print(f"  ⚠️ Could not extract role title - using placeholder")
