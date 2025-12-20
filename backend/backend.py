@@ -11178,6 +11178,13 @@ Role: {request.role_title}
         decision_confidence = calculate_decision_confidence(fit_score, momentum, jd_conf)
         parsed_data["decision_confidence"] = decision_confidence
 
+        # DEBUG: Log critical fields being returned to frontend
+        print(f"\n📤 API RESPONSE DEBUG:")
+        print(f"   fit_score: {parsed_data.get('fit_score', 'MISSING')}")
+        print(f"   recommendation: {parsed_data.get('recommendation', 'MISSING')}")
+        print(f"   recommendation_locked: {parsed_data.get('recommendation_locked', 'MISSING')}")
+        print(f"   Total keys in response: {len(parsed_data.keys())}")
+
         return parsed_data
     except json.JSONDecodeError as e:
         # Log the problematic section of Claude's response for debugging
