@@ -568,53 +568,68 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
     """
     Extract role-specific signals from strengths list.
 
-    Looks for concrete capabilities that match the role:
-    - Technical: Kubernetes, SRE, distributed systems, platform, infrastructure
-    - Domain: ads, consumer, enterprise, fintech, healthcare
-    - Scale: API volume, user counts, team size
+    PRIORITY: Role-specific capabilities > generic leadership
+    For Apply/Strong Apply, we want to surface things like:
+    - Kubernetes, SRE, ROSA, OpenShift (for infra roles)
+    - Distributed systems, API scale, reliability
+    - Team scaling metrics
 
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
     if not strengths:
+        print("   ⚠️ _extract_role_signals: No strengths provided")
         return []
 
     role_lower = (role_title or '').lower()
     domain = (job_requirements.get('domain', '') or '').lower()
 
-    # Define role-specific keywords to look for
+    print(f"   🔍 Extracting role signals from {len(strengths)} strengths for role: '{role_title}'")
+
+    # Define role-specific keywords to look for (EXPANDED)
+    # Order matters - more specific keywords first
     role_keywords = {
-        'technical': ['kubernetes', 'k8s', 'sre', 'distributed', 'platform', 'infrastructure',
-                     'reliability', 'scaling', 'api', 'backend', 'microservices', 'cloud',
-                     'aws', 'gcp', 'azure', 'docker', 'container', 'openshift', 'rosa'],
+        'technical': [
+            # Very specific (highest priority)
+            'openshift', 'rosa', 'kubernetes', 'k8s', 'sre',
+            # Specific
+            'distributed system', 'microservice', 'container', 'docker',
+            'reliability', 'incident response', 'on-call',
+            # General technical
+            'platform', 'infrastructure', 'backend', 'api',
+            'aws', 'gcp', 'azure', 'cloud'
+        ],
         'product': ['product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
                    'a/b test', 'experimentation', 'discovery', 'launch'],
         'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
                 'warehouse', 'etl', 'sql', 'python'],
         'leadership': ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
-                      'managed', 'led', 'cross-functional'],
-        'scale': ['million', 'M users', 'M requests', 'api requests', 'traffic',
-                 'uptime', '99.', 'latency', 'throughput']
+                      'managed', 'cross-functional'],
+        'scale': ['150m', '100m', 'million', 'requests/day', 'requests per day',
+                 'api requests', 'traffic', 'uptime', '99.9', '99.', 'latency', 'throughput',
+                 'scale', 'scaling']
     }
 
     # Detect what type of role this is
     role_type = 'general'
-    if any(k in role_lower for k in ['sre', 'reliability', 'platform', 'infrastructure', 'devops', 'cloud']):
+    if any(k in role_lower for k in ['sre', 'reliability', 'platform', 'infrastructure', 'devops', 'cloud', 'rosa', 'openshift']):
         role_type = 'technical'
     elif any(k in role_lower for k in ['product', 'pm', 'growth']):
         role_type = 'product'
     elif any(k in role_lower for k in ['data', 'analytics', 'ml', 'machine learning']):
         role_type = 'data'
 
+    print(f"   📊 Detected role type: {role_type}")
+
     signals = []
 
+    # First pass: Look for role-type specific keywords (highest priority)
+    keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', [])
+
     for strength in strengths:
-        if not isinstance(strength, str):
+        if not isinstance(strength, str) or not strength.strip():
             continue
 
         strength_lower = strength.lower()
-
-        # Check for role-type specific keywords
-        keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', []) + role_keywords.get('leadership', [])
 
         for keyword in keywords_to_check:
             if keyword in strength_lower:
@@ -622,11 +637,33 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
                 signal = _clean_signal_phrase(strength, keyword)
                 if signal and signal not in signals:
                     signals.append(signal)
+                    print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}')")
                     break  # Only one signal per strength
 
         if len(signals) >= 2:
             break
 
+    # Second pass: If no role-specific signals, check leadership as fallback
+    if not signals:
+        print("   ⚠️ No role-specific signals found, checking leadership keywords")
+        for strength in strengths:
+            if not isinstance(strength, str) or not strength.strip():
+                continue
+
+            strength_lower = strength.lower()
+
+            for keyword in role_keywords.get('leadership', []):
+                if keyword in strength_lower:
+                    signal = _clean_signal_phrase(strength, keyword)
+                    if signal and signal not in signals:
+                        signals.append(signal)
+                        print(f"   ✅ Found leadership signal: '{signal}'")
+                        break
+
+            if len(signals) >= 2:
+                break
+
+    print(f"   📋 Extracted {len(signals)} signals: {signals}")
     return signals
 
 
