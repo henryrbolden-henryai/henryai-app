@@ -19,7 +19,12 @@
       "Bash(vercel:*)",
       "Bash(npx vercel --prod)",
       "Bash(git commit:*)",
-      "Bash(npx vercel --prod --yes)"
+      "Bash(npx vercel --prod --yes)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

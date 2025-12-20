@@ -269,6 +269,195 @@
             margin-bottom: 8px;
         }
 
+        /* REALITY CHECK SECTION */
+        .reality-check-section {
+            margin-bottom: 24px;
+        }
+
+        .reality-check-card {
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .reality-check-card.blocker {
+            background: linear-gradient(135deg, #450a0a 0%, #1f2937 100%);
+            border: 1px solid #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+
+        .reality-check-card.warning {
+            background: linear-gradient(135deg, #422006 0%, #1f2937 100%);
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .reality-check-card.coaching {
+            background: linear-gradient(135deg, #0c4a6e 0%, #1f2937 100%);
+            border: 1px solid #0ea5e9;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .reality-check-card.informational {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #6b7280;
+            border-left: 4px solid #6b7280;
+        }
+
+        .reality-check-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .reality-check-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .reality-check-badge.blocker {
+            background: rgba(220, 38, 38, 0.2);
+            color: #fca5a5;
+        }
+
+        .reality-check-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+
+        .reality-check-badge.coaching {
+            background: rgba(14, 165, 233, 0.2);
+            color: #7dd3fc;
+        }
+
+        .reality-check-badge.informational {
+            background: rgba(107, 114, 128, 0.2);
+            color: #d1d5db;
+        }
+
+        .reality-check-signal {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+
+        .reality-check-message {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--color-text);
+            margin-bottom: 16px;
+        }
+
+        .reality-check-alternatives {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .reality-check-alternatives h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .reality-check-alternatives ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .reality-check-alternatives li {
+            padding: 8px 0 8px 24px;
+            position: relative;
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .reality-check-alternatives li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--color-primary);
+        }
+
+        /* ASK HENRY FOR BETTER PATHS - Simple CTA for low fit scores */
+        .ask-henry-paths-cta {
+            margin-top: 24px;
+            padding: 20px;
+            background: linear-gradient(135deg, #2e1065 0%, #1f2937 100%);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .ask-henry-paths-cta.visible {
+            display: block;
+        }
+
+        .ask-henry-paths-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .ask-henry-paths-prompt {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ask-henry-paths-icon {
+            font-size: 1.5rem;
+        }
+
+        .ask-henry-paths-text {
+            color: #c4b5fd;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .ask-henry-paths-btn {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .ask-henry-paths-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .ask-henry-paths-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .ask-henry-paths-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
@@ -885,6 +1074,28 @@
                         </div>
                     </div>
 
+                    <!-- 3.5. MARKET SIGNALS (Reality Check System) -->
+                    <div class="section reality-check-section" id="marketSignalsSection" style="display: none;">
+                        <div class="section-title">Market Signals</div>
+                        <div id="marketSignalsContent">
+                            <!-- Populated dynamically by Reality Check system -->
+                        </div>
+                    </div>
+
+                    <!-- 3.6. ASK HENRY FOR BETTER PATHS (shown for low fit scores) -->
+                    <div class="ask-henry-paths-cta" id="askHenryPathsCta">
+                        <div class="ask-henry-paths-content">
+                            <div class="ask-henry-paths-prompt">
+                                <span class="ask-henry-paths-icon">💬</span>
+                                <span class="ask-henry-paths-text">This role may not be the best fit. Let Henry suggest better paths for you.</span>
+                            </div>
+                            <button class="ask-henry-paths-btn" id="askHenryPathsBtn">
+                                Ask Henry for better paths
+                                <span>→</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 4. RED FLAGS (hidden by default) -->
                     <div class="section" id="redFlagsSection" style="display: none;">
                         <div class="section-title">Red Flags</div>
@@ -1243,15 +1454,83 @@
         
         if (redFlags && redFlags.length > 0) {
             const redFlagsList = document.getElementById('redFlags');
-            
+
             redFlags.forEach(flag => {
                 const li = document.createElement('li');
                 li.textContent = flag;
                 redFlagsList.appendChild(li);
             });
-            
+
             // Show the section
             document.getElementById('redFlagsSection').style.display = 'block';
+        }
+
+        // =====================================================================
+        // POPULATE: Market Signals (Reality Check System)
+        // Per REALITY_CHECK_SPEC.md: Market-truth interventions
+        // Market Bias and Market Climate signals are message-only overlays
+        // =====================================================================
+        const realityCheckData = data.reality_check;
+        if (realityCheckData && realityCheckData.display_checks && realityCheckData.display_checks.length > 0) {
+            const marketSignalsSection = document.getElementById('marketSignalsSection');
+            const marketSignalsContent = document.getElementById('marketSignalsContent');
+
+            // Clear existing content
+            marketSignalsContent.innerHTML = '';
+
+            // Render each Reality Check card (max 2 per spec)
+            realityCheckData.display_checks.forEach(check => {
+                const card = document.createElement('div');
+                card.className = `reality-check-card ${check.severity}`;
+
+                // Map signal class to user-friendly name
+                const signalClassNames = {
+                    'eligibility': 'Eligibility',
+                    'fit': 'Fit Signal',
+                    'credibility': 'Credibility',
+                    'risk': 'Risk Signal',
+                    'market_bias': 'Market Bias Signal',
+                    'market_climate': 'Market Climate Signal'
+                };
+
+                // Map severity to badge label
+                const severityLabels = {
+                    'blocker': 'Blocker',
+                    'warning': 'Warning',
+                    'coaching': 'Coaching',
+                    'informational': 'Info'
+                };
+
+                const signalName = signalClassNames[check.signal_class] || check.signal_class;
+                const severityLabel = severityLabels[check.severity] || check.severity;
+
+                let cardHTML = `
+                    <div class="reality-check-header">
+                        <span class="reality-check-badge ${check.severity}">${severityLabel}</span>
+                        <span class="reality-check-signal">${signalName}</span>
+                    </div>
+                    <div class="reality-check-message">${check.message}</div>
+                `;
+
+                // Add strategic alternatives if present
+                if (check.strategic_alternatives && check.strategic_alternatives.length > 0) {
+                    cardHTML += `
+                        <div class="reality-check-alternatives">
+                            <h4>Strategic Options</h4>
+                            <ul>
+                                ${check.strategic_alternatives.map(alt => `<li>${alt}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = cardHTML;
+                marketSignalsContent.appendChild(card);
+            });
+
+            // Show the section
+            marketSignalsSection.style.display = 'block';
+            console.log(`✅ Rendered ${realityCheckData.display_checks.length} Reality Check signals`);
         }
 
         // =====================================================================
@@ -1726,6 +2005,90 @@
                 document.getElementById('passModal').classList.remove('show');
             }
         });
+
+        // =====================================================================
+        // ASK HENRY FOR BETTER PATHS - Routes to Hey Henry chat for low fit scores
+        // Trigger: fit_score < 60 OR recommendation in ['Conditional Apply', 'Do Not Apply']
+        // Does NOT change scoring or recommendations - purely conversational guidance
+        // =====================================================================
+        (function initAskHenryPaths() {
+            const askHenryCta = document.getElementById('askHenryPathsCta');
+            const askHenryBtn = document.getElementById('askHenryPathsBtn');
+
+            if (!askHenryCta || !askHenryBtn) return;
+
+            // Determine if we should show the "Ask Henry for better paths" CTA
+            const shouldShow = fitScore < 60 ||
+                recommendationLabel.toLowerCase().includes('conditional') ||
+                recommendationLabel.toLowerCase().includes('do not apply') ||
+                recommendationLabel.toLowerCase().includes('caution');
+
+            if (!shouldShow) {
+                askHenryCta.style.display = 'none';
+                return;
+            }
+
+            // Show the CTA
+            askHenryCta.classList.add('visible');
+
+            // Track view event
+            if (typeof gtag === 'function') {
+                gtag('event', 'ask_henry_paths_shown', {
+                    fit_score: fitScore,
+                    recommendation: recommendationLabel
+                });
+            }
+
+            // Handle "Ask Henry for better paths" button click
+            askHenryBtn.addEventListener('click', function() {
+                // Build context for Hey Henry conversation
+                const redirectContext = {
+                    type: 'better_paths_request',
+                    sourceJob: {
+                        company: data._company_name || data._company || '',
+                        role: data.role_title || data._role || '',
+                        fitScore: fitScore,
+                        recommendation: recommendationLabel
+                    },
+                    candidateStrengths: data.strengths || [],
+                    candidateGaps: (data.gaps || []).slice(0, 3).map(g =>
+                        typeof g === 'string' ? g : (g.description || g.gap || '')
+                    ),
+                    candidateName: candidateFirstName,
+                    // Include any backend-suggested alternatives as hints (not shown to user)
+                    alternativeHints: data.alternative_actions ||
+                                      data.intelligence_layer?.alternative_actions ||
+                                      data.strategic_alternatives || []
+                };
+
+                sessionStorage.setItem('henryRedirectContext', JSON.stringify(redirectContext));
+
+                // Build the initial prompt for Henry
+                const roleTitle = data.role_title || data._role || 'this role';
+                const companyName = data._company_name || data._company || '';
+                const initialPrompt = companyName
+                    ? `I just analyzed ${roleTitle} at ${companyName} and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`
+                    : `I just analyzed a ${roleTitle} role and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`;
+
+                // Open Hey Henry with the conversation starter
+                if (typeof window.openHeyHenry === 'function') {
+                    window.openHeyHenry(initialPrompt);
+                } else if (typeof window.HeyHenry !== 'undefined' && window.HeyHenry.open) {
+                    window.HeyHenry.open(initialPrompt);
+                } else {
+                    // Fallback: navigate to hey-henry page with context
+                    window.location.href = 'hey-henry.html?context=better_paths';
+                }
+
+                // Track event
+                if (typeof gtag === 'function') {
+                    gtag('event', 'ask_henry_for_better_paths', {
+                        fit_score: fitScore,
+                        recommendation: recommendationLabel
+                    });
+                }
+            });
+        })();
     </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>

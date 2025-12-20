@@ -1,9 +1,11 @@
 # Job Fit Scoring Implementation Specification
 
-**Version**: 2.0  
-**Date**: December 18, 2025  
-**Status**: DRAFT - Pending Backend Audit Validation  
+**Version**: 2.1
+**Date**: December 20, 2025
+**Status**: DRAFT - Pending Backend Audit Validation
 **Purpose**: Single source of truth for job fit analysis system
+
+> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented.
 
 ---
 
@@ -14,7 +16,7 @@
 3. [Experience Calculation Functions](#experience-calculation-functions)
 4. [Backend Safety Net](#backend-safety-net)
 5. [Company Credibility Scoring](#company-credibility-scoring)
-6. [6-Tier Recommendation System](#6-tier-recommendation-system)
+6. [Recommendation System](#recommendation-system)
 7. [Strategic Action Coaching Framework](#strategic-action-coaching-framework)
 8. [System Prompt Requirements](#system-prompt-requirements)
 9. [Implementation Roadmap](#implementation-roadmap)
@@ -33,7 +35,7 @@
 4. ⚠️ Company credibility scoring not implemented (MEDIUM)
 
 **What Works:**
-- ✅ 6-tier recommendation thresholds correct
+- ✅ 4-tier recommendation system deployed (Strongly Apply, Apply, Conditional Apply, Do Not Apply)
 - ✅ Hard cap logic functioning
 - ✅ Deterministic scoring (same input = same output)
 - ✅ Backend safety net applies penalties
@@ -692,69 +694,100 @@ def get_credibility_multiplier(tier: str) -> float:
 
 ---
 
-## 6-Tier Recommendation System
+## Recommendation System
 
-### Purpose
+### Current (Deployed): 4-Tier System
 
 Replace binary "Apply/Skip" with graduated guidance that reflects reality.
 
-### Tier Definitions
+### Tier Definitions (Current)
 
 | Tier | Score Range | Label | Meaning |
 |------|-------------|-------|---------|
-| 1 | 85-100% | Strong Apply | Prioritize immediately |
-| 2 | 70-84% | Apply | Good fit, worth pursuing |
-| 3 | 55-69% | Consider | Moderate fit, apply if interested |
-| 4 | 40-54% | Apply with Caution | Stretch role, strategic positioning needed |
-| 5 | 25-39% | Long Shot | Significant gaps, unlikely |
-| 6 | 0-24% | Do Not Apply | Not recommended, focus elsewhere |
+| 1 | 75-100% | Strongly Apply | Prioritize immediately |
+| 2 | 60-74% | Apply | Good fit, worth pursuing |
+| 3 | 40-59% | Conditional Apply | Stretch role, strategic positioning needed |
+| 4 | 0-39% | Do Not Apply | Not recommended, focus elsewhere |
 
-### Implementation
+### Implementation (Current)
 
-**Location**: `backend/backend.py` (existing, verify line number via audit)
+**Location**: `backend/backend.py`
 
 **Function**: `get_recommendation_from_score()`
 
 ```python
+# CURRENT (DEPLOYED) - 4-Tier System
 def get_recommendation_from_score(capped_score: int) -> str:
     """
     Map fit score to recommendation tier.
-    
+
     Args:
         capped_score: Fit score after hard caps applied
-    
+
     Returns:
-        str: One of 6 recommendation labels
+        str: One of 4 recommendation labels
     """
+    if capped_score >= 75:
+        return "Strongly Apply"
+    elif capped_score >= 60:
+        return "Apply"
+    elif capped_score >= 40:
+        return "Conditional Apply"
+    else:
+        return "Do Not Apply"
+```
+
+**Frontend Mapping** (current):
+
+```javascript
+// frontend/results.html
+const recommendationStyles = {
+    "Strongly Apply": { color: "#10b981", badge: "✓" },
+    "Apply": { color: "#60a5fa", badge: "→" },
+    "Conditional Apply": { color: "#f59e0b", badge: "⚠" },
+    "Do Not Apply": { color: "#991b1b", badge: "✗" }
+};
+```
+
+**Status**: ✅ Deployed and functioning
+
+---
+
+### Planned: 6-Tier Recommendation System (Not Yet Deployed)
+
+The following 6-tier expansion is planned for a future release:
+
+| Tier | Score Range | Label | Meaning |
+|------|-------------|-------|---------|
+| 1 | 85-100% | Strongly Apply | Prioritize immediately |
+| 2 | 70-84% | Apply | Good fit, worth pursuing |
+| 3 | 55-69% | Consider | Moderate fit, apply if interested |
+| 4 | 40-54% | Conditional Apply | Stretch role, strategic positioning needed |
+| 5 | 25-39% | Long Shot | Significant gaps, unlikely |
+| 6 | 0-24% | Do Not Apply | Not recommended, focus elsewhere |
+
+```python
+# PLANNED (NOT YET DEPLOYED) - 6-Tier System
+def get_recommendation_from_score_v2(capped_score: int) -> str:
     if capped_score >= 85:
-        return "Strong Apply"
+        return "Strongly Apply"
     elif capped_score >= 70:
         return "Apply"
     elif capped_score >= 55:
         return "Consider"
     elif capped_score >= 40:
-        return "Apply with Caution"
+        return "Conditional Apply"
     elif capped_score >= 25:
         return "Long Shot"
     else:
         return "Do Not Apply"
 ```
 
-**Frontend Mapping** (verify via audit):
-
-```javascript
-// frontend/results.html or similar
-const recommendationStyles = {
-    "Strong Apply": { color: "#10b981", badge: "✓" },
-    "Apply": { color: "#60a5fa", badge: "→" },
-    "Consider": { color: "#f59e0b", badge: "?" },
-    "Apply with Caution": { color: "#ef4444", badge: "⚠" },
-    "Long Shot": { color: "#dc2626", badge: "✗" },
-    "Do Not Apply": { color: "#991b1b", badge: "✗✗" }
-};
-```
-
-**Status**: ✅ Thresholds confirmed correct via Darnel testing
+**Migration Notes:**
+- "Consider" and "Long Shot" tiers are not yet deployed
+- Current system uses 4 tiers with different thresholds (75/60/40)
+- 6-tier system uses thresholds (85/70/55/40/25)
+- UI updates required for new tier styling
 
 ---
 
@@ -764,9 +797,11 @@ const recommendationStyles = {
 
 Provide score-band-specific guidance that prioritizes preparation over blind application. Different scores require different strategies.
 
-### Framework by Score Band
+> **Note:** The framework below uses the **current 4-tier system** thresholds. When the 6-tier system is deployed, additional bands (Consider, Long Shot) will be added.
 
-#### Band 1: 85-100% (Strong Apply)
+### Framework by Score Band (Current 4-Tier System)
+
+#### Band 1: 75-100% (Strongly Apply)
 
 **Goal**: Convert strength into immediate action
 
@@ -788,23 +823,23 @@ manager on LinkedIn today and lead with your 2.3M user scale."
 
 ---
 
-#### Band 2: 70-84% (Apply)
+#### Band 2: 60-74% (Apply)
 
 **Goal**: Tighten positioning BEFORE applying
 
 **Format**:
 ```
-"Before applying, tighten your resume to close the remaining gaps. 
-[Specific improvements to make]. Once improved, apply quickly and 
+"Before applying, tighten your resume to close the remaining gaps.
+[Specific improvements to make]. Once improved, apply quickly and
 [outreach strategy]. Don't rely on the ATS alone."
 ```
 
 **Example**:
 ```
-"Before applying, tighten your resume to close the remaining gaps. 
-Focus on sharpening fintech impact metrics, emphasizing scale (2.3M+ users), 
-and highlighting cross-functional leadership in payments infrastructure. 
-Once improved, apply within 24 hours and reach out to the hiring manager 
+"Before applying, tighten your resume to close the remaining gaps.
+Focus on sharpening fintech impact metrics, emphasizing scale (2.3M+ users),
+and highlighting cross-functional leadership in payments infrastructure.
+Once improved, apply within 24 hours and reach out to the hiring manager
 with your Ripple Labs experience. Don't rely on the ATS to do the work."
 ```
 
@@ -816,7 +851,7 @@ with your Ripple Labs experience. Don't rely on the ATS to do the work."
 
 ---
 
-#### Band 3: 55-69% (Consider) or 40-54% (Apply with Caution)
+#### Band 3: 40-59% (Conditional Apply)
 
 **Goal**: Honest assessment + concrete weekly action plan
 
@@ -860,46 +895,7 @@ apply and reach out to the hiring manager."
 
 ---
 
-#### Band 4: 25-39% (Long Shot)
-
-**Goal**: Reality check + concrete alternative path
-
-**Format**:
-```
-"This is a significant stretch. [Gap explanation].
-
-YOUR MOVE THIS WEEK:
-1. Target these roles: [3 specific roles at appropriate level]
-2. Build this evidence: [specific competency to develop]
-3. Deprioritize: [what to stop applying to]
-
-Timeline: [concrete readiness milestone]."
-```
-
-**Example**:
-```
-"This is a significant stretch for your current experience level. The 
-role requires 10+ years at Staff/Principal scope with multi-product 
-platform ownership. You're at 8 years Senior-level with single-product focus.
-
-YOUR MOVE THIS WEEK:
-1. Target these roles: Senior PM at Stripe, Atlassian, Datadog; Staff PM 
-   at smaller Series B companies
-2. Build this evidence: Lead a multi-quarter platform initiative, partner 
-   with 3+ product teams, influence at VP level
-3. Deprioritize: Stop applying to Principal/Staff roles at FAANG immediately
-
-Timeline: You'll be competitive for Staff PM in 12-18 months with 
-multi-product platform scope and proven organizational influence."
-```
-
-**Tone**: Direct, honest, helpful redirection with timeline
-
-**Length**: 100-125 words
-
----
-
-#### Band 5: 0-24% (Do Not Apply)
+#### Band 4: 0-39% (Do Not Apply)
 
 **Goal**: Clear "no" + immediate redirection
 
@@ -940,23 +936,20 @@ YOUR MOVE THIS WEEK:
 **Add this section** (verify via audit if it exists):
 
 ```
-STRATEGIC ACTION FRAMEWORK BY SCORE BAND:
+STRATEGIC ACTION FRAMEWORK BY SCORE BAND (Current 4-Tier System):
 
-For 85-100% (Strong Apply):
+For 75-100% (Strongly Apply):
 "Apply immediately. [Strength]. [Differentiation]. [Outreach]."
 Example: "Apply immediately. Your Ripple consumer wallet experience is exactly what they need. Reach out to the hiring manager today."
 
-For 70-84% (Apply):
+For 60-74% (Apply):
 "Before applying, tighten your resume to close the remaining gaps. [Specific improvements]. Once improved, [outreach]. Don't rely on the ATS alone."
 CRITICAL: MUST start with "Before applying" for this band.
 
-For 55-69% (Consider) OR 40-54% (Apply with Caution):
+For 40-59% (Conditional Apply):
 "You have [strength], but this role favors [what's missing]. Before applying, [specific preparation]."
 
-For 25-39% (Long Shot):
-"This is a significant stretch. [Gap]. Consider [alternative]."
-
-For 0-24% (Do Not Apply):
+For 0-39% (Do Not Apply):
 "Do not apply to this role. [Explanation]. Focus on [better match]."
 
 TONE REQUIREMENTS:
@@ -992,32 +985,27 @@ TONE REQUIREMENTS:
 **Add after scoring framework section:**
 
 ```
-=== STRATEGIC ACTION FRAMEWORK ===
+=== STRATEGIC ACTION FRAMEWORK (Current 4-Tier System) ===
 
 Your strategic_action field MUST follow these score-band-specific frameworks:
 
-85-100% (Strong Apply):
+75-100% (Strongly Apply):
 Format: "Apply immediately. [Strength]. [Differentiation]. [Outreach]."
 Length: 50-75 words
 Tone: Confident, action-oriented
 
-70-84% (Apply):
+60-74% (Apply):
 Format: "Before applying, tighten resume to close gaps. [Improvements]. Once improved, [outreach]."
 Length: 75-100 words
 CRITICAL: MUST start with "Before applying"
 Tone: Coaching-first, strategic
 
-55-69% (Consider) OR 40-54% (Apply with Caution):
+40-59% (Conditional Apply):
 Format: "You have [strength], but this role favors [missing]. Before applying, [preparation]."
 Length: 100-125 words
 Tone: Honest, solution-focused
 
-25-39% (Long Shot):
-Format: "This is a significant stretch. [Gap]. Consider [alternative]."
-Length: 50-75 words
-Tone: Direct, helpful redirection
-
-0-24% (Do Not Apply):
+0-39% (Do Not Apply):
 Format: "Do not apply. [Explanation]. Focus on [better match]."
 Length: 50-75 words
 Tone: Clear, no ambiguity
@@ -1447,16 +1435,88 @@ Adjusted years: 0.0
 
 ---
 
-## Appendix B: Revision History
+## Appendix B: 4-Tier → 6-Tier Migration Plan
+
+This migration plan ensures a painless transition when ready to expand to 6 tiers.
+
+### Phase 0: Lock Today (Current)
+
+**Status:** ✅ Complete
+
+- 4-tier system = canonical
+- Reality Check + Strategic Redirects depend only on:
+  - `fit_score` thresholds
+  - High-level recommendation categories
+- Docs clearly separate Current vs Planned
+
+### Phase 1: Shadow the 6-Tier System (No UI)
+
+**Status:** ⏳ Future Phase
+
+Internally compute a secondary `recommendation_v2`:
+- Not shown to users
+- Logged only for analysis
+
+**Mapping:**
+| Current 4-Tier | Planned 6-Tier |
+|----------------|----------------|
+| Strongly Apply | Strongly Apply |
+| Apply | Apply |
+| Conditional Apply | Consider OR Conditional Apply (based on gaps) |
+| Do Not Apply | Long Shot OR Do Not Apply (based on severity) |
+
+**Purpose:** Validate distributions without user impact.
+
+### Phase 2: Dual-Read, Single-Write
+
+**Status:** ⏳ Future Phase
+
+- Keep 4-tier as the UI and API output
+- Begin testing:
+  - Strategic Redirects sensitivity under 6-tier
+  - Reality Check severity mapping
+- Add analytics: "Would 6-tier have changed guidance?"
+- No migrations yet
+
+### Phase 3: Opt-in UI (Feature Flag)
+
+**Status:** ⏳ Future Phase
+
+Enable 6-tier display for:
+- Internal testing
+- Beta users
+
+Keep 4-tier as fallback.
+
+**Ensure:**
+- No change to eligibility logic
+- No change to CEC math
+- No new blockers introduced
+
+### Phase 4: Cutover
+
+**Status:** ⏳ Future Phase
+
+- Rename enums cleanly
+- Migrate stored recommendations
+- Remove shadow logic
+- Update specs from "Planned" → "Current"
+
+One release. No ambiguity.
+
+---
+
+## Appendix C: Revision History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | Dec 18, 2025 | Henry + Claude | Initial draft based on audit findings |
 | 2.0 | Dec 18, 2025 | Henry + Claude | Added Darnel feedback, strategic action framework |
+| 2.1 | Dec 20, 2025 | Claude | Aligned docs to 4-tier deployed system, moved 6-tier to Planned section, added migration plan |
 
 ---
 
-## Appendix C: Related Documents
+## Appendix D: Related Documents
 
 - `JOB_FIT_ANALYSIS_AUDIT.md` - Comprehensive bug analysis
 - `BACKEND_AUDIT_REQUEST.md` - What to check in deployed code

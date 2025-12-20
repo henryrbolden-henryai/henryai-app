@@ -45,7 +45,7 @@ All features below have been implemented and deployed to production:
 18. ✅ **QA Validation Updates** (Dec 14) - blocking disabled
 19. ✅ **Async/Await Syntax Fix** (Dec 14) - documents.html
 20. ✅ **LinkedIn Profile Integration** (Dec 15) - upload, parse, align, optimize
-21. ✅ **6-Tier Recommendation System** (Dec 16) - graduated guidance from Strong Apply to Do Not Apply
+21. ✅ **4-Tier Recommendation System** (Dec 16) - Strongly Apply, Apply, Conditional Apply, Do Not Apply
 22. ✅ **Experience Penalty Hard Caps** (Dec 16) - backend safety net
 23. ✅ **Company Credibility Scoring** (Dec 16) - multipliers for experience calculation
 24. ✅ **Reality Check Improvements** (Dec 16) - candidate name personalization
@@ -89,30 +89,99 @@ All features below have been implemented and deployed to production:
 
 ---
 
-### 6-Tier Recommendation System (Dec 16, 2025)
+### 4-Tier Recommendation System (Dec 16, 2025)
+
+> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system. A 6-tier expansion is planned but not yet implemented.
 
 **Files Modified**:
 - `backend/backend.py` - `force_apply_experience_penalties()` function
 
 **Features Implemented**:
 
-Replaced binary Apply/Skip with nuanced 6-tier guidance:
+Replaced binary Apply/Skip with nuanced 4-tier guidance:
 
 ```python
+# CURRENT (DEPLOYED) - 4-Tier System
 def get_recommendation_from_score(capped_score: int) -> str:
+    if capped_score >= 75:
+        return "Strongly Apply"    # Strong match - prioritize
+    elif capped_score >= 60:
+        return "Apply"             # Good fit - worth pursuing
+    elif capped_score >= 40:
+        return "Conditional Apply" # Stretch role - strategic positioning needed
+    else:
+        return "Do Not Apply"      # Not recommended
+```
+
+---
+
+### Planned: 6-Tier Recommendation System (Not Yet Deployed)
+
+The following 6-tier expansion is planned for a future release:
+
+```python
+# PLANNED (NOT YET DEPLOYED) - 6-Tier System
+def get_recommendation_from_score_v2(capped_score: int) -> str:
     if capped_score >= 85:
-        return "Strong Apply"      # Strong match - prioritize
+        return "Strongly Apply"    # Strong match - prioritize
     elif capped_score >= 70:
         return "Apply"             # Good fit - worth pursuing
     elif capped_score >= 55:
         return "Consider"          # Moderate fit - if interested
     elif capped_score >= 40:
-        return "Apply with Caution" # Stretch role - strategic positioning
+        return "Conditional Apply" # Stretch role - strategic positioning
     elif capped_score >= 25:
         return "Long Shot"         # Significant gaps
     else:
         return "Do Not Apply"      # Not recommended
 ```
+
+**Migration Notes:**
+- "Consider" and "Long Shot" tiers are not yet deployed
+- Current system uses 4 tiers with different thresholds
+- 6-tier system will require UI updates for new tier styling
+
+---
+
+### 4-Tier → 6-Tier Migration Plan
+
+This migration plan ensures a painless transition when ready to expand to 6 tiers.
+
+**Phase 0: Lock Today (Current)** ✅
+- 4-tier system = canonical
+- Reality Check + Strategic Redirects depend only on:
+  - `fit_score` thresholds
+  - High-level recommendation categories
+- Docs clearly separate Current vs Planned
+
+**Phase 1: Shadow the 6-Tier System (No UI)** ⏳
+- Internally compute a secondary `recommendation_v2`
+- Not shown to users, logged only for analysis
+- Mapping:
+  - Strongly Apply → Strongly Apply
+  - Apply → Apply
+  - Conditional Apply → Consider OR Conditional Apply (based on gaps)
+  - Do Not Apply → Long Shot OR Do Not Apply (based on severity)
+- Purpose: Validate distributions without user impact
+
+**Phase 2: Dual-Read, Single-Write** ⏳
+- Keep 4-tier as the UI and API output
+- Test Strategic Redirects sensitivity under 6-tier
+- Test Reality Check severity mapping
+- Add analytics: "Would 6-tier have changed guidance?"
+- No migrations yet
+
+**Phase 3: Opt-in UI (Feature Flag)** ⏳
+- Enable 6-tier display for internal testing and beta users
+- Keep 4-tier as fallback
+- Ensure no change to eligibility logic, CEC math, or blockers
+
+**Phase 4: Cutover** ⏳
+- Rename enums cleanly
+- Migrate stored recommendations
+- Remove shadow logic
+- Update specs from "Planned" → "Current"
+- One release. No ambiguity.
 
 ---
 

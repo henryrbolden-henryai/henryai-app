@@ -88,6 +88,31 @@ except ImportError:
     FINAL_CONTROLLER_AVAILABLE = False
     print("⚠️ Final Recommendation Controller not available - using legacy behavior")
 
+# Reality Check System - Market-truth intervention framework
+# Per REALITY_CHECK_SPEC.md:
+# - Surfaces risk, friction, and market behavior patterns
+# - NEVER modifies fit_score or eligibility
+# - Market Bias and Market Climate signals are message-only overlays
+#
+# ROLLOUT NOTE (Dec 2024):
+# Reality Check System enabled behind feature flag.
+# No scoring logic changes. Message-only overlays.
+# Violations are aggressively logged for early warning.
+try:
+    from reality_check import (
+        RealityCheckController,
+        analyze_reality_checks,
+        SignalClass,
+        Severity,
+    )
+    REALITY_CHECK_AVAILABLE = True
+    # Feature flag for gradual rollout - set to True to enable
+    REALITY_CHECK_ENABLED = True
+except ImportError:
+    REALITY_CHECK_AVAILABLE = False
+    REALITY_CHECK_ENABLED = False
+    print("⚠️ Reality Check module not available - using fallback behavior")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
@@ -10411,58 +10436,46 @@ NEVER say: "You're not senior enough", "You're underqualified", "You don't have 
 After completing the Intelligence Layer and Reality Check, provide standard JD analysis.
 Note: Fit scoring rules with experience penalties are defined at the TOP of this prompt - apply them first.
 
-=== POLITICAL SENSITIVITY DETECTION (PHASE 1.5) ===
+=== MARKET CLIMATE SIGNALS (Per REALITY_CHECK_SPEC.md) ===
 
-Analyze the candidate's resume for politically sensitive content that may impact hiring decisions in the current climate (December 2024).
+The Reality Check system detects market climate signals separately via the backend.
+This section provides STRATEGIC FRAMING GUIDANCE only - it does NOT modify scores.
 
-POLITICALLY SENSITIVE CATEGORIES:
+CRITICAL GUARDRAILS (HARD RULES):
+1. NEVER instruct identity suppression
+2. NEVER suggest hiding legitimate work experience
+3. NEVER suggest omitting roles from resume
+4. ALWAYS validate the work's importance and value
+5. ALWAYS frame as market friction, not personal failing
+6. Strategic framing guidance only - no prescriptive word substitutions
 
-1. DEI/DIVERSITY FOCUS (Risk Level: HIGH):
-   - Company mission includes: "diversity", "inclusion", "equity", "DEI", "underrepresented", "belonging"
-   - Role titles: "Chief Diversity Officer", "DEI Manager", "Inclusion Lead"
-   - Companies explicitly focused on diversity
+APPROVED FRAMING PATTERN:
+> "Market Climate Signal: In the current hiring climate, some companies are scrutinizing [type of work] more heavily due to [external factor]. Your work is valid and valuable. Strategic framing: [specific guidance]."
 
-2. CLIMATE/ENVIRONMENTAL ACTIVISM (Risk Level: MEDIUM):
-   - Company mission includes: "climate justice", "environmental activism"
-   - Role titles: "Climate Organizer", "Sustainability Advocate"
-
-3. POLITICAL CAMPAIGNS/ADVOCACY (Risk Level: MEDIUM):
-   - Worked for political campaigns, PACs, advocacy organizations
-   - Role titles: "Campaign Manager", "Political Organizer"
-
-4. CANNABIS INDUSTRY (Risk Level: MEDIUM):
-   - Worked in cannabis/marijuana industry
-
-5. CRYPTO/WEB3 POST-2022 (Risk Level: LOW-MEDIUM):
-   - Worked in crypto/blockchain during 2022-2024 period
-
-DETECTION LOGIC:
-- Flag if ANY politically sensitive category is detected
-- Weight by risk level: HIGH risk = auto-flag, MEDIUM risk = flag if prominent
-- Consider recency: DEI work from 2020-2023 is higher risk than 2015-2018
-- Consider prominence: "Lead PM at DEI company" is higher risk than "volunteered for DEI committee"
-
-DO NOT FLAG:
-- Generic corporate DEI statements
-- Standard EEOC compliance language
-- Employee resource group participation (unless primary role)
-
-=== POLITICAL REFRAMING GUIDANCE ===
-
-When political sensitivity flags are detected, provide specific reframing strategies:
+EXAMPLES OF APPROVED MESSAGING:
 
 1. DEI-FOCUSED EXPERIENCE:
-   - Lead with product/technical work, not mission
-   - Describe functionality ("talent matching", "recommendation engine") not ideology
-   - Emphasize business outcomes ("$60K B2B contract", "50% increase in demo requests") not social impact
-   - Avoid words: diversity, inclusion, equity, underrepresented, belonging
-   - Use instead: talent, recruiting, workforce, marketplace, matching
+> "Your work driving inclusion and belonging is legitimate business impact. Strategic framing: Lead with business outcomes (retention, engagement, performance) and team effectiveness metrics. This reduces early screening friction without hiding your work."
 
-2. COMPANY TARGETING STRATEGY when political sensitivity is HIGH:
-   AVOID: Companies that rolled back DEI initiatives, conservative-leaning industries
-   TARGET: Pro-DEI tech companies, early-stage startups, nonprofit sector
+2. CLIMATE/SUSTAINABILITY:
+> "Your sustainability work demonstrates strategic thinking and stakeholder management. Strategic framing: Emphasize cost savings, operational efficiency, and risk mitigation alongside mission-driven language."
 
-Include reframing_guidance in the response when political risks are detected
+3. POLITICAL/ADVOCACY WORK:
+> "Your organizing and coalition-building skills are directly transferable. Strategic framing: Lead with project management, stakeholder alignment, and measurable outcomes. Let the substance speak for itself."
+
+4. EMERGING INDUSTRIES (Crypto, Cannabis):
+> "Your technical and operational skills from [industry] remain valuable. Strategic framing: Emphasize transferable skills, regulatory navigation, and high-velocity execution."
+
+FORBIDDEN PATTERNS (NEVER USE):
+❌ "Avoid words like diversity, inclusion, equity"
+❌ "Hide your background in [industry]"
+❌ "Don't mention you worked at [company]"
+❌ "Rewrite your experience to remove [topic]"
+❌ "This is a weakness in the current climate"
+❌ "Companies won't hire people who worked in [field]"
+
+DO NOT modify fit_score or eligibility based on market climate signals.
+Market Climate is informational/coaching only - it explains friction, not capability.
 
 === CAREER GAP DETECTION (MANDATORY) ===
 
@@ -11145,6 +11158,88 @@ Role: {request.role_title}
         momentum = 50
         decision_confidence = calculate_decision_confidence(fit_score, momentum, jd_conf)
         parsed_data["decision_confidence"] = decision_confidence
+
+        # =================================================================
+        # REALITY CHECK SYSTEM - Market-truth interventions
+        # Per REALITY_CHECK_SPEC.md: Surfaces risk and market patterns
+        # CRITICAL: NEVER modifies fit_score. Message-only overlays.
+        # =================================================================
+        if REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED:
+            try:
+                # Capture fit_score BEFORE Reality Check for assertion
+                pre_reality_check_score = parsed_data.get("fit_score")
+
+                # Build inputs for Reality Check analysis
+                resume_data = request.resume if request.resume else {}
+                jd_data = {
+                    "role_title": request.role_title or parsed_data.get("role_title", ""),
+                    "company": request.company or parsed_data.get("company", ""),
+                    "job_description": request.job_description or "",
+                }
+
+                # Gather pre-computed analysis results for Reality Check
+                eligibility_result = None
+                if parsed_data.get("eligibility_gate"):
+                    eligibility_result = {
+                        "eligible": parsed_data["eligibility_gate"].get("passed", True),
+                        "reason": parsed_data["eligibility_gate"].get("reason", ""),
+                        "failed_check": parsed_data["eligibility_gate"].get("failed_check", ""),
+                    }
+
+                fit_details = None
+                if parsed_data.get("fit_score_breakdown"):
+                    fit_details = {
+                        "years_gap": parsed_data["fit_score_breakdown"].get("experience_gap_years", 0),
+                    }
+
+                credibility_result = None
+                if parsed_data.get("calibration_result"):
+                    cal = parsed_data["calibration_result"]
+                    credibility_result = {
+                        "title_inflation": cal.get("title_inflation", {}),
+                        "fabrication_risk": cal.get("fabrication_risk", False),
+                        "press_release_pattern": cal.get("press_release_pattern", False),
+                    }
+
+                risk_analysis = None
+                if parsed_data.get("calibration_result"):
+                    cal = parsed_data["calibration_result"]
+                    risk_analysis = {
+                        "job_hopping": cal.get("job_hopping", {}),
+                        "career_gaps": cal.get("career_gaps", []),
+                        "overqualified": cal.get("overqualified", {}),
+                        "company_pattern": cal.get("company_pattern", {}),
+                    }
+
+                # Run Reality Check analysis
+                reality_check_result = analyze_reality_checks(
+                    resume_data=resume_data,
+                    jd_data=jd_data,
+                    fit_score=fit_score,
+                    eligibility_result=eligibility_result,
+                    fit_details=fit_details,
+                    credibility_result=credibility_result,
+                    risk_analysis=risk_analysis,
+                    feature_flag=REALITY_CHECK_ENABLED,
+                )
+
+                # Add Reality Check to response
+                parsed_data["reality_check"] = reality_check_result
+
+                # CRITICAL ASSERTION: Verify fit_score was NOT modified
+                post_reality_check_score = parsed_data.get("fit_score")
+                if pre_reality_check_score != post_reality_check_score:
+                    print(f"🚨 REALITY CHECK GUARDRAIL VIOLATION: Score changed from {pre_reality_check_score} to {post_reality_check_score}")
+                    # Restore original score
+                    parsed_data["fit_score"] = pre_reality_check_score
+                    parsed_data["reality_check"]["_guardrail_violation"] = True
+
+                print(f"✅ Reality Check completed: {len(reality_check_result.get('display_checks', []))} checks to display")
+
+            except Exception as e:
+                print(f"⚠️ Reality Check failed (non-blocking): {str(e)}")
+                # Reality Check failure should not block the response
+                parsed_data["reality_check"] = {"error": str(e), "checks": []}
 
         return parsed_data
     except json.JSONDecodeError as e:

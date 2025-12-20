@@ -1,10 +1,12 @@
 # Leadership Evaluation & Positioning Engine (LEPE) — Implementation Specification
 
-**Version:** 1.0  
-**Last Updated:** December 18, 2025  
-**Status:** Production-Ready  
-**Scope:** Manager+ Roles Only  
+**Version:** 1.1
+**Last Updated:** December 20, 2025
+**Status:** Production-Ready
+**Scope:** Manager+ Roles Only
 **Owner:** HenryHQ Core Intelligence Layer
+
+> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented.
 
 ---
 
@@ -690,11 +692,11 @@ def determine_positioning_strategy(
             "allow_proceed": False
         }
     
-    # Caution mode
+    # Caution mode (maps to "Conditional Apply" in 4-tier system)
     elif gap >= 3 or len(missing_competencies) == 2:
         return {
-            "mode": "APPLY_WITH_CAUTION",
-            "recommendation": "Apply with Caution",
+            "mode": "CONDITIONAL_APPLY",
+            "recommendation": "Conditional Apply",
             "reasoning": generate_caution_reasoning(gap, missing_competencies),
             "positioning_strategy": generate_positioning_advice(candidate_tenure, missing_competencies),
             "allow_proceed": True,
@@ -743,21 +745,23 @@ def determine_positioning_strategy(
 
 ---
 
-**APPLY_WITH_CAUTION Mode (Gap 3-4 years or 2 missing competencies):**
+**CONDITIONAL_APPLY Mode (Gap 3-4 years or 2 missing competencies):**
 - Explicit skepticism about candidacy
 - Positioning advice still provided
 - Strong warning about low success probability
 
+> **Note:** In the current 4-tier system, this maps to "Conditional Apply". In the planned 6-tier system, this may split into "Conditional Apply" and "Long Shot" based on gap severity.
+
 **Example messaging:**
 > "You have 4 years of people leadership for a role requiring 8+. This is a significant gap.
-> 
+>
 > Reality check: Most hiring managers will screen you out before interviews. This is a long shot.
-> 
+>
 > If you proceed:
 > - Emphasize Stripe brand and growth environment
 > - Highlight any indirect management or org-level projects
 > - Be prepared to explain why you're ready for this jump
-> 
+>
 > Recommendation: Target Senior Manager roles instead, then move to Director after 2-3 years."
 
 ---
@@ -803,7 +807,7 @@ class LEPEOutput(BaseModel):
     competency_coverage: float  # Percentage of required competencies
     
     # Positioning decision
-    positioning_mode: str  # CLEARED | POSITIONING | APPLY_WITH_CAUTION | HARD_LOCK
+    positioning_mode: str  # CLEARED | POSITIONING | CONDITIONAL_APPLY | HARD_LOCK
     recommendation: str
     reasoning: str
     positioning_strategy: Optional[str]
@@ -881,8 +885,8 @@ class LEPEOutput(BaseModel):
     "Org Design & Scale"
   ],
   "competency_coverage": 0.83,
-  "positioning_mode": "APPLY_WITH_CAUTION",
-  "recommendation": "Apply with Caution",
+  "positioning_mode": "CONDITIONAL_APPLY",
+  "recommendation": "Conditional Apply",
   "reasoning": "You have 5.5 years of people leadership for a role requiring 8+. This is a stretch. Most hiring managers will screen you out before interviews.",
   "positioning_strategy": "Emphasize Stripe brand and growth environment. Highlight any indirect management or org-level projects. Be prepared to explain why you're ready for this jump.",
   "allow_proceed": true,
@@ -1161,12 +1165,13 @@ def integrate_lepe_with_fit_scoring(
         return base_fit_score
     
     # Hard cap based on positioning mode
+    # Score caps aligned with 4-tier system thresholds
     if lepe_output.positioning_mode == "HARD_LOCK":
-        return min(base_fit_score, 30)  # Force "Do Not Apply"
-    elif lepe_output.positioning_mode == "APPLY_WITH_CAUTION":
-        return min(base_fit_score, 55)  # Force "Conditional Apply"
+        return min(base_fit_score, 39)  # Force "Do Not Apply" (< 40)
+    elif lepe_output.positioning_mode == "CONDITIONAL_APPLY":
+        return min(base_fit_score, 59)  # Force "Conditional Apply" (40-59)
     elif lepe_output.positioning_mode == "POSITIONING":
-        return min(base_fit_score, 70)  # Force "Apply"
+        return min(base_fit_score, 74)  # Force "Apply" (60-74)
     else:
         return base_fit_score  # No constraint if cleared
 ```
@@ -1274,6 +1279,7 @@ This specification defines the **truth layer** for leadership evaluation in Henr
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
 | 1.0 | Dec 18, 2025 | Initial production-ready specification | Product |
+| 1.1 | Dec 20, 2025 | Aligned to 4-tier recommendation system, renamed APPLY_WITH_CAUTION to CONDITIONAL_APPLY | Claude |
 
 ---
 

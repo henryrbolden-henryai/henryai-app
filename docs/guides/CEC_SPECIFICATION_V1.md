@@ -1,8 +1,10 @@
 # Capability Evidence Check (CEC) — Implementation Specification v1.0
 
-**Status:** Ready for Implementation  
-**Last Updated:** December 19, 2025  
+**Status:** Ready for Implementation
+**Last Updated:** December 20, 2025
 **Authority:** This layer is diagnostic only. It does not alter scoring, recommendations, or eligibility.
+
+> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented.
 
 ---
 
@@ -45,7 +47,7 @@ Step 6: Coaching Output Generation (uses capability_evidence_report)
 
 ```
 ✗ Change fit score
-✗ Change recommendation (Apply / Caution / Do Not Apply)
+✗ Change recommendation (Strongly Apply / Apply / Conditional Apply / Do Not Apply)
 ✗ Trigger LEPE caps
 ✗ Trigger CAE multipliers
 ✗ Override hard_requirement_failures
@@ -393,15 +395,15 @@ Redirect to: B2B SaaS Product roles (billing, payments, enterprise tools)
 where your Stripe and Asana experience directly applies.
 ```
 
-**Example (Apply with Caution scenario):**
+**Example (Conditional Apply scenario):**
 ```
 Gaps to Address:
 - Leadership scope is local (team of 12 in Boston), not global (3+ regions required)
 - No Product partnership evidenced (collaborated with engineering only)
 
 Your Move:
-Marcus, apply with caution. You have strong people management (4.75 years, 
-12 engineers) but the global scale and Product partnership gaps will come up 
+Marcus, conditionally apply. You have strong people management (4.75 years,
+12 engineers) but the global scale and Product partnership gaps will come up
 in interviews.
 
 Position it as: "I've built strong local teams and am ready to scale globally."
@@ -434,9 +436,9 @@ def generate_your_move(job_fit_recommendation, capability_evidence_report):
         critical_gap = find_most_critical_gap(capability_evidence_report)
         return format_do_not_apply_coaching(critical_gap)
     
-    elif job_fit_recommendation == "Apply with Caution":
+    elif job_fit_recommendation == "Conditional Apply":
         coachable_gaps = find_coachable_gaps(capability_evidence_report)
-        return format_caution_coaching(coachable_gaps)
+        return format_conditional_apply_coaching(coachable_gaps)
     
     # ... etc
 ```
