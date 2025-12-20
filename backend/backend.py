@@ -5574,16 +5574,9 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             gaps.insert(0, gap_warning)  # Add at the beginning for visibility
             response_data["gaps"] = gaps
 
-    # Log the correction
-    print(f"🔧 PENALTY ENFORCEMENT:")
-    print(f"   Original fit_score: {original_fit_score}%")
-    print(f"   Years percentage: {years_percentage:.1f}% ({candidate_years:.1f}/{required_years} years)")
-    print(f"   Hard cap: {hard_cap}%")
-    print(f"   Final fit_score: {capped_score}%")
-    print(f"   Original recommendation: {current_recommendation}")
-    print(f"   Final recommendation: {response_data['recommendation']}")
+    # Log penalty enforcement (abbreviated - full summary at end)
     if hard_cap_applied:
-        print(f"   ⚠️ HARD CAP APPLIED - score reduced from {original_fit_score}% to {capped_score}%")
+        print(f"🔧 PENALTY: Score capped {original_fit_score}% → {capped_score}% ({years_percentage:.0f}% of required years)")
 
     # ========================================================================
     # GAP CLASSIFICATION AND STRENGTH-GAP CONFLICT RESOLUTION
@@ -8542,11 +8535,13 @@ def evaluate_lepe(
         "gaps_identified": gaps,
         "advice_given": positioning["messaging"].get("coaching_advice", ""),
         "risk_communicated": positioning["messaging"].get("skepticism_warning", ""),
-        "decision": positioning["decision"],
+        "lepe_advisory": positioning["decision"],  # Renamed: this is advisory, NOT the final recommendation
         "timestamp": datetime.now().isoformat()
     }
 
-    print(f"   Decision: {positioning['decision'].upper()}")
+    # IMPORTANT: This is LEPE's advisory signal, NOT the final recommendation
+    # Final recommendation is set by FinalRecommendationController and is immutable
+    print(f"   LEPE Advisory: {positioning['decision'].upper()} (does not override Final Recommendation)")
     print(f"   People leadership years: {tenure.get('people_leadership_years', 0):.1f}")
     print(f"   Required: {required_years:.0f}+")
     print(f"   Gap: {positioning['gap_years']:.1f} years")
@@ -9987,7 +9982,7 @@ Evaluate the job posting quality using these criteria:
 
 You MUST provide one of these EXACT strings:
 - "Apply" (strong opportunity, good fit, clear role)
-- "Apply with caution" (red flags present but salvageable)
+- "Apply with Caution" (red flags present but salvageable)
 - "Skip — poor quality or low close rate" (multiple issues, waste of time)
 
 Then explain in 3-5 substantive sentences why you gave this rating. DO NOT leave this empty.
@@ -10145,7 +10140,7 @@ Evaluate the job posting quality using these criteria:
 
 You MUST provide one of these EXACT strings:
 - "Apply" (strong opportunity, good fit, clear role)
-- "Apply with caution" (red flags present but salvageable)
+- "Apply with Caution" (red flags present but salvageable)
 - "Skip — poor quality or low close rate" (multiple issues, waste of time)
 
 Then explain in 3-5 substantive sentences why you gave this rating. DO NOT leave this empty.
@@ -15514,7 +15509,7 @@ Analyze gaps between candidate's current level and the target role requirements.
                 elif lepe_decision in ["caution", "locked"]:
                     lepe_skepticism_warning = messaging.get("skepticism_warning")
 
-                print(f"   📊 LEPE Decision: {lepe_decision}")
+                print(f"   📊 LEPE Advisory: {lepe_decision} (advisory only)")
 
         return ResumeLevelingResponse(
             detected_function=parsed_data.get('detected_function', 'Unknown'),
@@ -18324,7 +18319,7 @@ Remember: Use ONLY information from the resume. Every number and claim must trac
                     elif lepe_decision in ["caution", "locked"]:
                         lepe_skepticism_warning = messaging.get("skepticism_warning")
 
-                    print(f"   📊 LEPE Decision: {lepe_decision}")
+                    print(f"   📊 LEPE Advisory: {lepe_decision} (advisory only)")
 
         return LinkedInOptimizeResponse(
             # Severity and summary
