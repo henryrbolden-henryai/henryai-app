@@ -6201,6 +6201,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             job_requirements = {
                 'role_title': response_data.get('role_title', ''),
                 'job_description': response_data.get('job_description', ''),
+                'domain': response_data.get('target_domain', '') or response_data.get('intelligence_layer', {}).get('target_domain', ''),
             }
 
             # Generate coaching output
@@ -6222,6 +6223,14 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
             if your_move:
                 print(f"   📣 Your Move: {your_move[:80]}...")
+
+                # CRITICAL: Wire coaching output to reality_check.strategic_action
+                # Frontend reads "Your Move" from reality_check.strategic_action
+                if "reality_check" not in response_data:
+                    response_data["reality_check"] = {}
+                response_data["reality_check"]["strategic_action"] = your_move
+                print(f"   ✅ Wired Your Move to reality_check.strategic_action")
+
             if gaps_to_address:
                 print(f"   📋 Gaps to Address: {len(gaps_to_address)} gap(s)")
             else:

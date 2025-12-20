@@ -155,21 +155,87 @@ def generate_your_move(
         else:
             return f"{job_fit_recommendation}: Your background does not align with this role's core requirements. Focus on roles that match your domain expertise and experience level."
 
-    elif job_fit_recommendation == "Apply with Caution":
-        # Coachable gaps scenario - must reference specific gap
-        if primary_gap:
-            gap = primary_gap.get('gap', {})
-            gap_diagnosis = gap.get('diagnosis', '')
-            mitigation = primary_gap.get('mitigation', '')
+    elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
+        # ==========================================================================
+        # CONDITIONAL APPLY: Viable but requires strategic execution
+        # This is NOT a weak candidate. It means positioning matters.
+        #
+        # Your Move must answer:
+        # 1. What's the gating risk? (name it plainly)
+        # 2. How to neutralize it in 24-48 hours? (specific action)
+        # 3. Clear go/no-go? (no second-guessing)
+        # ==========================================================================
 
-            if gap_diagnosis and mitigation:
-                return f"{job_fit_recommendation}: {gap_diagnosis} {mitigation} This is a stretch—you'll compete with candidates who have direct experience."
-            elif gap_diagnosis:
-                return f"{job_fit_recommendation}: {gap_diagnosis} Position your relevant experience carefully. This is a stretch—you'll compete with candidates who have direct experience."
+        # Get the primary gap details
+        gap = primary_gap.get('gap', {}) if primary_gap else {}
+        gap_capability = gap.get('capability', '') or gap.get('capability_id', '')
+        gap_diagnosis = gap.get('diagnosis', '')
+        mitigation = primary_gap.get('mitigation', '') if primary_gap else ''
+
+        # Get candidate's dominant narrative for positive framing
+        dominant_narrative = None
+        if calibrated_gaps:
+            dominant_narrative = calibrated_gaps.get('dominant_narrative')
+
+        # Get role context for specific guidance
+        role_title = (job_requirements.get('role_title', '') or job_requirements.get('title', '') or '').lower()
+
+        # Build decisive, specific "Your Move"
+        # Format: [Viability] [Gating risk] [Specific neutralization action] [Urgency]
+
+        # Determine the specific repositioning advice based on gap type
+        if 'domain' in gap_capability.lower():
+            # Domain gap - reframe around transferable skills
+            domain = job_requirements.get('domain', 'this domain')
+            if dominant_narrative:
+                return (f"You're viable here if you control the narrative. "
+                       f"Your strength is that you {dominant_narrative}. "
+                       f"Update your resume to lead with customer-facing impact and cross-functional delivery—de-emphasize pure infrastructure unless it ties to product velocity. "
+                       f"Apply within 24 hours with a targeted note positioning yourself as a platform-first leader who scales teams across surfaces.")
             else:
-                return f"{job_fit_recommendation}: Position your strengths carefully. This is a stretch—you'll compete with candidates who have direct experience."
+                return (f"You're viable here if you control the narrative. "
+                       f"This team needs {domain} context—reframe your experience around adjacent domains and transferable leadership. "
+                       f"Apply within 24 hours and lead with your cross-functional delivery track record, not domain expertise.")
+
+        elif 'leadership' in gap_capability.lower() or 'scope' in gap_capability.lower():
+            # Leadership/scope gap - emphasize trajectory
+            if dominant_narrative:
+                return (f"You're viable here, but only if you demonstrate trajectory. "
+                       f"Lead with the fact that you {dominant_narrative}. "
+                       f"Tighten your resume to emphasize growing scope and impact—this role will screen out flat career paths. "
+                       f"Apply fast and reach out directly to the hiring manager.")
+            else:
+                return (f"You're viable here, but only if you demonstrate trajectory. "
+                       f"Reframe your resume to show scope expansion over time—highlight team growth, increasing responsibility, or expanded ownership. "
+                       f"Apply within 24 hours and address the trajectory question head-on in your outreach.")
+
+        elif 'experience' in gap_capability.lower() or 'years' in gap_capability.lower():
+            # Experience years gap - emphasize density of impact
+            if dominant_narrative:
+                return (f"You're viable here if you emphasize impact density over tenure. "
+                       f"Your edge: you {dominant_narrative}. "
+                       f"Lead with outcomes, not timeline. Stack your highest-impact work at the top of your resume. "
+                       f"Apply within 24 hours—speed matters when you're competing on impact, not years.")
+            else:
+                return (f"You're viable here if you emphasize impact density over tenure. "
+                       f"Don't let years be the story—lead with your highest-impact outcomes and results. "
+                       f"Apply fast and reach out directly with a specific accomplishment that proves you punch above your weight class.")
+
         else:
-            return f"{job_fit_recommendation}: Position your strengths carefully and set realistic expectations about competitiveness."
+            # Generic coachable gap - still be decisive
+            if dominant_narrative:
+                return (f"You're viable here, but positioning matters. "
+                       f"Your edge: you {dominant_narrative}. "
+                       f"Tighten your resume to lead with this and address the gap directly in your cover letter. "
+                       f"Apply within 24 hours—if you apply without repositioning, this role becomes a coin flip.")
+            elif gap_diagnosis and mitigation:
+                return (f"You're viable here, but positioning matters. "
+                       f"{mitigation} "
+                       f"Apply within 24 hours and reach out directly to the hiring manager—speed and specificity beat perfection.")
+            else:
+                return (f"You're viable here, but positioning matters. "
+                       f"Reframe your experience to lead with outcomes that map to this role's needs. "
+                       f"Apply within 24 hours—if you apply without repositioning, this role becomes a coin flip.")
 
     elif job_fit_recommendation == "Strong Apply":
         # RECRUITER REALITY: Strong Apply MUST have a concrete proof point
