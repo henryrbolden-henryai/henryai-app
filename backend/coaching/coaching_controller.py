@@ -74,25 +74,49 @@ def generate_coaching_output(
         return result
 
     # =========================================================================
-    # CRITICAL: Gap suppression vs gap influence separation
+    # SYSTEM CONTRACT: Candidate Isolation & Strengths Extraction Recovery
     #
     # - suppress_gaps_section = UI visibility only (what user sees)
     # - gaps still influence coaching tone and tactical advice
+    # - Even when gaps are suppressed for display, they sharpen "Your Move"
     #
-    # Even when gaps are suppressed for display, they sharpen "Your Move"
+    # CONTRACT RULE: If strengths extraction fails:
+    # - Skip coaching advice generation
+    # - Surface gaps + reality check ONLY
+    # - Do NOT surface "Analysis incomplete" or internal errors
+    # - Do NOT fall back to generic leadership summaries
     # =========================================================================
 
-    # HARD FAILURE: Empty strengths extraction is a bug, not a fallback case
+    # CONTRACT: Empty strengths = downgrade confidence, not output quality
     if strengths is not None and len(strengths) == 0:
-        print("   🚨 ERROR: Strengths extraction returned 0 items - this is a bug")
-        print("   🚨 Blocking coaching generation. Do not fall back to defaults.")
-        # Return minimal output with error flag
+        print("   🚨 CONTRACT BREACH: Strengths extraction returned 0 items")
+        print("   📋 Recovery: Surface gaps + informational state, skip coaching advice")
+
+        # Per contract: Surface informational state, not error message
+        # Allowed outputs: reality_check_only, gaps_summary
+        # Forbidden: coaching_advice, motivational copy, generic "Your Move"
+        informational_your_move = _generate_informational_your_move(
+            job_fit_recommendation=job_fit_recommendation,
+            calibrated_gaps=calibrated_gaps,
+            job_requirements=job_requirements
+        )
+
+        # Still surface gaps if available
+        gaps_to_address = None
+        if not calibrated_gaps.get('suppress_gaps_section', False):
+            if calibrated_gaps.get('primary_gap') or calibrated_gaps.get('secondary_gaps'):
+                gaps_to_address = format_gaps_for_display(
+                    primary_gap=calibrated_gaps.get('primary_gap'),
+                    secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
+                )
+
         return {
-            'your_move': "Analysis incomplete. Please try again.",
-            'gaps_to_address': None,
+            'your_move': informational_your_move,
+            'gaps_to_address': gaps_to_address,
             'show_accountability_banner': False,
             'accountability_message': None,
-            '_error': 'empty_strengths_extraction'
+            '_contract_state': 'strengths_extraction_recovery',
+            '_strengths_count': 0
         }
 
     # Generate "Your Move" (ALWAYS generate, even with silence)
@@ -834,8 +858,11 @@ def _extract_role_signals(
     """
     Extract role-specific signals from strengths list.
 
-    CRITICAL: Keywords are JD-scoped, not global.
-    This prevents Marcus → Sarah contamination.
+    SYSTEM CONTRACT COMPLIANCE:
+    - Keywords are JD-scoped, not global (prevents cross-candidate contamination)
+    - Signals are (candidate, role) scoped - no persistence between runs
+    - No reuse of prior candidate narratives, metrics, or examples
+    - Leadership fallback only when JD-aligned evidence is insufficient
 
     ORDERING:
     1. Resume-verified signals that map to JD keywords (highest priority)
@@ -844,8 +871,15 @@ def _extract_role_signals(
 
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
+    # CONTRACT: Log extraction attempt for audit trail
+    import hashlib
+    candidate_hash = hashlib.md5(str(candidate_resume).encode()).hexdigest()[:8] if candidate_resume else "none"
+    role_hash = hashlib.md5(f"{role_title}:{job_requirements.get('job_description', '')[:100]}".encode()).hexdigest()[:8]
+    print(f"   🔐 Signal extraction scope: candidate={candidate_hash}, role={role_hash}")
+
     if not strengths:
-        print("   🚨 ERROR: _extract_role_signals called with no strengths - this is a bug")
+        print("   🚨 CONTRACT BREACH: _extract_role_signals called with no strengths")
+        print("   📋 Breach logged. Returning empty signals (no fallback permitted).")
         return []
 
     # =========================================================================
@@ -1025,6 +1059,51 @@ def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
         return f"{company}'s team needs"
 
     return None  # No specific context available
+
+
+def _generate_informational_your_move(
+    job_fit_recommendation: str,
+    calibrated_gaps: Dict[str, Any],
+    job_requirements: Dict[str, Any]
+) -> str:
+    """
+    Generate informational "Your Move" when strengths extraction fails.
+
+    Per SYSTEM CONTRACT:
+    - This is NOT coaching advice
+    - This is NOT motivational copy
+    - This is informational only - directs user to gaps/reality check
+
+    Allowed: Factual guidance based on recommendation + gaps
+    Forbidden: "Analysis incomplete", "Please try again", generic leadership
+    """
+    role_title = job_requirements.get('role_title', 'this role')
+
+    # Get primary gap info if available
+    primary_gap = calibrated_gaps.get('primary_gap')
+    gap_summary = ""
+    if primary_gap:
+        gap_info = primary_gap.get('gap', {})
+        gap_summary = gap_info.get('capability', gap_info.get('diagnosis', ''))
+
+    # Generate informational message based on recommendation tier
+    if job_fit_recommendation == "Do Not Apply":
+        if gap_summary:
+            return f"Review the gaps identified below. {gap_summary} is a critical blocker for {role_title}."
+        return f"Review the gaps identified below before considering {role_title}."
+
+    elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
+        if gap_summary:
+            return f"Address {gap_summary} in your application materials. Review gaps below for positioning guidance."
+        return f"Review the highlighted gaps below and address them directly in your application for {role_title}."
+
+    elif job_fit_recommendation in ["Apply", "Strong Apply"]:
+        # Even for Apply, if we couldn't extract strengths, be honest
+        return f"Your background aligns with {role_title}. Review the analysis below and emphasize your most relevant experience."
+
+    else:
+        # Fallback - still informational, not error
+        return f"Review the analysis below for {role_title} and focus on addressing any highlighted gaps."
 
 
 def _sanitize_your_move(text: str) -> str:
