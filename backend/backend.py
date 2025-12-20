@@ -11892,11 +11892,22 @@ Role: {request.role_title}
                 for w in qa_validation_result.warnings
             ]
 
-        # CRITICAL: Ensure parsed_data has job_description and role_title for eligibility checks
+        # CRITICAL: Ensure parsed_data has job_description, company, and role_title
         # These are needed by force_apply_experience_penalties for non-transferable domain detection
+        # USER INPUT TAKES PRECEDENCE: If user provided company/role_title, use those over Claude's extraction
         if "job_description" not in parsed_data and request.job_description:
             parsed_data["job_description"] = request.job_description
-        if "role_title" not in parsed_data and request.role_title:
+
+        # Company: User input takes precedence over Claude's extraction
+        if request.company:
+            if parsed_data.get("company") != request.company:
+                print(f"📋 [{analysis_id}] Overriding company: '{parsed_data.get('company')}' → '{request.company}' (user provided)")
+            parsed_data["company"] = request.company
+
+        # Role title: User input takes precedence over Claude's extraction
+        if request.role_title:
+            if parsed_data.get("role_title") != request.role_title:
+                print(f"📋 [{analysis_id}] Overriding role_title: '{parsed_data.get('role_title')}' → '{request.role_title}' (user provided)")
             parsed_data["role_title"] = request.role_title
 
         # CRITICAL: Inject isolated role detection data for downstream use
@@ -12091,10 +12102,13 @@ Role: {request.role_title}
             parsed_data = json.loads(fixed_response)
             print("✅ Fixed JSON by escaping common quote patterns")
 
-            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            # Ensure job_description, company, and role_title are in parsed_data
+            # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and request.job_description:
                 parsed_data["job_description"] = request.job_description
-            if "role_title" not in parsed_data and request.role_title:
+            if request.company:
+                parsed_data["company"] = request.company
+            if request.role_title:
                 parsed_data["role_title"] = request.role_title
 
             # Continue with penalty enforcement
@@ -12384,10 +12398,13 @@ Role: {request.role_title}
                 parsed_data = json.loads(truncated)
                 print(f"✅ Salvaged JSON by truncating")
 
-            # Ensure job_description and role_title are in parsed_data for eligibility checks
+            # Ensure job_description, company, and role_title are in parsed_data
+            # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and request.job_description:
                 parsed_data["job_description"] = request.job_description
-            if "role_title" not in parsed_data and request.role_title:
+            if request.company:
+                parsed_data["company"] = request.company
+            if request.role_title:
                 parsed_data["role_title"] = request.role_title
 
             # Apply experience penalties
