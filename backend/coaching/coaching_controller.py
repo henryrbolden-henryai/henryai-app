@@ -251,8 +251,13 @@ def generate_your_move(
         # MUST reference role-specific capabilities from strengths
         # ======================================================================
 
-        # Extract role-specific signals from strengths
-        role_signals = _extract_role_signals(strengths or [], role_title or '', job_requirements)
+        # Extract role-specific signals from strengths (with candidate evidence validation)
+        role_signals = _extract_role_signals(
+            strengths or [],
+            role_title or '',
+            job_requirements,
+            candidate_resume=candidate_resume
+        )
 
         # Get dominant narrative for proof point
         dominant_narrative = calibrated_gaps.get('dominant_narrative') if calibrated_gaps else None
@@ -564,7 +569,73 @@ def _build_resume_text_for_strength(candidate_resume: Dict[str, Any]) -> str:
     return ' '.join(filter(None, parts))
 
 
-def _extract_role_signals(strengths: List[str], role_title: str, job_requirements: Dict[str, Any]) -> List[str]:
+def _build_candidate_evidence_text(candidate_resume: Optional[Dict[str, Any]]) -> str:
+    """
+    Build combined text from candidate resume for cross-validation.
+
+    Used by _extract_role_signals to ensure keywords are grounded in candidate evidence,
+    not just JD keywords that the model hallucinated as strengths.
+
+    Returns: lowercase combined text from resume
+    """
+    if not candidate_resume:
+        return ""
+
+    parts = []
+
+    # Summary
+    summary = candidate_resume.get('summary', '')
+    if summary:
+        parts.append(summary)
+
+    # Skills (explicit skill list)
+    skills = candidate_resume.get('skills', []) or []
+    for skill in skills:
+        if isinstance(skill, str):
+            parts.append(skill)
+        elif isinstance(skill, dict):
+            parts.append(skill.get('name', ''))
+            parts.append(skill.get('skill', ''))
+
+    # Experience
+    experience = candidate_resume.get('experience', []) or []
+    for exp in experience:
+        if isinstance(exp, dict):
+            parts.append(exp.get('title', ''))
+            parts.append(exp.get('company', ''))
+            parts.append(exp.get('description', ''))
+            # Bullets/achievements
+            bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
+            for bullet in bullets:
+                if isinstance(bullet, str):
+                    parts.append(bullet)
+                elif isinstance(bullet, dict):
+                    parts.append(bullet.get('text', ''))
+
+    # Education
+    education = candidate_resume.get('education', []) or []
+    for edu in education:
+        if isinstance(edu, dict):
+            parts.append(edu.get('degree', ''))
+            parts.append(edu.get('field', ''))
+            parts.append(edu.get('institution', ''))
+
+    # Projects
+    projects = candidate_resume.get('projects', []) or []
+    for proj in projects:
+        if isinstance(proj, dict):
+            parts.append(proj.get('name', ''))
+            parts.append(proj.get('description', ''))
+
+    return ' '.join(filter(None, parts))
+
+
+def _extract_role_signals(
+    strengths: List[str],
+    role_title: str,
+    job_requirements: Dict[str, Any],
+    candidate_resume: Optional[Dict[str, Any]] = None
+) -> List[str]:
     """
     Extract role-specific signals from strengths list.
 
@@ -574,6 +645,11 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
     - Distributed systems, API scale, reliability
     - Team scaling metrics
 
+    CANDIDATE SCOPING (prevents overfitting):
+    - Keyword must exist in JD AND candidate evidence to elevate
+    - If keyword in JD only → do NOT elevate (it's a gap, not a strength)
+    - Cross-candidate safety: If top signals don't exist in resume, fallback to leadership
+
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
     if not strengths:
@@ -582,6 +658,10 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
 
     role_lower = (role_title or '').lower()
     domain = (job_requirements.get('domain', '') or '').lower()
+
+    # Build candidate evidence text for cross-validation
+    candidate_evidence = _build_candidate_evidence_text(candidate_resume) if candidate_resume else ""
+    candidate_evidence_lower = candidate_evidence.lower()
 
     print(f"   🔍 Extracting role signals from {len(strengths)} strengths for role: '{role_title}'")
 
@@ -619,8 +699,11 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
         role_type = 'data'
 
     print(f"   📊 Detected role type: {role_type}")
+    if candidate_evidence_lower:
+        print(f"   📄 Candidate evidence available ({len(candidate_evidence_lower)} chars)")
 
     signals = []
+    signals_from_evidence = []  # Track which signals are grounded in candidate resume
 
     # First pass: Look for role-type specific keywords (highest priority)
     keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', [])
@@ -633,19 +716,34 @@ def _extract_role_signals(strengths: List[str], role_title: str, job_requirement
 
         for keyword in keywords_to_check:
             if keyword in strength_lower:
+                # CANDIDATE SCOPING: Verify keyword exists in candidate evidence
+                if candidate_evidence_lower and keyword not in candidate_evidence_lower:
+                    print(f"   ⚠️ Keyword '{keyword}' in strength but NOT in candidate resume. Skipping.")
+                    continue
+
                 # Extract a clean signal phrase
                 signal = _clean_signal_phrase(strength, keyword)
                 if signal and signal not in signals:
                     signals.append(signal)
-                    print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}')")
+                    signals_from_evidence.append(signal)
+                    print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}', grounded in resume: {bool(candidate_evidence_lower)})")
                     break  # Only one signal per strength
 
         if len(signals) >= 2:
             break
 
+    # CROSS-CANDIDATE SAFETY CHECK
+    # If we have candidate evidence but top signals don't exist in resume, fallback to leadership
+    if candidate_evidence_lower and len(signals) >= 2:
+        # Verify top 2 signals are grounded in candidate evidence
+        ungrounded_signals = [s for s in signals[:2] if s not in signals_from_evidence]
+        if ungrounded_signals:
+            print(f"   ⚠️ Role signals suppressed due to insufficient candidate evidence: {ungrounded_signals}")
+            signals = []  # Reset and fall through to leadership
+
     # Second pass: If no role-specific signals, check leadership as fallback
     if not signals:
-        print("   ⚠️ No role-specific signals found, checking leadership keywords")
+        print("   ⚠️ No role-specific signals found (or suppressed), checking leadership keywords")
         for strength in strengths:
             if not isinstance(strength, str) or not strength.strip():
                 continue
