@@ -4,6 +4,12 @@
 #
 # PURPOSE: One controller to rule them all. Everything else is advisory.
 #
+# CORE INVARIANT (SYSTEM_CONTRACT.md §0):
+# "If it doesn't make the candidate better, no one wins."
+#
+# Outputs must improve candidate decision quality.
+# Do not soften, inflate, or redirect unless it materially makes the candidate better.
+#
 # HARD RULES:
 # 1. Recommendation is set ONCE and locked
 # 2. Score is set ONCE and locked

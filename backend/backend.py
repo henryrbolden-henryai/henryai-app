@@ -88,6 +88,31 @@ except ImportError:
     FINAL_CONTROLLER_AVAILABLE = False
     print("⚠️ Final Recommendation Controller not available - using legacy behavior")
 
+# Reality Check System - Market-truth intervention framework
+# Per REALITY_CHECK_SPEC.md:
+# - Surfaces risk, friction, and market behavior patterns
+# - NEVER modifies fit_score or eligibility
+# - Market Bias and Market Climate signals are message-only overlays
+#
+# ROLLOUT NOTE (Dec 2024):
+# Reality Check System enabled behind feature flag.
+# No scoring logic changes. Message-only overlays.
+# Violations are aggressively logged for early warning.
+try:
+    from reality_check import (
+        RealityCheckController,
+        analyze_reality_checks,
+        SignalClass,
+        Severity,
+    )
+    REALITY_CHECK_AVAILABLE = True
+    # Feature flag for gradual rollout - set to True to enable
+    REALITY_CHECK_ENABLED = True
+except ImportError:
+    REALITY_CHECK_AVAILABLE = False
+    REALITY_CHECK_ENABLED = False
+    print("⚠️ Reality Check module not available - using fallback behavior")
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
@@ -5326,18 +5351,38 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     # BACKEND SAFETY NET: Calculate role-specific experience from resume
     # Detects the role type from JD and uses appropriate experience calculator
     # Enhanced with credibility scoring and leadership vs IC distinction
+    #
+    # CRITICAL: Use isolated role detection when available (per contamination fix)
+    # The isolated detection runs early with request-only data, avoiding any
+    # cached/contaminated role type from previous analyses
     if resume_data:
-        # Detect the role type from the JD analysis
-        detected_role_type = detect_role_type_from_jd(response_data)
-        print(f"   🔍 Detected role type: {detected_role_type.upper()}")
+        # Check if isolated role detection was performed (higher priority)
+        isolated_role_type = experience_analysis.get("isolated_role_type")
+        isolated_years = experience_analysis.get("isolated_candidate_years")
+
+        if isolated_role_type:
+            # Use isolated detection - it was computed with request-only data
+            detected_role_type = isolated_role_type
+            print(f"   🔍 Detected role type (ISOLATED): {detected_role_type.upper()}")
+            if isolated_years is not None and isolated_years > 0:
+                print(f"   🔍 Using isolated experience calculation: {isolated_years:.1f} years")
+        else:
+            # Fallback to original detection
+            detected_role_type = detect_role_type_from_jd(response_data)
+            print(f"   🔍 Detected role type: {detected_role_type.upper()}")
 
         # Check if JD requires leadership (for recruiting roles)
         requires_leadership = jd_requires_leadership(response_data)
         if detected_role_type == "recruiting":
             print(f"   🔍 JD requires leadership: {requires_leadership}")
 
-        # Calculate role-specific years with appropriate method
-        if detected_role_type == "recruiting" and requires_leadership:
+        # CRITICAL: If isolated years are available and valid, use them directly
+        # This bypasses the old calculation that may have been contaminated
+        if isolated_years is not None and isolated_years > 0:
+            backend_role_years = isolated_years
+            print(f"   ✅ Using ISOLATED years calculation: {backend_role_years:.1f} years")
+            experience_analysis["used_isolated_calculation"] = True
+        elif detected_role_type == "recruiting" and requires_leadership:
             # Use leadership-aware recruiting calculator
             backend_role_years = calculate_recruiting_leadership_years(resume_data, requires_leadership)
             print(f"   🔍 Backend recruiting LEADERSHIP years: {backend_role_years:.1f} years")
@@ -9327,6 +9372,629 @@ def calculate_role_specific_years(resume_data: dict, target_role_type: str = "pm
     return total_years
 
 
+# =============================================================================
+# REQUEST ISOLATION & CONTAMINATION DETECTION
+# Per Revised Code Fix Instructions: Fail-fast on test data contamination
+# =============================================================================
+
+def detect_test_contamination(resume_data: Dict[str, Any], analysis_id: str) -> None:
+    """
+    Detect test data contamination and ABORT if found.
+
+    This is a platform integrity check, not a data cleanup function.
+    If test data appears in production, this is a fatal system error.
+
+    Args:
+        resume_data: Resume data from request
+        analysis_id: Analysis ID for logging
+
+    Raises:
+        HTTPException 500: If test contamination detected (system error)
+    """
+
+    print(f"🔍 [{analysis_id}] Checking for test data contamination...")
+
+    # Known test data patterns that should NEVER appear in production
+    TEST_PATTERNS = {
+        "companies": [
+            "mckinsey", "mckinsey & company",
+            "bain", "bain & company",
+            "bcg", "boston consulting group"
+        ],
+        "titles": [
+            "management consultant",
+            "strategy consultant",
+            "product manager, cloud and open ecosystems"
+        ]
+    }
+
+    contamination_found = []
+
+    # Check all experience entries
+    for exp in resume_data.get("experience", []):
+        if not isinstance(exp, dict):
+            continue
+        company = (exp.get("company", "") or "").lower().strip()
+        title = (exp.get("title", "") or "").lower().strip()
+
+        # Check for test company patterns
+        for test_company in TEST_PATTERNS["companies"]:
+            if test_company in company:
+                contamination_found.append({
+                    "type": "test_company",
+                    "pattern": test_company,
+                    "company": exp.get("company"),
+                    "title": exp.get("title")
+                })
+
+        # Check for test title patterns
+        for test_title in TEST_PATTERNS["titles"]:
+            if test_title in title:
+                contamination_found.append({
+                    "type": "test_title",
+                    "pattern": test_title,
+                    "company": exp.get("company"),
+                    "title": exp.get("title")
+                })
+
+    # If contamination found, ABORT - this is a system error
+    if contamination_found:
+        print(f"\n{'='*80}")
+        print(f"🚨 FATAL: TEST DATA CONTAMINATION DETECTED")
+        print(f"{'='*80}")
+        for item in contamination_found:
+            print(f"Type: {item['type']}")
+            print(f"Pattern: {item['pattern']}")
+            print(f"Company: {item['company']}")
+            print(f"Title: {item['title']}")
+            print(f"---")
+        print(f"{'='*80}\n")
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "SYSTEM ERROR: Test data contamination detected. "
+                "This indicates a platform integrity issue. "
+                f"Analysis ID: {analysis_id}. "
+                "Please report this error to engineering."
+            )
+        )
+
+    print(f"✅ [{analysis_id}] No test contamination detected")
+
+
+def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
+    """
+    Extract role title from job description text.
+
+    This is the ONLY source of role title for analysis.
+    Never use cached, session, or global title data.
+
+    Args:
+        jd_text: Job description text from current request
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        Extracted role title
+    """
+    import re
+
+    print(f"📋 [{analysis_id}] Extracting role title from JD...")
+
+    # Strategy 1: Look for explicit markers
+    patterns = [
+        r'(?:job title|position|role):\s*([^\n]+)',
+        r'^([^\n]+)(?:\s*-\s*(?:corporate|hybrid|remote|full.time))',
+        r'^([A-Z][^\n]{10,80})$',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, jd_text, re.IGNORECASE | re.MULTILINE)
+        if match:
+            title = match.group(1).strip()
+            title = re.sub(
+                r'\s*-\s*(corporate|hybrid|remote|san francisco|full.time).*$',
+                '',
+                title,
+                flags=re.IGNORECASE
+            )
+            if 5 < len(title) < 100:
+                print(f"  ✅ Extracted: '{title}'")
+                return title
+
+    # Strategy 2: First non-empty line
+    lines = [line.strip() for line in jd_text.split('\n') if line.strip()]
+    if lines:
+        first_line = lines[0]
+        if 5 < len(first_line) < 100 and first_line[0].isupper():
+            print(f"  ✅ Extracted from first line: '{first_line}'")
+            return first_line
+
+    # Fallback
+    print(f"  ⚠️ Could not extract role title - using placeholder")
+    return "Unknown Role"
+
+
+def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -> str:
+    """
+    Detect role type from job description and title.
+
+    CRITICAL: Uses ONLY the parameters passed to this function.
+    NO global variables, cache, or session data.
+
+    PRIORITY ORDER (RECRUITING first to fix contamination issues):
+    1. RECRUITING - most specific, check first
+    2. PRODUCT
+    3. ENGINEERING
+    4. SALES
+    5. MARKETING
+    6. GENERAL (fallback)
+
+    Args:
+        jd_text: Job description text from current request
+        role_title: Role title extracted from jd_text
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        Role type: "recruiting", "pm", "engineering", "sales", "marketing", "general"
+    """
+
+    print(f"🔍 [{analysis_id}] Detecting role type (isolated)...")
+    print(f"  Title: '{role_title}'")
+
+    title_lower = role_title.lower()
+    jd_lower = jd_text.lower()
+
+    # PRIORITY 1: RECRUITING (most specific, check first)
+    recruiting_title_patterns = [
+        "recruiter", "recruiting", "talent acquisition",
+        "sourcer", "sourcing", "talent partner",
+        "recruitment", "headhunter", "technical recruiter",
+        "ta director", "ta manager", "talent lead", "head of talent"
+    ]
+
+    if any(pattern in title_lower for pattern in recruiting_title_patterns):
+        print(f"  ✅ RECRUITING detected from title")
+        return "recruiting"
+
+    # Check JD content for recruiting signals
+    recruiting_jd_signals = [
+        "full-cycle recruiting", "sourcing", "candidate experience",
+        "hiring manager", "recruitment funnel", "talent pipeline",
+        "offer negotiation", "interview scheduling"
+    ]
+    recruiting_signal_count = sum(1 for sig in recruiting_jd_signals if sig in jd_lower)
+
+    if recruiting_signal_count >= 3:
+        print(f"  ✅ RECRUITING detected from JD ({recruiting_signal_count} signals)")
+        return "recruiting"
+
+    # PRIORITY 2: PRODUCT
+    product_patterns = [
+        "product manager", "product lead", "product owner",
+        "product director", "head of product", "vp product", "cpo"
+    ]
+
+    # Be careful NOT to match "product manager, cloud and open ecosystems" for non-PM roles
+    if any(pattern in title_lower for pattern in product_patterns):
+        # Double-check this isn't a recruiting role with PM in name
+        if not any(rp in title_lower for rp in recruiting_title_patterns):
+            print(f"  ✅ PRODUCT detected from title")
+            return "pm"
+
+    # PRIORITY 3: ENGINEERING
+    engineering_patterns = [
+        "engineer", "developer", "software", "technical lead",
+        "architect", "sre", "devops", "engineering manager"
+    ]
+
+    if any(pattern in title_lower for pattern in engineering_patterns):
+        print(f"  ✅ ENGINEERING detected from title")
+        return "engineering"
+
+    # PRIORITY 4: SALES
+    sales_patterns = [
+        "sales", "account executive", "account manager",
+        "business development", "revenue", "ae ", "sdr", "bdr"
+    ]
+
+    if any(pattern in title_lower for pattern in sales_patterns):
+        print(f"  ✅ SALES detected from title")
+        return "sales"
+
+    # PRIORITY 5: MARKETING
+    marketing_patterns = [
+        "marketing", "growth", "demand gen",
+        "brand", "marketing manager", "cmo"
+    ]
+
+    if any(pattern in title_lower for pattern in marketing_patterns):
+        print(f"  ✅ MARKETING detected from title")
+        return "marketing"
+
+    # Fallback
+    print(f"  ⚠️ Defaulting to GENERAL")
+    return "general"
+
+
+def verify_role_type_alignment(
+    role_type: str,
+    role_title: str,
+    jd_text: str,
+    analysis_id: str
+) -> Dict[str, Any]:
+    """
+    Verify detected role type aligns with job description.
+
+    Mismatches trigger:
+    - Loud logging
+    - Confidence degradation
+    - Warning flags
+
+    They do NOT crash the request unless contamination is confirmed.
+
+    Args:
+        role_type: Detected role type
+        role_title: Extracted role title
+        jd_text: Job description text
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        {
+            "aligned": bool,
+            "confidence": float,
+            "warnings": List[str]
+        }
+    """
+
+    print(f"🔍 [{analysis_id}] Verifying role type alignment...")
+
+    title_lower = role_title.lower()
+    jd_lower = jd_text.lower()
+    warnings = []
+    aligned = True
+    confidence = 1.0
+
+    # Check for obvious mismatches
+
+    # Case 1: Title says "recruiter" but detected as PM/other
+    if "recruit" in title_lower and role_type == "pm":
+        print(f"⚠️ [{analysis_id}] ROLE TYPE MISMATCH WARNING")
+        print(f"   Title: '{role_title}'")
+        print(f"   Detected: {role_type}")
+        print(f"   Expected: recruiting")
+        warnings.append("Role type detection uncertain - title suggests RECRUITING but detected as PM")
+        aligned = False
+        confidence = 0.3
+
+    # Case 2: Title says "engineer" but detected as RECRUITING
+    elif "engineer" in title_lower and role_type == "recruiting":
+        print(f"⚠️ [{analysis_id}] ROLE TYPE MISMATCH WARNING")
+        print(f"   Title: '{role_title}'")
+        print(f"   Detected: {role_type}")
+        print(f"   Expected: engineering")
+        warnings.append("Role type detection uncertain - title suggests ENGINEERING but detected as RECRUITING")
+        aligned = False
+        confidence = 0.3
+
+    # Case 3: Strong recruiting signals but non-recruiting type
+    recruiting_signals = [
+        "full-cycle recruiting", "candidate experience",
+        "sourcing", "hiring manager", "talent pipeline"
+    ]
+    signal_count = sum(1 for sig in recruiting_signals if sig in jd_lower)
+
+    if signal_count >= 3 and role_type != "recruiting":
+        print(f"⚠️ [{analysis_id}] ROLE TYPE CONFIDENCE LOW")
+        print(f"   JD has {signal_count} recruiting signals")
+        print(f"   Detected: {role_type}")
+        warnings.append(f"JD contains {signal_count} recruiting indicators but detected as {role_type}")
+        aligned = False
+        confidence = 0.5
+
+    if aligned:
+        print(f"✅ [{analysis_id}] Role type alignment verified")
+    else:
+        print(f"⚠️ [{analysis_id}] Role type alignment degraded (confidence: {confidence})")
+
+    return {
+        "aligned": aligned,
+        "confidence": confidence,
+        "warnings": warnings
+    }
+
+
+def calculate_relevant_years_isolated(
+    resume_data: Dict[str, Any],
+    role_type: str,
+    analysis_id: str
+) -> float:
+    """
+    Calculate years of relevant experience based on role type.
+
+    CRITICAL: Uses ONLY data from current request.
+    No cache, no globals, no session data.
+
+    Args:
+        resume_data: Resume data from current request
+        role_type: Detected role type
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        Total years of relevant experience
+    """
+
+    print(f"📊 [{analysis_id}] Calculating {role_type.upper()} experience years...")
+
+    # Role-specific title patterns
+    role_patterns = {
+        "recruiting": [
+            "recruiter", "recruiting", "talent acquisition",
+            "sourcer", "sourcing", "talent partner", "recruitment",
+            "technical recruiter", "ta ", "talent lead", "head of talent"
+        ],
+        "pm": [
+            "product manager", "product lead", "pm", "product owner",
+            "product director", "head of product", "vp product"
+        ],
+        "engineering": [
+            "engineer", "developer", "software", "technical lead",
+            "architect", "sre", "devops", "programmer"
+        ],
+        "sales": [
+            "sales", "account executive", "account manager",
+            "business development", "revenue", "ae ", "sdr", "bdr"
+        ],
+        "marketing": [
+            "marketing", "growth", "demand gen",
+            "brand", "marketing manager", "content"
+        ]
+    }
+
+    patterns = role_patterns.get(role_type, [])
+    total_years = 0.0
+
+    for exp in resume_data.get("experience", []):
+        if not isinstance(exp, dict):
+            continue
+
+        title = (exp.get("title", "") or "").lower()
+        company = exp.get("company", "")
+        dates = exp.get("dates", "")
+
+        # For general type, count all experience
+        if role_type == "general" or not patterns:
+            years = parse_duration_to_years_isolated(dates)
+            total_years += years
+            print(f"  📊 {exp.get('title')} @ {company}: +{years:.1f} years (all experience)")
+            continue
+
+        is_relevant = any(pattern in title for pattern in patterns)
+
+        if is_relevant:
+            years = parse_duration_to_years_isolated(dates)
+            total_years += years
+            print(f"  ✅ {exp.get('title')} @ {company}: +{years:.1f} years")
+        else:
+            print(f"  ⏭️  {exp.get('title')} @ {company}: Not relevant to {role_type.upper()}")
+
+    print(f"📊 [{analysis_id}] Total {role_type.upper()} experience: {total_years:.1f} years")
+    return total_years
+
+
+def parse_duration_to_years_isolated(dates: str) -> float:
+    """
+    Parse date range to years of experience.
+
+    Isolated version - no external dependencies.
+
+    Args:
+        dates: Date range string from resume
+
+    Returns:
+        Duration in years
+    """
+    import re
+    from datetime import datetime
+
+    if not dates:
+        return 0.0
+
+    dates_str = str(dates).lower().strip()
+
+    # Check for "present" or "current"
+    is_current = "present" in dates_str or "current" in dates_str
+
+    # Extract years
+    years = re.findall(r'\b(20\d{2})\b', dates_str)
+
+    if len(years) >= 2:
+        start_year = int(years[0])
+        end_year = int(years[-1]) if not is_current else datetime.now().year
+        return max(0.0, float(end_year - start_year))
+
+    elif len(years) == 1 and is_current:
+        start_year = int(years[0])
+        return max(0.0, float(datetime.now().year - start_year))
+
+    elif len(years) == 1:
+        return 1.0
+
+    # Try to parse duration format (e.g., "2 years 3 months")
+    year_match = re.search(r'(\d+)\s*year', dates_str)
+    month_match = re.search(r'(\d+)\s*month', dates_str)
+    if year_match or month_match:
+        yrs = int(year_match.group(1)) if year_match else 0
+        mos = int(month_match.group(1)) if month_match else 0
+        return yrs + (mos / 12)
+
+    return 0.0
+
+
+def check_people_leadership_requirement_isolated(
+    resume_data: Dict[str, Any],
+    required_years: float,
+    hard_requirement: bool,
+    analysis_id: str
+) -> Dict[str, Any]:
+    """
+    Check if candidate meets people leadership requirement.
+
+    CRITICAL: Skip entirely if not required to avoid noise.
+
+    Args:
+        resume_data: Resume data from request
+        required_years: Years required
+        hard_requirement: If blocking
+        analysis_id: Analysis ID
+
+    Returns:
+        Leadership check results
+    """
+
+    # Skip entirely if not required
+    if required_years == 0.0 and not hard_requirement:
+        print(f"⏭️  [{analysis_id}] Skipping leadership check (not required)")
+        return {
+            "meets_requirement": True,
+            "candidate_years": 0.0,
+            "gap_severity": "none",
+            "skipped": True
+        }
+
+    print(f"🔍 [{analysis_id}] Checking leadership requirement...")
+    print(f"   Required: {required_years} years (hard={hard_requirement})")
+
+    # Calculate people leadership years
+    leadership_patterns = [
+        "manager", "director", "head of", "vp ", "lead",
+        "chief", "team lead", "group lead"
+    ]
+
+    candidate_years = 0.0
+    for exp in resume_data.get("experience", []):
+        if not isinstance(exp, dict):
+            continue
+        title = (exp.get("title", "") or "").lower()
+
+        if any(pattern in title for pattern in leadership_patterns):
+            dates = exp.get("dates", "")
+            years = parse_duration_to_years_isolated(dates)
+            candidate_years += years
+
+    print(f"   Candidate: {candidate_years:.1f} years")
+
+    if candidate_years >= required_years:
+        return {
+            "meets_requirement": True,
+            "candidate_years": candidate_years,
+            "gap_severity": "none",
+            "skipped": False
+        }
+    elif hard_requirement:
+        return {
+            "meets_requirement": False,
+            "candidate_years": candidate_years,
+            "gap_severity": "major",
+            "skipped": False
+        }
+    else:
+        return {
+            "meets_requirement": True,
+            "candidate_years": candidate_years,
+            "gap_severity": "minor",
+            "skipped": False
+        }
+
+
+def calculate_career_gap_penalty_isolated(
+    resume_data: Dict[str, Any],
+    analysis_id: str
+) -> Dict[str, Any]:
+    """
+    Calculate penalty for employment gaps.
+
+    Post-2023 context: Widespread layoffs make gaps less stigmatizing.
+
+    Args:
+        resume_data: Resume data
+        analysis_id: Analysis ID
+
+    Returns:
+        Gap analysis with adjusted penalties
+    """
+
+    from datetime import datetime
+    import re
+
+    print(f"📅 [{analysis_id}] Checking for career gaps...")
+
+    experience = resume_data.get("experience", [])
+    if not experience:
+        return {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
+
+    # Get most recent experience
+    most_recent = None
+    for exp in experience:
+        if isinstance(exp, dict):
+            most_recent = exp
+            break
+
+    if not most_recent:
+        return {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
+
+    dates = (most_recent.get("dates", "") or "").lower()
+
+    if "present" in dates or "current" in dates:
+        print(f"  ✅ Currently employed - no gap")
+        return {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
+
+    # Extract end year
+    years = re.findall(r'\b(20\d{2})\b', dates)
+    if not years:
+        return {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
+
+    end_year = int(years[-1])
+    current_year = datetime.now().year
+    gap_months = (current_year - end_year) * 12
+
+    # Try to get more precise with month
+    month_match = re.search(r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)', dates)
+    if month_match:
+        month_map = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                     "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+        end_month = month_map.get(month_match.group(1), 6)
+        gap_months = (current_year - end_year) * 12 + (datetime.now().month - end_month)
+
+    print(f"  📊 Gap: {gap_months} months since {end_year}")
+
+    # Post-2023 adjusted penalties (more lenient due to widespread layoffs)
+    if gap_months <= 6:
+        penalty, severity = 0, "none"
+    elif gap_months <= 12:
+        penalty, severity = 2, "minor"
+    elif gap_months <= 18:
+        penalty, severity = 5, "moderate"
+    elif gap_months <= 24:
+        penalty, severity = 8, "moderate"
+    else:
+        penalty, severity = 12, "major"
+
+    print(f"  {'✅' if penalty == 0 else '⚠️'} Penalty: {penalty} points ({severity})")
+
+    return {
+        "has_gap": gap_months > 6,
+        "gap_months": gap_months,
+        "penalty_points": penalty,
+        "severity": severity
+    }
+
+
+# =============================================================================
+# END REQUEST ISOLATION & CONTAMINATION DETECTION
+# =============================================================================
+
+
 def detect_role_type_from_jd(response_data: dict) -> str:
     """
     Detect the role type from the job description analysis.
@@ -9614,9 +10282,125 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     5. Then traditional JD analysis
 
     Returns detailed analysis with intelligence layer and fit score
+
+    CRITICAL: Complete request isolation - no shared state.
+    Per Revised Code Fix Instructions for data contamination prevention.
     """
 
-    system_prompt = """You are a senior executive recruiter and career strategist.
+    # ========================================================================
+    # STEP 0: REQUEST ISOLATION - Fresh analysis context
+    # Per Revised Code Fix Instructions: Fail-fast on contamination
+    # ========================================================================
+
+    analysis_id = str(uuid.uuid4())[:8]
+
+    print(f"\n{'='*80}")
+    print(f"🆕 NEW ANALYSIS REQUEST - ID: {analysis_id}")
+    print(f"{'='*80}")
+
+    # Validate we have complete data from THIS request only
+    if not request.resume or not isinstance(request.resume, dict):
+        print(f"⚠️ [{analysis_id}] No valid resume data provided")
+        # Continue without resume - some analyses are valid without it
+    else:
+        # CRITICAL: Detect test contamination - ABORT if found
+        detect_test_contamination(request.resume, analysis_id)
+
+    if not request.job_description or len(request.job_description.strip()) < 50:
+        print(f"⚠️ [{analysis_id}] Short or missing job description")
+        # Continue - provisional profile may be used
+
+    # Use request data directly - no cache, no session, no globals
+    resume_data = request.resume if request.resume else {}
+    jd_text = request.job_description or ""
+
+    # Pre-compute isolated role detection for later use
+    isolated_role_detection = None
+    if jd_text:
+        extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
+        isolated_role_type = detect_role_type_isolated(jd_text, extracted_title, analysis_id)
+        alignment = verify_role_type_alignment(isolated_role_type, extracted_title, jd_text, analysis_id)
+
+        # Calculate role-specific experience using isolated function
+        if resume_data:
+            candidate_years = calculate_relevant_years_isolated(resume_data, isolated_role_type, analysis_id)
+            gap_info = calculate_career_gap_penalty_isolated(resume_data, analysis_id)
+
+            # Skip leadership check if not required (reduces noise)
+            leadership_info = check_people_leadership_requirement_isolated(
+                resume_data,
+                required_years=0.0,  # Will be extracted from JD if needed
+                hard_requirement=False,
+                analysis_id=analysis_id
+            )
+        else:
+            candidate_years = 0.0
+            gap_info = {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
+            leadership_info = {"meets_requirement": True, "candidate_years": 0.0, "gap_severity": "none", "skipped": True}
+
+        isolated_role_detection = {
+            "extracted_title": extracted_title,
+            "role_type": isolated_role_type,
+            "alignment": alignment,
+            "candidate_years": candidate_years,
+            "gap_info": gap_info,
+            "leadership_info": leadership_info
+        }
+
+        print(f"\n{'='*80}")
+        print(f"📊 [{analysis_id}] ISOLATED PRE-ANALYSIS COMPLETE")
+        print(f"{'='*80}")
+        print(f"Role: {extracted_title}")
+        print(f"Type: {isolated_role_type.upper()} (confidence: {alignment['confidence']})")
+        print(f"Experience: {candidate_years:.1f} years")
+        print(f"Gap: {gap_info['gap_months']} months (penalty: {gap_info['penalty_points']})")
+        if alignment['warnings']:
+            print(f"Warnings: {alignment['warnings']}")
+        print(f"{'='*80}\n")
+
+    print(f"✅ [{analysis_id}] Request isolation verified - using only request data")
+
+    system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
+
+=== STRICT JSON OUTPUT MODE (ABSOLUTE REQUIREMENT) ===
+
+Your ONLY job is to produce a single JSON object that conforms EXACTLY to the schema provided below.
+
+CRITICAL RULES - VIOLATION BREAKS THE SYSTEM:
+1. You MUST return ONLY valid JSON. Nothing else.
+2. Do NOT write explanations, reasoning, commentary, or natural language before or after the JSON.
+3. Do NOT include markdown code fences (no ```json or ```).
+4. Do NOT invent new fields, rename fields, or add extra structure.
+5. Do NOT output multiple JSON objects.
+6. If a field cannot be extracted, return an empty string "", null, or empty array [] as appropriate.
+7. Always escape special characters to ensure valid JSON.
+8. Your output MUST be parseable by a strict JSON parser with zero repair.
+9. Keep responses as compact as possible while filling all required fields.
+10. Start your response with { and end with } - nothing before, nothing after.
+
+If you violate ANY of these rules, the system will break and the candidate will not receive their analysis.
+
+=== END STRICT JSON OUTPUT MODE ===
+
+You are a senior executive recruiter and career strategist providing job fit analysis.
+
+=== CORE INSTRUCTION (NON-NEGOTIABLE) ===
+
+Optimize all responses to make the candidate better.
+
+"Better" means:
+- Clearer understanding of market reality
+- Stronger decision-making ability
+- More effective positioning or skill-building
+- Reduced wasted effort
+
+Do NOT optimize for reassurance, encouragement, or emotional comfort
+unless it directly contributes to candidate improvement.
+
+If a truthful response may feel discouraging but improves the candidate,
+deliver it clearly, respectfully, and without dilution.
+
+=== END CORE INSTRUCTION ===
 
 🚨🚨🚨 CRITICAL - CANDIDATE IDENTITY & VOICE (READ FIRST) 🚨🚨🚨
 - The candidate is NOT Henry
@@ -10443,58 +11227,46 @@ NEVER say: "You're not senior enough", "You're underqualified", "You don't have 
 After completing the Intelligence Layer and Reality Check, provide standard JD analysis.
 Note: Fit scoring rules with experience penalties are defined at the TOP of this prompt - apply them first.
 
-=== POLITICAL SENSITIVITY DETECTION (PHASE 1.5) ===
+=== MARKET CLIMATE SIGNALS (Per REALITY_CHECK_SPEC.md) ===
 
-Analyze the candidate's resume for politically sensitive content that may impact hiring decisions in the current climate (December 2024).
+The Reality Check system detects market climate signals separately via the backend.
+This section provides STRATEGIC FRAMING GUIDANCE only - it does NOT modify scores.
 
-POLITICALLY SENSITIVE CATEGORIES:
+CRITICAL GUARDRAILS (HARD RULES):
+1. NEVER instruct identity suppression
+2. NEVER suggest hiding legitimate work experience
+3. NEVER suggest omitting roles from resume
+4. ALWAYS validate the work's importance and value
+5. ALWAYS frame as market friction, not personal failing
+6. Strategic framing guidance only - no prescriptive word substitutions
 
-1. DEI/DIVERSITY FOCUS (Risk Level: HIGH):
-   - Company mission includes: "diversity", "inclusion", "equity", "DEI", "underrepresented", "belonging"
-   - Role titles: "Chief Diversity Officer", "DEI Manager", "Inclusion Lead"
-   - Companies explicitly focused on diversity
+APPROVED FRAMING PATTERN:
+> "Market Climate Signal: In the current hiring climate, some companies are scrutinizing [type of work] more heavily due to [external factor]. Your work is valid and valuable. Strategic framing: [specific guidance]."
 
-2. CLIMATE/ENVIRONMENTAL ACTIVISM (Risk Level: MEDIUM):
-   - Company mission includes: "climate justice", "environmental activism"
-   - Role titles: "Climate Organizer", "Sustainability Advocate"
-
-3. POLITICAL CAMPAIGNS/ADVOCACY (Risk Level: MEDIUM):
-   - Worked for political campaigns, PACs, advocacy organizations
-   - Role titles: "Campaign Manager", "Political Organizer"
-
-4. CANNABIS INDUSTRY (Risk Level: MEDIUM):
-   - Worked in cannabis/marijuana industry
-
-5. CRYPTO/WEB3 POST-2022 (Risk Level: LOW-MEDIUM):
-   - Worked in crypto/blockchain during 2022-2024 period
-
-DETECTION LOGIC:
-- Flag if ANY politically sensitive category is detected
-- Weight by risk level: HIGH risk = auto-flag, MEDIUM risk = flag if prominent
-- Consider recency: DEI work from 2020-2023 is higher risk than 2015-2018
-- Consider prominence: "Lead PM at DEI company" is higher risk than "volunteered for DEI committee"
-
-DO NOT FLAG:
-- Generic corporate DEI statements
-- Standard EEOC compliance language
-- Employee resource group participation (unless primary role)
-
-=== POLITICAL REFRAMING GUIDANCE ===
-
-When political sensitivity flags are detected, provide specific reframing strategies:
+EXAMPLES OF APPROVED MESSAGING:
 
 1. DEI-FOCUSED EXPERIENCE:
-   - Lead with product/technical work, not mission
-   - Describe functionality ("talent matching", "recommendation engine") not ideology
-   - Emphasize business outcomes ("$60K B2B contract", "50% increase in demo requests") not social impact
-   - Avoid words: diversity, inclusion, equity, underrepresented, belonging
-   - Use instead: talent, recruiting, workforce, marketplace, matching
+> "Your work driving inclusion and belonging is legitimate business impact. Strategic framing: Lead with business outcomes (retention, engagement, performance) and team effectiveness metrics. This reduces early screening friction without hiding your work."
 
-2. COMPANY TARGETING STRATEGY when political sensitivity is HIGH:
-   AVOID: Companies that rolled back DEI initiatives, conservative-leaning industries
-   TARGET: Pro-DEI tech companies, early-stage startups, nonprofit sector
+2. CLIMATE/SUSTAINABILITY:
+> "Your sustainability work demonstrates strategic thinking and stakeholder management. Strategic framing: Emphasize cost savings, operational efficiency, and risk mitigation alongside mission-driven language."
 
-Include reframing_guidance in the response when political risks are detected
+3. POLITICAL/ADVOCACY WORK:
+> "Your organizing and coalition-building skills are directly transferable. Strategic framing: Lead with project management, stakeholder alignment, and measurable outcomes. Let the substance speak for itself."
+
+4. EMERGING INDUSTRIES (Crypto, Cannabis):
+> "Your technical and operational skills from [industry] remain valuable. Strategic framing: Emphasize transferable skills, regulatory navigation, and high-velocity execution."
+
+FORBIDDEN PATTERNS (NEVER USE):
+❌ "Avoid words like diversity, inclusion, equity"
+❌ "Hide your background in [industry]"
+❌ "Don't mention you worked at [company]"
+❌ "Rewrite your experience to remove [topic]"
+❌ "This is a weakness in the current climate"
+❌ "Companies won't hire people who worked in [field]"
+
+DO NOT modify fit_score or eligibility based on market climate signals.
+Market Climate is informational/coaching only - it explains friction, not capability.
 
 === CAREER GAP DETECTION (MANDATORY) ===
 
@@ -11016,6 +11788,9 @@ Role: {request.role_title}
     if request.preferences:
         user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
 
+    # GUARD CLAUSE: Reinforce JSON-only output at end of user message
+    user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
+
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
 
@@ -11124,6 +11899,20 @@ Role: {request.role_title}
         if "role_title" not in parsed_data and request.role_title:
             parsed_data["role_title"] = request.role_title
 
+        # CRITICAL: Inject isolated role detection data for downstream use
+        # This ensures the correct role type and experience years are used
+        if isolated_role_detection:
+            parsed_data["_isolated_role_detection"] = isolated_role_detection
+            # Override role type if isolated detection is more reliable
+            if isolated_role_detection.get("alignment", {}).get("confidence", 0) >= 0.5:
+                print(f"📊 [{analysis_id}] Using isolated role detection: {isolated_role_detection['role_type'].upper()}")
+                # Inject into experience_analysis for use by force_apply_experience_penalties
+                if "experience_analysis" not in parsed_data:
+                    parsed_data["experience_analysis"] = {}
+                parsed_data["experience_analysis"]["isolated_role_type"] = isolated_role_detection["role_type"]
+                parsed_data["experience_analysis"]["isolated_candidate_years"] = isolated_role_detection["candidate_years"]
+                parsed_data["experience_analysis"]["isolated_gap_info"] = isolated_role_detection["gap_info"]
+
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
         parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
@@ -11184,6 +11973,88 @@ Role: {request.role_title}
         print(f"   recommendation: {parsed_data.get('recommendation', 'MISSING')}")
         print(f"   recommendation_locked: {parsed_data.get('recommendation_locked', 'MISSING')}")
         print(f"   Total keys in response: {len(parsed_data.keys())}")
+
+        # =================================================================
+        # REALITY CHECK SYSTEM - Market-truth interventions
+        # Per REALITY_CHECK_SPEC.md: Surfaces risk and market patterns
+        # CRITICAL: NEVER modifies fit_score. Message-only overlays.
+        # =================================================================
+        if REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED:
+            try:
+                # Capture fit_score BEFORE Reality Check for assertion
+                pre_reality_check_score = parsed_data.get("fit_score")
+
+                # Build inputs for Reality Check analysis
+                resume_data = request.resume if request.resume else {}
+                jd_data = {
+                    "role_title": request.role_title or parsed_data.get("role_title", ""),
+                    "company": request.company or parsed_data.get("company", ""),
+                    "job_description": request.job_description or "",
+                }
+
+                # Gather pre-computed analysis results for Reality Check
+                eligibility_result = None
+                if parsed_data.get("eligibility_gate"):
+                    eligibility_result = {
+                        "eligible": parsed_data["eligibility_gate"].get("passed", True),
+                        "reason": parsed_data["eligibility_gate"].get("reason", ""),
+                        "failed_check": parsed_data["eligibility_gate"].get("failed_check", ""),
+                    }
+
+                fit_details = None
+                if parsed_data.get("fit_score_breakdown"):
+                    fit_details = {
+                        "years_gap": parsed_data["fit_score_breakdown"].get("experience_gap_years", 0),
+                    }
+
+                credibility_result = None
+                if parsed_data.get("calibration_result"):
+                    cal = parsed_data["calibration_result"]
+                    credibility_result = {
+                        "title_inflation": cal.get("title_inflation", {}),
+                        "fabrication_risk": cal.get("fabrication_risk", False),
+                        "press_release_pattern": cal.get("press_release_pattern", False),
+                    }
+
+                risk_analysis = None
+                if parsed_data.get("calibration_result"):
+                    cal = parsed_data["calibration_result"]
+                    risk_analysis = {
+                        "job_hopping": cal.get("job_hopping", {}),
+                        "career_gaps": cal.get("career_gaps", []),
+                        "overqualified": cal.get("overqualified", {}),
+                        "company_pattern": cal.get("company_pattern", {}),
+                    }
+
+                # Run Reality Check analysis
+                reality_check_result = analyze_reality_checks(
+                    resume_data=resume_data,
+                    jd_data=jd_data,
+                    fit_score=fit_score,
+                    eligibility_result=eligibility_result,
+                    fit_details=fit_details,
+                    credibility_result=credibility_result,
+                    risk_analysis=risk_analysis,
+                    feature_flag=REALITY_CHECK_ENABLED,
+                )
+
+                # Add Reality Check to response
+                parsed_data["reality_check"] = reality_check_result
+
+                # CRITICAL ASSERTION: Verify fit_score was NOT modified
+                post_reality_check_score = parsed_data.get("fit_score")
+                if pre_reality_check_score != post_reality_check_score:
+                    print(f"🚨 REALITY CHECK GUARDRAIL VIOLATION: Score changed from {pre_reality_check_score} to {post_reality_check_score}")
+                    # Restore original score
+                    parsed_data["fit_score"] = pre_reality_check_score
+                    parsed_data["reality_check"]["_guardrail_violation"] = True
+
+                print(f"✅ Reality Check completed: {len(reality_check_result.get('display_checks', []))} checks to display")
+
+            except Exception as e:
+                print(f"⚠️ Reality Check failed (non-blocking): {str(e)}")
+                # Reality Check failure should not block the response
+                parsed_data["reality_check"] = {"error": str(e), "checks": []}
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -11257,7 +12128,47 @@ async def analyze_jd_stream(request: JDAnalyzeRequest):
     import asyncio
 
     # Use the same system prompt as the regular analyze endpoint
-    system_prompt = """You are a senior executive recruiter and career strategist.
+    system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
+
+=== STRICT JSON OUTPUT MODE (ABSOLUTE REQUIREMENT) ===
+
+Your ONLY job is to produce a single JSON object that conforms EXACTLY to the schema provided below.
+
+CRITICAL RULES - VIOLATION BREAKS THE SYSTEM:
+1. You MUST return ONLY valid JSON. Nothing else.
+2. Do NOT write explanations, reasoning, commentary, or natural language before or after the JSON.
+3. Do NOT include markdown code fences (no ```json or ```).
+4. Do NOT invent new fields, rename fields, or add extra structure.
+5. Do NOT output multiple JSON objects.
+6. If a field cannot be extracted, return an empty string "", null, or empty array [] as appropriate.
+7. Always escape special characters to ensure valid JSON.
+8. Your output MUST be parseable by a strict JSON parser with zero repair.
+9. Keep responses as compact as possible while filling all required fields.
+10. Start your response with { and end with } - nothing before, nothing after.
+
+If you violate ANY of these rules, the system will break and the candidate will not receive their analysis.
+
+=== END STRICT JSON OUTPUT MODE ===
+
+You are a senior executive recruiter and career strategist providing job fit analysis.
+
+=== CORE INSTRUCTION (NON-NEGOTIABLE) ===
+
+Optimize all responses to make the candidate better.
+
+"Better" means:
+- Clearer understanding of market reality
+- Stronger decision-making ability
+- More effective positioning or skill-building
+- Reduced wasted effort
+
+Do NOT optimize for reassurance, encouragement, or emotional comfort
+unless it directly contributes to candidate improvement.
+
+If a truthful response may feel discouraging but improves the candidate,
+deliver it clearly, respectfully, and without dilution.
+
+=== END CORE INSTRUCTION ===
 
 🚨🚨🚨 CRITICAL - CANDIDATE IDENTITY & VOICE (READ FIRST) 🚨🚨🚨
 - The candidate is NOT Henry
@@ -11369,6 +12280,9 @@ Role: {request.role_title}
 
     if request.preferences:
         user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
+
+    # GUARD CLAUSE: Reinforce JSON-only output at end of user message
+    user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
 
     async def event_generator():
         """Generate Server-Sent Events with progressive data extraction"""
@@ -12864,6 +13778,23 @@ async def interview_feedback(request: InterviewFeedbackRequest) -> InterviewFeed
     
     system_prompt = """You are a senior executive coach specializing in interview preparation.
 
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
+
 Analyze the candidate's interview performance and provide constructive, actionable feedback.
 
 SCORING FRAMEWORK (1-100):
@@ -12965,6 +13896,23 @@ async def generate_thank_you(request: ThankYouRequest) -> ThankYouResponse:
     """
     
     system_prompt = """You are a professional communication coach specializing in post-interview follow-ups.
+
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
 
 Generate a thank-you email that is:
 - Professional but warm and genuine
@@ -13349,6 +14297,23 @@ async def analyze_intro_sell(request: IntroSellFeedbackRequest):
 
     system_prompt = """Analyze this candidate's 60-90 second intro sell attempt.
 
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
+
 Provide structured feedback:
 
 CONTENT (1-10):
@@ -13615,6 +14580,36 @@ class DebriefChatResponse(BaseModel):
 
 DEBRIEF_SYSTEM_PROMPT_WITH_TRANSCRIPT = """You are an expert interview coach having a warm, supportive conversation with a candidate who just completed an interview. You're like a trusted mentor who gives honest, actionable feedback while being encouraging.
 
+=== CORE INSTRUCTION (NON-NEGOTIABLE) ===
+
+"If it doesn't make the candidate better, no one wins."
+
+Optimize all responses to make the candidate better. Do NOT optimize for reassurance
+unless it directly contributes to candidate improvement.
+
+Before finalizing your response, verify:
+"Does this materially improve the candidate's next decision?"
+If not, revise.
+
+=== END CORE INSTRUCTION ===
+
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
+
 INTERVIEW CONTEXT:
 - Company: {company}
 - Role: {role_title}
@@ -13657,6 +14652,36 @@ Remember: This is a conversation, not a report. Be human, be helpful, be honest.
 
 
 DEBRIEF_SYSTEM_PROMPT_NO_TRANSCRIPT = """You are an expert interview coach having a warm, supportive conversation with a candidate who just completed an interview. You're like a trusted mentor who helps them reflect on how it went and prepare for next steps.
+
+=== CORE INSTRUCTION (NON-NEGOTIABLE) ===
+
+"If it doesn't make the candidate better, no one wins."
+
+Optimize all responses to make the candidate better. Do NOT optimize for reassurance
+unless it directly contributes to candidate improvement.
+
+Before finalizing your response, verify:
+"Does this materially improve the candidate's next decision?"
+If not, revise.
+
+=== END CORE INSTRUCTION ===
+
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
 
 INTERVIEW CONTEXT:
 - Company: {company}
@@ -16344,6 +17369,43 @@ AskHenryResponse = HeyHenryResponse
 
 HEY_HENRY_SYSTEM_PROMPT = """You are Henry, a strategic career coach built into HenryHQ. You're the primary relationship owner for candidates, providing honest guidance, accountability, and support throughout their job search.
 
+=== CORE INSTRUCTION (NON-NEGOTIABLE) ===
+
+"If it doesn't make the candidate better, no one wins."
+
+Optimize all responses to make the candidate better.
+
+"Better" means:
+- Clearer understanding of market reality
+- Stronger decision-making ability
+- More effective positioning or skill-building
+- Reduced wasted effort
+
+Do NOT optimize for reassurance, encouragement, or emotional comfort
+unless it directly contributes to candidate improvement.
+
+If a truthful response may feel discouraging but improves the candidate,
+deliver it clearly, respectfully, and without dilution.
+
+=== END CORE INSTRUCTION ===
+
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
+
 USER INFO:
 - Name: {user_name} {name_note}
 
@@ -18190,6 +19252,23 @@ TARGET JOB DESCRIPTION:
 
     # Comprehensive system prompt for world-class LinkedIn optimization
     system_prompt = """You are an elite executive recruiter generating world-class LinkedIn optimization recommendations for HenryHQ users. Your guidance must meet the standard of $50K/year executive coaching.
+
+=== HENRYHQ VOICE (NON-NEGOTIABLE) ===
+
+You are HenryHQ — a direct, honest, supportive career coach.
+You tell candidates the truth without shame, and you always give them a clear next step.
+Your tone is calm, confident, human, and never robotic or overly optimistic.
+Your goal is simple: make the candidate better with every message.
+If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
+
+Voice Rules:
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+2. Be direct and concise. Short sentences. No filler. No corporate jargon.
+3. Every output must give the user a NEXT STEP.
+4. No false encouragement. Praise must be earned and specific.
+5. Emotional safety is mandatory. Deliver hard truths calmly and respectfully.
+
+=== END HENRYHQ VOICE ===
 
 QUALITY BAR:
 - Recommendations must be specific, actionable, and grounded in the candidate's ACTUAL experience

@@ -4,6 +4,12 @@
 #
 # Purpose: Consumes calibrated_gaps and governs what gets said to users.
 #
+# CORE INVARIANT (SYSTEM_CONTRACT.md §0):
+# "If it doesn't make the candidate better, no one wins."
+#
+# Outputs must improve candidate decision quality.
+# Do not soften, inflate, or redirect unless it materially makes the candidate better.
+#
 # HARD CONSTRAINTS:
 # - Silence suppresses "Gaps to Address," NOT "Your Move"
 # - NO vague language ("some gaps," "most requirements")

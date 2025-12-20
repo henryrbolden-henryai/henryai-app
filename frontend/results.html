@@ -269,6 +269,577 @@
             margin-bottom: 8px;
         }
 
+        /* REALITY CHECK SECTION */
+        .reality-check-section {
+            margin-bottom: 24px;
+        }
+
+        .reality-check-card {
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .reality-check-card.blocker {
+            background: linear-gradient(135deg, #450a0a 0%, #1f2937 100%);
+            border: 1px solid #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+
+        .reality-check-card.warning {
+            background: linear-gradient(135deg, #422006 0%, #1f2937 100%);
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .reality-check-card.coaching {
+            background: linear-gradient(135deg, #0c4a6e 0%, #1f2937 100%);
+            border: 1px solid #0ea5e9;
+            border-left: 4px solid #0ea5e9;
+        }
+
+        .reality-check-card.informational {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #6b7280;
+            border-left: 4px solid #6b7280;
+        }
+
+        .reality-check-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .reality-check-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .reality-check-badge.blocker {
+            background: rgba(220, 38, 38, 0.2);
+            color: #fca5a5;
+        }
+
+        .reality-check-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+
+        .reality-check-badge.coaching {
+            background: rgba(14, 165, 233, 0.2);
+            color: #7dd3fc;
+        }
+
+        .reality-check-badge.informational {
+            background: rgba(107, 114, 128, 0.2);
+            color: #d1d5db;
+        }
+
+        .reality-check-signal {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+
+        .reality-check-message {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--color-text);
+            margin-bottom: 16px;
+        }
+
+        .reality-check-alternatives {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .reality-check-alternatives h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .reality-check-alternatives ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .reality-check-alternatives li {
+            padding: 8px 0 8px 24px;
+            position: relative;
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .reality-check-alternatives li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--color-primary);
+        }
+
+        /* ASK HENRY FOR BETTER PATHS - Simple CTA for low fit scores */
+        .ask-henry-paths-cta {
+            margin-top: 24px;
+            padding: 20px;
+            background: linear-gradient(135deg, #2e1065 0%, #1f2937 100%);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            border-radius: 12px;
+            display: none;
+        }
+
+        .ask-henry-paths-cta.visible {
+            display: block;
+        }
+
+        .ask-henry-paths-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .ask-henry-paths-prompt {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ask-henry-paths-icon {
+            font-size: 1.5rem;
+        }
+
+        .ask-henry-paths-text {
+            color: #c4b5fd;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .ask-henry-paths-btn {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .ask-henry-paths-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .ask-henry-paths-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .ask-henry-paths-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* CAREER CHANGER REDIRECT - Inline expandable orientation */
+        .career-changer-redirect {
+            margin-top: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .career-changer-redirect.visible {
+            display: block;
+        }
+
+        .career-changer-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .career-changer-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .career-changer-prompt {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .career-changer-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .career-changer-message {
+            flex: 1;
+        }
+
+        .career-changer-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .career-changer-subtitle {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .career-changer-toggle {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .career-changer-toggle:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .career-changer-toggle.expanded {
+            background: rgba(34, 211, 238, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .career-changer-toggle .toggle-arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .career-changer-toggle.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Expanded Content */
+        .career-changer-content {
+            display: none;
+            padding: 0 20px 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .career-changer-content.expanded {
+            display: block;
+        }
+
+        /* Diagnosis Section */
+        .career-changer-diagnosis {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .diagnosis-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+        }
+
+        .diagnosis-points {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .diagnosis-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .diagnosis-point-icon {
+            color: var(--color-accent);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        /* Three Paths Section */
+        .career-changer-paths {
+            padding: 20px 0;
+        }
+
+        .paths-intro {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .path-cards {
+            display: grid;
+            gap: 12px;
+        }
+
+        .path-card {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .path-card:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .path-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .path-number {
+            width: 24px;
+            height: 24px;
+            background: var(--color-accent);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .path-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .path-purpose {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .path-description {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .path-example {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            line-height: 1.5;
+            border-left: 2px solid var(--color-accent);
+        }
+
+        .path-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .path-save-btn {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .path-save-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .path-save-btn.saved {
+            background: rgba(34, 211, 238, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        /* Experience Building Section */
+        .career-changer-experience {
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .experience-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .experience-priorities {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .experience-priority {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .priority-rank {
+            width: 20px;
+            height: 20px;
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .experience-note {
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #fbbf24;
+        }
+
+        /* What Not To Do Section */
+        .career-changer-avoid {
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .avoid-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #f87171;
+            margin-bottom: 10px;
+        }
+
+        .avoid-points {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .avoid-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .avoid-point-icon {
+            color: #f87171;
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .career-changer-cta {
+            padding: 16px 0 0;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .career-changer-ask-henry {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .career-changer-ask-henry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .career-changer-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .career-changer-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .career-changer-cta {
+                flex-direction: column;
+            }
+
+            .career-changer-ask-henry {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
@@ -885,6 +1456,186 @@
                         </div>
                     </div>
 
+                    <!-- 3.5. MARKET SIGNALS (Reality Check System) -->
+                    <div class="section reality-check-section" id="marketSignalsSection" style="display: none;">
+                        <div class="section-title">Market Signals</div>
+                        <div id="marketSignalsContent">
+                            <!-- Populated dynamically by Reality Check system -->
+                        </div>
+                    </div>
+
+                    <!-- 3.6. ASK HENRY FOR BETTER PATHS (shown for low fit scores) -->
+                    <div class="ask-henry-paths-cta" id="askHenryPathsCta">
+                        <div class="ask-henry-paths-content">
+                            <div class="ask-henry-paths-prompt">
+                                <span class="ask-henry-paths-icon">💬</span>
+                                <span class="ask-henry-paths-text">This role may not be the best fit. Let Henry suggest better paths for you.</span>
+                            </div>
+                            <button class="ask-henry-paths-btn" id="askHenryPathsBtn">
+                                Ask Henry for better paths
+                                <span>→</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 3.7. CAREER CHANGER REDIRECT (inline expandable) -->
+                    <div class="career-changer-redirect" id="careerChangerRedirect">
+                        <div class="career-changer-header" id="careerChangerHeader">
+                            <div class="career-changer-prompt">
+                                <span class="career-changer-icon">🎯</span>
+                                <div class="career-changer-message">
+                                    <div class="career-changer-title">You're not unqualified. You're early.</div>
+                                    <div class="career-changer-subtitle">This role sits ahead of where your current experience signals put you today. That's normal for career changers.</div>
+                                </div>
+                            </div>
+                            <button class="career-changer-toggle" id="careerChangerToggle">
+                                Explore paths
+                                <span class="toggle-arrow">↓</span>
+                            </button>
+                        </div>
+
+                        <div class="career-changer-content" id="careerChangerContent">
+                            <!-- Diagnosis -->
+                            <div class="career-changer-diagnosis">
+                                <div class="diagnosis-label">Primary Diagnosis</div>
+                                <div class="diagnosis-points" id="diagnosisPoints">
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Your transferable skills are strong</span>
+                                    </div>
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Your direct experience signal is still forming</span>
+                                    </div>
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Hiring managers screen heavily on recent, role-specific reps</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Three Paths -->
+                            <div class="career-changer-paths">
+                                <div class="paths-intro">Three strategic paths forward:</div>
+                                <div class="path-cards" id="pathCards">
+                                    <!-- Path 1: Down-Leveled Entry -->
+                                    <div class="path-card" data-path="1">
+                                        <div class="path-card-header">
+                                            <span class="path-number">1</span>
+                                            <span class="path-title">Down-Leveled Entry Role</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: get official reps fast</div>
+                                        <div class="path-description" id="path1Description">
+                                            Same function, lower level or narrower scope. Higher interview conversion probability.
+                                        </div>
+                                        <div class="path-example" id="path1Example">
+                                            You're aiming at mid-level roles. The market sees you as entry-to-early. Close that gap intentionally.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="1">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Path 2: Adjacent Role -->
+                                    <div class="path-card" data-path="2">
+                                        <div class="path-card-header">
+                                            <span class="path-number">2</span>
+                                            <span class="path-title">Adjacent Role with High Skill Overlap</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: convert without restarting</div>
+                                        <div class="path-description" id="path2Description">
+                                            Adjacent titles, similar problem space. Easier credibility transfer.
+                                        </div>
+                                        <div class="path-example" id="path2Example">
+                                            This is not a compromise. It's leverage.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="2">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Path 3: Bridge Role -->
+                                    <div class="path-card" data-path="3">
+                                        <div class="path-card-header">
+                                            <span class="path-number">3</span>
+                                            <span class="path-title">Bridge Role Inside Your Current Domain</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: avoid full reset</div>
+                                        <div class="path-description" id="path3Description">
+                                            Keeps your existing credibility, adds role-relevant signals. Often internal-mobility friendly.
+                                        </div>
+                                        <div class="path-example" id="path3Example">
+                                            This path is slower, but stickier.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="3">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Experience Building -->
+                            <div class="career-changer-experience">
+                                <div class="experience-label">How to Build Experience (Ranked by Signal Strength)</div>
+                                <div class="experience-priorities">
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">1</span>
+                                        <span>On-the-job scope expansion</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">2</span>
+                                        <span>Internships, fellowships, contract or temp roles</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">3</span>
+                                        <span>Internal transfers</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">4</span>
+                                        <span>Certifications or coursework (supporting, not leading)</span>
+                                    </div>
+                                </div>
+                                <div class="experience-note">
+                                    Courses help explain interest. Experience changes outcomes.
+                                </div>
+                            </div>
+
+                            <!-- What Not To Do -->
+                            <div class="career-changer-avoid">
+                                <div class="avoid-label">What Not To Do</div>
+                                <div class="avoid-points">
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Mass-apply to mid/senior roles hoping for luck</span>
+                                    </div>
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Over-inflate titles or scope on your resume</span>
+                                    </div>
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Hide the career change from interviewers</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CTA -->
+                            <div class="career-changer-cta">
+                                <button class="career-changer-ask-henry" id="careerChangerAskHenry">
+                                    <span>💬</span>
+                                    Ask Henry how to pursue this
+                                    <span>→</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 4. RED FLAGS (hidden by default) -->
                     <div class="section" id="redFlagsSection" style="display: none;">
                         <div class="section-title">Red Flags</div>
@@ -939,10 +1690,44 @@
             window.location.href = 'analyze.html';
         }
 
-        console.log('Results page data:', data);
-        console.log('🔍 DEBUG - fit_score:', data?.fit_score);
-        console.log('🔍 DEBUG - recommendation:', data?.recommendation);
-        console.log('🔍 DEBUG - data keys:', data ? Object.keys(data) : 'null');
+        // =====================================================================
+        // 🚨 DIAGNOSTIC LOGGING - PROVE WHAT PAYLOAD THE UI IS BINDING TO
+        // =====================================================================
+        console.log("🚨 FINAL API PAYLOAD", JSON.stringify(data, null, 2));
+        console.log("🔍 CRITICAL FIELDS CHECK:", {
+            has_final_recommendation: 'final_recommendation' in data,
+            final_recommendation_value: data.final_recommendation,
+            has_recommendation: 'recommendation' in data,
+            recommendation_value: data.recommendation,
+            has_fit_score: 'fit_score' in data,
+            fit_score_value: data.fit_score,
+            fit_score_type: typeof data.fit_score,
+            has_strengths: 'strengths' in data,
+            strengths_value: data.strengths,
+            strengths_is_array: Array.isArray(data.strengths),
+            strengths_length: Array.isArray(data.strengths) ? data.strengths.length : 'N/A',
+            has_your_move: 'your_move' in data,
+            your_move_value: data.your_move,
+            all_top_level_keys: Object.keys(data)
+        });
+        console.log("⏱️ DIAGNOSTIC TIMESTAMP:", new Date().toISOString());
+
+        // =====================================================================
+        // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
+        // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
+        // =====================================================================
+        const finalDecision = data.final_recommendation || data.recommendation || 'Apply';
+        const lockedDoNotApply = finalDecision === 'Do Not Apply';
+        const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
+        const strengths = Array.isArray(data.strengths) ? data.strengths : [];
+
+        // CONTRACT ASSERTION (dev-only debugging)
+        console.log('🔒 IMMUTABLE UI STATE:', {
+            finalDecision,
+            lockedDoNotApply,
+            fitScore,
+            strengthsCount: strengths.length
+        });
 
         // =====================================================================
         // VIEW TOGGLE LOGIC
@@ -982,39 +1767,11 @@
         }
 
         // =====================================================================
-        // HELPER: Infer fit score from recommendation if score is 0/null
+        // HELPER: Get fit score - REMOVED
+        // Now using immutable fitScore constant defined at top of script
         // =====================================================================
-        function inferFitScore(data) {
-            let score = data.fit_score;
-            
-            // If we have a valid score, use it
-            if (score && score > 0) {
-                return score;
-            }
-            
-            // Otherwise, infer from recommendation
-            let recommendation = '';
-            if (data.intelligence_layer?.apply_decision?.recommendation) {
-                recommendation = data.intelligence_layer.apply_decision.recommendation.toLowerCase();
-            } else if (data.intelligence_layer?.job_quality_score) {
-                recommendation = data.intelligence_layer.job_quality_score.toLowerCase();
-            }
-            
-            console.log('Inferring fit score from recommendation:', recommendation);
-            
-            if (recommendation.includes('skip') || recommendation.includes('do not')) {
-                return 35;
-            } else if (recommendation.includes('caution') || recommendation.includes('conditional')) {
-                return 58;
-            } else if (recommendation.includes('strongly')) {
-                return 82;
-            } else if (recommendation.includes('apply')) {
-                return 72;
-            }
-            
-            // Default fallback
-            return 50;
-        }
+        // fitScore is already defined above as:
+        // const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
 
         // =====================================================================
         // POPULATE: Role Summary (TRUNCATED TO 2 SENTENCES)
@@ -1041,11 +1798,12 @@
 
         // =====================================================================
         // POPULATE: Fit Score (both views)
+        // Uses immutable fitScore constant from top of script
         // =====================================================================
-        const fitScore = inferFitScore(data);
         const fitScoreEl = document.getElementById('fitScore');
         const fitScoreQuickEl = document.getElementById('fitScoreQuick');
-        
+
+        // ALWAYS render numeric score - never fall back to —%
         fitScoreEl.textContent = `${fitScore}%`;
         fitScoreQuickEl.textContent = `${fitScore}%`;
 
@@ -1246,33 +2004,115 @@
         
         if (redFlags && redFlags.length > 0) {
             const redFlagsList = document.getElementById('redFlags');
-            
+
             redFlags.forEach(flag => {
                 const li = document.createElement('li');
                 li.textContent = flag;
                 redFlagsList.appendChild(li);
             });
-            
+
             // Show the section
             document.getElementById('redFlagsSection').style.display = 'block';
         }
 
         // =====================================================================
+        // POPULATE: Market Signals (Reality Check System)
+        // Per REALITY_CHECK_SPEC.md: Market-truth interventions
+        // Market Bias and Market Climate signals are message-only overlays
+        // =====================================================================
+        const realityCheckData = data.reality_check;
+        if (realityCheckData && realityCheckData.display_checks && realityCheckData.display_checks.length > 0) {
+            const marketSignalsSection = document.getElementById('marketSignalsSection');
+            const marketSignalsContent = document.getElementById('marketSignalsContent');
+
+            // Clear existing content
+            marketSignalsContent.innerHTML = '';
+
+            // Render each Reality Check card (max 2 per spec)
+            realityCheckData.display_checks.forEach(check => {
+                const card = document.createElement('div');
+                card.className = `reality-check-card ${check.severity}`;
+
+                // Map signal class to user-friendly name
+                const signalClassNames = {
+                    'eligibility': 'Eligibility',
+                    'fit': 'Fit Signal',
+                    'credibility': 'Credibility',
+                    'risk': 'Risk Signal',
+                    'market_bias': 'Market Bias Signal',
+                    'market_climate': 'Market Climate Signal'
+                };
+
+                // Map severity to badge label
+                const severityLabels = {
+                    'blocker': 'Blocker',
+                    'warning': 'Warning',
+                    'coaching': 'Coaching',
+                    'informational': 'Info'
+                };
+
+                const signalName = signalClassNames[check.signal_class] || check.signal_class;
+                const severityLabel = severityLabels[check.severity] || check.severity;
+
+                let cardHTML = `
+                    <div class="reality-check-header">
+                        <span class="reality-check-badge ${check.severity}">${severityLabel}</span>
+                        <span class="reality-check-signal">${signalName}</span>
+                    </div>
+                    <div class="reality-check-message">${check.message}</div>
+                `;
+
+                // Add strategic alternatives if present
+                if (check.strategic_alternatives && check.strategic_alternatives.length > 0) {
+                    cardHTML += `
+                        <div class="reality-check-alternatives">
+                            <h4>Strategic Options</h4>
+                            <ul>
+                                ${check.strategic_alternatives.map(alt => `<li>${alt}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = cardHTML;
+                marketSignalsContent.appendChild(card);
+            });
+
+            // Show the section
+            marketSignalsSection.style.display = 'block';
+            console.log(`✅ Rendered ${realityCheckData.display_checks.length} Reality Check signals`);
+        }
+
+        // =====================================================================
         // POPULATE: Strengths
+        // FRONTEND CONTRACT: Uses immutable strengths array from top of script
+        // Never branch on truthiness. Only branch on array length for copy selection.
         // =====================================================================
         const strengthsList = document.getElementById('strengths');
-        let strengths = data.strengths || [];
-        
-        // Also check intelligence_layer.strategic_positioning.lead_with_strengths
-        if (strengths.length === 0 && data.intelligence_layer?.strategic_positioning?.lead_with_strengths) {
-            strengths = data.intelligence_layer.strategic_positioning.lead_with_strengths;
+        const strengthsSection = document.getElementById('strengthsSection');
+
+        // strengths is already defined at top as: Array.isArray(data.strengths) ? data.strengths : []
+        // Check fallback source if primary is empty
+        let strengthsToRender = strengths;
+        if (strengthsToRender.length === 0 && Array.isArray(data.intelligence_layer?.strategic_positioning?.lead_with_strengths)) {
+            strengthsToRender = data.intelligence_layer.strategic_positioning.lead_with_strengths;
         }
-        
-        strengths.slice(0, 4).forEach(strength => {
+
+        // Branch on length only, not truthiness
+        if (strengthsToRender.length > 0) {
+            strengthsToRender.slice(0, 4).forEach(strength => {
+                const li = document.createElement('li');
+                li.textContent = strength;
+                strengthsList.appendChild(li);
+            });
+        } else {
+            // Empty array is valid state - show fallback copy
             const li = document.createElement('li');
-            li.textContent = strength;
+            li.textContent = 'Detailed strength analysis not available for this role match.';
+            li.style.color = 'var(--color-text-secondary)';
+            li.style.fontStyle = 'italic';
             strengthsList.appendChild(li);
-        });
+        }
 
         // =====================================================================
         // POPULATE: Gaps (with mitigation advice if available)
@@ -1386,24 +2226,15 @@
 
         // =====================================================================
         // POPULATE: Recommendation with Candidate Name
+        // FRONTEND CONTRACT: Uses immutable finalDecision from top of script
+        // No advisory reconciliation. No recommendation_ceiling checks.
         // =====================================================================
         const recommendationEl = document.getElementById('recommendation');
-        let recommendationLabel = 'Apply';
+        const recommendationLabel = finalDecision; // Immutable - already derived at top
         let recommendationText = '';
 
         // Get candidate name
         const candidateName = data._candidate_name || '';
-
-        // CRITICAL: Use top-level recommendation field for 6-tier labels
-        // DO NOT use intelligence_layer.apply_decision.recommendation (has old "Skip" mapping)
-        if (data.recommendation) {
-            recommendationLabel = data.recommendation;
-        } else if (data.intelligence_layer?.apply_decision?.recommendation) {
-            // Fallback to intelligence_layer only if top-level not available
-            recommendationLabel = data.intelligence_layer.apply_decision.recommendation;
-        } else if (data.intelligence_layer?.job_quality_score) {
-            recommendationLabel = data.intelligence_layer.job_quality_score;
-        }
 
         // Get recommendation text from intelligence_layer or recommendation_rationale
         if (data.recommendation_rationale) {
@@ -1465,11 +2296,10 @@
 
         // =====================================================================
         // UI CONTRACT: DISABLE APPLY FOR INELIGIBLE ROLES
-        // Per Required Fixes Spec: If recommendation == "Do Not Apply", the Apply
-        // button must NOT be clickable. Either hide or show disabled state.
+        // FRONTEND CONTRACT: Use immutable lockedDoNotApply from top of script
+        // No lowercase checks. No score checks. No advisory checks.
         // =====================================================================
-        const isDoNotApply = labelLower.includes('do not apply') || labelLower === 'do not apply';
-        const applyDisabled = data.apply_disabled === true || isDoNotApply;
+        const applyDisabled = lockedDoNotApply; // Single source of truth
 
         if (applyDisabled) {
             console.log('🚫 APPLY DISABLED: Recommendation is Do Not Apply');
@@ -1527,6 +2357,18 @@
             }
         }
 
+        // =====================================================================
+        // CONTRACT ASSERTION (dev-only) - Detect violations early
+        // =====================================================================
+        const applyBtn = document.getElementById('getPackageBtn');
+        const applyBtnQuick = document.getElementById('getPackageBtnQuick');
+        if (lockedDoNotApply && applyBtn && !applyBtn.disabled) {
+            console.error('🚨 CONTRACT VIOLATION: Apply enabled on Do Not Apply');
+        }
+        if (lockedDoNotApply && applyBtnQuick && !applyBtnQuick.disabled) {
+            console.error('🚨 CONTRACT VIOLATION: Apply Quick enabled on Do Not Apply');
+        }
+
         /**
          * SINGLE SOURCE OF TRUTH: Accountability Record
          * Per QA Spec: If candidate clicks "Pass" on "Do Not Apply" screen, log it
@@ -1565,23 +2407,29 @@
 
         // =====================================================================
         // POPULATE: Quick View "Your Move" section
+        // FRONTEND CONTRACT FIX: Render fallback copy if Your Move is missing
         // SANITY CHECK: Do Not Apply must not show optimistic messaging
         // =====================================================================
         const quickMoveText = document.getElementById('quickMoveText');
         // realityCheckData already declared above
 
+        // Get strategic_action if available
+        const strategicAction = realityCheckData?.strategic_action ||
+                                data.intelligence_layer?.strategic_positioning?.recommended_action ||
+                                data.your_move || '';
+
         // SANITY CHECK: If recommendation is Do Not Apply, override any optimistic messaging
         if (applyDisabled) {
             // Use backend strategic_action if available, otherwise use direct language
-            if (realityCheckData && realityCheckData.strategic_action) {
-                quickMoveText.textContent = realityCheckData.strategic_action;
+            if (strategicAction) {
+                quickMoveText.textContent = strategicAction;
             } else {
-                quickMoveText.textContent = 'This role is not a fit. Review the alternative actions below and focus on roles where you are competitive.';
+                quickMoveText.textContent = 'This role is not a fit. Review the analysis above and focus on roles where you are competitive.';
             }
-        } else if (realityCheckData && realityCheckData.strategic_action) {
-            quickMoveText.textContent = realityCheckData.strategic_action;
+        } else if (strategicAction) {
+            quickMoveText.textContent = strategicAction;
         } else {
-            // Generate a default quick move based on fit score
+            // Fallback: Generate a default quick move based on fit score
             if (fitScore >= 70) {
                 quickMoveText.textContent = 'Apply within 24 hours and find the hiring manager on LinkedIn. Your fit score gives you an edge, but speed matters in this market.';
             } else if (fitScore >= 50) {
@@ -1729,6 +2577,328 @@
                 document.getElementById('passModal').classList.remove('show');
             }
         });
+
+        // =====================================================================
+        // ASK HENRY FOR BETTER PATHS - Routes to Hey Henry chat for low fit scores
+        // Trigger: fit_score < 60 OR recommendation in ['Conditional Apply', 'Do Not Apply']
+        // Does NOT change scoring or recommendations - purely conversational guidance
+        // =====================================================================
+        (function initAskHenryPaths() {
+            const askHenryCta = document.getElementById('askHenryPathsCta');
+            const askHenryBtn = document.getElementById('askHenryPathsBtn');
+
+            if (!askHenryCta || !askHenryBtn) return;
+
+            // Determine if we should show the "Ask Henry for better paths" CTA
+            const shouldShow = fitScore < 60 ||
+                recommendationLabel.toLowerCase().includes('conditional') ||
+                recommendationLabel.toLowerCase().includes('do not apply') ||
+                recommendationLabel.toLowerCase().includes('caution');
+
+            if (!shouldShow) {
+                askHenryCta.style.display = 'none';
+                return;
+            }
+
+            // Show the CTA
+            askHenryCta.classList.add('visible');
+
+            // Track view event
+            if (typeof gtag === 'function') {
+                gtag('event', 'ask_henry_paths_shown', {
+                    fit_score: fitScore,
+                    recommendation: recommendationLabel
+                });
+            }
+
+            // Handle "Ask Henry for better paths" button click
+            askHenryBtn.addEventListener('click', function() {
+                // Build context for Hey Henry conversation
+                const redirectContext = {
+                    type: 'better_paths_request',
+                    sourceJob: {
+                        company: data._company_name || data._company || '',
+                        role: data.role_title || data._role || '',
+                        fitScore: fitScore,
+                        recommendation: recommendationLabel
+                    },
+                    candidateStrengths: data.strengths || [],
+                    candidateGaps: (data.gaps || []).slice(0, 3).map(g =>
+                        typeof g === 'string' ? g : (g.description || g.gap || '')
+                    ),
+                    candidateName: candidateFirstName,
+                    // Include any backend-suggested alternatives as hints (not shown to user)
+                    alternativeHints: data.alternative_actions ||
+                                      data.intelligence_layer?.alternative_actions ||
+                                      data.strategic_alternatives || []
+                };
+
+                sessionStorage.setItem('henryRedirectContext', JSON.stringify(redirectContext));
+
+                // Build the initial prompt for Henry
+                const roleTitle = data.role_title || data._role || 'this role';
+                const companyName = data._company_name || data._company || '';
+                const initialPrompt = companyName
+                    ? `I just analyzed ${roleTitle} at ${companyName} and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`
+                    : `I just analyzed a ${roleTitle} role and it's not a great fit (${fitScore}%). Based on my background, what roles would be better paths for me?`;
+
+                // Open Hey Henry with the conversation starter
+                if (typeof window.openHeyHenry === 'function') {
+                    window.openHeyHenry(initialPrompt);
+                } else if (typeof window.HeyHenry !== 'undefined' && window.HeyHenry.open) {
+                    window.HeyHenry.open(initialPrompt);
+                } else {
+                    // Fallback: navigate to hey-henry page with context
+                    window.location.href = 'hey-henry.html?context=better_paths';
+                }
+
+                // Track event
+                if (typeof gtag === 'function') {
+                    gtag('event', 'ask_henry_for_better_paths', {
+                        fit_score: fitScore,
+                        recommendation: recommendationLabel
+                    });
+                }
+            });
+        })();
+
+        // =====================================================================
+        // CAREER CHANGER REDIRECT - Inline expandable orientation
+        // Trigger: fit < 60% AND gap type = experience/tenure/domain (NOT eligibility)
+        // This is orientation, NOT coaching. Defers personalization to Hey Henry.
+        // Per spec: Does NOT modify scoring, eligibility, or recommendations.
+        // =====================================================================
+        (function initCareerChangerRedirect() {
+            const redirect = document.getElementById('careerChangerRedirect');
+            const header = document.getElementById('careerChangerHeader');
+            const toggle = document.getElementById('careerChangerToggle');
+            const content = document.getElementById('careerChangerContent');
+            const askHenryBtn = document.getElementById('careerChangerAskHenry');
+
+            if (!redirect || !header || !toggle || !content) {
+                console.log('Career Changer Redirect: Elements not found');
+                return;
+            }
+
+            // ===== TRIGGER CONDITION =====
+            // Fit < 60% AND gap is experience-based (NOT eligibility blocker)
+            function shouldShowRedirect() {
+                // Check fit score threshold
+                if (fitScore >= 60) {
+                    console.log('Career Changer Redirect: Fit score >= 60%, not showing');
+                    return false;
+                }
+
+                // Check if there's an eligibility blocker - if so, don't show
+                // (Eligibility failures are terminal, not "early" career changers)
+                const realityChecks = data.reality_check?.display_checks || [];
+                const hasEligibilityBlocker = realityChecks.some(check =>
+                    check.signal_class === 'eligibility' && check.severity === 'blocker'
+                );
+
+                if (hasEligibilityBlocker) {
+                    console.log('Career Changer Redirect: Eligibility blocker detected, not showing');
+                    return false;
+                }
+
+                // Check if recommendation is "Do Not Apply" due to eligibility
+                // (vs "Conditional Apply" which indicates experience gap)
+                if (recommendationLabel.toLowerCase() === 'do not apply') {
+                    // Check if it's truly an eligibility failure or just a stretch
+                    // Eligibility failures typically have hard blockers
+                    const hasHardBlocker = realityChecks.some(check =>
+                        check.severity === 'blocker'
+                    );
+                    if (hasHardBlocker) {
+                        console.log('Career Changer Redirect: Hard blocker present, not showing');
+                        return false;
+                    }
+                }
+
+                // Check for experience/tenure/domain gaps (fit signals, not eligibility)
+                const hasFitGap = realityChecks.some(check =>
+                    ['fit', 'credibility'].includes(check.signal_class)
+                );
+
+                // Also check gaps array for experience-related gaps
+                const gapsArray = data.gaps || [];
+                const hasExperienceGap = gapsArray.some(gap => {
+                    const gapText = typeof gap === 'string' ? gap.toLowerCase() :
+                        (gap.description || gap.gap || '').toLowerCase();
+                    return gapText.includes('experience') ||
+                           gapText.includes('tenure') ||
+                           gapText.includes('years') ||
+                           gapText.includes('domain') ||
+                           gapText.includes('level') ||
+                           gapText.includes('seniority') ||
+                           gapText.includes('scope') ||
+                           gapText.includes('scale');
+                });
+
+                // Show if we have fit/experience gaps OR low fit without blockers
+                const shouldShow = hasFitGap || hasExperienceGap || fitScore < 60;
+                console.log(`Career Changer Redirect: shouldShow=${shouldShow}, hasFitGap=${hasFitGap}, hasExperienceGap=${hasExperienceGap}`);
+                return shouldShow;
+            }
+
+            if (!shouldShowRedirect()) {
+                redirect.style.display = 'none';
+                return;
+            }
+
+            // Show the redirect section
+            redirect.classList.add('visible');
+            console.log('Career Changer Redirect: Showing inline orientation');
+
+            // Track view
+            if (typeof gtag === 'function') {
+                gtag('event', 'career_changer_redirect_shown', {
+                    fit_score: fitScore,
+                    recommendation: recommendationLabel
+                });
+            }
+
+            // ===== TOGGLE EXPAND/COLLAPSE =====
+            let isExpanded = false;
+
+            header.addEventListener('click', function(e) {
+                // Don't toggle if clicking on the toggle button itself (it will handle it)
+                if (e.target === toggle) return;
+                toggleExpand();
+            });
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleExpand();
+            });
+
+            function toggleExpand() {
+                isExpanded = !isExpanded;
+                content.classList.toggle('expanded', isExpanded);
+                toggle.textContent = isExpanded ? 'Collapse' : 'Explore paths';
+                toggle.classList.toggle('expanded', isExpanded);
+
+                if (isExpanded && typeof gtag === 'function') {
+                    gtag('event', 'career_changer_redirect_expanded', {
+                        fit_score: fitScore
+                    });
+                }
+            }
+
+            // ===== POPULATE DYNAMIC CONTENT =====
+            // Populate the three paths with role-specific context
+            const roleTitle = data.role_title || data._role || 'this role';
+            const companyName = data._company_name || data._company || '';
+            const roleContext = companyName ? `${roleTitle} at ${companyName}` : roleTitle;
+
+            // Update path descriptions with context (optional enhancement)
+            // The HTML has generic descriptions that work for all roles
+
+            // ===== SAVE PATH FUNCTIONALITY =====
+            const pathCards = document.querySelectorAll('.career-path-card');
+            pathCards.forEach(card => {
+                const saveBtn = card.querySelector('.path-save-btn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const pathName = card.querySelector('.path-title')?.textContent || 'Path';
+
+                        // Save to localStorage
+                        const savedPaths = JSON.parse(localStorage.getItem('savedCareerPaths') || '[]');
+                        const pathEntry = {
+                            path: pathName,
+                            sourceRole: roleContext,
+                            fitScore: fitScore,
+                            savedAt: new Date().toISOString()
+                        };
+
+                        // Avoid duplicates
+                        const exists = savedPaths.some(p =>
+                            p.path === pathName && p.sourceRole === roleContext
+                        );
+                        if (!exists) {
+                            savedPaths.push(pathEntry);
+                            localStorage.setItem('savedCareerPaths', JSON.stringify(savedPaths));
+                        }
+
+                        // Update button state
+                        saveBtn.textContent = 'Saved ✓';
+                        saveBtn.disabled = true;
+                        saveBtn.classList.add('saved');
+
+                        // Track
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'career_path_saved', {
+                                path: pathName,
+                                fit_score: fitScore
+                            });
+                        }
+                    });
+                }
+            });
+
+            // ===== ASK HENRY INTEGRATION =====
+            if (askHenryBtn) {
+                askHenryBtn.addEventListener('click', function() {
+                    // Build comprehensive context for Hey Henry
+                    const redirectContext = {
+                        type: 'career_changer_redirect',
+                        sourceJob: {
+                            company: companyName,
+                            role: roleTitle,
+                            fitScore: fitScore,
+                            recommendation: recommendationLabel
+                        },
+                        candidateStrengths: data.strengths || [],
+                        candidateGaps: (data.gaps || []).slice(0, 3).map(g =>
+                            typeof g === 'string' ? g : (g.description || g.gap || '')
+                        ),
+                        candidateName: candidateFirstName,
+                        threePaths: {
+                            downLevel: 'Down-leveled entry point in target function',
+                            adjacent: 'Adjacent role with overlapping skill requirements',
+                            bridge: 'Bridge role in current domain building target skills'
+                        },
+                        experiencePriorities: [
+                            'Core function exposure (even unpaid)',
+                            'Scope complexity proof (launch experience, scale metrics)',
+                            'Domain-specific vocabulary and context',
+                            'Cross-functional collaboration evidence'
+                        ],
+                        // Include any gap mitigation advice from backend
+                        mitigationAdvice: data.intelligence_layer?.strategic_positioning?.gaps_and_mitigation || [],
+                        alternativeHints: data.alternative_actions ||
+                                          data.intelligence_layer?.alternative_actions ||
+                                          data.strategic_alternatives || []
+                    };
+
+                    sessionStorage.setItem('henryRedirectContext', JSON.stringify(redirectContext));
+
+                    // Build conversation starter prompt
+                    const initialPrompt = companyName
+                        ? `I just analyzed the ${roleTitle} role at ${companyName} and realized I'm early for it (${fitScore}% fit). Can you help me figure out which path makes the most sense for me - a down-leveled entry point, an adjacent role, or a bridge role in my current domain?`
+                        : `I just analyzed a ${roleTitle} role and realized I'm early for it (${fitScore}% fit). Can you help me figure out which path makes the most sense - a down-leveled entry point, an adjacent role, or a bridge role?`;
+
+                    // Open Hey Henry
+                    if (typeof window.openHeyHenry === 'function') {
+                        window.openHeyHenry(initialPrompt);
+                    } else if (typeof window.HeyHenry !== 'undefined' && window.HeyHenry.open) {
+                        window.HeyHenry.open(initialPrompt);
+                    } else {
+                        // Fallback: navigate to hey-henry page with context
+                        window.location.href = 'hey-henry.html?context=career_changer';
+                    }
+
+                    // Track
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'career_changer_ask_henry', {
+                            fit_score: fitScore,
+                            recommendation: recommendationLabel
+                        });
+                    }
+                });
+            }
+        })();
     </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
