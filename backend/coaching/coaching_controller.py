@@ -21,7 +21,9 @@ def generate_coaching_output(
     job_fit_recommendation: str,
     candidate_resume: Dict[str, Any],
     job_requirements: Dict[str, Any],
-    user_proceeded_anyway: bool = False
+    user_proceeded_anyway: bool = False,
+    strengths: Optional[List[str]] = None,
+    role_title: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Enforces Selective Coaching Moments Spec v1.0.
@@ -32,6 +34,8 @@ def generate_coaching_output(
         - candidate_resume: dict
         - job_requirements: dict
         - user_proceeded_anyway: bool
+        - strengths: list of strength strings from response (for role-specific binding)
+        - role_title: job title (for role context)
 
     Output:
         - coaching_output: dict {
@@ -72,13 +76,16 @@ def generate_coaching_output(
     # Generate "Your Move" (ALWAYS generate, even with silence)
     # CORRECTED: Silence suppresses gaps, not "Your Move"
     # Pass full calibrated_gaps for dominant_narrative and strong_signals access
+    # NEW: Also pass strengths and role_title for role-specific binding
     your_move = generate_your_move(
         primary_gap=calibrated_gaps.get('primary_gap'),
         job_fit_recommendation=job_fit_recommendation,
         redirect_reason=calibrated_gaps.get('redirect_reason'),
         candidate_resume=candidate_resume,
         job_requirements=job_requirements,
-        calibrated_gaps=calibrated_gaps  # For dominant_narrative
+        calibrated_gaps=calibrated_gaps,
+        strengths=strengths,
+        role_title=role_title
     )
 
     # Determine "Gaps to Address" visibility
@@ -124,23 +131,27 @@ def generate_your_move(
     redirect_reason: Optional[str],
     candidate_resume: Dict[str, Any],
     job_requirements: Dict[str, Any],
-    calibrated_gaps: Optional[Dict[str, Any]] = None
+    calibrated_gaps: Optional[Dict[str, Any]] = None,
+    strengths: Optional[List[str]] = None,
+    role_title: Optional[str] = None
 ) -> str:
     """
     Generates "Your Move" section per Selective Coaching Spec.
 
-    Rules:
+    HARD REQUIREMENTS:
     - Max 3 sentences
-    - One action only: Apply, Redirect, or Position
-    - No mixed signals
-    - If terminal gap: no positioning advice, direct redirect only
-    - NO vague language: "aligns well", "relevant experience", "some gaps"
-    - Strong Apply REQUIRES concrete proof point from resume
+    - Must reference role-specific capabilities (not generic leadership)
+    - Structure: Positioning + Action + Timing/Channel
 
-    Structure:
-    [Job Fit Recommendation]: [Specific proof point].
-    [What to do]: [Specific action].
-    [Expectation]: [Reality check].
+    BINDING RULES by recommendation tier:
+    - Apply/Strong Apply: Reference role-specific strengths, immediate action, concrete tactic
+    - Conditional Apply: Emphasize positioning + gap mitigation
+    - Do Not Apply: Redirect or upskilling
+
+    BANNED (unless tied to role evidence):
+    - "Position as a proven leader"
+    - "Lead with outcomes"
+    - "Apply soon"
     """
     if redirect_reason:
         # Terminal gap - redirect only, no positioning
@@ -225,50 +236,70 @@ def generate_your_move(
                    f"Lead with directly relevant outcomes; cut tangential experience. "
                    f"Apply within 24 hours and reach out to the hiring manager directly.")
 
-    elif job_fit_recommendation == "Strong Apply":
-        # RECRUITER REALITY: Strong Apply MUST have a concrete proof point
-        # No hedging allowed. Reference specific accomplishment.
+    elif job_fit_recommendation in ["Strong Apply", "Apply"]:
+        # ======================================================================
+        # APPLY / STRONG APPLY: Role-Specific, Actionable, Grounded
+        #
+        # Structure (HARD REQUIREMENT):
+        # 1. POSITIONING: Why you fit THIS role (not leadership in general)
+        # 2. ACTION: What to emphasize in resume/outreach
+        # 3. TIMING/CHANNEL: Apply now, reach out directly, or both
+        #
+        # MUST reference role-specific capabilities from strengths
+        # ======================================================================
 
-        # First try dominant_narrative from calibration (most specific)
-        dominant_narrative = None
-        if calibrated_gaps:
-            dominant_narrative = calibrated_gaps.get('dominant_narrative')
+        # Extract role-specific signals from strengths
+        role_signals = _extract_role_signals(strengths or [], role_title or '', job_requirements)
 
-        if dominant_narrative:
-            # Use the pre-computed dominant narrative
-            return f"{job_fit_recommendation}: You {dominant_narrative}. Lead with this in your application and apply within 24 hours."
+        # Get dominant narrative for proof point
+        dominant_narrative = calibrated_gaps.get('dominant_narrative') if calibrated_gaps else None
 
-        # Fall back to extract_primary_strength with calibrated_gaps
-        key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
+        # Build role-specific "Your Move"
+        if role_signals:
+            # We have role-specific signals - use them
+            signal_text = role_signals[0]  # Top signal
+            additional_signal = role_signals[1] if len(role_signals) > 1 else None
 
-        if key_strength:
-            # BANNED: "aligns strongly", "aligns well", "relevant experience"
-            # USE: Concrete statement about their accomplishment
-            return f"{job_fit_recommendation}: Your {key_strength} is exactly what this role needs. Apply within 24 hours and reference this directly in your outreach."
+            if additional_signal:
+                positioning = f"Your {signal_text} and {additional_signal} directly match this role's core requirements."
+            else:
+                positioning = f"Your {signal_text} directly matches this role's core requirements."
+
+            action = f"Emphasize this experience prominently in your resume and outreach."
+            timing = "Apply now and prioritize a direct message to the hiring manager—ATS volume is high."
+
+            return f"{positioning} {action} {timing}"
+
+        elif dominant_narrative:
+            # Fall back to dominant narrative but tie to role
+            role_context = _get_role_context(role_title or '', job_requirements)
+            if role_context:
+                return (f"You {dominant_narrative}—this aligns with {role_context}. "
+                       f"Lead with this proof point in your application. "
+                       f"Apply now and reach out directly to bypass ATS filtering.")
+            else:
+                return (f"You {dominant_narrative}. "
+                       f"Lead with this accomplishment in your application and outreach. "
+                       f"Apply now—strong matches move fast.")
+
         else:
-            # Even without specific strength, don't use weak language
-            return f"{job_fit_recommendation}: You're competitive for this role. Apply within 24 hours and lead with your highest-impact accomplishment."
-
-    elif job_fit_recommendation == "Apply":
-        # Good match - strategic guidance with proof points
-        # First try dominant_narrative (verb phrase like "drove $8M revenue")
-        dominant_narrative = None
-        if calibrated_gaps:
-            dominant_narrative = calibrated_gaps.get('dominant_narrative')
-
-        if dominant_narrative:
-            # Use "You" + verb phrase format
-            return f"{job_fit_recommendation}: You {dominant_narrative}. Lead with this accomplishment and apply soon."
-
-        # Fall back to key_strength (noun phrase like "track record of building teams")
-        key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
-
-        if key_strength:
-            # Use "Your" + noun phrase format
-            return f"{job_fit_recommendation}: Your {key_strength} positions you well. Lead with this accomplishment and apply soon."
-        else:
-            # Fallback without weak phrases
-            return f"{job_fit_recommendation}: You're a solid match. Lead with your highest-impact accomplishment and apply soon."
+            # Last resort - extract from resume text
+            key_strength = extract_primary_strength(candidate_resume, job_requirements, calibrated_gaps)
+            if key_strength:
+                return (f"Your {key_strength} positions you competitively. "
+                       f"Emphasize this directly in your resume header and outreach. "
+                       f"Apply now and message the hiring manager on LinkedIn.")
+            else:
+                # Absolute fallback - still role-aware
+                role_context = _get_role_context(role_title or '', job_requirements)
+                if role_context:
+                    return (f"You're a competitive match for {role_context}. "
+                           f"Lead with your most relevant accomplishments. "
+                           f"Apply now and reach out directly to the hiring manager.")
+                else:
+                    return (f"You're a competitive match. "
+                           f"Lead with your highest-impact, most relevant accomplishment. "
+                           f"Apply now and message the hiring manager directly.")
 
     else:
         # Fallback - should rarely hit
@@ -528,3 +559,145 @@ def _build_resume_text_for_strength(candidate_resume: Dict[str, Any]) -> str:
                     parts.append(bullet.get('text', ''))
 
     return ' '.join(filter(None, parts))
+
+
+def _extract_role_signals(strengths: List[str], role_title: str, job_requirements: Dict[str, Any]) -> List[str]:
+    """
+    Extract role-specific signals from strengths list.
+
+    Looks for concrete capabilities that match the role:
+    - Technical: Kubernetes, SRE, distributed systems, platform, infrastructure
+    - Domain: ads, consumer, enterprise, fintech, healthcare
+    - Scale: API volume, user counts, team size
+
+    Returns: List of role-specific signal phrases (max 2), or empty if none found.
+    """
+    if not strengths:
+        return []
+
+    role_lower = (role_title or '').lower()
+    domain = (job_requirements.get('domain', '') or '').lower()
+
+    # Define role-specific keywords to look for
+    role_keywords = {
+        'technical': ['kubernetes', 'k8s', 'sre', 'distributed', 'platform', 'infrastructure',
+                     'reliability', 'scaling', 'api', 'backend', 'microservices', 'cloud',
+                     'aws', 'gcp', 'azure', 'docker', 'container', 'openshift', 'rosa'],
+        'product': ['product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
+                   'a/b test', 'experimentation', 'discovery', 'launch'],
+        'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
+                'warehouse', 'etl', 'sql', 'python'],
+        'leadership': ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
+                      'managed', 'led', 'cross-functional'],
+        'scale': ['million', 'M users', 'M requests', 'api requests', 'traffic',
+                 'uptime', '99.', 'latency', 'throughput']
+    }
+
+    # Detect what type of role this is
+    role_type = 'general'
+    if any(k in role_lower for k in ['sre', 'reliability', 'platform', 'infrastructure', 'devops', 'cloud']):
+        role_type = 'technical'
+    elif any(k in role_lower for k in ['product', 'pm', 'growth']):
+        role_type = 'product'
+    elif any(k in role_lower for k in ['data', 'analytics', 'ml', 'machine learning']):
+        role_type = 'data'
+
+    signals = []
+
+    for strength in strengths:
+        if not isinstance(strength, str):
+            continue
+
+        strength_lower = strength.lower()
+
+        # Check for role-type specific keywords
+        keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', []) + role_keywords.get('leadership', [])
+
+        for keyword in keywords_to_check:
+            if keyword in strength_lower:
+                # Extract a clean signal phrase
+                signal = _clean_signal_phrase(strength, keyword)
+                if signal and signal not in signals:
+                    signals.append(signal)
+                    break  # Only one signal per strength
+
+        if len(signals) >= 2:
+            break
+
+    return signals
+
+
+def _clean_signal_phrase(strength: str, matched_keyword: str) -> str:
+    """
+    Clean up a strength string into a concise signal phrase.
+
+    E.g., "Engineering management experience with distributed systems at scale (150M API requests/day)"
+    → "distributed systems experience at scale"
+    """
+    strength_lower = strength.lower()
+
+    # Try to extract the most relevant part
+    # Look for patterns like "X experience with Y" or "Y expertise"
+    patterns = [
+        (r'(\w+(?:\s+\w+)?)\s+experience\s+(?:with\s+)?([^(]+)', r'\2 experience'),
+        (r'(\w+)\s+expertise\s+(?:with\s+|in\s+)?([^(]+)', r'\2 expertise'),
+        (r'strong\s+(\w+(?:\s+\w+)?)\s+background', r'\1 background'),
+        (r'proven\s+(?:track record\s+)?(?:in\s+|of\s+)?([^(]+)', r'\1'),
+    ]
+
+    import re
+    for pattern, replacement in patterns:
+        match = re.search(pattern, strength_lower)
+        if match:
+            result = match.group(0)
+            # Clean up parenthetical details but keep key metrics
+            result = re.sub(r'\([^)]*\)', '', result).strip()
+            # Capitalize first letter
+            if result:
+                return result[0].upper() + result[1:] if len(result) > 1 else result.upper()
+
+    # If no pattern matched, use a simplified version
+    # Remove parenthetical content and clean up
+    cleaned = re.sub(r'\([^)]*\)', '', strength).strip()
+    # Take first 60 chars max
+    if len(cleaned) > 60:
+        cleaned = cleaned[:57] + '...'
+
+    return cleaned
+
+
+def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
+    """
+    Get a concise role context string for use in "Your Move".
+
+    E.g., "Red Hat's ROSA service requirements" or "this platform engineering role"
+    """
+    role_lower = (role_title or '').lower()
+    domain = (job_requirements.get('domain', '') or '').lower()
+    company = job_requirements.get('company', '')
+
+    # Try to build a specific context
+    if 'sre' in role_lower or 'reliability' in role_lower:
+        if company:
+            return f"{company}'s reliability engineering needs"
+        return "this SRE role's requirements"
+
+    if 'platform' in role_lower or 'infrastructure' in role_lower:
+        if company:
+            return f"{company}'s platform engineering needs"
+        return "this platform role's requirements"
+
+    if 'kubernetes' in domain or 'k8s' in domain or 'openshift' in domain:
+        if company:
+            return f"{company}'s Kubernetes/container infrastructure"
+        return "the container orchestration requirements"
+
+    if 'product' in role_lower:
+        if company:
+            return f"{company}'s product needs"
+        return "this product role"
+
+    if company:
+        return f"{company}'s team needs"
+
+    return None  # No specific context available

@@ -6207,13 +6207,25 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 'domain': response_data.get('target_domain', '') or response_data.get('intelligence_layer', {}).get('target_domain', ''),
             }
 
-            # Generate coaching output
+            # Extract strengths for role-specific "Your Move" binding
+            # Strengths can be strings or dicts with 'description' key
+            raw_strengths = response_data.get('strengths', [])
+            strengths_list = []
+            for s in raw_strengths:
+                if isinstance(s, str):
+                    strengths_list.append(s)
+                elif isinstance(s, dict):
+                    strengths_list.append(s.get('description', s.get('strength', '')))
+
+            # Generate coaching output with role-specific binding
             coaching_output = generate_coaching_output(
                 calibrated_gaps=calibrated_gaps,
                 job_fit_recommendation=normalized_recommendation,
                 candidate_resume=candidate_resume,
                 job_requirements=job_requirements,
-                user_proceeded_anyway=False  # TODO: Wire this from request
+                user_proceeded_anyway=False,  # TODO: Wire this from request
+                strengths=strengths_list,
+                role_title=response_data.get('role_title', '')
             )
 
             # Store coaching output in response
