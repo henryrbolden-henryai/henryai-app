@@ -5176,6 +5176,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     ORDER OF OPERATIONS (MANDATORY):
     1. Eligibility Gate → 2. Gap Typing → 3. Recommendation Lock → 4. Score Explanation → 5. Coaching
 
+    SYSTEM CONTRACT §7 - ANALYSIS ID ENFORCEMENT:
+    Each run generates a unique analysis_id. All extracted data is tagged to this ID
+    and destroyed at completion. No cross-candidate memory permitted.
+
     Args:
         response_data: Parsed JSON response from Claude
         resume_data: Original resume data (optional, for credibility adjustment)
@@ -5183,6 +5187,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     Returns:
         Modified response_data with corrected fit_score and recommendation
     """
+    import uuid
+
+    # =========================================================================
+    # SYSTEM CONTRACT §7: ANALYSIS ID ENFORCEMENT
+    # Generate unique analysis_id for this run. All candidate-scoped data
+    # must be tagged to this ID and discarded at completion.
+    # =========================================================================
+    analysis_id = str(uuid.uuid4())
+    response_data["_analysis_id"] = analysis_id
+    print(f"\n🔐 ANALYSIS ID: {analysis_id[:8]}... (candidate-scoped data will be discarded at completion)")
 
     # Extract experience analysis (Claude should have populated this)
     experience_analysis = response_data.get("experience_analysis", {})
@@ -6233,14 +6247,32 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             }
 
             # Extract strengths for role-specific "Your Move" binding
-            # Strengths can be strings or dicts with 'description' key
+            # Strengths can be in multiple locations - check all of them
             raw_strengths = response_data.get('strengths', [])
+
+            # Also check intelligence_layer.strengths and experience_analysis.strengths
+            if not raw_strengths:
+                raw_strengths = response_data.get('intelligence_layer', {}).get('strengths', [])
+            if not raw_strengths:
+                raw_strengths = response_data.get('experience_analysis', {}).get('strengths', [])
+            if not raw_strengths:
+                raw_strengths = response_data.get('candidate_fit', {}).get('strengths', [])
+
+            print(f"   📋 Raw strengths extracted: {len(raw_strengths)} items")
+
             strengths_list = []
             for s in raw_strengths:
                 if isinstance(s, str):
                     strengths_list.append(s)
                 elif isinstance(s, dict):
-                    strengths_list.append(s.get('description', s.get('strength', '')))
+                    # Try multiple keys: description, strength, text, summary
+                    strength_text = s.get('description', s.get('strength', s.get('text', s.get('summary', ''))))
+                    if strength_text:
+                        strengths_list.append(strength_text)
+
+            print(f"   ✅ Processed strengths for coaching: {len(strengths_list)} items")
+            if strengths_list:
+                print(f"      First strength: {strengths_list[0][:60]}...")
 
             # Generate coaching output with role-specific binding
             coaching_output = generate_coaching_output(

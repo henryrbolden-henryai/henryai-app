@@ -20,11 +20,16 @@
       "Bash(npx vercel --prod)",
       "Bash(git commit:*)",
       "Bash(npx vercel --prod --yes)",
-      "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(python -m pytest:*)",
-      "Bash(python3 -m pytest:*)",
-      "Bash(git stash:*)"
+      "Bash(wc:*)",
+      "Bash(git checkout:*)",
+      "Bash(that you built and scaled a team of 12... Apply within 24 hours with a)",
+      "Bash(targeted note positioning yourself as a platform-first leader.\"\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git pull:*)",
+      "Bash(python3:*)",
+      "Bash(grep:*)",
+      "Bash(npx vercel:*)",
+      "Bash(evidence\" when falling back\n   - Only elevate signals that exist in BOTH JD and candidate resume\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

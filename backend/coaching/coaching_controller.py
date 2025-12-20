@@ -73,17 +73,91 @@ def generate_coaching_output(
         print("=" * 80 + "\n")
         return result
 
+    # =========================================================================
+    # UI CONTRACT: Single Source of Truth for Presentation State
+    #
+    # This flag determines what Your Move MAY reference.
+    # Computed ONCE, used everywhere. No downstream guessing.
+    #
+    # RULES:
+    # - gaps_visible = False → Your Move may NOT reference gaps
+    # - strengths_available = False → Use positioning fallback, not generic gap copy
+    # =========================================================================
+
+    # Step 1: Compute gaps_to_render FIRST (before any Your Move logic)
+    suppress_gaps_section = calibrated_gaps.get('suppress_gaps_section', False)
+    has_gaps = bool(calibrated_gaps.get('primary_gap') or calibrated_gaps.get('secondary_gaps'))
+
+    gaps_to_render = []
+    if not suppress_gaps_section and has_gaps:
+        show_gaps = should_show_gaps_section(
+            job_fit_recommendation=job_fit_recommendation,
+            primary_gap=calibrated_gaps.get('primary_gap')
+        )
+        if show_gaps:
+            gaps_to_render = format_gaps_for_display(
+                primary_gap=calibrated_gaps.get('primary_gap'),
+                secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
+            )
+
+    # Step 2: Build UI Contract (THE ONLY AUTHORITY)
+    ui_contract = {
+        "gaps_visible": not suppress_gaps_section and len(gaps_to_render) > 0,
+        "strengths_available": strengths is not None and len(strengths) > 0,
+        "recommendation": job_fit_recommendation
+    }
+
+    print(f"   📋 UI Contract: gaps_visible={ui_contract['gaps_visible']}, strengths_available={ui_contract['strengths_available']}")
+
+    # =========================================================================
+    # STRENGTHS EXTRACTION RECOVERY (uses UI contract)
+    #
+    # If strengths extraction fails:
+    # - Check UI contract for gaps visibility
+    # - If gaps visible → gap-focused move
+    # - If gaps NOT visible → positioning move (no gap language!)
+    # =========================================================================
+
+    if not ui_contract['strengths_available']:
+        print("   🚨 CONTRACT BREACH: Strengths extraction returned 0 items")
+        print("   📋 Recovery: Using UI contract to determine Your Move copy")
+
+        # Use UI contract to determine the right fallback
+        if ui_contract['gaps_visible']:
+            # Gaps ARE visible - can reference them
+            informational_your_move = _generate_gap_focused_move(
+                job_fit_recommendation=job_fit_recommendation,
+                calibrated_gaps=calibrated_gaps,
+                job_requirements=job_requirements
+            )
+            print("   ✅ Recovery path: gap-focused move (gaps visible)")
+        else:
+            # Gaps NOT visible - positioning move only
+            informational_your_move = _generate_positioning_move(
+                job_fit_recommendation=job_fit_recommendation,
+                job_requirements=job_requirements
+            )
+            print("   ✅ Recovery path: positioning move (gaps suppressed)")
+
+        return {
+            'your_move': informational_your_move,
+            'gaps_to_address': gaps_to_render if ui_contract['gaps_visible'] else None,
+            'show_accountability_banner': False,
+            'accountability_message': None,
+            '_contract_state': 'strengths_extraction_recovery',
+            '_strengths_count': 0,
+            '_ui_contract': ui_contract
+        }
+
     # Generate "Your Move" (ALWAYS generate, even with silence)
-    # CORRECTED: Silence suppresses gaps, not "Your Move"
-    # Pass full calibrated_gaps for dominant_narrative and strong_signals access
-    # NEW: Also pass strengths and role_title for role-specific binding
+    # Gaps influence the tone even when suppressed from display
     your_move_raw = generate_your_move(
         primary_gap=calibrated_gaps.get('primary_gap'),
         job_fit_recommendation=job_fit_recommendation,
         redirect_reason=calibrated_gaps.get('redirect_reason'),
         candidate_resume=candidate_resume,
         job_requirements=job_requirements,
-        calibrated_gaps=calibrated_gaps,
+        calibrated_gaps=calibrated_gaps,  # Gaps still influence coaching tone
         strengths=strengths,
         role_title=role_title
     )
@@ -91,29 +165,29 @@ def generate_coaching_output(
     # Sanitize: Remove em dashes and enforce clean sentence structure
     your_move = _sanitize_your_move(your_move_raw)
 
-    # Determine "Gaps to Address" visibility
-    # CORRECTED: Use suppress_gaps_section flag
-    if calibrated_gaps.get('suppress_gaps_section', False):
-        gaps_to_address = None
-    else:
-        show_gaps = should_show_gaps_section(
-            job_fit_recommendation=job_fit_recommendation,
-            primary_gap=calibrated_gaps.get('primary_gap')
-        )
+    # =========================================================================
+    # UI CONTRACT ASSERTION: Your Move must not reference gaps when none visible
+    # =========================================================================
+    if not ui_contract['gaps_visible']:
+        gap_language = ['gaps below', 'address gaps', 'missing experience', 'close the gap', 'gaps identified', 'highlighted gaps']
+        your_move_lower = your_move.lower()
+        for phrase in gap_language:
+            if phrase in your_move_lower:
+                print(f"   🚨 UI CONTRACT VIOLATION: Your Move contains '{phrase}' but gaps_visible=False")
+                # Do NOT block - just log. This should never happen with proper generation.
+                break
 
-        if show_gaps:
-            gaps_to_address = format_gaps_for_display(
-                primary_gap=calibrated_gaps.get('primary_gap'),
-                secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
-            )
-        else:
-            gaps_to_address = None
+    # Use pre-computed gaps_to_render (from UI contract computation above)
+    gaps_to_address = gaps_to_render if ui_contract['gaps_visible'] else None
+    if not ui_contract['gaps_visible'] and has_gaps:
+        print("   🔇 Gaps suppressed from UI (but still influenced coaching tone)")
 
     result = {
         'your_move': your_move,
         'gaps_to_address': gaps_to_address,
         'show_accountability_banner': False,
-        'accountability_message': None
+        'accountability_message': None,
+        '_ui_contract': ui_contract
     }
 
     # === LOGGING: EXIT ===
@@ -251,8 +325,13 @@ def generate_your_move(
         # MUST reference role-specific capabilities from strengths
         # ======================================================================
 
-        # Extract role-specific signals from strengths
-        role_signals = _extract_role_signals(strengths or [], role_title or '', job_requirements)
+        # Extract role-specific signals from strengths (with candidate evidence validation)
+        role_signals = _extract_role_signals(
+            strengths or [],
+            role_title or '',
+            job_requirements,
+            candidate_resume=candidate_resume
+        )
 
         # Get dominant narrative for proof point
         dominant_narrative = calibrated_gaps.get('dominant_narrative') if calibrated_gaps else None
@@ -564,104 +643,370 @@ def _build_resume_text_for_strength(candidate_resume: Dict[str, Any]) -> str:
     return ' '.join(filter(None, parts))
 
 
-def _extract_role_signals(strengths: List[str], role_title: str, job_requirements: Dict[str, Any]) -> List[str]:
+def _build_candidate_evidence_text(candidate_resume: Optional[Dict[str, Any]]) -> str:
+    """
+    Build combined text from candidate resume for cross-validation.
+
+    Used by _extract_role_signals to ensure keywords are grounded in candidate evidence,
+    not just JD keywords that the model hallucinated as strengths.
+
+    Returns: lowercase combined text from resume
+    """
+    if not candidate_resume:
+        return ""
+
+    parts = []
+
+    # Summary
+    summary = candidate_resume.get('summary', '')
+    if summary:
+        parts.append(summary)
+
+    # Skills (explicit skill list)
+    skills = candidate_resume.get('skills', []) or []
+    for skill in skills:
+        if isinstance(skill, str):
+            parts.append(skill)
+        elif isinstance(skill, dict):
+            parts.append(skill.get('name', ''))
+            parts.append(skill.get('skill', ''))
+
+    # Experience
+    experience = candidate_resume.get('experience', []) or []
+    for exp in experience:
+        if isinstance(exp, dict):
+            parts.append(exp.get('title', ''))
+            parts.append(exp.get('company', ''))
+            parts.append(exp.get('description', ''))
+            # Bullets/achievements
+            bullets = exp.get('bullets', []) or exp.get('achievements', []) or []
+            for bullet in bullets:
+                if isinstance(bullet, str):
+                    parts.append(bullet)
+                elif isinstance(bullet, dict):
+                    parts.append(bullet.get('text', ''))
+
+    # Education
+    education = candidate_resume.get('education', []) or []
+    for edu in education:
+        if isinstance(edu, dict):
+            parts.append(edu.get('degree', ''))
+            parts.append(edu.get('field', ''))
+            parts.append(edu.get('institution', ''))
+
+    # Projects
+    projects = candidate_resume.get('projects', []) or []
+    for proj in projects:
+        if isinstance(proj, dict):
+            parts.append(proj.get('name', ''))
+            parts.append(proj.get('description', ''))
+
+    return ' '.join(filter(None, parts))
+
+
+def _compute_candidate_signal_profile(candidate_resume: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Compute a per-candidate signal profile before prioritization.
+
+    This prevents overfitting to a single candidate by ensuring we only
+    elevate signals that exist in the candidate's actual background.
+
+    Returns:
+        {
+            'primary_domains': ['infra', 'sre', ...],
+            'secondary_domains': ['product', ...],
+            'scale_context': ['150m requests', ...],
+            'leadership_context': ['team of 12', ...],
+            'evidence_keywords': set of all lowercase keywords found
+        }
+    """
+    if not candidate_resume:
+        return {
+            'primary_domains': [],
+            'secondary_domains': [],
+            'scale_context': [],
+            'leadership_context': [],
+            'evidence_keywords': set()
+        }
+
+    evidence_text = _build_candidate_evidence_text(candidate_resume).lower()
+
+    # Domain detection patterns
+    domain_patterns = {
+        'infra': ['infrastructure', 'platform', 'sre', 'devops', 'cloud', 'kubernetes', 'k8s', 'docker', 'container'],
+        'backend': ['backend', 'api', 'server', 'microservice', 'distributed'],
+        'frontend': ['frontend', 'react', 'vue', 'angular', 'javascript', 'typescript', 'ui', 'ux'],
+        'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline', 'etl'],
+        'product': ['product', 'roadmap', 'strategy', 'discovery', 'user research'],
+        'mobile': ['mobile', 'ios', 'android', 'swift', 'kotlin'],
+    }
+
+    # Scale detection patterns
+    scale_patterns = ['million', '100m', '150m', 'requests/day', 'requests per day', 'users', 'traffic',
+                     '99.9', 'uptime', 'latency', 'throughput', 'scale']
+
+    # Leadership detection patterns
+    leadership_patterns = ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
+                          'managed', 'led', 'directed', 'head of', 'director', 'vp']
+
+    # Detect domains
+    primary_domains = []
+    secondary_domains = []
+    for domain, patterns in domain_patterns.items():
+        matches = sum(1 for p in patterns if p in evidence_text)
+        if matches >= 3:
+            primary_domains.append(domain)
+        elif matches >= 1:
+            secondary_domains.append(domain)
+
+    # Detect scale context
+    scale_context = [p for p in scale_patterns if p in evidence_text]
+
+    # Detect leadership context
+    leadership_context = [p for p in leadership_patterns if p in evidence_text]
+
+    # Build evidence keyword set (all words for fast lookup)
+    evidence_keywords = set(evidence_text.split())
+
+    profile = {
+        'primary_domains': primary_domains,
+        'secondary_domains': secondary_domains,
+        'scale_context': scale_context,
+        'leadership_context': leadership_context,
+        'evidence_keywords': evidence_keywords
+    }
+
+    print(f"   👤 Candidate Signal Profile:")
+    print(f"      Primary domains: {primary_domains}")
+    print(f"      Secondary domains: {secondary_domains}")
+    print(f"      Scale context: {scale_context[:3]}..." if len(scale_context) > 3 else f"      Scale context: {scale_context}")
+
+    return profile
+
+
+def _extract_jd_signal_profile(job_requirements: Dict[str, Any], role_title: str) -> Dict[str, Any]:
+    """
+    Extract role-specific signal profile FROM THE JD, not from a global list.
+
+    This prevents candidate → candidate contamination by deriving keywords
+    per-JD instead of using a shared global keyword list.
+
+    Returns:
+        {
+            'jd_keywords': list of keywords extracted from JD,
+            'role_type': 'technical' | 'product' | 'data' | 'general',
+            'system_level_signals': list of Staff+ level signals if present
+        }
+    """
+    jd_text = (job_requirements.get('job_description', '') or '').lower()
+    role_lower = (role_title or '').lower()
+
+    # =========================================================================
+    # JD-SCOPED KEYWORD EXTRACTION
+    # Keywords are derived from THIS JD, not a global list
+    # =========================================================================
+
+    # Technical signal patterns to look for in JD
+    technical_patterns = [
+        'kubernetes', 'k8s', 'openshift', 'rosa', 'sre', 'reliability',
+        'distributed system', 'microservice', 'container', 'docker',
+        'infrastructure', 'platform', 'devops', 'cloud', 'aws', 'gcp', 'azure',
+        'incident response', 'on-call', 'backend', 'api'
+    ]
+
+    # Product signal patterns
+    product_patterns = [
+        'product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
+        'a/b test', 'experimentation', 'discovery', 'launch', 'growth',
+        'attribution', 'conversion', 'funnel', 'retention'
+    ]
+
+    # Data signal patterns
+    data_patterns = [
+        'data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
+        'warehouse', 'etl', 'sql', 'python', 'modeling', 'attribution model'
+    ]
+
+    # Scale patterns (apply to all roles)
+    scale_patterns = [
+        'million', '100m', '150m', 'requests/day', 'traffic', 'uptime',
+        '99.9', 'latency', 'throughput', 'scale', 'high-volume'
+    ]
+
+    # Staff+ system-level signals (for PM calibration)
+    staff_level_patterns = [
+        'attribution', 'governance', 'internal platform', 'cross-functional',
+        'system design', 'architecture', 'org-wide', 'company-wide',
+        'strategic initiative', 'executive', 'c-suite'
+    ]
+
+    # Extract keywords that actually appear in the JD
+    jd_keywords = []
+    for pattern in technical_patterns + product_patterns + data_patterns + scale_patterns:
+        if pattern in jd_text:
+            jd_keywords.append(pattern)
+
+    # Detect system-level signals for Staff+ roles
+    system_level_signals = [p for p in staff_level_patterns if p in jd_text]
+
+    # Detect role type from title AND JD content
+    role_type = 'general'
+    tech_count = sum(1 for p in technical_patterns if p in jd_text or p in role_lower)
+    product_count = sum(1 for p in product_patterns if p in jd_text or p in role_lower)
+    data_count = sum(1 for p in data_patterns if p in jd_text or p in role_lower)
+
+    if tech_count >= product_count and tech_count >= data_count and tech_count > 0:
+        role_type = 'technical'
+    elif product_count >= tech_count and product_count >= data_count and product_count > 0:
+        role_type = 'product'
+    elif data_count > 0:
+        role_type = 'data'
+
+    profile = {
+        'jd_keywords': jd_keywords,
+        'role_type': role_type,
+        'system_level_signals': system_level_signals
+    }
+
+    print(f"   📋 JD Signal Profile:")
+    print(f"      Role type: {role_type}")
+    print(f"      JD keywords: {jd_keywords[:5]}..." if len(jd_keywords) > 5 else f"      JD keywords: {jd_keywords}")
+    print(f"      Staff+ signals: {system_level_signals}")
+
+    return profile
+
+
+def _extract_role_signals(
+    strengths: List[str],
+    role_title: str,
+    job_requirements: Dict[str, Any],
+    candidate_resume: Optional[Dict[str, Any]] = None
+) -> List[str]:
     """
     Extract role-specific signals from strengths list.
 
-    PRIORITY: Role-specific capabilities > generic leadership
-    For Apply/Strong Apply, we want to surface things like:
-    - Kubernetes, SRE, ROSA, OpenShift (for infra roles)
-    - Distributed systems, API scale, reliability
-    - Team scaling metrics
+    SYSTEM CONTRACT COMPLIANCE:
+    - Keywords are JD-scoped, not global (prevents cross-candidate contamination)
+    - Signals are (candidate, role) scoped - no persistence between runs
+    - No reuse of prior candidate narratives, metrics, or examples
+    - Leadership fallback only when JD-aligned evidence is insufficient
+
+    ORDERING:
+    1. Resume-verified signals that map to JD keywords (highest priority)
+    2. Scale signals verified in both JD and resume
+    3. Leadership fallback (only when JD-aligned evidence insufficient)
 
     Returns: List of role-specific signal phrases (max 2), or empty if none found.
     """
+    # CONTRACT: Log extraction attempt for audit trail
+    import hashlib
+    candidate_hash = hashlib.md5(str(candidate_resume).encode()).hexdigest()[:8] if candidate_resume else "none"
+    role_hash = hashlib.md5(f"{role_title}:{job_requirements.get('job_description', '')[:100]}".encode()).hexdigest()[:8]
+    print(f"   🔐 Signal extraction scope: candidate={candidate_hash}, role={role_hash}")
+
     if not strengths:
-        print("   ⚠️ _extract_role_signals: No strengths provided")
+        print("   🚨 CONTRACT BREACH: _extract_role_signals called with no strengths")
+        print("   📋 Breach logged. Returning empty signals (no fallback permitted).")
         return []
 
-    role_lower = (role_title or '').lower()
-    domain = (job_requirements.get('domain', '') or '').lower()
+    # =========================================================================
+    # STEP 1: Extract JD signal profile (JD-scoped, not global)
+    # =========================================================================
+    jd_profile = _extract_jd_signal_profile(job_requirements, role_title)
+    jd_keywords = jd_profile['jd_keywords']
+    role_type = jd_profile['role_type']
 
-    print(f"   🔍 Extracting role signals from {len(strengths)} strengths for role: '{role_title}'")
+    if not jd_keywords:
+        print("   ⚠️ No JD keywords extracted - falling back to role-type detection")
+        # Minimal fallback based on role title only
+        role_lower = (role_title or '').lower()
+        if 'sre' in role_lower or 'platform' in role_lower or 'infrastructure' in role_lower:
+            jd_keywords = ['reliability', 'infrastructure', 'platform']
+        elif 'product' in role_lower or 'pm' in role_lower:
+            jd_keywords = ['product', 'roadmap', 'metrics']
+        elif 'data' in role_lower:
+            jd_keywords = ['data', 'analytics', 'pipeline']
 
-    # Define role-specific keywords to look for (EXPANDED)
-    # Order matters - more specific keywords first
-    role_keywords = {
-        'technical': [
-            # Very specific (highest priority)
-            'openshift', 'rosa', 'kubernetes', 'k8s', 'sre',
-            # Specific
-            'distributed system', 'microservice', 'container', 'docker',
-            'reliability', 'incident response', 'on-call',
-            # General technical
-            'platform', 'infrastructure', 'backend', 'api',
-            'aws', 'gcp', 'azure', 'cloud'
-        ],
-        'product': ['product', 'roadmap', 'strategy', 'user research', 'metrics', 'okr',
-                   'a/b test', 'experimentation', 'discovery', 'launch'],
-        'data': ['data', 'analytics', 'ml', 'machine learning', 'ai', 'pipeline',
-                'warehouse', 'etl', 'sql', 'python'],
-        'leadership': ['team of', 'engineers', 'reports', 'hired', 'built team', 'grew team',
-                      'managed', 'cross-functional'],
-        'scale': ['150m', '100m', 'million', 'requests/day', 'requests per day',
-                 'api requests', 'traffic', 'uptime', '99.9', '99.', 'latency', 'throughput',
-                 'scale', 'scaling']
-    }
+    # =========================================================================
+    # STEP 2: Build candidate evidence (resume-first)
+    # =========================================================================
+    candidate_profile = _compute_candidate_signal_profile(candidate_resume)
+    candidate_evidence = _build_candidate_evidence_text(candidate_resume) if candidate_resume else ""
+    candidate_evidence_lower = candidate_evidence.lower()
 
-    # Detect what type of role this is
-    role_type = 'general'
-    if any(k in role_lower for k in ['sre', 'reliability', 'platform', 'infrastructure', 'devops', 'cloud', 'rosa', 'openshift']):
-        role_type = 'technical'
-    elif any(k in role_lower for k in ['product', 'pm', 'growth']):
-        role_type = 'product'
-    elif any(k in role_lower for k in ['data', 'analytics', 'ml', 'machine learning']):
-        role_type = 'data'
+    print(f"   🔍 Extracting role signals from {len(strengths)} strengths")
+    print(f"   📊 Role type: {role_type}")
+    if candidate_evidence_lower:
+        print(f"   📄 Candidate evidence: {len(candidate_evidence_lower)} chars")
 
-    print(f"   📊 Detected role type: {role_type}")
+    # Leadership keywords (for fallback only)
+    leadership_keywords = ['team of', 'engineers', 'reports', 'hired', 'built team',
+                          'grew team', 'managed', 'cross-functional']
 
-    signals = []
+    # =========================================================================
+    # RESUME-FIRST EVIDENCE SELECTION
+    #
+    # Priority order:
+    # 1. JD keywords that exist in BOTH strength AND candidate resume (weight 1.0)
+    # 2. Scale keywords in both (weight 0.7)
+    # 3. Leadership keywords (fallback only, weight 0.5)
+    #
+    # Dominant narrative is FALLBACK ONLY when JD-aligned evidence insufficient
+    # =========================================================================
 
-    # First pass: Look for role-type specific keywords (highest priority)
-    keywords_to_check = role_keywords.get(role_type, []) + role_keywords.get('scale', [])
+    scored_signals = []  # List of (signal, weight, keyword)
 
+    # STEP 3: Score signals using JD-derived keywords (not global list)
     for strength in strengths:
         if not isinstance(strength, str) or not strength.strip():
             continue
 
         strength_lower = strength.lower()
 
-        for keyword in keywords_to_check:
+        # Check JD keywords first (highest priority)
+        for keyword in jd_keywords:
             if keyword in strength_lower:
-                # Extract a clean signal phrase
+                # CANDIDATE SCOPING: Must exist in resume too
+                if candidate_evidence_lower and keyword not in candidate_evidence_lower:
+                    print(f"   ⚠️ JD keyword '{keyword}' in strength but NOT in resume. Skipping.")
+                    continue
+
                 signal = _clean_signal_phrase(strength, keyword)
-                if signal and signal not in signals:
-                    signals.append(signal)
-                    print(f"   ✅ Found signal: '{signal}' (keyword: '{keyword}')")
-                    break  # Only one signal per strength
-
-        if len(signals) >= 2:
-            break
-
-    # Second pass: If no role-specific signals, check leadership as fallback
-    if not signals:
-        print("   ⚠️ No role-specific signals found, checking leadership keywords")
-        for strength in strengths:
-            if not isinstance(strength, str) or not strength.strip():
-                continue
-
-            strength_lower = strength.lower()
-
-            for keyword in role_keywords.get('leadership', []):
-                if keyword in strength_lower:
-                    signal = _clean_signal_phrase(strength, keyword)
-                    if signal and signal not in signals:
-                        signals.append(signal)
-                        print(f"   ✅ Found leadership signal: '{signal}'")
+                if signal:
+                    existing = [s[0] for s in scored_signals]
+                    if signal not in existing:
+                        scored_signals.append((signal, 1.0, keyword))
+                        print(f"   ✅ JD-aligned signal: '{signal}' (keyword: '{keyword}')")
                         break
 
-            if len(signals) >= 2:
-                break
+    # Sort by weight and take top 2
+    scored_signals.sort(key=lambda x: x[1], reverse=True)
+    signals = [s[0] for s in scored_signals[:2]]
+
+    # =========================================================================
+    # LEADERSHIP FALLBACK (only when JD-aligned evidence insufficient)
+    # This is step 3 in the ordering rule - only used if JD-aligned signals
+    # don't exist. If JD signals exist, leadership fallback is NOT allowed.
+    # =========================================================================
+    if not signals:
+        print("   ⚠️ No JD-aligned signals found. Checking leadership fallback.")
+        if candidate_profile.get('leadership_context'):
+            for strength in strengths:
+                if not isinstance(strength, str) or not strength.strip():
+                    continue
+
+                strength_lower = strength.lower()
+
+                for keyword in leadership_keywords:
+                    if keyword in strength_lower:
+                        signal = _clean_signal_phrase(strength, keyword)
+                        if signal and signal not in signals:
+                            signals.append(signal)
+                            print(f"   ✅ Leadership fallback signal: '{signal}'")
+                            break
+
+                if len(signals) >= 2:
+                    break
 
     print(f"   📋 Extracted {len(signals)} signals: {signals}")
     return signals
@@ -741,6 +1086,95 @@ def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
         return f"{company}'s team needs"
 
     return None  # No specific context available
+
+
+def _generate_gap_focused_move(
+    job_fit_recommendation: str,
+    calibrated_gaps: Dict[str, Any],
+    job_requirements: Dict[str, Any]
+) -> str:
+    """
+    Generate gap-focused "Your Move" when gaps ARE visible.
+
+    Used when:
+    - strengths extraction failed
+    - gaps ARE rendered (ui_contract.gaps_visible = True)
+
+    This is the ONLY path that may reference gaps in Your Move.
+    """
+    role_title = job_requirements.get('role_title', 'this role')
+
+    # Get primary gap info
+    primary_gap = calibrated_gaps.get('primary_gap')
+    gap_summary = ""
+    if primary_gap:
+        gap_info = primary_gap.get('gap', {})
+        gap_summary = gap_info.get('capability', gap_info.get('diagnosis', ''))
+
+    # Generate gap-focused message based on recommendation tier
+    if job_fit_recommendation == "Do Not Apply":
+        if gap_summary:
+            return f"Review the gaps identified below. {gap_summary} is a critical blocker for {role_title}."
+        return f"Review the gaps identified below before considering {role_title}."
+
+    elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
+        if gap_summary:
+            return f"Address {gap_summary} in your application materials. Review gaps below for positioning guidance."
+        return f"Review the highlighted gaps below and address them directly in your application for {role_title}."
+
+    elif job_fit_recommendation in ["Apply", "Strong Apply"]:
+        return f"Your background aligns with {role_title}. Review the analysis below and emphasize your most relevant experience."
+
+    else:
+        return f"Review the analysis below for {role_title} and focus on addressing any highlighted gaps."
+
+
+def _generate_positioning_move(
+    job_fit_recommendation: str,
+    job_requirements: Dict[str, Any]
+) -> str:
+    """
+    Generate positioning-only "Your Move" when gaps are NOT visible.
+
+    Used when:
+    - strengths extraction failed
+    - gaps are SUPPRESSED or not rendered (ui_contract.gaps_visible = False)
+
+    HARD RULE: This function may NEVER reference gaps.
+    No "gaps below", "address gaps", "missing experience", etc.
+    """
+    role_title = job_requirements.get('role_title', 'this role')
+
+    # Generate positioning-focused message (NO gap language)
+    if job_fit_recommendation == "Do Not Apply":
+        # Still no gap language - just be direct about fit
+        return (
+            f"Your background may not align with {role_title}'s core requirements. "
+            "Consider roles that better match your domain expertise and experience level."
+        )
+
+    elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
+        # Positioning advice without gap references
+        return (
+            "Lead with your strongest transferable outcomes. "
+            "Anchor your application in measurable impact and platform-level ownership. "
+            "Be explicit about how your experience maps to this role's core responsibilities."
+        )
+
+    elif job_fit_recommendation in ["Apply", "Strong Apply"]:
+        return (
+            f"Your background aligns with {role_title}. "
+            "Lead with your most relevant accomplishments and quantified impact. "
+            "Apply now and reach out directly to the hiring manager."
+        )
+
+    else:
+        # Absolute fallback - still no gap language
+        return (
+            "Lead with your strongest transferable outcomes. "
+            "Anchor your application in measurable impact and platform-level ownership. "
+            "Be explicit about how your experience maps to this role's core responsibilities."
+        )
 
 
 def _sanitize_your_move(text: str) -> str:
