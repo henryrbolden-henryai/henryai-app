@@ -1178,16 +1178,312 @@ Streaming (EXPERIMENTAL):
 
 ---
 
+---
+
+## December 17-19 Enhancements
+
+### 30. ✅ LEPE Integration (Dec 17-18)
+
+**What it does**: Leadership Experience Pattern Extraction wired into Resume Leveling and LinkedIn Scoring.
+
+**Implementation**:
+- Aggregated mixed-scope credit into `people_leadership_years`
+- Wired LEPE into resume leveling and LinkedIn endpoints
+- Fixed leadership years calculation from experience data
+
+**Impact**:
+- ✅ Accurate leadership experience detection
+- ✅ Better resume leveling signals
+
+---
+
+### 31. ✅ Capability Evidence Check (CEC) System (Dec 18-19)
+
+**What it does**: Diagnostic layer for evaluating candidate capabilities against job requirements.
+
+**Implementation**:
+- `backend/calibration/calibration_controller.py` - CEC v1.0 → v1.1 with recruiter-grade sub-signals
+- Internal Recruiter Calibration System
+- Gap classification with severity levels
+- Staff+ PM calibration modifier for system-level signals
+
+**Features**:
+- Eligibility gate (pass/fail)
+- Gap severity classification (critical, important, nice-to-have)
+- Manager-level domain gap suppression
+- Staff+ PM calibration for system-level signals
+
+**Impact**:
+- ✅ More accurate gap detection
+- ✅ Recruiter-grade assessment quality
+- ✅ Role-appropriate calibration
+
+---
+
+### 32. ✅ Final Recommendation Controller (Dec 19)
+
+**What it does**: Single Source of Truth for all recommendation decisions.
+
+**Implementation**:
+- Created `backend/recommendation/final_controller.py`
+- Decision Authority Lock (SYSTEM CONTRACT §6)
+- Score-based recommendation mapping (frozen)
+- Override attempt blocking with logging
+
+**Key Rules**:
+- Recommendation set ONCE and locked
+- Score set ONCE and locked
+- No downstream layer may mutate values
+- Manager domain gaps are advisory only
+
+**Recommendation Tiers** (frozen mapping):
+```python
+SCORE_TO_RECOMMENDATION = {
+    (0, 50): DO_NOT_APPLY,
+    (50, 60): APPLY_WITH_CAUTION,
+    (60, 70): APPLY_WITH_CAUTION,
+    (70, 80): CONDITIONAL_APPLY,
+    (80, 90): APPLY,
+    (90, 101): STRONG_APPLY,
+}
+```
+
+**Impact**:
+- ✅ Deterministic recommendations
+- ✅ No decision leaks from advisory layers
+- ✅ Immutable once locked
+
+---
+
+### 33. ✅ SYSTEM CONTRACT Block (Dec 19)
+
+**What it does**: Non-negotiable constraints for job fit analysis engine.
+
+**Implementation**:
+- Created `backend/SYSTEM_CONTRACT.md` (10 sections)
+- Analysis ID enforcement with UUID per run
+- JD-scoped vs candidate-scoped data separation
+
+**10 Contract Sections**:
+1. Stateless Candidate Isolation
+2. Allowed Persistent State (Global Only)
+3. JD-Scoped vs Candidate-Scoped Data
+4. Explicit Ban on Candidate → Global Promotion
+5. JD-First Narrative Ordering
+6. Decision Authority Lock
+7. Analysis ID Enforcement
+8. Strength Extraction Failure Handling
+9. No Cross-Candidate Memory
+10. Trust Principle
+
+**Impact**:
+- ✅ Prevents cross-candidate contamination
+- ✅ Ensures stateless execution
+- ✅ Canonical reference for all controllers
+
+---
+
+### 34. ✅ JD-Scoped Signal Extraction (Dec 19)
+
+**What it does**: Extract role signals FROM the JD, not from global lists.
+
+**Implementation**:
+- `_extract_jd_signal_profile()` function
+- Keywords derived per-JD instead of shared global list
+- Candidate/role hash scoping for audit trail
+
+**Features**:
+- Technical, product, and data signal patterns
+- Scale patterns (million, 100m, uptime, etc.)
+- Staff+ system-level signals (attribution, governance, etc.)
+- Role type detection (technical, product, data, general)
+
+**Impact**:
+- ✅ Prevents cross-candidate signal contamination
+- ✅ JD-first narrative ordering
+- ✅ Audit trail for signal extraction
+
+---
+
+### 35. ✅ Candidate Evidence Validation (Dec 19)
+
+**What it does**: Ensures keywords are grounded in candidate resume, not just JD.
+
+**Implementation**:
+- `_build_candidate_evidence_text()` function
+- `_compute_candidate_signal_profile()` function
+- Resume-first evidence selection
+
+**Features**:
+- Combined text from summary, skills, experience, education, projects
+- Domain detection (infra, backend, frontend, data, product, mobile)
+- Scale context detection (million, uptime, latency, etc.)
+- Leadership context detection (team of, managed, led, etc.)
+
+**Impact**:
+- ✅ Prevents hallucinated signals
+- ✅ Grounded in actual resume evidence
+- ✅ Accurate signal prioritization
+
+---
+
+### 36. ✅ "Your Move" Coaching Overhaul (Dec 19)
+
+**What it does**: Context-aware, decisive coaching for all recommendation tiers.
+
+**Implementation**:
+- Updated `generate_your_move()` in coaching_controller.py
+- Role-specific signals over generic dominant_narrative
+- Manager-level domain gap suppression
+- Conditional Apply gets decisive guidance
+
+**Key Changes**:
+- Apply: Lead with role-specific signals
+- Conditional Apply: Specific tactical advice (apply now, reach out directly)
+- Apply with Caution: Acknowledge gaps, provide mitigation strategy
+- Do Not Apply: Direct redirection
+
+**Impact**:
+- ✅ Actionable, not vague
+- ✅ Role-specific, not generic
+- ✅ Decisive, not hedging
+
+---
+
+### 37. ✅ UI Contract Enforcement (Dec 19)
+
+**What it does**: Single Source of Truth for presentation state.
+
+**Implementation**:
+- `ui_contract` flag computed ONCE at top of coaching controller
+- `_generate_gap_focused_move()` vs `_generate_positioning_move()`
+- Contract assertion logging for violations
+
+**UI Contract Structure**:
+```python
+ui_contract = {
+    "gaps_visible": not suppress_gaps_section and len(gaps_to_render) > 0,
+    "strengths_available": len(strengths) > 0,
+    "recommendation": job_fit_recommendation
+}
+```
+
+**Hard Rules**:
+- If `gaps_visible == False`, Your Move may NOT reference:
+  - "gaps below"
+  - "address gaps"
+  - "missing experience"
+  - "close the gap"
+
+**Impact**:
+- ✅ No more "Review gaps below" when no gaps rendered
+- ✅ Deterministic fallback copy
+- ✅ State authority over UI copy
+
+---
+
+### 38. ✅ Strengths Extraction Recovery (Dec 19)
+
+**What it does**: Contract-compliant handling when strengths extraction fails.
+
+**Implementation**:
+- Recovery uses UI contract to determine fallback
+- Gap-focused move when gaps visible
+- Positioning move when gaps suppressed
+- Contract breach logging
+
+**Recovery Paths**:
+- If `ui_contract['gaps_visible']` → `_generate_gap_focused_move()`
+- If NOT `ui_contract['gaps_visible']` → `_generate_positioning_move()`
+
+**Positioning Move** (no gap language):
+```python
+"Lead with your strongest transferable outcomes. "
+"Anchor your application in measurable impact and platform-level ownership. "
+"Be explicit about how your experience maps to this role's core responsibilities."
+```
+
+**Impact**:
+- ✅ No "Analysis incomplete" errors
+- ✅ No internal errors surfaced to users
+- ✅ Always produces usable output
+
+---
+
+## Current Status
+
+| Phase | Status | Completion |
+|-------|--------|------------|
+| Phase 0: Foundation Strengthening | ✅ COMPLETE | 100% |
+| Phase 1: Core Application Engine | ✅ COMPLETE | 100% |
+| Phase 1.5: Interview Intelligence | ✅ COMPLETE | 100% |
+| Phase 1.75: Engagement & Coaching | ✅ COMPLETE | 100% |
+| Phase 2: Strategic Intelligence | ✅ COMPLETE | 100% |
+| Phase 3: Performance Intelligence | 🔄 In Progress | ~40% |
+
+---
+
 ## Next Actions
 
-1. **Test 6-tier system with users** - Get feedback on new recommendation language
-2. **Monitor cap enforcement** - Ensure backend safety net is catching misses
-3. **Re-enable streaming** - When experience penalties can be applied to partial data
-4. **Complete LinkedIn integration testing** - Full flow with real LinkedIn PDFs
-5. **Implement Phase 1.5 features** - Screening Questions + Document Refinement
+1. ~~Test 6-tier system with users~~ ✅ Deployed and tested
+2. ~~Monitor cap enforcement~~ ✅ Backend safety net working
+3. ~~Fix Your Move / gaps contract violation~~ ✅ UI contract enforcement deployed
+4. **Re-enable streaming** - When experience penalties can be applied to partial data
+5. **Implement Phase 1.5 features** - Screening Questions + Document Refinement (Jan 2-17, 2026)
+6. **Complete LinkedIn integration testing** - Full flow with real LinkedIn PDFs
+
+---
+
+## Incomplete Tasks for Next Week
+
+### HIGH PRIORITY
+
+1. **Streaming Document Generation**
+   - Status: Infrastructure ready, endpoint not yet integrated
+   - Files: `backend/backend.py` (add `/api/documents/generate/stream`)
+   - Effort: 2-3 days
+
+2. **Validation UI Display**
+   - Status: Backend data ready, UI not built
+   - Files: `frontend/overview.html`, `frontend/documents.html`
+   - Effort: 1-2 days
+
+3. **Fix QA Validation False Positives**
+   - Status: Currently disabled due to false positives
+   - Files: `backend/qa_validation.py`
+   - Effort: 1 day
+
+### MEDIUM PRIORITY
+
+4. **Screening Questions Analysis** (Phase 1.5.1)
+   - Status: Spec complete, not implemented
+   - Files: New `backend/` endpoint + `frontend/screening-questions.html`
+   - Effort: 3-4 days
+
+5. **Document Iteration via Chat** (Phase 1.5.2)
+   - Status: Spec complete, not implemented
+   - Files: `backend/backend.py` + `frontend/components/ask-henry.js`
+   - Effort: 3-4 days
+
+6. **LinkedIn Integration Testing**
+   - Status: Endpoints exist, need end-to-end testing
+   - Files: LinkedIn endpoints in backend, documents.html tab
+   - Effort: 1 day
+
+### LOW PRIORITY
+
+7. **Optimistic UI Patterns**
+   - Status: Planned for after streaming
+   - Files: Multiple frontend HTML files
+   - Effort: 2 days
+
+8. **Smart Inference Engine**
+   - Status: Planned for Phase 2
+   - Files: `backend/backend.py`
+   - Effort: 3-4 days
 
 ---
 
 **Prepared by**: Engineering Team
-**Date**: December 16, 2025
+**Date**: December 19, 2025
 **Status**: Deployed to Production

@@ -1,9 +1,9 @@
 # HenryAI Implementation Guide
 
-**Date**: December 16, 2025
-**Version**: 1.4
+**Date**: December 19, 2025
+**Version**: 1.5
 **Audience**: Development Team
-**Last Updated**: December 16, 2025
+**Last Updated**: December 19, 2025
 
 ---
 
@@ -52,6 +52,15 @@ All features below have been implemented and deployed to production:
 25. ✅ **Candidate Identity Bug Fix** (Dec 16) - fixed "Henry" appearing in outputs
 26. ✅ **JSON Repair & Error Handling** (Dec 16) - enhanced robustness
 27. ✅ **Streaming Analysis Endpoint** (Dec 16) - experimental, reverted
+28. ✅ **LEPE Integration** (Dec 17-18) - leadership experience pattern extraction
+29. ✅ **Capability Evidence Check (CEC) System** (Dec 18-19) - recruiter-grade diagnostics
+30. ✅ **Final Recommendation Controller** (Dec 19) - Single Source of Truth for decisions
+31. ✅ **SYSTEM CONTRACT Block** (Dec 19) - 10-section non-negotiable constraints
+32. ✅ **JD-Scoped Signal Extraction** (Dec 19) - prevents cross-candidate contamination
+33. ✅ **Candidate Evidence Validation** (Dec 19) - resume-first grounding
+34. ✅ **Your Move Coaching Overhaul** (Dec 19) - context-aware, decisive guidance
+35. ✅ **UI Contract Enforcement** (Dec 19) - gaps/Your Move consistency
+36. ✅ **Strengths Extraction Recovery** (Dec 19) - contract-compliant failure handling
 
 ---
 
@@ -2557,6 +2566,206 @@ For questions about this implementation:
 
 ---
 
+---
+
+## December 17-19 Architecture Changes
+
+### SYSTEM CONTRACT Block (Dec 19)
+
+**Files Created**:
+- `backend/SYSTEM_CONTRACT.md` - Canonical reference for non-negotiable constraints
+
+**10 Contract Sections**:
+1. Stateless Candidate Isolation
+2. Allowed Persistent State (Global Only)
+3. JD-Scoped vs Candidate-Scoped Data
+4. Explicit Ban on Candidate → Global Promotion
+5. JD-First Narrative Ordering
+6. Decision Authority Lock
+7. Analysis ID Enforcement
+8. Strength Extraction Failure Handling
+9. No Cross-Candidate Memory
+10. Trust Principle
+
+**Implementation Reference** (from SYSTEM_CONTRACT.md):
+- `backend/recommendation/final_controller.py` - Decision Authority Lock (§6)
+- `backend/coaching/coaching_controller.py` - JD-First Narrative Ordering (§5), Strength Failure Handling (§8)
+- `backend/calibration/calibration_controller.py` - Gap Classification, Staff+ PM Rules
+- `backend/backend.py` - Analysis Flow, Controller Integration
+
+---
+
+### Final Recommendation Controller (Dec 19)
+
+**File Created**: `backend/recommendation/final_controller.py`
+
+**Purpose**: Single Source of Truth for all recommendation decisions
+
+**Key Classes**:
+
+```python
+class Recommendation(Enum):
+    DO_NOT_APPLY = "Do Not Apply"
+    APPLY_WITH_CAUTION = "Apply with Caution"
+    CONDITIONAL_APPLY = "Conditional Apply"
+    APPLY = "Apply"
+    STRONG_APPLY = "Strong Apply"
+
+@dataclass
+class FinalDecision:
+    recommendation: str
+    fit_score: int
+    confidence: str
+    locked: bool = True
+    locked_reason: str = ""
+    advisory_signals: Dict[str, Any] = field(default_factory=dict)
+```
+
+**Score-to-Recommendation Mapping** (FROZEN):
+
+```python
+SCORE_TO_RECOMMENDATION = {
+    (0, 50): Recommendation.DO_NOT_APPLY,
+    (50, 60): Recommendation.APPLY_WITH_CAUTION,
+    (60, 70): Recommendation.APPLY_WITH_CAUTION,
+    (70, 80): Recommendation.CONDITIONAL_APPLY,
+    (80, 90): Recommendation.APPLY,
+    (90, 101): Recommendation.STRONG_APPLY,
+}
+```
+
+**Usage**:
+
+```python
+from recommendation.final_controller import FinalRecommendationController
+
+controller = FinalRecommendationController()
+decision = controller.compute_recommendation(
+    fit_score=75,
+    eligibility_passed=True,
+    is_manager_role=True,
+    domain_gap_detected=True
+)
+# Returns: FinalDecision with recommendation="Conditional Apply"
+```
+
+---
+
+### Calibration Controller (Dec 18-19)
+
+**File Created/Modified**: `backend/calibration/calibration_controller.py`
+
+**Features**:
+- Capability Evidence Check (CEC) v1.1 with recruiter-grade sub-signals
+- Gap classification with severity levels
+- Staff+ PM calibration modifier
+- Manager-level domain gap suppression
+
+**Staff+ PM Rule**:
+
+```python
+is_staff_plus_pm = (
+    ('staff' in role_title or 'principal' in role_title or 'senior' in role_title) and
+    ('product' in role_title or 'pm' in role_title)
+)
+if is_staff_plus_pm:
+    system_level_patterns = ['attribution', 'governance', 'internal platform', ...]
+    jd_has_system_signals = any(p in jd_text for p in system_level_patterns)
+    candidate_has_system_evidence = any(p in resume_text for p in system_level_patterns)
+    if jd_has_system_signals and not candidate_has_system_evidence:
+        print(f"   ⚠️ STAFF+ PM RULE: System-level signals required but not found")
+```
+
+---
+
+### Coaching Controller Updates (Dec 19)
+
+**File Modified**: `backend/coaching/coaching_controller.py`
+
+**New Functions**:
+
+1. **`_extract_jd_signal_profile()`** - Extract keywords FROM the JD, not global lists
+2. **`_build_candidate_evidence_text()`** - Combine resume text for validation
+3. **`_compute_candidate_signal_profile()`** - Detect domains, scale, leadership from resume
+4. **`_generate_gap_focused_move()`** - Your Move when gaps ARE visible
+5. **`_generate_positioning_move()`** - Your Move when gaps NOT visible
+
+**UI Contract**:
+
+```python
+ui_contract = {
+    "gaps_visible": not suppress_gaps_section and len(gaps_to_render) > 0,
+    "strengths_available": strengths is not None and len(strengths) > 0,
+    "recommendation": job_fit_recommendation
+}
+```
+
+**Contract Assertion**:
+
+```python
+if not ui_contract['gaps_visible']:
+    gap_language = ['gaps below', 'address gaps', 'missing experience', 'close the gap']
+    for phrase in gap_language:
+        if phrase in your_move.lower():
+            print(f"   🚨 UI CONTRACT VIOLATION: Your Move contains '{phrase}' but gaps_visible=False")
+```
+
+---
+
+### Signal Extraction System (Dec 19)
+
+**File Modified**: `backend/coaching/coaching_controller.py`
+
+**JD-Scoped Extraction**:
+
+```python
+def _extract_jd_signal_profile(job_requirements: Dict[str, Any], role_title: str) -> Dict[str, Any]:
+    """
+    Extract role-specific signal profile FROM THE JD, not from a global list.
+    Prevents candidate → candidate contamination.
+    """
+    jd_text = (job_requirements.get('job_description', '') or '').lower()
+
+    # Technical signal patterns
+    technical_patterns = ['kubernetes', 'k8s', 'sre', 'distributed system', ...]
+
+    # Product signal patterns
+    product_patterns = ['product', 'roadmap', 'strategy', 'user research', ...]
+
+    # Staff+ system-level signals
+    staff_level_patterns = ['attribution', 'governance', 'internal platform', ...]
+
+    # Extract keywords that actually appear in THIS JD
+    jd_keywords = [p for p in all_patterns if p in jd_text]
+
+    return {
+        'jd_keywords': jd_keywords,
+        'role_type': detected_role_type,
+        'system_level_signals': staff_signals
+    }
+```
+
+**Candidate Evidence Validation**:
+
+```python
+def _extract_role_signals(strengths, role_title, job_requirements, candidate_resume=None):
+    # CONTRACT: Log extraction attempt for audit trail
+    import hashlib
+    candidate_hash = hashlib.md5(str(candidate_resume).encode()).hexdigest()[:8]
+    role_hash = hashlib.md5(f"{role_title}:{job_description[:100]}".encode()).hexdigest()[:8]
+    print(f"   🔐 Signal extraction scope: candidate={candidate_hash}, role={role_hash}")
+
+    # JD keyword must exist in BOTH strength AND candidate resume
+    for keyword in jd_keywords:
+        if keyword in strength_lower:
+            if candidate_evidence_lower and keyword not in candidate_evidence_lower:
+                print(f"   ⚠️ JD keyword '{keyword}' in strength but NOT in resume. Skipping.")
+                continue
+            # Valid signal - add to list
+```
+
+---
+
 **Document Maintained By**: Engineering Team
-**Last Updated**: December 16, 2025
-**Next Review**: December 23, 2025
+**Last Updated**: December 19, 2025
+**Next Review**: December 26, 2025

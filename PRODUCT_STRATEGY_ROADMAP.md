@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
-**Date**: December 16, 2025
-**Version**: 1.5
-**Status**: Phase 0 Complete, Phase 1 Core Engine Complete, Interview Intelligence Complete, Engagement Layer In Progress
-**Last Updated**: December 16, 2025
-**Next Review**: December 23, 2025
+**Date**: December 19, 2025
+**Version**: 1.6
+**Status**: Phase 0-2 Complete, Engagement Layer Complete, Strategic Intelligence Complete
+**Last Updated**: December 19, 2025
+**Next Review**: December 26, 2025
 
 ---
 
@@ -194,6 +194,61 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Production page: `analyzing_streaming.html` (ready for integration)
 - **Status**: Reverted from production (experience penalties not reflecting correctly)
 - **Files preserved**: For future re-integration after fixes
+
+### Recent Achievements (Dec 17-19, 2025)
+
+✅ **LEPE Integration** (Dec 17-18, 2025)
+- Leadership Experience Pattern Extraction wired into Resume Leveling and LinkedIn Scoring
+- Aggregated mixed-scope credit into `people_leadership_years`
+- Fixed leadership years calculation from experience data
+
+✅ **Capability Evidence Check (CEC) System** (Dec 18-19, 2025)
+- Recruiter-grade diagnostics layer for candidate evaluation
+- Gap classification with severity levels (critical, important, nice-to-have)
+- Internal Recruiter Calibration System
+- Staff+ PM calibration modifier for system-level signals
+
+✅ **Final Recommendation Controller** (Dec 19, 2025)
+- Single Source of Truth for all recommendation decisions
+- Created `backend/recommendation/final_controller.py`
+- Decision Authority Lock (SYSTEM CONTRACT §6)
+- Score-based recommendation mapping (frozen)
+- Override attempt blocking with logging
+
+✅ **SYSTEM CONTRACT Block** (Dec 19, 2025)
+- Created `backend/SYSTEM_CONTRACT.md` (10 sections of non-negotiable constraints)
+- Analysis ID enforcement with UUID per run
+- JD-scoped vs candidate-scoped data separation
+- Stateless candidate isolation enforcement
+
+✅ **JD-Scoped Signal Extraction** (Dec 19, 2025)
+- Extract role signals FROM the JD, not from global lists
+- `_extract_jd_signal_profile()` function
+- Prevents cross-candidate signal contamination
+- Candidate/role hash scoping for audit trail
+
+✅ **Candidate Evidence Validation** (Dec 19, 2025)
+- `_build_candidate_evidence_text()` and `_compute_candidate_signal_profile()` functions
+- Resume-first evidence selection
+- Ensures keywords are grounded in candidate resume, not just JD
+
+✅ **"Your Move" Coaching Overhaul** (Dec 19, 2025)
+- Context-aware, decisive coaching for all recommendation tiers
+- Role-specific signals over generic dominant_narrative
+- Manager-level domain gap suppression
+- Conditional Apply gets decisive guidance
+
+✅ **UI Contract Enforcement** (Dec 19, 2025)
+- Single Source of Truth for presentation state
+- `ui_contract` flag computed ONCE at top of coaching controller
+- `_generate_gap_focused_move()` vs `_generate_positioning_move()`
+- Contract assertion logging for violations
+- Fixes "Review gaps below" when no gaps are rendered
+
+✅ **Strengths Extraction Recovery** (Dec 19, 2025)
+- Contract-compliant handling when strengths extraction fails
+- Recovery uses UI contract to determine fallback
+- No more "Analysis incomplete" errors surfaced to users
 
 ---
 
@@ -1466,6 +1521,45 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 
 ---
 
+---
+
+## Incomplete Tasks for Next Week (Dec 23-31, 2025)
+
+### HIGH PRIORITY
+
+| Task | Status | Files | Effort | Notes |
+|------|--------|-------|--------|-------|
+| Streaming Document Generation | Infrastructure ready | `backend/backend.py` | 2-3 days | Endpoint not yet integrated |
+| Validation UI Display | Backend data ready | `frontend/overview.html`, `frontend/documents.html` | 1-2 days | Quality badge, keyword coverage |
+| Fix QA Validation False Positives | Disabled | `backend/qa_validation.py` | 1 day | Regex detection needs fixing |
+
+### MEDIUM PRIORITY (Phase 1.5 - Jan 2-17, 2026)
+
+| Task | Status | Files | Effort | Notes |
+|------|--------|-------|--------|-------|
+| Screening Questions Analysis | Spec complete | New endpoint + `frontend/screening-questions.html` | 3-4 days | Prevents auto-rejections |
+| Document Iteration via Chat | Spec complete | `backend/backend.py` + `ask-henry.js` | 3-4 days | Refine documents from chat |
+| LinkedIn Integration Testing | Endpoints exist | LinkedIn endpoints, documents.html | 1 day | End-to-end validation |
+
+### LOW PRIORITY
+
+| Task | Status | Files | Effort | Notes |
+|------|--------|-------|--------|-------|
+| Optimistic UI Patterns | Planned | Multiple frontend files | 2 days | After streaming |
+| Smart Inference Engine | Planned | `backend/backend.py` | 3-4 days | Phase 2 feature |
+
+### Current Architecture Status
+
+| Component | Status | Files |
+|-----------|--------|-------|
+| SYSTEM CONTRACT | ✅ Complete | `backend/SYSTEM_CONTRACT.md` |
+| Final Recommendation Controller | ✅ Complete | `backend/recommendation/final_controller.py` |
+| Calibration Controller | ✅ Complete | `backend/calibration/calibration_controller.py` |
+| Coaching Controller | ✅ Complete | `backend/coaching/coaching_controller.py` |
+| UI Contract Enforcement | ✅ Complete | Embedded in coaching_controller.py |
+
+---
+
 **Document Owner**: Product Team
-**Last Updated**: December 14, 2025
-**Next Review**: December 21, 2025
+**Last Updated**: December 19, 2025
+**Next Review**: December 26, 2025
