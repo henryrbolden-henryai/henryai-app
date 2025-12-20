@@ -574,6 +574,16 @@
                 return { uploaded: false };
             }
 
+            // Get resume data from session storage
+            const resumeJson = JSON.parse(sessionStorage.getItem('parsedResume') || 'null');
+            const linkedinData = profile.linkedin_data || profile.linkedin_profile_data;
+
+            // Guard: Skip call if required data is missing
+            if (!resumeJson || !linkedinData) {
+                console.log('LinkedIn alignment: skipping - resume or linkedin data not available');
+                return { uploaded: true, alignment_unavailable: true };
+            }
+
             try {
                 let url = `${API_BASE}/api/linkedin/check-alignment`;
                 if (jobId) {
@@ -581,7 +591,14 @@
                 }
 
                 const response = await fetch(url, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        resume_json: resumeJson,
+                        linkedin_data: linkedinData
+                    })
                 });
 
                 if (!response.ok) {

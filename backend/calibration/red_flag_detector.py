@@ -195,57 +195,65 @@ def detect_fabrication_risk(experience: Dict[str, Any]) -> bool:
     - Timeline inconsistencies
     - Responsibilities exceed typical scope
     - Scale claims inconsistent internally
+
+    CRASH-PROOF: This function will NEVER throw. Expected input noise
+    (LinkedIn strings, malformed data) is silently handled.
     """
-    # Defensive: handle non-dict input
-    if not experience or not isinstance(experience, dict):
+    try:
+        # Defensive: handle non-dict input
+        if not experience or not isinstance(experience, dict):
+            return False
+
+        # Already implemented in signal_detectors, but add additional checks here
+        if detect_scale_inconsistency(experience):
+            return True
+
+        roles = experience.get('roles', []) or experience.get('experience', [])
+
+        # Defensive: handle non-list roles
+        if not isinstance(roles, list):
+            return False
+
+        for role in roles:
+            # Defensive: skip non-dict roles
+            if not isinstance(role, dict):
+                continue
+
+            company_size = role.get('company_size', 0)
+            claimed_impact = extract_revenue_impact(role)
+
+            # Check for implausible impact at small companies
+            if claimed_impact and company_size:
+                # $50M impact at 20-person startup = red flag
+                if company_size < 50 and claimed_impact > 20_000_000:
+                    return True
+
+                # $100M impact at 100-person company = suspicious
+                if company_size < 100 and claimed_impact > 50_000_000:
+                    return True
+
+        # Check timeline math
+        total_years_claimed = 0
+        for role in roles:
+            # Defensive: skip non-dict roles
+            if not isinstance(role, dict):
+                continue
+
+            duration = role.get('duration', 0)
+            if isinstance(duration, (int, float)):
+                total_years_claimed += duration
+
+        actual_career_span = calculate_career_span(experience)
+
+        # If claimed years exceed actual career span by >20%
+        if actual_career_span > 0 and total_years_claimed > actual_career_span * 1.2:
+            return True
+
         return False
 
-    # Already implemented in signal_detectors, but add additional checks here
-    if detect_scale_inconsistency(experience):
-        return True
-
-    roles = experience.get('roles', []) or experience.get('experience', [])
-
-    # Defensive: handle non-list roles
-    if not isinstance(roles, list):
+    except Exception:
+        # Silently fail - this is expected noise from malformed input
         return False
-
-    for role in roles:
-        # Defensive: skip non-dict roles
-        if not isinstance(role, dict):
-            continue
-
-        company_size = role.get('company_size', 0)
-        claimed_impact = extract_revenue_impact(role)
-
-        # Check for implausible impact at small companies
-        if claimed_impact and company_size:
-            # $50M impact at 20-person startup = red flag
-            if company_size < 50 and claimed_impact > 20_000_000:
-                return True
-
-            # $100M impact at 100-person company = suspicious
-            if company_size < 100 and claimed_impact > 50_000_000:
-                return True
-
-    # Check timeline math
-    total_years_claimed = 0
-    for role in roles:
-        # Defensive: skip non-dict roles
-        if not isinstance(role, dict):
-            continue
-
-        duration = role.get('duration', 0)
-        if isinstance(duration, (int, float)):
-            total_years_claimed += duration
-
-    actual_career_span = calculate_career_span(experience)
-
-    # If claimed years exceed actual career span by >20%
-    if actual_career_span > 0 and total_years_claimed > actual_career_span * 1.2:
-        return True
-
-    return False
 
 
 def analyze_tenure_pattern(experience: Dict[str, Any]) -> Dict[str, Any]:
