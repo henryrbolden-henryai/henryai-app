@@ -2849,6 +2849,13 @@ def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, m
 
     for attempt in range(max_retries):
         try:
+            # DEBUG: Log message structure being sent to API
+            print(f"\n=== DEBUG: Sending Messages ===")
+            print(f"system: {len(system_prompt)} chars")
+            print(f"user: {len(user_message)} chars")
+            print(f"=== DEBUG: System prompt starts with: {system_prompt[:200]}...")
+            print(f"=== DEBUG: User message ends with: ...{user_message[-200:]}")
+
             print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
             message = client.messages.create(
                 model="claude-sonnet-4-20250514",
@@ -2893,6 +2900,13 @@ def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int
 
     for attempt in range(max_retries):
         try:
+            # DEBUG: Log message structure being sent to API
+            print(f"\n=== DEBUG: Sending Messages (Streaming) ===")
+            print(f"system: {len(system_prompt)} chars")
+            print(f"user: {len(user_message)} chars")
+            print(f"=== DEBUG: System prompt starts with: {system_prompt[:200]}...")
+            print(f"=== DEBUG: User message ends with: ...{user_message[-200:]}")
+
             print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
@@ -11072,15 +11086,10 @@ Role: {request.role_title}
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
 
-    # DEBUG: Confirm strict JSON mode is loaded
-    print("\n=== DEBUG: SYSTEM PROMPT LENGTH:", len(system_prompt))
-    print("=== DEBUG: SYSTEM PROMPT PREVIEW:\n", system_prompt[:500], "\n")
-
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
 
-    # DEBUG: Log response length to verify strict JSON mode is working
-    print(f"\n🤖 Claude responded with {len(response)} chars")
+    # DEBUG: Log response start to verify JSON output
     print(f"=== DEBUG: RESPONSE STARTS WITH: {response[:100]}")
 
     # Parse JSON response
@@ -11551,10 +11560,6 @@ Role: {request.role_title}
 
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
-
-    # DEBUG: Confirm strict JSON mode is loaded
-    print("\n=== DEBUG: STREAM ENDPOINT - SYSTEM PROMPT LENGTH:", len(system_prompt))
-    print("=== DEBUG: STREAM ENDPOINT - SYSTEM PROMPT PREVIEW:\n", system_prompt[:500], "\n")
 
     async def event_generator():
         """Generate Server-Sent Events with progressive data extraction"""
