@@ -167,6 +167,20 @@ def generate_your_move(
         # No fluff. No repetition of strengths. Answer: "What do I literally do next?"
         # ==========================================================================
 
+        # If no primary gap visible (e.g., domain gap suppressed for managers),
+        # provide generic positioning guidance without gap-specific reframing
+        if not primary_gap:
+            # Check for dominant_narrative from calibration
+            dominant_narrative = calibrated_gaps.get('dominant_narrative') if calibrated_gaps else None
+            if dominant_narrative:
+                return (f"Position as a proven leader—you {dominant_narrative}. "
+                       f"Lead with outcomes, not credentials. "
+                       f"Apply within 24 hours with a targeted note positioning yourself as a platform-first leader.")
+            else:
+                return (f"Position your leadership experience around this role's core needs. "
+                       f"Lead with outcomes and team impact; cut tangential experience. "
+                       f"Apply within 24 hours and reach out to the hiring manager directly.")
+
         gap = primary_gap.get('gap', {}) if primary_gap else {}
         gap_capability = (gap.get('capability', '') or gap.get('capability_id', '') or '').lower()
         target_domain = job_requirements.get('domain', '')
