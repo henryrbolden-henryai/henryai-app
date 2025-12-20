@@ -463,6 +463,17 @@
                 }
             } 
             else if (type === 'complete') {
+                // 🚨 DIAGNOSTIC: Log what we're storing before redirect
+                console.log("🚨 STREAMING COMPLETE - STORING TO SESSION:", JSON.stringify(data.data, null, 2));
+                console.log("🔍 CRITICAL FIELDS IN STREAM RESPONSE:", {
+                    has_final_recommendation: 'final_recommendation' in data.data,
+                    final_recommendation_value: data.data.final_recommendation,
+                    has_fit_score: 'fit_score' in data.data,
+                    fit_score_value: data.data.fit_score,
+                    fit_score_type: typeof data.data.fit_score,
+                    has_strengths: 'strengths' in data.data,
+                    strengths_length: Array.isArray(data.data.strengths) ? data.data.strengths.length : 'NOT_ARRAY'
+                });
                 // Store complete data and redirect
                 sessionStorage.setItem('analysisData', JSON.stringify(data.data));
                 streamingData.complete = data.data;

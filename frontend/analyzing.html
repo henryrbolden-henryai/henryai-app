@@ -331,6 +331,17 @@
                     _createdAt: new Date().toISOString()
                 };
 
+                // 🚨 DIAGNOSTIC: Log what we're storing before redirect
+                console.log("🚨 ANALYZING COMPLETE - STORING TO SESSION:", JSON.stringify(fullData, null, 2));
+                console.log("🔍 CRITICAL FIELDS FROM API RESPONSE:", {
+                    has_final_recommendation: 'final_recommendation' in fullData,
+                    final_recommendation_value: fullData.final_recommendation,
+                    has_fit_score: 'fit_score' in fullData,
+                    fit_score_value: fullData.fit_score,
+                    fit_score_type: typeof fullData.fit_score,
+                    has_strengths: 'strengths' in fullData,
+                    strengths_length: Array.isArray(fullData.strengths) ? fullData.strengths.length : 'NOT_ARRAY'
+                });
                 // Store analysis data
                 sessionStorage.setItem('analysisData', JSON.stringify(fullData));
 
