@@ -458,6 +458,388 @@
             }
         }
 
+        /* CAREER CHANGER REDIRECT - Inline expandable orientation */
+        .career-changer-redirect {
+            margin-top: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .career-changer-redirect.visible {
+            display: block;
+        }
+
+        .career-changer-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .career-changer-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .career-changer-prompt {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .career-changer-icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .career-changer-message {
+            flex: 1;
+        }
+
+        .career-changer-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .career-changer-subtitle {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .career-changer-toggle {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .career-changer-toggle:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .career-changer-toggle.expanded {
+            background: rgba(34, 211, 238, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .career-changer-toggle .toggle-arrow {
+            transition: transform 0.2s ease;
+        }
+
+        .career-changer-toggle.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Expanded Content */
+        .career-changer-content {
+            display: none;
+            padding: 0 20px 20px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .career-changer-content.expanded {
+            display: block;
+        }
+
+        /* Diagnosis Section */
+        .career-changer-diagnosis {
+            padding: 16px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .diagnosis-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 10px;
+        }
+
+        .diagnosis-points {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .diagnosis-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .diagnosis-point-icon {
+            color: var(--color-accent);
+            font-size: 0.8rem;
+            margin-top: 2px;
+        }
+
+        /* Three Paths Section */
+        .career-changer-paths {
+            padding: 20px 0;
+        }
+
+        .paths-intro {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .path-cards {
+            display: grid;
+            gap: 12px;
+        }
+
+        .path-card {
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .path-card:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .path-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .path-number {
+            width: 24px;
+            height: 24px;
+            background: var(--color-accent);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .path-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .path-purpose {
+            font-size: 0.8rem;
+            color: var(--color-accent);
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        .path-description {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .path-example {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #d1d5db;
+            line-height: 1.5;
+            border-left: 2px solid var(--color-accent);
+        }
+
+        .path-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .path-save-btn {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .path-save-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .path-save-btn.saved {
+            background: rgba(34, 211, 238, 0.1);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        /* Experience Building Section */
+        .career-changer-experience {
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .experience-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .experience-priorities {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .experience-priority {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .priority-rank {
+            width: 20px;
+            height: 20px;
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .experience-note {
+            background: rgba(251, 191, 36, 0.08);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.85rem;
+            color: #fbbf24;
+        }
+
+        /* What Not To Do Section */
+        .career-changer-avoid {
+            padding: 16px 0;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .avoid-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #f87171;
+            margin-bottom: 10px;
+        }
+
+        .avoid-points {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .avoid-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .avoid-point-icon {
+            color: #f87171;
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .career-changer-cta {
+            padding: 16px 0 0;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .career-changer-ask-henry {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .career-changer-ask-henry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .career-changer-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .career-changer-toggle {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .career-changer-cta {
+                flex-direction: column;
+            }
+
+            .career-changer-ask-henry {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
@@ -1093,6 +1475,164 @@
                                 Ask Henry for better paths
                                 <span>→</span>
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- 3.7. CAREER CHANGER REDIRECT (inline expandable) -->
+                    <div class="career-changer-redirect" id="careerChangerRedirect">
+                        <div class="career-changer-header" id="careerChangerHeader">
+                            <div class="career-changer-prompt">
+                                <span class="career-changer-icon">🎯</span>
+                                <div class="career-changer-message">
+                                    <div class="career-changer-title">You're not unqualified. You're early.</div>
+                                    <div class="career-changer-subtitle">This role sits ahead of where your current experience signals put you today. That's normal for career changers.</div>
+                                </div>
+                            </div>
+                            <button class="career-changer-toggle" id="careerChangerToggle">
+                                Explore paths
+                                <span class="toggle-arrow">↓</span>
+                            </button>
+                        </div>
+
+                        <div class="career-changer-content" id="careerChangerContent">
+                            <!-- Diagnosis -->
+                            <div class="career-changer-diagnosis">
+                                <div class="diagnosis-label">Primary Diagnosis</div>
+                                <div class="diagnosis-points" id="diagnosisPoints">
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Your transferable skills are strong</span>
+                                    </div>
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Your direct experience signal is still forming</span>
+                                    </div>
+                                    <div class="diagnosis-point">
+                                        <span class="diagnosis-point-icon">→</span>
+                                        <span>Hiring managers screen heavily on recent, role-specific reps</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Three Paths -->
+                            <div class="career-changer-paths">
+                                <div class="paths-intro">Three strategic paths forward:</div>
+                                <div class="path-cards" id="pathCards">
+                                    <!-- Path 1: Down-Leveled Entry -->
+                                    <div class="path-card" data-path="1">
+                                        <div class="path-card-header">
+                                            <span class="path-number">1</span>
+                                            <span class="path-title">Down-Leveled Entry Role</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: get official reps fast</div>
+                                        <div class="path-description" id="path1Description">
+                                            Same function, lower level or narrower scope. Higher interview conversion probability.
+                                        </div>
+                                        <div class="path-example" id="path1Example">
+                                            You're aiming at mid-level roles. The market sees you as entry-to-early. Close that gap intentionally.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="1">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Path 2: Adjacent Role -->
+                                    <div class="path-card" data-path="2">
+                                        <div class="path-card-header">
+                                            <span class="path-number">2</span>
+                                            <span class="path-title">Adjacent Role with High Skill Overlap</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: convert without restarting</div>
+                                        <div class="path-description" id="path2Description">
+                                            Adjacent titles, similar problem space. Easier credibility transfer.
+                                        </div>
+                                        <div class="path-example" id="path2Example">
+                                            This is not a compromise. It's leverage.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="2">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Path 3: Bridge Role -->
+                                    <div class="path-card" data-path="3">
+                                        <div class="path-card-header">
+                                            <span class="path-number">3</span>
+                                            <span class="path-title">Bridge Role Inside Your Current Domain</span>
+                                        </div>
+                                        <div class="path-purpose">Purpose: avoid full reset</div>
+                                        <div class="path-description" id="path3Description">
+                                            Keeps your existing credibility, adds role-relevant signals. Often internal-mobility friendly.
+                                        </div>
+                                        <div class="path-example" id="path3Example">
+                                            This path is slower, but stickier.
+                                        </div>
+                                        <div class="path-actions">
+                                            <button class="path-save-btn" data-path-id="3">
+                                                <span>☆</span> Save path
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Experience Building -->
+                            <div class="career-changer-experience">
+                                <div class="experience-label">How to Build Experience (Ranked by Signal Strength)</div>
+                                <div class="experience-priorities">
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">1</span>
+                                        <span>On-the-job scope expansion</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">2</span>
+                                        <span>Internships, fellowships, contract or temp roles</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">3</span>
+                                        <span>Internal transfers</span>
+                                    </div>
+                                    <div class="experience-priority">
+                                        <span class="priority-rank">4</span>
+                                        <span>Certifications or coursework (supporting, not leading)</span>
+                                    </div>
+                                </div>
+                                <div class="experience-note">
+                                    Courses help explain interest. Experience changes outcomes.
+                                </div>
+                            </div>
+
+                            <!-- What Not To Do -->
+                            <div class="career-changer-avoid">
+                                <div class="avoid-label">What Not To Do</div>
+                                <div class="avoid-points">
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Mass-apply to mid/senior roles hoping for luck</span>
+                                    </div>
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Over-inflate titles or scope on your resume</span>
+                                    </div>
+                                    <div class="avoid-point">
+                                        <span class="avoid-point-icon">✗</span>
+                                        <span>Hide the career change from interviewers</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CTA -->
+                            <div class="career-changer-cta">
+                                <button class="career-changer-ask-henry" id="careerChangerAskHenry">
+                                    <span>💬</span>
+                                    Ask Henry how to pursue this
+                                    <span>→</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -2088,6 +2628,244 @@
                     });
                 }
             });
+        })();
+
+        // =====================================================================
+        // CAREER CHANGER REDIRECT - Inline expandable orientation
+        // Trigger: fit < 60% AND gap type = experience/tenure/domain (NOT eligibility)
+        // This is orientation, NOT coaching. Defers personalization to Hey Henry.
+        // Per spec: Does NOT modify scoring, eligibility, or recommendations.
+        // =====================================================================
+        (function initCareerChangerRedirect() {
+            const redirect = document.getElementById('careerChangerRedirect');
+            const header = document.getElementById('careerChangerHeader');
+            const toggle = document.getElementById('careerChangerToggle');
+            const content = document.getElementById('careerChangerContent');
+            const askHenryBtn = document.getElementById('careerChangerAskHenry');
+
+            if (!redirect || !header || !toggle || !content) {
+                console.log('Career Changer Redirect: Elements not found');
+                return;
+            }
+
+            // ===== TRIGGER CONDITION =====
+            // Fit < 60% AND gap is experience-based (NOT eligibility blocker)
+            function shouldShowRedirect() {
+                // Check fit score threshold
+                if (fitScore >= 60) {
+                    console.log('Career Changer Redirect: Fit score >= 60%, not showing');
+                    return false;
+                }
+
+                // Check if there's an eligibility blocker - if so, don't show
+                // (Eligibility failures are terminal, not "early" career changers)
+                const realityChecks = data.reality_check?.display_checks || [];
+                const hasEligibilityBlocker = realityChecks.some(check =>
+                    check.signal_class === 'eligibility' && check.severity === 'blocker'
+                );
+
+                if (hasEligibilityBlocker) {
+                    console.log('Career Changer Redirect: Eligibility blocker detected, not showing');
+                    return false;
+                }
+
+                // Check if recommendation is "Do Not Apply" due to eligibility
+                // (vs "Conditional Apply" which indicates experience gap)
+                if (recommendationLabel.toLowerCase() === 'do not apply') {
+                    // Check if it's truly an eligibility failure or just a stretch
+                    // Eligibility failures typically have hard blockers
+                    const hasHardBlocker = realityChecks.some(check =>
+                        check.severity === 'blocker'
+                    );
+                    if (hasHardBlocker) {
+                        console.log('Career Changer Redirect: Hard blocker present, not showing');
+                        return false;
+                    }
+                }
+
+                // Check for experience/tenure/domain gaps (fit signals, not eligibility)
+                const hasFitGap = realityChecks.some(check =>
+                    ['fit', 'credibility'].includes(check.signal_class)
+                );
+
+                // Also check gaps array for experience-related gaps
+                const gapsArray = data.gaps || [];
+                const hasExperienceGap = gapsArray.some(gap => {
+                    const gapText = typeof gap === 'string' ? gap.toLowerCase() :
+                        (gap.description || gap.gap || '').toLowerCase();
+                    return gapText.includes('experience') ||
+                           gapText.includes('tenure') ||
+                           gapText.includes('years') ||
+                           gapText.includes('domain') ||
+                           gapText.includes('level') ||
+                           gapText.includes('seniority') ||
+                           gapText.includes('scope') ||
+                           gapText.includes('scale');
+                });
+
+                // Show if we have fit/experience gaps OR low fit without blockers
+                const shouldShow = hasFitGap || hasExperienceGap || fitScore < 60;
+                console.log(`Career Changer Redirect: shouldShow=${shouldShow}, hasFitGap=${hasFitGap}, hasExperienceGap=${hasExperienceGap}`);
+                return shouldShow;
+            }
+
+            if (!shouldShowRedirect()) {
+                redirect.style.display = 'none';
+                return;
+            }
+
+            // Show the redirect section
+            redirect.classList.add('visible');
+            console.log('Career Changer Redirect: Showing inline orientation');
+
+            // Track view
+            if (typeof gtag === 'function') {
+                gtag('event', 'career_changer_redirect_shown', {
+                    fit_score: fitScore,
+                    recommendation: recommendationLabel
+                });
+            }
+
+            // ===== TOGGLE EXPAND/COLLAPSE =====
+            let isExpanded = false;
+
+            header.addEventListener('click', function(e) {
+                // Don't toggle if clicking on the toggle button itself (it will handle it)
+                if (e.target === toggle) return;
+                toggleExpand();
+            });
+
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleExpand();
+            });
+
+            function toggleExpand() {
+                isExpanded = !isExpanded;
+                content.classList.toggle('expanded', isExpanded);
+                toggle.textContent = isExpanded ? 'Collapse' : 'Explore paths';
+                toggle.classList.toggle('expanded', isExpanded);
+
+                if (isExpanded && typeof gtag === 'function') {
+                    gtag('event', 'career_changer_redirect_expanded', {
+                        fit_score: fitScore
+                    });
+                }
+            }
+
+            // ===== POPULATE DYNAMIC CONTENT =====
+            // Populate the three paths with role-specific context
+            const roleTitle = data.role_title || data._role || 'this role';
+            const companyName = data._company_name || data._company || '';
+            const roleContext = companyName ? `${roleTitle} at ${companyName}` : roleTitle;
+
+            // Update path descriptions with context (optional enhancement)
+            // The HTML has generic descriptions that work for all roles
+
+            // ===== SAVE PATH FUNCTIONALITY =====
+            const pathCards = document.querySelectorAll('.career-path-card');
+            pathCards.forEach(card => {
+                const saveBtn = card.querySelector('.path-save-btn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const pathName = card.querySelector('.path-title')?.textContent || 'Path';
+
+                        // Save to localStorage
+                        const savedPaths = JSON.parse(localStorage.getItem('savedCareerPaths') || '[]');
+                        const pathEntry = {
+                            path: pathName,
+                            sourceRole: roleContext,
+                            fitScore: fitScore,
+                            savedAt: new Date().toISOString()
+                        };
+
+                        // Avoid duplicates
+                        const exists = savedPaths.some(p =>
+                            p.path === pathName && p.sourceRole === roleContext
+                        );
+                        if (!exists) {
+                            savedPaths.push(pathEntry);
+                            localStorage.setItem('savedCareerPaths', JSON.stringify(savedPaths));
+                        }
+
+                        // Update button state
+                        saveBtn.textContent = 'Saved ✓';
+                        saveBtn.disabled = true;
+                        saveBtn.classList.add('saved');
+
+                        // Track
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'career_path_saved', {
+                                path: pathName,
+                                fit_score: fitScore
+                            });
+                        }
+                    });
+                }
+            });
+
+            // ===== ASK HENRY INTEGRATION =====
+            if (askHenryBtn) {
+                askHenryBtn.addEventListener('click', function() {
+                    // Build comprehensive context for Hey Henry
+                    const redirectContext = {
+                        type: 'career_changer_redirect',
+                        sourceJob: {
+                            company: companyName,
+                            role: roleTitle,
+                            fitScore: fitScore,
+                            recommendation: recommendationLabel
+                        },
+                        candidateStrengths: data.strengths || [],
+                        candidateGaps: (data.gaps || []).slice(0, 3).map(g =>
+                            typeof g === 'string' ? g : (g.description || g.gap || '')
+                        ),
+                        candidateName: candidateFirstName,
+                        threePaths: {
+                            downLevel: 'Down-leveled entry point in target function',
+                            adjacent: 'Adjacent role with overlapping skill requirements',
+                            bridge: 'Bridge role in current domain building target skills'
+                        },
+                        experiencePriorities: [
+                            'Core function exposure (even unpaid)',
+                            'Scope complexity proof (launch experience, scale metrics)',
+                            'Domain-specific vocabulary and context',
+                            'Cross-functional collaboration evidence'
+                        ],
+                        // Include any gap mitigation advice from backend
+                        mitigationAdvice: data.intelligence_layer?.strategic_positioning?.gaps_and_mitigation || [],
+                        alternativeHints: data.alternative_actions ||
+                                          data.intelligence_layer?.alternative_actions ||
+                                          data.strategic_alternatives || []
+                    };
+
+                    sessionStorage.setItem('henryRedirectContext', JSON.stringify(redirectContext));
+
+                    // Build conversation starter prompt
+                    const initialPrompt = companyName
+                        ? `I just analyzed the ${roleTitle} role at ${companyName} and realized I'm early for it (${fitScore}% fit). Can you help me figure out which path makes the most sense for me - a down-leveled entry point, an adjacent role, or a bridge role in my current domain?`
+                        : `I just analyzed a ${roleTitle} role and realized I'm early for it (${fitScore}% fit). Can you help me figure out which path makes the most sense - a down-leveled entry point, an adjacent role, or a bridge role?`;
+
+                    // Open Hey Henry
+                    if (typeof window.openHeyHenry === 'function') {
+                        window.openHeyHenry(initialPrompt);
+                    } else if (typeof window.HeyHenry !== 'undefined' && window.HeyHenry.open) {
+                        window.HeyHenry.open(initialPrompt);
+                    } else {
+                        // Fallback: navigate to hey-henry page with context
+                        window.location.href = 'hey-henry.html?context=career_changer';
+                    }
+
+                    // Track
+                    if (typeof gtag === 'function') {
+                        gtag('event', 'career_changer_ask_henry', {
+                            fit_score: fitScore,
+                            recommendation: recommendationLabel
+                        });
+                    }
+                });
+            }
         })();
     </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
