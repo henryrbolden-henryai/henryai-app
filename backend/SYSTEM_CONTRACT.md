@@ -2,6 +2,37 @@
 
 **Job Fit Analysis Engine — Non-Negotiable Constraints**
 
+> **"If it doesn't make the candidate better, no one wins."**
+
+This contract defines the hard constraints that govern HenryAI's behavior. These are not suggestions—they are architectural invariants that protect candidate outcomes. The system is opinionated by design: it refuses to support mass-apply behavior, refuses to fabricate experience, and refuses to override market reality to preserve optimism.
+
+---
+
+## 0. Core Invariant: Candidate Improvement
+
+All HenryHQ outputs must satisfy the following condition:
+
+> **If it doesn't make the candidate better, no one wins.**
+
+"Better" means:
+- Improved clarity about market reality
+- Better decision-making and prioritization
+- Stronger positioning, skill development, or strategy
+- Reduced wasted effort or false optimism
+
+This invariant **supersedes**:
+- Encouragement for its own sake
+- Engagement-driven output
+- User preference for reassurance
+- Optimistic framing that obscures reality
+
+HenryHQ prioritizes long-term candidate improvement over short-term comfort.
+
+This invariant is **binding** and equivalent in weight to:
+- No fabrication (§5, §8)
+- Final recommendation immutability (§6)
+- Trust Principle (§10)
+
 ---
 
 ## 1. Stateless Candidate Isolation
@@ -133,6 +164,10 @@ This system exists to deliver **honest, candidate-specific, role-specific guidan
 If evidence is missing, say so.
 If alignment is partial, reflect it accurately.
 Never optimize for reassurance at the expense of truth.
+
+**The goal is not convenience—it's better decision-making that compounds.**
+
+HenryAI teaches candidates how recruiters think. Every honest assessment, every hard constraint, every locked recommendation exists to build positioning instincts that transfer to every future job search. Comfortable fiction helps no one.
 
 ---
 

@@ -13,11 +13,17 @@ This is the **MVP foundation** for a full Job Search Operating System designed f
 
 ### **1\. Job Description Analysis**
 
-* Uses a structured 50/30/20 Fit Score (skills, experience, alignment).
+* **Fit Score Calculation**: Initial scoring based on skills (50%), experience (30%), and alignment (20%)
 
-* Highlights red flags, missing qualifications, and positioning opportunities.
+* **Eligibility Gating**: Hard requirements checked before scoring proceeds
 
-* Converts long, inconsistent job descriptions into clean summaries.
+* **Calibration Layer**: CEC (Capability Evidence Check), credibility signals, and risk factors applied
+
+* **Final Recommendation Lock**: Immutable decision set by the Final Recommendation Controller
+
+* Highlights red flags, missing qualifications, and positioning opportunities
+
+* Converts long, inconsistent job descriptions into clean summaries
 
 ### **2\. Resume Parsing & Tailored Resume Generation**
 
@@ -211,21 +217,38 @@ in the browser.
 
 ## **🎯 Philosophy**
 
-HenryAI is built from actual recruiting expertise, not generic AI templates.  
- It’s designed to treat job seekers the way top recruiters treat their candidates:
+> **"If it doesn't make the candidate better, no one wins."**
 
-* strategic
+HenryAI is built from actual recruiting expertise, not generic AI templates. It's designed to treat job seekers the way top recruiters treat their best candidates—with strategic honesty, not comfortable fiction.
 
-* accurate
+### Core Values
 
-* empathetic
+* **Strategic** — Every output serves a purpose
+* **Accurate** — No fabrication, no inflation
+* **Empathetic** — Honest guidance delivered with care
+* **Factual** — Grounded in resume evidence, not wishful thinking
+* **High-leverage** — Focus energy where it matters
+* **Zero fluff** — Direct communication, no padding
 
-* factual
+### What HenryAI Refuses to Do
 
-* high-leverage
+HenryAI is opinionated and constraint-driven. The system enforces hard limits to protect candidate outcomes:
 
-* zero fluff
+* **Refuses mass-apply behavior** — Quality over quantity. Apply to 10 roles strategically, not 100 blindly.
+* **Refuses to fabricate experience** — Every statement grounded in actual resume content. Zero hallucination tolerance.
+* **Refuses to override market reality** — If alignment is partial, say so. No optimism at the expense of truth.
+* **Enforces hard constraints** — Eligibility gates, experience caps, and recommendation locks exist to prevent bad outcomes.
 
-This is not a resume vending machine.  
- This is a career acceleration engine.
+These refusals are features, not limitations.
+
+### User Transformation
+
+HenryAI doesn't just organize job searches—it teaches candidates how recruiters think. The goal isn't convenience. The goal is better decision-making that compounds over time.
+
+* Learn which roles actually fit your background
+* Understand why certain applications fail before they start
+* Build positioning instincts that transfer to every future search
+
+This is not a resume vending machine.
+This is a career acceleration engine.
 

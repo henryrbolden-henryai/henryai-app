@@ -1693,6 +1693,23 @@
         console.log('Results page data:', data);
 
         // =====================================================================
+        // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
+        // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
+        // =====================================================================
+        const finalDecision = data.final_recommendation || data.recommendation || 'Apply';
+        const lockedDoNotApply = finalDecision === 'Do Not Apply';
+        const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
+        const strengths = Array.isArray(data.strengths) ? data.strengths : [];
+
+        // CONTRACT ASSERTION (dev-only debugging)
+        console.log('🔒 IMMUTABLE UI STATE:', {
+            finalDecision,
+            lockedDoNotApply,
+            fitScore,
+            strengthsCount: strengths.length
+        });
+
+        // =====================================================================
         // VIEW TOGGLE LOGIC
         // =====================================================================
         const quickViewBtn = document.getElementById('quickViewBtn');
@@ -1730,39 +1747,11 @@
         }
 
         // =====================================================================
-        // HELPER: Infer fit score from recommendation if score is 0/null
+        // HELPER: Get fit score - REMOVED
+        // Now using immutable fitScore constant defined at top of script
         // =====================================================================
-        function inferFitScore(data) {
-            let score = data.fit_score;
-            
-            // If we have a valid score, use it
-            if (score && score > 0) {
-                return score;
-            }
-            
-            // Otherwise, infer from recommendation
-            let recommendation = '';
-            if (data.intelligence_layer?.apply_decision?.recommendation) {
-                recommendation = data.intelligence_layer.apply_decision.recommendation.toLowerCase();
-            } else if (data.intelligence_layer?.job_quality_score) {
-                recommendation = data.intelligence_layer.job_quality_score.toLowerCase();
-            }
-            
-            console.log('Inferring fit score from recommendation:', recommendation);
-            
-            if (recommendation.includes('skip') || recommendation.includes('do not')) {
-                return 35;
-            } else if (recommendation.includes('caution') || recommendation.includes('conditional')) {
-                return 58;
-            } else if (recommendation.includes('strongly')) {
-                return 82;
-            } else if (recommendation.includes('apply')) {
-                return 72;
-            }
-            
-            // Default fallback
-            return 50;
-        }
+        // fitScore is already defined above as:
+        // const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
 
         // =====================================================================
         // POPULATE: Role Summary (TRUNCATED TO 2 SENTENCES)
@@ -1789,11 +1778,12 @@
 
         // =====================================================================
         // POPULATE: Fit Score (both views)
+        // Uses immutable fitScore constant from top of script
         // =====================================================================
-        const fitScore = inferFitScore(data);
         const fitScoreEl = document.getElementById('fitScore');
         const fitScoreQuickEl = document.getElementById('fitScoreQuick');
-        
+
+        // ALWAYS render numeric score - never fall back to —%
         fitScoreEl.textContent = `${fitScore}%`;
         fitScoreQuickEl.textContent = `${fitScore}%`;
 
@@ -2075,20 +2065,34 @@
 
         // =====================================================================
         // POPULATE: Strengths
+        // FRONTEND CONTRACT: Uses immutable strengths array from top of script
+        // Never branch on truthiness. Only branch on array length for copy selection.
         // =====================================================================
         const strengthsList = document.getElementById('strengths');
-        let strengths = data.strengths || [];
-        
-        // Also check intelligence_layer.strategic_positioning.lead_with_strengths
-        if (strengths.length === 0 && data.intelligence_layer?.strategic_positioning?.lead_with_strengths) {
-            strengths = data.intelligence_layer.strategic_positioning.lead_with_strengths;
+        const strengthsSection = document.getElementById('strengthsSection');
+
+        // strengths is already defined at top as: Array.isArray(data.strengths) ? data.strengths : []
+        // Check fallback source if primary is empty
+        let strengthsToRender = strengths;
+        if (strengthsToRender.length === 0 && Array.isArray(data.intelligence_layer?.strategic_positioning?.lead_with_strengths)) {
+            strengthsToRender = data.intelligence_layer.strategic_positioning.lead_with_strengths;
         }
-        
-        strengths.slice(0, 4).forEach(strength => {
+
+        // Branch on length only, not truthiness
+        if (strengthsToRender.length > 0) {
+            strengthsToRender.slice(0, 4).forEach(strength => {
+                const li = document.createElement('li');
+                li.textContent = strength;
+                strengthsList.appendChild(li);
+            });
+        } else {
+            // Empty array is valid state - show fallback copy
             const li = document.createElement('li');
-            li.textContent = strength;
+            li.textContent = 'Detailed strength analysis not available for this role match.';
+            li.style.color = 'var(--color-text-secondary)';
+            li.style.fontStyle = 'italic';
             strengthsList.appendChild(li);
-        });
+        }
 
         // =====================================================================
         // POPULATE: Gaps (with mitigation advice if available)
@@ -2202,24 +2206,15 @@
 
         // =====================================================================
         // POPULATE: Recommendation with Candidate Name
+        // FRONTEND CONTRACT: Uses immutable finalDecision from top of script
+        // No advisory reconciliation. No recommendation_ceiling checks.
         // =====================================================================
         const recommendationEl = document.getElementById('recommendation');
-        let recommendationLabel = 'Apply';
+        const recommendationLabel = finalDecision; // Immutable - already derived at top
         let recommendationText = '';
 
         // Get candidate name
         const candidateName = data._candidate_name || '';
-
-        // CRITICAL: Use top-level recommendation field for 6-tier labels
-        // DO NOT use intelligence_layer.apply_decision.recommendation (has old "Skip" mapping)
-        if (data.recommendation) {
-            recommendationLabel = data.recommendation;
-        } else if (data.intelligence_layer?.apply_decision?.recommendation) {
-            // Fallback to intelligence_layer only if top-level not available
-            recommendationLabel = data.intelligence_layer.apply_decision.recommendation;
-        } else if (data.intelligence_layer?.job_quality_score) {
-            recommendationLabel = data.intelligence_layer.job_quality_score;
-        }
 
         // Get recommendation text from intelligence_layer or recommendation_rationale
         if (data.recommendation_rationale) {
@@ -2281,11 +2276,10 @@
 
         // =====================================================================
         // UI CONTRACT: DISABLE APPLY FOR INELIGIBLE ROLES
-        // Per Required Fixes Spec: If recommendation == "Do Not Apply", the Apply
-        // button must NOT be clickable. Either hide or show disabled state.
+        // FRONTEND CONTRACT: Use immutable lockedDoNotApply from top of script
+        // No lowercase checks. No score checks. No advisory checks.
         // =====================================================================
-        const isDoNotApply = labelLower.includes('do not apply') || labelLower === 'do not apply';
-        const applyDisabled = data.apply_disabled === true || isDoNotApply;
+        const applyDisabled = lockedDoNotApply; // Single source of truth
 
         if (applyDisabled) {
             console.log('🚫 APPLY DISABLED: Recommendation is Do Not Apply');
@@ -2343,6 +2337,18 @@
             }
         }
 
+        // =====================================================================
+        // CONTRACT ASSERTION (dev-only) - Detect violations early
+        // =====================================================================
+        const applyBtn = document.getElementById('getPackageBtn');
+        const applyBtnQuick = document.getElementById('getPackageBtnQuick');
+        if (lockedDoNotApply && applyBtn && !applyBtn.disabled) {
+            console.error('🚨 CONTRACT VIOLATION: Apply enabled on Do Not Apply');
+        }
+        if (lockedDoNotApply && applyBtnQuick && !applyBtnQuick.disabled) {
+            console.error('🚨 CONTRACT VIOLATION: Apply Quick enabled on Do Not Apply');
+        }
+
         /**
          * SINGLE SOURCE OF TRUTH: Accountability Record
          * Per QA Spec: If candidate clicks "Pass" on "Do Not Apply" screen, log it
@@ -2381,23 +2387,29 @@
 
         // =====================================================================
         // POPULATE: Quick View "Your Move" section
+        // FRONTEND CONTRACT FIX: Render fallback copy if Your Move is missing
         // SANITY CHECK: Do Not Apply must not show optimistic messaging
         // =====================================================================
         const quickMoveText = document.getElementById('quickMoveText');
         // realityCheckData already declared above
 
+        // Get strategic_action if available
+        const strategicAction = realityCheckData?.strategic_action ||
+                                data.intelligence_layer?.strategic_positioning?.recommended_action ||
+                                data.your_move || '';
+
         // SANITY CHECK: If recommendation is Do Not Apply, override any optimistic messaging
         if (applyDisabled) {
             // Use backend strategic_action if available, otherwise use direct language
-            if (realityCheckData && realityCheckData.strategic_action) {
-                quickMoveText.textContent = realityCheckData.strategic_action;
+            if (strategicAction) {
+                quickMoveText.textContent = strategicAction;
             } else {
-                quickMoveText.textContent = 'This role is not a fit. Review the alternative actions below and focus on roles where you are competitive.';
+                quickMoveText.textContent = 'This role is not a fit. Review the analysis above and focus on roles where you are competitive.';
             }
-        } else if (realityCheckData && realityCheckData.strategic_action) {
-            quickMoveText.textContent = realityCheckData.strategic_action;
+        } else if (strategicAction) {
+            quickMoveText.textContent = strategicAction;
         } else {
-            // Generate a default quick move based on fit score
+            // Fallback: Generate a default quick move based on fit score
             if (fitScore >= 70) {
                 quickMoveText.textContent = 'Apply within 24 hours and find the hiring manager on LinkedIn. Your fit score gives you an edge, but speed matters in this market.';
             } else if (fitScore >= 50) {

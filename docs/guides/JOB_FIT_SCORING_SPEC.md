@@ -1,11 +1,13 @@
 # Job Fit Scoring Implementation Specification
 
-**Version**: 2.1
+**Version**: 2.2
 **Date**: December 20, 2025
 **Status**: DRAFT - Pending Backend Audit Validation
 **Purpose**: Single source of truth for job fit analysis system
 
-> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented.
+> **Mission Statement**: *"If it doesn't make the candidate better, no one wins."*
+
+> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented. See [Appendix B](#appendix-b-4-tier--6-tier-migration-plan) for the migration plan.
 
 ---
 
@@ -55,6 +57,8 @@
 
 ### High-Level Flow
 
+**IMPORTANT:** Job Fit Scoring is NOT just "50/30/20". The initial score is the starting point—the system then applies eligibility gates, calibration layers, and locks the final decision.
+
 ```
 1. User uploads resume → parse_resume()
 2. User provides JD → extract_jd_requirements()
@@ -62,14 +66,29 @@
    ├── 50% Skills match
    ├── 30% Experience match
    └── 20% Scope/Seniority match
-4. Backend post-processing → force_apply_experience_penalties()
+4. ELIGIBILITY GATE (hard requirements check)
+   ├── Non-negotiable requirements (visa, clearance, location)
+   ├── Domain-specific gates (PM years, engineering depth)
+   └── If gate fails → recommendation capped regardless of score
+5. Backend post-processing → force_apply_experience_penalties()
    ├── Calculate role-specific years → calculate_domain_years_from_resume()
    ├── Apply company credibility → get_credibility_multiplier()
    ├── Calculate years percentage
    ├── Apply hard caps based on percentage
    └── Update recommendation tier
-5. Return to frontend → display results
+6. CALIBRATION LAYER (advisory adjustments)
+   ├── CEC (Capability Evidence Check) → explicit/implicit/missing capabilities
+   ├── Red flag detection → stop_search vs proceed_with_caution
+   ├── Role-specific calibration (technical, GTM, executive)
+   └── All calibration is ADVISORY ONLY - does not override final decision
+7. FINAL RECOMMENDATION CONTROLLER (single source of truth)
+   ├── Decision LOCKED based on score
+   ├── Immutable once set
+   └── All downstream layers (coaching, UI) use this decision
+8. Return to frontend → display results
 ```
+
+The key insight: **scoring happens early, but the decision is locked late** after all gates and calibrations have run. This ensures honest, recruiter-grade recommendations.
 
 ### Key Files
 

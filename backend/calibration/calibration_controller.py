@@ -5,6 +5,12 @@
 # Purpose: Control layer that enforces gap classification and priority ranking.
 # CEC detects capabilities. This controller decides which gaps matter.
 #
+# CORE INVARIANT (SYSTEM_CONTRACT.md §0):
+# "If it doesn't make the candidate better, no one wins."
+#
+# Outputs must improve candidate decision quality.
+# Do not soften, inflate, or redirect unless it materially makes the candidate better.
+#
 # HARD CONSTRAINTS:
 # - Does NOT override Job Fit recommendation
 # - Does NOT change fit scores

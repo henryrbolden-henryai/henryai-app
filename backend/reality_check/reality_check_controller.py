@@ -4,6 +4,12 @@ Reality Check Controller
 Main orchestration layer for the Reality Check System.
 Enforces all guardrails as hard assertions that fail fast.
 
+CORE INVARIANT (SYSTEM_CONTRACT.md §0):
+"If it doesn't make the candidate better, no one wins."
+
+Outputs must improve candidate decision quality.
+Do not soften, inflate, or redirect unless it materially makes the candidate better.
+
 Per REALITY_CHECK_SPEC.md:
 - No silent logic
 - No vibes-based branching

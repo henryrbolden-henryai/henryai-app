@@ -1,6 +1,12 @@
 /**
  * Hey Henry - Floating Chat Widget
  * A contextually-aware AI assistant available from any page
+ *
+ * CORE INVARIANT (SYSTEM_CONTRACT.md §0):
+ * "If it doesn't make the candidate better, no one wins."
+ *
+ * All responses must improve candidate decision quality.
+ * Do not soften, inflate, or redirect unless it materially makes the candidate better.
  */
 
 (function() {

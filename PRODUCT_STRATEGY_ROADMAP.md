@@ -142,14 +142,16 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Backend endpoints: `/api/linkedin/upload`, `/api/linkedin/align`, `/api/linkedin/optimize`
 - LinkedIn Score (0-100) with section-by-section optimization suggestions
 
-✅ **6-Tier Graduated Recommendation System** (Dec 16, 2025)
-- Replaced binary "Apply/Skip" with nuanced 6-level guidance:
-  - **Strong Apply** (85-100): "Strong match - prioritize this application"
-  - **Apply** (70-84): "Good fit - worth pursuing"
-  - **Consider** (55-69): "Moderate fit - apply if interested in company/role"
-  - **Apply with Caution** (40-54): "Stretch role - be strategic about positioning"
-  - **Long Shot** (25-39): "Significant gaps - only if highly motivated"
-  - **Do Not Apply** (0-24): "Not recommended - focus energy elsewhere"
+✅ **Graduated Recommendation System** (Dec 16, 2025)
+- Replaced binary "Apply/Skip" with graduated guidance
+- **Currently Deployed (4-Tier System)**:
+  - **Strongly Apply** (75-100): "Strong match - prioritize this application"
+  - **Apply** (60-74): "Good fit - worth pursuing"
+  - **Conditional Apply** (40-59): "Stretch role - be strategic about positioning"
+  - **Do Not Apply** (0-39): "Not recommended - focus energy elsewhere"
+- **Planned (6-Tier System)** - documented and future-ready:
+  - Adds "Consider" (55-69) and "Long Shot" (25-39) tiers
+  - Migration plan documented in JOB_FIT_SCORING_SPEC.md Appendix B
 - Visual badge styling with color-coded indicators
 
 ✅ **Experience Penalty Hard Caps** (Dec 16, 2025)
@@ -254,7 +256,9 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 
 ## Strategic Vision
 
-**North Star**: HenryAI should feel like Claude is personally helping you land your dream job—proactive, intelligent, and effortlessly high-quality.
+**Mission Statement**: *"If it doesn't make the candidate better, no one wins."*
+
+**North Star**: HenryAI should feel like a recruiter is personally helping you land your dream job—opinionated, strategic, and honest about your odds.
 
 ### Core Principles
 
@@ -263,6 +267,29 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 3. **Recruiter-Grade Quality**: 95%+ accuracy, zero fabrication tolerance
 4. **Perceived Performance**: Feel instant even when processing takes time
 5. **Continuous Context**: Never forget, never repeat questions
+
+### Authority Stance
+
+HenryAI is not just intelligent—it is **opinionated and constraint-driven**. The system enforces behavior that protects candidate outcomes:
+
+| Refusal | Rationale |
+|---------|-----------|
+| **Mass-apply behavior** | Quality over quantity. 10 strategic applications beat 100 blind ones. |
+| **Fabricating experience** | Every resume statement grounded in actual content. Zero hallucination. |
+| **Overriding market reality** | If alignment is partial, say so. Truth over reassurance. |
+| **Bypassing hard constraints** | Eligibility gates and recommendation locks exist for a reason. |
+
+These refusals are features, not limitations. They exist because **the goal is not convenience—it's better decision-making that compounds.**
+
+### User Transformation
+
+HenryAI doesn't merely organize job searches. It teaches candidates how recruiters think:
+
+- Learn to recognize which roles actually fit your background
+- Understand why certain applications fail before they start
+- Build positioning instincts that transfer to every future search
+
+The product enforces behavior change over time through honest feedback and strategic constraints.
 
 ---
 
