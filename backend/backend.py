@@ -2839,33 +2839,74 @@ class CalculateConfidenceResponse(BaseModel):
 # HELPER FUNCTIONS
 # ============================================================================
 
-def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0) -> str:
+# Hard JSON override - appended as final system instruction
+STRICT_JSON_OVERRIDE = """
+RETURN ONLY VALID JSON.
+Start with { and end with }.
+NO natural language.
+NO explanations.
+NO markdown fences.
+NO preambles.
+NO headers.
+Your entire output MUST be a single valid JSON object.
+"""
+
+
+def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0, strict_json_mode: bool = False) -> str:
     """Call Claude API with given prompts and automatic retry for overload errors.
 
     Args:
         temperature: Controls randomness. Use 0 for deterministic scoring, higher for creative tasks.
+        strict_json_mode: If True, appends hard JSON override and validates response starts with {
     """
     import time
+
+    # Build system content - can be string or list of content blocks
+    if strict_json_mode:
+        # Use list format to append JSON override as separate instruction
+        system_content = [
+            {"type": "text", "text": system_prompt},
+            {"type": "text", "text": STRICT_JSON_OVERRIDE}
+        ]
+    else:
+        system_content = system_prompt
 
     for attempt in range(max_retries):
         try:
             # DEBUG: Log message structure being sent to API
             print(f"\n=== DEBUG: Sending Messages ===")
-            print(f"system: {len(system_prompt)} chars")
+            print(f"system: {len(system_prompt)} chars" + (" + JSON_OVERRIDE" if strict_json_mode else ""))
             print(f"user: {len(user_message)} chars")
             print(f"=== DEBUG: System prompt starts with: {system_prompt[:200]}...")
             print(f"=== DEBUG: User message ends with: ...{user_message[-200:]}")
 
-            print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
+            print(f"🤖 Calling Claude API... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature}, strict_json={strict_json_mode})")
             message = client.messages.create(
                 model="claude-sonnet-4-20250514",
                 max_tokens=max_tokens,
                 temperature=temperature,  # Use temperature=0 for deterministic fit scoring
-                system=system_prompt,
+                system=system_content,
                 messages=[{"role": "user", "content": user_message}]
             )
             response_text = message.content[0].text
             print(f"🤖 Claude responded with {len(response_text)} chars")
+
+            # STEP 3: Validate JSON response if strict_json_mode
+            if strict_json_mode and not response_text.strip().startswith("{"):
+                print(f"⚠️ STRICT JSON VIOLATION: Response does not start with {{")
+                print(f"=== First 200 chars: {response_text[:200]}")
+                # Retry with even stronger forcing
+                if attempt < max_retries - 1:
+                    print(f"🔄 Retrying with HARD JSON FORCE...")
+                    # Add an even stronger override for retry
+                    system_content = [
+                        {"type": "text", "text": system_prompt},
+                        {"type": "text", "text": "STOP. Return ONLY the JSON object. No text. No explanation. Start with { end with }. NOTHING ELSE."}
+                    ]
+                    continue
+                else:
+                    print(f"🔥 JSON mode failed after {max_retries} attempts, returning raw response")
+
             return response_text
         except anthropic.APIStatusError as e:
             # Check for overload error (529)
@@ -2890,29 +2931,40 @@ def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096, m
             traceback.print_exc()
             raise HTTPException(status_code=500, detail=f"Claude API error: {str(e)}")
 
-def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0):
+def call_claude_streaming(system_prompt: str, user_message: str, max_tokens: int = 4096, max_retries: int = 3, temperature: float = 0, strict_json_mode: bool = False):
     """Call Claude API with streaming support - yields chunks of text, with retry for overload
 
     Args:
         temperature: Controls randomness. Use 0 for deterministic scoring.
+        strict_json_mode: If True, appends hard JSON override to system prompt
     """
     import time
+
+    # Build system content - can be string or list of content blocks
+    if strict_json_mode:
+        # Use list format to append JSON override as separate instruction
+        system_content = [
+            {"type": "text", "text": system_prompt},
+            {"type": "text", "text": STRICT_JSON_OVERRIDE}
+        ]
+    else:
+        system_content = system_prompt
 
     for attempt in range(max_retries):
         try:
             # DEBUG: Log message structure being sent to API
             print(f"\n=== DEBUG: Sending Messages (Streaming) ===")
-            print(f"system: {len(system_prompt)} chars")
+            print(f"system: {len(system_prompt)} chars" + (" + JSON_OVERRIDE" if strict_json_mode else ""))
             print(f"user: {len(user_message)} chars")
             print(f"=== DEBUG: System prompt starts with: {system_prompt[:200]}...")
             print(f"=== DEBUG: User message ends with: ...{user_message[-200:]}")
 
-            print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature})")
+            print(f"🤖 Calling Claude API (streaming)... (message length: {len(user_message)} chars, attempt {attempt + 1}/{max_retries}, temp={temperature}, strict_json={strict_json_mode})")
             with client.messages.stream(
                 model="claude-sonnet-4-20250514",
                 max_tokens=max_tokens,
                 temperature=temperature,  # Use temperature=0 for deterministic fit scoring
-                system=system_prompt,
+                system=system_content,
                 messages=[{"role": "user", "content": user_message}]
             ) as stream:
                 for text in stream.text_stream:
@@ -11094,8 +11146,8 @@ Role: {request.role_title}
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
 
-    # Call Claude with higher token limit for comprehensive analysis
-    response = call_claude(system_prompt, user_message, max_tokens=4096)
+    # Call Claude with STRICT JSON MODE enabled - adds hard JSON override and validates response
+    response = call_claude(system_prompt, user_message, max_tokens=4096, strict_json_mode=True)
 
     # DEBUG: Log response start to verify JSON output
     print(f"=== DEBUG: RESPONSE STARTS WITH: {response[:100]}")
@@ -11586,8 +11638,8 @@ Role: {request.role_title}
         applicants_sent = False
 
         try:
-            # Stream Claude's response
-            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096):
+            # Stream Claude's response with STRICT JSON MODE enabled
+            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096, strict_json_mode=True):
                 buffer += chunk
 
                 # Try to extract key fields as they become available
