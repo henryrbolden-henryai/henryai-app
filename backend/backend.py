@@ -11072,8 +11072,16 @@ Role: {request.role_title}
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
 
+    # DEBUG: Confirm strict JSON mode is loaded
+    print("\n=== DEBUG: SYSTEM PROMPT LENGTH:", len(system_prompt))
+    print("=== DEBUG: SYSTEM PROMPT PREVIEW:\n", system_prompt[:500], "\n")
+
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
+
+    # DEBUG: Log response length to verify strict JSON mode is working
+    print(f"\n🤖 Claude responded with {len(response)} chars")
+    print(f"=== DEBUG: RESPONSE STARTS WITH: {response[:100]}")
 
     # Parse JSON response
     try:
@@ -11543,6 +11551,10 @@ Role: {request.role_title}
 
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
+
+    # DEBUG: Confirm strict JSON mode is loaded
+    print("\n=== DEBUG: STREAM ENDPOINT - SYSTEM PROMPT LENGTH:", len(system_prompt))
+    print("=== DEBUG: STREAM ENDPOINT - SYSTEM PROMPT PREVIEW:\n", system_prompt[:500], "\n")
 
     async def event_generator():
         """Generate Server-Sent Events with progressive data extraction"""
