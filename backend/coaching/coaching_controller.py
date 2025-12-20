@@ -74,49 +74,79 @@ def generate_coaching_output(
         return result
 
     # =========================================================================
-    # SYSTEM CONTRACT: Candidate Isolation & Strengths Extraction Recovery
+    # UI CONTRACT: Single Source of Truth for Presentation State
     #
-    # - suppress_gaps_section = UI visibility only (what user sees)
-    # - gaps still influence coaching tone and tactical advice
-    # - Even when gaps are suppressed for display, they sharpen "Your Move"
+    # This flag determines what Your Move MAY reference.
+    # Computed ONCE, used everywhere. No downstream guessing.
     #
-    # CONTRACT RULE: If strengths extraction fails:
-    # - Skip coaching advice generation
-    # - Surface gaps + reality check ONLY
-    # - Do NOT surface "Analysis incomplete" or internal errors
-    # - Do NOT fall back to generic leadership summaries
+    # RULES:
+    # - gaps_visible = False → Your Move may NOT reference gaps
+    # - strengths_available = False → Use positioning fallback, not generic gap copy
     # =========================================================================
 
-    # CONTRACT: Empty strengths = downgrade confidence, not output quality
-    if strengths is not None and len(strengths) == 0:
-        print("   🚨 CONTRACT BREACH: Strengths extraction returned 0 items")
-        print("   📋 Recovery: Surface gaps + informational state, skip coaching advice")
+    # Step 1: Compute gaps_to_render FIRST (before any Your Move logic)
+    suppress_gaps_section = calibrated_gaps.get('suppress_gaps_section', False)
+    has_gaps = bool(calibrated_gaps.get('primary_gap') or calibrated_gaps.get('secondary_gaps'))
 
-        # Per contract: Surface informational state, not error message
-        # Allowed outputs: reality_check_only, gaps_summary
-        # Forbidden: coaching_advice, motivational copy, generic "Your Move"
-        informational_your_move = _generate_informational_your_move(
+    gaps_to_render = []
+    if not suppress_gaps_section and has_gaps:
+        show_gaps = should_show_gaps_section(
             job_fit_recommendation=job_fit_recommendation,
-            calibrated_gaps=calibrated_gaps,
-            job_requirements=job_requirements
+            primary_gap=calibrated_gaps.get('primary_gap')
         )
+        if show_gaps:
+            gaps_to_render = format_gaps_for_display(
+                primary_gap=calibrated_gaps.get('primary_gap'),
+                secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
+            )
 
-        # Still surface gaps if available
-        gaps_to_address = None
-        if not calibrated_gaps.get('suppress_gaps_section', False):
-            if calibrated_gaps.get('primary_gap') or calibrated_gaps.get('secondary_gaps'):
-                gaps_to_address = format_gaps_for_display(
-                    primary_gap=calibrated_gaps.get('primary_gap'),
-                    secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
-                )
+    # Step 2: Build UI Contract (THE ONLY AUTHORITY)
+    ui_contract = {
+        "gaps_visible": not suppress_gaps_section and len(gaps_to_render) > 0,
+        "strengths_available": strengths is not None and len(strengths) > 0,
+        "recommendation": job_fit_recommendation
+    }
+
+    print(f"   📋 UI Contract: gaps_visible={ui_contract['gaps_visible']}, strengths_available={ui_contract['strengths_available']}")
+
+    # =========================================================================
+    # STRENGTHS EXTRACTION RECOVERY (uses UI contract)
+    #
+    # If strengths extraction fails:
+    # - Check UI contract for gaps visibility
+    # - If gaps visible → gap-focused move
+    # - If gaps NOT visible → positioning move (no gap language!)
+    # =========================================================================
+
+    if not ui_contract['strengths_available']:
+        print("   🚨 CONTRACT BREACH: Strengths extraction returned 0 items")
+        print("   📋 Recovery: Using UI contract to determine Your Move copy")
+
+        # Use UI contract to determine the right fallback
+        if ui_contract['gaps_visible']:
+            # Gaps ARE visible - can reference them
+            informational_your_move = _generate_gap_focused_move(
+                job_fit_recommendation=job_fit_recommendation,
+                calibrated_gaps=calibrated_gaps,
+                job_requirements=job_requirements
+            )
+            print("   ✅ Recovery path: gap-focused move (gaps visible)")
+        else:
+            # Gaps NOT visible - positioning move only
+            informational_your_move = _generate_positioning_move(
+                job_fit_recommendation=job_fit_recommendation,
+                job_requirements=job_requirements
+            )
+            print("   ✅ Recovery path: positioning move (gaps suppressed)")
 
         return {
             'your_move': informational_your_move,
-            'gaps_to_address': gaps_to_address,
+            'gaps_to_address': gaps_to_render if ui_contract['gaps_visible'] else None,
             'show_accountability_banner': False,
             'accountability_message': None,
             '_contract_state': 'strengths_extraction_recovery',
-            '_strengths_count': 0
+            '_strengths_count': 0,
+            '_ui_contract': ui_contract
         }
 
     # Generate "Your Move" (ALWAYS generate, even with silence)
@@ -136,31 +166,28 @@ def generate_coaching_output(
     your_move = _sanitize_your_move(your_move_raw)
 
     # =========================================================================
-    # GAP SUPPRESSION (UI visibility only)
-    # This affects what the user SEES, not what influences the coaching
+    # UI CONTRACT ASSERTION: Your Move must not reference gaps when none visible
     # =========================================================================
-    if calibrated_gaps.get('suppress_gaps_section', False):
-        gaps_to_address = None
-        print("   🔇 Gaps suppressed from UI (but still influenced coaching tone)")
-    else:
-        show_gaps = should_show_gaps_section(
-            job_fit_recommendation=job_fit_recommendation,
-            primary_gap=calibrated_gaps.get('primary_gap')
-        )
+    if not ui_contract['gaps_visible']:
+        gap_language = ['gaps below', 'address gaps', 'missing experience', 'close the gap', 'gaps identified', 'highlighted gaps']
+        your_move_lower = your_move.lower()
+        for phrase in gap_language:
+            if phrase in your_move_lower:
+                print(f"   🚨 UI CONTRACT VIOLATION: Your Move contains '{phrase}' but gaps_visible=False")
+                # Do NOT block - just log. This should never happen with proper generation.
+                break
 
-        if show_gaps:
-            gaps_to_address = format_gaps_for_display(
-                primary_gap=calibrated_gaps.get('primary_gap'),
-                secondary_gaps=calibrated_gaps.get('secondary_gaps', [])
-            )
-        else:
-            gaps_to_address = None
+    # Use pre-computed gaps_to_render (from UI contract computation above)
+    gaps_to_address = gaps_to_render if ui_contract['gaps_visible'] else None
+    if not ui_contract['gaps_visible'] and has_gaps:
+        print("   🔇 Gaps suppressed from UI (but still influenced coaching tone)")
 
     result = {
         'your_move': your_move,
         'gaps_to_address': gaps_to_address,
         'show_accountability_banner': False,
-        'accountability_message': None
+        'accountability_message': None,
+        '_ui_contract': ui_contract
     }
 
     # === LOGGING: EXIT ===
@@ -1061,32 +1088,30 @@ def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
     return None  # No specific context available
 
 
-def _generate_informational_your_move(
+def _generate_gap_focused_move(
     job_fit_recommendation: str,
     calibrated_gaps: Dict[str, Any],
     job_requirements: Dict[str, Any]
 ) -> str:
     """
-    Generate informational "Your Move" when strengths extraction fails.
+    Generate gap-focused "Your Move" when gaps ARE visible.
 
-    Per SYSTEM CONTRACT:
-    - This is NOT coaching advice
-    - This is NOT motivational copy
-    - This is informational only - directs user to gaps/reality check
+    Used when:
+    - strengths extraction failed
+    - gaps ARE rendered (ui_contract.gaps_visible = True)
 
-    Allowed: Factual guidance based on recommendation + gaps
-    Forbidden: "Analysis incomplete", "Please try again", generic leadership
+    This is the ONLY path that may reference gaps in Your Move.
     """
     role_title = job_requirements.get('role_title', 'this role')
 
-    # Get primary gap info if available
+    # Get primary gap info
     primary_gap = calibrated_gaps.get('primary_gap')
     gap_summary = ""
     if primary_gap:
         gap_info = primary_gap.get('gap', {})
         gap_summary = gap_info.get('capability', gap_info.get('diagnosis', ''))
 
-    # Generate informational message based on recommendation tier
+    # Generate gap-focused message based on recommendation tier
     if job_fit_recommendation == "Do Not Apply":
         if gap_summary:
             return f"Review the gaps identified below. {gap_summary} is a critical blocker for {role_title}."
@@ -1098,12 +1123,58 @@ def _generate_informational_your_move(
         return f"Review the highlighted gaps below and address them directly in your application for {role_title}."
 
     elif job_fit_recommendation in ["Apply", "Strong Apply"]:
-        # Even for Apply, if we couldn't extract strengths, be honest
         return f"Your background aligns with {role_title}. Review the analysis below and emphasize your most relevant experience."
 
     else:
-        # Fallback - still informational, not error
         return f"Review the analysis below for {role_title} and focus on addressing any highlighted gaps."
+
+
+def _generate_positioning_move(
+    job_fit_recommendation: str,
+    job_requirements: Dict[str, Any]
+) -> str:
+    """
+    Generate positioning-only "Your Move" when gaps are NOT visible.
+
+    Used when:
+    - strengths extraction failed
+    - gaps are SUPPRESSED or not rendered (ui_contract.gaps_visible = False)
+
+    HARD RULE: This function may NEVER reference gaps.
+    No "gaps below", "address gaps", "missing experience", etc.
+    """
+    role_title = job_requirements.get('role_title', 'this role')
+
+    # Generate positioning-focused message (NO gap language)
+    if job_fit_recommendation == "Do Not Apply":
+        # Still no gap language - just be direct about fit
+        return (
+            f"Your background may not align with {role_title}'s core requirements. "
+            "Consider roles that better match your domain expertise and experience level."
+        )
+
+    elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
+        # Positioning advice without gap references
+        return (
+            "Lead with your strongest transferable outcomes. "
+            "Anchor your application in measurable impact and platform-level ownership. "
+            "Be explicit about how your experience maps to this role's core responsibilities."
+        )
+
+    elif job_fit_recommendation in ["Apply", "Strong Apply"]:
+        return (
+            f"Your background aligns with {role_title}. "
+            "Lead with your most relevant accomplishments and quantified impact. "
+            "Apply now and reach out directly to the hiring manager."
+        )
+
+    else:
+        # Absolute fallback - still no gap language
+        return (
+            "Lead with your strongest transferable outcomes. "
+            "Anchor your application in measurable impact and platform-level ownership. "
+            "Be explicit about how your experience maps to this role's core responsibilities."
+        )
 
 
 def _sanitize_your_move(text: str) -> str:
