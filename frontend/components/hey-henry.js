@@ -3133,7 +3133,12 @@ ${confidenceClosing}`,
 
             const response = await fetch(`${API_BASE}/api/hey-henry`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                mode: 'cors',
+                credentials: 'omit',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 signal: controller.signal,
                 body: requestBody
             });
