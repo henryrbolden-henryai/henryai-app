@@ -2526,11 +2526,14 @@ ${dynamicClosing}`;
             if (typeof closeAskHenry === 'function') {
                 closeAskHenry();
             } else {
-                // Fallback: manually close drawer
+                // Fallback: manually close drawer with correct class changes
                 const drawer = document.getElementById('askHenryDrawer');
                 const fab = document.getElementById('askHenryFab');
-                if (drawer) drawer.style.display = 'none';
-                if (fab) fab.classList.remove('active');
+                if (drawer) {
+                    drawer.classList.remove('open');
+                    drawer.classList.remove('expanded');
+                }
+                if (fab) fab.classList.remove('hidden');
             }
         }
 
@@ -2604,10 +2607,14 @@ ${dynamicClosing}`;
                 if (typeof closeAskHenry === 'function') {
                     closeAskHenry();
                 } else {
+                    // Fallback: manually close drawer with correct class changes
                     const drawer = document.getElementById('askHenryDrawer');
                     const fab = document.getElementById('askHenryFab');
-                    if (drawer) drawer.style.display = 'none';
-                    if (fab) fab.classList.remove('active');
+                    if (drawer) {
+                        drawer.classList.remove('open');
+                        drawer.classList.remove('expanded');
+                    }
+                    if (fab) fab.classList.remove('hidden');
                 }
             };
 
