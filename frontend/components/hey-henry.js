@@ -408,9 +408,9 @@
         .ask-henry-send {
             background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            width: 40px;
-            height: 40px;
+            border-radius: 8px;
+            width: 36px;
+            height: 36px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -431,8 +431,8 @@
         }
 
         .ask-henry-send svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             fill: #ffffff;
         }
 

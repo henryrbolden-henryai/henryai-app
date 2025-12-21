@@ -1610,16 +1610,42 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
 
     if is_hard_requirement and required_people_leadership > 0:
         if people_leadership_years < required_people_leadership:
-            print(f"🚫 ELIGIBILITY GATE FAILED: People leadership requirement")
+            # Calculate how severe the gap is
+            leadership_ratio = people_leadership_years / required_people_leadership if required_people_leadership > 0 else 0
+            gap_years = required_people_leadership - people_leadership_years
+
+            print(f"⚠️ ELIGIBILITY CHECK: People leadership requirement")
             print(f"   Required: {required_people_leadership} years")
             print(f"   Candidate has: {people_leadership_years} years")
+            print(f"   Ratio: {leadership_ratio:.1%}")
 
-            result["eligible"] = False
-            result["reason"] = f"This role requires {required_people_leadership:.0f}+ years of people leadership experience. You have {people_leadership_years:.1f} years verified. Operational leadership does not count."
-            result["failed_check"] = "people_leadership_requirement"
-            result["locked_recommendation"] = "Do Not Apply"
-            result["gap_classification"] = "missing_experience"
-            return result
+            # TIERED RESPONSE based on gap severity:
+            # - <50% of required = hard fail (Do Not Apply)
+            # - 50-70% of required = significant gap (Apply with Caution)
+            # - >70% of required = minor gap (warning only, allow score-based recommendation)
+            if leadership_ratio < 0.5:
+                # SEVERE gap - hard fail
+                print(f"🚫 ELIGIBILITY GATE FAILED: Severe leadership gap (<50%)")
+                result["eligible"] = False
+                result["reason"] = f"This role requires {required_people_leadership:.0f}+ years of people leadership experience. You have {people_leadership_years:.1f} years verified. Operational leadership does not count."
+                result["failed_check"] = "people_leadership_requirement"
+                result["locked_recommendation"] = "Do Not Apply"
+                result["gap_classification"] = "missing_experience"
+                return result
+            elif leadership_ratio < 0.7:
+                # MODERATE gap - strong warning but allow cautious apply
+                print(f"⚠️ ELIGIBILITY WARNING: Moderate leadership gap (50-70%)")
+                result["eligible"] = True
+                result["warning"] = f"Leadership gap: {gap_years:.1f} years short of {required_people_leadership:.0f}+ requirement"
+                result["recommended_adjustment"] = "Apply with Caution"
+                result["gap_classification"] = "experience_gap"
+                # Don't lock - let fit score drive recommendation with warning
+            else:
+                # MINOR gap - allow normal recommendation with note
+                print(f"ℹ️ ELIGIBILITY NOTE: Minor leadership gap (>70%)")
+                result["eligible"] = True
+                result["warning"] = f"Minor leadership gap: {gap_years:.1f} years short"
+                # No adjustment needed
 
     # ========================================================================
     # CHECK 3: Seniority Scope Mismatch
@@ -8737,7 +8763,10 @@ def extract_people_leadership_years(resume_data: dict) -> float:
     # STRONG leadership titles that inherently imply people management at established companies
     # VP/Director at real companies = you manage people (no explicit evidence needed)
     strong_leadership_titles = [
-        "vp ", "vice president", "vp,", "director", "head of", "chief"
+        "vp ", "vice president", "vp,", "director", "head of", "chief",
+        # Senior Manager titles at established companies also typically have reports
+        "senior manager", "senior product marketing manager", "group manager",
+        "marketing manager", "product marketing manager"
     ]
 
     # Explicitly NOT people leadership (operational/systems leadership)
