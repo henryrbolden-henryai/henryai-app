@@ -3080,9 +3080,22 @@ ${confidenceClosing}`,
                 clearAttachments(); // Clear after capturing
             }
 
+            // Create abort controller for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+            // Log the request for debugging
+            console.log('Hey Henry request:', {
+                url: `${API_BASE}/api/hey-henry`,
+                message: message.substring(0, 50),
+                hasAnalysis: !!analysisData._company_name,
+                hasResume: !!resumeData.name
+            });
+
             const response = await fetch(`${API_BASE}/api/hey-henry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
                 body: JSON.stringify({
                     message: message,
                     conversation_history: conversationHistory.slice(0, -1),
@@ -3114,24 +3127,44 @@ ${confidenceClosing}`,
                 })
             });
 
+            clearTimeout(timeoutId);
+            console.log('Hey Henry response received:', { status: response.status, ok: response.ok });
+
             removeTypingIndicator();
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Hey Henry server error:', { status: response.status, body: errorText });
                 throw new Error('Failed to get response');
             }
 
             const data = await response.json();
+            console.log('Hey Henry response parsed successfully');
             addMessage('assistant', data.response);
             conversationHistory.push({ role: 'assistant', content: data.response });
             saveConversationHistory();
 
         } catch (error) {
             console.error('Hey Henry error:', error);
+            console.error('Error details:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
             removeTypingIndicator();
             // More helpful error message with retry suggestion
-            const errorMessage = error.message === 'Failed to fetch'
-                ? "I'm having trouble reaching the server. This might be a connection issue. Please check your internet connection and try again."
-                : "Sorry, something went wrong. Let me try again - just resend your message.";
+            let errorMessage;
+            if (error.name === 'AbortError') {
+                errorMessage = "That took longer than expected. The server might be busy - try again in a moment.";
+            } else if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+                // Network error - could be CORS, connectivity, or server down
+                console.error('Network error - checking connectivity...');
+                errorMessage = "I'm having trouble connecting. Please check your internet connection and try again.";
+            } else if (error.message === 'Failed to get response') {
+                errorMessage = "The server had an issue processing that. Let me try again - just resend your message.";
+            } else {
+                errorMessage = "Something unexpected happened. Try sending your message again.";
+            }
             addMessage('assistant', errorMessage);
         }
 
