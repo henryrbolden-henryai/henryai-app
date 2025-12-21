@@ -385,13 +385,13 @@
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 14px 16px;
             color: #ffffff;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            font-size: 0.95rem;
+            line-height: 1.5;
             resize: none;
-            min-height: 44px;
-            max-height: 100px;
+            min-height: 52px;
+            max-height: 120px;
             order: 0; /* Input first */
         }
 
@@ -408,9 +408,9 @@
         .ask-henry-send {
             background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            width: 36px;
-            height: 36px;
+            border-radius: 6px;
+            width: 28px;
+            height: 28px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
@@ -431,8 +431,8 @@
         }
 
         .ask-henry-send svg {
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             fill: #ffffff;
         }
 
@@ -3128,7 +3128,11 @@ ${confidenceClosing}`,
         } catch (error) {
             console.error('Hey Henry error:', error);
             removeTypingIndicator();
-            addMessage('assistant', "Sorry, I'm having trouble connecting right now. Try again in a moment!");
+            // More helpful error message with retry suggestion
+            const errorMessage = error.message === 'Failed to fetch'
+                ? "I'm having trouble reaching the server. This might be a connection issue. Please check your internet connection and try again."
+                : "Sorry, something went wrong. Let me try again - just resend your message.";
+            addMessage('assistant', errorMessage);
         }
 
         isLoading = false;
