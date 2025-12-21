@@ -1008,9 +1008,19 @@
 
       // Extract company and role from JD
       const { company, role } = extractCompanyAndRole(jobDescription);
-      const candidateName = resumeJson.contact?.full_name || 'Candidate';
+      const candidateName = resumeJson.contact?.full_name || resumeJson.full_name || 'Candidate';
 
-      console.log('Analyzing for:', candidateName, '|', company, '|', role);
+      // Log detailed resume info for debugging cross-candidate contamination
+      console.log('========================================');
+      console.log('ANALYSIS REQUEST - Candidate Verification');
+      console.log('========================================');
+      console.log('Candidate Name:', candidateName);
+      console.log('Company:', company);
+      console.log('Role:', role);
+      console.log('Resume contact email:', resumeJson.contact?.email || resumeJson.email || 'N/A');
+      console.log('First experience:', resumeJson.experience?.[0]?.title || 'N/A');
+      console.log('Profile last updated:', userProfile.updated_at || 'N/A');
+      console.log('========================================');
 
       // Build request payload using new accuracy pipeline structure
       const requestPayload = {

@@ -141,7 +141,8 @@ def generate_coaching_output(
             # Gaps NOT visible - positioning move only
             informational_your_move = _generate_positioning_move(
                 job_fit_recommendation=job_fit_recommendation,
-                job_requirements=job_requirements
+                job_requirements=job_requirements,
+                candidate_resume=candidate_resume
             )
             print("   ✅ Recovery path: positioning move (gaps suppressed)")
 
@@ -378,16 +379,9 @@ def generate_your_move(
                        f"Emphasize this directly in your resume header and outreach. "
                        f"Apply now and message the hiring manager on LinkedIn.")
             else:
-                # Absolute fallback - still role-aware
-                role_context = _get_role_context(role_title or '', job_requirements)
-                if role_context:
-                    return (f"You're a competitive match for {role_context}. "
-                           f"Lead with your most relevant accomplishments. "
-                           f"Apply now and reach out directly to the hiring manager.")
-                else:
-                    return (f"You're a competitive match. "
-                           f"Lead with your highest-impact, most relevant accomplishment. "
-                           f"Apply now and message the hiring manager directly.")
+                # NEW: Use resume highlights for specific coaching instead of generic copy
+                highlights = _extract_resume_highlights(candidate_resume)
+                return _build_specific_your_move(highlights, role_title or '', job_requirements)
 
     else:
         # Fallback - should rarely hit
@@ -594,6 +588,147 @@ def extract_primary_strength(
 
     # If nothing specific found, return None (don't return weak phrases)
     return None
+
+
+def _extract_resume_highlights(candidate_resume: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract concrete highlights from resume for specific coaching.
+
+    NEVER returns generic phrases. Always pulls actual data from resume.
+
+    Returns dict with:
+    - notable_company: str or None (FAANG/notable company name)
+    - top_metrics: List[str] (up to 3 quantified achievements)
+    - team_size: str or None (e.g., "120+ engineers")
+    - product_names: List[str] (actual product/feature names launched)
+    - years_experience: str or None (e.g., "12+ years")
+    """
+    import re
+
+    result = {
+        'notable_company': None,
+        'top_metrics': [],
+        'team_size': None,
+        'product_names': [],
+        'years_experience': None
+    }
+
+    if not candidate_resume:
+        return result
+
+    combined_text = _build_resume_text_for_strength(candidate_resume)
+
+    # Extract notable company
+    experience = candidate_resume.get('experience', []) or []
+    faang_like = [
+        'google', 'meta', 'facebook', 'amazon', 'apple', 'microsoft', 'netflix',
+        'stripe', 'airbnb', 'uber', 'lyft', 'doordash', 'coinbase', 'square',
+        'block', 'twitter', 'x corp', 'salesforce', 'linkedin', 'spotify',
+        'adobe', 'nvidia', 'paypal', 'shopify', 'dropbox', 'slack', 'zoom'
+    ]
+    for exp in experience:
+        if isinstance(exp, dict):
+            company = (exp.get('company', '') or '')
+            company_lower = company.lower()
+            for notable in faang_like:
+                if notable in company_lower:
+                    result['notable_company'] = company
+                    break
+            if result['notable_company']:
+                break
+
+    # Extract top metrics (numbers with context)
+    metrics = []
+
+    # User/customer scale
+    user_matches = re.findall(r'(\d+(?:\.\d+)?)\s*(?:million|M|K)\s*(?:users|customers|DAU|MAU|accounts)', combined_text, re.IGNORECASE)
+    for match in user_matches[:1]:
+        metrics.append(f"{match}M+ users")
+
+    # Revenue/ARR
+    revenue_matches = re.findall(r'\$(\d+(?:\.\d+)?)\s*(?:million|M|billion|B)\s*(?:ARR|revenue|GMV)?', combined_text, re.IGNORECASE)
+    for match in revenue_matches[:1]:
+        metrics.append(f"${match}M ARR")
+
+    # Percentage improvements
+    pct_matches = re.findall(r'(\d+)\s*%\s*(?:increase|improvement|growth|reduction|faster)', combined_text, re.IGNORECASE)
+    for match in pct_matches[:1]:
+        metrics.append(f"{match}% improvement")
+
+    result['top_metrics'] = metrics[:3]
+
+    # Extract team size
+    team_match = re.search(r'(?:team\s+of\s+)?(\d+)\+?\s*(?:engineers|people|reports|members|direct reports)', combined_text, re.IGNORECASE)
+    if team_match:
+        result['team_size'] = f"{team_match.group(1)}+ engineers"
+
+    # Extract product names (look for product launches)
+    product_matches = re.findall(r'(?:launched|shipped|built|led)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z]?[a-z]+)?)', combined_text)
+    result['product_names'] = [p for p in product_matches if len(p) > 3 and p.lower() not in ['the', 'new', 'our', 'major', 'key', 'product', 'feature']][:3]
+
+    # Extract years of experience
+    years_match = re.search(r'(\d+)\+?\s*years?\s*(?:of\s+)?(?:experience|in)', combined_text, re.IGNORECASE)
+    if years_match:
+        result['years_experience'] = f"{years_match.group(1)}+ years"
+
+    return result
+
+
+def _build_specific_your_move(
+    highlights: Dict[str, Any],
+    role_title: str,
+    job_requirements: Dict[str, Any]
+) -> str:
+    """
+    Build a specific, resume-grounded "Your Move" message.
+
+    NEVER returns generic phrases like "Lead with your strongest outcomes."
+    Always uses actual data from the candidate's resume.
+
+    Args:
+        highlights: Output from _extract_resume_highlights
+        role_title: Sanitized role title
+        job_requirements: Job requirements dict
+
+    Returns:
+        str: Specific, actionable Your Move message
+    """
+    parts = []
+
+    # Build specific positioning based on what we found
+    if highlights.get('notable_company') and highlights.get('top_metrics'):
+        company = highlights['notable_company']
+        metric = highlights['top_metrics'][0]
+        parts.append(f"Lead with your {company} experience and {metric} impact.")
+    elif highlights.get('top_metrics'):
+        metrics_text = ' and '.join(highlights['top_metrics'][:2])
+        parts.append(f"Lead with your {metrics_text} track record.")
+    elif highlights.get('notable_company'):
+        parts.append(f"Your {highlights['notable_company']} experience is a strong signal for this role.")
+
+    # Add team/scope context if available
+    if highlights.get('team_size'):
+        if highlights.get('product_names'):
+            product = highlights['product_names'][0]
+            parts.append(f"Emphasize your {highlights['team_size']} coordination and {product} launch in your outreach.")
+        else:
+            parts.append(f"Your {highlights['team_size']} coordination experience positions you for this scope.")
+    elif highlights.get('product_names'):
+        product = highlights['product_names'][0]
+        parts.append(f"Highlight your {product} launch experience prominently.")
+
+    # Add action
+    parts.append("Apply now and reach out directly to the hiring manager on LinkedIn.")
+
+    if parts:
+        return ' '.join(parts)
+
+    # If we still have nothing specific, use years + domain as last resort
+    if highlights.get('years_experience'):
+        return f"Your {highlights['years_experience']} of experience positions you competitively. Apply now and reach out directly to the hiring manager."
+
+    # Absolute last resort - still better than "lead with your strongest outcomes"
+    return "Apply now. Prioritize a direct message to the hiring manager on LinkedIn."
 
 
 def _extract_gap_surface(gap_capability: str, target_domain: str) -> str:
@@ -1094,6 +1229,72 @@ def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:
     return None  # No specific context available
 
 
+def _sanitize_role_title(role_title: str) -> str:
+    """
+    Sanitize role_title to extract just the job title.
+
+    Handles common issues:
+    - "Role" placeholder (returns fallback)
+    - JD preamble like "As a Product Manager focused on the Consumer experience, you..."
+    - Empty/None values
+
+    Returns clean job title or "this role" fallback.
+    """
+    import re
+
+    if not role_title:
+        return "this role"
+
+    title = role_title.strip()
+
+    # Check for placeholder values
+    if title.lower() in ['role', 'the role', 'this role', 'position', 'job']:
+        return "this role"
+
+    # Check for JD preamble patterns (starts with "As a", "The", etc.)
+    jd_preamble_patterns = [
+        "as a ", "as an ", "the ", "we are looking for ",
+        "we're looking for ", "we seek ", "join our ",
+        "about the role", "about this role", "role overview",
+        "job description", "position summary"
+    ]
+    title_lower = title.lower()
+    for pattern in jd_preamble_patterns:
+        if title_lower.startswith(pattern):
+            # Try to extract just the job title after the pattern
+            remainder = title[len(pattern):].strip()
+            # Look for common job title patterns
+            # Match patterns like "Product Manager", "Senior Engineer", etc.
+            match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', remainder)
+            if match:
+                extracted = match.group(1).strip()
+                # Validate it's a reasonable length (2-50 chars)
+                if 2 <= len(extracted) <= 50:
+                    return extracted
+            # Couldn't extract a clean title, return fallback
+            return "this role"
+
+    # Check if title is too long (likely contains JD fragment)
+    if len(title) > 60:
+        # Try to extract just the first few title-like words
+        # Match first 1-4 capitalized words
+        match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', title)
+        if match:
+            extracted = match.group(1).strip()
+            if 2 <= len(extracted) <= 50:
+                return extracted
+        return "this role"
+
+    # Check for trailing JD content after comma
+    if ',' in title:
+        parts = title.split(',')
+        first_part = parts[0].strip()
+        if 2 <= len(first_part) <= 50:
+            return first_part
+
+    return title
+
+
 def _generate_gap_focused_move(
     job_fit_recommendation: str,
     calibrated_gaps: Dict[str, Any],
@@ -1108,7 +1309,7 @@ def _generate_gap_focused_move(
 
     This is the ONLY path that may reference gaps in Your Move.
     """
-    role_title = job_requirements.get('role_title', 'this role')
+    role_title = _sanitize_role_title(job_requirements.get('role_title', 'this role'))
 
     # Get primary gap info
     primary_gap = calibrated_gaps.get('primary_gap')
@@ -1137,7 +1338,8 @@ def _generate_gap_focused_move(
 
 def _generate_positioning_move(
     job_fit_recommendation: str,
-    job_requirements: Dict[str, Any]
+    job_requirements: Dict[str, Any],
+    candidate_resume: Optional[Dict[str, Any]] = None
 ) -> str:
     """
     Generate positioning-only "Your Move" when gaps are NOT visible.
@@ -1148,39 +1350,44 @@ def _generate_positioning_move(
 
     HARD RULE: This function may NEVER reference gaps.
     No "gaps below", "address gaps", "missing experience", etc.
+
+    NEW: Uses resume-specific data instead of generic copy.
     """
-    role_title = job_requirements.get('role_title', 'this role')
+    role_title = _sanitize_role_title(job_requirements.get('role_title', 'this role'))
+
+    # Extract resume highlights for specific messaging
+    highlights = _extract_resume_highlights(candidate_resume) if candidate_resume else {}
 
     # Generate positioning-focused message (NO gap language)
     if job_fit_recommendation == "Do Not Apply":
         # Still no gap language - just be direct about fit
+        # But suggest specific alternative role levels if we can
+        if highlights.get('years_experience'):
+            return (
+                f"Your background may not align with {role_title}'s core requirements. "
+                f"With {highlights['years_experience']} of experience, consider roles that better match your domain expertise."
+            )
         return (
             f"Your background may not align with {role_title}'s core requirements. "
             "Consider roles that better match your domain expertise and experience level."
         )
 
     elif job_fit_recommendation in ["Apply with Caution", "Conditional Apply"]:
-        # Positioning advice without gap references
-        return (
-            "Lead with your strongest transferable outcomes. "
-            "Anchor your application in measurable impact and platform-level ownership. "
-            "Be explicit about how your experience maps to this role's core responsibilities."
-        )
+        # Use resume-specific data for positioning advice
+        return _build_specific_your_move(highlights, role_title, job_requirements)
 
     elif job_fit_recommendation in ["Apply", "Strong Apply"]:
+        # Use resume-specific data for positioning
+        if highlights.get('notable_company') or highlights.get('top_metrics'):
+            return _build_specific_your_move(highlights, role_title, job_requirements)
         return (
             f"Your background aligns with {role_title}. "
-            "Lead with your most relevant accomplishments and quantified impact. "
-            "Apply now and reach out directly to the hiring manager."
+            "Apply now and reach out directly to the hiring manager on LinkedIn."
         )
 
     else:
-        # Absolute fallback - still no gap language
-        return (
-            "Lead with your strongest transferable outcomes. "
-            "Anchor your application in measurable impact and platform-level ownership. "
-            "Be explicit about how your experience maps to this role's core responsibilities."
-        )
+        # Absolute fallback - still use resume-specific data
+        return _build_specific_your_move(highlights, role_title, job_requirements)
 
 
 def _sanitize_your_move(text: str) -> str:
