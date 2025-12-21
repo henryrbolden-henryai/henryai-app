@@ -204,14 +204,12 @@ NON_TRANSFERABLE_DOMAINS = [
         # Keywords that REQUIRE context (not standalone matches)
         "require_ownership": True
     },
-    # People Leadership at Director+ level
-    {
-        "domain": "people_leadership",
-        "levels": ["director", "senior director", "vp", "vice president", "head of"],
-        "description": "People Leadership at Director+ level",
-        "keywords": ["people leadership", "direct reports", "team management", "people management", "managing teams"],
-        "require_ownership": True
-    },
+    # NOTE: People Leadership is intentionally NOT in this list because:
+    # 1. People leadership IS transferable across industries and roles
+    # 2. We have a dedicated tiered leadership check (see CHECK 2 in check_eligibility_gate)
+    #    that properly handles leadership gaps with 50%/70% thresholds
+    # 3. Evidence like "built and scaled teams" should satisfy leadership requirements
+    #    even if exact phrasing differs from JD
     # Core Software Engineering (not PM, not design, not adjacent)
     {
         "domain": "core_software_engineering",

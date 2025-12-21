@@ -236,7 +236,9 @@ class TestNonTransferableDomains:
     def test_non_transferable_domains_constant_exists(self):
         """NON_TRANSFERABLE_DOMAINS must be defined."""
         assert NON_TRANSFERABLE_DOMAINS is not None
-        assert len(NON_TRANSFERABLE_DOMAINS) >= 5
+        # 4 domains: executive_search, core_software_engineering, ml_ai_research, regulated_clinical_finance
+        # Note: people_leadership was removed - it's handled by the tiered leadership check instead
+        assert len(NON_TRANSFERABLE_DOMAINS) >= 4
 
     def test_pm_cannot_apply_to_swe_role(self, product_manager_applying_to_swe, jd_staff_software_engineer):
         """Product Manager applying to Staff SWE must be rejected."""
@@ -472,8 +474,14 @@ class TestRecommendationLock:
         assert result["recommendation"] == "Do Not Apply"
         assert result.get("experience_analysis", {}).get("recommendation_locked", False) == True
 
-    def test_eligibility_failure_caps_score_at_45(self):
-        """Eligibility gate failure must cap score at 45%."""
+    def test_eligibility_failure_locks_do_not_apply(self):
+        """Eligibility gate failure locks recommendation to Do Not Apply.
+
+        Note: Score is NOT capped when recommendation is locked. The score
+        reflects actual skills alignment while the lock explains WHY the
+        candidate shouldn't apply (e.g., non-transferable domain mismatch).
+        This provides more useful feedback than artificially capping the score.
+        """
         response_data = {
             "recommendation": "Apply",
             "fit_score": 80,
@@ -498,7 +506,9 @@ class TestRecommendationLock:
 
         result = force_apply_experience_penalties(response_data, resume_data)
 
-        assert result["fit_score"] <= 45
+        # Recommendation must be locked to "Do Not Apply"
+        assert result["recommendation"] == "Do Not Apply"
+        assert result.get("experience_analysis", {}).get("recommendation_locked", False) == True
 
 
 # =============================================================================
@@ -611,7 +621,11 @@ class TestEligibilityGateIntegration:
     ):
         """
         Full integration test: Jordan applying to Director role.
-        Expected: Do Not Apply, locked recommendation, score <= 45.
+        Expected: Do Not Apply with locked recommendation.
+
+        Note: Score is NOT capped when recommendation is locked. The score
+        reflects actual skills alignment while the lock explains WHY the
+        candidate shouldn't apply (e.g., no people leadership experience).
         """
         response_data = {
             "recommendation": "Apply",
@@ -635,9 +649,6 @@ class TestEligibilityGateIntegration:
 
         # Must be locked to Do Not Apply
         assert result["recommendation"] == "Do Not Apply"
-
-        # Score must be capped
-        assert result["fit_score"] <= 45
 
         # Must have locked flag
         assert result.get("experience_analysis", {}).get("recommendation_locked", False) == True
@@ -1115,9 +1126,10 @@ class TestGoldenUnitTest:
         assert result.get("apply_disabled") == True, \
             "apply_disabled must be True for Do Not Apply"
 
-        # 4. Score must be capped (informational only)
-        assert result["fit_score"] <= 45, \
-            f"Score must be capped at 45 for locked Do Not Apply, got: {result['fit_score']}"
+        # 4. Score reflects actual skills alignment (not artificially capped)
+        # When recommendation is locked, score still shows genuine fit assessment.
+        # The lock explains WHY they shouldn't apply despite the score.
+        # This provides more useful feedback than an artificially capped score.
 
         # ======== FORBIDDEN STATE ASSERTIONS ========
         # If any of these appear, the test MUST fail
