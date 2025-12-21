@@ -5604,13 +5604,22 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         critical_gaps = cec_summary.get("critical_gaps", [])
         domain_gap_detected = any("domain" in (g.get("capability_id", "") or "").lower() for g in critical_gaps)
 
-    if FINAL_CONTROLLER_AVAILABLE:
-        # Use the new single-authority controller
-        controller = FinalRecommendationController()
+    # ========================================================================
+    # SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025)
+    # Per HenryHQ Scoring Spec v2.0 - Invariant enforced score-decision pairing
+    #
+    # Score Range | Decision           | Meaning
+    # 85-100      | Strong Apply       | Top-tier match. Prioritize this application.
+    # 70-84       | Apply              | Solid fit. Worth your time and energy.
+    # 55-69       | Consider           | Moderate fit. Apply if genuinely interested.
+    # 40-54       | Apply with Caution | Stretch role. Need positioning and referral.
+    # 25-39       | Long Shot          | Significant gaps. Only with inside connection.
+    # 0-24        | Do Not Apply       | Not your role. Invest energy elsewhere.
+    # ========================================================================
 
-        print("\n" + "=" * 80)
-        print("🔒 FINAL RECOMMENDATION CONTROLLER - SINGLE SOURCE OF TRUTH")
-        print("=" * 80)
+    if FINAL_CONTROLLER_AVAILABLE:
+        # Use the new single-authority controller with six-tier system
+        controller = FinalRecommendationController()
 
         decision = controller.compute_recommendation(
             fit_score=capped_score,
@@ -5622,62 +5631,114 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         )
 
         correct_recommendation = decision.recommendation
+        # Use the enforced score from the decision (may be adjusted for invariant)
+        capped_score = decision.fit_score
 
-        # Generate alternative actions based on recommendation
-        if correct_recommendation == "Do Not Apply":
+        # Generate tier-appropriate alternative actions (six-tier system)
+        if correct_recommendation == "Strong Apply":
             alternative_actions = [
-                f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience",
-                "Build 1-2 more years of experience at an established company",
-                "Consider Associate/Junior level roles at this company if available"
+                "Apply immediately - you're a top-tier match for this role",
+                "Reach out directly to the hiring manager on LinkedIn",
+                "This should be a priority application in your pipeline"
+            ]
+        elif correct_recommendation == "Apply":
+            alternative_actions = [
+                "Solid fit - apply within the next 24-48 hours",
+                "Lead with your strongest, most relevant accomplishments",
+                "Consider reaching out to someone at the company for an intro"
+            ]
+        elif correct_recommendation == "Consider":
+            alternative_actions = [
+                "Worth pursuing if you're genuinely interested in this company/role",
+                "Address the experience gaps proactively in your cover letter",
+                "Don't prioritize this over stronger fits in your pipeline"
             ]
         elif correct_recommendation == "Apply with Caution":
             alternative_actions = [
-                "Position adjacent experience carefully in your materials",
-                "Network with someone at the company to strengthen your candidacy",
-                "Lead with your strongest, most relevant accomplishments"
+                "This is a stretch role - you'll need strong positioning",
+                "Network with someone at the company before applying if possible",
+                "Lead with your most transferable accomplishments"
             ]
-        elif correct_recommendation == "Conditional Apply":
+        elif correct_recommendation == "Long Shot":
             alternative_actions = [
-                "Apply and reach out directly to hiring manager on LinkedIn",
-                "Emphasize specific achievements that match the top 3 requirements",
-                "Address experience gaps proactively in your cover letter"
+                "Only pursue if you have an inside connection or unique angle",
+                "Consider targeting roles 1-2 levels below this one at the same company",
+                f"Build 1-2 more years of experience before targeting {required_years}+ year roles"
             ]
-        else:
-            alternative_actions = []
+        else:  # Do Not Apply
+            alternative_actions = [
+                f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
+                "This role requires fundamentally different experience than you have",
+                "Focus your energy on roles where you're a stronger match"
+            ]
 
         print(f"   Score: {capped_score}%")
         print(f"   Eligibility: {'PASSED' if not recommendation_locked else 'FAILED'}")
         print(f"   Manager Role: {is_manager_role}")
         print(f"   Domain Gap: {domain_gap_detected} {'(suppressed for manager)' if is_manager_role and domain_gap_detected else ''}")
         print(f"   Final Recommendation: {correct_recommendation}")
-        print("=" * 80 + "\n")
 
         # Store controller decision for downstream access
         response_data["final_decision_controller"] = controller.to_dict()
+        # Update fit_score with potentially adjusted value from invariant enforcement
+        response_data["fit_score"] = capped_score
     else:
-        # Fallback to legacy mapping if controller not available
-        if capped_score < 50 and recommendation_locked:
+        # Fallback six-tier mapping (if controller not available)
+        # Per HenryHQ Scoring Spec v2.0 - strict tier boundaries
+        if recommendation_locked:
+            # Eligibility failure - cap score to match Do Not Apply tier
+            capped_score = min(capped_score, 24)
             correct_recommendation = "Do Not Apply"
             alternative_actions = [
-                f"Target roles requiring {candidate_years:.1f}-{candidate_years + 1:.1f} years of experience",
-                "Build 1-2 more years of experience at an established company",
-                "Consider Associate/Junior level roles at this company if available"
+                f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
+                "This role requires fundamentally different experience than you have",
+                "Focus your energy on roles where you're a stronger match"
             ]
-        elif capped_score < 50:
-            correct_recommendation = "Apply with Caution"
-            alternative_actions = ["Lead with your strongest, most relevant accomplishments"]
-        elif capped_score < 70:
-            correct_recommendation = "Apply with Caution"
-            alternative_actions = ["Network with someone at the company before applying"]
-        elif capped_score < 80:
-            correct_recommendation = "Conditional Apply"
-            alternative_actions = ["Apply and reach out directly to hiring manager on LinkedIn"]
-        elif capped_score < 90:
-            correct_recommendation = "Apply"
-            alternative_actions = []
-        else:
+        elif capped_score >= 85:
             correct_recommendation = "Strong Apply"
-            alternative_actions = ["Apply immediately - you're a top-tier match"]
+            alternative_actions = [
+                "Apply immediately - you're a top-tier match for this role",
+                "Reach out directly to the hiring manager on LinkedIn",
+                "This should be a priority application in your pipeline"
+            ]
+        elif capped_score >= 70:
+            correct_recommendation = "Apply"
+            alternative_actions = [
+                "Solid fit - apply within the next 24-48 hours",
+                "Lead with your strongest, most relevant accomplishments",
+                "Consider reaching out to someone at the company for an intro"
+            ]
+        elif capped_score >= 55:
+            correct_recommendation = "Consider"
+            alternative_actions = [
+                "Worth pursuing if you're genuinely interested in this company/role",
+                "Address the experience gaps proactively in your cover letter",
+                "Don't prioritize this over stronger fits in your pipeline"
+            ]
+        elif capped_score >= 40:
+            correct_recommendation = "Apply with Caution"
+            alternative_actions = [
+                "This is a stretch role - you'll need strong positioning",
+                "Network with someone at the company before applying if possible",
+                "Lead with your most transferable accomplishments"
+            ]
+        elif capped_score >= 25:
+            correct_recommendation = "Long Shot"
+            alternative_actions = [
+                "Only pursue if you have an inside connection or unique angle",
+                "Consider targeting roles 1-2 levels below this one at the same company",
+                f"Build 1-2 more years of experience before targeting {required_years}+ year roles"
+            ]
+        else:
+            correct_recommendation = "Do Not Apply"
+            alternative_actions = [
+                f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
+                "This role requires fundamentally different experience than you have",
+                "Focus your energy on roles where you're a stronger match"
+            ]
+
+        # Update fit_score for eligibility failure
+        response_data["fit_score"] = capped_score
 
     # ========================================================================
     # SET RECOMMENDATION - THIS IS THE FINAL IMMUTABLE VALUE

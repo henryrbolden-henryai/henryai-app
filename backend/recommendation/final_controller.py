@@ -15,6 +15,16 @@
 # 2. Score is set ONCE and locked
 # 3. No downstream layer may mutate these values
 # 4. Any override attempt is logged and ignored
+# 5. Score and Decision MUST be logically consistent (INVARIANT ENFORCED)
+#
+# SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025):
+# Score Range | Decision           | Meaning
+# 85-100      | Strong Apply       | Top-tier match. Prioritize this application.
+# 70-84       | Apply              | Solid fit. Worth your time and energy.
+# 55-69       | Consider           | Moderate fit. Apply if genuinely interested.
+# 40-54       | Apply with Caution | Stretch role. Need positioning and referral.
+# 25-39       | Long Shot          | Significant gaps. Only with inside connection.
+# 0-24        | Do Not Apply       | Not your role. Invest energy elsewhere.
 #
 # INPUTS:
 # - Eligibility Gate result (pass/fail)
@@ -28,18 +38,220 @@
 #
 # ============================================================================
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
 
-class Recommendation(Enum):
-    """Canonical recommendation values. No aliases."""
-    DO_NOT_APPLY = "Do Not Apply"
-    APPLY_WITH_CAUTION = "Apply with Caution"
-    CONDITIONAL_APPLY = "Conditional Apply"
-    APPLY = "Apply"
+class Recommendation(str, Enum):
+    """
+    Six-Tier Recommendation System.
+
+    Per HenryHQ Scoring Spec v2.0 (Dec 21, 2025)
+    These boundaries are hardcoded and may NOT be overridden.
+    """
     STRONG_APPLY = "Strong Apply"
+    APPLY = "Apply"
+    CONSIDER = "Consider"
+    APPLY_WITH_CAUTION = "Apply with Caution"
+    LONG_SHOT = "Long Shot"
+    DO_NOT_APPLY = "Do Not Apply"
+
+
+# ============================================================================
+# SCORE-TO-RECOMMENDATION MAPPING - IMMUTABLE BOUNDARIES
+# ============================================================================
+
+# Score -> Decision mapping (inclusive lower bound, exclusive upper bound)
+SCORE_TO_RECOMMENDATION = {
+    (85, 101): Recommendation.STRONG_APPLY,
+    (70, 85): Recommendation.APPLY,
+    (55, 70): Recommendation.CONSIDER,
+    (40, 55): Recommendation.APPLY_WITH_CAUTION,
+    (25, 40): Recommendation.LONG_SHOT,
+    (0, 25): Recommendation.DO_NOT_APPLY,
+}
+
+# Decision -> Score constraints (for invariant enforcement)
+DECISION_SCORE_FLOORS = {
+    Recommendation.STRONG_APPLY: 85,
+    Recommendation.APPLY: 70,
+    Recommendation.CONSIDER: 55,
+    Recommendation.APPLY_WITH_CAUTION: 40,
+    Recommendation.LONG_SHOT: 25,
+    Recommendation.DO_NOT_APPLY: 0,
+}
+
+DECISION_SCORE_CEILINGS = {
+    Recommendation.STRONG_APPLY: 100,
+    Recommendation.APPLY: 84,
+    Recommendation.CONSIDER: 69,
+    Recommendation.APPLY_WITH_CAUTION: 54,
+    Recommendation.LONG_SHOT: 39,
+    Recommendation.DO_NOT_APPLY: 24,
+}
+
+# Invalid combinations - if detected, system MUST autocorrect
+INVALID_SCORE_DECISION_PAIRS: List[Tuple[Callable[[int], bool], Recommendation, str]] = [
+    # High score + low decision = INVALID
+    (lambda s: s >= 70, Recommendation.DO_NOT_APPLY, "High score (>=70) cannot pair with Do Not Apply"),
+    (lambda s: s >= 70, Recommendation.LONG_SHOT, "High score (>=70) cannot pair with Long Shot"),
+    (lambda s: s >= 85, Recommendation.APPLY_WITH_CAUTION, "Top score (>=85) cannot pair with Apply with Caution"),
+    (lambda s: s >= 85, Recommendation.CONSIDER, "Top score (>=85) cannot pair with Consider"),
+
+    # Low score + high decision = INVALID
+    (lambda s: s < 40, Recommendation.APPLY, "Low score (<40) cannot pair with Apply"),
+    (lambda s: s < 55, Recommendation.STRONG_APPLY, "Score below 55 cannot pair with Strong Apply"),
+    (lambda s: s < 25, Recommendation.APPLY_WITH_CAUTION, "Very low score (<25) cannot pair with Apply with Caution"),
+]
+
+
+# ============================================================================
+# SCORE-DECISION LOCK FUNCTIONS
+# ============================================================================
+
+def get_recommendation_from_score(score: int) -> Recommendation:
+    """
+    Get the correct recommendation for a given score.
+    This is the ONLY function that should determine recommendation from score.
+
+    Args:
+        score: Fit score (0-100)
+
+    Returns:
+        Recommendation enum value
+    """
+    for (low, high), rec in SCORE_TO_RECOMMENDATION.items():
+        if low <= score < high:
+            return rec
+
+    # Edge case: exactly 100
+    if score >= 100:
+        return Recommendation.STRONG_APPLY
+
+    # Fallback for invalid scores
+    if score < 0:
+        return Recommendation.DO_NOT_APPLY
+    return Recommendation.STRONG_APPLY
+
+
+def enforce_score_decision_lock(score: int, decision: str) -> Tuple[int, str]:
+    """
+    Enforces invariant: score and decision MUST be logically consistent.
+
+    If a mismatch is detected:
+    1. Log the violation
+    2. Adjust score to match the decision tier ceiling
+    3. Return corrected values
+
+    This is the FINAL AUTHORITY on score-decision pairing.
+    No downstream code may override this function's output.
+
+    Args:
+        score: The fit score (0-100)
+        decision: The recommendation string
+
+    Returns:
+        tuple[int, str]: (adjusted_score, decision)
+    """
+    # Normalize decision to enum if string
+    if isinstance(decision, str):
+        try:
+            decision_enum = Recommendation(decision)
+        except ValueError:
+            # Unknown decision - default to score-based
+            decision_enum = get_recommendation_from_score(score)
+            print(f"   ⚠️ Unknown decision '{decision}' - defaulting to {decision_enum.value}")
+            return score, decision_enum.value
+    else:
+        decision_enum = decision
+
+    # Get valid score range for this decision
+    floor = DECISION_SCORE_FLOORS[decision_enum]
+    ceiling = DECISION_SCORE_CEILINGS[decision_enum]
+
+    # Check for invariant violation
+    if score < floor or score > ceiling:
+        original_score = score
+
+        # Determine correction strategy:
+        # - If score is TOO HIGH for decision, cap to ceiling
+        # - If score is TOO LOW for decision, bump to floor
+        if score > ceiling:
+            adjusted_score = ceiling
+            correction_type = "capped"
+        else:
+            adjusted_score = floor
+            correction_type = "bumped"
+
+        # Log the violation
+        print(f"\n{'🚨' * 10}")
+        print(f"SCORE-DECISION INVARIANT VIOLATION DETECTED")
+        print(f"{'🚨' * 10}")
+        print(f"   Original: {original_score}% with '{decision_enum.value}'")
+        print(f"   Valid range for '{decision_enum.value}': {floor}-{ceiling}%")
+        print(f"   Correction: Score {correction_type} to {adjusted_score}%")
+        print(f"{'🚨' * 10}\n")
+
+        return adjusted_score, decision_enum.value
+
+    return score, decision_enum.value
+
+
+def validate_score_decision_pair(score: int, decision: str) -> Dict[str, Any]:
+    """
+    Validate a score-decision pair and return diagnostics.
+
+    Args:
+        score: Fit score (0-100)
+        decision: Recommendation string
+
+    Returns:
+        dict with keys:
+        - valid: bool
+        - expected_decision: str
+        - actual_decision: str
+        - violation_type: str or None
+        - correction_needed: bool
+        - corrected_score: int
+        - corrected_decision: str
+    """
+    expected = get_recommendation_from_score(score)
+
+    try:
+        decision_enum = Recommendation(decision) if isinstance(decision, str) else decision
+    except ValueError:
+        return {
+            "valid": False,
+            "expected_decision": expected.value,
+            "actual_decision": decision,
+            "violation_type": "unknown_decision",
+            "correction_needed": True,
+            "corrected_score": score,
+            "corrected_decision": expected.value,
+        }
+
+    if expected != decision_enum:
+        corrected_score, corrected_decision = enforce_score_decision_lock(score, decision)
+        return {
+            "valid": False,
+            "expected_decision": expected.value,
+            "actual_decision": decision_enum.value,
+            "violation_type": "score_decision_mismatch",
+            "correction_needed": True,
+            "corrected_score": corrected_score,
+            "corrected_decision": corrected_decision,
+        }
+
+    return {
+        "valid": True,
+        "expected_decision": expected.value,
+        "actual_decision": decision_enum.value,
+        "violation_type": None,
+        "correction_needed": False,
+        "corrected_score": score,
+        "corrected_decision": decision,
+    }
 
 
 @dataclass
@@ -67,17 +279,16 @@ class FinalRecommendationController:
 
     All other controllers (CEC, Calibration, Coaching) are advisory.
     They may add context but CANNOT change the decision.
-    """
 
-    # Frozen mapping - DO NOT MODIFY
-    SCORE_TO_RECOMMENDATION = {
-        (0, 50): Recommendation.DO_NOT_APPLY,
-        (50, 60): Recommendation.APPLY_WITH_CAUTION,
-        (60, 70): Recommendation.APPLY_WITH_CAUTION,
-        (70, 80): Recommendation.CONDITIONAL_APPLY,
-        (80, 90): Recommendation.APPLY,
-        (90, 101): Recommendation.STRONG_APPLY,
-    }
+    SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025):
+    Score Range | Decision           | Meaning
+    85-100      | Strong Apply       | Top-tier match. Prioritize this application.
+    70-84       | Apply              | Solid fit. Worth your time and energy.
+    55-69       | Consider           | Moderate fit. Apply if genuinely interested.
+    40-54       | Apply with Caution | Stretch role. Need positioning and referral.
+    25-39       | Long Shot          | Significant gaps. Only with inside connection.
+    0-24        | Do Not Apply       | Not your role. Invest energy elsewhere.
+    """
 
     def __init__(self):
         self._decision: Optional[FinalDecision] = None
@@ -105,12 +316,17 @@ class FinalRecommendationController:
 
         This is called ONCE. Any subsequent call is logged and ignored.
 
-        LOCKED MAPPING:
-        - fit_score >= 85 → Apply
-        - 70-84 → Conditional Apply
-        - 60-69 → Apply with Caution
-        - 50-59 → Apply with Caution
-        - < 50 → Do Not Apply (if eligibility locked) OR Apply with Caution
+        SIX-TIER MAPPING (Dec 21, 2025):
+        - fit_score >= 85 → Strong Apply
+        - 70-84 → Apply
+        - 55-69 → Consider
+        - 40-54 → Apply with Caution
+        - 25-39 → Long Shot
+        - 0-24 → Do Not Apply
+
+        INVARIANT ENFORCEMENT:
+        - Score and decision MUST be logically consistent
+        - If mismatch detected, score is adjusted to match decision tier
 
         MANAGER RULE:
         - Domain gaps may NEVER downgrade recommendation for managers
@@ -135,21 +351,31 @@ class FinalRecommendationController:
         # ELIGIBILITY GATE - FIRST
         # ======================================================================
         if not eligibility_passed:
+            # Cap score to match Do Not Apply tier ceiling (24)
+            capped_score = min(fit_score, DECISION_SCORE_CEILINGS[Recommendation.DO_NOT_APPLY])
+
             self._decision = FinalDecision(
                 recommendation=Recommendation.DO_NOT_APPLY.value,
-                fit_score=min(fit_score, 45),  # Cap at 45 if eligibility failed
+                fit_score=capped_score,
                 confidence="high",
                 locked=True,
                 locked_reason=eligibility_reason or "Eligibility gate failed",
                 advisory_signals={}
             )
-            print(f"   🔒 ELIGIBILITY LOCKED: {Recommendation.DO_NOT_APPLY.value}")
+            print(f"   🔒 ELIGIBILITY LOCKED: {Recommendation.DO_NOT_APPLY.value} (score capped to {capped_score}%)")
             return self._decision
 
         # ======================================================================
-        # SCORE-BASED RECOMMENDATION - FROZEN MAPPING
+        # SCORE-BASED RECOMMENDATION - SIX-TIER SYSTEM
         # ======================================================================
-        recommendation = self._score_to_recommendation(fit_score)
+        recommendation = get_recommendation_from_score(fit_score)
+
+        # ======================================================================
+        # INVARIANT ENFORCEMENT - Score must match decision tier
+        # ======================================================================
+        enforced_score, enforced_decision = enforce_score_decision_lock(
+            fit_score, recommendation.value
+        )
 
         # ======================================================================
         # MANAGER DOMAIN GAP RULE
@@ -165,11 +391,15 @@ class FinalRecommendationController:
             print(f"   🔄 MANAGER RULE: Domain gap suppressed (advisory only)")
 
         # ======================================================================
-        # SET CONFIDENCE BASED ON SCORE
+        # SET CONFIDENCE BASED ON SCORE (six-tier adjusted)
         # ======================================================================
-        if fit_score >= 80:
+        if enforced_score >= 85:
             confidence = "high"
-        elif fit_score >= 65:
+        elif enforced_score >= 70:
+            confidence = "high"
+        elif enforced_score >= 55:
+            confidence = "medium"
+        elif enforced_score >= 40:
             confidence = "medium"
         else:
             confidence = "low"
@@ -178,26 +408,32 @@ class FinalRecommendationController:
         # LOCK THE DECISION
         # ======================================================================
         self._decision = FinalDecision(
-            recommendation=recommendation.value,
-            fit_score=fit_score,
+            recommendation=enforced_decision,
+            fit_score=enforced_score,
             confidence=confidence,
             locked=True,
-            locked_reason="Score-based mapping",
+            locked_reason="Six-tier score-based mapping with invariant enforcement",
             advisory_signals=advisory_signals
         )
 
-        print(f"   🔒 DECISION LOCKED: {recommendation.value} ({fit_score}%)")
+        print("\n" + "=" * 80)
+        print("🔒 SIX-TIER RECOMMENDATION SYSTEM - DECISION LOCKED")
+        print("=" * 80)
+        print(f"   Score: {enforced_score}%")
+        print(f"   Recommendation: {enforced_decision}")
+        print(f"   Confidence: {confidence}")
+        print("=" * 80 + "\n")
+
         return self._decision
 
     def _score_to_recommendation(self, score: int) -> Recommendation:
-        """Apply frozen score → recommendation mapping."""
-        for (low, high), rec in self.SCORE_TO_RECOMMENDATION.items():
-            if low <= score < high:
-                return rec
-        # Fallback for edge cases
-        if score >= 90:
-            return Recommendation.STRONG_APPLY
-        return Recommendation.DO_NOT_APPLY
+        """
+        Apply six-tier score -> recommendation mapping.
+
+        DEPRECATED: Use get_recommendation_from_score() instead.
+        Kept for backwards compatibility.
+        """
+        return get_recommendation_from_score(score)
 
     def add_advisory_signal(self, signal_type: str, signal_data: Dict[str, Any]) -> bool:
         """

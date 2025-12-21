@@ -633,3 +633,336 @@ def _extract_resume_text(resume_data: Dict[str, Any]) -> str:
             parts.append(edu.get("field", ""))
 
     return " ".join(str(p) for p in parts if p)
+
+
+# ============================================================================
+# THE OPPORTUNITY SECTION - Strategic Context Signals
+# Per HenryHQ Implementation Guide (Dec 21, 2025)
+#
+# Answers five strategic questions:
+# 1. Why now? - What makes this moment strategic for applying?
+# 2. Why this org? - What's happening at this company that creates opportunity?
+# 3. Why this team? - What does this team own and why does it matter?
+# 4. What it opens - What does this role unlock in 18-24 months?
+# 5. Behind the scenes - What's the internal context a candidate wouldn't see?
+# ============================================================================
+
+from enum import Enum
+from dataclasses import dataclass
+from datetime import datetime
+
+
+class OpportunitySignalType(str, Enum):
+    WHY_NOW = "why_now"
+    WHY_THIS_ORG = "why_this_org"
+    WHY_THIS_TEAM = "why_this_team"
+    WHAT_IT_OPENS = "what_it_opens"
+    BEHIND_THE_SCENES = "behind_the_scenes"
+
+
+@dataclass
+class OpportunitySignal:
+    signal_type: OpportunitySignalType
+    headline: str
+    explanation: str
+    strategic_insight: str
+    confidence: float  # 0.0 - 1.0
+
+
+def detect_opportunity_signals(
+    jd_data: Dict[str, Any],
+    resume_data: Dict[str, Any],
+    company_intel: Optional[Dict[str, Any]] = None
+) -> Dict[str, OpportunitySignal]:
+    """
+    Detect opportunity signals for The Opportunity section.
+
+    Returns a dict with keys: why_now, why_this_org, why_this_team,
+    what_it_opens, behind_the_scenes
+
+    Args:
+        jd_data: Parsed job description data
+        resume_data: Parsed resume data
+        company_intel: Optional company intelligence data
+
+    Returns:
+        Dict mapping signal type to OpportunitySignal
+    """
+    signals = {}
+
+    company = (jd_data.get("company_name", "") or "").lower()
+    role_title = (jd_data.get("role_title", "") or "").lower()
+    role_level = _detect_role_level(role_title)
+    jd_text = (jd_data.get("job_description", "") or "").lower()
+
+    # =========================================================================
+    # WHY NOW - Timing signals
+    # =========================================================================
+    why_now_signals = []
+
+    # Hiring velocity signals
+    if any(phrase in jd_text for phrase in ["growing team", "rapidly expanding", "new team", "scaling"]):
+        why_now_signals.append("Team is actively growing - hiring momentum is high")
+
+    # Urgency signals
+    if any(phrase in jd_text for phrase in ["immediate", "asap", "urgent", "start date", "right away"]):
+        why_now_signals.append("Role has urgency - faster hiring process likely")
+
+    # Budget cycle signals
+    current_month = datetime.now().month
+    if current_month in [1, 2, 7, 8]:  # Q1 or Q3 start
+        why_now_signals.append("New budget cycle - fresh headcount approvals")
+
+    # Backfill signals
+    if any(phrase in jd_text for phrase in ["backfill", "replacement", "previous", "taking over"]):
+        why_now_signals.append("Backfill role - defined scope and expectations exist")
+
+    # New role signals
+    if any(phrase in jd_text for phrase in ["newly created", "new role", "first hire", "founding"]):
+        why_now_signals.append("New role - opportunity to shape the position")
+
+    signals["why_now"] = OpportunitySignal(
+        signal_type=OpportunitySignalType.WHY_NOW,
+        headline="Why now?",
+        explanation=" | ".join(why_now_signals) if why_now_signals else "Standard hiring timeline - no special urgency signals detected",
+        strategic_insight=_generate_timing_insight(why_now_signals),
+        confidence=0.8 if why_now_signals else 0.5
+    )
+
+    # =========================================================================
+    # WHY THIS ORG - Company trajectory signals
+    # =========================================================================
+    org_signals = []
+
+    # Company stage detection
+    if any(phrase in jd_text for phrase in ["series a", "series b", "series c", "startup"]):
+        org_signals.append("Growth-stage company - high impact potential, equity upside")
+    elif any(phrase in jd_text for phrase in ["fortune 500", "global", "enterprise", "multinational"]):
+        org_signals.append("Established enterprise - stability, brand credibility")
+    elif any(phrase in jd_text for phrase in ["ipo", "pre-ipo", "public company", "publicly traded"]):
+        org_signals.append("IPO trajectory - potential liquidity event")
+
+    # Brand leverage detection
+    high_brand_companies = [
+        "google", "meta", "amazon", "apple", "microsoft", "netflix",
+        "warner bros", "disney", "nike", "goldman", "mckinsey", "stripe",
+        "airbnb", "uber", "spotify", "salesforce", "linkedin", "twitter",
+        "adobe", "nvidia", "shopify", "coinbase", "doordash"
+    ]
+    if any(b in company for b in high_brand_companies):
+        org_signals.append(f"High-brand company - significant resume value")
+
+    signals["why_this_org"] = OpportunitySignal(
+        signal_type=OpportunitySignalType.WHY_THIS_ORG,
+        headline="Why this org?",
+        explanation=" | ".join(org_signals) if org_signals else "Standard company profile - evaluate based on role fit",
+        strategic_insight=_generate_org_insight(org_signals, company),
+        confidence=0.7 if org_signals else 0.4
+    )
+
+    # =========================================================================
+    # WHY THIS TEAM - Team mandate signals
+    # =========================================================================
+    team_signals = []
+
+    # Strategic priority signals
+    if any(phrase in jd_text for phrase in ["strategic", "critical", "key initiative", "top priority", "high visibility"]):
+        team_signals.append("Strategic priority team - high visibility to leadership")
+
+    # Revenue signals
+    if any(phrase in jd_text for phrase in ["revenue", "p&l", "profit", "growth", "monetization"]):
+        team_signals.append("Revenue-impacting team - clear success metrics")
+
+    # New vs established
+    if any(phrase in jd_text for phrase in ["new team", "building", "0 to 1", "greenfield", "ground up"]):
+        team_signals.append("New/building team - opportunity to shape direction")
+    elif any(phrase in jd_text for phrase in ["established", "mature", "scaled", "proven"]):
+        team_signals.append("Established team - existing playbook and support")
+
+    # Core vs support
+    if any(phrase in jd_text for phrase in ["core product", "platform", "infrastructure", "mission-critical"]):
+        team_signals.append("Core/platform team - foundational impact")
+
+    signals["why_this_team"] = OpportunitySignal(
+        signal_type=OpportunitySignalType.WHY_THIS_TEAM,
+        headline="Why this team?",
+        explanation=" | ".join(team_signals) if team_signals else "Team context not clear from JD - ask in interviews",
+        strategic_insight=_generate_team_insight(team_signals),
+        confidence=0.6 if team_signals else 0.3
+    )
+
+    # =========================================================================
+    # WHAT IT OPENS - Career trajectory signals
+    # =========================================================================
+    trajectory_signals = []
+
+    # Level signals
+    if role_level == "entry":
+        trajectory_signals.append("Entry point - focus on skill building and internal mobility")
+    elif role_level == "mid":
+        trajectory_signals.append("Mid-level - path to senior/lead within 2-3 years")
+    elif role_level == "senior":
+        trajectory_signals.append("Senior IC or Manager path - choose your trajectory")
+    elif role_level == "director_plus":
+        trajectory_signals.append("Executive trajectory - builds toward VP/C-suite")
+
+    # Skill development signals
+    if any(phrase in jd_text for phrase in ["mentorship", "coaching", "development", "learning"]):
+        trajectory_signals.append("Development-focused culture - accelerated learning")
+
+    # Internal mobility signals
+    if any(phrase in jd_text for phrase in ["internal mobility", "growth opportunities", "career path", "career ladder"]):
+        trajectory_signals.append("Strong internal mobility - multiple path options")
+
+    # High-growth signals
+    if any(phrase in jd_text for phrase in ["hyper-growth", "fast-paced", "rapidly growing", "hypergrowth"]):
+        trajectory_signals.append("High-growth environment - faster advancement opportunities")
+
+    signals["what_it_opens"] = OpportunitySignal(
+        signal_type=OpportunitySignalType.WHAT_IT_OPENS,
+        headline="What it opens",
+        explanation=" | ".join(trajectory_signals) if trajectory_signals else "Standard career progression path",
+        strategic_insight=_generate_trajectory_insight(trajectory_signals, role_level),
+        confidence=0.7 if trajectory_signals else 0.5
+    )
+
+    # =========================================================================
+    # BEHIND THE SCENES - Internal context signals
+    # =========================================================================
+    internal_signals = []
+
+    # Reorg/restructure signals
+    merger_companies = [
+        "warner bros discovery", "wbd", "microsoft activision", "amazon mgm",
+        "salesforce slack", "adobe figma"
+    ]
+    if any(m in company for m in merger_companies):
+        internal_signals.append("Post-merger org - restructuring creates opportunity for adaptable performers")
+
+    # Leadership change signals
+    if any(phrase in jd_text for phrase in ["new leadership", "new ceo", "transformation", "new direction"]):
+        internal_signals.append("Leadership transition - new priorities being set")
+
+    # Layoff recovery signals
+    layoff_recovery_companies = ["meta", "amazon", "google", "microsoft", "salesforce", "stripe", "twitter", "lyft"]
+    if any(c in company for c in layoff_recovery_companies):
+        internal_signals.append("Post-layoff hiring - leaner org, higher expectations per role")
+
+    # Remote/hybrid signals
+    if any(phrase in jd_text for phrase in ["fully remote", "remote-first", "distributed team"]):
+        internal_signals.append("Remote-first culture - location flexibility")
+    elif any(phrase in jd_text for phrase in ["hybrid", "in-office", "on-site required"]):
+        internal_signals.append("Hybrid/in-office expectation - evaluate commute requirements")
+
+    signals["behind_the_scenes"] = OpportunitySignal(
+        signal_type=OpportunitySignalType.BEHIND_THE_SCENES,
+        headline="Behind the scenes",
+        explanation=" | ".join(internal_signals) if internal_signals else "No unusual internal dynamics detected",
+        strategic_insight=_generate_internal_insight(internal_signals),
+        confidence=0.5 if internal_signals else 0.3
+    )
+
+    return signals
+
+
+def _detect_role_level(role_title: str) -> str:
+    """Detect seniority level from role title."""
+    role_lower = role_title.lower()
+
+    if any(x in role_lower for x in ["vp", "vice president", "director", "head of", "chief", "c-suite", "president"]):
+        return "director_plus"
+    elif any(x in role_lower for x in ["senior", "staff", "principal", "lead", "sr."]):
+        return "senior"
+    elif any(x in role_lower for x in ["associate", "junior", "entry", "i ", " i", " 1", "1 "]):
+        return "entry"
+    else:
+        return "mid"
+
+
+def _generate_timing_insight(signals: List[str]) -> str:
+    if not signals:
+        return "Apply when ready - no special timing advantage detected."
+    if len(signals) >= 2:
+        return "Multiple timing signals suggest this is a good moment to apply. Move quickly."
+    return "Timing appears favorable. Apply within the next week if interested."
+
+
+def _generate_org_insight(signals: List[str], company: str) -> str:
+    signals_str = str(signals)
+    if "High-brand company" in signals_str:
+        company_display = company.title() if company else "this company"
+        return f"Time at {company_display} adds significant credibility to your resume for future opportunities."
+    if "Growth-stage" in signals_str:
+        return "Growth-stage company offers higher impact but less stability. Evaluate risk tolerance."
+    return "Evaluate company culture and trajectory during interviews."
+
+
+def _generate_team_insight(signals: List[str]) -> str:
+    signals_str = str(signals)
+    if "Strategic priority" in signals_str:
+        return "Strategic teams get more resources and executive attention. High visibility, high expectations."
+    if "New/building team" in signals_str:
+        return "New teams offer more autonomy but less established process. Good for builders."
+    if "Revenue-impacting" in signals_str:
+        return "Revenue teams have clear success metrics. Prepare to discuss quantified business impact."
+    return "Dig into team dynamics during interviews - ask about reporting structure and team tenure."
+
+
+def _generate_trajectory_insight(signals: List[str], level: str) -> str:
+    insights = {
+        "entry": "Focus on learning velocity and internal mobility options. 18-24 months to next level.",
+        "mid": "This role should position you for senior/lead within 2-3 years if you perform.",
+        "senior": "At this level, you're choosing between IC depth or management path. Clarify in interviews.",
+        "director_plus": "Executive roles are about building leverage. What scope does this role unlock?"
+    }
+    return insights.get(level, "Standard progression path - performance determines trajectory.")
+
+
+def _generate_internal_insight(signals: List[str]) -> str:
+    signals_str = str(signals)
+    if "Post-merger" in signals_str:
+        return "Post-merger orgs are politically complex but offer faster advancement for adaptable performers."
+    if "Post-layoff" in signals_str:
+        return "Leaner orgs post-layoff mean higher expectations per role. Prepare to demonstrate immediate impact."
+    if "Remote-first" in signals_str:
+        return "Remote-first culture offers flexibility but requires strong async communication skills."
+    return "No unusual internal dynamics detected. Standard org context."
+
+
+def format_opportunity_for_response(signals: Dict[str, OpportunitySignal]) -> Dict[str, Dict[str, str]]:
+    """
+    Format opportunity signals for API response.
+
+    Args:
+        signals: Dict of OpportunitySignal objects
+
+    Returns:
+        Dict formatted for frontend consumption
+    """
+    return {
+        "why_now": {
+            "headline": signals["why_now"].headline,
+            "content": signals["why_now"].explanation,
+            "strategic_insight": signals["why_now"].strategic_insight,
+        },
+        "why_this_org": {
+            "headline": signals["why_this_org"].headline,
+            "content": signals["why_this_org"].explanation,
+            "strategic_insight": signals["why_this_org"].strategic_insight,
+        },
+        "why_this_team": {
+            "headline": signals["why_this_team"].headline,
+            "content": signals["why_this_team"].explanation,
+            "strategic_insight": signals["why_this_team"].strategic_insight,
+        },
+        "what_it_opens": {
+            "headline": signals["what_it_opens"].headline,
+            "content": signals["what_it_opens"].explanation,
+            "strategic_insight": signals["what_it_opens"].strategic_insight,
+        },
+        "behind_the_scenes": {
+            "headline": signals["behind_the_scenes"].headline,
+            "content": signals["behind_the_scenes"].explanation,
+            "strategic_insight": signals["behind_the_scenes"].strategic_insight,
+        },
+    }
