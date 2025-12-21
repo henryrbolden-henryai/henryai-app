@@ -5330,35 +5330,59 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         if leadership_gap_msg['status'] != 'sufficient':
             print(f"   Leadership gap message: {leadership_gap_msg['message']}")
 
-        # HARD GATE: If people leadership required and candidate doesn't meet it
+        # TIERED GATE: Apply same tiered response as eligibility gate
+        # This ensures consistency between the two checks
         if is_hard_requirement and required_people_leadership > 0:
             if people_leadership_years < required_people_leadership:
-                recommendation_locked = True
-                locked_recommendation = "Do Not Apply"
+                # Calculate gap severity (same logic as eligibility gate)
+                leadership_ratio = people_leadership_years / required_people_leadership if required_people_leadership > 0 else 0
+                gap_years = required_people_leadership - people_leadership_years
 
-                # Use tiered messaging instead of generic "X vs Y years"
-                if leadership_gap_msg['status'] == 'none':
-                    locked_reason = f"No people leadership experience found. This role requires {required_people_leadership:.0f}+ years."
-                elif leadership_gap_msg['status'] == 'insufficient':
-                    if leadership_gap_msg.get('has_lower_tier'):
-                        locked_reason = f"Leadership type mismatch: {leadership_gap_msg['message']}"
+                print(f"   📊 Leadership ratio: {leadership_ratio:.1%} (gap: {gap_years:.1f} years)")
+
+                # TIERED RESPONSE:
+                # - <50% = hard fail
+                # - 50-70% = warning (Apply with Caution)
+                # - >70% = minor gap (allow score-based recommendation)
+                if leadership_ratio < 0.5:
+                    # SEVERE gap - hard fail
+                    recommendation_locked = True
+                    locked_recommendation = "Do Not Apply"
+
+                    if leadership_gap_msg['status'] == 'none':
+                        locked_reason = f"No people leadership experience found. This role requires {required_people_leadership:.0f}+ years."
+                    elif leadership_gap_msg['status'] == 'insufficient':
+                        if leadership_gap_msg.get('has_lower_tier'):
+                            locked_reason = f"Leadership type mismatch: {leadership_gap_msg['message']}"
+                        else:
+                            locked_reason = f"People leadership experience insufficient ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
                     else:
-                        locked_reason = f"People leadership experience insufficient ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
-                else:
-                    locked_reason = f"People leadership experience below role requirement ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
+                        locked_reason = f"People leadership experience below role requirement ({people_leadership_years:.1f} vs {required_people_leadership:.0f}+ years required)"
 
-                print(f"   🚫 HARD GATE TRIGGERED: {locked_reason}")
-                print(f"   🔒 RECOMMENDATION LOCKED: Do Not Apply (no exceptions)")
+                    print(f"   🚫 HARD GATE TRIGGERED (severe gap <50%): {locked_reason}")
+                    print(f"   🔒 RECOMMENDATION LOCKED: Do Not Apply")
+
+                    experience_analysis["people_leadership_hard_gate_failed"] = True
+                    experience_analysis["recommendation_locked"] = True
+                    experience_analysis["locked_reason"] = locked_reason
+                    experience_analysis["hard_requirement_failure"] = True
+                elif leadership_ratio < 0.7:
+                    # MODERATE gap - warning only
+                    print(f"   ⚠️ MODERATE LEADERSHIP GAP (50-70%): {gap_years:.1f} years short")
+                    print(f"   📋 Recommendation: Apply with Caution (not locked)")
+                    experience_analysis["leadership_warning"] = f"Leadership gap: {gap_years:.1f} years short of {required_people_leadership:.0f}+ requirement"
+                    experience_analysis["recommended_adjustment"] = "Apply with Caution"
+                else:
+                    # MINOR gap - allow score-based
+                    print(f"   ℹ️ MINOR LEADERSHIP GAP (>70%): {gap_years:.1f} years short")
+                    print(f"   📋 Allowing score-based recommendation")
+                    experience_analysis["leadership_note"] = f"Minor gap: {gap_years:.1f} years short"
 
                 # Store tiered leadership analysis in experience_analysis
                 experience_analysis["people_leadership_years"] = people_leadership_years
                 experience_analysis["required_people_leadership_years"] = required_people_leadership
-                experience_analysis["people_leadership_hard_gate_failed"] = True
-                experience_analysis["recommendation_locked"] = True
-                experience_analysis["locked_reason"] = locked_reason
                 experience_analysis["tiered_leadership"] = tiered_leadership
                 experience_analysis["leadership_gap_messaging"] = leadership_gap_msg
-                experience_analysis["hard_requirement_failure"] = True  # NEW: Explicit flag for CAE
                 response_data["experience_analysis"] = experience_analysis
 
     # Try to get adjusted years first, fallback to raw years
@@ -6895,6 +6919,25 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         "chief", "supervisor", "team lead"
     ]
 
+    # Strong leadership titles at established companies = automatic people credit
+    strong_leadership_titles = [
+        "vp ", "vice president", "vp,", "director", "head of", "chief",
+        "senior manager", "senior product marketing manager", "group manager",
+        "marketing manager", "product marketing manager"
+    ]
+
+    # Well-known companies where VP/Director definitely means people leadership
+    established_companies = [
+        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
+        "uber", "lyft", "airbnb", "stripe", "square", "twilio", "segment",
+        "salesforce", "adobe", "oracle", "sap", "ibm", "cisco", "intel",
+        "linkedin", "twitter", "x corp", "snap", "pinterest", "dropbox",
+        "slack", "atlassian", "asana", "notion", "figma", "canva",
+        "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
+        "new relic", "mparticle", "amplitude", "mixpanel", "braze",
+        "intercom", "drift", "gong", "outreach", "salesloft",
+    ]
+
     # ========================================================================
     # TIER 3: ORG-LEVEL LEADERSHIP EVIDENCE
     # ========================================================================
@@ -6974,9 +7017,22 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
 
         # Check TIER 2 (people leadership)
         has_people_title = any(pt in title for pt in people_titles)
+        has_strong_title = any(st in title for st in strong_leadership_titles)
         has_people_evidence = any(ev in combined_text for ev in people_evidence)
 
-        if has_people_title and has_people_evidence:
+        # Check if company is established (VP/Director definitely means people leadership)
+        company_lower = company.lower()
+        is_established_company = any(ec in company_lower for ec in established_companies)
+        if "acquired by" in company_lower or "twilio" in company_lower:
+            is_established_company = True
+
+        if has_strong_title and is_established_company:
+            # VP/Director at established company = full credit, no evidence needed
+            adjusted = years * multiplier
+            tier_years["people"] = adjusted
+            people_total += adjusted
+            role_tiers.append("people_established")
+        elif has_people_title and has_people_evidence:
             # Full credit for verified people leadership
             adjusted = years * multiplier
             tier_years["people"] = adjusted
@@ -6988,6 +7044,12 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
             tier_years["people"] = adjusted
             people_total += adjusted
             role_tiers.append("people_partial")
+        elif has_strong_title:
+            # Strong title at unknown company - 50% credit
+            adjusted = years * multiplier * 0.5
+            tier_years["people"] = adjusted
+            people_total += adjusted
+            role_tiers.append("people_unverified")
 
         # Check TIER 1 (strategic/functional) - even if other tiers apply
         has_strategic_evidence = any(ev in combined_text for ev in strategic_evidence)
