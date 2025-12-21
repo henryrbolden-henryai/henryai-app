@@ -156,10 +156,62 @@ outcomes_store: List[Dict[str, Any]] = []
 
 # In-memory storage for mock interview sessions
 # In production, replace with proper database
+# WARNING: These persist in memory until server restart - implement TTL cleanup
 mock_interview_sessions: Dict[str, Dict[str, Any]] = {}
 mock_interview_questions: Dict[str, Dict[str, Any]] = {}
 mock_interview_responses: Dict[str, List[Dict[str, Any]]] = {}
 mock_interview_analyses: Dict[str, Dict[str, Any]] = {}
+
+# Session TTL in seconds (24 hours)
+SESSION_TTL_SECONDS = 24 * 60 * 60
+
+
+def cleanup_expired_sessions() -> int:
+    """
+    Clean up expired mock interview sessions to prevent memory leaks
+    and cross-session contamination.
+
+    Returns:
+        Number of sessions cleaned up
+    """
+    import time
+    current_time = time.time()
+    expired_sessions = []
+
+    # Find expired sessions
+    for session_id, session in mock_interview_sessions.items():
+        created_at = session.get("created_at", 0)
+        if isinstance(created_at, str):
+            # Parse ISO format timestamp
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                created_at = dt.timestamp()
+            except:
+                created_at = 0
+
+        if current_time - created_at > SESSION_TTL_SECONDS:
+            expired_sessions.append(session_id)
+
+    # Clean up expired sessions and their associated data
+    for session_id in expired_sessions:
+        # Find and remove questions for this session
+        questions_to_remove = [
+            qid for qid, q in mock_interview_questions.items()
+            if q.get("session_id") == session_id
+        ]
+        for qid in questions_to_remove:
+            mock_interview_questions.pop(qid, None)
+            mock_interview_responses.pop(qid, None)
+
+        # Remove session
+        mock_interview_sessions.pop(session_id, None)
+        mock_interview_analyses.pop(session_id, None)
+
+    if expired_sessions:
+        print(f"🧹 Cleaned up {len(expired_sessions)} expired mock interview sessions")
+
+    return len(expired_sessions)
 
 # Load question bank
 QUESTION_BANK_PATH = os.path.join(os.path.dirname(__file__), "data", "question_bank.json")
@@ -9539,20 +9591,73 @@ def detect_test_contamination(resume_data: Dict[str, Any], analysis_id: str) -> 
     print(f"🔍 [{analysis_id}] Checking for test data contamination...")
 
     # Known test data patterns that should NEVER appear in production
+    # These are test profiles from the examples/ folder and common test fixtures
     TEST_PATTERNS = {
+        # Test profile names from examples/ folder - these are synthetic personas
+        # CRITICAL: If you add a new test profile, add their name here
+        "names": [
+            "aisha williams",
+            "david park",
+            "jessica martinez",
+            "marcus johnson",
+            "sarah chen",
+            # Common test fixture names from test_eligibility_gate.py
+            "jordan taylor",
+            "chris engineer",
+            # Generic test names
+            "test user",
+            "jane doe",
+            "john doe",
+        ],
+        # Companies that indicate test/synthetic data
         "companies": [
             "mckinsey", "mckinsey & company",
             "bain", "bain & company",
-            "bcg", "boston consulting group"
+            "bcg", "boston consulting group",
+            # Generic test companies
+            "test company", "testcorp", "test corp",
+            "example inc", "example company",
+            "acme corp", "acme corporation",
         ],
+        # Titles that indicate test data
         "titles": [
             "management consultant",
             "strategy consultant",
             "product manager, cloud and open ecosystems"
+        ],
+        # Email patterns that indicate test data
+        "emails": [
+            "@test.com", "@example.com", "@fake.com",
+            "@testuser.com", "@localhost",
+            "test@", "fake@", "example@",
         ]
     }
 
     contamination_found = []
+
+    # Check candidate name (full_name field)
+    candidate_name = (resume_data.get("full_name", "") or "").lower().strip()
+    for test_name in TEST_PATTERNS["names"]:
+        if test_name in candidate_name or candidate_name == test_name:
+            contamination_found.append({
+                "type": "test_profile_name",
+                "pattern": test_name,
+                "found_name": resume_data.get("full_name"),
+                "severity": "critical"
+            })
+
+    # Check email for test patterns
+    contact = resume_data.get("contact", {})
+    if isinstance(contact, dict):
+        email = (contact.get("email", "") or "").lower().strip()
+        for test_email in TEST_PATTERNS["emails"]:
+            if test_email in email:
+                contamination_found.append({
+                    "type": "test_email",
+                    "pattern": test_email,
+                    "found_email": contact.get("email"),
+                    "severity": "high"
+                })
 
     # Check all experience entries
     for exp in resume_data.get("experience", []):
@@ -9586,22 +9691,44 @@ def detect_test_contamination(resume_data: Dict[str, Any], analysis_id: str) -> 
         print(f"\n{'='*80}")
         print(f"🚨 FATAL: TEST DATA CONTAMINATION DETECTED")
         print(f"{'='*80}")
+        print(f"Analysis ID: {analysis_id}")
+        print(f"Contamination count: {len(contamination_found)}")
+        print(f"---")
         for item in contamination_found:
             print(f"Type: {item['type']}")
             print(f"Pattern: {item['pattern']}")
-            print(f"Company: {item['company']}")
-            print(f"Title: {item['title']}")
+            if 'found_name' in item:
+                print(f"Found Name: {item['found_name']}")
+            if 'found_email' in item:
+                print(f"Found Email: {item['found_email']}")
+            if 'company' in item:
+                print(f"Company: {item['company']}")
+            if 'title' in item:
+                print(f"Title: {item['title']}")
+            if 'severity' in item:
+                print(f"Severity: {item['severity']}")
             print(f"---")
         print(f"{'='*80}\n")
 
-        raise HTTPException(
-            status_code=500,
-            detail=(
+        # Determine primary contamination type for error message
+        primary_type = contamination_found[0]['type']
+        if primary_type == "test_profile_name":
+            error_detail = (
+                f"BLOCKED: Test profile detected ('{contamination_found[0].get('found_name')}'). "
+                "Test profiles from examples/ folder cannot be used in production. "
+                f"Analysis ID: {analysis_id}"
+            )
+        else:
+            error_detail = (
                 "SYSTEM ERROR: Test data contamination detected. "
                 "This indicates a platform integrity issue. "
                 f"Analysis ID: {analysis_id}. "
                 "Please report this error to engineering."
             )
+
+        raise HTTPException(
+            status_code=500,
+            detail=error_detail
         )
 
     print(f"✅ [{analysis_id}] No test contamination detected")
@@ -10487,6 +10614,9 @@ async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     print(f"\n{'='*80}")
     print(f"🆕 NEW ANALYSIS REQUEST - ID: {analysis_id}")
     print(f"{'='*80}")
+
+    # Opportunistic cleanup of expired sessions to prevent memory leaks
+    cleanup_expired_sessions()
 
     # Validate we have complete data from THIS request only
     if not request.resume or not isinstance(request.resume, dict):
