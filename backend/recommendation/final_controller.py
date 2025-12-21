@@ -309,7 +309,9 @@ class FinalRecommendationController:
         eligibility_reason: str = "",
         is_manager_role: bool = False,
         is_vp_plus_role: bool = False,
-        domain_gap_detected: bool = False
+        domain_gap_detected: bool = False,
+        transition_info: Optional[Dict[str, Any]] = None,
+        has_referral: bool = False
     ) -> FinalDecision:
         """
         Compute final recommendation from score and eligibility.
@@ -327,6 +329,10 @@ class FinalRecommendationController:
         INVARIANT ENFORCEMENT:
         - Score and decision MUST be logically consistent
         - If mismatch detected, score is adjusted to match decision tier
+
+        CAREER TRANSITION MODIFIER:
+        - Career pivots with low adjacency + marginal scores get honest guidance
+        - A 45% fit for a career changer isn't "Apply with Caution" - it's "Long Shot"
 
         MANAGER RULE:
         - Domain gaps may NEVER downgrade recommendation for managers
@@ -371,6 +377,23 @@ class FinalRecommendationController:
         recommendation = get_recommendation_from_score(fit_score)
 
         # ======================================================================
+        # CAREER TRANSITION MODIFIER
+        # Career pivots with marginal scores need honest guidance
+        # ======================================================================
+        if transition_info and transition_info.get("is_transition"):
+            from backend.seniority_detector import get_transition_adjusted_decision
+            transition_adjustment = get_transition_adjusted_decision(
+                base_decision=recommendation.value,
+                score=fit_score,
+                transition_info=transition_info,
+                has_referral=has_referral
+            )
+            if transition_adjustment.get("was_adjusted"):
+                recommendation = Recommendation(transition_adjustment["adjusted_decision"])
+                print(f"   🔄 CAREER TRANSITION MODIFIER: {transition_adjustment['adjustment_reason']}")
+                print(f"      Decision adjusted to: {recommendation.value}")
+
+        # ======================================================================
         # INVARIANT ENFORCEMENT - Score must match decision tier
         # ======================================================================
         enforced_score, enforced_decision = enforce_score_decision_lock(
@@ -388,7 +411,17 @@ class FinalRecommendationController:
                 "reason": "Manager-level role - domain gaps are advisory only",
                 "impacts_decision": False
             }
-            print(f"   🔄 MANAGER RULE: Domain gap suppressed (advisory only)")
+
+        # Add transition info to advisory signals for UI display
+        if transition_info and transition_info.get("is_transition"):
+            advisory_signals["career_transition"] = {
+                "is_transition": True,
+                "transition_type": transition_info.get("transition_type"),
+                "source_domain": transition_info.get("source_domain"),
+                "target_domain": transition_info.get("target_domain"),
+                "adjacency_score": transition_info.get("adjacency_score"),
+                "framing": transition_info.get("framing", "")
+            }
 
         # ======================================================================
         # SET CONFIDENCE BASED ON SCORE (six-tier adjusted)
@@ -509,13 +542,25 @@ def compute_final_recommendation(
     eligibility_reason: str = "",
     is_manager_role: bool = False,
     is_vp_plus_role: bool = False,
-    domain_gap_detected: bool = False
+    domain_gap_detected: bool = False,
+    transition_info: Optional[Dict[str, Any]] = None,
+    has_referral: bool = False
 ) -> Dict[str, Any]:
     """
     One-shot function to compute final recommendation.
 
     Use this for simple integration into existing code.
     For more control, instantiate FinalRecommendationController directly.
+
+    Args:
+        fit_score: Job fit score (0-100)
+        eligibility_passed: Whether eligibility gate passed
+        eligibility_reason: Reason for eligibility failure
+        is_manager_role: Whether this is a manager-level role
+        is_vp_plus_role: Whether this is a VP+ role
+        domain_gap_detected: Whether a domain gap was detected
+        transition_info: Career transition info from detect_transition_candidate()
+        has_referral: Whether candidate has an inside connection
     """
     controller = FinalRecommendationController()
     controller.compute_recommendation(
@@ -524,6 +569,8 @@ def compute_final_recommendation(
         eligibility_reason=eligibility_reason,
         is_manager_role=is_manager_role,
         is_vp_plus_role=is_vp_plus_role,
-        domain_gap_detected=domain_gap_detected
+        domain_gap_detected=domain_gap_detected,
+        transition_info=transition_info,
+        has_referral=has_referral
     )
     return controller.to_dict()

@@ -5605,6 +5605,33 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         domain_gap_detected = any("domain" in (g.get("capability_id", "") or "").lower() for g in critical_gaps)
 
     # ========================================================================
+    # CAREER TRANSITION DETECTION
+    # Detect if candidate is making a career pivot vs stretch role
+    # ========================================================================
+    transition_info = None
+    try:
+        from seniority_detector import detect_transition_candidate
+        # Extract role type from JD
+        target_role_type = role_title
+        # Common role type extraction
+        if "product" in role_title:
+            target_role_type = "product"
+        elif "engineer" in role_title or "developer" in role_title:
+            target_role_type = "engineering"
+        elif "design" in role_title:
+            target_role_type = "design"
+
+        transition_info = detect_transition_candidate(
+            resume_data=response_data.get("resume_data", {}),
+            target_role_type=target_role_type
+        )
+        if transition_info.get("is_transition"):
+            print(f"   🔄 CAREER TRANSITION DETECTED: {transition_info.get('source_domain')} → {transition_info.get('target_domain')}")
+            print(f"      Type: {transition_info.get('transition_type')}, Adjacency: {transition_info.get('adjacency_score')}")
+    except ImportError:
+        pass  # Seniority detector not available
+
+    # ========================================================================
     # SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025)
     # Per HenryHQ Scoring Spec v2.0 - Invariant enforced score-decision pairing
     #
@@ -5627,7 +5654,9 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             eligibility_reason=locked_reason or "",
             is_manager_role=is_manager_role,
             is_vp_plus_role=is_vp_plus_role,
-            domain_gap_detected=domain_gap_detected
+            domain_gap_detected=domain_gap_detected,
+            transition_info=transition_info,
+            has_referral=False  # TODO: Add referral detection if needed
         )
 
         correct_recommendation = decision.recommendation

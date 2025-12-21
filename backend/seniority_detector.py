@@ -414,16 +414,22 @@ def detect_transition_candidate(
 
     # Check for career change patterns
     career_change_patterns = {
-        # Clinical to Product
+        # Clinical/Healthcare to Product
         ("clinical", "product"): {
             "type": "career_change",
-            "adjacency": 0.4,
-            "framing": "You're not unqualified. You're early."
+            "adjacency": 0.35,
+            "framing": "You're not unqualified. You're early. Healthcare → consumer PM is a pivot, not a stretch."
         },
         ("nursing", "product"): {
             "type": "career_change",
-            "adjacency": 0.4,
-            "framing": "You're not unqualified. You're early."
+            "adjacency": 0.35,
+            "framing": "You're not unqualified. You're early. Clinical → PM requires demonstrated product thinking."
+        },
+        # Operations to Product (common pivot)
+        ("operations", "product"): {
+            "type": "career_change",
+            "adjacency": 0.45,
+            "framing": "Operations to product is possible but requires demonstrated product thinking and user empathy."
         },
         # Government to Tech
         ("government", "engineering"): {
@@ -442,11 +448,33 @@ def detect_transition_candidate(
             "adjacency": 0.2,
             "framing": "Non-traditional paths are valued at companies that prioritize grit and learning."
         },
+        ("retail", "product"): {
+            "type": "career_change",
+            "adjacency": 0.3,
+            "framing": "Retail operations experience needs strong product portfolio to bridge the gap."
+        },
         # Program Management to Product
         ("program_management", "product"): {
             "type": "function_change",
             "adjacency": 0.6,
             "framing": "Program management to product is a common and viable transition."
+        },
+        # Marketing to Product
+        ("marketing", "product"): {
+            "type": "function_change",
+            "adjacency": 0.55,
+            "framing": "Marketing to product is achievable - lead with growth/analytics experience."
+        },
+        # Finance/Consulting to Product
+        ("finance", "product"): {
+            "type": "career_change",
+            "adjacency": 0.4,
+            "framing": "Finance to product requires demonstrated product sense and user research."
+        },
+        ("consulting", "product"): {
+            "type": "function_change",
+            "adjacency": 0.55,
+            "framing": "Consulting to product is common - lead with client problem-solving experience."
         }
     }
 
@@ -477,17 +505,19 @@ def _detect_domain_from_title(title: str) -> str:
     title_lower = title.lower()
 
     domain_patterns = {
-        "engineering": ["engineer", "developer", "swe", "programmer", "architect"],
-        "product": ["product manager", "pm", "product owner"],
-        "program_management": ["program manager", "project manager", "tpm"],
+        "engineering": ["engineer", "developer", "swe", "programmer", "architect", "software"],
+        "product": ["product manager", "pm", "product owner", "product lead"],
+        "program_management": ["program manager", "project manager", "tpm", "pmo"],
         "design": ["designer", "ux", "ui", "creative"],
-        "clinical": ["nurse", "rn", "clinical", "physician", "doctor", "therapist"],
+        "clinical": ["nurse", "rn", "clinical", "physician", "doctor", "therapist", "healthcare", "medical"],
         "nursing": ["nurse", "rn", "lpn", "cna"],
         "government": ["gs-", "federal", "government", "gsa", "dhs", "dod"],
         "retail": ["retail", "store manager", "sales associate"],
-        "operations": ["operations", "ops", "logistics"],
-        "consulting": ["consultant", "advisor"],
-        "finance": ["analyst", "finance", "accounting"]
+        "operations": ["operations manager", "operations director", "ops manager", "logistics"],
+        "consulting": ["consultant", "advisor", "strategy"],
+        "finance": ["analyst", "finance", "accounting", "fp&a"],
+        "marketing": ["marketing", "growth", "brand", "content"],
+        "sales": ["sales", "account executive", "business development", "bd"]
     }
 
     for domain, patterns in domain_patterns.items():
@@ -496,3 +526,96 @@ def _detect_domain_from_title(title: str) -> str:
                 return domain
 
     return "unknown"
+
+
+# ============================================================================
+# CAREER TRANSITION DECISION MODIFIER
+# ============================================================================
+
+def get_transition_adjusted_decision(
+    base_decision: str,
+    score: int,
+    transition_info: Dict[str, Any],
+    has_referral: bool = False
+) -> Dict[str, Any]:
+    """
+    Adjust recommendation based on career transition type.
+
+    For career pivot candidates with marginal scores:
+    - Downgrade to more honest recommendation
+    - A 45% fit for a career changer isn't "Apply with Caution"
+    - It's "Long Shot" - be honest about the gap
+
+    Args:
+        base_decision: The initial recommendation
+        score: Fit score (0-100)
+        transition_info: Result from detect_transition_candidate()
+        has_referral: Whether candidate has an inside connection
+
+    Returns:
+        dict with:
+        - adjusted_decision: The (possibly) modified recommendation
+        - was_adjusted: bool
+        - adjustment_reason: str or None
+    """
+    # No adjustment needed if not a transition candidate
+    if not transition_info.get("is_transition"):
+        return {
+            "adjusted_decision": base_decision,
+            "was_adjusted": False,
+            "adjustment_reason": None
+        }
+
+    transition_type = transition_info.get("transition_type")
+    adjacency = transition_info.get("adjacency_score", 1.0)
+
+    # Career changers with low adjacency (<0.5) and marginal scores need honest guidance
+    if transition_type == "career_change" and adjacency < 0.5:
+        # Score below 55 + career pivot = Long Shot or Do Not Apply
+        if score < 55 and base_decision in ["Apply with Caution", "Consider"]:
+            if has_referral:
+                # Referral softens the penalty slightly
+                return {
+                    "adjusted_decision": "Apply with Caution",
+                    "was_adjusted": base_decision != "Apply with Caution",
+                    "adjustment_reason": "Career pivot with referral - proceed with strong positioning"
+                }
+            else:
+                # No referral + career change + marginal score = Long Shot
+                return {
+                    "adjusted_decision": "Long Shot",
+                    "was_adjusted": True,
+                    "adjustment_reason": f"Career pivot ({transition_info.get('source_domain')} → {transition_info.get('target_domain')}) with {score}% fit requires inside connection"
+                }
+
+        # Score below 40 + career pivot = Do Not Apply
+        if score < 40:
+            return {
+                "adjusted_decision": "Do Not Apply",
+                "was_adjusted": base_decision != "Do Not Apply",
+                "adjustment_reason": f"Fundamental domain mismatch - consider entry-level roles in target field"
+            }
+
+    # Function changes (adjacent moves) - less severe penalty
+    if transition_type == "function_change" and adjacency >= 0.5:
+        # These are stretch roles, not pivots - base decision is usually appropriate
+        return {
+            "adjusted_decision": base_decision,
+            "was_adjusted": False,
+            "adjustment_reason": None
+        }
+
+    # Industry change - moderate penalty for low scores
+    if transition_type == "industry_change" and score < 50:
+        if base_decision in ["Apply with Caution", "Consider"] and not has_referral:
+            return {
+                "adjusted_decision": "Long Shot",
+                "was_adjusted": True,
+                "adjustment_reason": "Industry transition with marginal fit - networking critical"
+            }
+
+    return {
+        "adjusted_decision": base_decision,
+        "was_adjusted": False,
+        "adjustment_reason": None
+    }
