@@ -1398,7 +1398,7 @@
             const welcomeSubtext = document.getElementById('welcomeSubtext');
 
             // Get user's first name - check multiple possible locations
-            let firstName = 'there';
+            let firstName = '';
             // First try Supabase user name (set during auth)
             if (supabaseUserName?.firstName && supabaseUserName.firstName !== 'there') {
                 firstName = supabaseUserName.firstName;
@@ -1419,7 +1419,8 @@
             if (hour >= 12 && hour < 17) greeting = 'Good afternoon';
             else if (hour >= 17) greeting = 'Good evening';
 
-            welcomeHeading.textContent = `${greeting}, ${firstName}`;
+            // Only include name in greeting if we have one
+            welcomeHeading.textContent = firstName ? `${greeting}, ${firstName}` : greeting;
 
             // Adaptive subtext based on situation
             const situation = profile?.situation;
@@ -1562,7 +1563,7 @@
                         // Use data attribute for prompt to avoid quote escaping issues
                         actionsHTML += `<button class="reality-check-btn secondary" data-prompt="${encodeURIComponent(realityContent.secondaryBtn.prompt)}" onclick="handleHeyHenryPrompt(this)">${realityContent.secondaryBtn.text}</button>`;
                     } else if (realityContent.secondaryBtn.action === 'openHeyHenry') {
-                        actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openHeyHenry) openHeyHenry();">${realityContent.secondaryBtn.text}</button>`;
+                        actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openHeyHenry) window.openHeyHenry();">${realityContent.secondaryBtn.text}</button>`;
                     } else {
                         actionsHTML += `<a href="${realityContent.secondaryBtn.link}" class="reality-check-btn secondary">${realityContent.secondaryBtn.text}</a>`;
                     }
@@ -1686,14 +1687,14 @@
                 if (content.primaryBtn.action === 'showContractGuidance') {
                     actionsHTML += `<button class="strategic-options-btn" onclick="showContractGuidanceModal()">${content.primaryBtn.text}</button>`;
                 } else if (content.primaryBtn.action === 'openHeyHenry') {
-                    actionsHTML += `<button class="strategic-options-btn" onclick="if(window.openHeyHenry) openHeyHenry();">${content.primaryBtn.text}</button>`;
+                    actionsHTML += `<button class="strategic-options-btn" onclick="if(window.openHeyHenry) window.openHeyHenry();">${content.primaryBtn.text}</button>`;
                 }
             }
             if (content.secondaryBtn) {
                 if (content.secondaryBtn.action === 'dismiss') {
                     actionsHTML += `<button class="strategic-options-btn secondary" onclick="dismissStrategicOptions()">${content.secondaryBtn.text}</button>`;
                 } else if (content.secondaryBtn.action === 'openHeyHenry') {
-                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openHeyHenry) openHeyHenry();">${content.secondaryBtn.text}</button>`;
+                    actionsHTML += `<button class="strategic-options-btn secondary" onclick="if(window.openHeyHenry) window.openHeyHenry();">${content.secondaryBtn.text}</button>`;
                 }
             }
             actions.innerHTML = actionsHTML;
