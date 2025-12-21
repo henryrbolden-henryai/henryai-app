@@ -80,6 +80,11 @@ def apply_all_postprocessors(
         try:
             from ..reality_check import analyze_reality_checks
 
+            # CRITICAL: Preserve coaching controller's strategic_action if already set
+            # The coaching controller runs BEFORE post-processors and sets a carefully
+            # crafted "Your Move" message. We must not overwrite it.
+            existing_strategic_action = processed.get("reality_check", {}).get("strategic_action")
+
             reality_result = analyze_reality_checks(
                 resume_data=resume_data,
                 jd_data=jd_data,
@@ -92,6 +97,12 @@ def apply_all_postprocessors(
             )
 
             processed["reality_check"] = reality_result
+
+            # Restore coaching controller's strategic_action if it was set
+            if existing_strategic_action:
+                processed["reality_check"]["strategic_action"] = existing_strategic_action
+                if config.debug_mode:
+                    print(f"   ✅ Preserved coaching strategic_action: {existing_strategic_action[:50]}...")
 
             # CRITICAL ASSERTION: Verify fit_score was NOT modified
             if processed.get("fit_score") != original_fit_score:
