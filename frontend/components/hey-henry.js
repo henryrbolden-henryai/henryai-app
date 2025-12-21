@@ -3084,19 +3084,10 @@ ${confidenceClosing}`,
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-            // Log the request for debugging
-            console.log('Hey Henry request:', {
-                url: `${API_BASE}/api/hey-henry`,
-                message: message.substring(0, 50),
-                hasAnalysis: !!analysisData._company_name,
-                hasResume: !!resumeData.name
-            });
-
-            const response = await fetch(`${API_BASE}/api/hey-henry`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal,
-                body: JSON.stringify({
+            // Build request body with error handling
+            let requestBody;
+            try {
+                requestBody = JSON.stringify({
                     message: message,
                     conversation_history: conversationHistory.slice(0, -1),
                     context: {
@@ -3124,7 +3115,27 @@ ${confidenceClosing}`,
                     user_profile: userProfile,
                     pipeline_data: pipelineData,
                     attachments: attachmentsData
-                })
+                });
+                console.log('Hey Henry request body size:', requestBody.length, 'bytes');
+            } catch (jsonError) {
+                console.error('Hey Henry JSON stringify error:', jsonError);
+                throw new Error('Failed to prepare request');
+            }
+
+            // Log the request for debugging
+            console.log('Hey Henry request:', {
+                url: `${API_BASE}/api/hey-henry`,
+                message: message.substring(0, 50),
+                hasAnalysis: !!analysisData._company_name,
+                hasResume: !!resumeData.name,
+                bodySize: requestBody.length
+            });
+
+            const response = await fetch(`${API_BASE}/api/hey-henry`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
+                body: requestBody
             });
 
             clearTimeout(timeoutId);
