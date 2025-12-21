@@ -823,9 +823,19 @@
         }
 
         userProfile = JSON.parse(stored);
-        
+
         // Validate profile has required data
-        if (!userProfile.resume || !userProfile.resume.contact) {
+        // Accept profile if it has resume with either:
+        // - contact.full_name (newer format)
+        // - full_name (older format)
+        // - experience array (parsed resume data)
+        const hasResume = userProfile.resume && (
+          userProfile.resume.contact?.full_name ||
+          userProfile.resume.full_name ||
+          (userProfile.resume.experience && userProfile.resume.experience.length > 0)
+        );
+
+        if (!hasResume) {
           showNoProfileState();
           return null;
         }
