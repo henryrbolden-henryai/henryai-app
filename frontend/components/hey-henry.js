@@ -1294,25 +1294,6 @@
             nudge.className = 'ask-henry-nudge';
             nudge.innerHTML = `
                 <div class="ask-henry-nudge-content">
-                    <div class="ask-henry-nudge-avatar">
-                        <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <linearGradient id="nudgeRingGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-                                </linearGradient>
-                                <linearGradient id="nudgeStrokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
-                                    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                                    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <circle cx="100" cy="100" r="85" stroke="url(#nudgeRingGradient)" stroke-width="4" fill="none" class="pulse-ring"/>
-                            <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
-                            <path d="M145 130 L145 50" stroke="url(#nudgeStrokeGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
-                            <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
-                            <circle cx="145" cy="50" r="9" fill="#764ba2"/>
-                        </svg>
-                    </div>
                     <div class="ask-henry-nudge-text"></div>
                     <button class="ask-henry-nudge-dismiss" aria-label="Dismiss">&times;</button>
                 </div>
