@@ -1,13 +1,13 @@
 # Job Fit Scoring Implementation Specification
 
-**Version**: 2.2
-**Date**: December 20, 2025
-**Status**: DRAFT - Pending Backend Audit Validation
+**Version**: 3.0
+**Date**: December 21, 2025
+**Status**: IMPLEMENTED - Six-Tier System with Invariant Enforcement
 **Purpose**: Single source of truth for job fit analysis system
 
 > **Mission Statement**: *"If it doesn't make the candidate better, no one wins."*
 
-> **Versioning Note:** This document reflects the currently deployed 4-tier recommendation system (Strongly Apply, Apply, Conditional Apply, Do Not Apply). A 6-tier expansion is planned but not yet implemented. See [Appendix B](#appendix-b-4-tier--6-tier-migration-plan) for the migration plan.
+> **IMPORTANT - Six-Tier System (Dec 21, 2025):** This document reflects the **newly implemented six-tier recommendation system** with score-decision invariant enforcement. The previous 4-tier system has been deprecated. See [Six-Tier Recommendation System](#six-tier-recommendation-system) for details.
 
 ---
 
@@ -28,28 +28,37 @@
 
 ## Executive Summary
 
-### Current State (As of Dec 18, 2025)
+### Current State (As of Dec 21, 2025)
 
-**Known Issues:**
-1. ❌ Experience calculator only recognizes PM patterns (CRITICAL)
-2. ❌ Strategic action doesn't enforce coaching-first framework (HIGH)
-3. ❌ Third-person tone in user-facing fields (HIGH)
-4. ⚠️ Company credibility scoring not implemented (MEDIUM)
+**Implemented (New):**
+- ✅ **Six-Tier Recommendation System** deployed
+- ✅ **Score-Decision Invariant Enforcement** - no mismatch allowed
+- ✅ **Seniority Detection Module** - tier-appropriate guidance
+- ✅ **QA Sanitization Module** - removes AI patterns, prevents leakage
+- ✅ **The Opportunity Section** - strategic context signals
 
 **What Works:**
-- ✅ 4-tier recommendation system deployed (Strongly Apply, Apply, Conditional Apply, Do Not Apply)
-- ✅ Hard cap logic functioning
+- ✅ Six-tier recommendation system with strict boundaries
+- ✅ Hard cap logic functioning with invariant enforcement
 - ✅ Deterministic scoring (same input = same output)
 - ✅ Backend safety net applies penalties
+- ✅ Seniority-aware coaching generation
+- ✅ Output validation and sanitization
+
+**Previous Known Issues (Now Fixed):**
+1. ~~❌ Score-Decision inconsistency~~ → **FIXED**: Invariant enforcement
+2. ~~❌ Generic coaching for executives~~ → **FIXED**: Seniority detection
+3. ~~❌ Reality Check too generic~~ → **FIXED**: The Opportunity section
+4. ~~❌ QA issues (typos, em dashes)~~ → **FIXED**: Sanitization module
 
 ### Target State
 
-**Goals:**
-1. Support all job functions (recruiting, engineering, sales, marketing, PM)
-2. Distinguish leadership vs IC experience
-3. Apply company credibility multipliers
-4. Enforce coaching-first strategic guidance
-5. Use second-person tone for user-facing content
+**Achieved:**
+1. ✅ Six-tier recommendation system with invariant enforcement
+2. ✅ Seniority-aware guidance depth
+3. ✅ Strategic context signals (The Opportunity)
+4. ✅ QA sanitization and output validation
+5. ✅ Score-decision consistency guaranteed
 
 ---
 
@@ -713,100 +722,111 @@ def get_credibility_multiplier(tier: str) -> float:
 
 ---
 
-## Recommendation System
+## Six-Tier Recommendation System
 
-### Current (Deployed): 4-Tier System
+### Current (Deployed): 6-Tier System with Invariant Enforcement
 
-Replace binary "Apply/Skip" with graduated guidance that reflects reality.
+**Deployed**: December 21, 2025
 
-### Tier Definitions (Current)
+Replace binary "Apply/Skip" with graduated guidance that reflects reality, with strict score-decision consistency.
+
+### Tier Definitions (Current - Six Tiers)
 
 | Tier | Score Range | Label | Meaning |
 |------|-------------|-------|---------|
-| 1 | 75-100% | Strongly Apply | Prioritize immediately |
-| 2 | 60-74% | Apply | Good fit, worth pursuing |
-| 3 | 40-59% | Conditional Apply | Stretch role, strategic positioning needed |
-| 4 | 0-39% | Do Not Apply | Not recommended, focus elsewhere |
+| 1 | 85-100% | Strong Apply | Top-tier match. Prioritize this application. |
+| 2 | 70-84% | Apply | Solid fit. Worth your time and energy. |
+| 3 | 55-69% | Consider | Moderate fit. Apply if genuinely interested. |
+| 4 | 40-54% | Apply with Caution | Stretch role. Need positioning and referral. |
+| 5 | 25-39% | Long Shot | Significant gaps. Only with inside connection. |
+| 6 | 0-24% | Do Not Apply | Not your role. Invest energy elsewhere. |
+
+### Score-Decision Invariant Enforcement
+
+**CRITICAL**: Score and decision MUST be logically consistent. The system enforces this invariant:
+
+| If Score... | Decision CANNOT be... | Correction Action |
+|-------------|----------------------|-------------------|
+| >= 70 | Do Not Apply, Long Shot | Cap score to match decision tier |
+| >= 85 | Apply with Caution, Consider | Cap score to match decision tier |
+| < 40 | Apply, Strong Apply | Bump score to match decision tier |
+| < 55 | Strong Apply | Bump score to match decision tier |
+
+If a mismatch is detected, the system logs a **SCORE-DECISION INVARIANT VIOLATION** and auto-corrects.
 
 ### Implementation (Current)
 
-**Location**: `backend/backend.py`
+**Location**: `backend/recommendation/final_controller.py`
 
-**Function**: `get_recommendation_from_score()`
+**Key Functions**:
+- `get_recommendation_from_score()` - Maps score to recommendation tier
+- `enforce_score_decision_lock()` - Enforces invariant consistency
+- `validate_score_decision_pair()` - Validates and returns diagnostics
 
 ```python
-# CURRENT (DEPLOYED) - 4-Tier System
-def get_recommendation_from_score(capped_score: int) -> str:
-    """
-    Map fit score to recommendation tier.
+# CURRENT (DEPLOYED) - 6-Tier System with Invariant Enforcement
+from backend.recommendation.final_controller import (
+    get_recommendation_from_score,
+    enforce_score_decision_lock,
+    Recommendation,
+    SCORE_TO_RECOMMENDATION,
+    DECISION_SCORE_FLOORS,
+    DECISION_SCORE_CEILINGS,
+)
 
-    Args:
-        capped_score: Fit score after hard caps applied
+# Score -> Decision mapping (immutable)
+SCORE_TO_RECOMMENDATION = {
+    (85, 101): Recommendation.STRONG_APPLY,
+    (70, 85): Recommendation.APPLY,
+    (55, 70): Recommendation.CONSIDER,
+    (40, 55): Recommendation.APPLY_WITH_CAUTION,
+    (25, 40): Recommendation.LONG_SHOT,
+    (0, 25): Recommendation.DO_NOT_APPLY,
+}
 
-    Returns:
-        str: One of 4 recommendation labels
-    """
-    if capped_score >= 75:
-        return "Strongly Apply"
-    elif capped_score >= 60:
-        return "Apply"
-    elif capped_score >= 40:
-        return "Conditional Apply"
-    else:
-        return "Do Not Apply"
+def get_recommendation_from_score(score: int) -> Recommendation:
+    """Get the correct recommendation for a given score."""
+    for (low, high), rec in SCORE_TO_RECOMMENDATION.items():
+        if low <= score < high:
+            return rec
+    if score >= 100:
+        return Recommendation.STRONG_APPLY
+    return Recommendation.DO_NOT_APPLY
 ```
 
-**Frontend Mapping** (current):
+**Frontend Mapping** (updated for 6-tier):
 
 ```javascript
 // frontend/results.html
 const recommendationStyles = {
-    "Strongly Apply": { color: "#10b981", badge: "✓" },
-    "Apply": { color: "#60a5fa", badge: "→" },
-    "Conditional Apply": { color: "#f59e0b", badge: "⚠" },
-    "Do Not Apply": { color: "#991b1b", badge: "✗" }
+    "Strong Apply": { color: "#10b981", badge: "✓✓", icon: "star" },
+    "Apply": { color: "#22c55e", badge: "✓", icon: "check-circle" },
+    "Consider": { color: "#60a5fa", badge: "→", icon: "arrow-right" },
+    "Apply with Caution": { color: "#f59e0b", badge: "⚠", icon: "alert-triangle" },
+    "Long Shot": { color: "#f97316", badge: "⚡", icon: "target" },
+    "Do Not Apply": { color: "#991b1b", badge: "✗", icon: "x-circle" }
 };
 ```
 
-**Status**: ✅ Deployed and functioning
+**Status**: ✅ Deployed and functioning with invariant enforcement
 
 ---
 
-### Planned: 6-Tier Recommendation System (Not Yet Deployed)
+### DEPRECATED: 4-Tier System
 
-The following 6-tier expansion is planned for a future release:
+The following 4-tier system has been **deprecated** as of December 21, 2025:
 
-| Tier | Score Range | Label | Meaning |
-|------|-------------|-------|---------|
-| 1 | 85-100% | Strongly Apply | Prioritize immediately |
-| 2 | 70-84% | Apply | Good fit, worth pursuing |
-| 3 | 55-69% | Consider | Moderate fit, apply if interested |
-| 4 | 40-54% | Conditional Apply | Stretch role, strategic positioning needed |
-| 5 | 25-39% | Long Shot | Significant gaps, unlikely |
-| 6 | 0-24% | Do Not Apply | Not recommended, focus elsewhere |
-
-```python
-# PLANNED (NOT YET DEPLOYED) - 6-Tier System
-def get_recommendation_from_score_v2(capped_score: int) -> str:
-    if capped_score >= 85:
-        return "Strongly Apply"
-    elif capped_score >= 70:
-        return "Apply"
-    elif capped_score >= 55:
-        return "Consider"
-    elif capped_score >= 40:
-        return "Conditional Apply"
-    elif capped_score >= 25:
-        return "Long Shot"
-    else:
-        return "Do Not Apply"
-```
+| Old Tier | Old Score Range | Migrated To |
+|----------|-----------------|-------------|
+| Strongly Apply | 75-100% | Strong Apply (85-100%) |
+| Apply | 60-74% | Apply (70-84%) or Consider (55-69%) |
+| Conditional Apply | 40-59% | Apply with Caution (40-54%) or Consider (55-69%) |
+| Do Not Apply | 0-39% | Long Shot (25-39%) or Do Not Apply (0-24%) |
 
 **Migration Notes:**
-- "Consider" and "Long Shot" tiers are not yet deployed
-- Current system uses 4 tiers with different thresholds (75/60/40)
-- 6-tier system uses thresholds (85/70/55/40/25)
-- UI updates required for new tier styling
+- All existing analyses will be re-scored using the new boundaries
+- UI has been updated to support all 6 tiers
+- Invariant enforcement prevents score-decision drift
 
 ---
 
