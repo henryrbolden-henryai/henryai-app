@@ -4647,8 +4647,20 @@ async def extract_jd_from_url(request: URLExtractRequest):
 
             html_content = response.text
 
-        # Check for common blocking patterns
-        if "captcha" in html_content.lower() or "verify you are human" in html_content.lower():
+        # Check for common blocking patterns (more specific to avoid false positives)
+        html_lower = html_content.lower()
+        blocking_patterns = [
+            "please verify you are human",
+            "please complete the security check",
+            "complete the captcha below",
+            "recaptcha-checkbox",
+            "cf-turnstile",  # Cloudflare Turnstile
+            "hcaptcha-box",
+            "g-recaptcha",
+            "challenge-running",  # Cloudflare challenge
+            "just a moment...</title>",  # Cloudflare waiting page
+        ]
+        if any(pattern in html_lower for pattern in blocking_patterns):
             return URLExtractResponse(
                 success=False,
                 error="This site requires human verification. Please copy and paste the job description manually."
