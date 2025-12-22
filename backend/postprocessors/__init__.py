@@ -184,6 +184,22 @@ def apply_all_postprocessors(
             print(f"⚠️ Voice Guide failed (non-blocking): {str(e)}")
 
     # =========================================================================
+    # STEP 4: Recommendation-Action Consistency
+    # Ensure timing_guidance and action fields match the recommendation
+    # =========================================================================
+    processed = _enforce_action_recommendation_consistency(processed, recommendation)
+    if config.debug_mode:
+        print("✅ Action-Recommendation consistency enforced")
+
+    # =========================================================================
+    # STEP 5: Text Sanitization (Em dash removal, cleanup)
+    # Applies globally to prevent AI-generated artifacts
+    # =========================================================================
+    processed = _sanitize_text_fields(processed)
+    if config.debug_mode:
+        print("✅ Text sanitization applied (em dashes, etc.)")
+
+    # =========================================================================
     # FINAL ASSERTION: Verify fit_score integrity
     # =========================================================================
     final_fit_score = processed.get("fit_score")
@@ -194,6 +210,130 @@ def apply_all_postprocessors(
         processed["_fit_score_restored"] = True
 
     return processed
+
+
+def _enforce_action_recommendation_consistency(data: Dict[str, Any], recommendation: str) -> Dict[str, Any]:
+    """
+    Ensure timing_guidance and action fields are consistent with the recommendation.
+
+    Rules:
+    - "Do Not Apply" / "Skip" → "Skip this one" or "Pass"
+    - "Long Shot" → "Only if you have an inside connection"
+    - "Apply with Caution" → Standard timing (no urgency language)
+    - "Apply" / "Consider" → "Apply today" or "Apply this week"
+    - "Strong Apply" → "Apply immediately"
+
+    Contradictions (e.g., "Do Not Apply" + "Apply today") are fixed.
+    """
+    recommendation_lower = (recommendation or "").lower()
+
+    # Map recommendation to valid timing_guidance values
+    timing_map = {
+        "strong apply": "Apply immediately",
+        "strongly apply": "Apply immediately",
+        "apply": "Apply today",
+        "consider": "Apply if interested",
+        "apply with caution": "Apply with caution - prepare positioning",
+        "conditional apply": "Apply with caution - prepare positioning",
+        "long shot": "Only pursue if you have an inside connection",
+        "do not apply": "Skip this one",
+        "skip": "Skip this one",
+    }
+
+    # Determine correct timing
+    correct_timing = None
+    for key, value in timing_map.items():
+        if key in recommendation_lower:
+            correct_timing = value
+            break
+
+    if not correct_timing:
+        # Default based on recommendation tier
+        if "not" in recommendation_lower or "skip" in recommendation_lower:
+            correct_timing = "Skip this one"
+        elif "caution" in recommendation_lower:
+            correct_timing = "Apply with caution - prepare positioning"
+        else:
+            correct_timing = "Apply today"
+
+    # Fix timing_guidance in intelligence_layer.apply_decision
+    intelligence_layer = data.get("intelligence_layer", {})
+    apply_decision = intelligence_layer.get("apply_decision", {})
+
+    if apply_decision:
+        current_timing = apply_decision.get("timing_guidance", "")
+
+        # Detect contradictions
+        is_skip_recommendation = "not" in recommendation_lower or "skip" in recommendation_lower
+        has_apply_language = any(phrase in current_timing.lower() for phrase in [
+            "apply today", "apply immediately", "apply now", "apply soon", "apply this week"
+        ])
+
+        if is_skip_recommendation and has_apply_language:
+            print(f"   ⚠️ ACTION CONTRADICTION: '{recommendation}' with timing '{current_timing}'")
+            print(f"   ✅ Fixed to: '{correct_timing}'")
+            apply_decision["timing_guidance"] = correct_timing
+            apply_decision["_timing_corrected"] = True
+
+        # Also fix apply_decision.recommendation if mismatched
+        decision_rec = apply_decision.get("recommendation", "")
+        if is_skip_recommendation and "apply" in decision_rec.lower() and "not" not in decision_rec.lower():
+            if "skip" not in decision_rec.lower():
+                print(f"   ⚠️ DECISION CONTRADICTION: Main rec='{recommendation}', decision rec='{decision_rec}'")
+                apply_decision["recommendation"] = "Skip"
+                print(f"   ✅ Fixed apply_decision.recommendation to: 'Skip'")
+
+        intelligence_layer["apply_decision"] = apply_decision
+        data["intelligence_layer"] = intelligence_layer
+
+    return data
+
+
+def _sanitize_text_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively sanitize all text fields to remove AI-generated artifacts.
+
+    Specifically targets:
+    - Em dashes (—) → replaced with period + space for sentence break
+    - En dashes (–) → replaced with period + space
+    - Double spaces
+    - Orphaned punctuation
+    """
+    import re
+
+    def sanitize_text(text: str) -> str:
+        if not text or not isinstance(text, str):
+            return text
+
+        # Replace em/en dashes with period + space for sentence breaks
+        if '—' in text or '–' in text:
+            text = text.replace('—', '. ')
+            text = text.replace('–', '. ')
+            # Clean up double periods and extra spaces
+            text = text.replace('..', '.')
+            text = text.replace('.  ', '. ')
+            # Capitalize after new periods
+            text = re.sub(r'\.\s+([a-z])', lambda m: '. ' + m.group(1).upper(), text)
+
+        # Fix double spaces
+        text = re.sub(r'\s{2,}', ' ', text)
+
+        # Fix orphaned punctuation (space before punctuation)
+        text = re.sub(r'\s+([.,!?;:])', r'\1', text)
+
+        return text.strip()
+
+    def recurse(obj):
+        if isinstance(obj, dict):
+            return {k: recurse(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [recurse(item) for item in obj]
+        elif isinstance(obj, str):
+            return sanitize_text(obj)
+        else:
+            return obj
+
+    return recurse(data)
 
 
 def _extract_recent_titles(resume_data: Dict[str, Any]) -> list:

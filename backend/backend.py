@@ -6247,12 +6247,33 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
             # A. DECISION (one sentence, direct)
             # B. WHY (plain, non-shaming)
-            if "non_transferable_domain" in failed_check:
-                domain_name = failed_check.split(":")[-1] if ":" in failed_check else "this domain"
+            #
+            # PRIORITY ORDER for explanations (most fundamental first):
+            # 1. Seniority/Level gap (they need a different level role entirely)
+            # 2. Years experience gap (they need more time in industry)
+            # 3. People leadership gap (specific management requirement)
+            # 4. Domain gap (might be coachable in some cases)
+            #
+            # This ensures the PRIMARY blocker is highlighted first.
+
+            # Check if there's a significant years gap first (even if domain is the failed_check)
+            candidate_years = experience_analysis.get("candidate_years", 0)
+            required_years = experience_analysis.get("required_years", 0)
+            years_percentage = (candidate_years / required_years * 100) if required_years > 0 else 100
+
+            # PRIORITY 1: Seniority/Level gap (Director/VP role, candidate is IC)
+            if "seniority_scope" in failed_check:
                 response_data["recommendation_rationale"] = (
-                    f"Do not apply. This role requires direct experience in {domain_name.replace('_', ' ')}. "
-                    f"Your background does not show verified experience in this domain."
+                    f"Do not apply. This is a Director/VP-level role requiring {required_years}+ years and people management. "
+                    f"Your background shows {candidate_years:.0f} years with no management experience. The level gap is the primary blocker."
                 )
+            # PRIORITY 2: Severe years gap (<50% of required) - this is fundamental
+            elif years_percentage < 50 and required_years > 0:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires {required_years}+ years of experience. "
+                    f"You have {candidate_years:.0f} years. This experience gap is the primary blocker."
+                )
+            # PRIORITY 3: People leadership gap
             elif "people_leadership" in failed_check:
                 # Use tiered leadership messaging if available
                 leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
@@ -6274,10 +6295,12 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                         f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
                         f"Operational leadership does not count toward this requirement."
                     )
-            elif "seniority_scope" in failed_check:
+            # PRIORITY 4: Domain gap
+            elif "non_transferable_domain" in failed_check:
+                domain_name = failed_check.split(":")[-1] if ":" in failed_check else "this domain"
                 response_data["recommendation_rationale"] = (
-                    f"Do not apply. This is a VP or executive-level role. "
-                    f"Your background does not include executive or director-level experience."
+                    f"Do not apply. This role requires direct experience in {domain_name.replace('_', ' ')}. "
+                    f"Your background does not show verified experience in this domain."
                 )
             else:
                 response_data["recommendation_rationale"] = (

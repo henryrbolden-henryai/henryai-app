@@ -379,7 +379,7 @@ def generate_your_move(
                        f"Emphasize this directly in your resume header and outreach. "
                        f"Apply now and message the hiring manager on LinkedIn.")
             else:
-                # NEW: Use resume highlights for specific coaching instead of generic copy
+                # Use resume highlights for specific coaching (runtime extraction, no cross-session state)
                 highlights = _extract_resume_highlights(candidate_resume)
                 return _build_specific_your_move(highlights, role_title or '', job_requirements)
 
@@ -693,41 +693,53 @@ def _build_specific_your_move(
     Returns:
         str: Specific, actionable Your Move message
     """
-    parts = []
+    # Log highlights for debugging
+    print(f"   📊 Resume highlights for Your Move:")
+    print(f"      notable_company: {highlights.get('notable_company')}")
+    print(f"      top_metrics: {highlights.get('top_metrics')}")
+    print(f"      team_size: {highlights.get('team_size')}")
+    print(f"      product_names: {highlights.get('product_names')}")
+    print(f"      years_experience: {highlights.get('years_experience')}")
+
+    positioning_parts = []
 
     # Build specific positioning based on what we found
     if highlights.get('notable_company') and highlights.get('top_metrics'):
         company = highlights['notable_company']
         metric = highlights['top_metrics'][0]
-        parts.append(f"Lead with your {company} experience and {metric} impact.")
+        positioning_parts.append(f"Lead with your {company} experience and {metric} impact.")
     elif highlights.get('top_metrics'):
         metrics_text = ' and '.join(highlights['top_metrics'][:2])
-        parts.append(f"Lead with your {metrics_text} track record.")
+        positioning_parts.append(f"Lead with your {metrics_text} track record.")
     elif highlights.get('notable_company'):
-        parts.append(f"Your {highlights['notable_company']} experience is a strong signal for this role.")
+        positioning_parts.append(f"Your {highlights['notable_company']} experience is a strong signal for this role.")
 
     # Add team/scope context if available
     if highlights.get('team_size'):
         if highlights.get('product_names'):
             product = highlights['product_names'][0]
-            parts.append(f"Emphasize your {highlights['team_size']} coordination and {product} launch in your outreach.")
+            positioning_parts.append(f"Emphasize your {highlights['team_size']} coordination and {product} launch in your outreach.")
         else:
-            parts.append(f"Your {highlights['team_size']} coordination experience positions you for this scope.")
+            positioning_parts.append(f"Your {highlights['team_size']} coordination experience positions you for this scope.")
     elif highlights.get('product_names'):
         product = highlights['product_names'][0]
-        parts.append(f"Highlight your {product} launch experience prominently.")
+        positioning_parts.append(f"Highlight your {product} launch experience prominently.")
 
-    # Add action
-    parts.append("Apply now and reach out directly to the hiring manager on LinkedIn.")
-
-    if parts:
-        return ' '.join(parts)
+    # If we have positioning parts, add action and return
+    if positioning_parts:
+        positioning_parts.append("Apply now and reach out directly to the hiring manager on LinkedIn.")
+        result = ' '.join(positioning_parts)
+        print(f"   ✅ Built specific Your Move: {result[:80]}...")
+        return result
 
     # If we still have nothing specific, use years + domain as last resort
     if highlights.get('years_experience'):
-        return f"Your {highlights['years_experience']} of experience positions you competitively. Apply now and reach out directly to the hiring manager."
+        result = f"Your {highlights['years_experience']} of experience positions you competitively. Apply now and reach out directly to the hiring manager."
+        print(f"   ⚠️ Years fallback Your Move: {result[:80]}...")
+        return result
 
     # Absolute last resort - still better than "lead with your strongest outcomes"
+    print("   🚨 No resume highlights found - using generic fallback")
     return "Apply now. Prioritize a direct message to the hiring manager on LinkedIn."
 
 
@@ -1236,6 +1248,7 @@ def _sanitize_role_title(role_title: str) -> str:
     Handles common issues:
     - "Role" placeholder (returns fallback)
     - JD preamble like "As a Product Manager focused on the Consumer experience, you..."
+    - JD intro like "We're seeking a Global Vice President of Talent Acquisition"
     - Empty/None values
 
     Returns clean job title or "this role" fallback.
@@ -1251,45 +1264,89 @@ def _sanitize_role_title(role_title: str) -> str:
     if title.lower() in ['role', 'the role', 'this role', 'position', 'job']:
         return "this role"
 
-    # Check for JD preamble patterns (starts with "As a", "The", etc.)
-    jd_preamble_patterns = [
-        "as a ", "as an ", "the ", "we are looking for ",
-        "we're looking for ", "we seek ", "join our ",
-        "about the role", "about this role", "role overview",
-        "job description", "position summary"
-    ]
-    title_lower = title.lower()
-    for pattern in jd_preamble_patterns:
-        if title_lower.startswith(pattern):
-            # Try to extract just the job title after the pattern
-            remainder = title[len(pattern):].strip()
-            # Look for common job title patterns
-            # Match patterns like "Product Manager", "Senior Engineer", etc.
-            match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', remainder)
-            if match:
-                extracted = match.group(1).strip()
-                # Validate it's a reasonable length (2-50 chars)
-                if 2 <= len(extracted) <= 50:
-                    return extracted
-            # Couldn't extract a clean title, return fallback
-            return "this role"
+    # ==========================================================================
+    # PATTERN 1: "As a [Title] focused on..." or "As a [Title], you..."
+    # Extract the job title between "As a/an" and the first delimiter
+    # ==========================================================================
+    as_a_match = re.match(
+        r'^[Aa]s\s+(?:a|an)\s+([A-Za-z][A-Za-z\s]+?)(?:\s+focused\s+on|\s+responsible\s+for|,\s+you|\s+who|\s+that|\s+with\s+|$)',
+        title
+    )
+    if as_a_match:
+        extracted = as_a_match.group(1).strip()
+        if 2 <= len(extracted) <= 60:
+            return extracted
 
-    # Check if title is too long (likely contains JD fragment)
-    if len(title) > 60:
-        # Try to extract just the first few title-like words
-        # Match first 1-4 capitalized words
-        match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', title)
-        if match:
-            extracted = match.group(1).strip()
-            if 2 <= len(extracted) <= 50:
+    # ==========================================================================
+    # PATTERN 2: "We're seeking a [Title]" or "We are looking for a [Title]"
+    # Extract the job title after the intro phrase
+    # ==========================================================================
+    seeking_match = re.match(
+        r'^(?:[Ww]e\'?re?\s+(?:seeking|looking\s+for)|[Ww]e\s+(?:are\s+)?(?:seeking|looking\s+for)|[Jj]oin\s+(?:us|our\s+team)\s+as)\s+(?:a|an)?\s*([A-Za-z][A-Za-z\s]+?)(?:\s+to\s+|\s+who\s+|\s+that\s+|,|\.|$)',
+        title
+    )
+    if seeking_match:
+        extracted = seeking_match.group(1).strip()
+        if 2 <= len(extracted) <= 60:
+            return extracted
+
+    # ==========================================================================
+    # PATTERN 3: Title contains sentence-ending content after the role
+    # Look for patterns like "Product Manager, Consumer" or "Director of Engineering at Company"
+    # ==========================================================================
+
+    # Check for trailing JD content after common delimiters
+    for delimiter in [' focused on ', ' responsible for ', ' who will ', ' that will ', ' to lead ', ' to drive ']:
+        if delimiter in title.lower():
+            idx = title.lower().find(delimiter)
+            extracted = title[:idx].strip()
+            if 2 <= len(extracted) <= 60:
                 return extracted
+
+    # Check for "you" appearing (indicates JD sentence)
+    if ', you' in title.lower() or ' you ' in title.lower():
+        you_idx = min(
+            title.lower().find(', you') if ', you' in title.lower() else len(title),
+            title.lower().find(' you ') if ' you ' in title.lower() else len(title)
+        )
+        extracted = title[:you_idx].strip().rstrip(',')
+        if 2 <= len(extracted) <= 60:
+            return extracted
+
+    # ==========================================================================
+    # PATTERN 4: Title is too long (>60 chars) - likely contains JD fragment
+    # Try to extract a clean job title from the beginning
+    # ==========================================================================
+    if len(title) > 60:
+        # Try stopping at common title boundaries
+        # Match job title pattern: 1-6 words that look like a title
+        job_title_match = re.match(
+            r'^((?:Senior|Staff|Principal|Lead|Head|Director|VP|Vice\s+President|Chief|Global|Associate|Junior|Manager|Engineering|Product|Software|Data|Machine\s+Learning|ML|AI|Platform|Infrastructure|DevOps|SRE|QA|Frontend|Backend|Full\s*[- ]?Stack|Mobile|iOS|Android|Cloud|Security|Design|UX|UI)[A-Za-z\s,/-]*?)(?:\s+[-–—]|\s+at\s+|\s+@|\s+focused|\s+responsible|\s+who|\.|,\s+(?:you|we|the|a|an)|$)',
+            title,
+            re.IGNORECASE
+        )
+        if job_title_match:
+            extracted = job_title_match.group(1).strip().rstrip(',')
+            if 2 <= len(extracted) <= 60:
+                return extracted
+
+        # Fallback: just take first 60 chars and try to end at a word boundary
+        truncated = title[:60]
+        last_space = truncated.rfind(' ')
+        if last_space > 20:
+            return truncated[:last_space].strip().rstrip(',')
         return "this role"
 
-    # Check for trailing JD content after comma
+    # Check for trailing content after comma (but keep meaningful parts like "Director, Engineering")
     if ',' in title:
         parts = title.split(',')
         first_part = parts[0].strip()
-        if 2 <= len(first_part) <= 50:
+        # If second part looks like a department/area, keep it
+        if len(parts) > 1 and len(parts[1].strip()) < 20:
+            combined = f"{first_part}, {parts[1].strip()}"
+            if len(combined) <= 60:
+                return combined
+        if 2 <= len(first_part) <= 60:
             return first_part
 
     return title
