@@ -105,6 +105,66 @@ def detect_candidate_seniority(resume_data: Dict[str, Any]) -> str:
     return "ic"
 
 
+def _sanitize_role_title_for_guidance(role_title: str) -> str:
+    """
+    Sanitize role_title to extract just the job title.
+
+    Handles common issues:
+    - "Role" placeholder (returns fallback)
+    - JD preamble like "As a Product Manager focused on the Consumer experience, you..."
+    - Empty/None values
+
+    Returns clean job title or "this role" fallback.
+    """
+    import re
+
+    if not role_title:
+        return "this role"
+
+    title = role_title.strip()
+
+    # Check for placeholder values
+    if title.lower() in ['role', 'the role', 'this role', 'position', 'job']:
+        return "this role"
+
+    # Check for JD preamble patterns
+    jd_preamble_patterns = [
+        "as a ", "as an ", "we are looking for ",
+        "we're looking for ", "we seek ", "join our ",
+        "about the role", "about this role", "role overview",
+        "job description", "position summary"
+    ]
+    title_lower = title.lower()
+    for pattern in jd_preamble_patterns:
+        if title_lower.startswith(pattern):
+            # Try to extract just the job title after the pattern
+            remainder = title[len(pattern):].strip()
+            match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', remainder)
+            if match:
+                extracted = match.group(1).strip()
+                if 2 <= len(extracted) <= 50:
+                    return extracted
+            return "this role"
+
+    # Check if title is too long (likely contains JD fragment)
+    if len(title) > 60:
+        match = re.match(r'^([A-Z][a-zA-Z]+(?:\s+[A-Za-z]+){0,3})', title)
+        if match:
+            extracted = match.group(1).strip()
+            if 2 <= len(extracted) <= 50:
+                return extracted
+        return "this role"
+
+    # Check for trailing JD content after comma
+    if ',' in title:
+        parts = title.split(',')
+        first_part = parts[0].strip()
+        if 2 <= len(first_part) <= 50:
+            return first_part
+
+    return title
+
+
 def detect_highest_seniority_held(resume_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Detect the highest seniority level ever held by the candidate.
@@ -314,21 +374,24 @@ def get_seniority_fallback_your_move(
     Returns:
         str: Fallback Your Move message (guaranteed non-empty)
     """
+    # Sanitize role_title to avoid "Role" placeholders and JD fragments
+    clean_title = _sanitize_role_title_for_guidance(role_title)
+
     fallbacks = {
         "executive": (
-            f"Your executive experience positions you for {role_title}. "
+            f"Your executive experience positions you for {clean_title}. "
             f"Lead with your most senior accomplishments and reach out directly to the hiring executive."
         ),
         "director": (
-            f"Your leadership track record aligns with {role_title}. "
+            f"Your leadership track record aligns with {clean_title}. "
             f"Emphasize team-level outcomes and cross-functional wins in your outreach."
         ),
         "manager": (
-            f"Position your management experience for {role_title}. "
+            f"Position your management experience for {clean_title}. "
             f"Lead with quantified team outcomes. Apply and reach out to the hiring manager."
         ),
         "ic": (
-            f"Your technical background aligns with {role_title}. "
+            f"Your technical background aligns with {clean_title}. "
             f"Lead with your strongest project outcomes. Apply now and follow up on LinkedIn."
         )
     }

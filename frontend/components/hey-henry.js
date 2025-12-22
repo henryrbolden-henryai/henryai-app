@@ -1767,6 +1767,13 @@ ${confidenceClosing}`,
 
     // Check and trigger welcome flow on init
     function checkWelcomeFlow() {
+        // Skip on dashboard - dashboard.html has its own welcome flow system
+        // that properly syncs with Supabase server-side profile data
+        const currentPage = window.location.pathname.split('/').pop().replace('.html', '') || 'index';
+        if (currentPage === 'dashboard') {
+            return false;
+        }
+
         const state = determineWelcomeFlowState();
         if (state) {
             // Small delay to let the page settle
