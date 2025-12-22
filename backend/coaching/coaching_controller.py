@@ -1278,17 +1278,45 @@ def _sanitize_role_title(role_title: str) -> str:
             return extracted
 
     # ==========================================================================
-    # PATTERN 2: "We're seeking a [Title]" or "We are looking for a [Title]"
-    # Extract the job title after the intro phrase
+    # PATTERN 2: Common JD preamble patterns
+    # Extract the job title after intro phrases like:
+    # - "We're seeking a [Title]"
+    # - "We are looking for a [Title]"
+    # - "[Company] is hiring a [Title]"
+    # - "About the Role: [Title]"
+    # - "About this role: [Title]"
+    # - "[Company] is looking for a [Title]"
     # ==========================================================================
-    seeking_match = re.match(
-        r'^(?:[Ww]e\'?re?\s+(?:seeking|looking\s+for)|[Ww]e\s+(?:are\s+)?(?:seeking|looking\s+for)|[Jj]oin\s+(?:us|our\s+team)\s+as)\s+(?:a|an)?\s*([A-Za-z][A-Za-z\s]+?)(?:\s+to\s+|\s+who\s+|\s+that\s+|,|\.|$)',
-        title
-    )
-    if seeking_match:
-        extracted = seeking_match.group(1).strip()
-        if 2 <= len(extracted) <= 60:
-            return extracted
+    seeking_patterns = [
+        r"^[Ww]e'?re?\s+seeking\s+(?:a|an)?\s*",
+        r"^[Ww]e\s+are\s+seeking\s+(?:a|an)?\s*",
+        r"^[Ww]e'?re?\s+looking\s+for\s+(?:a|an)?\s*",
+        r"^[Ww]e\s+are\s+looking\s+for\s+(?:a|an)?\s*",
+        r"^[Jj]oin\s+(?:us|our\s+team)\s+as\s+(?:a|an)?\s*",
+        r"^[Aa]bout\s+(?:the|this)\s+[Rr]ole[:\s]+",
+        r"^[Aa]bout\s+(?:the|this)\s+[Pp]osition[:\s]+",
+        r"^.{1,30}\s+is\s+(?:hiring|seeking|looking\s+for)\s+(?:a|an)?\s*",  # "[Company] is hiring a"
+        r"^[Tt]he\s+[Rr]ole[:\s]+",
+        r"^[Pp]osition[:\s]+",
+    ]
+    for pattern in seeking_patterns:
+        if re.match(pattern, title):
+            # Strip the preamble and extract just the title
+            stripped = re.sub(pattern, '', title).strip()
+            # Now extract just the job title (stop at common delimiters)
+            title_match = re.match(
+                r'^([A-Za-z][A-Za-z\s/-]+?)(?:\s+to\s+|\s+who\s+|\s+that\s+|\s+responsible|\s+focused|,|\.|$)',
+                stripped
+            )
+            if title_match:
+                extracted = title_match.group(1).strip()
+                if 2 <= len(extracted) <= 60:
+                    return extracted
+            # If no delimiter found, just use the stripped text if reasonable length
+            if 2 <= len(stripped) <= 60:
+                return stripped
+            # If still too long, return fallback
+            return "this role"
 
     # ==========================================================================
     # PATTERN 3: Title contains sentence-ending content after the role

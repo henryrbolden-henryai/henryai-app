@@ -959,7 +959,7 @@
     function extractCompanyAndRole(jdText) {
       let company = '';
       let role = '';
-      
+
       // Extract company from JD text
       const companyMatch = jdText.match(/(?:About|Join|At)\s+([A-Z][A-Za-z0-9\s&]+?)(?:\s+is|\s+we|\s*,|\s*\.)/);
       if (companyMatch) {
@@ -967,7 +967,7 @@
       } else {
         company = 'Company';
       }
-      
+
       // Extract role from JD text
       const roleMatch = jdText.match(/(?:Title|Position|Role):\s*([^\n]+)/i);
       if (roleMatch) {
@@ -980,9 +980,12 @@
             break;
           }
         }
-        if (!role) role = 'Role';
+        // CRITICAL: Do NOT use 'Role' fallback - let backend extract from JD
+        // Using 'Role' as fallback breaks level detection and other downstream logic
+        // If we can't extract a role, leave it empty and let Claude extract it
+        if (!role) role = '';
       }
-      
+
       return { company, role };
     }
 

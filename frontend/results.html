@@ -1873,14 +1873,17 @@
         function extractTimingLabel(text) {
             if (!text) return 'Standard';
             const lower = text.toLowerCase();
-            
+
+            // CRITICAL: Check skip/pass FIRST - these override any timing signals
+            // "Skip this one" should not become "Apply soon" just because it contains text
+            if (lower.includes('skip') || lower.includes('don\'t') || lower.includes('do not') || lower.includes('pass on')) return 'Skip this one';
+
             // Map timing signals to clear actions
             if (lower.includes('immediate') || lower.includes('1-2 day') || lower.includes('24 hour') || lower.includes('asap')) return 'Apply today';
             if (lower.includes('24-48') || lower.includes('2-3 day') || lower.includes('this week')) return 'Apply this week';
             if (lower.includes('week') || lower.includes('soon')) return 'Apply soon';
             if (lower.includes('ghost') || lower.includes('old') || lower.includes('stale')) return 'Likely stale';
-            if (lower.includes('skip') || lower.includes('don\'t') || lower.includes('pass')) return 'Skip this one';
-            
+
             return 'Standard timing';
         }
 

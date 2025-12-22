@@ -6394,9 +6394,82 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
         else:
             # Generic locked Do Not Apply (e.g., from missing_experience gap)
-            response_data["recommendation_rationale"] = (
-                f"Do not apply. {locked_reason}."
+            # ==========================================================================
+            # PRIORITY ORDER: Even when eligibility passed, apply this priority:
+            # 1. Level/seniority gap (IC applying to Director+)
+            # 2. Years experience gap
+            # 3. People leadership gap
+            # 4. Domain gap
+            # ==========================================================================
+
+            # Get gap data
+            candidate_years = experience_analysis.get("candidate_years", 0)
+            required_years = experience_analysis.get("required_years", 0)
+            years_percentage = (candidate_years / required_years * 100) if required_years > 0 else 100
+            people_leadership_years = experience_analysis.get("people_leadership_years", 0)
+            required_people_leadership = experience_analysis.get("required_people_leadership_years", 0)
+            role_level = experience_analysis.get("role_level", "").lower() or response_data.get("role_level", "").lower()
+            candidate_level = experience_analysis.get("candidate_level", "").lower()
+            leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
+
+            # Also check role_title for level detection (more reliable source)
+            role_title_for_level = (response_data.get("role_title", "") or "").lower()
+
+            # Detect if this is a level mismatch (IC → Director+)
+            # Check both role_level field AND role_title for director+ signals
+            director_signals = ["director", "vp", "vice president", "head of", "chief", "executive", "senior director", "global"]
+            is_director_plus_role = any(
+                level in role_level for level in director_signals
+            ) or any(
+                level in role_title_for_level for level in director_signals
             )
+            is_ic_candidate = candidate_level in ["ic", "individual contributor", "senior", "mid", "junior", "staff"] or not any(
+                level in candidate_level for level in ["director", "manager", "lead", "head"]
+            )
+
+            # Debug: Log the values used for explanation priority
+            print(f"   📋 EXPLANATION PRIORITY DEBUG:")
+            print(f"      role_level: '{role_level}', role_title: '{role_title_for_level[:40]}...'")
+            print(f"      is_director_plus_role: {is_director_plus_role}, is_ic_candidate: {is_ic_candidate}")
+            print(f"      required_people_leadership: {required_people_leadership}, people_leadership_years: {people_leadership_years}")
+            print(f"      candidate_years: {candidate_years}, required_years: {required_years}, years_percentage: {years_percentage:.1f}%")
+
+            # PRIORITY 1: Level/seniority gap (IC applying to Director+ role)
+            # Note: Director+ roles ALWAYS require people leadership, so we don't require it to be explicitly set
+            if is_director_plus_role and is_ic_candidate and people_leadership_years < 1:
+                print(f"   ✅ PRIORITY 1 matched: Level gap (Director+ role, IC candidate)")
+                # Use role_title if role_level is empty
+                level_display = role_level.title() if role_level else "Director"
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This is a {level_display}-level role requiring people management experience. "
+                    f"Your {candidate_years:.0f} years are IC-focused with no verified direct reports. The level gap is the primary blocker."
+                )
+            # PRIORITY 2: Severe years gap (<50% of required)
+            elif years_percentage < 50 and required_years > 0:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. This role requires {required_years}+ years of experience. "
+                    f"You have {candidate_years:.0f} years. This experience gap is the primary blocker."
+                )
+            # PRIORITY 3: People leadership gap with specific messaging
+            elif required_people_leadership > 0 and people_leadership_years < required_people_leadership:
+                if leadership_gap_msg.get("factual_statement"):
+                    response_data["recommendation_rationale"] = f"Do not apply. {leadership_gap_msg['factual_statement']}"
+                elif leadership_gap_msg.get("status") == "none":
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your resume shows no verified people management experience."
+                    )
+                else:
+                    response_data["recommendation_rationale"] = (
+                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"Your people leadership experience ({people_leadership_years:.1f} years) is insufficient."
+                    )
+            # PRIORITY 4: Default to locked_reason
+            else:
+                response_data["recommendation_rationale"] = (
+                    f"Do not apply. {locked_reason}."
+                )
+
             response_data["alternative_actions"] = redirect_roles
 
         # Update strategic_action - NO UPSIDE FRAMING, SPECIFIC REDIRECT
@@ -6472,9 +6545,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 'domain': response_data.get('experience_analysis', {}).get('domain', ''),
             }
 
-            # Prepare job requirements for coaching
+            # Sanitize role_title before using in coaching
+            from coaching import _sanitize_role_title
+            raw_role_title = response_data.get('role_title', '')
+            sanitized_role_title = _sanitize_role_title(raw_role_title)
+            print(f"   📋 Role title sanitization: '{raw_role_title[:50] if raw_role_title else 'None'}' → '{sanitized_role_title}'")
+
+            # Prepare job requirements for coaching with sanitized role title
             job_requirements = {
-                'role_title': response_data.get('role_title', ''),
+                'role_title': sanitized_role_title,
                 'job_description': response_data.get('job_description', ''),
                 'domain': response_data.get('target_domain', '') or response_data.get('intelligence_layer', {}).get('target_domain', ''),
             }
@@ -6490,6 +6569,22 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 raw_strengths = response_data.get('experience_analysis', {}).get('strengths', [])
             if not raw_strengths:
                 raw_strengths = response_data.get('candidate_fit', {}).get('strengths', [])
+
+            # Also check intelligence_layer.strategic_positioning.lead_with_strengths
+            if not raw_strengths:
+                raw_strengths = response_data.get('intelligence_layer', {}).get('strategic_positioning', {}).get('lead_with_strengths', [])
+                if raw_strengths:
+                    print("   📋 Found strengths in intelligence_layer.strategic_positioning.lead_with_strengths")
+
+            # FALLBACK: If Claude returned 0 strengths, extract from resume directly
+            # This ensures the UI always has candidate-specific strengths to show
+            if not raw_strengths and resume_data:
+                print("   ⚠️ Claude returned 0 strengths - extracting from resume")
+                raw_strengths = _extract_fallback_strengths_from_resume(resume_data, response_data)
+                if raw_strengths:
+                    print(f"   ✅ Extracted {len(raw_strengths)} fallback strengths from resume")
+                    # Also store in response_data for UI to use
+                    response_data['strengths'] = raw_strengths
 
             print(f"   📋 Raw strengths extracted: {len(raw_strengths)} items")
 
@@ -6508,6 +6603,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 print(f"      First strength: {strengths_list[0][:60]}...")
 
             # Generate coaching output with role-specific binding
+            # Note: sanitized_role_title is already computed above when preparing job_requirements
             coaching_output = generate_coaching_output(
                 calibrated_gaps=calibrated_gaps,
                 job_fit_recommendation=normalized_recommendation,
@@ -6515,7 +6611,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 job_requirements=job_requirements,
                 user_proceeded_anyway=False,  # TODO: Wire this from request
                 strengths=strengths_list,
-                role_title=response_data.get('role_title', '')
+                role_title=sanitized_role_title
             )
 
             # Store coaching output in response
@@ -10565,6 +10661,124 @@ def apply_credibility_adjustment(resume_data: dict, raw_years: float) -> float:
         return raw_years
 
 
+def _final_sanitize_text(data: dict) -> dict:
+    """
+    Final safety-net sanitization for em/en dashes and JD preambles in API responses.
+
+    This catches any em dashes that slip through the postprocessor pipeline.
+    Also removes JD preamble patterns from user-facing text fields.
+    Critical for user-facing text fields like strategic_action.
+    """
+    import re
+
+    def sanitize_string(text: str) -> str:
+        if not text or not isinstance(text, str):
+            return text
+
+        # =====================================================================
+        # PART 1: Remove JD preamble patterns from text
+        # Patterns like "We're seeking a [Title]" shouldn't appear in Your Move
+        # =====================================================================
+        jd_preamble_patterns = [
+            r"[Ww]e'?re?\s+seeking\s+(?:a|an)\s+",
+            r"[Ww]e\s+are\s+seeking\s+(?:a|an)\s+",
+            r"[Ww]e'?re?\s+looking\s+for\s+(?:a|an)\s+",
+            r"[Ww]e\s+are\s+looking\s+for\s+(?:a|an)\s+",
+            r"[Jj]oin\s+(?:us|our\s+team)\s+as\s+(?:a|an)\s+",
+            r"[Aa]bout\s+(?:the|this)\s+[Rr]ole[:\s]+",
+            r"[Tt]he\s+[Rr]ole[:\s]+",
+        ]
+        for pattern in jd_preamble_patterns:
+            text = re.sub(pattern, "", text)
+
+        # =====================================================================
+        # PART 2: Replace em/en dashes with period + space
+        # =====================================================================
+        if '—' in text or '–' in text:
+            # Replace em/en dashes with period + space for sentence breaks
+            text = text.replace('—', '. ')
+            text = text.replace('–', '. ')
+            # Clean up double periods and extra spaces
+            text = text.replace('..', '.')
+            text = text.replace('.  ', '. ')
+            # Capitalize after new periods
+            text = re.sub(r'\.\s+([a-z])', lambda m: '. ' + m.group(1).upper(), text)
+            # Fix double spaces
+            text = re.sub(r'\s{2,}', ' ', text)
+
+        return text.strip()
+
+    def recurse(obj):
+        if isinstance(obj, dict):
+            return {k: recurse(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [recurse(item) for item in obj]
+        elif isinstance(obj, str):
+            return sanitize_string(obj)
+        else:
+            return obj
+
+    return recurse(data)
+
+
+def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: dict) -> list:
+    """
+    Extract strengths from resume when Claude returns 0 strengths.
+
+    This ensures the UI always has candidate-specific strengths to show,
+    even for "Do Not Apply" candidates where Claude may not generate them.
+
+    Uses resume data to generate objective strengths (no generic phrases).
+    """
+    strengths = []
+
+    # Get candidate's experience
+    experience = resume_data.get('experience', [])
+    if not experience:
+        return []
+
+    # Extract most recent/relevant role info
+    recent_role = experience[0] if experience else {}
+    role_title = recent_role.get('title', '')
+    company = recent_role.get('company', '')
+    highlights = recent_role.get('highlights', []) or recent_role.get('bullets', [])
+
+    # Build domain context
+    domain = response_data.get('experience_analysis', {}).get('domain', '')
+    if not domain:
+        domain = response_data.get('target_domain', '')
+
+    # Calculate total years from experience
+    candidate_years = response_data.get('experience_analysis', {}).get('candidate_years', 0)
+    if not candidate_years and experience:
+        candidate_years = len(experience) * 2  # Rough estimate: 2 years per role
+
+    # Strength 1: Role/domain experience
+    if role_title and company:
+        strengths.append(f"{role_title} experience at {company}")
+    elif role_title:
+        strengths.append(f"Background in {role_title} roles")
+
+    # Strength 2: Quantified achievement from highlights
+    if highlights:
+        for h in highlights[:3]:
+            if isinstance(h, str) and any(char.isdigit() for char in h):
+                # Truncate to reasonable length
+                clean_highlight = h[:80] + "..." if len(h) > 80 else h
+                strengths.append(clean_highlight)
+                break
+
+    # Strength 3: Years of experience (if substantial)
+    if candidate_years >= 3:
+        strengths.append(f"{int(candidate_years)}+ years of professional experience")
+
+    # Strength 4: Domain expertise
+    if domain and domain not in ['general', 'unknown']:
+        strengths.append(f"Domain expertise in {domain}")
+
+    return strengths[:3]  # Cap at 3 strengths
+
+
 @app.post("/api/jd/analyze")
 async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
     """
@@ -12204,10 +12418,16 @@ Role: {request.role_title}
             parsed_data["company"] = request.company
 
         # Role title: User input takes precedence over Claude's extraction
+        # But ONLY if the user input is not a placeholder value like "Role"
         if request.role_title:
-            if parsed_data.get("role_title") != request.role_title:
-                print(f"📋 [{analysis_id}] Overriding role_title: '{parsed_data.get('role_title')}' → '{request.role_title}' (user provided)")
-            parsed_data["role_title"] = request.role_title
+            user_role = request.role_title.strip()
+            is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
+            if not is_placeholder:
+                if parsed_data.get("role_title") != user_role:
+                    print(f"📋 [{analysis_id}] Overriding role_title: '{parsed_data.get('role_title')}' → '{user_role}' (user provided)")
+                parsed_data["role_title"] = user_role
+            else:
+                print(f"📋 [{analysis_id}] Ignoring placeholder role_title '{user_role}' - keeping Claude's extraction: '{parsed_data.get('role_title')[:50] if parsed_data.get('role_title') else 'None'}'")
 
         # CRITICAL: Inject isolated role detection data for downstream use
         # This ensures the correct role type and experience years are used
@@ -12290,6 +12510,15 @@ Role: {request.role_title}
         # All processors are rule-based (no additional LLM calls)
         # CRITICAL: NEVER modifies fit_score
         # =================================================================
+        print("=" * 60)
+        print("🔄 POST-PROCESSING PIPELINE - ENTRY")
+        print("=" * 60)
+        candidate_name = request.resume.get("full_name", "Unknown") if request.resume else "Unknown"
+        print(f"   Candidate: {candidate_name}")
+        print(f"   Recommendation: {parsed_data.get('recommendation', 'MISSING')}")
+        print(f"   Fit Score: {parsed_data.get('fit_score', 'MISSING')}")
+        print(f"   Strategic Action BEFORE: {parsed_data.get('reality_check', {}).get('strategic_action', 'NOT SET')[:60]}...")
+
         try:
             from backend.postprocessors import apply_all_postprocessors, PostProcessorConfig
 
@@ -12366,7 +12595,12 @@ Role: {request.role_title}
                 gap_analysis=gap_analysis,
             )
 
-            print(f"✅ Post-processing pipeline completed")
+            print("=" * 60)
+            print("✅ POST-PROCESSING PIPELINE - COMPLETED")
+            print("=" * 60)
+            print(f"   Strategic Action AFTER: {parsed_data.get('reality_check', {}).get('strategic_action', 'NOT SET')[:60]}...")
+            timing_after = parsed_data.get('timing_guidance') or parsed_data.get('intelligence_layer', {}).get('apply_decision', {}).get('timing_guidance', 'NOT SET')
+            print(f"   Timing Guidance AFTER: {timing_after}")
 
         except ImportError as e:
             print(f"⚠️ Post-processors not available: {str(e)}")
@@ -12396,6 +12630,80 @@ Role: {request.role_title}
             print(f"⚠️ Post-processing failed (non-blocking): {str(e)}")
             import traceback
             traceback.print_exc()
+
+        # =========================================================================
+        # FINAL ACTION/RECOMMENDATION CONSISTENCY CHECK
+        # Runs AFTER all post-processors to catch any mismatches
+        # =========================================================================
+        recommendation = parsed_data.get("recommendation", "").lower()
+        is_skip_recommendation = "do not apply" in recommendation or "skip" in recommendation or "not" in recommendation
+
+        if is_skip_recommendation:
+            # Force all timing fields to "Skip this one" or "Pass"
+            correct_timing = "Skip this one"
+
+            # Fix top-level timing_guidance
+            if parsed_data.get("timing_guidance"):
+                old_timing = parsed_data["timing_guidance"]
+                if "apply" in old_timing.lower() and "not" not in old_timing.lower():
+                    print(f"   🔧 FINAL FIX: timing_guidance '{old_timing}' → '{correct_timing}'")
+                    parsed_data["timing_guidance"] = correct_timing
+
+            # Fix intelligence_layer.apply_decision.timing_guidance
+            il = parsed_data.get("intelligence_layer", {})
+            ad = il.get("apply_decision", {})
+            if ad.get("timing_guidance"):
+                old_timing = ad["timing_guidance"]
+                if "apply" in old_timing.lower() and "not" not in old_timing.lower():
+                    print(f"   🔧 FINAL FIX: apply_decision.timing_guidance '{old_timing}' → '{correct_timing}'")
+                    ad["timing_guidance"] = correct_timing
+                    il["apply_decision"] = ad
+                    parsed_data["intelligence_layer"] = il
+
+            # Fix intelligence_layer.timing_guidance
+            if il.get("timing_guidance"):
+                old_timing = il["timing_guidance"]
+                if "apply" in old_timing.lower() and "not" not in old_timing.lower():
+                    print(f"   🔧 FINAL FIX: il.timing_guidance '{old_timing}' → '{correct_timing}'")
+                    il["timing_guidance"] = correct_timing
+                    parsed_data["intelligence_layer"] = il
+
+            # Fix intelligence_layer.market_context.action (used in Market Context section)
+            mc = il.get("market_context", {})
+            if mc.get("action"):
+                old_action = mc["action"]
+                if "apply" in old_action.lower() and "not" not in old_action.lower():
+                    print(f"   🔧 FINAL FIX: market_context.action '{old_action}' → '{correct_timing}'")
+                    mc["action"] = correct_timing
+                    il["market_context"] = mc
+                    parsed_data["intelligence_layer"] = il
+
+            # Fix intelligence_layer.salary_market_context.action (alternate location)
+            smc = il.get("salary_market_context", {})
+            if smc.get("action"):
+                old_action = smc["action"]
+                if "apply" in old_action.lower() and "not" not in old_action.lower():
+                    print(f"   🔧 FINAL FIX: salary_market_context.action '{old_action}' → '{correct_timing}'")
+                    smc["action"] = correct_timing
+                    il["salary_market_context"] = smc
+                    parsed_data["intelligence_layer"] = il
+
+        # =========================================================================
+        # FINAL SANITIZATION: Remove em/en dashes from critical text fields
+        # This is a safety net in case postprocessors miss any fields
+        # =========================================================================
+        strategic_action_before = parsed_data.get("reality_check", {}).get("strategic_action", "")
+        has_em_dash_before = '—' in strategic_action_before or '–' in strategic_action_before
+        if has_em_dash_before:
+            print(f"   🔍 Em dash detected BEFORE final sanitization: '{strategic_action_before[:50]}...'")
+
+        parsed_data = _final_sanitize_text(parsed_data)
+
+        strategic_action_after = parsed_data.get("reality_check", {}).get("strategic_action", "")
+        has_em_dash_after = '—' in strategic_action_after or '–' in strategic_action_after
+        if has_em_dash_before:
+            print(f"   ✅ Em dash {'REMOVED' if not has_em_dash_after else 'STILL PRESENT'} after final sanitization")
+            print(f"      Result: '{strategic_action_after[:50]}...'")
 
         return parsed_data
     except json.JSONDecodeError as e:
@@ -12462,11 +12770,20 @@ Role: {request.role_title}
                 parsed_data["job_description"] = request.job_description
             if request.company:
                 parsed_data["company"] = request.company
+            # Role title: only override with non-placeholder values
             if request.role_title:
-                parsed_data["role_title"] = request.role_title
+                user_role = request.role_title.strip()
+                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
+                if not is_placeholder:
+                    parsed_data["role_title"] = user_role
 
             # Continue with penalty enforcement
             parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+
+            # CRITICAL: Apply final sanitization to remove em/en dashes
+            # This must run as the absolute last step before returning
+            parsed_data = _final_sanitize_text(parsed_data)
+
             return parsed_data
         except Exception as fix_error:
             print(f"   Fix attempt failed: {fix_error}")
@@ -12758,8 +13075,12 @@ Role: {request.role_title}
                 parsed_data["job_description"] = request.job_description
             if request.company:
                 parsed_data["company"] = request.company
+            # Role title: only override with non-placeholder values
             if request.role_title:
-                parsed_data["role_title"] = request.role_title
+                user_role = request.role_title.strip()
+                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
+                if not is_placeholder:
+                    parsed_data["role_title"] = user_role
 
             # Apply experience penalties
             parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
@@ -12773,6 +13094,9 @@ Role: {request.role_title}
                 if not existing_career_gaps:
                     parsed_data["gaps"].append(career_gap)
                     print(f"✅ [Stream] Career gap detected via post-processing: {career_gap['description']}")
+
+            # Final sanitization: Remove em/en dashes from text fields
+            parsed_data = _final_sanitize_text(parsed_data)
 
             # Send complete data
             yield f"data: {json.dumps({'type': 'complete', 'data': parsed_data})}\n\n"

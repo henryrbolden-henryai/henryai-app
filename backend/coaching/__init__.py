@@ -13,6 +13,7 @@ from .coaching_controller import (
     format_gaps_for_display,
     generate_accountability_banner,
     extract_primary_strength,
+    _sanitize_role_title,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     'format_gaps_for_display',
     'generate_accountability_banner',
     'extract_primary_strength',
+    '_sanitize_role_title',
 ]

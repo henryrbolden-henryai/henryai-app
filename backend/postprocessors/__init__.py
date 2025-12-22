@@ -256,6 +256,21 @@ def _enforce_action_recommendation_consistency(data: Dict[str, Any], recommendat
         else:
             correct_timing = "Apply today"
 
+    # Check if this is a skip/do-not-apply recommendation
+    is_skip_recommendation = "not" in recommendation_lower or "skip" in recommendation_lower
+
+    # Fix TOP-LEVEL timing_guidance first (frontend checks this first)
+    top_level_timing = data.get("timing_guidance", "")
+    if top_level_timing:
+        has_apply_language_top = any(phrase in top_level_timing.lower() for phrase in [
+            "apply today", "apply immediately", "apply now", "apply soon", "apply this week"
+        ])
+        if is_skip_recommendation and has_apply_language_top:
+            print(f"   ⚠️ TOP-LEVEL TIMING CONTRADICTION: '{recommendation}' with timing '{top_level_timing}'")
+            print(f"   ✅ Fixed to: '{correct_timing}'")
+            data["timing_guidance"] = correct_timing
+            data["_top_level_timing_corrected"] = True
+
     # Fix timing_guidance in intelligence_layer.apply_decision
     intelligence_layer = data.get("intelligence_layer", {})
     apply_decision = intelligence_layer.get("apply_decision", {})
@@ -264,7 +279,6 @@ def _enforce_action_recommendation_consistency(data: Dict[str, Any], recommendat
         current_timing = apply_decision.get("timing_guidance", "")
 
         # Detect contradictions
-        is_skip_recommendation = "not" in recommendation_lower or "skip" in recommendation_lower
         has_apply_language = any(phrase in current_timing.lower() for phrase in [
             "apply today", "apply immediately", "apply now", "apply soon", "apply this week"
         ])
@@ -285,6 +299,18 @@ def _enforce_action_recommendation_consistency(data: Dict[str, Any], recommendat
 
         intelligence_layer["apply_decision"] = apply_decision
         data["intelligence_layer"] = intelligence_layer
+
+    # Also fix intelligence_layer.timing_guidance if present
+    il_timing = intelligence_layer.get("timing_guidance", "")
+    if il_timing:
+        has_apply_language_il = any(phrase in il_timing.lower() for phrase in [
+            "apply today", "apply immediately", "apply now", "apply soon", "apply this week"
+        ])
+        if is_skip_recommendation and has_apply_language_il:
+            print(f"   ⚠️ IL TIMING CONTRADICTION: '{recommendation}' with timing '{il_timing}'")
+            print(f"   ✅ Fixed to: '{correct_timing}'")
+            intelligence_layer["timing_guidance"] = correct_timing
+            data["intelligence_layer"] = intelligence_layer
 
     return data
 
