@@ -292,16 +292,14 @@
                 console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
 
                 // Add cache-busting timestamp to prevent stale responses
+                // Note: Using query param for cache-busting instead of headers to avoid CORS preflight issues
                 const cacheBuster = Date.now();
                 const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze?_t=${cacheBuster}`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestPayload),
-                    cache: 'no-store'  // Prevent browser caching
+                    body: JSON.stringify(requestPayload)
                 });
 
                 console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);
