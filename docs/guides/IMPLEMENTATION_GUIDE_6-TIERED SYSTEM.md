@@ -1208,6 +1208,50 @@ After implementation:
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Created**: December 21, 2025
+**Last Updated**: December 22, 2025
 **Author**: HenryHQ Product Team
+
+---
+
+## Appendix: Pre-Launch QA Results (December 22, 2025)
+
+### Bugs Fixed During QA
+
+**1. Document Generation - Education Details Bug**
+- **Issue**: Education details appeared character-by-character in DOCX output
+- **Root Cause**: `document_generator/resume_formatter.py` line 332 iterated over string as chars
+- **Fix**: Convert string to single-item list before iteration
+- **File**: `document_generator/resume_formatter.py`
+
+**2. Document Generation - Skills Capitalization**
+- **Issue**: Skills categories showed "technical" instead of "Technical"
+- **Fix**: Added `.title()` to category names
+- **File**: `backend/document_generator.py`
+
+**3. URL Extraction - False Positive Captcha Detection**
+- **Issue**: Valid job posting URLs flagged as captcha-blocked
+- **Fix**: Changed broad "captcha" detection to specific blocking patterns
+- **File**: `backend/backend.py`
+
+### Test Results
+
+| Test | Result | Notes |
+|------|--------|-------|
+| Resume Parsing | 10/10 ✅ | All edge cases passed |
+| Document Generation | 7/7 ✅ | Bugs fixed and verified |
+| LinkedIn Upload | 3/3 ✅ | All profiles parsed correctly |
+| Error Handling | All ✅ | Proper validation errors |
+| Tracker API | ✅ | CRUD + status transitions |
+
+### Critical Discovery
+
+**Railway Deployment Architecture**: Railway uses the `document_generator/` module directory, NOT `backend/document_generator.py`. The Dockerfile confirms: `COPY document_generator/ ./document_generator/`. All production fixes must go in the module directory.
+
+### Remaining Manual Tests
+
+1. Ask Henry Context Awareness
+2. Mock Interview Feedback Quality
+3. Screening Questions Analysis
+4. Calendar Integration
