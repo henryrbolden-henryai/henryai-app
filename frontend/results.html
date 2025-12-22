@@ -1945,13 +1945,13 @@
 
             if (fitScore >= 75) {
                 if (competitionLower.includes('tight') || competitionLower.includes('competitive')) {
-                    return `${greeting}You're a strong fit—but so are 300-500 other people who applied in the first 48 hours. Cold response rate is 3-5% right now.\n\nThe ATS isn't your friend. Find the hiring manager on LinkedIn and reach out directly.`;
+                    return `${greeting}You're a strong fit, but so are 300-500 other people who applied in the first 48 hours. Cold response rate is 3-5% right now.\n\nThe ATS isn't your friend. Find the hiring manager on LinkedIn and reach out directly.`;
                 }
                 return `${greeting}You're well-positioned here. Expect 200-400 applicants. Cold response rate: 5-8%.\n\nApply immediately, then find someone at the company to message. A warm intro changes everything.`;
             } else if (fitScore >= 60) {
                 return `${greeting}You can compete here, but you're not the obvious choice. 300+ candidates have more direct experience. Cold response rate: 2-4%.\n\nDon't just apply and hope. Find someone at the company to vouch for you, or this goes nowhere.`;
             } else {
-                return `${greeting}I'll be straight with you—this is a stretch. 300+ better-matched candidates means your cold application has under 2% chance of a response.\n\nOnly pursue if you have a direct connection. Otherwise, spend your energy on roles where you're 70%+ fit.`;
+                return `${greeting}I'll be straight with you: this is a stretch. 300+ better-matched candidates means your cold application has under 2% chance of a response.\n\nOnly pursue if you have a direct connection. Otherwise, spend your energy on roles where you're 70%+ fit.`;
             }
         }
 
