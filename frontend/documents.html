@@ -874,17 +874,27 @@
                 if (eduSource) {
                     if (Array.isArray(eduSource) && eduSource.length > 0) {
                         const edu = eduSource[0];
+                        // Ensure details is always a string, not an array
+                        let eduDetails = edu.details || edu.highlights || edu.activities || '';
+                        if (Array.isArray(eduDetails)) {
+                            eduDetails = eduDetails.join(', ');
+                        }
                         normalizedEducation = {
                             school: edu.school || edu.institution || edu.university || edu.name || '',
                             degree: edu.degree || edu.qualification || edu.field_of_study ||
                                     (edu.degree_name ? `${edu.degree_name}${edu.field_of_study ? ', ' + edu.field_of_study : ''}` : ''),
-                            details: edu.details || edu.highlights || edu.activities || []
+                            details: eduDetails
                         };
                     } else if (typeof eduSource === 'object' && !Array.isArray(eduSource)) {
+                        // Ensure details is always a string, not an array
+                        let eduDetails = eduSource.details || eduSource.highlights || '';
+                        if (Array.isArray(eduDetails)) {
+                            eduDetails = eduDetails.join(', ');
+                        }
                         normalizedEducation = {
                             school: eduSource.school || eduSource.institution || eduSource.university || eduSource.name || '',
                             degree: eduSource.degree || eduSource.qualification || eduSource.field_of_study || '',
-                            details: eduSource.details || eduSource.highlights || []
+                            details: eduDetails
                         };
                     } else if (typeof eduSource === 'string') {
                         // If education is just a string, try to parse school and degree
@@ -895,12 +905,12 @@
                             const degreeKeywords = ['bachelor', 'master', 'phd', 'b.a.', 'b.s.', 'm.a.', 'm.s.', 'mba', 'degree'];
                             const firstIsDegree = degreeKeywords.some(kw => parts[0].toLowerCase().includes(kw));
                             if (firstIsDegree) {
-                                normalizedEducation = { school: parts.slice(1).join(', '), degree: parts[0], details: [] };
+                                normalizedEducation = { school: parts.slice(1).join(', '), degree: parts[0], details: '' };
                             } else {
-                                normalizedEducation = { school: parts[0], degree: parts.slice(1).join(', '), details: [] };
+                                normalizedEducation = { school: parts[0], degree: parts.slice(1).join(', '), details: '' };
                             }
                         } else {
-                            normalizedEducation = { school: '', degree: eduSource, details: [] };
+                            normalizedEducation = { school: '', degree: eduSource, details: '' };
                         }
                     }
                 }

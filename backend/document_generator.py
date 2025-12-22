@@ -185,10 +185,12 @@ class ResumeFormatter(BaseFormatter):
         """Add skills section - handles various formats."""
         if isinstance(skills, dict):
             for category, skill_list in skills.items():
+                # Title case the category name
+                category_title = category.title() if category else ""
                 if isinstance(skill_list, list):
-                    skill_text = f"{category}: {', '.join(skill_list)}"
+                    skill_text = f"{category_title}: {', '.join(skill_list)}"
                 else:
-                    skill_text = f"{category}: {skill_list}"
+                    skill_text = f"{category_title}: {skill_list}"
                 self._add_paragraph(skill_text, font_size=10, space_after=2)
         elif isinstance(skills, list):
             skills_text = " • ".join(skills)
@@ -196,7 +198,7 @@ class ResumeFormatter(BaseFormatter):
         elif isinstance(skills, str):
             self._add_paragraph(skills, font_size=10, space_after=4)
 
-    def add_education(self, school: str, degree: str = "", details: str = None):
+    def add_education(self, school: str, degree: str = "", details = None):
         """Add education entry."""
         p = self.doc.add_paragraph()
         p.style = self.doc.styles['Normal']
@@ -217,9 +219,12 @@ class ResumeFormatter(BaseFormatter):
             degree_run = degree_p.add_run(degree)
             self._set_font(degree_run, font_size=11)
 
-        # Additional details
+        # Additional details - ensure it's a string, not a list
         if details:
-            self._add_paragraph(details, font_size=10, space_after=4)
+            if isinstance(details, list):
+                details = ', '.join(str(d) for d in details if d)
+            if details:  # Check again after conversion
+                self._add_paragraph(str(details), font_size=10, space_after=4)
 
 
 class CoverLetterFormatter(BaseFormatter):
