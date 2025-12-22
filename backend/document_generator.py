@@ -221,15 +221,10 @@ class ResumeFormatter(BaseFormatter):
 
         # Additional details - ensure it's a string, not a list
         if details:
-            print(f"DEBUG add_education details type: {type(details)}, value: {repr(details)}")
             if isinstance(details, list):
                 details = ', '.join(str(d) for d in details if d)
-                print(f"DEBUG after list join: {repr(details)}")
-            # Ensure details is a string before adding
-            details_str = str(details) if details else ""
-            print(f"DEBUG final details_str: {repr(details_str)}")
-            if details_str:
-                self._add_paragraph(details_str, font_size=10, space_after=4)
+            if details:
+                self._add_paragraph(str(details), font_size=10, space_after=4)
 
 
 class CoverLetterFormatter(BaseFormatter):

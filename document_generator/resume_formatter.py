@@ -329,11 +329,19 @@ class ResumeFormatter:
 
         # Line 3+: Details like concentration (regular, 10pt)
         if details:
-            for detail in details:
+            # Handle both string and list formats
+            if isinstance(details, str):
+                details_list = [details]
+            elif isinstance(details, list):
+                details_list = details
+            else:
+                details_list = [str(details)]
+
+            for detail in details_list:
                 if detail and str(detail).strip():
                     detail_para = self.doc.add_paragraph()
                     detail_para.alignment = styles.ALIGN_LEFT
-                    detail_run = detail_para.add_run(detail)
+                    detail_run = detail_para.add_run(str(detail))
                     detail_run.font.size = styles.FONT_SIZE_DEFAULT
                     detail_run.font.name = styles.FONT_FAMILY
                     detail_run.font.color.rgb = styles.COLOR_BLACK
