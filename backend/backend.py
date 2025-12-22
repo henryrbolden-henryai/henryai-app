@@ -12414,11 +12414,9 @@ Role: {request.role_title}
         # Try to fix common JSON issues - unescaped quotes in strings
         try:
             import re
-            # Fix common patterns of unescaped quotes inside JSON strings
-            # This regex finds string values and escapes internal quotes
             fixed_response = response
 
-            # Common patterns that break JSON - role titles with quotes
+            # 1. Fix common patterns that break JSON - role titles with quotes
             patterns_to_escape = [
                 (r'"Lead PM"', r'\\"Lead PM\\"'),
                 (r'"Senior"', r'\\"Senior\\"'),
@@ -12429,8 +12427,34 @@ Role: {request.role_title}
             for pattern, replacement in patterns_to_escape:
                 fixed_response = fixed_response.replace(pattern, replacement)
 
+            # 2. Try to find and fix truncated JSON (missing closing braces)
+            open_braces = fixed_response.count('{')
+            close_braces = fixed_response.count('}')
+            if open_braces > close_braces:
+                missing = open_braces - close_braces
+                # Try to close any open strings first
+                if fixed_response.rstrip()[-1] not in ['"', '}', ']']:
+                    fixed_response = fixed_response.rstrip() + '"'
+                fixed_response = fixed_response.rstrip() + ('}' * missing)
+                print(f"   Attempted to close {missing} unclosed braces")
+
+            # 3. Fix unescaped newlines within strings (common issue)
+            # Replace actual newlines within JSON string values
+            def fix_string_newlines(match):
+                content = match.group(1)
+                # Replace actual newlines with escaped \n
+                content = content.replace('\n', '\\n').replace('\r', '\\r')
+                return f'"{content}"'
+
+            # This regex matches string values and fixes internal newlines
+            fixed_response = re.sub(
+                r'"([^"\\]*(?:\\.[^"\\]*)*)"',
+                fix_string_newlines,
+                fixed_response
+            )
+
             parsed_data = json.loads(fixed_response)
-            print("✅ Fixed JSON by escaping common quote patterns")
+            print("✅ Fixed JSON by escaping/repairing common issues")
 
             # Ensure job_description, company, and role_title are in parsed_data
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
