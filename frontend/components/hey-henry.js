@@ -3256,4 +3256,12 @@ ${confidenceClosing}`,
 
     // Keep legacy function for backwards compatibility
     window.openAskHenryWithPrompt = window.openHeyHenryWithPrompt;
+
+    // Close functions for external access
+    window.closeHeyHenry = function() {
+        closeDrawer();
+    };
+
+    // Keep legacy function for backwards compatibility
+    window.closeAskHenry = window.closeHeyHenry;
 })();
