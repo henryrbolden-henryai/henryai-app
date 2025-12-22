@@ -1713,6 +1713,29 @@
         console.log("⏱️ DIAGNOSTIC TIMESTAMP:", new Date().toISOString());
 
         // =====================================================================
+        // 🚨 CANDIDATE VERIFICATION - Detect cross-candidate contamination
+        // =====================================================================
+        const storedCandidateName = data._candidate_name;
+        const resumeContactName = data._resume_json?.contact?.full_name || data._resume_json?.full_name;
+        const profileCandidateName = JSON.parse(localStorage.getItem('userProfile') || '{}')?.resume?.contact?.full_name;
+
+        console.log("🔍 CANDIDATE VERIFICATION:", {
+            storedCandidateName,
+            resumeContactName,
+            profileCandidateName,
+            match: storedCandidateName === profileCandidateName
+        });
+
+        // If stored candidate doesn't match profile, warn about potential contamination
+        if (profileCandidateName && storedCandidateName && storedCandidateName !== profileCandidateName) {
+            console.error("🚨 CONTAMINATION DETECTED: Stored analysis is for", storedCandidateName, "but profile is", profileCandidateName);
+            // Force redirect to re-analyze with correct candidate
+            alert("Session data mismatch detected. Please re-run the analysis.");
+            sessionStorage.removeItem('analysisData');
+            window.location.href = 'analyze.html';
+        }
+
+        // =====================================================================
         // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
         // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
         // =====================================================================

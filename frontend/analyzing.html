@@ -291,12 +291,17 @@
             try {
                 console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
 
-                const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze`, {
+                // Add cache-busting timestamp to prevent stale responses
+                const cacheBuster = Date.now();
+                const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze?_t=${cacheBuster}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
                     },
-                    body: JSON.stringify(requestPayload)
+                    body: JSON.stringify(requestPayload),
+                    cache: 'no-store'  // Prevent browser caching
                 });
 
                 console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);

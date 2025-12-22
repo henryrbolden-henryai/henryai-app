@@ -1010,6 +1010,14 @@
       const { company, role } = extractCompanyAndRole(jobDescription);
       const candidateName = resumeJson.contact?.full_name || resumeJson.full_name || 'Candidate';
 
+      // =========================================================================
+      // CRITICAL: Clear ALL old analysis data BEFORE starting new analysis
+      // This prevents cross-candidate contamination from stale sessionStorage
+      // =========================================================================
+      sessionStorage.removeItem('analysisData');
+      sessionStorage.removeItem('pendingAnalysis');
+      console.log('🧹 Cleared old analysis data from sessionStorage');
+
       // Log detailed resume info for debugging cross-candidate contamination
       console.log('========================================');
       console.log('ANALYSIS REQUEST - Candidate Verification');
