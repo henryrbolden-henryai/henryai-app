@@ -1,6 +1,6 @@
-# Known Issues - Six-Tier Recommendation System
+# Known Issues - HenryHQ
 
-**Last Updated:** Post Round 8 Testing (December 2025)
+**Last Updated:** December 22, 2025 (Pre-Launch QA)
 
 ---
 
@@ -116,3 +116,32 @@
 - Added role title placeholder rejection in backend
 - Added `market_context.action` to FINAL consistency check
 - Added fallback strengths extraction from resume
+
+### Pre-Launch QA (December 22, 2025)
+
+**Document Generation Fixes:**
+- ✅ Fixed education details character-by-character iteration bug
+  - Root cause: `document_generator/resume_formatter.py` iterated string as chars
+  - Fix: Convert string to single-item list before iteration
+- ✅ Fixed skills category capitalization ("technical" → "Technical")
+  - Added `.title()` to category names in `backend/document_generator.py`
+- ✅ Fixed frontend education details normalization
+  - Ensures `details` field is always a string, not an array
+
+**URL Extraction Fixes:**
+- ✅ Fixed false positive captcha detection
+  - Changed broad "captcha" detection to specific blocking patterns
+  - Updated warning message in frontend
+
+**Test Results (All Passing):**
+- Resume Parsing: 10/10 test cases passed
+- LinkedIn Upload: 3/3 profiles parsed correctly
+- Document Generation: 7 test documents verified
+- Error Handling: All API endpoints return proper validation errors
+- Tracker API: CRUD operations and status transitions working
+
+**Remaining Tests (Manual Browser Testing Required):**
+- Ask Henry Context Awareness (#5)
+- Mock Interview Feedback Quality (#7)
+- Screening Questions Analysis (#8)
+- Calendar Integration (#9)
