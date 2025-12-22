@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parse Tester | HenryHQ QA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .api-config {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .api-config label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .api-config input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            font-family: monospace;
+        }
+
+        .api-config input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .upload-section h2 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .dropzone {
+            border: 2px dashed #444;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .dropzone:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .dropzone.dragover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .dropzone-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .dropzone-text {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .dropzone-text strong {
+            color: #667eea;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .file-info.visible {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .file-size {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .parse-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .parse-btn:hover {
+            opacity: 0.9;
+        }
+
+        .parse-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .test-list {
+            margin-top: 24px;
+            border-top: 1px solid #333;
+            padding-top: 16px;
+        }
+
+        .test-list h3 {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .test-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #222;
+            font-size: 13px;
+        }
+
+        .test-item:last-child {
+            border-bottom: none;
+        }
+
+        .test-num {
+            width: 24px;
+            height: 24px;
+            background: #333;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .test-name {
+            flex: 1;
+            color: #ccc;
+        }
+
+        .test-status {
+            font-size: 16px;
+        }
+
+        .results-section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .results-header h2 {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            padding: 6px 12px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #888;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            border-color: #555;
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: #fff;
+        }
+
+        .results-content {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .json-view {
+            padding: 16px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-x: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .json-view pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .field-view {
+            display: none;
+        }
+
+        .field-view.active {
+            display: block;
+        }
+
+        .field-group {
+            border-bottom: 1px solid #222;
+            padding: 16px;
+        }
+
+        .field-group:last-child {
+            border-bottom: none;
+        }
+
+        .field-group-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #667eea;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .field-row {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .field-row:last-child {
+            border-bottom: none;
+        }
+
+        .field-label {
+            width: 180px;
+            flex-shrink: 0;
+            color: #888;
+            font-size: 13px;
+        }
+
+        .field-value {
+            flex: 1;
+            color: #fff;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .field-value.empty {
+            color: #ef4444;
+            font-style: italic;
+        }
+
+        .field-value.success {
+            color: #10b981;
+        }
+
+        .experience-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .experience-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .exp-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .exp-company {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .exp-dates {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .exp-title {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .exp-bullets {
+            list-style: none;
+            padding: 0;
+        }
+
+        .exp-bullets li {
+            position: relative;
+            padding-left: 16px;
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 4px;
+        }
+
+        .exp-bullets li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-box.visible {
+            display: block;
+        }
+
+        .error-title {
+            color: #ef4444;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            color: #fca5a5;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+            padding: 16px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            padding: 6px 12px;
+            background: #333;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #444;
+        }
+
+        .validation-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .validation-badge.pass {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .validation-badge.fail {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .validation-badge.warn {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Resume Parse Tester</h1>
+        <p class="subtitle">Upload resumes and inspect the raw JSON output from the parser</p>
+
+        <div class="api-config">
+            <label for="apiUrl">API Base URL</label>
+            <input type="text" id="apiUrl" value="https://your-api-url.railway.app" placeholder="https://your-api-url.railway.app">
+        </div>
+
+        <div class="main-grid">
+            <div class="upload-section">
+                <h2>Upload Resume</h2>
+                
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-icon">📄</div>
+                    <div class="dropzone-text">
+                        Drop file here or <strong>click to browse</strong><br>
+                        PDF, DOCX, or TXT
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+
+                <div class="file-info" id="fileInfo">
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-size" id="fileSize"></div>
+                </div>
+
+                <button class="parse-btn" id="parseBtn" disabled>Parse Resume</button>
+
+                <div class="test-list">
+                    <h3>Test Suite Progress</h3>
+                    <div id="testList">
+                        <div class="test-item" data-test="1">
+                            <span class="test-num">1</span>
+                            <span class="test-name">Multi-column</span>
+                            <span class="test-status" id="status-1">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="2">
+                            <span class="test-num">2</span>
+                            <span class="test-name">Table PDF</span>
+                            <span class="test-status" id="status-2">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="3">
+                            <span class="test-num">3</span>
+                            <span class="test-name">Standard (baseline)</span>
+                            <span class="test-status" id="status-3">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="4">
+                            <span class="test-num">4</span>
+                            <span class="test-name">International chars</span>
+                            <span class="test-status" id="status-4">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="5">
+                            <span class="test-num">5</span>
+                            <span class="test-name">Career gap</span>
+                            <span class="test-status" id="status-5">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="6">
+                            <span class="test-num">6</span>
+                            <span class="test-name">Concurrent roles</span>
+                            <span class="test-status" id="status-6">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="7">
+                            <span class="test-num">7</span>
+                            <span class="test-name">Long executive</span>
+                            <span class="test-status" id="status-7">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="8">
+                            <span class="test-num">8</span>
+                            <span class="test-name">Functional format</span>
+                            <span class="test-status" id="status-8">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="9">
+                            <span class="test-num">9</span>
+                            <span class="test-name">DOCX tables</span>
+                            <span class="test-status" id="status-9">⬜</span>
+                        </div>
+                        <div class="test-item" data-test="10">
+                            <span class="test-num">10</span>
+                            <span class="test-name">Minimal sparse</span>
+                            <span class="test-status" id="status-10">⬜</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="results-header">
+                    <h2>Parse Results</h2>
+                    <div class="results-tabs">
+                        <button class="tab-btn active" data-tab="fields">Key Fields</button>
+                        <button class="tab-btn" data-tab="experience">Experience</button>
+                        <button class="tab-btn" data-tab="json">Raw JSON</button>
+                    </div>
+                </div>
+
+                <div class="error-box" id="errorBox">
+                    <div class="error-title">Parse Error</div>
+                    <div class="error-message" id="errorMessage"></div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Parsing resume...</div>
+                </div>
+
+                <div class="results-content" id="resultsContent" style="display: none;">
+                    <div class="stats-bar" id="statsBar">
+                        <div class="stat-item">
+                            <div class="stat-value" id="statJobs">-</div>
+                            <div class="stat-label">Jobs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statSkills">-</div>
+                            <div class="stat-label">Skills</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statBullets">-</div>
+                            <div class="stat-label">Bullets</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="statFields">-</div>
+                            <div class="stat-label">Fields Filled</div>
+                        </div>
+                    </div>
+
+                    <!-- Key Fields Tab -->
+                    <div class="field-view active" id="tab-fields">
+                        <div class="field-group">
+                            <div class="field-group-title">Basic Info</div>
+                            <div class="field-row">
+                                <div class="field-label">full_name</div>
+                                <div class="field-value" id="f-full_name">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">current_title</div>
+                                <div class="field-value" id="f-current_title">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">years_experience</div>
+                                <div class="field-value" id="f-years_experience">-</div>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Contact</div>
+                            <div class="field-row">
+                                <div class="field-label">contact.email</div>
+                                <div class="field-value" id="f-contact-email">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">contact.phone</div>
+                                <div class="field-value" id="f-contact-phone">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">contact.location</div>
+                                <div class="field-value" id="f-contact-location">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">contact.linkedin</div>
+                                <div class="field-value" id="f-contact-linkedin">-</div>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Summary</div>
+                            <div class="field-row">
+                                <div class="field-label">summary</div>
+                                <div class="field-value" id="f-summary">-</div>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Target & Industries</div>
+                            <div class="field-row">
+                                <div class="field-label">target_roles</div>
+                                <div class="field-value" id="f-target_roles">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">industries</div>
+                                <div class="field-value" id="f-industries">-</div>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Skills & Competencies</div>
+                            <div class="field-row">
+                                <div class="field-label">skills</div>
+                                <div class="field-value" id="f-skills">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">core_competencies</div>
+                                <div class="field-value" id="f-core_competencies">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">key_achievements</div>
+                                <div class="field-value" id="f-key_achievements">-</div>
+                            </div>
+                        </div>
+
+                        <div class="field-group">
+                            <div class="field-group-title">Education</div>
+                            <div class="field-row">
+                                <div class="field-label">education</div>
+                                <div class="field-value" id="f-education">-</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="field-label">certifications</div>
+                                <div class="field-value" id="f-certifications">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Experience Tab -->
+                    <div class="field-view" id="tab-experience">
+                        <div id="experienceList" style="padding: 16px;"></div>
+                    </div>
+
+                    <!-- Raw JSON Tab -->
+                    <div class="field-view" id="tab-json">
+                        <div style="padding: 8px 16px; border-bottom: 1px solid #333; display: flex; justify-content: flex-end;">
+                            <button class="copy-btn" id="copyJsonBtn">Copy JSON</button>
+                        </div>
+                        <div class="json-view">
+                            <pre id="jsonOutput">Upload a resume to see parsed JSON</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let selectedFile = null;
+        let parsedData = null;
+
+        // Elements
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const parseBtn = document.getElementById('parseBtn');
+        const loading = document.getElementById('loading');
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+        const resultsContent = document.getElementById('resultsContent');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const apiUrlInput = document.getElementById('apiUrl');
+
+        // Dropzone events
+        dropzone.addEventListener('click', () => fileInput.click());
+        
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatBytes(file.size);
+            fileInfo.classList.add('visible');
+            parseBtn.disabled = false;
+
+            // Auto-detect test number from filename
+            const match = file.name.match(/^(\d+)_/);
+            if (match) {
+                const testNum = parseInt(match[1]);
+                highlightTest(testNum);
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function highlightTest(num) {
+            document.querySelectorAll('.test-item').forEach(item => {
+                item.style.background = '';
+            });
+            const item = document.querySelector(`.test-item[data-test="${num}"]`);
+            if (item) {
+                item.style.background = 'rgba(102, 126, 234, 0.1)';
+            }
+        }
+
+        // Parse button
+        parseBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const apiUrl = apiUrlInput.value.trim();
+            if (!apiUrl) {
+                alert('Please enter the API URL');
+                return;
+            }
+
+            // Show loading
+            loading.classList.add('visible');
+            errorBox.classList.remove('visible');
+            resultsContent.style.display = 'none';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile, selectedFile.name);
+
+                const response = await fetch(`${apiUrl}/api/resume/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                parsedData = await response.json();
+                displayResults(parsedData);
+
+                // Update test status
+                const match = selectedFile.name.match(/^(\d+)_/);
+                if (match) {
+                    const testNum = parseInt(match[1]);
+                    document.getElementById(`status-${testNum}`).textContent = '✅';
+                }
+
+            } catch (error) {
+                console.error('Parse error:', error);
+                errorMessage.textContent = error.message;
+                errorBox.classList.add('visible');
+
+                // Update test status to failed
+                const match = selectedFile.name.match(/^(\d+)_/);
+                if (match) {
+                    const testNum = parseInt(match[1]);
+                    document.getElementById(`status-${testNum}`).textContent = '❌';
+                }
+            } finally {
+                loading.classList.remove('visible');
+            }
+        });
+
+        function displayResults(data) {
+            resultsContent.style.display = 'block';
+
+            // Stats
+            const experience = data.experience || [];
+            const skills = data.skills || [];
+            const totalBullets = experience.reduce((sum, job) => sum + (job.bullets?.length || 0), 0);
+            const filledFields = countFilledFields(data);
+
+            document.getElementById('statJobs').textContent = experience.length;
+            document.getElementById('statSkills').textContent = skills.length;
+            document.getElementById('statBullets').textContent = totalBullets;
+            document.getElementById('statFields').textContent = `${filledFields}/16`;
+
+            // Key Fields
+            setFieldValue('f-full_name', data.full_name);
+            setFieldValue('f-current_title', data.current_title);
+            setFieldValue('f-years_experience', data.years_experience);
+            
+            const contact = data.contact || {};
+            setFieldValue('f-contact-email', contact.email);
+            setFieldValue('f-contact-phone', contact.phone);
+            setFieldValue('f-contact-location', contact.location);
+            setFieldValue('f-contact-linkedin', contact.linkedin);
+            
+            setFieldValue('f-summary', data.summary);
+            setFieldValue('f-target_roles', Array.isArray(data.target_roles) ? data.target_roles.join(', ') : data.target_roles);
+            setFieldValue('f-industries', Array.isArray(data.industries) ? data.industries.join(', ') : data.industries);
+            setFieldValue('f-skills', Array.isArray(skills) ? skills.join(', ') : skills);
+            setFieldValue('f-core_competencies', Array.isArray(data.core_competencies) ? data.core_competencies.join(', ') : data.core_competencies);
+            setFieldValue('f-key_achievements', Array.isArray(data.key_achievements) ? data.key_achievements.join(' • ') : data.key_achievements);
+            setFieldValue('f-education', data.education);
+            setFieldValue('f-certifications', Array.isArray(data.certifications) ? data.certifications.join(', ') : data.certifications);
+
+            // Experience
+            const expList = document.getElementById('experienceList');
+            if (experience.length === 0) {
+                expList.innerHTML = '<p style="color: #ef4444; padding: 20px;">No experience entries found!</p>';
+            } else {
+                expList.innerHTML = experience.map((job, i) => `
+                    <div class="experience-card">
+                        <div class="exp-header">
+                            <span class="exp-company">${job.company || 'Unknown Company'}</span>
+                            <span class="exp-dates">${job.dates || 'No dates'}</span>
+                        </div>
+                        <div class="exp-title">${job.title || 'Unknown Title'}</div>
+                        ${job.bullets && job.bullets.length > 0 ? `
+                            <ul class="exp-bullets">
+                                ${job.bullets.map(b => `<li>${b}</li>`).join('')}
+                            </ul>
+                        ` : '<p style="color: #f59e0b; font-size: 12px;">No bullets captured</p>'}
+                    </div>
+                `).join('');
+            }
+
+            // Raw JSON
+            jsonOutput.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function setFieldValue(id, value) {
+            const el = document.getElementById(id);
+            if (!el) return;
+
+            if (value === null || value === undefined || value === '' || 
+                (Array.isArray(value) && value.length === 0)) {
+                el.textContent = '(empty)';
+                el.classList.add('empty');
+                el.classList.remove('success');
+            } else {
+                el.textContent = value;
+                el.classList.remove('empty');
+                el.classList.add('success');
+            }
+        }
+
+        function countFilledFields(data) {
+            let count = 0;
+            const fieldsToCheck = [
+                data.full_name,
+                data.current_title,
+                data.years_experience,
+                data.contact?.email,
+                data.contact?.phone,
+                data.contact?.location,
+                data.contact?.linkedin,
+                data.summary,
+                data.skills?.length > 0,
+                data.core_competencies?.length > 0,
+                data.key_achievements?.length > 0,
+                data.target_roles?.length > 0,
+                data.industries?.length > 0,
+                data.education,
+                data.certifications?.length > 0,
+                data.experience?.length > 0
+            ];
+
+            fieldsToCheck.forEach(f => {
+                if (f) count++;
+            });
+
+            return count;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.field-view').forEach(v => v.classList.remove('active'));
+                
+                btn.classList.add('active');
+                const tabId = `tab-${btn.dataset.tab}`;
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Copy JSON
+        document.getElementById('copyJsonBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(jsonOutput.textContent).then(() => {
+                const btn = document.getElementById('copyJsonBtn');
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy JSON', 2000);
+            });
+        });
+
+        // Load saved API URL
+        const savedUrl = localStorage.getItem('henryApiUrl');
+        if (savedUrl) {
+            apiUrlInput.value = savedUrl;
+        }
+
+        apiUrlInput.addEventListener('change', () => {
+            localStorage.setItem('henryApiUrl', apiUrlInput.value);
+        });
+    </script>
+</body>
+</html>

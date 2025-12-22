@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcus Chen - LinkedIn Profile</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f2ef; color: #000000e6; line-height: 1.5; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e0e0e0; }
+        .profile-header { position: relative; }
+        .banner { height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0; }
+        .profile-photo { width: 160px; height: 160px; border-radius: 50%; border: 4px solid white; background: #0077b5; position: absolute; bottom: -80px; left: 24px; display: flex; align-items: center; justify-content: center; color: white; font-size: 64px; font-weight: 600; }
+        .profile-info { padding: 100px 24px 24px; }
+        .name { font-size: 24px; font-weight: 600; }
+        .headline { font-size: 16px; color: #000000e6; margin: 8px 0; }
+        .location { font-size: 14px; color: #00000099; }
+        .connections { font-size: 14px; color: #0077b5; font-weight: 600; margin-top: 8px; }
+        .section { padding: 24px; }
+        .section-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+        .about-text { color: #000000e6; white-space: pre-line; }
+        .experience-item { display: flex; gap: 12px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; }
+        .experience-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .company-logo { width: 48px; height: 48px; border-radius: 4px; background: #f3f2ef; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; flex-shrink: 0; }
+        .company-logo.meta { background: #0668E1; color: white; }
+        .company-logo.google { background: #4285f4; color: white; }
+        .company-logo.stripe { background: #635bff; color: white; }
+        .exp-title { font-weight: 600; font-size: 16px; }
+        .exp-company { color: #000000e6; }
+        .exp-dates { color: #00000099; font-size: 14px; }
+        .exp-location { color: #00000099; font-size: 14px; }
+        .exp-description { margin-top: 12px; color: #000000e6; }
+        .exp-description ul { margin-left: 20px; margin-top: 8px; }
+        .exp-description li { margin-bottom: 4px; }
+        .education-item { display: flex; gap: 12px; margin-bottom: 16px; }
+        .school-logo { width: 48px; height: 48px; border-radius: 4px; background: #8c1515; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+        .school-logo.mit { background: #a31f34; }
+        .skills-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+        .skill-tag { background: #f3f2ef; padding: 8px 16px; border-radius: 16px; font-size: 14px; font-weight: 500; }
+        .badge { display: inline-block; background: #0077b5; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
+        .featured { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .featured-item { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+        .featured-title { font-weight: 600; margin-bottom: 4px; }
+        .featured-source { color: #00000099; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Profile Header -->
+        <div class="card profile-header">
+            <div class="banner"></div>
+            <div class="profile-photo">MC</div>
+            <div class="profile-info">
+                <h1 class="name">Marcus Chen</h1>
+                <p class="headline">VP Product @ Meta | Ex-Google, Stripe | Stanford MBA | Building AI products for billions of users</p>
+                <p class="location">San Francisco Bay Area</p>
+                <p class="connections">500+ connections</p>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="card section">
+            <h2 class="section-title">About</h2>
+            <div class="about-text">I build products that matter at scale.
+
+Currently leading Meta's AI consumer products and Instagram monetization as VP of Product. My team of 45 PMs is responsible for products reaching 400M+ monthly users and driving $1.4B+ in annual revenue.
+
+Before Meta, I spent 4 years at Google shaping the future of conversational AI. I grew the Google Assistant third-party ecosystem from 1,200 to 35,000+ Actions and led the Smart Displays product line to $700M in revenue.
+
+My journey in tech started at Stripe, where I was the first PM hire for Stripe Connect. Watching that platform scale from zero to $8B in payment volume taught me everything about building platforms that enable others to build.
+
+I'm passionate about:
+• AI products that enhance human capability (not replace it)
+• Platform ecosystems that create win-win-win dynamics
+• Building and scaling world-class product teams
+• Mentoring the next generation of product leaders
+
+Stanford MBA (Arjay Miller Scholar) | MIT CS
+
+Always happy to chat with aspiring PMs, founders, and anyone working on interesting problems. DMs open.</div>
+        </div>
+
+        <!-- Featured -->
+        <div class="card section">
+            <h2 class="section-title">Featured</h2>
+            <div class="featured">
+                <div class="featured-item">
+                    <div class="featured-title">Forbes 30 Under 30: Enterprise Technology</div>
+                    <div class="featured-source">Forbes • 2015</div>
+                </div>
+                <div class="featured-item">
+                    <div class="featured-title">How We Scaled Stripe Connect to $8B</div>
+                    <div class="featured-source">First Round Review • 2019</div>
+                </div>
+                <div class="featured-item">
+                    <div class="featured-title">Building AI Products at Scale</div>
+                    <div class="featured-source">Mind the Product Conference • 2023</div>
+                </div>
+                <div class="featured-item">
+                    <div class="featured-title">Google Founders' Award Recipient</div>
+                    <div class="featured-source">Google • 2019</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Experience -->
+        <div class="card section">
+            <h2 class="section-title">Experience</h2>
+            
+            <div class="experience-item">
+                <div class="company-logo meta">M</div>
+                <div class="exp-content">
+                    <div class="exp-title">Vice President, Product Management</div>
+                    <div class="exp-company">Meta</div>
+                    <div class="exp-dates">Jan 2020 - Present • 5 yrs</div>
+                    <div class="exp-location">Menlo Park, California</div>
+                    <div class="exp-description">
+                        Leading Meta's AI consumer products and Instagram Reels monetization.
+                        <ul>
+                            <li>Built and lead 45-person product organization across Instagram Reels monetization and Meta AI consumer products</li>
+                            <li>Drove $1.4B incremental annual advertising revenue through new monetization products</li>
+                            <li>Launched Meta AI assistant across WhatsApp, Messenger, and Instagram, reaching 400M+ MAU within 8 months</li>
+                            <li>Architected creator monetization strategy increasing creator earnings 3.2x YoY</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="experience-item">
+                <div class="company-logo google">G</div>
+                <div class="exp-content">
+                    <div class="exp-title">Director, Product Management</div>
+                    <div class="exp-company">Google</div>
+                    <div class="exp-dates">Mar 2016 - Dec 2019 • 3 yrs 10 mos</div>
+                    <div class="exp-location">Mountain View, California</div>
+                    <div class="exp-description">
+                        Led Google Assistant third-party platform and Smart Displays product line.
+                        <ul>
+                            <li>Grew Google Assistant Actions ecosystem from 1,200 to 35,000+ integrations</li>
+                            <li>Led 120+ person cross-functional team shipping Smart Displays generating $700M+ revenue</li>
+                            <li>Secured $50M incremental investment from CFO for conversational AI commerce roadmap</li>
+                            <li>Recipient of Google Founders' Award for exceptional contribution to company strategy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="experience-item">
+                <div class="company-logo stripe">S</div>
+                <div class="exp-content">
+                    <div class="exp-title">Senior Product Manager</div>
+                    <div class="exp-company">Stripe</div>
+                    <div class="exp-dates">Jun 2013 - Feb 2016 • 2 yrs 9 mos</div>
+                    <div class="exp-location">San Francisco, California</div>
+                    <div class="exp-description">
+                        First PM hire for Stripe Connect platform.
+                        <ul>
+                            <li>Scaled Stripe Connect from $0 to $8B in annual payment volume</li>
+                            <li>Launched marketplace payments in 12 new countries, increasing international revenue 240%</li>
+                            <li>Reduced merchant onboarding from 14 days to 2 hours through automated verification</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Education -->
+        <div class="card section">
+            <h2 class="section-title">Education</h2>
+            
+            <div class="education-item">
+                <div class="school-logo">GSB</div>
+                <div>
+                    <div class="exp-title">Stanford Graduate School of Business</div>
+                    <div class="exp-company">Master of Business Administration - MBA</div>
+                    <div class="exp-dates">2011 - 2013</div>
+                    <div class="exp-description">Arjay Miller Scholar (Top 10%). Focus: Technology Strategy, Entrepreneurship</div>
+                </div>
+            </div>
+
+            <div class="education-item">
+                <div class="school-logo mit">MIT</div>
+                <div>
+                    <div class="exp-title">Massachusetts Institute of Technology</div>
+                    <div class="exp-company">Bachelor of Science - Computer Science</div>
+                    <div class="exp-dates">2005 - 2009</div>
+                    <div class="exp-description">Magna Cum Laude. Undergraduate Research: Machine Learning Lab</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="card section">
+            <h2 class="section-title">Skills</h2>
+            <div class="skills-grid">
+                <span class="skill-tag">Product Strategy</span>
+                <span class="skill-tag">AI/ML Products</span>
+                <span class="skill-tag">Platform Development</span>
+                <span class="skill-tag">Executive Leadership</span>
+                <span class="skill-tag">Team Building</span>
+                <span class="skill-tag">P&L Management</span>
+                <span class="skill-tag">Go-to-Market Strategy</span>
+                <span class="skill-tag">Data-Driven Decision Making</span>
+                <span class="skill-tag">Stakeholder Management</span>
+                <span class="skill-tag">Board Presentations</span>
+                <span class="skill-tag">M&A Due Diligence</span>
+                <span class="skill-tag">API Design</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

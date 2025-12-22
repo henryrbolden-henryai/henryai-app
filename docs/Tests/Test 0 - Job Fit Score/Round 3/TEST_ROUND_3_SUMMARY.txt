@@ -1,0 +1,149 @@
+
+JOB FIT SCORING - TEST ROUND 3
+==============================
+Generated: 2025-12-21T20:45:15.317Z
+
+These 4 resumes are designed to stress-test specific failure modes
+identified in prior testing rounds.
+
+────────────────────────────────────────────────────────────────────
+
+RESUME 1: TITLE INFLATION DETECTOR
+File: test_resume_1_title_inflation_derek_simmons.docx
+Candidate: Derek Simmons
+Current Title: "Head of Product"
+Actual Level: PM I/II (feature-level work)
+
+EXPECTED BEHAVIOR:
+- Should detect title inflation (senior title, junior scope)
+- No team size mentioned
+- No budget/P&L ownership
+- No multi-product roadmap evidence
+- Companies are unverifiable (seed-stage, defunct, agency)
+- EXPECTED SCORE CAP: 55% max for Senior PM roles
+- EXPECTED RECOMMENDATION: "Apply with Caution" or "Long Shot"
+
+RED FLAGS TO DETECT:
+✓ "Head of Product" at 5-person startup
+✓ "Work with 3-person engineering team" (not leading)
+✓ Company "now defunct" - no verification possible
+✓ No metrics showing business impact
+✓ Language shows execution, not strategy
+
+────────────────────────────────────────────────────────────────────
+
+RESUME 2: CAREER SWITCHER DETECTION
+File: test_resume_2_career_switcher_priya_venkatesh.docx
+Candidate: Priya Venkatesh
+Current Title: "Senior Technical Program Manager"
+Seeking: Product Manager role
+
+EXPECTED BEHAVIOR:
+- Should detect career switcher pattern
+- Should flag "PM-adjacent" language
+- EXPECTED SCORE CAP: 40% for PM roles
+- EXPECTED RECOMMENDATION: "Do Not Apply" with coaching
+
+LANGUAGE PATTERNS TO DETECT:
+✓ "Partner with PM team" (supporting, not owning)
+✓ "Contributed to product strategy" (input, not decision)
+✓ "Supported product launches" (execution, not strategy)
+✓ "Collaborated with Product Managers" (coordination role)
+✓ "Coordinated... for product team" (service function)
+✓ "Seeking to transition into a Product Manager role" (explicit)
+
+COACHING EXPECTED:
+"Your background is Program Management, not Product Management.
+Your resume shows adjacent exposure, not direct product ownership.
+Target Associate PM roles to build direct ownership experience."
+
+────────────────────────────────────────────────────────────────────
+
+RESUME 3: FUNCTION MISMATCH (Calculator Selection)
+File: test_resume_3_function_mismatch_kendra_williams.docx
+Candidate: Kendra Williams
+Current Title: "Director of Talent Acquisition"
+Function: Recruiting/TA
+
+EXPECTED BEHAVIOR:
+- When applying to recruiting roles: Should recognize 10+ years
+- Should NOT use PM calculator (would return 0 years)
+- Should use recruiting-specific calculator
+- EXPECTED SCORE: 70-85% for Director TA roles
+- EXPECTED RECOMMENDATION: "Apply" or "Strong Apply"
+
+THIS TESTS:
+✓ Function detection (is this a PM role or recruiting role?)
+✓ Calculator routing (use TA calculator, not PM calculator)
+✓ Experience recognition (10 years recruiting should count)
+
+BUG WE'RE TESTING FOR:
+Previous bug: Jordan's 12-year recruiting career returned 0 years
+because the PM calculator was used instead of recruiting calculator.
+
+────────────────────────────────────────────────────────────────────
+
+RESUME 4: COMPANY CREDIBILITY SCORING
+File: test_resume_4_credibility_test_marcus_chen_ramirez.docx
+Candidate: Marcus Chen-Ramirez
+Current Title: "Senior Product Manager"
+Mix of verifiable and unverifiable companies
+
+EXPECTED BEHAVIOR:
+- Square (Block, Inc.): HIGH credibility (1.0x) - public company
+- NovaPay (Seed-stage, acquired): MEDIUM credibility (0.7x)
+- Zenith Solutions (Boutique consultancy): LOW credibility (0.3x)
+- TaskRabbit: HIGH credibility (1.0x) - established startup
+
+EXPERIENCE CALCULATION:
+Raw years: ~6.5 years PM experience
+Adjusted years:
+- Square: 2.5 years × 1.0 = 2.5 years
+- NovaPay: 2.5 years × 0.7 = 1.75 years
+- Zenith: 1.75 years × 0.3 = 0.5 years
+- TaskRabbit: 1.75 years × 1.0 = 1.75 years
+TOTAL CREDIBLE: ~6.5 years (minimal discount)
+
+For a Senior PM role requiring 5+ years:
+- EXPECTED SCORE: 65-80%
+- EXPECTED RECOMMENDATION: "Apply" or "Consider"
+
+────────────────────────────────────────────────────────────────────
+
+TEST EXECUTION GUIDE
+────────────────────────────────────────────────────────────────────
+
+For each resume, test against a relevant JD:
+
+1. DEREK (Title Inflation)
+   → Test against: Senior PM at Series B+ company (5+ years required)
+   → Watch for: Does it detect inflated title? Is score capped?
+
+2. PRIYA (Career Switcher)
+   → Test against: Product Manager role (any level)
+   → Watch for: Does it detect PM-adjacent language? Is score capped?
+
+3. KENDRA (Function Mismatch)
+   → Test against: Director of TA role (7+ years required)
+   → Watch for: Does it count recruiting years? Or return 0?
+
+4. MARCUS (Credibility Scoring)
+   → Test against: Senior PM at established company (5+ years)
+   → Watch for: Are years at consultancy discounted?
+
+────────────────────────────────────────────────────────────────────
+
+CONSOLE LOGS TO WATCH
+────────────────────────────────────────────────────────────────────
+
+Look for these in the backend logs:
+
+✓ "Backend PM years calculation: X years"
+✓ "Years percentage: X% (X/Y years)"
+✓ "HARD CAP APPLIED" (if experience gap triggers cap)
+✓ "Claude overcounted!" (if backend corrects Claude)
+✓ "Title inflation detected" (if implemented)
+✓ "Career switcher pattern detected" (if implemented)
+✓ "Company credibility: HIGH/MEDIUM/LOW" (if implemented)
+
+────────────────────────────────────────────────────────────────────
