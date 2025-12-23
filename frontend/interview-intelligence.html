@@ -979,6 +979,9 @@
                 }
             }
 
+            // Merge interviews from Command Center (apps with interviewDate)
+            mergeInterviewsFromTracker();
+
             // Render immediately with localStorage data
             renderInterviewList();
             renderCompletedInterviews();
@@ -1344,6 +1347,63 @@
             } catch (error) {
                 console.error('Error syncing interview to tracker:', error);
             }
+        }
+
+        // ============================================================================
+        // COMMAND CENTER INTEGRATION
+        // ============================================================================
+
+        function mergeInterviewsFromTracker() {
+            // Pull interviews from Command Center (apps with interviewDate)
+            // This ensures Interview Intelligence is reading from CC as source of truth
+            const now = new Date();
+
+            trackedApplications.forEach(app => {
+                if (!app.interviewDate) return;
+
+                const interviewDate = new Date(app.interviewDate);
+                const isPast = interviewDate < now;
+
+                // Check if this interview already exists in our lists
+                const existsInUpcoming = upcomingInterviews.some(i =>
+                    (String(i.appId) === String(app.id)) ||
+                    (i.company.toLowerCase() === app.company.toLowerCase() &&
+                     Math.abs(new Date(i.date) - interviewDate) < 1000 * 60 * 60) // Within 1 hour
+                );
+                const existsInCompleted = completedInterviews.some(i =>
+                    (String(i.appId) === String(app.id)) ||
+                    (i.company.toLowerCase() === app.company.toLowerCase() &&
+                     Math.abs(new Date(i.date) - interviewDate) < 1000 * 60 * 60)
+                );
+
+                if (existsInUpcoming || existsInCompleted) return;
+
+                // Create interview record from app
+                const interview = {
+                    id: `app-${app.id}`,
+                    appId: app.id,
+                    company: app.company,
+                    role: app.role,
+                    type: app.status || 'Interview', // Use status as interview type
+                    date: app.interviewDate,
+                    interviewerName: app.interviewerName || '',
+                    interviewerTitle: app.interviewerTitle || '',
+                    fromTracker: true // Flag to indicate this came from Command Center
+                };
+
+                if (isPast) {
+                    // Past interview - add to completed if not debriefed
+                    completedInterviews.push(interview);
+                } else {
+                    // Future interview - add to upcoming
+                    upcomingInterviews.push(interview);
+                }
+            });
+
+            console.log('Merged interviews from tracker:', {
+                upcoming: upcomingInterviews.length,
+                completed: completedInterviews.length
+            });
         }
 
         // ============================================================================
