@@ -3050,6 +3050,46 @@
             display: flex;
             flex-direction: column;
             gap: var(--space-md);
+            min-height: 100px;
+            transition: background 0.2s ease;
+        }
+
+        /* Drag and drop styles */
+        .board-column.drag-over {
+            background: rgba(34, 211, 238, 0.05);
+            border-color: var(--color-accent);
+        }
+
+        .board-cards.drag-over {
+            background: rgba(34, 211, 238, 0.08);
+            border-radius: var(--radius-md);
+        }
+
+        .app-card-v2.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .app-card-v2[draggable="true"] {
+            cursor: grab;
+        }
+
+        .app-card-v2[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
+        .drop-indicator {
+            height: 4px;
+            background: var(--color-accent);
+            border-radius: 2px;
+            margin: var(--space-sm) 0;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .drop-indicator.visible {
+            opacity: 1;
         }
 
         /* Application Card with UI Signals */
@@ -9086,6 +9126,9 @@ Thanks so much!
 
                 cardsEl.innerHTML = items.map(({ app, intel }) => renderAppCardV2(app, intel)).join('');
             });
+
+            // Initialize drag and drop after rendering
+            initBoardDragAndDrop();
         }
 
         /**
@@ -9119,6 +9162,7 @@ Thanks so much!
             return `
                 <div class="app-card-v2 ${confidenceClass} ${priorityClass} ${dimmedClass}"
                      data-id="${app.id}"
+                     draggable="true"
                      tabindex="0"
                      role="button"
                      aria-label="${app.company} - ${app.role || app.roleTitle || 'Role'}"
@@ -9162,6 +9206,202 @@ Thanks so much!
                     ` : ''}
                 </div>
             `;
+        }
+
+        /**
+         * Initialize drag and drop for board view
+         */
+        function initBoardDragAndDrop() {
+            const columns = document.querySelectorAll('.board-column');
+            const cards = document.querySelectorAll('.app-card-v2[draggable="true"]');
+
+            // Card drag events
+            cards.forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+            });
+
+            // Column drop zone events
+            columns.forEach(column => {
+                const cardsContainer = column.querySelector('.board-cards');
+
+                column.addEventListener('dragover', handleDragOver);
+                column.addEventListener('dragenter', handleDragEnter);
+                column.addEventListener('dragleave', handleDragLeave);
+                column.addEventListener('drop', handleDrop);
+
+                if (cardsContainer) {
+                    cardsContainer.addEventListener('dragover', handleDragOver);
+                    cardsContainer.addEventListener('drop', handleDrop);
+                }
+            });
+        }
+
+        let draggedCard = null;
+        let draggedAppId = null;
+
+        function handleDragStart(e) {
+            draggedCard = this;
+            draggedAppId = this.dataset.id;
+            this.classList.add('dragging');
+
+            // Set drag data
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedAppId);
+
+            // Delay to allow the drag image to be set
+            setTimeout(() => {
+                this.style.opacity = '0.4';
+            }, 0);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            this.style.opacity = '1';
+
+            // Remove all drag-over styling
+            document.querySelectorAll('.board-column.drag-over, .board-cards.drag-over').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+
+            draggedCard = null;
+            draggedAppId = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            const column = e.target.closest('.board-column');
+            if (column) {
+                column.classList.add('drag-over');
+                const cardsContainer = column.querySelector('.board-cards');
+                if (cardsContainer) cardsContainer.classList.add('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            const column = e.target.closest('.board-column');
+            if (column && !column.contains(e.relatedTarget)) {
+                column.classList.remove('drag-over');
+                const cardsContainer = column.querySelector('.board-cards');
+                if (cardsContainer) cardsContainer.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+
+            const column = e.target.closest('.board-column');
+            if (!column || !draggedAppId) return;
+
+            const newStatus = column.dataset.status;
+            if (!newStatus) return;
+
+            // Remove drag styling
+            column.classList.remove('drag-over');
+            const cardsContainer = column.querySelector('.board-cards');
+            if (cardsContainer) cardsContainer.classList.remove('drag-over');
+
+            // Update the application status
+            updateApplicationStatus(draggedAppId, newStatus);
+        }
+
+        /**
+         * Update application status after drag and drop
+         */
+        function updateApplicationStatus(appId, newStatus) {
+            const apps = getApplications();
+            const appIndex = apps.findIndex(a => String(a.id) === String(appId));
+
+            if (appIndex === -1) return;
+
+            const app = apps[appIndex];
+            const oldStatus = app.status;
+
+            // Status mapping from column to actual status values
+            const statusMap = {
+                'applied': 'Applied',
+                'screening': 'Screening',
+                'interviewing': 'Interviewing',
+                'final': 'Final Round'
+            };
+
+            const mappedStatus = statusMap[newStatus] || newStatus;
+
+            // Don't update if status hasn't changed
+            if (app.status?.toLowerCase() === newStatus.toLowerCase()) return;
+
+            // Update the status
+            app.status = mappedStatus;
+            app.lastUpdated = new Date().toISOString();
+
+            // Mark as user override since they manually moved it
+            app.user_override = {
+                type: 'status_change',
+                from: oldStatus,
+                to: mappedStatus,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save to localStorage
+            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+
+            // Sync to Supabase if available
+            if (typeof HenryData !== 'undefined') {
+                HenryData.saveApplication(app).catch(e =>
+                    console.error('Failed to sync status change to Supabase:', e)
+                );
+            }
+
+            // Show feedback
+            showToast(`Moved ${app.company} to ${mappedStatus}`, 'success');
+
+            // Re-render the board
+            renderBoardView();
+        }
+
+        /**
+         * Simple toast notification for drag and drop feedback
+         */
+        function showToast(message, type = 'info') {
+            // Use existing toast system if available
+            if (window.InterviewNotifications?.showToast) {
+                window.InterviewNotifications.showToast({
+                    title: type === 'success' ? 'Updated' : 'Info',
+                    message: message,
+                    icon: type === 'success' ? '✓' : 'ℹ️',
+                    timeout: 3000
+                });
+                return;
+            }
+
+            // Fallback simple toast
+            const toast = document.createElement('div');
+            toast.className = 'simple-toast';
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : '#6b7280'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                z-index: 10001;
+                animation: fadeIn 0.3s ease;
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         /**
