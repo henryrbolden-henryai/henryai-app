@@ -390,11 +390,13 @@
             background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
             display: flex;
             gap: 8px;
-            align-items: center;
+            align-items: flex-end;
         }
 
         .ask-henry-input {
-            flex: 1;
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -406,6 +408,7 @@
             min-height: 80px;
             max-height: 150px;
             order: 0; /* Input first */
+            box-sizing: border-box;
         }
 
         .ask-henry-input:focus {
