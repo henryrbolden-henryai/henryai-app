@@ -15009,17 +15009,28 @@ async def generate_intro_sell_template(request: IntroSellTemplateRequest):
 
     system_prompt = """Generate a customized 60-90 second intro sell template for this candidate.
 
+🚨 CRITICAL - ZERO FABRICATION ALLOWED 🚨
+You MUST use ONLY the candidate's ACTUAL resume data provided below.
+- Use ONLY their ACTUAL job titles (e.g., if they're a Designer, say Designer - NOT PM)
+- Use ONLY their ACTUAL companies (don't invent companies)
+- Use ONLY metrics that appear in their resume
+- If they don't have experience in an area, DO NOT mention that area
+- Bridge their REAL experience to the target role - don't invent experience
+
+WRONG: "I'm a Staff Product Manager who built data platforms..."
+RIGHT: "I'm a Senior Product Designer who optimized user onboarding..."
+
 STRUCTURE (MANDATORY):
-1. Current Role + Impact (1-2 sentences, include quantified achievement)
-2. Previous Role + Relevant Achievement (1-2 sentences)
-3. Why You're Here (1 sentence connecting background to job)
+1. Current Role + Impact (1-2 sentences, include quantified achievement FROM RESUME)
+2. Previous Role + Relevant Achievement (1-2 sentences FROM RESUME)
+3. Why You're Here (1 sentence connecting their REAL background to this job)
 4. What You're Looking For (1 sentence, optional)
 
 RULES:
 - Total word count: 100-150 words
-- Use ONLY information from resume
-- Include at least one quantified metric
-- No college/education unless directly relevant
+- Use ONLY information from the resume provided
+- Include at least one quantified metric FROM THE RESUME
+- Every claim must be traceable to resume data
 - No generic filler phrases
 - End with confidence, not a question
 
@@ -17714,19 +17725,32 @@ INTERVIEW DETAILS:
 JOB DESCRIPTION:
 {request.job_description or 'Not provided'}
 
-CANDIDATE BACKGROUND:
+CANDIDATE BACKGROUND (THIS IS THE CANDIDATE'S ACTUAL RESUME - USE ONLY THIS DATA):
 {resume_text or 'Not provided'}
 
 Generate a prep guide with these sections:
 
 1. WHAT THEY EVALUATE (5-7 bullet points of what interviewers assess in this type of interview)
 
-2. INTRO PITCH (A 60-90 second "tell me about yourself" script that:
-   - Opens with current role and key accomplishment
-   - Bridges to relevant experience for this role
-   - Closes with why this opportunity excites them
-   - Is conversational, not robotic
-   - Around 150-200 words)
+2. INTRO PITCH (A 60-90 second "tell me about yourself" script)
+
+🚨 CRITICAL INTRO PITCH RULES - ZERO FABRICATION ALLOWED 🚨
+The intro MUST use ONLY information from CANDIDATE BACKGROUND above:
+- Use ONLY the candidate's ACTUAL job titles (e.g., "Senior Product Designer" not "Staff PM")
+- Use ONLY the candidate's ACTUAL companies (e.g., "Airbnb" not invented companies)
+- Use ONLY metrics/accomplishments that appear in CANDIDATE BACKGROUND
+- If the candidate is a Designer, DO NOT say they are a PM
+- If the candidate has no data platform experience, DO NOT mention data platforms
+- Bridge their REAL experience to what the role needs - don't invent experience they don't have
+
+WRONG (fabrication): "I'm a Staff Product Manager with experience building data platforms..."
+RIGHT (grounded): "I'm a Senior Product Designer with 6 years optimizing user onboarding at Airbnb..."
+
+The intro should:
+- Open with their ACTUAL current role and a REAL accomplishment from their resume
+- Bridge their REAL experience to why it's relevant for this role
+- Close with genuine enthusiasm for this opportunity
+- Be conversational, around 150-200 words
 
 3. LIKELY QUESTIONS (8-12 questions they'll probably ask, with personalized guidance on how to answer based on their specific experience. Each question should have a "guidance" field with 2-3 sentences of specific advice referencing their background.)
 
@@ -17807,15 +17831,20 @@ Company: {request.company}
 Role: {request.role_title}
 Interview Type: {request.interview_type}
 
-Candidate's recent experience:
+CANDIDATE'S ACTUAL RESUME (USE ONLY THIS DATA - DO NOT FABRICATE):
 {resume_text or 'Not provided'}
 
+🚨 CRITICAL - ZERO FABRICATION ALLOWED 🚨
+- Use ONLY the job titles, companies, and metrics from the resume above
+- If they are a Designer, say Designer - NOT PM
+- If they have no data platform experience, do NOT mention data platforms
+- Every claim must trace back to the resume data
+
 Create a conversational, engaging intro (150-200 words) that:
-- Opens with their current role and a key accomplishment
-- Bridges to why their experience is relevant for this role
+- Opens with their ACTUAL current role and a REAL accomplishment from their resume
+- Bridges their REAL experience to why it's relevant for this role
 - Closes with genuine enthusiasm for this opportunity
 - Sounds natural, not scripted
-- Is different from typical generic intros
 
 Return ONLY the intro text, no JSON or formatting."""
 
@@ -18175,6 +18204,7 @@ class HeyHenryRequest(BaseModel):
     outreach_data: Optional[Dict[str, Any]] = None  # Generated outreach templates
     interview_prep_data: Optional[Dict[str, Any]] = None  # Generated interview prep modules
     positioning_data: Optional[Dict[str, Any]] = None  # Positioning strategy content
+    screening_questions_data: Optional[Dict[str, Any]] = None  # Screening questions from the page
 
 
 class HeyHenryResponse(BaseModel):
@@ -18276,6 +18306,8 @@ CURRENT CONTEXT:
 {pipeline_context}
 
 {generated_content_context}
+
+{screening_questions_context}
 
 {emotional_context}
 
@@ -18479,6 +18511,25 @@ POSITIONING STRATEGY YOU DEVELOPED:
 - Key talking points: {', '.join(pp.get('talking_points', [])[:3]) if pp.get('talking_points') else 'N/A'}
 """
 
+    # Screening questions context - user is working on application screening questions
+    screening_questions_context = ""
+    if request.screening_questions_data:
+        sq = request.screening_questions_data
+        screening_questions_context = f"""
+SCREENING QUESTIONS (the candidate has entered these on the page - help them answer):
+Number of questions: {sq.get('count', 0)}
+
+Questions entered:
+{sq.get('summary', 'No questions entered yet')}
+
+INSTRUCTIONS: When the user asks for help with these questions:
+- Reference the specific questions they've entered (you can see them above)
+- Don't ask "What's the question?" - you already have them
+- Provide strategic guidance on how to answer each one
+- For comp expectations, give ranges and negotiation tips
+- For yes/no questions, explain how to position their answer
+"""
+
     # Build emotional context - prefer direct context fields, fall back to user_profile
     emotional_context = ""
     holding_up = request.context.emotional_state
@@ -18567,6 +18618,7 @@ POSITIONING STRATEGY YOU DEVELOPED:
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
         generated_content_context=generated_content_context,
+        screening_questions_context=screening_questions_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,
         tone_guidance_detail=tone_guidance_detail,

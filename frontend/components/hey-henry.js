@@ -1819,7 +1819,8 @@ ${confidenceClosing}`,
             'interview-debrief': { name: 'Interview Debrief', description: 'Debriefing after an interview' },
             'mock-interview': { name: 'Mock Interview', description: 'Practicing interview skills' },
             'tracker': { name: 'Application Tracker', description: 'Managing job applications' },
-            'profile-edit': { name: 'Profile', description: 'Editing your profile' }
+            'profile-edit': { name: 'Profile', description: 'Editing your profile' },
+            'screening-questions': { name: 'Screening Questions', description: 'Answering application screening questions' }
         };
 
         const context = contexts[page] || { name: 'HenryHQ', description: 'Your personal job search guide' };
@@ -1968,6 +1969,41 @@ ${confidenceClosing}`,
             };
         } catch (e) {
             console.error('Error getting documents data:', e);
+            return null;
+        }
+    }
+
+    // Get screening questions from the page (for screening-questions.html context)
+    function getScreeningQuestionsData() {
+        try {
+            // Check if we're on the screening questions page
+            if (!window.location.pathname.includes('screening-questions')) return null;
+
+            const questions = [];
+            const questionItems = document.querySelectorAll('.question-item');
+
+            questionItems.forEach((item, index) => {
+                const textarea = item.querySelector('.question-text');
+                const typeSelect = item.querySelector('.question-type');
+
+                if (textarea && textarea.value.trim()) {
+                    questions.push({
+                        number: index + 1,
+                        question: textarea.value.trim(),
+                        type: typeSelect ? typeSelect.value : 'essay'
+                    });
+                }
+            });
+
+            if (questions.length === 0) return null;
+
+            return {
+                questions: questions,
+                count: questions.length,
+                summary: questions.map(q => `Q${q.number} (${q.type}): ${q.question.substring(0, 100)}...`).join('\n')
+            };
+        } catch (e) {
+            console.error('Error getting screening questions data:', e);
             return null;
         }
     }
@@ -3152,6 +3188,7 @@ ${confidenceClosing}`,
             const outreachData = getOutreachData();
             const interviewPrepData = getInterviewPrepData();
             const positioningData = getPositioningData();
+            const screeningQuestionsData = getScreeningQuestionsData();
 
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
@@ -3210,7 +3247,9 @@ ${confidenceClosing}`,
                     documents_data: documentsData,
                     outreach_data: outreachData,
                     interview_prep_data: interviewPrepData,
-                    positioning_data: positioningData
+                    positioning_data: positioningData,
+                    // Screening questions from the page
+                    screening_questions_data: screeningQuestionsData
                 });
                 console.log('Hey Henry request body size:', requestBody.length, 'bytes');
             } catch (jsonError) {
