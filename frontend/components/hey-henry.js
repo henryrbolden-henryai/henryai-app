@@ -2656,6 +2656,10 @@ ${confidenceClosing}`,
         }
 
         try {
+            // Get resume data from multiple possible sources
+            const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
+            const originalResume = analysisData._resume_json || resumeData || {};
+
             const response = await fetch(`${API_BASE}/api/documents/refine`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2663,8 +2667,8 @@ ${confidenceClosing}`,
                     chat_command: message,
                     target_document: documentType,
                     current_document_data: currentDoc,
-                    original_jd_analysis: analysisData,
-                    original_resume_data: analysisData._resume_json || {},
+                    original_jd_analysis: analysisData || {},
+                    original_resume_data: originalResume,
                     conversation_history: conversationHistory.slice(-10),
                     version: documentsData._version || 1
                 })

@@ -1137,6 +1137,33 @@
                 currentInterview = completed.find(i => String(i.id) === String(interviewId));
             }
 
+            // Final fallback: check tracker apps without app- prefix
+            // (in case interview was scheduled via Interview Intelligence and synced to tracker)
+            if (!currentInterview) {
+                const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                // Try to find by interviewId directly in case it's stored differently
+                const app = trackedApps.find(a =>
+                    String(a.id) === String(interviewId) ||
+                    (a.interviewDate && a.company && interviews.some(i =>
+                        i.company.toLowerCase() === a.company.toLowerCase() &&
+                        String(i.id) === String(interviewId)
+                    ))
+                );
+                if (app && app.interviewDate) {
+                    currentInterview = {
+                        id: interviewId,
+                        appId: app.id,
+                        company: app.company,
+                        role: app.role,
+                        type: app.interviewType || app.status || 'Interview',
+                        date: app.interviewDate,
+                        interviewerName: app.interviewerName || '',
+                        interviewerTitle: app.interviewerTitle || '',
+                        jobDescription: app.jobDescription || app.notes || ''
+                    };
+                }
+            }
+
             if (!currentInterview) {
                 showError();
                 return;

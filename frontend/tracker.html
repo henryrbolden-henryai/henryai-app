@@ -8187,7 +8187,7 @@ Thanks so much!
 
             // Listen for selection changes
             select.onchange = function() {
-                selectedInterviewAppId = this.value ? parseInt(this.value) : null;
+                selectedInterviewAppId = this.value || null;
                 proceedBtn.disabled = !selectedInterviewAppId;
             };
 
@@ -8209,7 +8209,7 @@ Thanks so much!
             if (!selectedInterviewAppId) return;
 
             const apps = getApplications();
-            const app = apps.find(a => a.id === selectedInterviewAppId);
+            const app = apps.find(a => String(a.id) === String(selectedInterviewAppId));
             if (!app) return;
 
             // Store context for the interview form
