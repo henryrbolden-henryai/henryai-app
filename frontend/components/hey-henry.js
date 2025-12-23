@@ -3185,6 +3185,19 @@ ${confidenceClosing}`,
 
         messagesContainer.appendChild(messageEl);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Auto-expand drawer for long assistant responses
+        if (role === 'assistant' && content.length > 400) {
+            const drawer = document.getElementById('askHenryDrawer');
+            if (!drawer.classList.contains('expanded')) {
+                drawer.classList.add('expanded');
+                const expandBtn = document.getElementById('askHenryExpand');
+                if (expandBtn) {
+                    expandBtn.title = 'Collapse chat';
+                    expandBtn.setAttribute('aria-label', 'Collapse');
+                }
+            }
+        }
     }
 
     function formatMessage(content) {
