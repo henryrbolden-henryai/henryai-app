@@ -1086,7 +1086,7 @@ def infer_preferences_from_resume(resume_data):
 
 ### 📊 Phase 3: Multi-Step Pipeline & Quality Control
 
-**Goal**: Systematic quality improvement through staged generation
+**Goal**: Systematic quality improvement through staged generation + Live Coach Chat
 
 **Priority**: MEDIUM
 **Effort**: HIGH
@@ -1094,6 +1094,60 @@ def infer_preferences_from_resume(resume_data):
 **Timeline**: 8 weeks (Feb 20 - Apr 16, 2026)
 **Status**: 📋 PLANNED
 **Dependencies**: Phase 2 complete, Phase 1 metrics reviewed
+
+#### 3.0 Live Coach Chat (NEW - Feb 20 - Mar 5, 2026)
+
+**Vision**: Connect candidates with human career coaches for real-time support.
+
+**Why This Matters**:
+- Ask Henry (AI) handles 80% of questions, but some candidates need human touch
+- Career transitions, emotional support, and negotiation are high-stakes moments
+- Differentiator: No competitor offers integrated AI + human coaching
+
+**Technical Approach** (Recommended: Supabase Realtime):
+- Supabase Realtime for WebSocket-based messaging (already using Supabase)
+- Simple channel-based architecture: one channel per conversation
+- Coach dashboard to manage active chats
+- Candidate initiates chat via Ask Henry ("I'd like to talk to a coach")
+
+**Implementation**:
+```javascript
+// Candidate-side: Connect to coach channel
+const channel = supabase.channel(`coach_chat:${userId}`)
+channel.on('broadcast', { event: 'message' }, (payload) => {
+    displayCoachMessage(payload.message)
+})
+await channel.subscribe()
+
+// Send message
+await channel.send({
+    type: 'broadcast',
+    event: 'message',
+    payload: { message: userMessage, sender: 'candidate' }
+})
+```
+
+**Coach Dashboard Requirements**:
+- View pending chat requests
+- Accept/decline conversations
+- Real-time messaging with typing indicators
+- Access to candidate profile and application history
+- Quick responses / templates for common questions
+
+**Effort Estimate**: 2-3 weeks (Medium complexity)
+- Week 1: Backend setup, database schema, Supabase Realtime integration
+- Week 2: Candidate-side UI (integrate with Ask Henry drawer)
+- Week 3: Coach dashboard, testing, polish
+
+**Alternative Approaches Considered**:
+1. **Socket.io + Custom WebSockets**: More control, more maintenance
+2. **Third-party (Intercom, Zendesk)**: Expensive, less integrated
+3. **Twilio Conversations**: Good but adds dependency
+
+**Success Metrics**:
+- Coach response time: < 2 minutes average
+- Candidate satisfaction: 4.5+/5 for coach interactions
+- Resolution rate: 80%+ issues resolved in single session
 
 #### 3.1 Structured JD Analysis v2 (Feb 20 - Mar 5, 2026)
 

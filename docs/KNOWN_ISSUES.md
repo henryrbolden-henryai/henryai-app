@@ -178,3 +178,8 @@
   - Now shows "Redirect to Product Designer roles at companies that need user-facing design"
   - Instead of generic "Redirect to roles in adjacent domains"
 - ✅ Improved readability of domain names in rationale (e.g., "ML/AI Research" instead of "ml ai research")
+- ✅ Fixed Your Move generic messaging for Do Not Apply candidates
+  - Root cause: Eligibility gaps were missing `redirect` field that coaching controller needs
+  - Fix: Added `redirect` field to all gap types (eligibility, people leadership, generic)
+  - Now shows specific redirect like "Redirect to Product Designer roles..." instead of generic "Focus on roles that match your domain expertise"
+  - Location: `backend/backend.py` lines 6369-6376, 6439-6457, 6542-6547

@@ -61,6 +61,42 @@ All features below have been implemented and deployed to production:
 34. ✅ **Your Move Coaching Overhaul** (Dec 19) - context-aware, decisive guidance
 35. ✅ **UI Contract Enforcement** (Dec 19) - gaps/Your Move consistency
 36. ✅ **Strengths Extraction Recovery** (Dec 19) - contract-compliant failure handling
+37. ✅ **Proceed Anyway Navigation Fix** (Dec 23) - fixed freeze on Do Not Apply acknowledgment
+38. ✅ **Domain Gap Priority Fix** (Dec 23) - domain mismatch now takes priority over years checks
+39. ✅ **Ask Henry UI Improvements** (Dec 23) - larger input box, smaller send button, timestamps
+40. ✅ **Ask Henry Auto-Expand** (Dec 23) - drawer expands for long responses (>400 chars)
+41. ✅ **Hey Henry Crash Fix** (Dec 23) - handle dict format for gaps/strengths
+42. ✅ **Your Move Redirect Fix** (Dec 23) - gaps now include redirect field for coaching controller
+
+---
+
+### Pre-Launch QA Fixes (Dec 23, 2025)
+
+**Files Modified**:
+- `frontend/results.html` - Proceed Anyway navigation, Apply button disable
+- `backend/backend.py` - Domain gap priority, CORS fix, redirect field for gaps
+- `frontend/components/hey-henry.js` - UI improvements, auto-expand, timestamps
+
+**Fixes Implemented**:
+
+1. **Proceed Anyway Navigation**
+   - Fixed screen freeze after clicking "Acknowledged - Proceeding"
+   - Now navigates to resume-leveling.html and auto-adds to tracker
+
+2. **Domain Gap Priority**
+   - Reordered priority so domain mismatch is Priority 1 when eligibility fails
+   - Added specific redirects for Product Designers
+
+3. **Your Move Redirect Field**
+   - Added `redirect` field to eligibility, people leadership, and generic gaps
+   - Coaching controller now generates specific redirect messaging
+   - "Redirect to Product Designer roles at companies..." instead of generic
+
+4. **Ask Henry UI**
+   - Input box: min-height 80px (was 56px)
+   - Send button: 28px (was 32px)
+   - Timestamps on messages (e.g., "2:30 PM")
+   - Auto-expand for responses >400 chars
 
 ---
 

@@ -6366,6 +6366,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # C. REDIRECT (specific, concrete)
             response_data["alternative_actions"] = redirect_roles
 
+            # CRITICAL: Add redirect to the primary gap for coaching controller
+            # The calibration controller reads primary_gap.get('redirect') to generate Your Move
+            gaps = response_data.get("gaps", [])
+            if gaps and isinstance(gaps[0], dict):
+                # Format redirect as a single string for Your Move
+                redirect_text = redirect_roles[0] if redirect_roles else "Redirect to roles that match your domain expertise"
+                gaps[0]["redirect"] = redirect_text
+                print(f"   ✅ Added redirect to primary gap: {redirect_text[:60]}...")
+
         elif required_people_leadership > 0 and people_leadership_years < required_people_leadership:
             # People leadership specific failure
             # Use tiered leadership messaging for accurate "none" vs "insufficient" distinction
@@ -6427,6 +6436,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     f"which is {leadership_gap_msg.get('gap_years', 0):.1f} years short of the requirement."
                 )
 
+            redirect_text = redirect_roles[0] if redirect_roles else "Target roles that match your experience level"
             people_gap = {
                 "gap_type": "people_leadership_requirement_not_met",
                 "gap_classification": "missing_experience",
@@ -6436,13 +6446,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 "leadership_status": gap_status,  # NEW: "none" vs "insufficient"
                 "tiered_breakdown": tiered_leadership.get("leadership_tier_summary", ""),
                 "impact": "You will not pass screening for this role",
-                "mitigation_strategy": redirect_roles[0] if redirect_roles else "Target roles that match your experience level"
+                "mitigation_strategy": redirect_text,
+                "redirect": redirect_text  # CRITICAL: For coaching controller Your Move
             }
             gaps = response_data.get("gaps", [])
             has_people_gap = any(g.get("gap_type") == "people_leadership_requirement_not_met" for g in gaps if isinstance(g, dict))
             if not has_people_gap:
                 gaps.insert(0, people_gap)
                 response_data["gaps"] = gaps
+                print(f"   ✅ Added redirect to people leadership gap: {redirect_text[:60]}...")
 
             # C. REDIRECT (specific)
             response_data["alternative_actions"] = redirect_roles
@@ -6526,6 +6538,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 )
 
             response_data["alternative_actions"] = redirect_roles
+
+            # CRITICAL: Add redirect to the primary gap for coaching controller
+            gaps = response_data.get("gaps", [])
+            if gaps and isinstance(gaps[0], dict):
+                redirect_text = redirect_roles[0] if redirect_roles else "Redirect to roles that match your experience level"
+                gaps[0]["redirect"] = redirect_text
+                print(f"   ✅ Added redirect to primary gap (else case): {redirect_text[:60]}...")
 
         # Update strategic_action - NO UPSIDE FRAMING, SPECIFIC REDIRECT
         if "reality_check" in response_data:
