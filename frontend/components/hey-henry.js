@@ -316,6 +316,19 @@
             color: #ffffff;
         }
 
+        /* Timestamp */
+        .ask-henry-timestamp {
+            display: block;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .ask-henry-message.user .ask-henry-timestamp {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
         /* Typing Indicator */
         .ask-henry-typing {
             display: flex;
@@ -3179,9 +3192,16 @@ ${confidenceClosing}`,
         const messagesContainer = document.getElementById('askHenryMessages');
         const formattedContent = formatMessage(content);
 
+        // Format timestamp
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
         const messageEl = document.createElement('div');
         messageEl.className = `ask-henry-message ${role}`;
-        messageEl.innerHTML = formattedContent;
+        messageEl.innerHTML = `
+            ${formattedContent}
+            <span class="ask-henry-timestamp">${timeStr}</span>
+        `;
 
         messagesContainer.appendChild(messageEl);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
