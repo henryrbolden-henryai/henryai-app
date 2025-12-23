@@ -897,10 +897,10 @@
 
         // Load data from sessionStorage and Supabase
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check for user switch and clear stale localStorage data
+            // Check for user switch and clear stale localStorage data (non-blocking)
             if (typeof HenryAuth !== 'undefined') {
-                try {
-                    const session = await HenryAuth.getSession();
+                // Don't await - run in background to avoid blocking page load
+                HenryAuth.getSession().then(session => {
                     if (session) {
                         const currentUserId = session.user.id;
                         const lastUserId = localStorage.getItem('henryai_current_user_id');
@@ -917,12 +917,14 @@
                                     localStorage.removeItem(key);
                                 }
                             }
+                            // Reload to get fresh data
+                            window.location.reload();
                         }
                         localStorage.setItem('henryai_current_user_id', currentUserId);
                     }
-                } catch (e) {
-                    console.log('Could not check user session');
-                }
+                }).catch(e => {
+                    console.log('Could not check user session:', e.message);
+                });
             }
 
             // Load analysis data
@@ -947,79 +949,86 @@
                 }
             }
 
-            // Try to load interviews from Supabase first, fall back to localStorage
-            let loadedFromSupabase = false;
-            if (typeof HenryData !== 'undefined') {
+            // FAST PATH: Load from localStorage first (instant)
+            // This ensures the page is usable immediately
+            const storedInterviews = localStorage.getItem('upcomingInterviews');
+            if (storedInterviews) {
                 try {
-                    const { upcoming, completed } = await HenryData.getInterviews();
-                    if (upcoming.length > 0 || completed.length > 0) {
-                        upcomingInterviews = upcoming;
-                        completedInterviews = completed;
-                        loadedFromSupabase = true;
-                        console.log('Loaded interviews from Supabase:', upcoming.length, 'upcoming,', completed.length, 'completed');
-                    }
+                    upcomingInterviews = JSON.parse(storedInterviews);
                 } catch (e) {
-                    console.log('Supabase not available, using localStorage');
+                    console.error('Error parsing interviews:', e);
                 }
             }
 
-            // Fall back to localStorage if Supabase didn't have data
-            if (!loadedFromSupabase) {
-                // Load upcoming interviews from localStorage
-                const storedInterviews = localStorage.getItem('upcomingInterviews');
-                if (storedInterviews) {
-                    try {
-                        upcomingInterviews = JSON.parse(storedInterviews);
-                    } catch (e) {
-                        console.error('Error parsing interviews:', e);
-                    }
-                }
-
-                // Load completed interviews from localStorage
-                const storedCompleted = localStorage.getItem('completedInterviews');
-                if (storedCompleted) {
-                    try {
-                        completedInterviews = JSON.parse(storedCompleted);
-                    } catch (e) {
-                        console.error('Error parsing completed interviews:', e);
-                    }
-                }
-            }
-
-            // Load tracked applications (try Supabase first)
-            let appsLoadedFromSupabase = false;
-            if (typeof HenryData !== 'undefined') {
+            const storedCompleted = localStorage.getItem('completedInterviews');
+            if (storedCompleted) {
                 try {
-                    const apps = await HenryData.getApplications();
-                    if (apps.length > 0) {
-                        trackedApplications = apps;
-                        appsLoadedFromSupabase = true;
-                        console.log('Loaded applications from Supabase:', apps.length);
-                    }
+                    completedInterviews = JSON.parse(storedCompleted);
                 } catch (e) {
-                    console.log('Supabase apps not available, using localStorage');
+                    console.error('Error parsing completed interviews:', e);
                 }
             }
 
-            if (!appsLoadedFromSupabase) {
-                const storedApps = localStorage.getItem('trackedApplications');
-                if (storedApps) {
-                    try {
-                        trackedApplications = JSON.parse(storedApps);
-                        console.log('Loaded tracked applications:', trackedApplications.length);
-                    } catch (e) {
-                        console.error('Error parsing tracked applications:', e);
-                    }
+            const storedApps = localStorage.getItem('trackedApplications');
+            if (storedApps) {
+                try {
+                    trackedApplications = JSON.parse(storedApps);
+                    console.log('Loaded tracked applications from localStorage:', trackedApplications.length);
+                } catch (e) {
+                    console.error('Error parsing tracked applications:', e);
                 }
             }
 
-            // Render both lists
+            // Render immediately with localStorage data
             renderInterviewList();
             renderCompletedInterviews();
 
-            // Check if we should auto-open the add interview modal (e.g., from Command Center)
+            // CRITICAL: Check for pending interview context BEFORE async Supabase calls
+            // This prevents the "freeze" issue where Supabase hangs and modal never opens
             if (sessionStorage.getItem('pendingInterviewContext')) {
+                console.log('Opening interview modal from pending context');
                 openAddInterviewModal();
+            }
+
+            // SLOW PATH: Try to enhance with Supabase data (non-blocking)
+            // Use Promise.race with timeout to prevent hanging
+            if (typeof HenryData !== 'undefined') {
+                const timeout = (ms) => new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), ms)
+                );
+
+                // Load interviews from Supabase (with 5s timeout)
+                Promise.race([
+                    HenryData.getInterviews(),
+                    timeout(5000)
+                ]).then(({ upcoming, completed }) => {
+                    if (upcoming.length > 0 || completed.length > 0) {
+                        upcomingInterviews = upcoming;
+                        completedInterviews = completed;
+                        renderInterviewList();
+                        renderCompletedInterviews();
+                        console.log('Enhanced with Supabase interviews:', upcoming.length, 'upcoming,', completed.length, 'completed');
+                    }
+                }).catch(e => {
+                    console.log('Supabase interviews not available (using localStorage):', e.message);
+                });
+
+                // Load applications from Supabase (with 5s timeout)
+                Promise.race([
+                    HenryData.getApplications(),
+                    timeout(5000)
+                ]).then(apps => {
+                    if (apps.length > 0) {
+                        trackedApplications = apps;
+                        // Re-populate dropdown if modal is open
+                        if (document.getElementById('addInterviewModal').classList.contains('active')) {
+                            populateApplicationDropdown();
+                        }
+                        console.log('Enhanced with Supabase applications:', apps.length);
+                    }
+                }).catch(e => {
+                    console.log('Supabase apps not available (using localStorage):', e.message);
+                });
             }
         });
 
@@ -1337,6 +1346,174 @@
             }
         }
 
+        // ============================================================================
+        // CALENDAR INVITE GENERATION
+        // ============================================================================
+
+        function generateInterviewPrepSummary(interview) {
+            // Build a prep summary for the calendar invite body
+            const lines = [];
+
+            lines.push(`Hey ${getUserName() || 'there'},`);
+            lines.push('');
+            lines.push(`Your ${interview.type} with ${interview.company} is coming up.`);
+            lines.push('');
+
+            // Add interviewer info if available
+            if (interview.interviewerName) {
+                lines.push(`INTERVIEWER: ${interview.interviewerName}${interview.interviewerTitle ? ' - ' + interview.interviewerTitle : ''}`);
+                lines.push('');
+            }
+
+            // Get prep data from analysis if available
+            if (analysisData) {
+                // What they're evaluating
+                if (analysisData.key_requirements || analysisData.strategic_positioning) {
+                    lines.push('WHAT THEY ARE EVALUATING:');
+                    if (analysisData.key_requirements) {
+                        const reqs = Array.isArray(analysisData.key_requirements)
+                            ? analysisData.key_requirements.slice(0, 4)
+                            : [];
+                        reqs.forEach(req => lines.push(`- ${typeof req === 'string' ? req : req.requirement || req}`));
+                    }
+                    lines.push('');
+                }
+
+                // Your strengths (60-90 second intro material)
+                if (analysisData.strengths && analysisData.strengths.length > 0) {
+                    lines.push('YOUR KEY STRENGTHS (for your intro):');
+                    const strengths = analysisData.strengths.slice(0, 3);
+                    strengths.forEach(s => {
+                        const text = typeof s === 'string' ? s : s.strength || s.description || s;
+                        lines.push(`- ${text}`);
+                    });
+                    lines.push('');
+                }
+
+                // Gaps to be prepared for
+                if (analysisData.gaps && analysisData.gaps.length > 0) {
+                    lines.push('GAPS TO ADDRESS (have stories ready):');
+                    const gaps = analysisData.gaps.slice(0, 3);
+                    gaps.forEach(g => {
+                        const text = typeof g === 'string' ? g : g.gap_description || g.gap || g;
+                        lines.push(`- ${text}`);
+                    });
+                    lines.push('');
+                }
+
+                // Strategic positioning
+                if (analysisData.strategic_positioning || analysisData.reality_check?.strategic_action) {
+                    lines.push('YOUR MOVE:');
+                    lines.push(analysisData.strategic_positioning || analysisData.reality_check?.strategic_action);
+                    lines.push('');
+                }
+            }
+
+            // Link to full prep
+            lines.push('FULL PREP GUIDE:');
+            lines.push(`${window.location.origin}/interview-prep.html`);
+            lines.push('');
+            lines.push("You've got this. Trust your prep.");
+            lines.push('');
+            lines.push('-- Henry');
+
+            return lines.join('\\n');
+        }
+
+        function generateICSFile(interview) {
+            const startTime = new Date(interview.date);
+            const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+            const formatICSDate = (date) => {
+                const pad = (n) => n.toString().padStart(2, '0');
+                const year = date.getUTCFullYear();
+                const month = pad(date.getUTCMonth() + 1);
+                const day = pad(date.getUTCDate());
+                const hour = pad(date.getUTCHours());
+                const minute = pad(date.getUTCMinutes());
+                const second = pad(date.getUTCSeconds());
+                return `${year}${month}${day}T${hour}${minute}${second}Z`;
+            };
+
+            const now = new Date();
+            const dtstamp = formatICSDate(now);
+            const dtstart = formatICSDate(startTime);
+            const dtend = formatICSDate(endTime);
+            const uid = `henryai-interview-${interview.id}@henryai.app`;
+
+            const escapeICS = (str) => {
+                return str.replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+            };
+
+            const title = `${interview.type} - ${interview.company}${interview.role ? ' (' + interview.role + ')' : ''}`;
+            const description = generateInterviewPrepSummary(interview);
+
+            const icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//HenryHQ//Interview Intelligence//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH',
+                'BEGIN:VEVENT',
+                `UID:${uid}`,
+                `DTSTAMP:${dtstamp}`,
+                `DTSTART:${dtstart}`,
+                `DTEND:${dtend}`,
+                `SUMMARY:${escapeICS(title)}`,
+                `DESCRIPTION:${escapeICS(description)}`,
+                'STATUS:CONFIRMED',
+                'SEQUENCE:0',
+                // 24 hour reminder
+                'BEGIN:VALARM',
+                'TRIGGER:-PT1440M',
+                'ACTION:DISPLAY',
+                'DESCRIPTION:Interview reminder - review your prep!',
+                'END:VALARM',
+                // 1 hour reminder
+                'BEGIN:VALARM',
+                'TRIGGER:-PT60M',
+                'ACTION:DISPLAY',
+                `DESCRIPTION:${escapeICS(title)} - starting soon!`,
+                'END:VALARM',
+                'END:VEVENT',
+                'END:VCALENDAR'
+            ].filter(line => line).join('\r\n');
+
+            return icsContent;
+        }
+
+        function downloadCalendarInvite(interviewId) {
+            const interview = upcomingInterviews.find(i => String(i.id) === String(interviewId));
+            if (!interview) {
+                console.error('Interview not found:', interviewId);
+                return;
+            }
+
+            const icsContent = generateICSFile(interview);
+            const filename = `HenryHQ_${interview.company.replace(/\s+/g, '_')}_${interview.type.replace(/\s+/g, '_')}.ics`;
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            console.log('Calendar invite downloaded:', filename);
+        }
+
+        function getUserName() {
+            try {
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                return profile.name || profile.firstName || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
         function renderInterviewList() {
             const emptyState = document.getElementById('emptyState');
             const interviewList = document.getElementById('interviewList');
@@ -1393,8 +1570,10 @@
                         <div class="interview-info">
                             <div class="company-name">${interview.company}</div>
                             <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr} @ ${timeStr}</div>
+                            ${interview.interviewerName ? `<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 4px;">with ${interview.interviewerName}</div>` : ''}
                         </div>
                         <div class="interview-actions">
+                            <button class="calendar-btn" onclick="downloadCalendarInvite('${interview.id}')" title="Download calendar invite" style="background: transparent; border: 1px solid var(--color-border); padding: 8px 12px; font-size: 0.85rem;">📅</button>
                             <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Prep Guide</button>
                             <button class="open-debrief-btn" onclick="openDebrief('${interview.id}')">Debrief</button>
                         </div>
