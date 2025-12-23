@@ -18254,13 +18254,31 @@ async def hey_henry(request: HeyHenryRequest):
     # Build analysis context string
     analysis_context = ""
     if request.analysis_data and request.context.has_analysis:
+        # Extract strengths - handle both string and dict formats
+        strengths_raw = request.analysis_data.get('strengths', [])[:3]
+        strengths_list = []
+        for s in strengths_raw:
+            if isinstance(s, dict):
+                strengths_list.append(s.get('strength', s.get('description', str(s))))
+            else:
+                strengths_list.append(str(s))
+
+        # Extract gaps - handle both string and dict formats
+        gaps_raw = request.analysis_data.get('gaps', [])[:3]
+        gaps_list = []
+        for g in gaps_raw:
+            if isinstance(g, dict):
+                gaps_list.append(g.get('gap_description', g.get('description', g.get('gap', str(g)))))
+            else:
+                gaps_list.append(str(g))
+
         analysis_context = f"""
 ANALYSIS DATA AVAILABLE:
 - Company: {request.analysis_data.get('_company_name', 'Unknown')}
 - Role: {request.analysis_data.get('role_title', 'Unknown')}
 - Fit Score: {request.analysis_data.get('fit_score', 'N/A')}
-- Key Strengths: {', '.join(request.analysis_data.get('strengths', [])[:3])}
-- Key Gaps: {', '.join(request.analysis_data.get('gaps', [])[:3])}
+- Key Strengths: {', '.join(strengths_list) if strengths_list else 'None identified'}
+- Key Gaps: {', '.join(gaps_list) if gaps_list else 'None identified'}
 """
 
     if request.resume_data and request.context.has_resume:
