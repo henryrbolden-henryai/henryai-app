@@ -1943,6 +1943,83 @@ ${confidenceClosing}`,
         return parts.join(', ');
     }
 
+    // =========================================================================
+    // GENERATED CONTENT DATA - Henry is the AUTHOR of these
+    // =========================================================================
+
+    function getDocumentsData() {
+        try {
+            // Get generated resume and cover letter
+            const resumeOutput = JSON.parse(sessionStorage.getItem('resumeOutput') || 'null');
+            const coverLetter = JSON.parse(sessionStorage.getItem('coverLetter') || 'null');
+            const changesApplied = JSON.parse(sessionStorage.getItem('changesApplied') || '[]');
+
+            if (!resumeOutput && !coverLetter) return null;
+
+            return {
+                resume_output: resumeOutput,
+                cover_letter: coverLetter,
+                changes_summary: changesApplied.length > 0
+                    ? changesApplied.slice(0, 5).join('; ')
+                    : 'Strategic optimization for role alignment'
+            };
+        } catch (e) {
+            console.error('Error getting documents data:', e);
+            return null;
+        }
+    }
+
+    function getOutreachData() {
+        try {
+            const outreachTemplates = JSON.parse(sessionStorage.getItem('outreachTemplates') || 'null');
+            if (!outreachTemplates) return null;
+
+            return {
+                templates: outreachTemplates
+            };
+        } catch (e) {
+            console.error('Error getting outreach data:', e);
+            return null;
+        }
+    }
+
+    function getInterviewPrepData() {
+        try {
+            const interviewPrep = JSON.parse(sessionStorage.getItem('interviewPrep') || 'null');
+            const prepModules = JSON.parse(sessionStorage.getItem('prepModules') || 'null');
+
+            if (!interviewPrep && !prepModules) return null;
+
+            return {
+                modules: prepModules || interviewPrep?.modules || [],
+                focus_areas: interviewPrep?.focus_areas || []
+            };
+        } catch (e) {
+            console.error('Error getting interview prep data:', e);
+            return null;
+        }
+    }
+
+    function getPositioningData() {
+        try {
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const positioningStrategy = analysisData.strategic_positioning ||
+                                        analysisData.positioning_strategy ||
+                                        analysisData.reality_check?.strategic_action;
+
+            if (!positioningStrategy) return null;
+
+            return {
+                positioning_strategy: positioningStrategy,
+                talking_points: analysisData.talking_points || [],
+                differentiation: analysisData.differentiation || analysisData.key_differentiators || []
+            };
+        } catch (e) {
+            console.error('Error getting positioning data:', e);
+            return null;
+        }
+    }
+
     // Get contextual suggestions based on current page
     function getContextualSuggestions() {
         const path = window.location.pathname;
@@ -3063,6 +3140,12 @@ ${confidenceClosing}`,
             const userName = getUserName();
             const emotionalState = getUserEmotionalState();
 
+            // Gather generated content - Henry is the AUTHOR of these
+            const documentsData = getDocumentsData();
+            const outreachData = getOutreachData();
+            const interviewPrepData = getInterviewPrepData();
+            const positioningData = getPositioningData();
+
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
 
@@ -3115,7 +3198,12 @@ ${confidenceClosing}`,
                     resume_data: resumeData,
                     user_profile: userProfile,
                     pipeline_data: pipelineData,
-                    attachments: attachmentsData
+                    attachments: attachmentsData,
+                    // Generated content - Henry is the AUTHOR
+                    documents_data: documentsData,
+                    outreach_data: outreachData,
+                    interview_prep_data: interviewPrepData,
+                    positioning_data: positioningData
                 });
                 console.log('Hey Henry request body size:', requestBody.length, 'bytes');
             } catch (jsonError) {

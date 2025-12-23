@@ -18122,6 +18122,11 @@ class HeyHenryRequest(BaseModel):
     user_profile: Optional[Dict[str, Any]] = None  # Includes emotional state/situation
     pipeline_data: Optional[Dict[str, Any]] = None  # Application pipeline metrics and apps
     attachments: Optional[List[HeyHenryAttachment]] = None  # File attachments (images, documents)
+    # Generated content - Henry is the AUTHOR of these
+    documents_data: Optional[Dict[str, Any]] = None  # Generated resume, cover letter, changes
+    outreach_data: Optional[Dict[str, Any]] = None  # Generated outreach templates
+    interview_prep_data: Optional[Dict[str, Any]] = None  # Generated interview prep modules
+    positioning_data: Optional[Dict[str, Any]] = None  # Positioning strategy content
 
 
 class HeyHenryResponse(BaseModel):
@@ -18137,6 +18142,38 @@ AskHenryResponse = HeyHenryResponse
 
 
 HEY_HENRY_SYSTEM_PROMPT = """You are Henry, a strategic career coach built into HenryHQ. You're the primary relationship owner for candidates, providing honest guidance, accountability, and support throughout their job search.
+
+=== CRITICAL: YOU ARE THE AUTHOR (NON-NEGOTIABLE) ===
+
+YOU created everything on HenryHQ. You are NOT an observer viewing someone else's work.
+
+When a candidate asks about ANY content on HenryHQ, you speak as its AUTHOR:
+- The fit score analysis? YOU wrote it.
+- The resume optimization? YOU rewrote it with strategic changes.
+- The cover letter? YOU drafted it based on their background and the role.
+- The positioning strategy? YOU developed it.
+- The outreach templates? YOU crafted them.
+- The interview prep modules? YOU built them.
+- The gaps and strengths? YOU identified them from their resume.
+- The recommendation rationale? YOU reasoned through it.
+
+NEVER say:
+- "I can't see what's on the page..."
+- "I don't have access to..."
+- "Can you share what you're seeing?"
+- "I'd need to review..."
+- "What specific changes were made?"
+
+ALWAYS say:
+- "I rewrote your summary to lead with..."
+- "I identified this as a gap because..."
+- "I built this prep module because..."
+- "I emphasized X in your cover letter because the JD prioritizes..."
+- "Looking at your background, here's why I made that recommendation..."
+
+When asked "why did you do X?" - EXPLAIN YOUR REASONING. You have the data. You made the decisions.
+
+=== END AUTHOR INSTRUCTION ===
 
 === CORE INSTRUCTION (NON-NEGOTIABLE) ===
 
@@ -18160,14 +18197,14 @@ deliver it clearly, respectfully, and without dilution.
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
 If an output does not improve clarity, readiness, confidence, or strategy, rewrite it.
 
 Voice Rules:
-1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth → Why → Fix → Support.
+1. Truth first, support second. Never sugar-coat. Never shame. Use: Truth -> Why -> Fix -> Support.
 2. Be direct and concise. Short sentences. No filler. No corporate jargon.
 3. Every output must give the user a NEXT STEP.
 4. No false encouragement. Praise must be earned and specific.
@@ -18189,6 +18226,8 @@ CURRENT CONTEXT:
 {analysis_context}
 
 {pipeline_context}
+
+{generated_content_context}
 
 {emotional_context}
 
@@ -18227,6 +18266,14 @@ ANTI-PATTERNS (NEVER DO THESE):
 - Immediate acknowledgment without understanding
 - Asking broad, open-ended questions
 - Multiple rounds of clarification (max 1-2, then proceed or escalate)
+- ASKING FOR RESUME WHEN YOU HAVE IT: If has_resume=Yes in context, NEVER ask "Can you upload your resume?" or "Could you share your resume?" You already have it.
+- ASKING FOR INFO YOU HAVE: If analysis data shows company/role/fit score, don't ask what role they're looking at
+
+DATA AWARENESS (CRITICAL):
+If the context above shows has_resume=Yes, you have their resume. Reference it directly.
+If the context above shows has_analysis=Yes, you have their job analysis. Reference it directly.
+If the context above shows has_pipeline=Yes, you have their application data. Reference it directly.
+DO NOT claim you need information that is already provided in your context.
 
 RESPONSE GUIDELINES:
 1. PERSONALIZE - Use their name if available. Never treat "Unknown" as a name.
@@ -18330,6 +18377,60 @@ TOP APPLICATIONS IN PIPELINE:
         for app in top_apps:
             pipeline_context += f"- {app.get('role', 'Unknown')} at {app.get('company', 'Unknown')}: {app.get('status', 'Unknown')} ({app.get('fitScore', 'N/A')}% fit, {app.get('daysSinceUpdate', 0)}d since update)\n"
 
+    # Build generated content context - YOU ARE THE AUTHOR
+    generated_content_context = ""
+
+    if request.documents_data:
+        dd = request.documents_data
+        generated_content_context += """
+DOCUMENTS YOU CREATED (speak as the author):
+"""
+        if dd.get('resume_output'):
+            ro = dd['resume_output']
+            generated_content_context += f"""
+RESUME (you rewrote this):
+- Summary: {ro.get('summary', 'N/A')[:200]}...
+- Key changes you made: {dd.get('changes_summary', 'Strategic optimization for role alignment')}
+"""
+        if dd.get('cover_letter'):
+            cl = dd['cover_letter']
+            generated_content_context += f"""
+COVER LETTER (you drafted this):
+- Opening hook: {cl.get('opening', cl.get('body', '')[:150] if isinstance(cl, dict) else str(cl)[:150])}...
+"""
+
+    if request.outreach_data:
+        od = request.outreach_data
+        generated_content_context += """
+OUTREACH TEMPLATES YOU CREATED:
+"""
+        templates = od.get('templates', od.get('outreach_templates', []))
+        for i, template in enumerate(templates[:3]):
+            if isinstance(template, dict):
+                generated_content_context += f"- {template.get('type', 'Template')}: {template.get('subject', template.get('message', ''))[:100]}...\n"
+            else:
+                generated_content_context += f"- Template {i+1}: {str(template)[:100]}...\n"
+
+    if request.interview_prep_data:
+        ip = request.interview_prep_data
+        generated_content_context += """
+INTERVIEW PREP YOU BUILT:
+"""
+        modules = ip.get('modules', ip.get('prep_modules', []))
+        for module in modules[:5]:
+            if isinstance(module, dict):
+                generated_content_context += f"- {module.get('name', module.get('title', 'Module'))}: {module.get('description', '')[:80]}...\n"
+            else:
+                generated_content_context += f"- {str(module)[:80]}...\n"
+
+    if request.positioning_data:
+        pp = request.positioning_data
+        generated_content_context += f"""
+POSITIONING STRATEGY YOU DEVELOPED:
+- Core positioning: {pp.get('positioning_strategy', pp.get('strategic_positioning', 'N/A'))[:200]}...
+- Key talking points: {', '.join(pp.get('talking_points', [])[:3]) if pp.get('talking_points') else 'N/A'}
+"""
+
     # Build emotional context - prefer direct context fields, fall back to user_profile
     emotional_context = ""
     holding_up = request.context.emotional_state
@@ -18417,6 +18518,7 @@ TOP APPLICATIONS IN PIPELINE:
         has_pipeline="Yes" if request.context.has_pipeline else "No",
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
+        generated_content_context=generated_content_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,
         tone_guidance_detail=tone_guidance_detail,
