@@ -351,6 +351,255 @@
             box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
         }
 
+        /* Outcome Selection */
+        .outcome-section {
+            margin-bottom: 24px;
+        }
+
+        .outcome-prompt {
+            color: #e5e7eb;
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .outcome-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .outcome-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .outcome-btn:hover {
+            background: #374151;
+            border-color: #22d3ee;
+        }
+
+        .outcome-btn.selected {
+            background: #22d3ee20;
+            border-color: #22d3ee;
+        }
+
+        .outcome-icon {
+            font-size: 1.5rem;
+        }
+
+        .outcome-text {
+            color: #e5e7eb;
+            font-size: 0.9rem;
+        }
+
+        /* Next Round Section */
+        .next-round-section {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .next-round-prompt {
+            color: #10b981;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .next-round-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .next-round-form .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .next-round-form label {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .next-round-form select,
+        .next-round-form input {
+            padding: 12px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            color: #e5e7eb;
+            font-size: 0.95rem;
+        }
+
+        .next-round-form select:focus,
+        .next-round-form input:focus {
+            outline: none;
+            border-color: #22d3ee;
+        }
+
+        .schedule-next-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #22d3ee, #06b6d4);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .schedule-next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+        }
+
+        .skip-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .skip-btn:hover {
+            border-color: #9ca3af;
+            color: #e5e7eb;
+        }
+
+        /* Follow-up Email Section */
+        .follow-up-section {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+
+        .follow-up-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .follow-up-icon {
+            font-size: 1.2rem;
+        }
+
+        .follow-up-title {
+            color: #e5e7eb;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .follow-up-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .follow-up-type-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .follow-up-type-btn:hover {
+            border-color: #22d3ee;
+            background: #374151;
+        }
+
+        .follow-up-type-btn.active {
+            background: #22d3ee20;
+            border-color: #22d3ee;
+        }
+
+        .follow-up-output {
+            background: #111827;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .follow-up-email {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .follow-up-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .copy-email-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-email-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .regenerate-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .regenerate-btn:hover {
+            border-color: #9ca3af;
+            color: #e5e7eb;
+        }
+
+        .follow-up-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #9ca3af;
+            padding: 20px;
+        }
+
         /* Chat Section */
         .chat-section {
             display: none;
@@ -788,8 +1037,82 @@ Examples of helpful info:
                 <!-- Messages will be added here -->
             </div>
             <div class="debrief-complete-section" id="debriefCompleteSection" style="display: none;">
-                <button class="debrief-complete-btn" onclick="goToCommandCenter()">
-                    Debrief Completed → Go to Command Center
+                <div class="outcome-section" id="outcomeSection">
+                    <p class="outcome-prompt">How did the interview end?</p>
+                    <div class="outcome-buttons">
+                        <button class="outcome-btn" data-outcome="offer" onclick="selectOutcome('offer')">
+                            <span class="outcome-icon">🎉</span>
+                            <span class="outcome-text">Got an offer</span>
+                        </button>
+                        <button class="outcome-btn" data-outcome="next_round" onclick="selectOutcome('next_round')">
+                            <span class="outcome-icon">⏩</span>
+                            <span class="outcome-text">Moving to next round</span>
+                        </button>
+                        <button class="outcome-btn" data-outcome="rejected" onclick="selectOutcome('rejected')">
+                            <span class="outcome-icon">✕</span>
+                            <span class="outcome-text">Didn't advance</span>
+                        </button>
+                        <button class="outcome-btn" data-outcome="waiting" onclick="selectOutcome('waiting')">
+                            <span class="outcome-icon">⏳</span>
+                            <span class="outcome-text">Still waiting to hear</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="next-round-section" id="nextRoundSection" style="display: none;">
+                    <p class="next-round-prompt">Great! Let's schedule your next round.</p>
+                    <div class="next-round-form">
+                        <div class="form-row">
+                            <label>Interview Type</label>
+                            <select id="nextRoundType">
+                                <option value="hiring_manager">Hiring Manager</option>
+                                <option value="technical">Technical</option>
+                                <option value="panel">Panel Interview</option>
+                                <option value="final">Final Round</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Date & Time (if known)</label>
+                            <input type="datetime-local" id="nextRoundDate" />
+                        </div>
+                        <div class="form-row">
+                            <label>Interviewer Name (if known)</label>
+                            <input type="text" id="nextRoundInterviewer" placeholder="e.g., Sarah Chen" />
+                        </div>
+                    </div>
+                    <button class="schedule-next-btn" onclick="scheduleNextRound()">
+                        Schedule Next Round
+                    </button>
+                    <button class="skip-btn" onclick="skipNextRound()">
+                        I'll add details later
+                    </button>
+                </div>
+                <div class="follow-up-section" id="followUpSection" style="display: none;">
+                    <div class="follow-up-header">
+                        <span class="follow-up-icon">✉️</span>
+                        <span class="follow-up-title">Send a follow-up email</span>
+                    </div>
+                    <div class="follow-up-buttons">
+                        <button class="follow-up-type-btn" onclick="generateFollowUp('thank_you')">
+                            Thank You Email
+                        </button>
+                        <button class="follow-up-type-btn" onclick="generateFollowUp('check_in')" id="checkInBtn" style="display: none;">
+                            Check-in Email
+                        </button>
+                    </div>
+                    <div class="follow-up-output" id="followUpOutput" style="display: none;">
+                        <div class="follow-up-email" id="followUpEmail"></div>
+                        <div class="follow-up-actions">
+                            <button class="copy-email-btn" onclick="copyFollowUpEmail()">
+                                <span id="copyBtnText">Copy to Clipboard</span>
+                            </button>
+                            <button class="regenerate-btn" onclick="regenerateFollowUp()">
+                                Regenerate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button class="debrief-complete-btn" id="goToCommandCenterBtn" onclick="goToCommandCenter()" style="display: none;">
+                    Done → Go to Command Center
                 </button>
             </div>
         </div>
@@ -831,6 +1154,7 @@ Examples of helpful info:
         let transcriptText = '';
         let transcriptFileData = null;
         let selectedFeeling = null;
+        let selectedOutcome = null;
         let isLoading = false;
 
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -930,6 +1254,7 @@ Examples of helpful info:
                 currentInterview.debriefCompleted = true;
                 currentInterview.debriefCompletedAt = currentInterview.debriefCompletedAt || new Date().toISOString();
                 currentInterview.feeling = selectedFeeling || currentInterview.feeling;
+                currentInterview.outcome = selectedOutcome;
 
                 console.log('Syncing interview to tracker:', currentInterview);
                 syncInterviewToTracker(currentInterview);
@@ -937,6 +1262,244 @@ Examples of helpful info:
                 console.error('No currentInterview found to sync');
             }
             window.location.href = 'tracker.html';
+        }
+
+        // ============================================================================
+        // OUTCOME TRACKING
+        // ============================================================================
+        function selectOutcome(outcome) {
+            selectedOutcome = outcome;
+
+            // Update button states
+            document.querySelectorAll('.outcome-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            const selectedBtn = document.querySelector(`.outcome-btn[data-outcome="${outcome}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('selected');
+            }
+
+            // Handle different outcomes
+            if (outcome === 'next_round') {
+                // Show next round scheduling form
+                document.getElementById('nextRoundSection').style.display = 'block';
+                document.getElementById('followUpSection').style.display = 'none';
+                document.getElementById('goToCommandCenterBtn').style.display = 'none';
+            } else {
+                // Hide next round form, show follow-up section and go to CC button
+                document.getElementById('nextRoundSection').style.display = 'none';
+                showFollowUpSection();
+                document.getElementById('goToCommandCenterBtn').style.display = 'block';
+
+                // Update status based on outcome
+                if (currentInterview) {
+                    if (outcome === 'offer') {
+                        updateTrackerStatus('Offer');
+                    } else if (outcome === 'rejected') {
+                        updateTrackerStatus('Rejected');
+                    }
+                    // 'waiting' keeps status as 'Interviewed'
+                }
+            }
+        }
+
+        function updateTrackerStatus(newStatus) {
+            try {
+                let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                const appIndex = trackedApps.findIndex(app =>
+                    app.company.toLowerCase() === currentInterview.company.toLowerCase() &&
+                    app.role.toLowerCase() === currentInterview.role.toLowerCase()
+                );
+                if (appIndex !== -1) {
+                    trackedApps[appIndex].status = newStatus;
+                    trackedApps[appIndex].lastUpdated = new Date().toISOString();
+                    trackedApps[appIndex].outcome = selectedOutcome;
+                    localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+                }
+            } catch (error) {
+                console.error('Error updating tracker status:', error);
+            }
+        }
+
+        function scheduleNextRound() {
+            const interviewType = document.getElementById('nextRoundType').value;
+            const dateValue = document.getElementById('nextRoundDate').value;
+            const interviewerName = document.getElementById('nextRoundInterviewer').value;
+
+            // Create next round interview
+            const nextInterview = {
+                id: Date.now(),
+                company: currentInterview.company,
+                role: currentInterview.role,
+                type: interviewType,
+                date: dateValue ? new Date(dateValue).toISOString() : null,
+                interviewerName: interviewerName,
+                interviewerTitle: '',
+                jobDescription: currentInterview.jobDescription,
+                round: (currentInterview.round || 1) + 1
+            };
+
+            // Add to upcoming interviews
+            let upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            upcomingInterviews.push(nextInterview);
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Update tracker with next round date
+            try {
+                let trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                const appIndex = trackedApps.findIndex(app =>
+                    app.company.toLowerCase() === currentInterview.company.toLowerCase() &&
+                    app.role.toLowerCase() === currentInterview.role.toLowerCase()
+                );
+                if (appIndex !== -1) {
+                    trackedApps[appIndex].interviewDate = nextInterview.date;
+                    trackedApps[appIndex].interviewType = interviewType;
+                    trackedApps[appIndex].interviewerName = interviewerName;
+                    trackedApps[appIndex].interviewRounds = (trackedApps[appIndex].interviewRounds || 1) + 1;
+                    trackedApps[appIndex].lastUpdated = new Date().toISOString();
+                    trackedApps[appIndex].outcome = 'next_round';
+                    localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+                }
+            } catch (error) {
+                console.error('Error updating tracker:', error);
+            }
+
+            // Navigate to prep guide if date is set, otherwise command center
+            if (dateValue) {
+                window.location.href = `prep-guide.html?id=${nextInterview.id}`;
+            } else {
+                window.location.href = 'tracker.html';
+            }
+        }
+
+        function skipNextRound() {
+            // Just go to command center without scheduling
+            document.getElementById('nextRoundSection').style.display = 'none';
+            document.getElementById('goToCommandCenterBtn').style.display = 'block';
+        }
+
+        // ============================================================================
+        // FOLLOW-UP EMAIL GENERATION
+        // ============================================================================
+        let currentFollowUpType = null;
+        let generatedEmail = '';
+
+        function showFollowUpSection() {
+            document.getElementById('followUpSection').style.display = 'block';
+            // Show check-in button if waiting for response
+            if (selectedOutcome === 'waiting') {
+                document.getElementById('checkInBtn').style.display = 'block';
+            }
+        }
+
+        async function generateFollowUp(type) {
+            currentFollowUpType = type;
+
+            // Update button states
+            document.querySelectorAll('.follow-up-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Show loading state
+            const outputDiv = document.getElementById('followUpOutput');
+            const emailDiv = document.getElementById('followUpEmail');
+            outputDiv.style.display = 'block';
+            emailDiv.innerHTML = '<div class="follow-up-loading"><span class="loading-spinner"></span> Generating email...</div>';
+
+            try {
+                // Build context from debrief conversation
+                let debriefContext = '';
+                if (conversationHistory.length > 0) {
+                    const assistantMessages = conversationHistory.filter(m => m.role === 'assistant');
+                    if (assistantMessages.length > 0) {
+                        debriefContext = assistantMessages.map(m => m.content).join('\n\n').substring(0, 2000);
+                    }
+                }
+
+                const response = await fetch(`${API_BASE}/api/follow-up-email/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email_type: type,
+                        company: currentInterview.company,
+                        role: currentInterview.role,
+                        interviewer_name: currentInterview.interviewerName || '',
+                        interview_date: currentInterview.date,
+                        feeling: selectedFeeling,
+                        outcome: selectedOutcome,
+                        debrief_context: debriefContext,
+                        resume_json: resumeData || {}
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate email');
+                }
+
+                const data = await response.json();
+                generatedEmail = data.email || data.content || '';
+                emailDiv.textContent = generatedEmail;
+            } catch (error) {
+                console.error('Error generating follow-up email:', error);
+                // Fallback to local generation
+                generatedEmail = generateLocalFollowUp(type);
+                emailDiv.textContent = generatedEmail;
+            }
+        }
+
+        function generateLocalFollowUp(type) {
+            const interviewerName = currentInterview.interviewerName || 'Hiring Team';
+            const company = currentInterview.company;
+            const role = currentInterview.role;
+            const firstName = interviewerName.split(' ')[0];
+
+            if (type === 'thank_you') {
+                return `Subject: Thank you for our conversation about ${role}
+
+Hi ${firstName},
+
+Thank you for taking the time to speak with me today about the ${role} position at ${company}. I really enjoyed learning more about the team and the exciting challenges ahead.
+
+Our conversation reinforced my enthusiasm for this opportunity. I was particularly energized by [mention specific topic discussed] and I'm confident that my experience in [relevant skill/area] would allow me to contribute meaningfully from day one.
+
+Please don't hesitate to reach out if you need any additional information. I look forward to the possibility of joining the ${company} team.
+
+Best regards,
+[Your Name]`;
+            } else {
+                // check_in type
+                return `Subject: Following up on ${role} interview
+
+Hi ${firstName},
+
+I hope this message finds you well. I wanted to follow up on our conversation about the ${role} position at ${company}.
+
+I remain very enthusiastic about this opportunity and would love to learn about any updates in the hiring process. Please let me know if there's any additional information I can provide.
+
+Thank you again for your consideration.
+
+Best regards,
+[Your Name]`;
+            }
+        }
+
+        async function regenerateFollowUp() {
+            if (currentFollowUpType) {
+                await generateFollowUp(currentFollowUpType);
+            }
+        }
+
+        function copyFollowUpEmail() {
+            navigator.clipboard.writeText(generatedEmail).then(() => {
+                const btnText = document.getElementById('copyBtnText');
+                btnText.textContent = 'Copied!';
+                setTimeout(() => {
+                    btnText.textContent = 'Copy to Clipboard';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
         }
 
         function loadSavedDebrief() {
@@ -1034,16 +1597,27 @@ Examples of helpful info:
                 }
 
                 if (existingAppIndex !== -1) {
-                    // Update existing application
-                    trackedApps[existingAppIndex].status = 'Interviewed';
+                    // Update existing application - determine status based on outcome
+                    const outcomeToStatus = {
+                        'offer': 'Offer',
+                        'rejected': 'Rejected',
+                        'next_round': 'Interviewed',
+                        'waiting': 'Interviewed'
+                    };
+                    const newStatus = interview.outcome ? (outcomeToStatus[interview.outcome] || 'Interviewed') : 'Interviewed';
+                    trackedApps[existingAppIndex].status = newStatus;
                     trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
                     trackedApps[existingAppIndex].interviewDate = interview.date;
                     trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
                     trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
+                    trackedApps[existingAppIndex].outcome = interview.outcome;
                     if (!trackedApps[existingAppIndex].dateInterviewed) {
                         trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
                     }
-                    trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+                    // Only increment rounds if not already done this session
+                    if (!interview.roundIncremented) {
+                        trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+                    }
 
                     // Add debrief info
                     if (interview.debriefCompleted) {

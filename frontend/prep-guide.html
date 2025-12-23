@@ -352,6 +352,30 @@
             color: #d1d5db;
         }
 
+        /* Questions to Ask */
+        .question-to-ask-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+        }
+
+        .question-to-ask-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-to-ask-text {
+            color: #e5e7eb;
+            font-size: 0.95rem;
+            font-style: italic;
+            margin-bottom: 6px;
+        }
+
+        .question-to-ask-rationale {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            padding-left: 12px;
+            border-left: 2px solid #374151;
+        }
+
         /* Drill Cards */
         .drill-grid {
             display: grid;
@@ -1010,6 +1034,18 @@
                 </div>
             </div>
 
+            <!-- Section 5.5: Questions to Ask Them -->
+            <div class="section" id="questionsToAskSection" style="display: none;">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <h3 class="section-title"><span>💬</span> Questions to Ask Them</h3>
+                    <span class="section-toggle">▼</span>
+                </div>
+                <div class="section-body">
+                    <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 16px;">Smart questions that show you've done your homework and are evaluating them too.</p>
+                    <div id="questionsToAskList"></div>
+                </div>
+            </div>
+
             <!-- Section 6: Strategy Scenarios (for HM/Technical only) -->
             <div class="section" id="strategySection" style="display: none;">
                 <div class="section-header" onclick="toggleSection(this)">
@@ -1072,7 +1108,34 @@
 
             // Get interviews from localStorage
             const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
-            currentInterview = interviews.find(i => i.id === interviewId);
+            currentInterview = interviews.find(i => String(i.id) === String(interviewId));
+
+            // Also check tracker apps if not found in interviews list
+            // This handles the case where interview came from Command Center
+            if (!currentInterview && interviewId.startsWith('app-')) {
+                const appId = interviewId.replace('app-', '');
+                const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                const app = trackedApps.find(a => String(a.id) === appId);
+                if (app && app.interviewDate) {
+                    currentInterview = {
+                        id: interviewId,
+                        appId: app.id,
+                        company: app.company,
+                        role: app.role,
+                        type: app.interviewType || app.status || 'Interview',
+                        date: app.interviewDate,
+                        interviewerName: app.interviewerName || '',
+                        interviewerTitle: app.interviewerTitle || '',
+                        jobDescription: app.jobDescription || app.notes || ''
+                    };
+                }
+            }
+
+            // Also check completed interviews
+            if (!currentInterview) {
+                const completed = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+                currentInterview = completed.find(i => String(i.id) === String(interviewId));
+            }
 
             if (!currentInterview) {
                 showError();
@@ -1320,6 +1383,18 @@
                     <span class="red-flag-text">${flag}</span>
                 </div>
             `).join('');
+
+            // Section 5.5: Questions to Ask Them
+            const questionsToAskList = document.getElementById('questionsToAskList');
+            if (questionsToAskList && prepData.questions_to_ask && prepData.questions_to_ask.length > 0) {
+                document.getElementById('questionsToAskSection').style.display = 'block';
+                questionsToAskList.innerHTML = prepData.questions_to_ask.map(q => `
+                    <div class="question-to-ask-item">
+                        <div class="question-to-ask-text">"${typeof q === 'string' ? q : q.question}"</div>
+                        ${typeof q !== 'string' && (q.why || q.rationale) ? `<div class="question-to-ask-rationale">Why: ${q.why || q.rationale}</div>` : ''}
+                    </div>
+                `).join('');
+            }
 
             // Section 6: Strategy (only for HM/Technical)
             if (currentInterview.type === 'hiring_manager' || currentInterview.type === 'technical') {

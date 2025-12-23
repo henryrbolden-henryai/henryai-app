@@ -20417,6 +20417,105 @@ async def delete_linkedin_profile():
 
 
 # ============================================================================
+# FOLLOW-UP EMAIL GENERATION
+# ============================================================================
+
+class FollowUpEmailRequest(BaseModel):
+    email_type: str  # "thank_you" or "check_in"
+    company: str
+    role: str
+    interviewer_name: Optional[str] = None
+    interview_date: Optional[str] = None
+    feeling: Optional[str] = None  # How candidate felt about interview
+    outcome: Optional[str] = None  # offer, next_round, rejected, waiting
+    debrief_context: Optional[str] = None  # Key points from debrief conversation
+    resume_json: Optional[Dict[str, Any]] = None
+
+@app.post("/api/follow-up-email/generate")
+async def generate_follow_up_email(request: FollowUpEmailRequest):
+    """Generate a personalized follow-up email after an interview"""
+    try:
+        print(f"[Follow-Up Email] Generating {request.email_type} email for {request.company}")
+
+        # Build context from resume
+        candidate_background = ""
+        if request.resume_json:
+            experiences = request.resume_json.get("experience", [])
+            if experiences:
+                latest = experiences[0]
+                candidate_background = f"Current role: {latest.get('title', '')} at {latest.get('company', '')}"
+
+            skills = request.resume_json.get("skills", [])
+            if skills:
+                candidate_background += f"\nKey skills: {', '.join(skills[:5])}"
+
+        # Build email type specific instructions
+        if request.email_type == "thank_you":
+            email_instructions = """Generate a professional thank-you email that:
+1. Thanks them genuinely for their time
+2. References something specific from the conversation if debrief context is provided
+3. Reinforces enthusiasm for the role
+4. Offers to provide additional information
+5. Closes professionally
+
+Keep it concise (150-200 words). Be warm but professional."""
+
+        else:  # check_in
+            email_instructions = """Generate a professional check-in/follow-up email that:
+1. References the previous interview politely
+2. Expresses continued interest in the role
+3. Asks about timeline or next steps without being pushy
+4. Offers to provide additional information
+5. Closes professionally
+
+Keep it concise (100-150 words). Be respectful of their time."""
+
+        prompt = f"""Generate a follow-up email for a job candidate.
+
+CONTEXT:
+- Company: {request.company}
+- Role: {request.role}
+- Interviewer: {request.interviewer_name or 'the hiring team'}
+- Interview Date: {request.interview_date or 'recently'}
+- How interview went: {request.feeling or 'not specified'}
+- Outcome: {request.outcome or 'waiting to hear back'}
+
+CANDIDATE BACKGROUND:
+{candidate_background or 'Not provided'}
+
+DEBRIEF INSIGHTS:
+{request.debrief_context or 'No specific insights available'}
+
+{email_instructions}
+
+Format the email with:
+- Subject line (on first line, starting with "Subject: ")
+- Greeting
+- Body paragraphs
+- Professional sign-off with "[Your Name]" placeholder
+
+IMPORTANT: Do NOT use em dashes. Use commas, periods, or colons instead."""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        email_content = response.content[0].text.strip()
+
+        # Sanitize em dashes
+        email_content = email_content.replace("—", " - ").replace("–", "-")
+
+        return {"email": email_content, "email_type": request.email_type}
+
+    except Exception as e:
+        print(f"[Follow-Up Email] Error: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate email: {str(e)}")
+
+
+# ============================================================================
 # RUN SERVER
 # ============================================================================
 
