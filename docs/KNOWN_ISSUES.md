@@ -1,6 +1,6 @@
 # Known Issues - HenryHQ
 
-**Last Updated:** December 22, 2025 (Pre-Launch QA)
+**Last Updated:** December 23, 2025 (Pre-Launch QA)
 
 ---
 
@@ -145,3 +145,36 @@
 - Mock Interview Feedback Quality (#7)
 - Screening Questions Analysis (#8)
 - Calendar Integration (#9)
+
+### Pre-Launch QA (December 23, 2025)
+
+**Navigation Fixes:**
+- ✅ Fixed "Proceed Anyway" button freeze on Do Not Apply results
+  - Root cause: `proceedDespiteGuidance()` function only updated UI, never navigated
+  - Fix: Added navigation to `resume-leveling.html` after acknowledgment
+  - Also added auto-add to tracker (same as normal apply flow)
+  - Location: `frontend/results.html` lines 2405-2428
+
+**Ask Henry Context Awareness Audit:**
+- 🔧 P1: Emotional state never read from profile (getUserEmotionalState reads `profile.holding_up` but profile stores `profile.situation.holding_up`)
+- 🔧 P2: 8 pages missing context definitions (dashboard, linkedin-scoring, practice-drills, practice-intro, resume-leveling, screening-questions, strengthen)
+- 🔧 P2: 12+ pages missing contextual suggestions (using generic defaults)
+- ✅ Conversation persistence working correctly (sessionStorage, last 20 messages)
+- ✅ Tooltip prompts working correctly (5-10s initial, 20-40s repeat)
+- ✅ Pipeline data integration working correctly
+
+**Ask Henry UI Fixes:**
+- ✅ Increased input box size (min-height: 56px → 80px, max-height: 120px → 150px)
+- ✅ Reduced send button size (32px → 28px)
+- Location: `frontend/components/hey-henry.js`
+
+**Recommendation Rationale Fixes (Do Not Apply):**
+- ✅ Fixed domain gap priority ordering - domain mismatch now takes priority over generic years checks
+  - Root cause: Years percentage check (Priority 2) was overriding domain failure (Priority 4)
+  - Fix: Reordered priorities so domain gap is Priority 1 when eligibility gate fails for domain mismatch
+  - Location: `backend/backend.py` lines 6277-6331
+- ✅ Improved domain detection for redirects - added product design, data/analytics domains
+- ✅ Added specific redirects for Product Designer candidates rejected for domain mismatch
+  - Now shows "Redirect to Product Designer roles at companies that need user-facing design"
+  - Instead of generic "Redirect to roles in adjacent domains"
+- ✅ Improved readability of domain names in rationale (e.g., "ML/AI Research" instead of "ml ai research")

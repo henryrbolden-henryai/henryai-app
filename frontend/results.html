@@ -2402,7 +2402,7 @@
          * Per QA Spec: If candidate clicks "Pass" on "Do Not Apply" screen, log it
          * and show accountability warning on downstream pages.
          */
-        function proceedDespiteGuidance() {
+        async function proceedDespiteGuidance() {
             // Set accountability flag in sessionStorage
             sessionStorage.setItem('proceeded_despite_guidance', 'true');
 
@@ -2412,25 +2412,19 @@
             // Update UI to show acknowledgment
             const btn = document.getElementById('proceedAnywayBtn');
             if (btn) {
-                btn.textContent = 'Acknowledged - Proceeding';
+                btn.textContent = 'Acknowledged - Proceeding...';
                 btn.disabled = true;
                 btn.style.opacity = '0.6';
             }
 
-            // Show confirmation message
-            const helperText = document.querySelector('.helper-text');
-            if (helperText) {
-                const existingContent = helperText.innerHTML;
-                helperText.innerHTML = `
-                    <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-                        <strong style="color: #fbbf24;">Acknowledged</strong>
-                        <p style="color: var(--color-text-secondary); font-size: 0.85rem; margin: 4px 0 0 0;">
-                            You've chosen to proceed despite HenryHQ's guidance. Resume Leveling and LinkedIn Analysis are now available, but will show a reminder of this decision.
-                        </p>
-                    </div>
-                    ${existingContent.replace(/<div style="margin-top: 16px;[\s\S]*?<\/div>\s*<\/div>/, '')}
-                `;
-            }
+            // Auto-add to tracker when user proceeds despite guidance
+            await addToTrackerAutomatically();
+
+            // Small delay to ensure writes complete before navigation
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Navigate to resume-leveling (same as normal apply flow)
+            window.location.href = 'resume-leveling.html';
         }
 
         // =====================================================================

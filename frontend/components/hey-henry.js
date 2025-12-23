@@ -390,8 +390,8 @@
             font-size: 1rem;
             line-height: 1.5;
             resize: none;
-            min-height: 56px;
-            max-height: 120px;
+            min-height: 80px;
+            max-height: 150px;
             order: 0; /* Input first */
         }
 
@@ -409,8 +409,8 @@
             background: linear-gradient(145deg, #4a4a4a 0%, #333333 100%);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             flex-shrink: 0;
             display: flex;
             align-items: center;

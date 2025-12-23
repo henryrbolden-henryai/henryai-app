@@ -1805,9 +1805,11 @@ def generate_specific_redirect(resume_data: dict, response_data: dict, eligibili
             # Detect domains
             if any(kw in f"{title} {desc}" for kw in ["recruit", "talent", "hiring", "sourcing"]):
                 domains.append("recruiting")
-            if any(kw in f"{title} {desc}" for kw in ["product", "pm", "roadmap"]):
-                domains.append("product")
-            if any(kw in f"{title} {desc}" for kw in ["engineer", "developer", "software", "code"]):
+            if any(kw in f"{title} {desc}" for kw in ["product manager", "pm ", "roadmap", "product strategy"]):
+                domains.append("product management")
+            if any(kw in f"{title} {desc}" for kw in ["product design", "ux", "ui", "user experience", "user interface", "designer", "design system"]):
+                domains.append("product design")
+            if any(kw in f"{title} {desc}" for kw in ["engineer", "developer", "software", "code", "backend", "frontend"]):
                 domains.append("engineering")
             if any(kw in f"{title} {desc}" for kw in ["operations", "ops", "process", "systems"]):
                 domains.append("operations")
@@ -1815,6 +1817,8 @@ def generate_specific_redirect(resume_data: dict, response_data: dict, eligibili
                 domains.append("sales")
             if any(kw in f"{title} {desc}" for kw in ["marketing", "growth", "brand"]):
                 domains.append("marketing")
+            if any(kw in f"{title} {desc}" for kw in ["data", "analyst", "analytics", "bi", "business intelligence"]):
+                domains.append("data/analytics")
 
     # Unique domains
     domains = list(set(domains))
@@ -1887,8 +1891,26 @@ def generate_specific_redirect(resume_data: dict, response_data: dict, eligibili
             ]
 
     elif "non_transferable_domain" in failed_check:
-        # Rejected for domain mismatch
-        if domains:
+        # Rejected for domain mismatch - give specific, actionable redirects
+        if "product design" in domains:
+            redirects = [
+                "Redirect to Product Designer roles at companies that need user-facing design, not research roles",
+                "Target Senior Product Designer or Design Lead positions where your UX expertise is the core requirement",
+                "Consider Growth Design or Design Systems roles that leverage your onboarding and scale experience"
+            ]
+        elif "product management" in domains:
+            redirects = [
+                "Redirect to Product Manager roles where your product strategy skills are directly applicable",
+                "Target PM positions at companies in your domain (consumer tech, B2B SaaS, etc.)",
+                "Consider Technical PM roles if you have strong technical collaboration experience"
+            ]
+        elif "engineering" in domains:
+            redirects = [
+                "Redirect to Software Engineering roles where your technical skills are directly applicable",
+                "Target positions at companies using your tech stack and domain",
+                "Consider Engineering Manager roles if you have people leadership experience"
+            ]
+        elif domains:
             redirects = [
                 f"Redirect to {primary_domain.title()} roles where your direct experience applies",
                 f"Target positions in {', '.join(d.title() for d in domains[:2])} where you are competitive",
@@ -6260,65 +6282,75 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # A. DECISION (one sentence, direct)
             # B. WHY (plain, non-shaming)
             #
-            # PRIORITY ORDER for explanations (most fundamental first):
-            # 1. Seniority/Level gap (they need a different level role entirely)
-            # 2. Years experience gap (they need more time in industry)
-            # 3. People leadership gap (specific management requirement)
-            # 4. Domain gap (might be coachable in some cases)
+            # PRIORITY ORDER for explanations:
+            # When eligibility gate fails, the failed_check IS the primary blocker.
+            # Don't override domain failures with years calculations - they're apples to oranges.
             #
-            # This ensures the PRIMARY blocker is highlighted first.
+            # 1. Domain gap (non-transferable domain) - fundamentally different skillset needed
+            # 2. Seniority/Level gap (Director/VP role, candidate is IC)
+            # 3. People leadership gap (specific management requirement)
+            # 4. Years experience gap (only if it's the actual failed_check)
 
-            # Check if there's a significant years gap first (even if domain is the failed_check)
+            # Get experience data for messaging
             candidate_years = experience_analysis.get("candidate_years", 0)
             required_years = experience_analysis.get("required_years", 0)
-            years_percentage = (candidate_years / required_years * 100) if required_years > 0 else 100
+            leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
 
-            # PRIORITY 1: Seniority/Level gap (Director/VP role, candidate is IC)
-            if "seniority_scope" in failed_check:
+            # PRIORITY 1: Domain gap (non-transferable domain) - this is fundamental
+            # When the role requires a completely different skillset (e.g., ML/AI Research),
+            # that's the primary blocker - not years of experience in an unrelated field.
+            if "non_transferable_domain" in failed_check:
+                domain_name = failed_check.split(":")[-1] if ":" in failed_check else "this domain"
+                # Make domain name more readable
+                domain_display = domain_name.replace('_', ' ').replace('ml ai', 'ML/AI')
                 response_data["recommendation_rationale"] = (
-                    f"Do not apply. This is a Director/VP-level role requiring {required_years}+ years and people management. "
-                    f"Your background shows {candidate_years:.0f} years with no management experience. The level gap is the primary blocker."
+                    f"do not apply. This role requires direct experience in {domain_display}. "
+                    f"Your background is in a different domain that doesn't transfer to this role."
                 )
-            # PRIORITY 2: Severe years gap (<50% of required) - this is fundamental
-            elif years_percentage < 50 and required_years > 0:
+            # PRIORITY 2: Seniority/Level gap (Director/VP role, candidate is IC)
+            elif "seniority_scope" in failed_check:
                 response_data["recommendation_rationale"] = (
-                    f"Do not apply. This role requires {required_years}+ years of experience. "
-                    f"You have {candidate_years:.0f} years. This experience gap is the primary blocker."
+                    f"do not apply. This is a Director/VP-level role requiring {required_years}+ years and people management. "
+                    f"Your background shows {candidate_years:.0f} years with no management experience. The level gap is the primary blocker."
                 )
             # PRIORITY 3: People leadership gap
             elif "people_leadership" in failed_check:
                 # Use tiered leadership messaging if available
-                leadership_gap_msg = experience_analysis.get("leadership_gap_messaging", {})
                 if leadership_gap_msg.get("factual_statement"):
-                    response_data["recommendation_rationale"] = f"Do not apply. {leadership_gap_msg['factual_statement']}"
+                    response_data["recommendation_rationale"] = f"do not apply. {leadership_gap_msg['factual_statement']}"
                 elif leadership_gap_msg.get("status") == "none":
                     response_data["recommendation_rationale"] = (
-                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
                         f"Your resume shows no verified leadership experience at any tier."
                     )
                 elif leadership_gap_msg.get("status") == "insufficient":
                     response_data["recommendation_rationale"] = (
-                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
                         f"Your people leadership experience ({people_leadership_years:.1f} years) is insufficient."
                     )
                 else:
                     response_data["recommendation_rationale"] = (
-                        f"Do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
+                        f"do not apply. This role requires {required_people_leadership:.0f}+ years of people leadership. "
                         f"Your verified people leadership experience is {people_leadership_years:.1f} years. "
                         f"Operational leadership does not count toward this requirement."
                     )
-            # PRIORITY 4: Domain gap
-            elif "non_transferable_domain" in failed_check:
-                domain_name = failed_check.split(":")[-1] if ":" in failed_check else "this domain"
+            # PRIORITY 4: Years experience gap (only when years is the actual failed_check)
+            elif "years" in failed_check.lower() or "experience" in failed_check.lower():
+                years_percentage = (candidate_years / required_years * 100) if required_years > 0 else 100
                 response_data["recommendation_rationale"] = (
-                    f"Do not apply. This role requires direct experience in {domain_name.replace('_', ' ')}. "
-                    f"Your background does not show verified experience in this domain."
+                    f"do not apply. This role requires {required_years}+ years of experience. "
+                    f"You have {candidate_years:.0f} years. This experience gap is the primary blocker."
                 )
             else:
-                response_data["recommendation_rationale"] = (
-                    f"Do not apply. This role requires experience you do not have. "
-                    f"Your background does not meet the core requirements."
-                )
+                # Use the eligibility reason directly when we have a specific one
+                eligibility_reason = eligibility_result.get("reason", "")
+                if eligibility_reason and len(eligibility_reason) > 20:
+                    response_data["recommendation_rationale"] = f"do not apply. {eligibility_reason}"
+                else:
+                    response_data["recommendation_rationale"] = (
+                        f"do not apply. This role requires experience you do not have. "
+                        f"Your background does not meet the core requirements."
+                    )
 
             # C. REDIRECT (specific, concrete)
             response_data["alternative_actions"] = redirect_roles
