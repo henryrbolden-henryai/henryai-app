@@ -1477,10 +1477,15 @@
                     lines.push('');
                 }
 
-                // Strategic positioning
-                if (analysisData.strategic_positioning || analysisData.reality_check?.strategic_action) {
+                // Strategic positioning (YOUR MOVE)
+                const strategicMove = analysisData.intelligence_layer?.strategic_positioning?.positioning_strategy ||
+                                     analysisData.strategic_positioning?.positioning_strategy ||
+                                     (typeof analysisData.strategic_positioning === 'string' ? analysisData.strategic_positioning : null) ||
+                                     analysisData.reality_check?.strategic_action ||
+                                     analysisData.your_move;
+                if (strategicMove && typeof strategicMove === 'string' && strategicMove.length < 500) {
                     lines.push('YOUR MOVE:');
-                    lines.push(analysisData.strategic_positioning || analysisData.reality_check?.strategic_action);
+                    lines.push(strategicMove);
                     lines.push('');
                 }
             }

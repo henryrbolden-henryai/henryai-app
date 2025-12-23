@@ -4718,7 +4718,7 @@ async def extract_jd_from_url(request: URLExtractRequest):
 
    Format this as clean, readable text with clear section breaks. Remove any navigation, footer, or unrelated content.
 
-2. "company": The company name
+2. "company": The FULL company name (include suffixes like Inc., Co., Corp., LLC). Example: "Hiring, Co." should stay as "Hiring, Co." - do not truncate at commas.
 
 3. "role_title": The job title
 
@@ -11921,7 +11921,7 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
       "timing_guidance": "MUST be specific guidance"
     }
   },
-  "company": "string from JD",
+  "company": "string - FULL company name from JD. Include complete legal name (e.g., 'Acme, Inc.' not just 'Acme'; 'Hiring, Co.' not just 'Co'). Do not truncate or parse at commas.",
   "role_title": "string from JD",
   "company_context": "MUST be 2-3 substantive sentences about company, industry, stage",
   "role_overview": "MUST be 2-3 substantive sentences about role purpose and impact",
@@ -13306,12 +13306,56 @@ def generate_resume_full_text(resume_output: dict) -> str:
             lines.append("")
     
     result = "\n".join(lines).strip()
-    
+
     # If result is empty or very short, return a helpful message
     if not result or len(result) < 50:
         return "Resume generation failed. Please try again or contact support."
-    
+
     return result
+
+
+def _sanitize_document_text(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Recursively sanitize all text fields to remove AI-generated artifacts.
+
+    Specifically removes:
+    - Em dashes (—) → replaced with hyphens
+    - En dashes (–) → replaced with hyphens
+    - Ensures clean text output for documents
+    """
+    import re
+
+    def sanitize_text(text: str) -> str:
+        if not text or not isinstance(text, str):
+            return text
+
+        # Replace em/en dashes with hyphens (better for documents)
+        text = text.replace('—', '-')
+        text = text.replace('–', '-')
+
+        # Fix double hyphens that may result
+        text = re.sub(r'-{2,}', '-', text)
+
+        # Fix double spaces
+        text = re.sub(r'\s{2,}', ' ', text)
+
+        # Fix orphaned punctuation (space before punctuation)
+        text = re.sub(r'\s+([.,!?;:])', r'\1', text)
+
+        return text.strip()
+
+    def recurse(obj):
+        if isinstance(obj, dict):
+            return {k: recurse(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [recurse(item) for item in obj]
+        elif isinstance(obj, str):
+            return sanitize_text(obj)
+        else:
+            return obj
+
+    return recurse(data)
+
 
 @app.post("/api/documents/generate")
 async def generate_documents(request: DocumentsGenerateRequest) -> Dict[str, Any]:
@@ -13792,6 +13836,10 @@ Generate the complete JSON response with ALL required fields populated."""
         #     parsed_data = add_validation_warnings_to_response(parsed_data, qa_validation_result)
         #     print(f"  ⚠️ QA validation warnings: {len(qa_validation_result.warnings)}")
         print("  ℹ️ QA validation disabled - returning documents without validation")
+
+        # Apply text sanitization to remove em dashes and other artifacts
+        parsed_data = _sanitize_document_text(parsed_data)
+        print("  ✅ Text sanitization applied (em dashes removed)")
 
         return parsed_data
         
@@ -19634,6 +19682,9 @@ Refine the document based on the chat command. Return the full updated document 
         parsed["validation"] = validation_results
 
         print(f"✅ Document refined successfully (v{request.version} -> v{parsed['changes_summary']['version']})")
+
+        # Sanitize text fields to remove em dashes and other artifacts
+        parsed = _sanitize_document_text(parsed)
 
         # Convert changes_summary dict to model
         changes_summary = DocumentChangesSummary(**parsed["changes_summary"])

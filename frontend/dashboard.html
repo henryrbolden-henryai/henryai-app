@@ -2188,9 +2188,31 @@
 
                 // Check if new user needs onboarding (set during signup)
                 if (localStorage.getItem('henryai_needs_onboarding') === 'true') {
+                    // First check if they already have a profile or resume data
+                    // (e.g., returning user who logged in on different device)
+                    let hasExistingData = false;
+
+                    if (typeof HenryData !== 'undefined') {
+                        try {
+                            const [profile, resumeConvo] = await Promise.all([
+                                HenryData.getCandidateProfile(),
+                                HenryData.getResumeConversation()
+                            ]);
+                            // If they have profile with resume or work history, skip onboarding
+                            hasExistingData = (profile?.resume || profile?.work_history?.length > 0) ||
+                                              (resumeConvo?.resume_json);
+                        } catch (e) {
+                            console.log('Could not check for existing data:', e);
+                        }
+                    }
+
                     localStorage.removeItem('henryai_needs_onboarding');
-                    window.location.href = 'profile-edit.html';
-                    return;
+
+                    if (!hasExistingData) {
+                        window.location.href = 'profile-edit.html';
+                        return;
+                    }
+                    console.log('Skipping onboarding - user has existing profile data');
                 }
 
                 // Get user's name from Supabase for personalized greeting
