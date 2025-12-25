@@ -913,6 +913,105 @@
                 max-height: 85vh;
             }
         }
+
+        /* Conversation picker buttons */
+        .ask-henry-picker-btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            border: none;
+            outline: none;
+        }
+
+        .ask-henry-picker-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .ask-henry-picker-btn.primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .ask-henry-picker-btn.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #a0a0a0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ask-henry-picker-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+
+        /* Previous conversations header link */
+        .ask-henry-history-link {
+            font-size: 0.75rem;
+            color: #667eea;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+            text-decoration: none;
+        }
+
+        .ask-henry-history-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        /* Conversation history list */
+        .ask-henry-history-list {
+            padding: 12px;
+        }
+
+        .ask-henry-history-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ask-henry-history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .ask-henry-history-item-date {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .ask-henry-history-item-preview {
+            font-size: 0.85rem;
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ask-henry-history-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .ask-henry-history-back:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
     `;
 
     // Inject stylesheet
@@ -930,6 +1029,12 @@
     let isGenieMode = false;
     let lastGreetingIndex = -1; // Track last greeting to avoid repetition
     let pendingAttachments = []; // Files waiting to be sent with next message
+
+    // Conversation persistence state
+    let currentConversationId = null; // UUID of active conversation in Supabase
+    let saveDebounceTimer = null; // Debounce timer for saving to Supabase
+    let isLoadingConversations = false; // Loading state for conversation list
+    let showingConversationPicker = false; // Whether we're showing the "Continue vs Start Fresh" prompt
 
     // Attachment configuration
     const ATTACHMENT_CONFIG = {
@@ -1385,12 +1490,15 @@
         }
     }
 
-    // Load conversation history from sessionStorage (persists across page navigation)
+    // Load conversation history from sessionStorage (for immediate access) and Supabase (for persistence)
     function loadConversationHistory() {
         try {
+            // First, load from sessionStorage for immediate display
             const saved = sessionStorage.getItem('heyHenryConversation');
+            const savedId = sessionStorage.getItem('heyHenryConversationId');
             if (saved) {
                 conversationHistory = JSON.parse(saved);
+                currentConversationId = savedId || null;
             }
         } catch (e) {
             console.error('Error loading conversation history:', e);
@@ -1398,21 +1506,354 @@
         }
     }
 
-    // Save conversation history to sessionStorage
+    // Load conversation from Supabase (async, called after initial render)
+    async function loadConversationFromSupabase() {
+        // Check if HenryData is available (Supabase client loaded)
+        if (typeof window.HenryData === 'undefined') {
+            console.log('HenryData not available, using sessionStorage only');
+            return;
+        }
+
+        try {
+            // Check if we already have a conversation ID in this session
+            const sessionConvoId = sessionStorage.getItem('heyHenryConversationId');
+            if (sessionConvoId && conversationHistory.length > 0) {
+                // Already loaded from sessionStorage, just verify the ID is valid
+                currentConversationId = sessionConvoId;
+                return;
+            }
+
+            // Check for recent conversation in Supabase
+            const recentConvo = await window.HenryData.getMostRecentHeyHenryConversation();
+
+            if (recentConvo && recentConvo.messages && recentConvo.messages.length > 0) {
+                // Show the "Continue vs Start Fresh" prompt
+                showConversationPicker(recentConvo);
+            }
+        } catch (e) {
+            console.error('Error loading conversation from Supabase:', e);
+        }
+    }
+
+    // Show the conversation picker prompt
+    function showConversationPicker(recentConvo) {
+        if (showingConversationPicker) return;
+        showingConversationPicker = true;
+
+        const messagesContainer = document.getElementById('askHenryMessages');
+        if (!messagesContainer) return;
+
+        // Get a preview of the last message
+        const lastMessage = recentConvo.messages[recentConvo.messages.length - 1];
+        const preview = lastMessage ? (lastMessage.content || '').substring(0, 100) + (lastMessage.content?.length > 100 ? '...' : '') : '';
+        const timeAgo = getTimeAgo(new Date(recentConvo.updated_at));
+
+        // Create picker UI
+        const pickerHtml = `
+            <div class="ask-henry-conversation-picker" id="askHenryConvoPicker">
+                <div class="ask-henry-message assistant">
+                    <p style="margin-bottom: 12px;">Welcome back! You have a recent conversation from ${timeAgo}.</p>
+                    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem; color: #a0a0a0;">
+                        <em>"${preview || 'Previous conversation'}"</em>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="ask-henry-picker-btn primary" id="askHenryContinueConvo">Continue Conversation</button>
+                        <button class="ask-henry-picker-btn secondary" id="askHenryStartFresh">Start Fresh</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        messagesContainer.innerHTML = pickerHtml;
+
+        // Bind button events
+        document.getElementById('askHenryContinueConvo').addEventListener('click', () => {
+            continueConversation(recentConvo);
+        });
+
+        document.getElementById('askHenryStartFresh').addEventListener('click', () => {
+            startFreshConversation();
+        });
+    }
+
+    // Continue a previous conversation
+    function continueConversation(conversation) {
+        showingConversationPicker = false;
+        currentConversationId = conversation.id;
+        conversationHistory = conversation.messages || [];
+
+        // Save to sessionStorage for fast access
+        sessionStorage.setItem('heyHenryConversationId', conversation.id);
+        sessionStorage.setItem('heyHenryConversation', JSON.stringify(conversationHistory));
+
+        // Render the conversation
+        const messagesContainer = document.getElementById('askHenryMessages');
+        messagesContainer.innerHTML = `
+            <div class="ask-henry-message assistant" style="font-size: 0.85rem; opacity: 0.8;">
+                <em>Continuing our conversation...</em>
+            </div>
+        `;
+
+        conversationHistory.forEach(msg => {
+            const formattedContent = formatMessage(msg.content);
+            const messageEl = document.createElement('div');
+            messageEl.className = `ask-henry-message ${msg.role === 'user' ? 'user' : 'assistant'}`;
+            messageEl.innerHTML = formattedContent;
+            messagesContainer.appendChild(messageEl);
+        });
+
+        // Hide suggestions
+        const suggestions = document.getElementById('askHenrySuggestions');
+        if (suggestions) suggestions.style.display = 'none';
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Start a fresh conversation
+    function startFreshConversation() {
+        showingConversationPicker = false;
+        currentConversationId = null;
+        conversationHistory = [];
+
+        // Clear sessionStorage
+        sessionStorage.removeItem('heyHenryConversationId');
+        sessionStorage.removeItem('heyHenryConversation');
+
+        // Restore default greeting
+        const messagesContainer = document.getElementById('askHenryMessages');
+        const userName = getUserName();
+        const greeting = getContextualGreeting(userName);
+
+        messagesContainer.innerHTML = `
+            <div class="ask-henry-message assistant">
+                ${greeting}
+            </div>
+        `;
+
+        // Show suggestions
+        const suggestions = document.getElementById('askHenrySuggestions');
+        if (suggestions) suggestions.style.display = 'flex';
+    }
+
+    // Save conversation history to sessionStorage and Supabase (debounced)
     function saveConversationHistory() {
         try {
-            // Keep last 20 messages to avoid storage limits
-            const toSave = conversationHistory.slice(-20);
+            // Keep last 50 messages (increased from 20 for persistence)
+            const toSave = conversationHistory.slice(-50);
+
+            // Always save to sessionStorage immediately for fast page navigation
             sessionStorage.setItem('heyHenryConversation', JSON.stringify(toSave));
+            if (currentConversationId) {
+                sessionStorage.setItem('heyHenryConversationId', currentConversationId);
+            }
+
+            // Debounce Supabase save (save after 1 second of no activity)
+            if (saveDebounceTimer) {
+                clearTimeout(saveDebounceTimer);
+            }
+
+            saveDebounceTimer = setTimeout(() => {
+                saveConversationToSupabase(toSave);
+            }, 1000);
         } catch (e) {
             console.error('Error saving conversation history:', e);
+        }
+    }
+
+    // Save conversation to Supabase
+    async function saveConversationToSupabase(messages) {
+        // Check if HenryData is available
+        if (typeof window.HenryData === 'undefined') {
+            return;
+        }
+
+        try {
+            if (currentConversationId) {
+                // Update existing conversation
+                await window.HenryData.updateHeyHenryConversation(currentConversationId, messages);
+            } else if (messages.length > 0) {
+                // Create new conversation
+                const { data, error } = await window.HenryData.createHeyHenryConversation(messages);
+                if (data && !error) {
+                    currentConversationId = data.id;
+                    sessionStorage.setItem('heyHenryConversationId', data.id);
+                }
+            }
+        } catch (e) {
+            console.error('Error saving conversation to Supabase:', e);
         }
     }
 
     // Clear conversation history (for starting fresh)
     function clearConversationHistory() {
         conversationHistory = [];
+        currentConversationId = null;
         sessionStorage.removeItem('heyHenryConversation');
+        sessionStorage.removeItem('heyHenryConversationId');
+    }
+
+    // Helper: Get time ago string
+    function getTimeAgo(date) {
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+        return date.toLocaleDateString();
+    }
+
+    // Show conversation history list
+    async function showConversationHistory() {
+        if (typeof window.HenryData === 'undefined') {
+            console.log('HenryData not available');
+            return;
+        }
+
+        const messagesContainer = document.getElementById('askHenryMessages');
+        const suggestionsContainer = document.getElementById('askHenrySuggestions');
+
+        // Show loading state
+        messagesContainer.innerHTML = `
+            <div class="ask-henry-history-back" id="askHenryHistoryBack">
+                ← Back to chat
+            </div>
+            <div class="ask-henry-history-list">
+                <div style="text-align: center; padding: 20px; color: #888;">Loading conversations...</div>
+            </div>
+        `;
+        suggestionsContainer.style.display = 'none';
+
+        // Bind back button
+        document.getElementById('askHenryHistoryBack').addEventListener('click', () => {
+            restoreCurrentConversation();
+        });
+
+        try {
+            const conversations = await window.HenryData.getHeyHenryConversations(10);
+
+            if (conversations.length === 0) {
+                messagesContainer.innerHTML = `
+                    <div class="ask-henry-history-back" id="askHenryHistoryBack">
+                        ← Back to chat
+                    </div>
+                    <div class="ask-henry-history-list">
+                        <div style="text-align: center; padding: 40px 20px; color: #888;">
+                            <p>No previous conversations yet.</p>
+                            <p style="font-size: 0.85rem; margin-top: 8px;">Your conversations will appear here after you chat with Henry.</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('askHenryHistoryBack').addEventListener('click', () => {
+                    restoreCurrentConversation();
+                });
+                return;
+            }
+
+            let historyHtml = `
+                <div class="ask-henry-history-back" id="askHenryHistoryBack">
+                    ← Back to chat
+                </div>
+                <div class="ask-henry-history-list">
+            `;
+
+            conversations.forEach(convo => {
+                const date = new Date(convo.updated_at);
+                const timeStr = getTimeAgo(date);
+                const messages = convo.messages || [];
+                const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+                const preview = lastUserMsg ? (lastUserMsg.content || '').substring(0, 80) + (lastUserMsg.content?.length > 80 ? '...' : '') : 'Conversation';
+
+                historyHtml += `
+                    <div class="ask-henry-history-item" data-convo-id="${convo.id}">
+                        <div class="ask-henry-history-item-date">${timeStr}</div>
+                        <div class="ask-henry-history-item-preview">${preview}</div>
+                    </div>
+                `;
+            });
+
+            historyHtml += '</div>';
+            messagesContainer.innerHTML = historyHtml;
+
+            // Bind back button
+            document.getElementById('askHenryHistoryBack').addEventListener('click', () => {
+                restoreCurrentConversation();
+            });
+
+            // Bind conversation item clicks
+            document.querySelectorAll('.ask-henry-history-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    const convoId = item.dataset.convoId;
+                    const convo = conversations.find(c => c.id === convoId);
+                    if (convo) {
+                        continueConversation(convo);
+                    }
+                });
+            });
+        } catch (e) {
+            console.error('Error loading conversation history:', e);
+            messagesContainer.innerHTML = `
+                <div class="ask-henry-history-back" id="askHenryHistoryBack">
+                    ← Back to chat
+                </div>
+                <div class="ask-henry-history-list">
+                    <div style="text-align: center; padding: 20px; color: #888;">Error loading conversations. Please try again.</div>
+                </div>
+            `;
+            document.getElementById('askHenryHistoryBack').addEventListener('click', () => {
+                restoreCurrentConversation();
+            });
+        }
+    }
+
+    // Restore current conversation after viewing history
+    function restoreCurrentConversation() {
+        const messagesContainer = document.getElementById('askHenryMessages');
+        const suggestionsContainer = document.getElementById('askHenrySuggestions');
+
+        if (conversationHistory.length > 0) {
+            messagesContainer.innerHTML = `
+                <div class="ask-henry-message assistant" style="font-size: 0.85rem; opacity: 0.8;">
+                    <em>Continuing our conversation...</em>
+                </div>
+            `;
+
+            conversationHistory.forEach(msg => {
+                const formattedContent = formatMessage(msg.content);
+                const messageEl = document.createElement('div');
+                messageEl.className = `ask-henry-message ${msg.role === 'user' ? 'user' : 'assistant'}`;
+                messageEl.innerHTML = formattedContent;
+                messagesContainer.appendChild(messageEl);
+            });
+
+            suggestionsContainer.style.display = 'none';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } else {
+            // Restore default greeting
+            const userName = getUserName();
+            const greeting = getContextualGreeting(userName);
+
+            messagesContainer.innerHTML = `
+                <div class="ask-henry-message assistant">
+                    ${greeting}
+                </div>
+            `;
+            suggestionsContainer.style.display = 'flex';
+        }
+    }
+
+    // Get contextual greeting for restoring chat
+    function getContextualGreeting(userName) {
+        const greetings = [
+            `Hey${userName ? ` ${userName}` : ''}! What's on your mind?`,
+            `Hey${userName ? ` ${userName}` : ''}! What are you working on?`,
+            `Hey${userName ? ` ${userName}` : ''}! How can I help?`,
+            `Hey${userName ? ` ${userName}` : ''}! What do you need?`
+        ];
+        return greetings[Math.floor(Math.random() * greetings.length)];
     }
 
     // Get user's first name from profile
@@ -2658,6 +3099,39 @@ ${confidenceClosing}`,
         return REFINEMENT_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
     }
 
+    // Persist refined document to Supabase applications table
+    async function persistRefinedDocumentToSupabase(company, role, documentsData) {
+        if (typeof window.HenryData === 'undefined') {
+            console.log('HenryData not available, skipping Supabase persistence');
+            return;
+        }
+
+        if (!company || !role) {
+            console.log('Missing company or role, skipping Supabase persistence');
+            return;
+        }
+
+        try {
+            // Find matching application in Supabase
+            const apps = await window.HenryData.getApplications();
+            const matchingApp = apps.find(app =>
+                app.company.toLowerCase() === company.toLowerCase() &&
+                app.role.toLowerCase() === role.toLowerCase()
+            );
+
+            if (matchingApp) {
+                // Update the application with new documents data
+                matchingApp.documentsData = documentsData;
+                await window.HenryData.saveApplication(matchingApp);
+                console.log('📝 Saved refined document to Supabase');
+            } else {
+                console.log('No matching application found in Supabase for:', company, role);
+            }
+        } catch (e) {
+            console.error('Error persisting refined document to Supabase:', e);
+        }
+    }
+
     async function handleRefinementRequest(message) {
         const currentPage = window.location.pathname;
 
@@ -2729,7 +3203,21 @@ ${confidenceClosing}`,
                 changes: result.changes_summary,
                 summary: result.conversational_response
             };
+
+            // Persist to sessionStorage (immediate access)
             sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+            // Also persist to localStorage for durability across sessions
+            const company = analysisData._company || analysisData.company_name || '';
+            const role = analysisData._role || analysisData.role_title || '';
+            if (company && role) {
+                const documentsKey = `documents_${company}_${role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+                localStorage.setItem(documentsKey, JSON.stringify(documentsData));
+                console.log('📝 Saved refined document to localStorage:', documentsKey);
+            }
+
+            // Also update in Supabase via applications table (async, non-blocking)
+            persistRefinedDocumentToSupabase(company, role, documentsData);
 
             // Format response with changes
             let changesText = '';
@@ -2844,7 +3332,7 @@ ${confidenceClosing}`,
                             <circle cx="145" cy="50" r="9" fill="#764ba2"/>
                         </svg>
                         <div>
-                            <div class="ask-henry-title-text">Hey Henry</div>
+                            <div class="ask-henry-title-text">Hey Henry <a class="ask-henry-history-link" id="askHenryHistoryLink" title="View previous conversations">History</a></div>
                             <div class="ask-henry-title-context" id="askHenryContext">${context.description}</div>
                         </div>
                     </div>
@@ -2888,10 +3376,10 @@ ${confidenceClosing}`,
 
         document.body.appendChild(widget);
 
-        // Load previous conversation history
+        // Load previous conversation history from sessionStorage (immediate)
         loadConversationHistory();
 
-        // If there's existing conversation, restore the messages
+        // If there's existing conversation from sessionStorage, restore the messages
         if (conversationHistory.length > 0) {
             const messagesContainer = document.getElementById('askHenryMessages');
             // Clear the default greeting
@@ -2908,7 +3396,7 @@ ${confidenceClosing}`,
             conversationHistory.forEach(msg => {
                 const formattedContent = formatMessage(msg.content);
                 const messageEl = document.createElement('div');
-                messageEl.className = `ask-henry-message ${msg.role}`;
+                messageEl.className = `ask-henry-message ${msg.role === 'user' ? 'user' : 'assistant'}`;
                 messageEl.innerHTML = formattedContent;
                 messagesContainer.appendChild(messageEl);
             });
@@ -2918,6 +3406,12 @@ ${confidenceClosing}`,
 
             // Scroll to bottom
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } else {
+            // No session conversation - check Supabase for recent conversation (async)
+            // Small delay to ensure HenryData is loaded
+            setTimeout(() => {
+                loadConversationFromSupabase();
+            }, 500);
         }
 
         // Bind events
@@ -2928,6 +3422,12 @@ ${confidenceClosing}`,
 
         // Expand/collapse button
         document.getElementById('askHenryExpand').addEventListener('click', toggleExpanded);
+
+        // History link
+        document.getElementById('askHenryHistoryLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            showConversationHistory();
+        });
 
         // Attachment button and file input
         const attachBtn = document.getElementById('askHenryAttach');
