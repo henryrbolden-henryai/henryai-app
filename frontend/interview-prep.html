@@ -1586,6 +1586,10 @@
         </div>
     </div>
 
+    <!-- Supabase Auth for debrief intelligence -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
     <script>
         // Configuration
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
@@ -1707,6 +1711,30 @@
                    `Role: ${analysisData.role_title || ''}\nCompany: ${analysisData._company_name || ''}`;
         }
 
+        // Fetch past debriefs for intelligence-informed prep
+        async function fetchPastDebriefs(company) {
+            try {
+                if (typeof window.HenryData === 'undefined') {
+                    console.log('HenryData not available, skipping debrief fetch');
+                    return [];
+                }
+
+                // Fetch all debriefs for pattern analysis
+                const debriefs = await window.HenryData.getDebriefsForPatternAnalysis();
+
+                if (!debriefs || debriefs.length === 0) {
+                    console.log('No past debriefs found');
+                    return [];
+                }
+
+                console.log(`✅ Found ${debriefs.length} past debriefs for interview prep`);
+                return debriefs;
+            } catch (error) {
+                console.error('Error fetching past debriefs:', error);
+                return [];
+            }
+        }
+
         // Generate Interview Prep
         async function generatePrep() {
             const btn = document.getElementById('generatePrepBtn');
@@ -1720,16 +1748,21 @@
             loadingEl.style.display = 'block';
 
             try {
+                // Fetch past debriefs for intelligence-informed prep (Phase 2.3)
+                const company = analysisData?._company_name || 'Company';
+                const pastDebriefs = await fetchPastDebriefs(company);
+
                 const response = await fetch(`${API_BASE}/api/interview-prep/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         resume_json: getResumeJson(),
                         job_description: getJobDescription(),
-                        company: analysisData?._company_name || 'Company',
+                        company: company,
                         role_title: analysisData?.role_title || 'Role',
                         interview_stage: currentStage,
-                        jd_analysis: analysisData
+                        jd_analysis: analysisData,
+                        past_debriefs: pastDebriefs  // Debrief intelligence for personalized prep
                     })
                 });
 

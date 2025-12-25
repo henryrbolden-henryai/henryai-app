@@ -888,6 +888,354 @@ const HenryData = {
         }
 
         return { error };
+    },
+
+    // ==========================================
+    // Interview Debriefs (Phase 2.3)
+    // ==========================================
+
+    /**
+     * Create a new interview debrief
+     * @param {Object} debriefData - Structured debrief data
+     */
+    async createDebrief(debriefData) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('interview_debriefs')
+            .insert({
+                user_id: user.id,
+                company: debriefData.company,
+                role: debriefData.role,
+                interview_type: debriefData.interview_type,
+                interview_date: debriefData.interview_date,
+                interviewer_name: debriefData.interviewer_name,
+                duration_minutes: debriefData.duration_minutes,
+                rating_overall: debriefData.rating_overall,
+                rating_confidence: debriefData.rating_confidence,
+                rating_preparation: debriefData.rating_preparation,
+                questions_asked: debriefData.questions_asked || [],
+                question_categories: debriefData.question_categories || [],
+                stumbles: debriefData.stumbles || [],
+                wins: debriefData.wins || [],
+                stories_used: debriefData.stories_used || [],
+                interviewer_signals: debriefData.interviewer_signals || {},
+                key_insights: debriefData.key_insights || [],
+                improvement_areas: debriefData.improvement_areas || [],
+                raw_conversation: debriefData.raw_conversation,
+                application_id: debriefData.application_id
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating debrief:', error);
+        } else {
+            console.log('✅ Created interview debrief:', data.id);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Get user's debriefs with optional filters
+     * @param {Object} filters - { company, interview_type, limit }
+     */
+    async getDebriefs(filters = {}) {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        let query = supabase
+            .from('interview_debriefs')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('interview_date', { ascending: false, nullsFirst: false });
+
+        if (filters.company) {
+            query = query.ilike('company', `%${filters.company}%`);
+        }
+
+        if (filters.interview_type) {
+            query = query.eq('interview_type', filters.interview_type);
+        }
+
+        if (filters.limit) {
+            query = query.limit(filters.limit);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error fetching debriefs:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get debriefs for a specific company
+     * @param {string} company - Company name
+     */
+    async getDebriefsByCompany(company) {
+        return this.getDebriefs({ company });
+    },
+
+    /**
+     * Get all debriefs for pattern analysis
+     */
+    async getDebriefsForPatternAnalysis() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('interview_debriefs')
+            .select('id, company, role, interview_type, interview_date, rating_overall, rating_confidence, rating_preparation, question_categories, stumbles, wins, stories_used, improvement_areas')
+            .eq('user_id', user.id)
+            .order('interview_date', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching debriefs for analysis:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Update a debrief
+     * @param {string} debriefId - UUID of the debrief
+     * @param {Object} updates - Fields to update
+     */
+    async updateDebrief(debriefId, updates) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('interview_debriefs')
+            .update(updates)
+            .eq('id', debriefId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating debrief:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Update debrief outcome (when application status changes)
+     * @param {string} debriefId - UUID of the debrief
+     * @param {string} outcome - 'advanced', 'rejected', 'pending', 'ghosted'
+     */
+    async updateDebriefOutcome(debriefId, outcome) {
+        return this.updateDebrief(debriefId, {
+            outcome,
+            outcome_updated_at: new Date().toISOString()
+        });
+    },
+
+    // ==========================================
+    // Story Bank (Phase 2.3)
+    // ==========================================
+
+    /**
+     * Get user's story bank
+     */
+    async getStoryBank() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('times_used', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching story bank:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Add or update a story in the bank
+     * @param {Object} story - Story data
+     */
+    async addStory(story) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        // Check if story with same name exists
+        const { data: existing } = await supabase
+            .from('user_story_bank')
+            .select('id')
+            .eq('user_id', user.id)
+            .ilike('story_name', story.story_name)
+            .single();
+
+        if (existing) {
+            // Update existing story
+            return this.updateStoryUsage(existing.id, story.interview_id, story.effectiveness);
+        }
+
+        // Create new story
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .insert({
+                user_id: user.id,
+                story_name: story.story_name,
+                story_summary: story.story_summary,
+                story_context: story.story_context,
+                demonstrates: story.demonstrates || [],
+                best_for_questions: story.best_for_questions || [],
+                times_used: 1,
+                last_used_at: new Date().toISOString(),
+                effectiveness_avg: story.effectiveness || null,
+                interviews_used_in: story.interview_id ? [story.interview_id] : []
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error adding story:', error);
+        } else {
+            console.log('✅ Added story to bank:', story.story_name);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Update story usage (increment count, update effectiveness)
+     * @param {string} storyId - UUID of the story
+     * @param {string} interviewId - UUID of the interview where story was used
+     * @param {number} effectiveness - Effectiveness rating 1-5
+     */
+    async updateStoryUsage(storyId, interviewId, effectiveness) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        // First get current story data
+        const { data: current, error: fetchError } = await supabase
+            .from('user_story_bank')
+            .select('times_used, effectiveness_avg, interviews_used_in')
+            .eq('id', storyId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (fetchError) {
+            return { data: null, error: fetchError };
+        }
+
+        // Calculate new effectiveness average
+        const timesUsed = (current.times_used || 0) + 1;
+        let newEffectivenessAvg = current.effectiveness_avg;
+        if (effectiveness) {
+            if (current.effectiveness_avg) {
+                newEffectivenessAvg = ((current.effectiveness_avg * current.times_used) + effectiveness) / timesUsed;
+            } else {
+                newEffectivenessAvg = effectiveness;
+            }
+        }
+
+        // Update interviews_used_in array
+        const interviewsUsedIn = current.interviews_used_in || [];
+        if (interviewId && !interviewsUsedIn.includes(interviewId)) {
+            interviewsUsedIn.push(interviewId);
+        }
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .update({
+                times_used: timesUsed,
+                last_used_at: new Date().toISOString(),
+                effectiveness_avg: newEffectivenessAvg,
+                interviews_used_in: interviewsUsedIn
+            })
+            .eq('id', storyId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating story usage:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Retire a story (mark as no longer active)
+     * @param {string} storyId - UUID of the story
+     */
+    async retireStory(storyId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .update({ status: 'retired' })
+            .eq('id', storyId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error retiring story:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Get active stories (not overused or retired)
+     */
+    async getActiveStories() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'active')
+            .order('effectiveness_avg', { ascending: false, nullsFirst: false });
+
+        if (error) {
+            console.error('Error fetching active stories:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get overused stories
+     */
+    async getOverusedStories() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('status', 'overused')
+            .order('times_used', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching overused stories:', error);
+            return [];
+        }
+
+        return data || [];
     }
 };
 

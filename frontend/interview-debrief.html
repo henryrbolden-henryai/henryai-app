@@ -1247,7 +1247,17 @@ Examples of helpful info:
             }
         }
 
-        function goToCommandCenter() {
+        async function goToCommandCenter() {
+            // Show loading state while extracting
+            const completeBtn = document.querySelector('.debrief-complete-btn');
+            if (completeBtn) {
+                completeBtn.disabled = true;
+                completeBtn.textContent = 'Saving insights...';
+            }
+
+            // Extract and store structured debrief data
+            await extractAndStoreDebrief();
+
             // Ensure the interview is synced to Command Center before navigating
             if (currentInterview) {
                 // Make sure debrief info is set on the interview object

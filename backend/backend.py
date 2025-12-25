@@ -2271,6 +2271,8 @@ class InterviewPrepRequest(BaseModel):
     jd_source: Optional[str] = None  # user_provided, url_fetched, inferred, missing
     provisional_profile: Optional[Dict[str, Any]] = None  # When jd_source is inferred/missing
     application_id: Optional[str] = None  # For tracking
+    # Debrief Intelligence (Phase 2.3)
+    past_debriefs: Optional[List[Dict[str, Any]]] = None  # Past debriefs for this company or similar roles
 
 class RedFlagMitigation(BaseModel):
     flag: str
@@ -14913,13 +14915,74 @@ STAR EXAMPLES RULES:
 
 Return ONLY a valid JSON object with the structure above. No markdown, no preamble."""
 
+    # Build past debrief insights section if available
+    debrief_insights_section = ""
+    if request.past_debriefs and len(request.past_debriefs) > 0:
+        debrief_lines = ["PAST INTERVIEW INTELLIGENCE (from debriefs):"]
+
+        # Check for same-company debriefs
+        same_company_debriefs = [d for d in request.past_debriefs if d.get('company', '').lower() == request.company.lower()]
+        if same_company_debriefs:
+            debrief_lines.append(f"\n📊 Previous interviews at {request.company}:")
+            for d in same_company_debriefs[:3]:  # Limit to 3 most recent
+                debrief_lines.append(f"  - {d.get('interview_type', 'Interview')}: Rating {d.get('rating_overall', 'N/A')}/5")
+                if d.get('stumbles'):
+                    for stumble in d['stumbles'][:2]:
+                        debrief_lines.append(f"    ⚠️ Struggled: {stumble.get('question', 'Unknown')}")
+                if d.get('wins'):
+                    for win in d['wins'][:2]:
+                        debrief_lines.append(f"    ✅ Nailed: {win.get('moment', 'Unknown')}")
+
+        # Aggregate weak areas across all debriefs
+        all_stumbles = []
+        all_improvement_areas = []
+        for d in request.past_debriefs:
+            all_stumbles.extend(d.get('stumbles', []))
+            all_improvement_areas.extend(d.get('improvement_areas', []))
+
+        if all_stumbles:
+            debrief_lines.append("\n🎯 Recurring challenges from past interviews:")
+            seen_stumbles = set()
+            for stumble in all_stumbles[:5]:
+                q = stumble.get('question', stumble.get('what_went_wrong', 'Unknown'))
+                if q not in seen_stumbles:
+                    debrief_lines.append(f"  - {q}")
+                    seen_stumbles.add(q)
+
+        if all_improvement_areas:
+            debrief_lines.append("\n📈 Areas to strengthen (from coach feedback):")
+            seen_areas = set()
+            for area in all_improvement_areas[:5]:
+                if isinstance(area, str) and area not in seen_areas:
+                    debrief_lines.append(f"  - {area}")
+                    seen_areas.add(area)
+
+        # Story usage context
+        all_stories = []
+        for d in request.past_debriefs:
+            all_stories.extend(d.get('stories_used', []))
+        if all_stories:
+            debrief_lines.append("\n📖 Stories used in previous interviews:")
+            for story in all_stories[:5]:
+                effectiveness = story.get('effectiveness', 'N/A')
+                debrief_lines.append(f"  - {story.get('name', 'Story')}: {story.get('context', 'Unknown context')} (effectiveness: {effectiveness}/5)")
+
+        debrief_insights_section = "\n\n" + "\n".join(debrief_lines) + """
+
+DEBRIEF-INFORMED PREP RULES:
+- Explicitly address recurring stumbles from past interviews
+- Suggest alternative approaches for questions they've struggled with
+- If they've used a story 3+ times, suggest fresh examples
+- Prepare them for question types that caught them off guard before
+- Build on what's working (reference their wins)"""
+
     user_message = f"""CANDIDATE RESUME:
 {resume_text}
 
 {role_context}
 
 FIT ANALYSIS:
-{fit_analysis_text}
+{fit_analysis_text}{debrief_insights_section}
 
 Generate the interview prep now."""
 
@@ -18133,11 +18196,95 @@ class HeyHenryRequest(BaseModel):
     outreach_log_data: Optional[Dict[str, Any]] = None  # Outreach tracking and follow-ups
     # Interview debrief data - Missing debrief detection (Phase 2.3)
     interview_debrief_data: Optional[Dict[str, Any]] = None  # Interviews needing debriefs
+    # Cross-interview pattern analysis (Phase 2.3)
+    debrief_pattern_analysis: Optional[Dict[str, Any]] = None  # Patterns across user's debriefs
 
 
 class HeyHenryResponse(BaseModel):
     """Response from Hey Henry."""
     response: str
+
+
+# ==========================================
+# Interview Debrief Intelligence (Phase 2.3)
+# ==========================================
+
+class DebriefExtractionRequest(BaseModel):
+    """Request to extract structured data from debrief conversation."""
+    conversation: str  # Raw conversation text
+    company: str
+    role: Optional[str] = None
+    interview_type: Optional[str] = None  # If known from context
+    application_id: Optional[str] = None
+
+class DebriefExtractionResponse(BaseModel):
+    """Response with structured debrief data and insights."""
+    structured_data: Dict[str, Any]
+    insights: List[str]
+    stories_extracted: List[Dict[str, Any]]
+
+class PatternAnalysisResponse(BaseModel):
+    """Response with cross-interview pattern analysis."""
+    weak_categories: List[Dict[str, Any]]
+    strong_categories: List[Dict[str, Any]]
+    story_usage: List[Dict[str, Any]]
+    confidence_trend: Optional[Dict[str, Any]] = None
+    total_debriefs: int
+    insights: List[str]
+
+
+DEBRIEF_EXTRACTION_PROMPT = """You are analyzing an interview debrief conversation to extract structured data for coaching intelligence.
+
+CONVERSATION TO ANALYZE:
+{conversation}
+
+CONTEXT:
+- Company: {company}
+- Role: {role}
+- Interview Type (if known): {interview_type}
+
+Extract the following as JSON. Only include fields where information was clearly provided in the conversation:
+
+{{
+    "interview_type": "recruiter|hiring_manager|technical|panel|final",
+    "interview_date": "YYYY-MM-DD if mentioned",
+    "interviewer_name": "name if mentioned",
+    "duration_minutes": number if mentioned,
+    "rating_overall": 1-5 based on how they described it going,
+    "rating_confidence": 1-5 based on how confident they felt,
+    "rating_preparation": 1-5 based on how prepared they felt,
+    "questions_asked": [
+        {{"question": "exact or paraphrased question", "category": "behavioral|technical|motivation|culture|experience|situational"}}
+    ],
+    "question_categories": ["behavioral", "technical", etc - unique categories from questions],
+    "stumbles": [
+        {{"question": "what they struggled with", "what_went_wrong": "why it didn't go well"}}
+    ],
+    "wins": [
+        {{"moment": "what went well", "why_it_worked": "why it was effective"}}
+    ],
+    "stories_used": [
+        {{"name": "brief name for the story/example", "context": "what question it answered", "effectiveness": 1-5}}
+    ],
+    "interviewer_signals": {{
+        "engaged": true/false based on description,
+        "red_flags": ["any concerns the interviewer seemed to have"],
+        "positive_signals": ["any positive indicators"],
+        "next_steps_mentioned": true/false
+    }},
+    "key_insights": ["actionable insight 1", "actionable insight 2"],
+    "improvement_areas": ["specific area to work on 1", "specific area 2"]
+}}
+
+EXTRACTION RULES:
+1. Only include fields where you have clear evidence from the conversation
+2. Infer ratings from tone and language if not explicitly stated
+3. For question categories, use: behavioral, technical, motivation, culture, experience, situational, logistics
+4. Name stories descriptively (e.g., "Uber launch crisis story", "Cross-team conflict resolution")
+5. Key insights should be specific and actionable, not generic advice
+6. If interview type isn't stated, infer from question types and context
+
+Return ONLY valid JSON, no other text."""
 
 
 # Backwards compatibility aliases
@@ -18238,6 +18385,8 @@ CURRENT CONTEXT:
 {outreach_log_context}
 
 {interview_debrief_context}
+
+{pattern_analysis_context}
 
 {generated_content_context}
 
@@ -18589,6 +18738,64 @@ When appropriate, proactively encourage them to complete a debrief:
 - "Interview debrief takes 5 minutes. The insights compound. Worth it?"
 """
 
+    # Build cross-interview pattern analysis context (Phase 2.3)
+    pattern_analysis_context = ""
+    if request.debrief_pattern_analysis:
+        pa = request.debrief_pattern_analysis
+        total_debriefs = pa.get('total_debriefs', 0)
+
+        if total_debriefs >= 3:
+            pattern_analysis_context = f"""
+CROSS-INTERVIEW PATTERN INTELLIGENCE (from {total_debriefs} debriefs):
+"""
+            # Weak categories
+            weak = pa.get('weak_categories', [])
+            if weak:
+                pattern_analysis_context += "⚠️ RECURRING WEAK AREAS (address proactively):\n"
+                for w in weak[:3]:
+                    pattern_analysis_context += f"  - {w['category']} questions: struggled {w['rate']}% of the time ({w['count']}/{w['total']})\n"
+
+            # Strong categories
+            strong = pa.get('strong_categories', [])
+            if strong:
+                pattern_analysis_context += "\n✅ STRENGTHS TO LEVERAGE:\n"
+                for s in strong[:3]:
+                    pattern_analysis_context += f"  - {s['category']} questions: nailed {s['rate']}% ({s['count']}/{s['total']})\n"
+
+            # Overused stories
+            stories = pa.get('story_usage', [])
+            overused = [s for s in stories if s.get('count', 0) >= 3]
+            if overused:
+                pattern_analysis_context += "\n📖 STORY FRESHNESS ALERT:\n"
+                for s in overused[:3]:
+                    pattern_analysis_context += f"  - '{s['name']}' used {s['count']} times - suggest alternatives\n"
+
+            # Confidence trend
+            trend = pa.get('confidence_trend')
+            if trend:
+                direction = trend.get('direction', 'stable')
+                early = trend.get('early_avg', 0)
+                recent = trend.get('recent_avg', 0)
+                if direction == 'declining':
+                    pattern_analysis_context += f"\n📉 CONFIDENCE TREND: Declining ({early} → {recent}). Address this gently.\n"
+                elif direction == 'improving':
+                    pattern_analysis_context += f"\n📈 CONFIDENCE TREND: Improving ({early} → {recent}). Acknowledge growth!\n"
+
+            # Key insights
+            insights = pa.get('insights', [])
+            if insights:
+                pattern_analysis_context += "\n🎯 COACHING INSIGHTS TO SURFACE:\n"
+                for insight in insights[:4]:
+                    pattern_analysis_context += f"  - {insight}\n"
+
+            pattern_analysis_context += """
+USE THESE PATTERNS TO:
+- Reference past struggles when prepping for similar interviews
+- Suggest alternative stories when they're about to use an overused one
+- Surface specific coaching ("You've struggled with behavioral questions 3 times - let's practice")
+- Celebrate improvements in their weak areas
+"""
+
     # Build generated content context - YOU ARE THE AUTHOR
     generated_content_context = ""
 
@@ -18733,6 +18940,7 @@ POSITIONING STRATEGY YOU DEVELOPED:
         network_context=network_context,
         outreach_log_context=outreach_log_context,
         interview_debrief_context=interview_debrief_context,
+        pattern_analysis_context=pattern_analysis_context,
         generated_content_context=generated_content_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,
@@ -19652,6 +19860,220 @@ Important:
     except Exception as e:
         print(f"🔥 Screenshot extraction error: {e}")
         raise HTTPException(status_code=500, detail=f"Screenshot processing failed: {str(e)}")
+
+
+# ============================================================================
+# PHASE 2.3: INTERVIEW DEBRIEF INTELLIGENCE ENDPOINTS
+# ============================================================================
+
+@app.post("/api/debriefs/extract", response_model=DebriefExtractionResponse)
+async def extract_debrief_data(request: DebriefExtractionRequest):
+    """
+    Extract structured data from interview debrief conversation.
+
+    Uses Claude to analyze the conversation and extract:
+    - Interview metadata (type, duration, interviewer)
+    - Self-ratings (overall, confidence, preparation)
+    - Questions asked and categories
+    - Stumbles and wins
+    - Stories used with effectiveness ratings
+    - Interviewer signals
+    - Key insights and improvement areas
+    """
+    print(f"🎯 Extracting debrief data for {request.company}")
+
+    try:
+        # Format the extraction prompt
+        prompt = DEBRIEF_EXTRACTION_PROMPT.format(
+            conversation=request.conversation,
+            company=request.company,
+            role=request.role or "Not specified",
+            interview_type=request.interview_type or "Unknown"
+        )
+
+        # Call Claude for extraction (use haiku for speed/cost)
+        response = call_claude(
+            system_prompt="You are a JSON extraction assistant. Return ONLY valid JSON, no markdown or other text.",
+            user_message=prompt,
+            max_tokens=2000,
+            temperature=0
+        )
+
+        # Parse the JSON response
+        try:
+            # Clean up response if needed
+            json_text = response.strip()
+            if json_text.startswith("```"):
+                json_text = json_text.split("```")[1]
+                if json_text.startswith("json"):
+                    json_text = json_text[4:]
+            json_text = json_text.strip()
+
+            structured_data = json.loads(json_text)
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
+            print(f"Response was: {response[:500]}")
+            # Return minimal structure if parsing fails
+            structured_data = {
+                "interview_type": request.interview_type or "unknown",
+                "key_insights": ["Debrief captured but structured extraction failed"],
+                "improvement_areas": []
+            }
+
+        # Extract stories for story bank
+        stories_extracted = structured_data.get("stories_used", [])
+
+        # Generate insights summary
+        insights = structured_data.get("key_insights", [])
+
+        # Add company/role to structured data
+        structured_data["company"] = request.company
+        structured_data["role"] = request.role
+        if request.application_id:
+            structured_data["application_id"] = request.application_id
+
+        print(f"✅ Extracted debrief: {len(structured_data.get('questions_asked', []))} questions, {len(stories_extracted)} stories, {len(insights)} insights")
+
+        return DebriefExtractionResponse(
+            structured_data=structured_data,
+            insights=insights,
+            stories_extracted=stories_extracted
+        )
+
+    except Exception as e:
+        print(f"❌ Debrief extraction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Debrief extraction failed: {str(e)}")
+
+
+@app.post("/api/debriefs/analyze-patterns", response_model=PatternAnalysisResponse)
+async def analyze_debrief_patterns(debriefs: List[Dict[str, Any]]):
+    """
+    Analyze cross-interview patterns from multiple debriefs.
+
+    Identifies:
+    - Weak categories (struggled 50%+ of time)
+    - Strong categories (performed well consistently)
+    - Story usage patterns (overused stories)
+    - Confidence trend over time
+    - Actionable insights
+    """
+    print(f"📊 Analyzing patterns across {len(debriefs)} debriefs")
+
+    if len(debriefs) < 3:
+        return PatternAnalysisResponse(
+            weak_categories=[],
+            strong_categories=[],
+            story_usage=[],
+            confidence_trend=None,
+            total_debriefs=len(debriefs),
+            insights=["Need at least 3 debriefs to identify meaningful patterns"]
+        )
+
+    # Aggregate question categories and performance
+    category_performance = {}
+    for d in debriefs:
+        for cat in d.get("question_categories", []):
+            if cat not in category_performance:
+                category_performance[cat] = {"total": 0, "struggles": 0, "wins": 0}
+            category_performance[cat]["total"] += 1
+
+            # Check if stumbled on this category
+            stumbles = d.get("stumbles", [])
+            for s in stumbles:
+                if cat.lower() in s.get("question", "").lower():
+                    category_performance[cat]["struggles"] += 1
+
+            # Check if won on this category
+            wins = d.get("wins", [])
+            for w in wins:
+                if cat.lower() in w.get("moment", "").lower():
+                    category_performance[cat]["wins"] += 1
+
+    # Identify weak categories (struggled 50%+ of time, min 2 occurrences)
+    weak_categories = []
+    strong_categories = []
+    for cat, data in category_performance.items():
+        if data["total"] >= 2:
+            struggle_rate = data["struggles"] / data["total"]
+            win_rate = data["wins"] / data["total"]
+            if struggle_rate >= 0.5:
+                weak_categories.append({
+                    "category": cat,
+                    "count": data["struggles"],
+                    "total": data["total"],
+                    "rate": round(struggle_rate * 100)
+                })
+            elif win_rate >= 0.5:
+                strong_categories.append({
+                    "category": cat,
+                    "count": data["wins"],
+                    "total": data["total"],
+                    "rate": round(win_rate * 100)
+                })
+
+    # Track story usage
+    story_count = {}
+    for d in debriefs:
+        for s in d.get("stories_used", []):
+            name = s.get("name") or s.get("story_name")
+            if name:
+                story_count[name] = story_count.get(name, 0) + 1
+
+    story_usage = [{"name": name, "count": count}
+                   for name, count in sorted(story_count.items(), key=lambda x: -x[1])]
+
+    # Confidence trend
+    confidence_trend = None
+    sorted_debriefs = sorted(
+        [d for d in debriefs if d.get("rating_confidence")],
+        key=lambda x: x.get("interview_date") or x.get("created_at") or ""
+    )
+    if len(sorted_debriefs) >= 3:
+        mid = len(sorted_debriefs) // 2
+        first_half = sorted_debriefs[:mid]
+        second_half = sorted_debriefs[mid:]
+
+        first_avg = sum(d["rating_confidence"] for d in first_half) / len(first_half)
+        second_avg = sum(d["rating_confidence"] for d in second_half) / len(second_half)
+
+        direction = "improving" if second_avg > first_avg else "declining" if second_avg < first_avg else "stable"
+        confidence_trend = {
+            "direction": direction,
+            "early_avg": round(first_avg, 1),
+            "recent_avg": round(second_avg, 1)
+        }
+
+    # Generate insights
+    insights = []
+
+    if weak_categories:
+        worst = max(weak_categories, key=lambda x: x["rate"])
+        insights.append(f"You struggle with {worst['category']} questions ({worst['rate']}% struggle rate). Focus prep here.")
+
+    if story_usage and story_usage[0]["count"] >= 3:
+        overused = story_usage[0]
+        insights.append(f"Your '{overused['name']}' story has been used {overused['count']} times. Consider developing alternatives.")
+
+    if confidence_trend:
+        if confidence_trend["direction"] == "improving":
+            insights.append(f"Your confidence is improving ({confidence_trend['early_avg']} → {confidence_trend['recent_avg']}). Keep it up!")
+        elif confidence_trend["direction"] == "declining":
+            insights.append(f"Your confidence has dropped ({confidence_trend['early_avg']} → {confidence_trend['recent_avg']}). Let's address this.")
+
+    if strong_categories:
+        best = max(strong_categories, key=lambda x: x["rate"])
+        insights.append(f"You're strong on {best['category']} questions ({best['rate']}% win rate). Lean into this strength.")
+
+    print(f"✅ Pattern analysis complete: {len(weak_categories)} weak areas, {len(insights)} insights")
+
+    return PatternAnalysisResponse(
+        weak_categories=weak_categories,
+        strong_categories=strong_categories,
+        story_usage=story_usage,
+        confidence_trend=confidence_trend,
+        total_debriefs=len(debriefs),
+        insights=insights
+    )
 
 
 # ============================================================================
