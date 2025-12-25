@@ -1,9 +1,9 @@
 # HenryAI Implementation Guide
 
 **Date**: December 19, 2025
-**Version**: 1.5
+**Version**: 1.6
 **Audience**: Development Team
-**Last Updated**: December 19, 2025
+**Last Updated**: December 25, 2025
 
 ---
 
@@ -67,6 +67,9 @@ All features below have been implemented and deployed to production:
 40. ✅ **Ask Henry Auto-Expand** (Dec 23) - drawer expands for long responses (>400 chars)
 41. ✅ **Hey Henry Crash Fix** (Dec 23) - handle dict format for gaps/strengths
 42. ✅ **Your Move Redirect Fix** (Dec 23) - gaps now include redirect field for coaching controller
+43. ✅ **Interview Debrief Intelligence** (Dec 25) - structured extraction, pattern analysis
+44. ✅ **Story Bank UI** (Dec 25) - behavioral example management with effectiveness tracking
+45. ✅ **Hey Henry Strategic Intelligence Engine** (Dec 25) - Phase 2.1-2.8 complete
 
 ---
 

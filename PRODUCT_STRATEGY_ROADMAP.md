@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
 **Date**: December 19, 2025
-**Version**: 1.6
-**Status**: Phase 0-2 Complete, Engagement Layer Complete, Strategic Intelligence Complete
-**Last Updated**: December 19, 2025
-**Next Review**: December 26, 2025
+**Version**: 1.7
+**Status**: Phase 0-2 Complete, Strategic Intelligence Engine Complete (Phase 2.1-2.8)
+**Last Updated**: December 25, 2025
+**Next Review**: January 2, 2026
 
 ---
 
@@ -251,6 +251,35 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 - Contract-compliant handling when strengths extraction fails
 - Recovery uses UI contract to determine fallback
 - No more "Analysis incomplete" errors surfaced to users
+
+### Recent Achievements (Dec 25, 2025)
+
+✅ **Interview Debrief Intelligence (Phase 2.3) COMPLETED**
+- Created `interview_debriefs` table with structured fields (questions, stumbles, wins, stories, ratings)
+- Created `user_story_bank` table for tracking stories across interviews with auto-overuse detection
+- `POST /api/debriefs/extract` - Claude extracts structured data from debrief conversations
+- `POST /api/debriefs/analyze-patterns` - Cross-interview pattern analysis
+- Debrief-informed prep: "Last time you stumbled on X"
+- Pattern detection: "You've struggled with behavioral questions 3 times"
+
+✅ **Story Bank UI (Behavioral Example Library) COMPLETED**
+- Created `story-bank.html` - Full Story Bank management interface
+- Stats bar showing Total Stories, High Impact, Overused, Needs Work counts
+- Story cards grid with effectiveness badges
+- Add/Edit modal with tag input for competencies
+- Filter buttons: All, High Impact, Needs Work, Overused
+- Navigation: Added Story Bank card to Interview Intelligence → Practice tab
+- Toast notification on Interview Debrief page linking to Story Bank
+
+✅ **Hey Henry Strategic Intelligence Engine - Complete (Phase 2.1-2.8)**
+1. Pipeline Pattern Analysis
+2. Proactive Network Surfacing
+3. Rejection Forensics
+4. Outreach Tracking
+5. Interview Debrief Intelligence
+6. Cross-Interview Pattern Detection
+7. Conversation Persistence
+8. Story Bank UI
 
 ---
 
@@ -1642,5 +1671,5 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 ---
 
 **Document Owner**: Product Team
-**Last Updated**: December 19, 2025
-**Next Review**: December 26, 2025
+**Last Updated**: December 25, 2025
+**Next Review**: January 2, 2026
