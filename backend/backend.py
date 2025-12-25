@@ -18127,6 +18127,10 @@ class HeyHenryRequest(BaseModel):
     outreach_data: Optional[Dict[str, Any]] = None  # Generated outreach templates
     interview_prep_data: Optional[Dict[str, Any]] = None  # Generated interview prep modules
     positioning_data: Optional[Dict[str, Any]] = None  # Positioning strategy content
+    # Network data - LinkedIn connections (Phase 2.1)
+    network_data: Optional[Dict[str, Any]] = None  # LinkedIn connections at target company
+    # Outreach log data - Follow-up tracking (Phase 2.7)
+    outreach_log_data: Optional[Dict[str, Any]] = None  # Outreach tracking and follow-ups
 
 
 class HeyHenryResponse(BaseModel):
@@ -18227,6 +18231,10 @@ CURRENT CONTEXT:
 
 {pipeline_context}
 
+{network_context}
+
+{outreach_log_context}
+
 {generated_content_context}
 
 {emotional_context}
@@ -18317,6 +18325,50 @@ async def hey_henry(request: HeyHenryRequest):
     """
     print(f"💬 Hey Henry: {request.context.current_page} - {request.message[:50]}...")
 
+    # Detect pipeline analysis request (Phase 2.2 trigger)
+    pipeline_analysis_triggers = [
+        "how's my search",
+        "hows my search",
+        "how is my search",
+        "how am i doing",
+        "search going",
+        "my pipeline",
+        "pipeline review",
+        "review my applications",
+        "application patterns",
+        "what patterns",
+        "analyze my applications",
+        "what am i doing wrong",
+        "why am i not getting",
+        "not getting interviews",
+        "not getting responses",
+        "getting rejected",
+        "strategy review",
+        "job search review",
+        "search strategy"
+    ]
+    message_lower = request.message.lower()
+    is_pipeline_analysis_request = any(trigger in message_lower for trigger in pipeline_analysis_triggers)
+
+    # Detect rejection forensics request (Phase 2.4 trigger)
+    rejection_forensics_triggers = [
+        "why am i getting rejected",
+        "keep getting rejected",
+        "why do i keep",
+        "rejection pattern",
+        "analyze my rejections",
+        "what's wrong with my",
+        "whats wrong with my",
+        "not landing interviews",
+        "not hearing back",
+        "ghosted",
+        "no responses",
+        "rejection analysis",
+        "rejection feedback",
+        "why rejected"
+    ]
+    is_rejection_forensics_request = any(trigger in message_lower for trigger in rejection_forensics_triggers)
+
     # Build analysis context string
     analysis_context = ""
     if request.analysis_data and request.context.has_analysis:
@@ -18376,6 +18428,122 @@ TOP APPLICATIONS IN PIPELINE:
         top_apps = pd.get('topApps', [])
         for app in top_apps:
             pipeline_context += f"- {app.get('role', 'Unknown')} at {app.get('company', 'Unknown')}: {app.get('status', 'Unknown')} ({app.get('fitScore', 'N/A')}% fit, {app.get('daysSinceUpdate', 0)}d since update)\n"
+
+        # Add pattern analysis if available (Phase 2.2)
+        pattern_data = pd.get('patternAnalysis', {})
+        if pattern_data:
+            pipeline_context += "\nPIPELINE PATTERN ANALYSIS (use this for strategic insights):\n"
+
+            # Fit distribution
+            fit_dist = pattern_data.get('fitDistribution', {})
+            if any(fit_dist.values()):
+                pipeline_context += f"- Fit Distribution: {fit_dist.get('strong', 0)} strong, {fit_dist.get('moderate', 0)} moderate, {fit_dist.get('reach', 0)} reach, {fit_dist.get('longShot', 0)} long shot\n"
+                reach_pct = pattern_data.get('reachPercentage', 0)
+                if reach_pct >= 50:
+                    pipeline_context += f"  ⚠️ {reach_pct}% of applications are reaches or long shots. Candidate may be overreaching.\n"
+
+            # Conversion rates
+            conv_rates = pattern_data.get('conversionRates', {})
+            if any(conv_rates.values()):
+                pipeline_context += f"- Conversion Rates:\n"
+                pipeline_context += f"  • Application to Response: {conv_rates.get('applicationToResponse', 0)}%\n"
+                pipeline_context += f"  • Response to Recruiter Screen: {conv_rates.get('responseToRecruiter', 0)}%\n"
+                pipeline_context += f"  • Recruiter to Hiring Manager: {conv_rates.get('recruiterToHM', 0)}%\n"
+                pipeline_context += f"  • Hiring Manager to Final: {conv_rates.get('hmToFinal', 0)}%\n"
+                pipeline_context += f"  • Final to Offer: {conv_rates.get('finalToOffer', 0)}%\n"
+
+            # Velocity
+            velocity = pattern_data.get('velocity', {})
+            if velocity:
+                pipeline_context += f"- Application Velocity: {velocity.get('thisWeek', 0)} this week, {velocity.get('lastWeek', 0)} last week (trend: {velocity.get('trend', 'steady')})\n"
+
+            # Rejections by stage
+            rej_stage = pattern_data.get('rejectionsByStage', {})
+            if any(rej_stage.values()):
+                pipeline_context += f"- Rejections by Stage: {rej_stage.get('resume', 0)} at resume, {rej_stage.get('recruiter', 0)} at recruiter, {rej_stage.get('hiringManager', 0)} at HM, {rej_stage.get('finalRound', 0)} at final\n"
+
+            # Weak spots
+            weak_spots = pattern_data.get('weakSpots', [])
+            if weak_spots:
+                pipeline_context += "- Identified Weak Spots:\n"
+                for ws in weak_spots:
+                    pipeline_context += f"  • {ws.get('message', 'Unknown issue')}\n"
+
+            # Pre-generated pattern insights
+            insights = pattern_data.get('patternInsights', [])
+            if insights:
+                pipeline_context += "- Pattern Insights (use these in your response):\n"
+                for insight in insights:
+                    pipeline_context += f"  • {insight}\n"
+
+    # Build network context from LinkedIn connections (Phase 2.1)
+    network_context = ""
+    if request.network_data:
+        nd = request.network_data
+        target_company = request.context.company or "target company"
+
+        if nd.get('hasConnections'):
+            direct_connections = nd.get('directAtCompany', [])
+            total_connections = nd.get('totalConnections', 0)
+
+            if direct_connections and len(direct_connections) > 0:
+                network_context = f"""
+NETWORK INTELLIGENCE (PROACTIVE - surface this when relevant):
+You have {len(direct_connections)} first-degree connection(s) at {target_company}:
+"""
+                for conn in direct_connections[:5]:  # Limit to top 5
+                    name = conn.get('fullName', 'Unknown').strip()
+                    position = conn.get('position', 'Unknown position')
+                    connected_on = conn.get('connectedOn', '')
+                    network_context += f"* {name}, {position}"
+                    if connected_on:
+                        network_context += f" (connected since {connected_on})"
+                    network_context += "\n"
+
+                network_context += f"""
+PROACTIVE NETWORK GUIDANCE:
+- Warm intros get 3x higher response rates than cold outreach
+- Suggest the candidate reach out to these connections for intel or referrals
+- Offer to draft outreach to the strongest connection
+- Prioritize connections in the same department or with relevant titles
+"""
+            else:
+                network_context = f"""
+NETWORK INTELLIGENCE:
+The candidate has {total_connections} LinkedIn connections uploaded but NO direct connections at {target_company}.
+
+When relevant, suggest:
+- Searching for 2nd-degree connections on LinkedIn
+- Looking for alumni or former company overlap
+- Using cold outreach templates (they can find these on the Outreach page)
+"""
+
+    # Build outreach log context for follow-up prompts (Phase 2.7)
+    outreach_log_context = ""
+    if request.outreach_log_data:
+        ol = request.outreach_log_data
+        due_for_followup = ol.get('dueForFollowUp', [])
+        due_for_final = ol.get('dueForFinalFollowUp', [])
+
+        if due_for_followup or due_for_final:
+            outreach_log_context = """
+OUTREACH FOLLOW-UP REMINDERS (PROACTIVE - mention these when relevant):
+"""
+            if due_for_followup:
+                outreach_log_context += "Messages due for follow-up (sent 5+ days ago, no response):\n"
+                for o in due_for_followup[:3]:
+                    outreach_log_context += f"* {o.get('contactName', 'Unknown')} at {o.get('company', 'Unknown')} ({o.get('channel', 'unknown channel')}, {o.get('daysSince', 0)} days ago)\n"
+
+            if due_for_final:
+                outreach_log_context += "\nMessages due for FINAL follow-up (sent 10+ days ago):\n"
+                for o in due_for_final[:3]:
+                    outreach_log_context += f"* {o.get('contactName', 'Unknown')} at {o.get('company', 'Unknown')} ({o.get('channel', 'unknown channel')}, {o.get('daysSince', 0)} days ago)\n"
+
+            outreach_log_context += """
+When the user seems open to it, proactively remind them about pending follow-ups.
+Offer to draft a follow-up message if they want.
+Don't be pushy, but do keep them accountable.
+"""
 
     # Build generated content context - YOU ARE THE AUTHOR
     generated_content_context = ""
@@ -18518,12 +18686,125 @@ POSITIONING STRATEGY YOU DEVELOPED:
         has_pipeline="Yes" if request.context.has_pipeline else "No",
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
+        network_context=network_context,
+        outreach_log_context=outreach_log_context,
         generated_content_context=generated_content_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,
         tone_guidance_detail=tone_guidance_detail,
         clarification_context=clarification_context
     )
+
+    # Add pipeline analysis instruction if triggered (Phase 2.2)
+    if is_pipeline_analysis_request and request.pipeline_data:
+        pd = request.pipeline_data
+        total_apps = pd.get('total', 0)
+        if total_apps >= 5:
+            system_prompt += """
+
+=== PIPELINE PATTERN ANALYSIS REQUEST ===
+
+The user is asking for a strategic review of their job search. Use the PIPELINE PATTERN ANALYSIS data above to provide a comprehensive, specific analysis.
+
+REQUIRED RESPONSE FORMAT:
+1. **Pipeline Health** (1-2 sentences): Give them the headline. Are they on track or off track?
+
+2. **Patterns I'm Seeing** (3-5 bullet points): Use the actual pattern data:
+   - Fit distribution (are they overreaching?)
+   - Conversion rates at each stage (where are they dropping off?)
+   - Velocity trends (accelerating, slowing, or steady?)
+   - Any weak spots identified
+
+3. **The Signal** (1-2 sentences): What's the ONE thing the data is telling them?
+
+4. **Recommendation** (1-2 actionable steps): What should they do next?
+
+CRITICAL RULES:
+- Use SPECIFIC numbers from the pattern data. Never say "some" or "a few" when you have exact counts.
+- Reference specific companies and roles from their pipeline where relevant.
+- If they're overreaching (high % of reaches/long shots), say so directly.
+- If they're stalling at a specific stage, diagnose why.
+- NO generic advice. Everything must be grounded in THEIR data.
+
+Example of GOOD analysis:
+"Here's what I'm seeing across your search:
+
+Pipeline Health: 12 applications, 3 active, 2 interviews scheduled, 4 rejected, 3 ghosted
+
+Patterns:
+* You're overreaching on scope. 8 of 12 were stretch roles.
+* Strong conversion to first round (67%), but dropping off at hiring manager stage (25%).
+* All your ghosted applications were at companies with 50+ open roles. They're probably overwhelmed.
+
+Recommendation: Tighten your targeting to roles where you're a 75%+ fit. Your hit rate will improve."
+
+=== END PIPELINE ANALYSIS INSTRUCTION ===
+"""
+        else:
+            system_prompt += f"""
+
+=== PIPELINE ANALYSIS NOTE ===
+The user is asking about their search, but they only have {total_apps} applications tracked. Let them know you need at least 5 applications to identify meaningful patterns. Encourage them to keep tracking and come back once they have more data.
+=== END NOTE ===
+"""
+
+    # Add rejection forensics instruction if triggered (Phase 2.4)
+    if is_rejection_forensics_request and request.pipeline_data:
+        pd = request.pipeline_data
+        rejected_count = pd.get('rejected', 0)
+        pattern_data = pd.get('patternAnalysis', {})
+        rej_by_stage = pattern_data.get('rejectionsByStage', {})
+
+        if rejected_count >= 3:
+            system_prompt += f"""
+
+=== REJECTION FORENSICS REQUEST ===
+
+The user wants to understand their rejection patterns. Analyze the data and provide diagnostic insights.
+
+REJECTION DATA:
+- Total rejections: {rejected_count}
+- At resume screen: {rej_by_stage.get('resume', 0)}
+- At recruiter screen: {rej_by_stage.get('recruiter', 0)}
+- At hiring manager: {rej_by_stage.get('hiringManager', 0)}
+- At final round: {rej_by_stage.get('finalRound', 0)}
+
+STAGE-SPECIFIC ANALYSIS:
+1. **Resume screen rejections** = Keywords missing, experience mismatch, or ATS issues. Resume needs refinement.
+2. **Recruiter screen rejections** = Communication issues, salary mismatch, or timeline misalignment. Prep recruiter conversations.
+3. **Hiring manager rejections** = Culture fit or scope concerns, not skills. Dig into those conversations.
+4. **Final round rejections** = Competition or factors outside control. You were qualified enough to get there.
+
+RESPONSE FORMAT:
+1. **The Pattern**: What stage are they dropping off at? Give specific numbers.
+2. **Likely Cause**: What typically causes rejection at this stage?
+3. **Diagnostic Questions**: Ask 1-2 questions to understand what happened.
+4. **Next Steps**: Specific actions to improve.
+
+CRITICAL RULES:
+- Be direct but not harsh. Rejections sting.
+- Use THEIR specific data, not generic advice.
+- If rejections are spread across stages, note that too.
+- If they have little rejection data, say you need more to see patterns.
+
+Example:
+"You've been rejected 4 times in the last month. Here's the pattern:
+
+* 2 rejections at resume screen: Your materials might not be optimized for these role types
+* 1 at recruiter screen: Was salary discussed? That's often the blocker there
+* 1 at final round: That one was competition, not qualification
+
+The signal: Your resume screen rejections are where to focus. What types of roles were those?"
+
+=== END REJECTION FORENSICS INSTRUCTION ===
+"""
+        elif rejected_count > 0:
+            system_prompt += f"""
+
+=== REJECTION FORENSICS NOTE ===
+The user is asking about rejections, but they only have {rejected_count} rejection(s) tracked. Let them know you need at least 3 rejections to identify meaningful patterns. Acknowledge their frustration, offer to discuss what happened, but note patterns take more data.
+=== END NOTE ===
+"""
 
     # Build messages
     messages = []

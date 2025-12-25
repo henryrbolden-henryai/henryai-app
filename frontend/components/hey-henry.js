@@ -2317,6 +2317,98 @@ ${confidenceClosing}`,
             const mostRecentActivity = lastActivityDates.length > 0 ? Math.max(...lastActivityDates) : Date.now();
             const stalledDays = Math.floor((Date.now() - mostRecentActivity) / (1000 * 60 * 60 * 24));
 
+            // ==========================================
+            // PIPELINE PATTERN ANALYSIS (Phase 2.2)
+            // ==========================================
+
+            // Fit distribution analysis
+            const fitDistribution = {
+                strong: apps.filter(a => (a.fitScore || 50) >= 80).length,
+                moderate: apps.filter(a => (a.fitScore || 50) >= 60 && (a.fitScore || 50) < 80).length,
+                reach: apps.filter(a => (a.fitScore || 50) >= 40 && (a.fitScore || 50) < 60).length,
+                longShot: apps.filter(a => (a.fitScore || 50) < 40).length
+            };
+            const reachPercentage = apps.length > 0
+                ? Math.round(((fitDistribution.reach + fitDistribution.longShot) / apps.length) * 100)
+                : 0;
+
+            // Stage conversion analysis
+            const stageProgression = {
+                applied: appliedApps.length,
+                responded: respondedApps.length,
+                recruiterScreen: apps.filter(a => ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Offer Received'].includes(a.status)).length,
+                hiringManager: apps.filter(a => ['Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Offer Received'].includes(a.status)).length,
+                finalRound: apps.filter(a => ['Final Round', 'Executive Interview', 'Offer Received'].includes(a.status)).length,
+                offer: apps.filter(a => a.status === 'Offer Received').length
+            };
+
+            // Calculate conversion rates
+            const conversionRates = {
+                applicationToResponse: appliedApps.length > 0 ? Math.round((stageProgression.responded / appliedApps.length) * 100) : 0,
+                responseToRecruiter: stageProgression.responded > 0 ? Math.round((stageProgression.recruiterScreen / stageProgression.responded) * 100) : 0,
+                recruiterToHM: stageProgression.recruiterScreen > 0 ? Math.round((stageProgression.hiringManager / stageProgression.recruiterScreen) * 100) : 0,
+                hmToFinal: stageProgression.hiringManager > 0 ? Math.round((stageProgression.finalRound / stageProgression.hiringManager) * 100) : 0,
+                finalToOffer: stageProgression.finalRound > 0 ? Math.round((stageProgression.offer / stageProgression.finalRound) * 100) : 0
+            };
+
+            // Rejection stage analysis
+            const rejectionsByStage = {
+                resume: rejectedApps.filter(a => !a.lastInterviewStage || a.lastInterviewStage === 'Applied').length,
+                recruiter: rejectedApps.filter(a => a.lastInterviewStage === 'Recruiter Screen').length,
+                hiringManager: rejectedApps.filter(a => a.lastInterviewStage === 'Hiring Manager').length,
+                finalRound: rejectedApps.filter(a => ['Final Round', 'Executive Interview'].includes(a.lastInterviewStage)).length,
+                offer: rejectedApps.filter(a => a.lastInterviewStage === 'Offer').length
+            };
+
+            // Application velocity (apps per week)
+            const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            const twoWeeksAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
+            const appsThisWeek = apps.filter(a => new Date(a.dateApplied || a.dateAdded) >= weekAgo).length;
+            const appsLastWeek = apps.filter(a => {
+                const appDate = new Date(a.dateApplied || a.dateAdded);
+                return appDate >= twoWeeksAgo && appDate < weekAgo;
+            }).length;
+            const velocityTrend = appsThisWeek < appsLastWeek ? 'slowing' : (appsThisWeek > appsLastWeek ? 'accelerating' : 'steady');
+
+            // Company clustering (find patterns in company types)
+            const companyPatterns = {};
+            apps.forEach(a => {
+                // Track company size if available
+                if (a.companySize) {
+                    companyPatterns[a.companySize] = (companyPatterns[a.companySize] || 0) + 1;
+                }
+            });
+
+            // Identify weak spots (stages with highest drop-off)
+            const weakSpots = [];
+            if (conversionRates.applicationToResponse < 20 && appliedApps.length >= 5) {
+                weakSpots.push({ stage: 'resume_screen', dropOff: 100 - conversionRates.applicationToResponse, message: 'Your resume may not be passing ATS or resonating with recruiters' });
+            }
+            if (conversionRates.recruiterToHM < 50 && stageProgression.recruiterScreen >= 3) {
+                weakSpots.push({ stage: 'recruiter_to_hm', dropOff: 100 - conversionRates.recruiterToHM, message: 'Something is happening in recruiter screens that is not advancing you' });
+            }
+            if (conversionRates.hmToFinal < 50 && stageProgression.hiringManager >= 3) {
+                weakSpots.push({ stage: 'hm_to_final', dropOff: 100 - conversionRates.hmToFinal, message: 'You are getting to hiring managers but not converting. Dig into those conversations.' });
+            }
+            if (conversionRates.finalToOffer < 33 && stageProgression.finalRound >= 2) {
+                weakSpots.push({ stage: 'final_to_offer', dropOff: 100 - conversionRates.finalToOffer, message: 'Getting to finals but not closing. Competition or late-stage issues.' });
+            }
+
+            // Pattern insights (auto-generated)
+            const patternInsights = [];
+            if (reachPercentage >= 60) {
+                patternInsights.push(`${reachPercentage}% of your applications are reaches or long shots. You are overreaching on scope.`);
+            }
+            if (ghostedApps.length >= 3 && ghostedApps.length >= appliedApps.length * 0.3) {
+                patternInsights.push(`${ghostedApps.length} applications likely ghosted. These companies may be overwhelmed or the role filled.`);
+            }
+            if (velocityTrend === 'slowing' && appsLastWeek >= 3) {
+                patternInsights.push(`Application momentum is slowing: ${appsThisWeek} this week vs ${appsLastWeek} last week.`);
+            }
+            if (weakSpots.length > 0) {
+                weakSpots.forEach(ws => patternInsights.push(ws.message));
+            }
+
             return {
                 total: apps.length,
                 active: activeApps.length,
@@ -2341,7 +2433,33 @@ ${confidenceClosing}`,
                     daysSinceUpdate: getDaysSinceDate(a.lastUpdated || a.dateAdded)
                 })),
                 // Summary for the AI
-                summary: generatePipelineSummary(activeApps, interviewingApps, appliedApps, respondedApps, rejectedApps, ghostedApps, avgFit, interviewRate)
+                summary: generatePipelineSummary(activeApps, interviewingApps, appliedApps, respondedApps, rejectedApps, ghostedApps, avgFit, interviewRate),
+                // PATTERN ANALYSIS DATA (Phase 2.2)
+                patternAnalysis: {
+                    fitDistribution,
+                    reachPercentage,
+                    stageProgression,
+                    conversionRates,
+                    rejectionsByStage,
+                    velocity: {
+                        thisWeek: appsThisWeek,
+                        lastWeek: appsLastWeek,
+                        trend: velocityTrend
+                    },
+                    weakSpots,
+                    patternInsights,
+                    // All apps for detailed analysis (not just top 5)
+                    allApps: apps.map(a => ({
+                        company: a.company,
+                        role: a.role,
+                        status: a.status,
+                        fitScore: a.fitScore || 50,
+                        dateApplied: a.dateApplied || a.dateAdded,
+                        lastUpdated: a.lastUpdated || a.dateAdded,
+                        daysSinceUpdate: getDaysSinceDate(a.lastUpdated || a.dateAdded),
+                        lastInterviewStage: a.lastInterviewStage || null
+                    }))
+                }
             };
         } catch (e) {
             console.error('Error getting pipeline data:', e);
@@ -2457,6 +2575,206 @@ ${confidenceClosing}`,
             };
         } catch (e) {
             console.error('Error getting positioning data:', e);
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // NETWORK DATA - LinkedIn Connections (Phase 2.1)
+    // =========================================================================
+
+    function getNetworkData(targetCompany) {
+        try {
+            const connectionsRaw = localStorage.getItem('linkedinConnections');
+            if (!connectionsRaw) return null;
+
+            const connections = JSON.parse(connectionsRaw);
+            if (!connections || connections.length === 0) return null;
+
+            // If no target company, just return summary
+            if (!targetCompany) {
+                return {
+                    hasConnections: true,
+                    totalConnections: connections.length,
+                    directAtCompany: [],
+                    relevantConnections: []
+                };
+            }
+
+            // Normalize company name for matching
+            const normalizeCompany = (name) => {
+                if (!name) return '';
+                return name.toLowerCase()
+                    .replace(/,?\s*(inc\.?|llc\.?|ltd\.?|corp\.?|corporation|company|co\.?)$/i, '')
+                    .replace(/[^a-z0-9]/g, '')
+                    .trim();
+            };
+
+            const targetNormalized = normalizeCompany(targetCompany);
+
+            // Find direct connections at target company
+            const directConnections = connections.filter(conn => {
+                const connCompany = normalizeCompany(conn.company || conn.Company || '');
+                return connCompany === targetNormalized || connCompany.includes(targetNormalized) || targetNormalized.includes(connCompany);
+            });
+
+            // Find relevant connections (same industry or function, for 2nd-degree suggestions)
+            // For now, we'll focus on direct connections
+            const relevantConnections = [];
+
+            return {
+                hasConnections: true,
+                totalConnections: connections.length,
+                directAtCompany: directConnections.slice(0, 10).map(conn => ({
+                    firstName: conn.firstName || conn['First Name'] || conn.first_name || '',
+                    lastName: conn.lastName || conn['Last Name'] || conn.last_name || '',
+                    fullName: (conn.firstName || conn['First Name'] || conn.first_name || '') + ' ' + (conn.lastName || conn['Last Name'] || conn.last_name || ''),
+                    company: conn.company || conn.Company || '',
+                    position: conn.position || conn.Position || conn.title || '',
+                    connectedOn: conn.connectedOn || conn['Connected On'] || ''
+                })),
+                relevantConnections: relevantConnections
+            };
+        } catch (e) {
+            console.error('Error getting network data:', e);
+            return null;
+        }
+    }
+
+    // =========================================================================
+    // OUTREACH TRACKING - Follow-up prompts (Phase 2.7)
+    // =========================================================================
+
+    function getOutreachLogData() {
+        try {
+            const outreachLog = JSON.parse(localStorage.getItem('outreachLog') || '[]');
+            if (outreachLog.length === 0) return null;
+
+            const now = Date.now();
+            const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+            const tenDaysMs = 10 * 24 * 60 * 60 * 1000;
+
+            // Categorize outreach by status
+            const pending = outreachLog.filter(o => o.status === 'pending');
+            const responded = outreachLog.filter(o => o.status === 'responded');
+            const noResponse = outreachLog.filter(o => o.status === 'no_response');
+
+            // Find outreach due for follow-up (sent 5+ days ago, still pending)
+            const dueForFollowUp = pending.filter(o => {
+                const sentDate = new Date(o.sentAt).getTime();
+                const daysSince = (now - sentDate) / (24 * 60 * 60 * 1000);
+                return daysSince >= 5 && daysSince < 10 && !o.followedUpAt;
+            });
+
+            // Find outreach due for final follow-up (sent 10+ days ago)
+            const dueForFinalFollowUp = pending.filter(o => {
+                const sentDate = new Date(o.sentAt).getTime();
+                const daysSince = (now - sentDate) / (24 * 60 * 60 * 1000);
+                return daysSince >= 10 && (!o.followedUpAt || ((now - new Date(o.followedUpAt).getTime()) / (24 * 60 * 60 * 1000)) >= 5);
+            });
+
+            return {
+                total: outreachLog.length,
+                pending: pending.length,
+                responded: responded.length,
+                noResponse: noResponse.length,
+                dueForFollowUp: dueForFollowUp.map(o => ({
+                    contactName: o.contactName,
+                    company: o.company,
+                    channel: o.channel,
+                    sentAt: o.sentAt,
+                    daysSince: Math.floor((now - new Date(o.sentAt).getTime()) / (24 * 60 * 60 * 1000))
+                })),
+                dueForFinalFollowUp: dueForFinalFollowUp.map(o => ({
+                    contactName: o.contactName,
+                    company: o.company,
+                    channel: o.channel,
+                    sentAt: o.sentAt,
+                    daysSince: Math.floor((now - new Date(o.sentAt).getTime()) / (24 * 60 * 60 * 1000))
+                })),
+                recentOutreach: outreachLog.slice(0, 5).map(o => ({
+                    contactName: o.contactName,
+                    company: o.company,
+                    channel: o.channel,
+                    status: o.status,
+                    sentAt: o.sentAt
+                }))
+            };
+        } catch (e) {
+            console.error('Error getting outreach log data:', e);
+            return null;
+        }
+    }
+
+    // Log new outreach (called when user confirms they sent a message)
+    function logOutreach(contactName, company, channel, messageContent = '') {
+        try {
+            const outreachLog = JSON.parse(localStorage.getItem('outreachLog') || '[]');
+
+            const newEntry = {
+                id: Date.now().toString(),
+                contactName,
+                company,
+                channel,
+                messageContent: messageContent.substring(0, 500), // Limit stored content
+                sentAt: new Date().toISOString(),
+                status: 'pending',
+                followedUpAt: null,
+                responseDate: null,
+                responseNotes: ''
+            };
+
+            outreachLog.unshift(newEntry); // Add to beginning
+
+            // Keep only last 100 entries
+            if (outreachLog.length > 100) {
+                outreachLog.length = 100;
+            }
+
+            localStorage.setItem('outreachLog', JSON.stringify(outreachLog));
+            return newEntry;
+        } catch (e) {
+            console.error('Error logging outreach:', e);
+            return null;
+        }
+    }
+
+    // Update outreach status
+    function updateOutreachStatus(outreachId, status, notes = '') {
+        try {
+            const outreachLog = JSON.parse(localStorage.getItem('outreachLog') || '[]');
+            const entry = outreachLog.find(o => o.id === outreachId);
+
+            if (entry) {
+                entry.status = status;
+                if (status === 'responded') {
+                    entry.responseDate = new Date().toISOString();
+                    entry.responseNotes = notes;
+                }
+                localStorage.setItem('outreachLog', JSON.stringify(outreachLog));
+                return entry;
+            }
+            return null;
+        } catch (e) {
+            console.error('Error updating outreach status:', e);
+            return null;
+        }
+    }
+
+    // Mark outreach as followed up
+    function markOutreachFollowedUp(outreachId) {
+        try {
+            const outreachLog = JSON.parse(localStorage.getItem('outreachLog') || '[]');
+            const entry = outreachLog.find(o => o.id === outreachId);
+
+            if (entry) {
+                entry.followedUpAt = new Date().toISOString();
+                localStorage.setItem('outreachLog', JSON.stringify(outreachLog));
+                return entry;
+            }
+            return null;
+        } catch (e) {
+            console.error('Error marking outreach followed up:', e);
             return null;
         }
     }
@@ -3646,6 +3964,13 @@ ${confidenceClosing}`,
             const interviewPrepData = getInterviewPrepData();
             const positioningData = getPositioningData();
 
+            // Gather network data for proactive connection surfacing (Phase 2.1)
+            const targetCompany = analysisData._company_name || analysisData.company || null;
+            const networkData = getNetworkData(targetCompany);
+
+            // Gather outreach log data for follow-up prompts (Phase 2.7)
+            const outreachLogData = getOutreachLogData();
+
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
 
@@ -3703,7 +4028,11 @@ ${confidenceClosing}`,
                     documents_data: documentsData,
                     outreach_data: outreachData,
                     interview_prep_data: interviewPrepData,
-                    positioning_data: positioningData
+                    positioning_data: positioningData,
+                    // Network data for proactive connection surfacing (Phase 2.1)
+                    network_data: networkData,
+                    // Outreach log data for follow-up prompts (Phase 2.7)
+                    outreach_log_data: outreachLogData
                 });
                 console.log('Hey Henry request body size:', requestBody.length, 'bytes');
             } catch (jsonError) {
