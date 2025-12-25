@@ -18131,6 +18131,8 @@ class HeyHenryRequest(BaseModel):
     network_data: Optional[Dict[str, Any]] = None  # LinkedIn connections at target company
     # Outreach log data - Follow-up tracking (Phase 2.7)
     outreach_log_data: Optional[Dict[str, Any]] = None  # Outreach tracking and follow-ups
+    # Interview debrief data - Missing debrief detection (Phase 2.3)
+    interview_debrief_data: Optional[Dict[str, Any]] = None  # Interviews needing debriefs
 
 
 class HeyHenryResponse(BaseModel):
@@ -18234,6 +18236,8 @@ CURRENT CONTEXT:
 {network_context}
 
 {outreach_log_context}
+
+{interview_debrief_context}
 
 {generated_content_context}
 
@@ -18545,6 +18549,46 @@ Offer to draft a follow-up message if they want.
 Don't be pushy, but do keep them accountable.
 """
 
+    # Build interview debrief context for missing debrief prompts (Phase 2.3)
+    interview_debrief_context = ""
+    if request.interview_debrief_data:
+        idd = request.interview_debrief_data
+        needs_debrief = idd.get('needsDebrief', [])
+        has_skipped = idd.get('hasSkippedDebriefs', False)
+
+        if needs_debrief or has_skipped:
+            interview_debrief_context = """
+INTERVIEW DEBRIEF REMINDERS (IMPORTANT - surface proactively):
+"""
+            if needs_debrief:
+                interview_debrief_context += "Interviews that need debriefs:\n"
+                for d in needs_debrief[:3]:
+                    company = d.get('company', 'Unknown')
+                    interview_type = d.get('interviewType', 'Interview')
+                    days_since = d.get('daysSince', 0)
+                    reason = d.get('reason', '')
+                    interview_debrief_context += f"* {interview_type} at {company}"
+                    if days_since > 0:
+                        interview_debrief_context += f" ({days_since} days ago)"
+                    interview_debrief_context += f"\n  Reason: {reason}\n"
+
+            if has_skipped:
+                interview_debrief_context += """
+⚠️ COMPOUNDING VALUE ALERT: This candidate has advanced to later interview stages without debriefing earlier rounds. They're missing the compounding value of pattern recognition across interviews.
+"""
+
+            interview_debrief_context += """
+DEBRIEF VALUE PITCH:
+- Debriefs while details are fresh capture 3x more actionable insights
+- Pattern recognition across interviews compounds (e.g., "this is the third time you've struggled with X")
+- Skipping debriefs means missing early signals that could help in later rounds
+
+When appropriate, proactively encourage them to complete a debrief:
+- "Before your panel interview, let's debrief your HM round. Those insights could help."
+- "You've had 3 interviews without debriefs. Want to quickly run through what happened? I can spot patterns."
+- "Interview debrief takes 5 minutes. The insights compound. Worth it?"
+"""
+
     # Build generated content context - YOU ARE THE AUTHOR
     generated_content_context = ""
 
@@ -18688,6 +18732,7 @@ POSITIONING STRATEGY YOU DEVELOPED:
         pipeline_context=pipeline_context,
         network_context=network_context,
         outreach_log_context=outreach_log_context,
+        interview_debrief_context=interview_debrief_context,
         generated_content_context=generated_content_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,

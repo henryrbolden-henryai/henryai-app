@@ -2779,6 +2779,94 @@ ${confidenceClosing}`,
         }
     }
 
+    // =========================================================================
+    // INTERVIEW DEBRIEF TRACKING - Missing debrief detection (Phase 2.3)
+    // =========================================================================
+
+    function getInterviewDebriefData() {
+        try {
+            const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+            const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+
+            if (completedInterviews.length === 0 && trackedApps.length === 0) return null;
+
+            // Find completed interviews without debriefs
+            const missingDebriefs = completedInterviews.filter(interview => {
+                // Interview happened but no debrief completed
+                return !interview.debriefCompleted && interview.date;
+            });
+
+            // Also check tracked applications for interview stages without debriefs
+            const interviewStages = ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview'];
+            const appsInInterviewStages = trackedApps.filter(app => {
+                return interviewStages.includes(app.status) && !app.debriefCompleted;
+            });
+
+            // Find apps that have advanced stages but may have skipped debriefs
+            // e.g., someone at Panel Interview who never debriefed Recruiter Screen or HM
+            const stageOrder = ['Applied', 'Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Offer Received'];
+            const appsWithSkippedDebriefs = trackedApps.filter(app => {
+                const currentStageIndex = stageOrder.indexOf(app.status);
+                // If at Panel Interview (index 4) or later, check if earlier interviews were debriefed
+                if (currentStageIndex >= 4) {
+                    // Check if any earlier interview stages were completed without debrief
+                    const hasEarlierInterview = completedInterviews.some(
+                        i => i.company === app.company && !i.debriefCompleted
+                    );
+                    return hasEarlierInterview || !app.debriefCompleted;
+                }
+                return false;
+            });
+
+            // Count total debriefs completed
+            const totalDebriefs = completedInterviews.filter(i => i.debriefCompleted).length;
+
+            // Get interviews that need debriefs (prioritized)
+            const needsDebrief = [];
+
+            // Priority 1: Recent completed interviews without debrief (within 7 days)
+            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            missingDebriefs.forEach(interview => {
+                const interviewDate = new Date(interview.date).getTime();
+                if (interviewDate >= sevenDaysAgo) {
+                    needsDebrief.push({
+                        company: interview.company || interview.companyName,
+                        role: interview.role || interview.roleName,
+                        interviewType: interview.interviewType || interview.type || 'Interview',
+                        date: interview.date,
+                        daysSince: Math.floor((Date.now() - interviewDate) / (24 * 60 * 60 * 1000)),
+                        priority: 'high',
+                        reason: 'Recent interview needs debrief while details are fresh'
+                    });
+                }
+            });
+
+            // Priority 2: Apps at advanced stages with no prior debriefs
+            appsWithSkippedDebriefs.forEach(app => {
+                needsDebrief.push({
+                    company: app.company,
+                    role: app.role,
+                    interviewType: app.status,
+                    date: app.lastUpdated || app.dateApplied,
+                    daysSince: 0,
+                    priority: 'medium',
+                    reason: `At ${app.status} but earlier interviews not debriefed. Compounding insights missed.`
+                });
+            });
+
+            return {
+                totalCompletedInterviews: completedInterviews.length,
+                totalDebriefs: totalDebriefs,
+                missingDebriefCount: missingDebriefs.length,
+                needsDebrief: needsDebrief.slice(0, 5), // Top 5 priority
+                hasSkippedDebriefs: appsWithSkippedDebriefs.length > 0
+            };
+        } catch (e) {
+            console.error('Error getting interview debrief data:', e);
+            return null;
+        }
+    }
+
     // Get contextual suggestions based on current page
     function getContextualSuggestions() {
         const path = window.location.pathname;
@@ -3971,6 +4059,9 @@ ${confidenceClosing}`,
             // Gather outreach log data for follow-up prompts (Phase 2.7)
             const outreachLogData = getOutreachLogData();
 
+            // Gather interview debrief data for missing debrief prompts (Phase 2.3)
+            const interviewDebriefData = getInterviewDebriefData();
+
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
 
@@ -4032,7 +4123,9 @@ ${confidenceClosing}`,
                     // Network data for proactive connection surfacing (Phase 2.1)
                     network_data: networkData,
                     // Outreach log data for follow-up prompts (Phase 2.7)
-                    outreach_log_data: outreachLogData
+                    outreach_log_data: outreachLogData,
+                    // Interview debrief data for missing debrief prompts (Phase 2.3)
+                    interview_debrief_data: interviewDebriefData
                 });
                 console.log('Hey Henry request body size:', requestBody.length, 'bytes');
             } catch (jsonError) {
