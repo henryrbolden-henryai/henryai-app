@@ -923,7 +923,17 @@ Examples of helpful info:
             }
         }
 
-        function goToCommandCenter() {
+        async function goToCommandCenter() {
+            // Show loading state while extracting
+            const completeBtn = document.querySelector('.debrief-complete-btn');
+            if (completeBtn) {
+                completeBtn.disabled = true;
+                completeBtn.textContent = 'Saving insights...';
+            }
+
+            // Extract and store structured debrief data
+            await extractAndStoreDebrief();
+
             // Ensure the interview is synced to Command Center before navigating
             if (currentInterview) {
                 // Make sure debrief info is set on the interview object
@@ -937,6 +947,84 @@ Examples of helpful info:
                 console.error('No currentInterview found to sync');
             }
             window.location.href = 'tracker.html';
+        }
+
+        /**
+         * Extract structured data from debrief conversation and store in Supabase
+         * This feeds the intelligence loop for future interview prep
+         */
+        async function extractAndStoreDebrief() {
+            // Need conversation history and HenryData to proceed
+            if (conversationHistory.length === 0 || typeof window.HenryData === 'undefined') {
+                console.log('Skipping debrief extraction - no conversation or HenryData unavailable');
+                return;
+            }
+
+            try {
+                // Format conversation as text for extraction
+                const conversationText = conversationHistory
+                    .map(msg => `${msg.role === 'user' ? 'User' : 'Henry'}: ${msg.content}`)
+                    .join('\n\n');
+
+                console.log('Extracting structured data from debrief conversation...');
+
+                // Call the extraction endpoint
+                const response = await fetch(`${API_BASE}/api/debriefs/extract`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conversation: conversationText,
+                        company: currentInterview?.company || 'Unknown',
+                        role: currentInterview?.role || null,
+                        interview_type: currentInterview?.type || null,
+                        application_id: null  // Could link to tracked application if available
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Debrief extraction failed:', response.status);
+                    return;
+                }
+
+                const extractionResult = await response.json();
+                console.log('✅ Extracted debrief data:', extractionResult);
+
+                // Store the structured debrief in Supabase
+                const debriefData = {
+                    company: currentInterview?.company || 'Unknown',
+                    role: currentInterview?.role,
+                    interview_date: currentInterview?.date ? new Date(currentInterview.date).toISOString().split('T')[0] : null,
+                    raw_conversation: conversationText,
+                    ...extractionResult.structured_data
+                };
+
+                const { data: savedDebrief, error: debriefError } = await window.HenryData.createDebrief(debriefData);
+
+                if (debriefError) {
+                    console.error('Failed to save debrief to Supabase:', debriefError);
+                } else {
+                    console.log('✅ Saved structured debrief:', savedDebrief?.id);
+
+                    // Save extracted stories to the story bank
+                    if (extractionResult.stories_extracted && extractionResult.stories_extracted.length > 0) {
+                        for (const story of extractionResult.stories_extracted) {
+                            await window.HenryData.addStory({
+                                story_name: story.name,
+                                story_context: story.context,
+                                effectiveness: story.effectiveness,
+                                interview_id: savedDebrief?.id,
+                                demonstrates: story.demonstrates || [],
+                                best_for_questions: story.best_for_questions || []
+                            });
+                        }
+                        console.log(`✅ Saved ${extractionResult.stories_extracted.length} stories to story bank`);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error extracting/storing debrief:', error);
+                // Don't block navigation on extraction failure
+            }
         }
 
         function loadSavedDebrief() {

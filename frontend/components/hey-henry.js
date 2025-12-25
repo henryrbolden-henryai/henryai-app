@@ -2867,6 +2867,60 @@ ${confidenceClosing}`,
         }
     }
 
+    // DEBRIEF PATTERN ANALYSIS - Cross-interview intelligence (Phase 2.3)
+    // Fetches and analyzes patterns across user's interview debriefs
+    let cachedPatternAnalysis = null;
+    let patternAnalysisTimestamp = null;
+
+    async function getDebriefPatternAnalysis() {
+        try {
+            // Check if HenryData is available
+            if (typeof window.HenryData === 'undefined') {
+                return null;
+            }
+
+            // Cache for 5 minutes to avoid repeated calls
+            const now = Date.now();
+            if (cachedPatternAnalysis && patternAnalysisTimestamp && (now - patternAnalysisTimestamp) < 300000) {
+                return cachedPatternAnalysis;
+            }
+
+            // Fetch debriefs from Supabase
+            const debriefs = await window.HenryData.getDebriefsForPatternAnalysis();
+
+            if (!debriefs || debriefs.length < 3) {
+                // Need at least 3 debriefs for meaningful patterns
+                return null;
+            }
+
+            console.log(`📊 Analyzing patterns across ${debriefs.length} debriefs...`);
+
+            // Call the pattern analysis endpoint
+            const response = await fetch(`${API_BASE}/api/debriefs/analyze-patterns`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(debriefs)
+            });
+
+            if (!response.ok) {
+                console.error('Pattern analysis failed:', response.status);
+                return null;
+            }
+
+            const patternData = await response.json();
+            console.log('✅ Pattern analysis complete:', patternData.insights?.length || 0, 'insights');
+
+            // Cache the result
+            cachedPatternAnalysis = patternData;
+            patternAnalysisTimestamp = now;
+
+            return patternData;
+        } catch (e) {
+            console.error('Error getting debrief pattern analysis:', e);
+            return null;
+        }
+    }
+
     // Get contextual suggestions based on current page
     function getContextualSuggestions() {
         const path = window.location.pathname;
@@ -4062,6 +4116,9 @@ ${confidenceClosing}`,
             // Gather interview debrief data for missing debrief prompts (Phase 2.3)
             const interviewDebriefData = getInterviewDebriefData();
 
+            // Get cross-interview pattern analysis (Phase 2.3)
+            const patternAnalysis = await getDebriefPatternAnalysis();
+
             // Generate tone guidance based on emotional state
             const toneGuidance = getToneGuidance(emotionalState);
 
@@ -4125,7 +4182,9 @@ ${confidenceClosing}`,
                     // Outreach log data for follow-up prompts (Phase 2.7)
                     outreach_log_data: outreachLogData,
                     // Interview debrief data for missing debrief prompts (Phase 2.3)
-                    interview_debrief_data: interviewDebriefData
+                    interview_debrief_data: interviewDebriefData,
+                    // Cross-interview pattern analysis (Phase 2.3)
+                    debrief_pattern_analysis: patternAnalysis
                 });
                 console.log('Hey Henry request body size:', requestBody.length, 'bytes');
             } catch (jsonError) {
