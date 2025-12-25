@@ -1236,6 +1236,56 @@ const HenryData = {
         }
 
         return data || [];
+    },
+
+    /**
+     * Update a story
+     * @param {string} storyId - UUID of the story
+     * @param {Object} updates - Fields to update
+     */
+    async updateStory(storyId, updates) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', storyId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating story:', error);
+            throw error;
+        }
+
+        return data;
+    },
+
+    /**
+     * Delete a story permanently
+     * @param {string} storyId - UUID of the story
+     */
+    async deleteStory(storyId) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { error } = await supabase
+            .from('user_story_bank')
+            .delete()
+            .eq('id', storyId)
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Error deleting story:', error);
+            throw error;
+        }
+
+        return true;
     }
 };
 

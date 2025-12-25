@@ -941,6 +941,62 @@
                 justify-content: center;
             }
         }
+
+        /* Story Bank Toast Notification */
+        .story-bank-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 1px solid #374151;
+            border-left: 3px solid #22d3ee;
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .story-bank-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .story-bank-toast .toast-icon {
+            font-size: 1.4rem;
+        }
+
+        .story-bank-toast .toast-message {
+            color: #e5e7eb;
+            font-size: 0.95rem;
+        }
+
+        .story-bank-toast .toast-link {
+            color: #22d3ee;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: color 0.2s;
+        }
+
+        .story-bank-toast .toast-link:hover {
+            color: #67e8f9;
+        }
+
+        @media (max-width: 768px) {
+            .story-bank-toast {
+                bottom: 16px;
+                right: 16px;
+                left: 16px;
+                flex-wrap: wrap;
+            }
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase Auth -->
@@ -1343,6 +1399,9 @@ Examples of helpful info:
                             });
                         }
                         console.log(`✅ Saved ${extractionResult.stories_extracted.length} stories to story bank`);
+
+                        // Show toast notification with link to story bank
+                        showStoryBankToast(extractionResult.stories_extracted.length);
                     }
                 }
 
@@ -1350,6 +1409,30 @@ Examples of helpful info:
                 console.error('Error extracting/storing debrief:', error);
                 // Don't block navigation on extraction failure
             }
+        }
+
+        // ============================================================================
+        // STORY BANK TOAST NOTIFICATION
+        // ============================================================================
+        function showStoryBankToast(count) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'story-bank-toast';
+            toast.innerHTML = `
+                <span class="toast-icon">📚</span>
+                <span class="toast-message">${count} ${count === 1 ? 'story' : 'stories'} saved to your Story Bank</span>
+                <a href="story-bank.html" class="toast-link">View Stories →</a>
+            `;
+            document.body.appendChild(toast);
+
+            // Animate in
+            setTimeout(() => toast.classList.add('visible'), 100);
+
+            // Auto dismiss after 6 seconds
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
         }
 
         // ============================================================================

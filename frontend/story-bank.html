@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Bank | HenryHQ</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/png" href="images/h-mark.png">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            min-height: 100vh;
+            color: #e5e7eb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .page-header p {
+            color: #9ca3af;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .filter-select {
+            background: #1f2937;
+            color: #e5e7eb;
+            border: 1px solid #374151;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #9ca3af;
+            margin-top: 0.25rem;
+        }
+
+        .stat-sublabel {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        /* Story Cards Grid */
+        .stories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .story-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .story-card:hover {
+            border-color: #60a5fa;
+            transform: translateY(-2px);
+        }
+
+        .story-card.retired {
+            opacity: 0.6;
+        }
+
+        .story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .story-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .btn-icon:hover {
+            color: #fff;
+            background: #374151;
+        }
+
+        .demonstrates-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: #374151;
+            color: #d1d5db;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .best-for {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .story-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .story-stat {
+            background: #111827;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #d1d5db;
+        }
+
+        /* Status Badges */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-high-impact {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-overused {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .badge-new {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+        }
+
+        .badge-needs-work {
+            background: rgba(107, 114, 128, 0.2);
+            color: #9ca3af;
+        }
+
+        .badge-retired {
+            background: rgba(75, 85, 99, 0.2);
+            color: #6b7280;
+        }
+
+        .story-footer {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #374151;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #1f2937;
+            border: 1px dashed #374151;
+            border-radius: 12px;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            margin-bottom: 1rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .empty-state ul {
+            text-align: left;
+            max-width: 350px;
+            margin: 1.5rem auto;
+            color: #9ca3af;
+        }
+
+        .empty-state li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #374151;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #e5e7eb;
+        }
+
+        .form-group .hint {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: #e5e7eb;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+
+        .form-textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .tags-input {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            min-height: 44px;
+        }
+
+        .tags-input .tag {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .tags-input .tag-remove {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .tags-input input {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            border: none;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+            padding: 0.25rem;
+        }
+
+        .tags-input input:focus {
+            outline: none;
+        }
+
+        .suggested-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .suggested-tag {
+            background: #374151;
+            border: none;
+            color: #9ca3af;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .suggested-tag:hover {
+            background: #4b5563;
+            color: #fff;
+        }
+
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .question-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .question-row input {
+            flex: 1;
+        }
+
+        .question-row .btn-remove {
+            background: #374151;
+            border: none;
+            color: #9ca3af;
+            width: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .question-row .btn-remove:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-add-question {
+            background: transparent;
+            border: 1px dashed #374151;
+            color: #9ca3af;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .btn-add-question:hover {
+            border-color: #60a5fa;
+            color: #60a5fa;
+        }
+
+        .tip-box {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.875rem;
+            color: #93c5fd;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #374151;
+        }
+
+        .btn-secondary {
+            background: #374151;
+            color: #e5e7eb;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* Detail View Modal */
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-section h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #374151;
+        }
+
+        .story-content {
+            white-space: pre-wrap;
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+
+        .usage-history {
+            list-style: none;
+            padding: 0;
+        }
+
+        .usage-history li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #374151;
+            color: #d1d5db;
+            font-size: 0.9rem;
+        }
+
+        .usage-history li:last-child {
+            border-bottom: none;
+        }
+
+        .usage-rating {
+            color: #f59e0b;
+        }
+
+        /* Dropdown Menu */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            min-width: 150px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            background: none;
+            border: none;
+            color: #d1d5db;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background: #374151;
+        }
+
+        .dropdown-item.danger {
+            color: #ef4444;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stories-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .modal {
+                max-height: 100vh;
+                border-radius: 0;
+            }
+        }
+
+        /* Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid #374151;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .nav-brand img {
+            height: 32px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #fff;
+        }
+
+        /* Confirmation Modal */
+        .confirm-modal .modal {
+            max-width: 400px;
+        }
+
+        .confirm-modal .modal-body {
+            text-align: center;
+        }
+
+        .confirm-modal .modal-body p {
+            color: #d1d5db;
+            margin-bottom: 1.5rem;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="top-nav">
+        <a href="tracker.html" class="nav-brand">
+            <img src="images/h-mark.png" alt="HenryHQ">
+            HenryHQ
+        </a>
+        <div class="nav-links">
+            <a href="tracker.html">Command Center</a>
+            <a href="profile-edit.html">Profile</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>Your Story Bank</h1>
+            <p>These are the examples and stories you've used (or can use) in interviews. Strong candidates have 8-12 polished stories covering different competencies.</p>
+
+            <div class="header-actions">
+                <button class="btn-primary" onclick="openAddModal()">
+                    <span>+</span> Add New Story
+                </button>
+                <select class="filter-select" id="storyFilter" onchange="filterStories()">
+                    <option value="all">All Stories</option>
+                    <option value="high-impact">High Impact</option>
+                    <option value="overused">Overused</option>
+                    <option value="needs-work">Needs Work</option>
+                    <option value="new">New (Unused)</option>
+                    <option value="retired">Retired</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">-</div>
+                <div class="stat-label">Total Stories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statHighImpact">-</div>
+                <div class="stat-label">High Impact</div>
+                <div class="stat-sublabel">(4+ rating)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statOverused">-</div>
+                <div class="stat-label">Overused</div>
+                <div class="stat-sublabel">(3+ uses)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statNeedsWork">-</div>
+                <div class="stat-label">Needs Work</div>
+                <div class="stat-sublabel">(incomplete)</div>
+            </div>
+        </div>
+
+        <!-- Stories Container -->
+        <div id="storiesContainer">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading your stories...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Story Modal -->
+    <div class="modal-overlay" id="storyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Story</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="storyForm" onsubmit="saveStory(event)">
+                    <input type="hidden" id="storyId">
+
+                    <div class="form-group">
+                        <label for="storyName">Story Name *</label>
+                        <input type="text" id="storyName" class="form-input" required maxlength="100" placeholder="e.g., Uber Launch Under Pressure">
+                        <div class="hint">Give it a memorable name you'll recognize</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>What does this story demonstrate? *</label>
+                        <div class="tags-input" id="demonstratesInput">
+                            <input type="text" placeholder="Type and press Enter" onkeydown="handleTagInput(event, 'demonstrates')">
+                        </div>
+                        <div class="suggested-tags" id="suggestedTags">
+                            <button type="button" class="suggested-tag" onclick="addTag('Leadership', 'demonstrates')">Leadership</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Problem-solving', 'demonstrates')">Problem-solving</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Conflict resolution', 'demonstrates')">Conflict resolution</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Influence', 'demonstrates')">Influence</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Technical depth', 'demonstrates')">Technical depth</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Cross-functional', 'demonstrates')">Cross-functional</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Deadline management', 'demonstrates')">Deadline management</button>
+                            <button type="button" class="suggested-tag" onclick="addTag('Failure & learning', 'demonstrates')">Failure & learning</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Best for what interview questions?</label>
+                        <div class="questions-list" id="questionsList">
+                            <div class="question-row">
+                                <input type="text" class="form-input question-input" placeholder="e.g., Tell me about a time you delivered under pressure">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add-question" onclick="addQuestionRow()">+ Add another question</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="storySummary">Story Summary (STAR format)</label>
+                        <textarea id="storySummary" class="form-input form-textarea" placeholder="Situation: [Context and background]
+
+Task: [Your responsibility]
+
+Action: [Specific steps you took]
+
+Result: [Measurable outcomes]"></textarea>
+                    </div>
+
+                    <div class="tip-box">
+                        <strong>Tip:</strong> Keep it under 2 minutes when spoken. Include specific numbers and outcomes.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn-primary" form="storyForm">Save Story</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail View Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="detailTitle">Story Details</h2>
+                <button class="modal-close" onclick="closeDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="detailContent">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="detailRetireBtn" onclick="retireCurrentStory()">Retire Story</button>
+                <button type="button" class="btn-primary" id="detailEditBtn" onclick="editCurrentStory()">Edit Story</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal-overlay confirm-modal" id="confirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Delete Story?</h2>
+                <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<span id="confirmStoryName"></span>"? This cannot be undone.</p>
+                <div class="confirm-actions">
+                    <button type="button" class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                    <button type="button" class="btn-primary btn-danger" onclick="confirmDelete()">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        // State
+        let stories = [];
+        let currentFilter = 'all';
+        let currentStoryId = null;
+        let demonstratesTags = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Restore filter from session
+            const savedFilter = sessionStorage.getItem('storyBankFilter');
+            if (savedFilter) {
+                currentFilter = savedFilter;
+                document.getElementById('storyFilter').value = savedFilter;
+            }
+
+            await loadStories();
+        });
+
+        // Load stories from Supabase
+        async function loadStories() {
+            const container = document.getElementById('storiesContainer');
+
+            try {
+                if (typeof window.HenryData === 'undefined') {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔒</div>
+                            <h2>Sign in required</h2>
+                            <p>Please sign in to view your story bank.</p>
+                            <a href="login.html" class="btn-primary" style="display: inline-block; margin-top: 1rem; text-decoration: none;">Sign In</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const data = await window.HenryData.getStoryBank();
+                stories = data || [];
+
+                updateStats();
+                renderStories();
+            } catch (error) {
+                console.error('Error loading stories:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h2>Error loading stories</h2>
+                        <p>${error.message}</p>
+                        <button class="btn-primary" onclick="loadStories()" style="margin-top: 1rem;">Try Again</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const activeStories = stories.filter(s => s.status !== 'retired');
+            const highImpact = activeStories.filter(s => (s.effectiveness_avg || 0) >= 4).length;
+            const overused = activeStories.filter(s => (s.times_used || 0) >= 3).length;
+            const needsWork = activeStories.filter(s => !s.story_summary || s.story_summary.trim() === '').length;
+
+            document.getElementById('statTotal').textContent = activeStories.length;
+            document.getElementById('statHighImpact').textContent = highImpact;
+            document.getElementById('statOverused').textContent = overused;
+            document.getElementById('statNeedsWork').textContent = needsWork;
+        }
+
+        // Filter stories
+        function filterStories() {
+            currentFilter = document.getElementById('storyFilter').value;
+            sessionStorage.setItem('storyBankFilter', currentFilter);
+            renderStories();
+        }
+
+        // Render stories
+        function renderStories() {
+            const container = document.getElementById('storiesContainer');
+
+            let filtered = stories;
+
+            switch (currentFilter) {
+                case 'high-impact':
+                    filtered = stories.filter(s => (s.effectiveness_avg || 0) >= 4 && s.status !== 'retired');
+                    break;
+                case 'overused':
+                    filtered = stories.filter(s => (s.times_used || 0) >= 3 && s.status !== 'retired');
+                    break;
+                case 'needs-work':
+                    filtered = stories.filter(s => (!s.story_summary || s.story_summary.trim() === '') && s.status !== 'retired');
+                    break;
+                case 'new':
+                    filtered = stories.filter(s => (s.times_used || 0) === 0 && s.status !== 'retired');
+                    break;
+                case 'retired':
+                    filtered = stories.filter(s => s.status === 'retired');
+                    break;
+                default:
+                    filtered = stories.filter(s => s.status !== 'retired');
+            }
+
+            if (filtered.length === 0) {
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📖</div>
+                            <h2>No stories yet</h2>
+                            <p>Stories get added automatically when you debrief interviews, or you can add them manually.</p>
+                            <p>Strong candidates have 8-12 polished stories covering:</p>
+                            <ul>
+                                <li>Leadership & influence</li>
+                                <li>Problem-solving & technical challenges</li>
+                                <li>Conflict resolution & difficult conversations</li>
+                                <li>Failures & lessons learned</li>
+                                <li>Achievements & impact</li>
+                            </ul>
+                            <button class="btn-primary" onclick="openAddModal()" style="margin-top: 1rem;">+ Add Your First Story</button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <h2>No stories match this filter</h2>
+                            <p>Try a different filter or add new stories.</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="stories-grid">
+                    ${filtered.map(story => renderStoryCard(story)).join('')}
+                </div>
+            `;
+        }
+
+        // Render single story card
+        function renderStoryCard(story) {
+            const demonstrates = story.demonstrates || [];
+            const bestFor = story.best_for_questions || [];
+            const timesUsed = story.times_used || 0;
+            const effectiveness = story.effectiveness_avg || 0;
+            const isRetired = story.status === 'retired';
+
+            // Determine badges
+            let badges = [];
+            if (effectiveness >= 4) badges.push('<span class="badge badge-high-impact">✅ High Impact</span>');
+            if (timesUsed >= 3 && !isRetired) badges.push('<span class="badge badge-overused">⚠️ Overused</span>');
+            if (timesUsed === 0 && !isRetired) badges.push('<span class="badge badge-new">🆕 New</span>');
+            if ((!story.story_summary || story.story_summary.trim() === '') && !isRetired) badges.push('<span class="badge badge-needs-work">📝 Needs Work</span>');
+            if (isRetired) badges.push('<span class="badge badge-retired">🗄️ Retired</span>');
+
+            const lastUsed = story.last_used_at ? new Date(story.last_used_at).toLocaleDateString() : null;
+
+            return `
+                <div class="story-card ${isRetired ? 'retired' : ''}" onclick="viewStory('${story.id}')">
+                    <div class="story-header">
+                        <div class="story-title">
+                            <span>📖</span>
+                            ${escapeHtml(story.story_name)}
+                        </div>
+                        <div class="story-actions" onclick="event.stopPropagation()">
+                            <button class="btn-icon" onclick="editStory('${story.id}')" title="Edit">✏️</button>
+                            <div class="dropdown">
+                                <button class="btn-icon" onclick="toggleDropdown(event, '${story.id}')" title="More">⋮</button>
+                                <div class="dropdown-menu" id="dropdown-${story.id}">
+                                    <button class="dropdown-item" onclick="viewStory('${story.id}')">View Full Story</button>
+                                    ${isRetired
+                                        ? `<button class="dropdown-item" onclick="restoreStory('${story.id}')">Restore</button>`
+                                        : `<button class="dropdown-item" onclick="retireStory('${story.id}')">Mark as Retired</button>`
+                                    }
+                                    <button class="dropdown-item danger" onclick="deleteStory('${story.id}')">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${demonstrates.length > 0 ? `
+                        <div class="demonstrates-tags">
+                            ${demonstrates.slice(0, 3).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                            ${demonstrates.length > 3 ? `<span class="tag">+${demonstrates.length - 3}</span>` : ''}
+                        </div>
+                    ` : ''}
+
+                    ${bestFor.length > 0 ? `
+                        <div class="best-for">"${escapeHtml(bestFor[0])}"${bestFor.length > 1 ? ` +${bestFor.length - 1} more` : ''}</div>
+                    ` : ''}
+
+                    <div class="story-stats">
+                        <div class="story-stat">Used: ${timesUsed}x</div>
+                        ${effectiveness > 0 ? `<div class="story-stat">Rating: ${effectiveness.toFixed(1)}</div>` : ''}
+                        ${badges.join('')}
+                    </div>
+
+                    ${lastUsed ? `<div class="story-footer">Last used: ${lastUsed}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Toggle dropdown
+        function toggleDropdown(event, storyId) {
+            event.stopPropagation();
+            // Close all other dropdowns
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                if (menu.id !== `dropdown-${storyId}`) {
+                    menu.classList.remove('active');
+                }
+            });
+
+            const menu = document.getElementById(`dropdown-${storyId}`);
+            menu.classList.toggle('active');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.classList.remove('active');
+            });
+        });
+
+        // Open add modal
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add New Story';
+            document.getElementById('storyId').value = '';
+            document.getElementById('storyForm').reset();
+            demonstratesTags = [];
+            renderTags('demonstrates');
+            resetQuestionRows();
+            document.getElementById('storyModal').classList.add('active');
+        }
+
+        // Edit story
+        function editStory(storyId) {
+            const story = stories.find(s => s.id === storyId);
+            if (!story) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Story';
+            document.getElementById('storyId').value = story.id;
+            document.getElementById('storyName').value = story.story_name || '';
+            document.getElementById('storySummary').value = story.story_summary || '';
+
+            // Set demonstrates tags
+            demonstratesTags = story.demonstrates || [];
+            renderTags('demonstrates');
+
+            // Set questions
+            resetQuestionRows();
+            const questions = story.best_for_questions || [];
+            if (questions.length > 0) {
+                document.querySelector('.question-input').value = questions[0];
+                for (let i = 1; i < questions.length; i++) {
+                    addQuestionRow(questions[i]);
+                }
+            }
+
+            document.getElementById('storyModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('storyModal').classList.remove('active');
+        }
+
+        // Handle tag input
+        function handleTagInput(event, type) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = event.target;
+                const value = input.value.trim();
+                if (value && !demonstratesTags.includes(value)) {
+                    addTag(value, type);
+                }
+                input.value = '';
+            }
+        }
+
+        // Add tag
+        function addTag(tag, type) {
+            if (!demonstratesTags.includes(tag)) {
+                demonstratesTags.push(tag);
+                renderTags(type);
+            }
+        }
+
+        // Remove tag
+        function removeTag(tag) {
+            demonstratesTags = demonstratesTags.filter(t => t !== tag);
+            renderTags('demonstrates');
+        }
+
+        // Render tags
+        function renderTags(type) {
+            const container = document.getElementById('demonstratesInput');
+            const input = container.querySelector('input');
+
+            // Remove existing tags
+            container.querySelectorAll('.tag').forEach(el => el.remove());
+
+            // Add tags before input
+            demonstratesTags.forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.className = 'tag';
+                tagEl.innerHTML = `${escapeHtml(tag)} <button type="button" class="tag-remove" onclick="removeTag('${escapeHtml(tag)}')">&times;</button>`;
+                container.insertBefore(tagEl, input);
+            });
+        }
+
+        // Add question row
+        function addQuestionRow(value = '') {
+            const list = document.getElementById('questionsList');
+            const row = document.createElement('div');
+            row.className = 'question-row';
+            row.innerHTML = `
+                <input type="text" class="form-input question-input" placeholder="e.g., Describe a challenging deadline" value="${escapeHtml(value)}">
+                <button type="button" class="btn-remove" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(row);
+        }
+
+        // Reset question rows
+        function resetQuestionRows() {
+            const list = document.getElementById('questionsList');
+            list.innerHTML = `
+                <div class="question-row">
+                    <input type="text" class="form-input question-input" placeholder="e.g., Tell me about a time you delivered under pressure">
+                </div>
+            `;
+        }
+
+        // Save story
+        async function saveStory(event) {
+            event.preventDefault();
+
+            const storyId = document.getElementById('storyId').value;
+            const storyName = document.getElementById('storyName').value.trim();
+            const storySummary = document.getElementById('storySummary').value.trim();
+
+            // Get questions
+            const questions = Array.from(document.querySelectorAll('.question-input'))
+                .map(input => input.value.trim())
+                .filter(q => q);
+
+            if (demonstratesTags.length === 0) {
+                alert('Please add at least one competency this story demonstrates.');
+                return;
+            }
+
+            const storyData = {
+                story_name: storyName,
+                story_summary: storySummary,
+                demonstrates: demonstratesTags,
+                best_for_questions: questions
+            };
+
+            try {
+                if (storyId) {
+                    // Update existing story
+                    await window.HenryData.updateStory(storyId, storyData);
+                } else {
+                    // Add new story
+                    await window.HenryData.addStory(storyData);
+                }
+
+                closeModal();
+                await loadStories();
+            } catch (error) {
+                console.error('Error saving story:', error);
+                alert('Error saving story: ' + error.message);
+            }
+        }
+
+        // View story details
+        function viewStory(storyId) {
+            const story = stories.find(s => s.id === storyId);
+            if (!story) return;
+
+            currentStoryId = storyId;
+
+            document.getElementById('detailTitle').innerHTML = `📖 ${escapeHtml(story.story_name)}`;
+
+            const demonstrates = story.demonstrates || [];
+            const bestFor = story.best_for_questions || [];
+            const effectiveness = story.effectiveness_avg || 0;
+            const timesUsed = story.times_used || 0;
+
+            // Update retire button text
+            const retireBtn = document.getElementById('detailRetireBtn');
+            if (story.status === 'retired') {
+                retireBtn.textContent = 'Restore Story';
+                retireBtn.onclick = restoreCurrentStory;
+            } else {
+                retireBtn.textContent = 'Retire Story';
+                retireBtn.onclick = retireCurrentStory;
+            }
+
+            document.getElementById('detailContent').innerHTML = `
+                ${demonstrates.length > 0 ? `
+                    <div class="demonstrates-tags" style="margin-bottom: 1.5rem;">
+                        ${demonstrates.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                    </div>
+                ` : ''}
+
+                ${story.story_summary ? `
+                    <div class="detail-section">
+                        <h3>The Story</h3>
+                        <div class="story-content">${escapeHtml(story.story_summary)}</div>
+                    </div>
+                ` : `
+                    <div class="detail-section">
+                        <h3>The Story</h3>
+                        <p style="color: #6b7280; font-style: italic;">No summary yet. Click Edit to add your STAR story.</p>
+                    </div>
+                `}
+
+                <div class="detail-section">
+                    <h3>Usage Stats</h3>
+                    <p>Times used: <strong>${timesUsed}</strong></p>
+                    ${effectiveness > 0 ? `<p>Average effectiveness: <strong class="usage-rating">${effectiveness.toFixed(1)}/5</strong></p>` : ''}
+                </div>
+
+                ${bestFor.length > 0 ? `
+                    <div class="detail-section">
+                        <h3>Best For These Questions</h3>
+                        <ul style="color: #d1d5db; padding-left: 1.5rem;">
+                            ${bestFor.map(q => `<li style="margin-bottom: 0.5rem;">"${escapeHtml(q)}"</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // Close detail modal
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+            currentStoryId = null;
+        }
+
+        // Edit current story from detail view
+        function editCurrentStory() {
+            closeDetailModal();
+            editStory(currentStoryId);
+        }
+
+        // Retire story
+        async function retireStory(storyId) {
+            try {
+                await window.HenryData.retireStory(storyId);
+                await loadStories();
+            } catch (error) {
+                console.error('Error retiring story:', error);
+                alert('Error retiring story: ' + error.message);
+            }
+        }
+
+        // Retire current story
+        async function retireCurrentStory() {
+            if (currentStoryId) {
+                await retireStory(currentStoryId);
+                closeDetailModal();
+            }
+        }
+
+        // Restore story
+        async function restoreStory(storyId) {
+            try {
+                await window.HenryData.updateStory(storyId, { status: 'active' });
+                await loadStories();
+            } catch (error) {
+                console.error('Error restoring story:', error);
+                alert('Error restoring story: ' + error.message);
+            }
+        }
+
+        // Restore current story
+        async function restoreCurrentStory() {
+            if (currentStoryId) {
+                await restoreStory(currentStoryId);
+                closeDetailModal();
+            }
+        }
+
+        // Delete story
+        function deleteStory(storyId) {
+            const story = stories.find(s => s.id === storyId);
+            if (!story) return;
+
+            currentStoryId = storyId;
+            document.getElementById('confirmStoryName').textContent = story.story_name;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        // Close confirm modal
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+        }
+
+        // Confirm delete
+        async function confirmDelete() {
+            if (!currentStoryId) return;
+
+            try {
+                await window.HenryData.deleteStory(currentStoryId);
+                closeConfirmModal();
+                await loadStories();
+            } catch (error) {
+                console.error('Error deleting story:', error);
+                alert('Error deleting story: ' + error.message);
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+
+    <script src="components/hey-henry.js"></script>
+</body>
+</html>
