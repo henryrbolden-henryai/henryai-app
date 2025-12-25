@@ -38,7 +38,46 @@
         init() {
             this.createFileInput();
             this.setupEventListeners();
-            this.checkAndShowReminder();
+            // Sync from Supabase first, then check if we should show reminder
+            this.syncFromSupabase().then(() => {
+                this.checkAndShowReminder();
+            });
+        }
+
+        /**
+         * Sync LinkedIn profile status from Supabase to localStorage
+         * This ensures users who uploaded LinkedIn on another device/session see correct state
+         */
+        async syncFromSupabase() {
+            try {
+                // Check if HenryData is available
+                if (typeof HenryData === 'undefined') {
+                    return;
+                }
+
+                // Get profile from Supabase
+                const supabaseProfile = await HenryData.getCandidateProfile();
+                if (!supabaseProfile) {
+                    return;
+                }
+
+                // Check if Supabase has linkedin_profile_uploaded = true
+                if (supabaseProfile.linkedin_profile_uploaded) {
+                    // Get current localStorage profile
+                    let localProfile = this.getUserProfile() || {};
+
+                    // If localStorage doesn't know about LinkedIn, sync it
+                    if (!localProfile.linkedin_profile_uploaded) {
+                        console.log('Syncing LinkedIn status from Supabase to localStorage');
+                        localProfile.linkedin_profile_uploaded = true;
+                        localProfile.linkedin_last_updated = supabaseProfile.linkedin_last_updated;
+                        localProfile.linkedin_parsed = supabaseProfile.linkedin_parsed;
+                        localStorage.setItem('userProfile', JSON.stringify(localProfile));
+                    }
+                }
+            } catch (e) {
+                console.error('Error syncing LinkedIn status from Supabase:', e);
+            }
         }
 
         /**
