@@ -4718,7 +4718,7 @@ async def extract_jd_from_url(request: URLExtractRequest):
 
    Format this as clean, readable text with clear section breaks. Remove any navigation, footer, or unrelated content.
 
-2. "company": The FULL company name (include suffixes like Inc., Co., Corp., LLC). Example: "Hiring, Co." should stay as "Hiring, Co." - do not truncate at commas.
+2. "company": The company name
 
 3. "role_title": The job title
 
@@ -11921,7 +11921,7 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
       "timing_guidance": "MUST be specific guidance"
     }
   },
-  "company": "string - FULL company name from JD. Include complete legal name (e.g., 'Acme, Inc.' not just 'Acme'; 'Hiring, Co.' not just 'Co'). Do not truncate or parse at commas.",
+  "company": "string from JD",
   "role_title": "string from JD",
   "company_context": "MUST be 2-3 substantive sentences about company, industry, stage",
   "role_overview": "MUST be 2-3 substantive sentences about role purpose and impact",
@@ -13306,56 +13306,12 @@ def generate_resume_full_text(resume_output: dict) -> str:
             lines.append("")
     
     result = "\n".join(lines).strip()
-
+    
     # If result is empty or very short, return a helpful message
     if not result or len(result) < 50:
         return "Resume generation failed. Please try again or contact support."
-
+    
     return result
-
-
-def _sanitize_document_text(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Recursively sanitize all text fields to remove AI-generated artifacts.
-
-    Specifically removes:
-    - Em dashes (—) → replaced with hyphens
-    - En dashes (–) → replaced with hyphens
-    - Ensures clean text output for documents
-    """
-    import re
-
-    def sanitize_text(text: str) -> str:
-        if not text or not isinstance(text, str):
-            return text
-
-        # Replace em/en dashes with hyphens (better for documents)
-        text = text.replace('—', '-')
-        text = text.replace('–', '-')
-
-        # Fix double hyphens that may result
-        text = re.sub(r'-{2,}', '-', text)
-
-        # Fix double spaces
-        text = re.sub(r'\s{2,}', ' ', text)
-
-        # Fix orphaned punctuation (space before punctuation)
-        text = re.sub(r'\s+([.,!?;:])', r'\1', text)
-
-        return text.strip()
-
-    def recurse(obj):
-        if isinstance(obj, dict):
-            return {k: recurse(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [recurse(item) for item in obj]
-        elif isinstance(obj, str):
-            return sanitize_text(obj)
-        else:
-            return obj
-
-    return recurse(data)
-
 
 @app.post("/api/documents/generate")
 async def generate_documents(request: DocumentsGenerateRequest) -> Dict[str, Any]:
@@ -13836,10 +13792,6 @@ Generate the complete JSON response with ALL required fields populated."""
         #     parsed_data = add_validation_warnings_to_response(parsed_data, qa_validation_result)
         #     print(f"  ⚠️ QA validation warnings: {len(qa_validation_result.warnings)}")
         print("  ℹ️ QA validation disabled - returning documents without validation")
-
-        # Apply text sanitization to remove em dashes and other artifacts
-        parsed_data = _sanitize_document_text(parsed_data)
-        print("  ✅ Text sanitization applied (em dashes removed)")
 
         return parsed_data
         
@@ -15009,28 +14961,17 @@ async def generate_intro_sell_template(request: IntroSellTemplateRequest):
 
     system_prompt = """Generate a customized 60-90 second intro sell template for this candidate.
 
-🚨 CRITICAL - ZERO FABRICATION ALLOWED 🚨
-You MUST use ONLY the candidate's ACTUAL resume data provided below.
-- Use ONLY their ACTUAL job titles (e.g., if they're a Designer, say Designer - NOT PM)
-- Use ONLY their ACTUAL companies (don't invent companies)
-- Use ONLY metrics that appear in their resume
-- If they don't have experience in an area, DO NOT mention that area
-- Bridge their REAL experience to the target role - don't invent experience
-
-WRONG: "I'm a Staff Product Manager who built data platforms..."
-RIGHT: "I'm a Senior Product Designer who optimized user onboarding..."
-
 STRUCTURE (MANDATORY):
-1. Current Role + Impact (1-2 sentences, include quantified achievement FROM RESUME)
-2. Previous Role + Relevant Achievement (1-2 sentences FROM RESUME)
-3. Why You're Here (1 sentence connecting their REAL background to this job)
+1. Current Role + Impact (1-2 sentences, include quantified achievement)
+2. Previous Role + Relevant Achievement (1-2 sentences)
+3. Why You're Here (1 sentence connecting background to job)
 4. What You're Looking For (1 sentence, optional)
 
 RULES:
 - Total word count: 100-150 words
-- Use ONLY information from the resume provided
-- Include at least one quantified metric FROM THE RESUME
-- Every claim must be traceable to resume data
+- Use ONLY information from resume
+- Include at least one quantified metric
+- No college/education unless directly relevant
 - No generic filler phrases
 - End with confidence, not a question
 
@@ -17725,32 +17666,19 @@ INTERVIEW DETAILS:
 JOB DESCRIPTION:
 {request.job_description or 'Not provided'}
 
-CANDIDATE BACKGROUND (THIS IS THE CANDIDATE'S ACTUAL RESUME - USE ONLY THIS DATA):
+CANDIDATE BACKGROUND:
 {resume_text or 'Not provided'}
 
 Generate a prep guide with these sections:
 
 1. WHAT THEY EVALUATE (5-7 bullet points of what interviewers assess in this type of interview)
 
-2. INTRO PITCH (A 60-90 second "tell me about yourself" script)
-
-🚨 CRITICAL INTRO PITCH RULES - ZERO FABRICATION ALLOWED 🚨
-The intro MUST use ONLY information from CANDIDATE BACKGROUND above:
-- Use ONLY the candidate's ACTUAL job titles (e.g., "Senior Product Designer" not "Staff PM")
-- Use ONLY the candidate's ACTUAL companies (e.g., "Airbnb" not invented companies)
-- Use ONLY metrics/accomplishments that appear in CANDIDATE BACKGROUND
-- If the candidate is a Designer, DO NOT say they are a PM
-- If the candidate has no data platform experience, DO NOT mention data platforms
-- Bridge their REAL experience to what the role needs - don't invent experience they don't have
-
-WRONG (fabrication): "I'm a Staff Product Manager with experience building data platforms..."
-RIGHT (grounded): "I'm a Senior Product Designer with 6 years optimizing user onboarding at Airbnb..."
-
-The intro should:
-- Open with their ACTUAL current role and a REAL accomplishment from their resume
-- Bridge their REAL experience to why it's relevant for this role
-- Close with genuine enthusiasm for this opportunity
-- Be conversational, around 150-200 words
+2. INTRO PITCH (A 60-90 second "tell me about yourself" script that:
+   - Opens with current role and key accomplishment
+   - Bridges to relevant experience for this role
+   - Closes with why this opportunity excites them
+   - Is conversational, not robotic
+   - Around 150-200 words)
 
 3. LIKELY QUESTIONS (8-12 questions they'll probably ask, with personalized guidance on how to answer based on their specific experience. Each question should have a "guidance" field with 2-3 sentences of specific advice referencing their background.)
 
@@ -17831,20 +17759,15 @@ Company: {request.company}
 Role: {request.role_title}
 Interview Type: {request.interview_type}
 
-CANDIDATE'S ACTUAL RESUME (USE ONLY THIS DATA - DO NOT FABRICATE):
+Candidate's recent experience:
 {resume_text or 'Not provided'}
 
-🚨 CRITICAL - ZERO FABRICATION ALLOWED 🚨
-- Use ONLY the job titles, companies, and metrics from the resume above
-- If they are a Designer, say Designer - NOT PM
-- If they have no data platform experience, do NOT mention data platforms
-- Every claim must trace back to the resume data
-
 Create a conversational, engaging intro (150-200 words) that:
-- Opens with their ACTUAL current role and a REAL accomplishment from their resume
-- Bridges their REAL experience to why it's relevant for this role
+- Opens with their current role and a key accomplishment
+- Bridges to why their experience is relevant for this role
 - Closes with genuine enthusiasm for this opportunity
 - Sounds natural, not scripted
+- Is different from typical generic intros
 
 Return ONLY the intro text, no JSON or formatting."""
 
@@ -18204,7 +18127,10 @@ class HeyHenryRequest(BaseModel):
     outreach_data: Optional[Dict[str, Any]] = None  # Generated outreach templates
     interview_prep_data: Optional[Dict[str, Any]] = None  # Generated interview prep modules
     positioning_data: Optional[Dict[str, Any]] = None  # Positioning strategy content
-    screening_questions_data: Optional[Dict[str, Any]] = None  # Screening questions from the page
+    # Network data - LinkedIn connections (Phase 2.1)
+    network_data: Optional[Dict[str, Any]] = None  # LinkedIn connections at target company
+    # Outreach log data - Follow-up tracking (Phase 2.7)
+    outreach_log_data: Optional[Dict[str, Any]] = None  # Outreach tracking and follow-ups
 
 
 class HeyHenryResponse(BaseModel):
@@ -18305,9 +18231,11 @@ CURRENT CONTEXT:
 
 {pipeline_context}
 
-{generated_content_context}
+{network_context}
 
-{screening_questions_context}
+{outreach_log_context}
+
+{generated_content_context}
 
 {emotional_context}
 
@@ -18397,6 +18325,50 @@ async def hey_henry(request: HeyHenryRequest):
     """
     print(f"💬 Hey Henry: {request.context.current_page} - {request.message[:50]}...")
 
+    # Detect pipeline analysis request (Phase 2.2 trigger)
+    pipeline_analysis_triggers = [
+        "how's my search",
+        "hows my search",
+        "how is my search",
+        "how am i doing",
+        "search going",
+        "my pipeline",
+        "pipeline review",
+        "review my applications",
+        "application patterns",
+        "what patterns",
+        "analyze my applications",
+        "what am i doing wrong",
+        "why am i not getting",
+        "not getting interviews",
+        "not getting responses",
+        "getting rejected",
+        "strategy review",
+        "job search review",
+        "search strategy"
+    ]
+    message_lower = request.message.lower()
+    is_pipeline_analysis_request = any(trigger in message_lower for trigger in pipeline_analysis_triggers)
+
+    # Detect rejection forensics request (Phase 2.4 trigger)
+    rejection_forensics_triggers = [
+        "why am i getting rejected",
+        "keep getting rejected",
+        "why do i keep",
+        "rejection pattern",
+        "analyze my rejections",
+        "what's wrong with my",
+        "whats wrong with my",
+        "not landing interviews",
+        "not hearing back",
+        "ghosted",
+        "no responses",
+        "rejection analysis",
+        "rejection feedback",
+        "why rejected"
+    ]
+    is_rejection_forensics_request = any(trigger in message_lower for trigger in rejection_forensics_triggers)
+
     # Build analysis context string
     analysis_context = ""
     if request.analysis_data and request.context.has_analysis:
@@ -18457,6 +18429,122 @@ TOP APPLICATIONS IN PIPELINE:
         for app in top_apps:
             pipeline_context += f"- {app.get('role', 'Unknown')} at {app.get('company', 'Unknown')}: {app.get('status', 'Unknown')} ({app.get('fitScore', 'N/A')}% fit, {app.get('daysSinceUpdate', 0)}d since update)\n"
 
+        # Add pattern analysis if available (Phase 2.2)
+        pattern_data = pd.get('patternAnalysis', {})
+        if pattern_data:
+            pipeline_context += "\nPIPELINE PATTERN ANALYSIS (use this for strategic insights):\n"
+
+            # Fit distribution
+            fit_dist = pattern_data.get('fitDistribution', {})
+            if any(fit_dist.values()):
+                pipeline_context += f"- Fit Distribution: {fit_dist.get('strong', 0)} strong, {fit_dist.get('moderate', 0)} moderate, {fit_dist.get('reach', 0)} reach, {fit_dist.get('longShot', 0)} long shot\n"
+                reach_pct = pattern_data.get('reachPercentage', 0)
+                if reach_pct >= 50:
+                    pipeline_context += f"  ⚠️ {reach_pct}% of applications are reaches or long shots. Candidate may be overreaching.\n"
+
+            # Conversion rates
+            conv_rates = pattern_data.get('conversionRates', {})
+            if any(conv_rates.values()):
+                pipeline_context += f"- Conversion Rates:\n"
+                pipeline_context += f"  • Application to Response: {conv_rates.get('applicationToResponse', 0)}%\n"
+                pipeline_context += f"  • Response to Recruiter Screen: {conv_rates.get('responseToRecruiter', 0)}%\n"
+                pipeline_context += f"  • Recruiter to Hiring Manager: {conv_rates.get('recruiterToHM', 0)}%\n"
+                pipeline_context += f"  • Hiring Manager to Final: {conv_rates.get('hmToFinal', 0)}%\n"
+                pipeline_context += f"  • Final to Offer: {conv_rates.get('finalToOffer', 0)}%\n"
+
+            # Velocity
+            velocity = pattern_data.get('velocity', {})
+            if velocity:
+                pipeline_context += f"- Application Velocity: {velocity.get('thisWeek', 0)} this week, {velocity.get('lastWeek', 0)} last week (trend: {velocity.get('trend', 'steady')})\n"
+
+            # Rejections by stage
+            rej_stage = pattern_data.get('rejectionsByStage', {})
+            if any(rej_stage.values()):
+                pipeline_context += f"- Rejections by Stage: {rej_stage.get('resume', 0)} at resume, {rej_stage.get('recruiter', 0)} at recruiter, {rej_stage.get('hiringManager', 0)} at HM, {rej_stage.get('finalRound', 0)} at final\n"
+
+            # Weak spots
+            weak_spots = pattern_data.get('weakSpots', [])
+            if weak_spots:
+                pipeline_context += "- Identified Weak Spots:\n"
+                for ws in weak_spots:
+                    pipeline_context += f"  • {ws.get('message', 'Unknown issue')}\n"
+
+            # Pre-generated pattern insights
+            insights = pattern_data.get('patternInsights', [])
+            if insights:
+                pipeline_context += "- Pattern Insights (use these in your response):\n"
+                for insight in insights:
+                    pipeline_context += f"  • {insight}\n"
+
+    # Build network context from LinkedIn connections (Phase 2.1)
+    network_context = ""
+    if request.network_data:
+        nd = request.network_data
+        target_company = request.context.company or "target company"
+
+        if nd.get('hasConnections'):
+            direct_connections = nd.get('directAtCompany', [])
+            total_connections = nd.get('totalConnections', 0)
+
+            if direct_connections and len(direct_connections) > 0:
+                network_context = f"""
+NETWORK INTELLIGENCE (PROACTIVE - surface this when relevant):
+You have {len(direct_connections)} first-degree connection(s) at {target_company}:
+"""
+                for conn in direct_connections[:5]:  # Limit to top 5
+                    name = conn.get('fullName', 'Unknown').strip()
+                    position = conn.get('position', 'Unknown position')
+                    connected_on = conn.get('connectedOn', '')
+                    network_context += f"* {name}, {position}"
+                    if connected_on:
+                        network_context += f" (connected since {connected_on})"
+                    network_context += "\n"
+
+                network_context += f"""
+PROACTIVE NETWORK GUIDANCE:
+- Warm intros get 3x higher response rates than cold outreach
+- Suggest the candidate reach out to these connections for intel or referrals
+- Offer to draft outreach to the strongest connection
+- Prioritize connections in the same department or with relevant titles
+"""
+            else:
+                network_context = f"""
+NETWORK INTELLIGENCE:
+The candidate has {total_connections} LinkedIn connections uploaded but NO direct connections at {target_company}.
+
+When relevant, suggest:
+- Searching for 2nd-degree connections on LinkedIn
+- Looking for alumni or former company overlap
+- Using cold outreach templates (they can find these on the Outreach page)
+"""
+
+    # Build outreach log context for follow-up prompts (Phase 2.7)
+    outreach_log_context = ""
+    if request.outreach_log_data:
+        ol = request.outreach_log_data
+        due_for_followup = ol.get('dueForFollowUp', [])
+        due_for_final = ol.get('dueForFinalFollowUp', [])
+
+        if due_for_followup or due_for_final:
+            outreach_log_context = """
+OUTREACH FOLLOW-UP REMINDERS (PROACTIVE - mention these when relevant):
+"""
+            if due_for_followup:
+                outreach_log_context += "Messages due for follow-up (sent 5+ days ago, no response):\n"
+                for o in due_for_followup[:3]:
+                    outreach_log_context += f"* {o.get('contactName', 'Unknown')} at {o.get('company', 'Unknown')} ({o.get('channel', 'unknown channel')}, {o.get('daysSince', 0)} days ago)\n"
+
+            if due_for_final:
+                outreach_log_context += "\nMessages due for FINAL follow-up (sent 10+ days ago):\n"
+                for o in due_for_final[:3]:
+                    outreach_log_context += f"* {o.get('contactName', 'Unknown')} at {o.get('company', 'Unknown')} ({o.get('channel', 'unknown channel')}, {o.get('daysSince', 0)} days ago)\n"
+
+            outreach_log_context += """
+When the user seems open to it, proactively remind them about pending follow-ups.
+Offer to draft a follow-up message if they want.
+Don't be pushy, but do keep them accountable.
+"""
+
     # Build generated content context - YOU ARE THE AUTHOR
     generated_content_context = ""
 
@@ -18509,25 +18597,6 @@ INTERVIEW PREP YOU BUILT:
 POSITIONING STRATEGY YOU DEVELOPED:
 - Core positioning: {pp.get('positioning_strategy', pp.get('strategic_positioning', 'N/A'))[:200]}...
 - Key talking points: {', '.join(pp.get('talking_points', [])[:3]) if pp.get('talking_points') else 'N/A'}
-"""
-
-    # Screening questions context - user is working on application screening questions
-    screening_questions_context = ""
-    if request.screening_questions_data:
-        sq = request.screening_questions_data
-        screening_questions_context = f"""
-SCREENING QUESTIONS (the candidate has entered these on the page - help them answer):
-Number of questions: {sq.get('count', 0)}
-
-Questions entered:
-{sq.get('summary', 'No questions entered yet')}
-
-INSTRUCTIONS: When the user asks for help with these questions:
-- Reference the specific questions they've entered (you can see them above)
-- Don't ask "What's the question?" - you already have them
-- Provide strategic guidance on how to answer each one
-- For comp expectations, give ranges and negotiation tips
-- For yes/no questions, explain how to position their answer
 """
 
     # Build emotional context - prefer direct context fields, fall back to user_profile
@@ -18617,13 +18686,125 @@ INSTRUCTIONS: When the user asks for help with these questions:
         has_pipeline="Yes" if request.context.has_pipeline else "No",
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
+        network_context=network_context,
+        outreach_log_context=outreach_log_context,
         generated_content_context=generated_content_context,
-        screening_questions_context=screening_questions_context,
         emotional_context=emotional_context,
         tone_guidance=tone_guidance,
         tone_guidance_detail=tone_guidance_detail,
         clarification_context=clarification_context
     )
+
+    # Add pipeline analysis instruction if triggered (Phase 2.2)
+    if is_pipeline_analysis_request and request.pipeline_data:
+        pd = request.pipeline_data
+        total_apps = pd.get('total', 0)
+        if total_apps >= 5:
+            system_prompt += """
+
+=== PIPELINE PATTERN ANALYSIS REQUEST ===
+
+The user is asking for a strategic review of their job search. Use the PIPELINE PATTERN ANALYSIS data above to provide a comprehensive, specific analysis.
+
+REQUIRED RESPONSE FORMAT:
+1. **Pipeline Health** (1-2 sentences): Give them the headline. Are they on track or off track?
+
+2. **Patterns I'm Seeing** (3-5 bullet points): Use the actual pattern data:
+   - Fit distribution (are they overreaching?)
+   - Conversion rates at each stage (where are they dropping off?)
+   - Velocity trends (accelerating, slowing, or steady?)
+   - Any weak spots identified
+
+3. **The Signal** (1-2 sentences): What's the ONE thing the data is telling them?
+
+4. **Recommendation** (1-2 actionable steps): What should they do next?
+
+CRITICAL RULES:
+- Use SPECIFIC numbers from the pattern data. Never say "some" or "a few" when you have exact counts.
+- Reference specific companies and roles from their pipeline where relevant.
+- If they're overreaching (high % of reaches/long shots), say so directly.
+- If they're stalling at a specific stage, diagnose why.
+- NO generic advice. Everything must be grounded in THEIR data.
+
+Example of GOOD analysis:
+"Here's what I'm seeing across your search:
+
+Pipeline Health: 12 applications, 3 active, 2 interviews scheduled, 4 rejected, 3 ghosted
+
+Patterns:
+* You're overreaching on scope. 8 of 12 were stretch roles.
+* Strong conversion to first round (67%), but dropping off at hiring manager stage (25%).
+* All your ghosted applications were at companies with 50+ open roles. They're probably overwhelmed.
+
+Recommendation: Tighten your targeting to roles where you're a 75%+ fit. Your hit rate will improve."
+
+=== END PIPELINE ANALYSIS INSTRUCTION ===
+"""
+        else:
+            system_prompt += f"""
+
+=== PIPELINE ANALYSIS NOTE ===
+The user is asking about their search, but they only have {total_apps} applications tracked. Let them know you need at least 5 applications to identify meaningful patterns. Encourage them to keep tracking and come back once they have more data.
+=== END NOTE ===
+"""
+
+    # Add rejection forensics instruction if triggered (Phase 2.4)
+    if is_rejection_forensics_request and request.pipeline_data:
+        pd = request.pipeline_data
+        rejected_count = pd.get('rejected', 0)
+        pattern_data = pd.get('patternAnalysis', {})
+        rej_by_stage = pattern_data.get('rejectionsByStage', {})
+
+        if rejected_count >= 3:
+            system_prompt += f"""
+
+=== REJECTION FORENSICS REQUEST ===
+
+The user wants to understand their rejection patterns. Analyze the data and provide diagnostic insights.
+
+REJECTION DATA:
+- Total rejections: {rejected_count}
+- At resume screen: {rej_by_stage.get('resume', 0)}
+- At recruiter screen: {rej_by_stage.get('recruiter', 0)}
+- At hiring manager: {rej_by_stage.get('hiringManager', 0)}
+- At final round: {rej_by_stage.get('finalRound', 0)}
+
+STAGE-SPECIFIC ANALYSIS:
+1. **Resume screen rejections** = Keywords missing, experience mismatch, or ATS issues. Resume needs refinement.
+2. **Recruiter screen rejections** = Communication issues, salary mismatch, or timeline misalignment. Prep recruiter conversations.
+3. **Hiring manager rejections** = Culture fit or scope concerns, not skills. Dig into those conversations.
+4. **Final round rejections** = Competition or factors outside control. You were qualified enough to get there.
+
+RESPONSE FORMAT:
+1. **The Pattern**: What stage are they dropping off at? Give specific numbers.
+2. **Likely Cause**: What typically causes rejection at this stage?
+3. **Diagnostic Questions**: Ask 1-2 questions to understand what happened.
+4. **Next Steps**: Specific actions to improve.
+
+CRITICAL RULES:
+- Be direct but not harsh. Rejections sting.
+- Use THEIR specific data, not generic advice.
+- If rejections are spread across stages, note that too.
+- If they have little rejection data, say you need more to see patterns.
+
+Example:
+"You've been rejected 4 times in the last month. Here's the pattern:
+
+* 2 rejections at resume screen: Your materials might not be optimized for these role types
+* 1 at recruiter screen: Was salary discussed? That's often the blocker there
+* 1 at final round: That one was competition, not qualification
+
+The signal: Your resume screen rejections are where to focus. What types of roles were those?"
+
+=== END REJECTION FORENSICS INSTRUCTION ===
+"""
+        elif rejected_count > 0:
+            system_prompt += f"""
+
+=== REJECTION FORENSICS NOTE ===
+The user is asking about rejections, but they only have {rejected_count} rejection(s) tracked. Let them know you need at least 3 rejections to identify meaningful patterns. Acknowledge their frustration, offer to discuss what happened, but note patterns take more data.
+=== END NOTE ===
+"""
 
     # Build messages
     messages = []
@@ -19735,9 +19916,6 @@ Refine the document based on the chat command. Return the full updated document 
 
         print(f"✅ Document refined successfully (v{request.version} -> v{parsed['changes_summary']['version']})")
 
-        # Sanitize text fields to remove em dashes and other artifacts
-        parsed = _sanitize_document_text(parsed)
-
         # Convert changes_summary dict to model
         changes_summary = DocumentChangesSummary(**parsed["changes_summary"])
 
@@ -20517,105 +20695,6 @@ async def delete_linkedin_profile():
     This endpoint exists for API consistency and future server-side storage.
     """
     return {"success": True, "message": "LinkedIn profile deleted"}
-
-
-# ============================================================================
-# FOLLOW-UP EMAIL GENERATION
-# ============================================================================
-
-class FollowUpEmailRequest(BaseModel):
-    email_type: str  # "thank_you" or "check_in"
-    company: str
-    role: str
-    interviewer_name: Optional[str] = None
-    interview_date: Optional[str] = None
-    feeling: Optional[str] = None  # How candidate felt about interview
-    outcome: Optional[str] = None  # offer, next_round, rejected, waiting
-    debrief_context: Optional[str] = None  # Key points from debrief conversation
-    resume_json: Optional[Dict[str, Any]] = None
-
-@app.post("/api/follow-up-email/generate")
-async def generate_follow_up_email(request: FollowUpEmailRequest):
-    """Generate a personalized follow-up email after an interview"""
-    try:
-        print(f"[Follow-Up Email] Generating {request.email_type} email for {request.company}")
-
-        # Build context from resume
-        candidate_background = ""
-        if request.resume_json:
-            experiences = request.resume_json.get("experience", [])
-            if experiences:
-                latest = experiences[0]
-                candidate_background = f"Current role: {latest.get('title', '')} at {latest.get('company', '')}"
-
-            skills = request.resume_json.get("skills", [])
-            if skills:
-                candidate_background += f"\nKey skills: {', '.join(skills[:5])}"
-
-        # Build email type specific instructions
-        if request.email_type == "thank_you":
-            email_instructions = """Generate a professional thank-you email that:
-1. Thanks them genuinely for their time
-2. References something specific from the conversation if debrief context is provided
-3. Reinforces enthusiasm for the role
-4. Offers to provide additional information
-5. Closes professionally
-
-Keep it concise (150-200 words). Be warm but professional."""
-
-        else:  # check_in
-            email_instructions = """Generate a professional check-in/follow-up email that:
-1. References the previous interview politely
-2. Expresses continued interest in the role
-3. Asks about timeline or next steps without being pushy
-4. Offers to provide additional information
-5. Closes professionally
-
-Keep it concise (100-150 words). Be respectful of their time."""
-
-        prompt = f"""Generate a follow-up email for a job candidate.
-
-CONTEXT:
-- Company: {request.company}
-- Role: {request.role}
-- Interviewer: {request.interviewer_name or 'the hiring team'}
-- Interview Date: {request.interview_date or 'recently'}
-- How interview went: {request.feeling or 'not specified'}
-- Outcome: {request.outcome or 'waiting to hear back'}
-
-CANDIDATE BACKGROUND:
-{candidate_background or 'Not provided'}
-
-DEBRIEF INSIGHTS:
-{request.debrief_context or 'No specific insights available'}
-
-{email_instructions}
-
-Format the email with:
-- Subject line (on first line, starting with "Subject: ")
-- Greeting
-- Body paragraphs
-- Professional sign-off with "[Your Name]" placeholder
-
-IMPORTANT: Do NOT use em dashes. Use commas, periods, or colons instead."""
-
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}]
-        )
-
-        email_content = response.content[0].text.strip()
-
-        # Sanitize em dashes
-        email_content = email_content.replace("—", " - ").replace("–", "-")
-
-        return {"email": email_content, "email_type": request.email_type}
-
-    except Exception as e:
-        print(f"[Follow-Up Email] Error: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to generate email: {str(e)}")
 
 
 # ============================================================================
