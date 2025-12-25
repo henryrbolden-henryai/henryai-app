@@ -1,9 +1,9 @@
-# HEY HENRY IMPLEMENTATION SPECIFICATION v2.1
+# HEY HENRY IMPLEMENTATION SPECIFICATION v2.2
 
-**Date:** December 18, 2025  
-**Status:** APPROVED - Ready for Implementation  
-**Purpose:** Complete implementation guide for Claude Code  
-**Target Completion:** January 15, 2026
+**Date:** December 25, 2025
+**Status:** PHASE 1 COMPLETE - Phase 1.5 In Progress
+**Purpose:** Complete implementation guide for Claude Code
+**Last Updated:** December 25, 2025
 
 ---
 
@@ -11,13 +11,46 @@
 
 This document contains the complete behavioral specification and implementation requirements for Hey Henry, HenryHQ's strategic career coach component. Hey Henry is the primary relationship owner for candidates, providing honest guidance, accountability, and escalation throughout the job search process.
 
-**Key Changes from Previous Version:**
-1. Rename from "Ask Henry" to "Hey Henry" (all files, references, APIs)
-2. Add clarification requirements (no vague acknowledgments)
-3. Add attachment/screenshot handling capability
-4. Consolidate welcome flows into component (move from dashboard.html)
-5. Implement emotional state adaptation
-6. Context-aware tooltips (not random rotation)
+### Current Implementation Status
+
+| Feature | Status |
+|---------|--------|
+| Core chat functionality | ✅ Complete |
+| Rename to Hey Henry (files, APIs, UI) | ✅ Complete |
+| Context-aware responses (page, profile, analysis) | ✅ Complete |
+| Emotional state adaptation | ✅ Complete |
+| Henry as "author" of generated content | ✅ Complete |
+| Document refinement via chat | ✅ Complete |
+| Feedback detection and clarification | ✅ Complete |
+| Attachment support (images, PDFs) | ✅ Complete |
+| QA validation (anti-fabrication) | ✅ Complete |
+| Timestamps on messages | ✅ Complete |
+| Auto-expand drawer for long responses | ✅ Complete |
+| Conversation history (session-only) | ✅ Complete |
+| Welcome flows consolidated | ✅ Complete |
+| Conversation persistence (cross-session) | 🔄 Phase 1.5 |
+| Context-aware tooltips | 🔄 Phase 1.5 |
+| Proactive check-ins | 🔄 Phase 1.5 |
+| Human handoff / scheduling | 🔄 Phase 1.5 |
+| Document coaching prompts | 🔄 Phase 1.5 |
+| Long-term memory (hey_henry_memory table) | 🔄 Phase 1.5 |
+
+### Phase 1 Completed (v2.1)
+1. ✅ Renamed from "Ask Henry" to "Hey Henry" (all files, references, APIs)
+2. ✅ Added clarification requirements (no vague acknowledgments)
+3. ✅ Added attachment/screenshot handling capability
+4. ✅ Consolidated welcome flows into component
+5. ✅ Implemented emotional state adaptation
+6. ✅ Added timestamps to messages
+7. ✅ Added auto-expand for long responses
+8. ✅ Added Henry as author context for generated content
+
+### Phase 1.5 Priority (Current)
+1. **Conversation persistence** (cross-session history) - Critical based on beta feedback
+2. Context-aware tooltips (not random rotation)
+3. Proactive check-ins
+4. Human handoff / scheduling
+5. Document coaching prompts
 
 ---
 
@@ -150,8 +183,8 @@ Before adding or changing any behavior, ask:
 - Default: "Got questions?" / "Need strategy help?"
 
 **Implementation:**
-- Current: `ask-henry.js` lines 405-477 (random rotation)
-- Change to: Context-aware logic using pipeline data
+- Current: `hey-henry.js` (random rotation active)
+- Phase 1.5: Change to context-aware logic using pipeline data
 
 ---
 
@@ -196,7 +229,7 @@ yourself, just ask.
 - Sets `hasSeenWelcome = true`
 - Redirects to `profile-edit.html`
 
-**Current Location:** `dashboard.html` (needs move to `hey-henry.js`)
+**Current Location:** `hey-henry.js` ✅ Consolidated
 
 ---
 
@@ -222,7 +255,7 @@ Alright [FirstName], you're all set. Ready to analyze your first role?
 - Sets `hasSeenWelcomeBack = true`
 - Removes URL param
 
-**Current Location:** Not implemented (needs add to `hey-henry.js`)
+**Current Location:** `hey-henry.js` ✅ Implemented
 
 ---
 
@@ -267,7 +300,7 @@ Here's what you can do:
 
 **CTA:** "Got It" (closes chat)
 
-**Current Location:** `dashboard.html` (needs consolidation)
+**Current Location:** `hey-henry.js` ✅ Consolidated
 
 ---
 
@@ -309,7 +342,7 @@ Here's what you can do:
 - Shows only on first open (no history)
 - Hidden after first message
 
-**Current Status:** Fully functional
+**Current Status:** ✅ Fully functional
 
 ---
 
@@ -342,7 +375,7 @@ Here's what you can do:
 - Purpose-driven
 - No "just checking in"
 
-**Status:** Not implemented (Phase 1.5)
+**Status:** 🔄 Phase 1.5
 
 ---
 
@@ -380,7 +413,7 @@ Here's what you can do:
 - Remind about missed sessions
 - Check on open support issues
 
-**Status:** Not implemented (Phase 1.5)
+**Status:** 🔄 Phase 1.5
 
 ---
 
@@ -522,7 +555,79 @@ What would you want to see in it?"
 - No third-party sharing
 - No AI training on uploads
 
-**Status:** Not implemented (Phase 1.5)
+**Status:** ✅ Basic attachment support implemented. Full processing (PDF/DOCX parsing) in Phase 1.5.
+
+---
+
+## CONVERSATION HISTORY (Phase 1.5) - PRIORITY
+
+### Purpose
+
+Persist Hey Henry conversations across sessions so users can reference past strategic guidance, reread insights, and maintain continuity in their job search relationship.
+
+### User Problem
+
+Users treat Hey Henry conversations as artifacts with lasting value. They expect to return to previous discussions, reread advice, and build on past context. Current behavior (clear on browser close) destroys value already created.
+
+**Beta Feedback (Alex, December 2025):**
+> "He had a valuable 45-minute conversation that he would have liked to have gone back to, but it was gone. That's why he went back to Hey Henry this morning: to reread something they were discussing."
+
+This is product-defining. Users are treating Hey Henry as a strategic advisor whose past guidance is worth revisiting. Losing that context breaks the relationship.
+
+### Requirements
+
+**Storage:**
+- Store full conversation threads per user in Supabase
+- Create `hey_henry_conversations` table:
+  ```sql
+  CREATE TABLE hey_henry_conversations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES candidate_profiles(user_id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    messages JSONB NOT NULL DEFAULT '[]'
+  );
+  ```
+- Each message object: `{ role: 'user' | 'henry', content: string, timestamp: ISO datetime }`
+- Retain conversations for minimum 90 days
+
+**Retrieval:**
+- Load most recent conversation on login (if exists and < 24 hours old)
+- Option to start fresh conversation or continue previous
+- Access to conversation history list (last 10 conversations)
+
+**UI:**
+- "Previous Conversations" link in Hey Henry header
+- List view: date, first message preview, truncated
+- Click to load full conversation
+- Current conversation auto-saves on each message
+
+**Contextual Awareness (Tier 2, optional):**
+- Hey Henry can reference past conversations when relevant
+- Example: "Last week you mentioned concerns about the salary range at Stripe. Did that change?"
+- Requires conversation summarization and context injection
+- Scope separately if complexity is high
+
+### Out of Scope (for now)
+
+- Search within conversation history
+- Export conversations
+- Sharing conversations
+
+### Success Criteria
+
+- User can log out, log back in, and access previous conversation
+- User can view list of past conversations
+- User can continue previous conversation or start new one
+
+### Testing Checklist
+
+- [ ] Conversation saves after each message
+- [ ] Conversation loads on returning session
+- [ ] "Continue" vs "Start Fresh" option works
+- [ ] Previous conversations list displays correctly
+- [ ] Clicking past conversation loads it
+- [ ] Mobile: history accessible and usable
 
 ---
 
@@ -660,6 +765,57 @@ Track:
 
 ---
 
+## HENRY AS AUTHOR (Non-Negotiable) ✅ Implemented
+
+### Core Principle
+
+Henry positions himself as the **AUTHOR** of all generated content (resume, cover letter, positioning strategy, interview prep, outreach templates), not an observer. This establishes credibility and accountability.
+
+### What This Means
+
+**Henry Created:**
+- The tailored resume
+- The cover letter
+- The positioning strategy
+- The outreach templates
+- The interview prep modules
+
+**Henry Can:**
+- Explain why he made specific choices
+- Defend positioning decisions
+- Reference specific changes he made
+- Walk through the reasoning behind edits
+
+**Henry Never Says:**
+- "I can't see your resume"
+- "I don't have access to that"
+- "Based on what you've told me..."
+
+**Henry Always Says:**
+- "I led with your Spotify work because..."
+- "I emphasized your cross-functional experience since..."
+- "In your cover letter, I positioned you as..."
+
+### Implementation
+
+The backend system prompt explicitly instructs Henry:
+1. Claim ownership of all generated content
+2. Never admit lack of access when documents exist
+3. Reference specific sections, bullet points, and choices
+4. Explain the strategic reasoning behind every decision
+
+### Generated Content Context
+
+The API receives full context about generated content:
+- `documents_data`: Resume and cover letter with changes
+- `outreach_data`: LinkedIn, email, and referral templates
+- `interview_prep_data`: Prep modules, questions, talking points
+- `positioning_data`: Strategy, themes, narrative arc
+
+Henry uses this to speak authoritatively about work he's done.
+
+---
+
 ## CONVERSATION FEATURES
 
 ### Persistent History
@@ -737,28 +893,45 @@ Track:
 
 ## API INTEGRATION
 
-### Backend API: `/api/hey-henry`
+### Backend API: `/api/hey-henry` ✅ Implemented
 
-**Rename from:** `/api/ask-henry`
+**Status:** Complete. Backward-compatible alias at `/api/ask-henry` also available.
 
 **Request:**
 ```json
 {
   "message": "string",
+  "conversation_history": [],
   "context": {
-    "page": "string",
-    "analysis_data": {},
-    "resume_data": {},
-    "profile_data": {},
-    "pipeline_data": {},
-    "conversation_history": [],
-    "open_loops": []
+    "current_page": "string",
+    "page_description": "string",
+    "company": "string | null",
+    "role": "string | null",
+    "has_analysis": boolean,
+    "has_resume": boolean,
+    "has_pipeline": boolean,
+    "user_name": "string | null",
+    "emotional_state": "zen | stressed | struggling | desperate | crushed | null",
+    "confidence_level": "low | need_validation | shaky | strong | null",
+    "timeline": "urgent | soon | actively_looking | no_rush | null",
+    "tone_guidance": "string | null",
+    "needs_clarification": boolean,
+    "clarification_hints": []
   },
+  "analysis_data": {},
+  "resume_data": {},
+  "user_profile": {},
+  "pipeline_data": {},
+  "documents_data": {},
+  "outreach_data": {},
+  "interview_prep_data": {},
+  "positioning_data": {},
   "attachments": [
     {
-      "type": "image" | "document",
+      "type": "image | pdf | word | text",
       "filename": "string",
-      "data": "base64_string"
+      "content": "base64_string",
+      "mime_type": "string"
     }
   ]
 }
@@ -876,51 +1049,88 @@ Opens chat and auto-sends message.
 
 ## FILE CHANGES REQUIRED
 
-### Phase 1 (Week 1)
+### Phase 1 ✅ COMPLETE
 
-**Rename Files:**
-- `frontend/components/ask-henry.js` to `hey-henry.js`
-- Update all imports/references
+**Renamed Files:**
+- ✅ `frontend/components/ask-henry.js` to `hey-henry.js`
+- ✅ Updated all imports/references
 
-**Update Backend:**
-- `backend/backend.py`:
-  - Rename `/api/ask-henry` to `/api/hey-henry`
-  - Add clarification detection logic
-  - Add emotional state adaptation in system prompt
+**Updated Backend:**
+- ✅ `backend/backend.py`:
+  - ✅ Renamed `/api/ask-henry` to `/api/hey-henry` (with backward-compat alias)
+  - ✅ Added clarification detection logic
+  - ✅ Added emotional state adaptation in system prompt
+  - ✅ Added Henry as Author context
+  - ✅ Added generated content context (documents, outreach, interview prep, positioning)
+  - ✅ Added timestamps to messages
+  - ✅ Added QA validation for anti-fabrication
 
-**Consolidate Welcome Flows:**
-- Move from `frontend/dashboard.html` to `hey-henry.js`:
-  - Proactive welcome (first-time)
-  - First action prompt (post-profile)
-  - Welcome back (returning user)
+**Consolidated Welcome Flows:**
+- ✅ Moved from `frontend/dashboard.html` to `hey-henry.js`:
+  - ✅ Proactive welcome (first-time)
+  - ✅ First action prompt (post-profile)
+  - ✅ Welcome back (returning user)
 
-**Update Frontend Components:**
-- `hey-henry.js`:
-  - Implement greeting rotation (5-6 variants)
-  - Add emotional state adaptation
-  - Make tooltips context-aware (not random)
-  - Add clarification detection
-  - Add welcome flow consolidation
+**Updated Frontend Components:**
+- ✅ `hey-henry.js`:
+  - ✅ Implemented greeting rotation (5-6 variants)
+  - ✅ Added emotional state adaptation
+  - ✅ Added clarification detection
+  - ✅ Added welcome flow consolidation
+  - ✅ Added timestamps to messages
+  - ✅ Added auto-expand for long responses
+  - 🔄 Make tooltips context-aware (not random) - Phase 1.5
 
-**Update All HTML Files:**
-Find/replace "Ask Henry" with "Hey Henry":
-- `dashboard.html`
-- `analyze.html`
-- `results.html`
-- `documents.html`
-- `positioning.html`
-- `outreach.html`
-- `interview-intelligence.html`
-- `tracker.html`
-- `profile-edit.html`
-- All other pages with component
+**Updated All HTML Files:**
+- ✅ Find/replaced "Ask Henry" with "Hey Henry" across all pages
 
 ---
 
-### Phase 1.5 (Weeks 2-4)
+### Phase 1.5 (Current Priority)
 
-**Database Changes:**
-- Create Supabase table `hey_henry_memory`:
+**Priority 1: Conversation Persistence (CRITICAL)**
+
+Based on beta feedback, this is the highest priority item.
+
+- Create Supabase table `hey_henry_conversations`:
+  ```sql
+  CREATE TABLE hey_henry_conversations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES candidate_profiles(user_id),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    messages JSONB NOT NULL DEFAULT '[]'
+  );
+
+  -- Index for fast user lookups
+  CREATE INDEX idx_hey_henry_conversations_user_id
+    ON hey_henry_conversations(user_id);
+
+  -- Index for recent conversations
+  CREATE INDEX idx_hey_henry_conversations_updated
+    ON hey_henry_conversations(updated_at DESC);
+  ```
+
+- Backend endpoints:
+  - `POST /api/hey-henry/conversations` - Create new conversation
+  - `GET /api/hey-henry/conversations` - List user's conversations
+  - `GET /api/hey-henry/conversations/{id}` - Get specific conversation
+  - `PUT /api/hey-henry/conversations/{id}` - Update conversation (add message)
+
+- Frontend updates:
+  - Save conversation to database on each message
+  - Load recent conversation on login
+  - "Previous Conversations" UI in header
+  - "Continue" vs "Start Fresh" option
+
+**Priority 2: Context-Aware Tooltips**
+
+- Replace random tooltip rotation with pipeline-aware logic
+- Use pipeline data to surface relevant nudges
+
+**Priority 3: Other Database Tables**
+
+- Create Supabase table `hey_henry_memory` (open loops):
   ```sql
   CREATE TABLE hey_henry_memory (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -947,21 +1157,15 @@ Find/replace "Ask Henry" with "Hey Henry":
   );
   ```
 
-**Backend Updates:**
+**Priority 4: Backend Updates**
 - `backend/backend.py`:
-  - Add attachment handling (multipart/form-data)
-  - Add Claude vision for screenshots
-  - Add document parsing (PDF, DOCX)
+  - Add document parsing (PDF, DOCX) for full attachment support
   - Add open loop tracking
   - Add follow-up prompt generation
   - Add scheduling integration
 
-**Frontend Updates:**
+**Priority 5: Frontend Updates**
 - `hey-henry.js`:
-  - Add attachment upload UI
-  - Add drag-and-drop
-  - Add file validation
-  - Add preview generation
   - Add proactive check-in triggers
   - Add human handoff UI
   - Add document coaching prompts
@@ -970,46 +1174,59 @@ Find/replace "Ask Henry" with "Hey Henry":
 
 ## TESTING CHECKLIST
 
-### Core Behaviors
-- [ ] FAB on all authenticated pages
-- [ ] Tooltips context-aware (not random)
-- [ ] Greetings rotate (5-6 variants)
-- [ ] Greetings adapt to emotional state
-- [ ] Page context displays correctly
-- [ ] Conversation persists across pages
-- [ ] Conversation clears on browser close
+### Core Behaviors ✅ Phase 1 Complete
+- [x] FAB on all authenticated pages
+- [x] Greetings rotate (5-6 variants)
+- [x] Greetings adapt to emotional state
+- [x] Page context displays correctly
+- [x] Conversation persists across pages (session)
+- [x] Conversation clears on browser close
+- [x] Timestamps display on messages
+- [x] Auto-expand for long responses
+- [ ] Tooltips context-aware (not random) - Phase 1.5
 
-### Welcome Flows
-- [ ] First-time welcome (genie animation)
-- [ ] "Create My Profile" works
-- [ ] Cannot dismiss welcome
-- [ ] First action prompt after profile
-- [ ] Welcome back on second login (1+ hour)
-- [ ] Correct timeline/confidence context
+### Welcome Flows ✅ Phase 1 Complete
+- [x] First-time welcome (genie animation)
+- [x] "Create My Profile" works
+- [x] Cannot dismiss welcome
+- [x] First action prompt after profile
+- [x] Welcome back on second login (1+ hour)
+- [x] Correct timeline/confidence context
 
-### Clarification & Follow-Up
-- [ ] Vague bugs trigger follow-up
-- [ ] Vague feedback triggers follow-up
-- [ ] Feature requests ask use case
-- [ ] Ambiguous requests clarified
-- [ ] High-impact verified
-- [ ] Max 1-3 questions
-- [ ] No asking for available context
-- [ ] Confirmation after clarification
-- [ ] Proceeds to resolve/escalate
+### Clarification & Follow-Up ✅ Phase 1 Complete
+- [x] Vague bugs trigger follow-up
+- [x] Vague feedback triggers follow-up
+- [x] Feature requests ask use case
+- [x] Ambiguous requests clarified
+- [x] High-impact verified
+- [x] Max 1-3 questions
+- [x] No asking for available context
+- [x] Confirmation after clarification
+- [x] Proceeds to resolve/escalate
 
-### Attachment Handling (Phase 1.5)
-- [ ] Attachment button visible
-- [ ] Drag-and-drop works
-- [ ] File size validation (5MB)
-- [ ] File type validation
-- [ ] Preview displays
-- [ ] Multiple files (max 3)
-- [ ] Screenshots with bugs
-- [ ] Documents processed
-- [ ] Cleared after send
+### Henry as Author ✅ Phase 1 Complete
+- [x] Henry claims ownership of generated content
+- [x] Never says "I can't see" or "I don't have access"
+- [x] References specific document sections
+- [x] Explains reasoning for choices
 
-### Proactive Check-Ins (Phase 1.5)
+### Attachment Handling ✅ Basic Complete
+- [x] Attachment button visible
+- [x] File size validation (5MB)
+- [x] File type validation
+- [x] Image processing (Claude vision)
+- [ ] PDF/DOCX parsing - Phase 1.5
+- [ ] Drag-and-drop - Phase 1.5
+
+### Conversation Persistence - Phase 1.5 (PRIORITY)
+- [ ] Conversation saves after each message (to database)
+- [ ] Conversation loads on returning session
+- [ ] "Continue" vs "Start Fresh" option works
+- [ ] Previous conversations list displays correctly
+- [ ] Clicking past conversation loads it
+- [ ] Mobile: history accessible and usable
+
+### Proactive Check-Ins - Phase 1.5
 - [ ] Momentum stall triggers
 - [ ] Rejection pattern triggers
 - [ ] Confidence dip triggers
@@ -1017,122 +1234,92 @@ Find/replace "Ask Henry" with "Hey Henry":
 - [ ] Celebration triggers
 - [ ] All dismissible
 
-### Human Handoff (Phase 1.5)
+### Human Handoff - Phase 1.5
 - [ ] Escalation offered appropriately
 - [ ] Scheduling works
 - [ ] Confirmation sent
 - [ ] Follow-up on missed
 - [ ] Never forced
 
-### Memory & Follow-Up (Phase 1.5)
+### Memory & Follow-Up - Phase 1.5
 - [ ] Open loops tracked
 - [ ] Feedback follow-up
 - [ ] Bug follow-up
 - [ ] Session reminders
 - [ ] Unresolved detection
 
-### Tone Adaptation
-- [ ] Zen tone (efficient)
-- [ ] Stressed tone (reassuring)
-- [ ] Desperate tone (empathetic)
-- [ ] Crushed tone (gentle, direct)
+### Tone Adaptation ✅ Phase 1 Complete
+- [x] Zen tone (efficient)
+- [x] Stressed tone (reassuring)
+- [x] Desperate tone (empathetic)
+- [x] Crushed tone (gentle, direct)
 
-### Document Coaching
+### Document Coaching - Phase 1.5
 - [ ] Prompts after generation
 - [ ] Teaches strategy
 - [ ] Separate from refinement
 
-### Mobile Responsive
-- [ ] Bottom sheet (<480px)
-- [ ] FAB positioning correct
-- [ ] Suggestions stack vertically
-- [ ] Input prevents zoom (16px)
-- [ ] Tap targets 44x44px min
+### Mobile Responsive ✅ Phase 1 Complete
+- [x] Bottom sheet (<480px)
+- [x] FAB positioning correct
+- [x] Suggestions stack vertically
+- [x] Input prevents zoom (16px)
+- [x] Tap targets 44x44px min
 
 ---
 
-## IMPLEMENTATION SCHEDULE
+## IMPLEMENTATION STATUS
 
-### Week 1 (Dec 19-25)
-**Priority: Core Renaming & Consolidation**
+### Phase 1 ✅ COMPLETE (December 2025)
 
-**Day 1-2:**
-- Rename `ask-henry.js` to `hey-henry.js`
-- Update all imports/references
-- Find/replace "Ask Henry" in all HTML files
-- Rename backend endpoint `/api/hey-henry`
-- Test basic functionality
+All Phase 1 items have been implemented and deployed:
+- Core chat functionality
+- Rename to Hey Henry
+- Welcome flows consolidated
+- Emotional state adaptation
+- Henry as Author context
+- Attachment support (basic)
+- QA validation
+- Timestamps and auto-expand
 
-**Day 3-4:**
-- Consolidate welcome flows into component
-- Move first-time welcome from dashboard.html
-- Move first action prompt (add)
-- Move welcome back
-- Test welcome flow sequence
+### Phase 1.5 Priorities (Current)
 
-**Day 5-7:**
-- Implement greeting rotation (5-6 variants)
-- Add emotional state detection
-- Update tooltip logic (context-aware, not random)
-- Add clarification detection
-- Test all behavior states
+**Priority 1: Conversation Persistence**
+- Scope: See CONVERSATION HISTORY section above
+- Dependencies: Supabase table creation, backend endpoints, frontend UI
+- Estimated complexity: Medium
 
-### Week 2 (Dec 26 - Jan 1)
-**Priority: Memory & Document Coaching**
+**Priority 2: Context-Aware Tooltips**
+- Scope: Replace random rotation with pipeline-aware logic
+- Dependencies: Pipeline data access in tooltip component
+- Estimated complexity: Low
 
-**Day 1-2:**
-- Create Supabase `hey_henry_memory` table
-- Implement open loop tracking
-- Add follow-up prompt generation
+**Priority 3: Proactive Check-Ins**
+- Scope: Trigger-based nudges based on pipeline state
+- Dependencies: Pipeline monitoring, timing logic
+- Estimated complexity: Medium
 
-**Day 3-4:**
-- Implement document coaching prompts
-- Add coaching after generation
-- Test coaching vs refinement separation
+**Priority 4: Human Handoff**
+- Scope: Scheduling integration for coach/support sessions
+- Dependencies: Calendar integration, booking system
+- Estimated complexity: High
 
-**Day 5-7:**
-- Add attachment upload UI
-- Implement drag-and-drop
-- Add file validation
-- Add preview generation
+**Priority 5: Document Coaching**
+- Scope: Proactive coaching prompts after document generation
+- Dependencies: Document generation hooks
+- Estimated complexity: Low
 
-### Week 3 (Jan 2-8)
-**Priority: Attachments & Processing**
+### Known Issues to Address
 
-**Day 1-3:**
-- Implement screenshot processing (Claude vision)
-- Add document parsing (PDF, DOCX)
-- Create `feedback_attachments` table
-- Test attachment storage
+1. **Document Refinement Bug** (Separate from conversation persistence)
+   - User reported: Hey Henry claimed to update resume but change didn't persist
+   - Likely cause: State management issue in document refinement flow
+   - Action: Investigate `/api/documents/refine` endpoint and frontend state handling
 
-**Day 4-5:**
-- Implement proactive check-in triggers
-- Add momentum stall detection
-- Add rejection pattern detection
-- Add confidence dip detection
-
-**Day 6-7:**
-- Test proactive check-ins
-- Ensure dismissible
-- Verify timing logic
-
-### Week 4 (Jan 9-15)
-**Priority: Human Handoff & Polish**
-
-**Day 1-2:**
-- Implement human handoff UI
-- Add scheduling integration (MVP)
-- Test escalation offers
-
-**Day 3-5:**
-- Comprehensive testing (all checklists)
-- Bug fixes
-- Performance optimization
-
-**Day 6-7:**
-- Final polish
-- Documentation updates
-- Deployment preparation
+2. **Feedback Misclassification**
+   - User reported: New session triggered "pass to Career Coach" incorrectly
+   - Likely cause: Context loss on new session, question misrouted as feedback
+   - Action: Review feedback detection logic in new session state
 
 ---
 
@@ -1265,6 +1452,34 @@ Hey Henry must never:
 
 ---
 
-**END OF IMPLEMENTATION SPECIFICATION**
+## BETA FEEDBACK LOG
 
-This document is comprehensive and ready for Claude Code to implement. All behavioral requirements, technical specifications, file changes, testing procedures, and implementation schedule are included.
+### Alex (Legal Field) - December 2025
+
+**Context:** Beta user for 2 weeks, applying for Legal Counsel roles.
+
+**Positive Feedback:**
+- Improved fit score from 70% to 95% after working with Hey Henry
+- "Resume leveling was insightful and correct"
+- "All responses were helpful"
+- Spent 45-60 minutes in a single Hey Henry session
+- Chose Hey Henry over contacting founder for questions
+- Would subscribe knowing the value
+
+**Issues Reported:**
+1. **Conversation history lost on logout** - 45-minute valuable conversation vanished
+2. **Document update claimed but didn't persist** - Asked to add experience line, Henry confirmed but resume didn't reflect change
+3. **Feedback misclassification** - New session asked to "pass to Career Coach" unexpectedly
+
+**User Insight:**
+> "He went back to Hey Henry this morning to reread something they were discussing."
+
+Users treat Hey Henry conversations as artifacts with lasting value. This validates the critical priority of conversation persistence.
+
+**Mobile Usage:** Primary use case is iPhone while walking dog or at work. Mobile is not an edge case.
+
+---
+
+**END OF IMPLEMENTATION SPECIFICATION v2.2**
+
+This document reflects the current implementation state as of December 25, 2025. Phase 1 is complete. Phase 1.5 priorities are defined with conversation persistence as the critical path based on beta feedback.
