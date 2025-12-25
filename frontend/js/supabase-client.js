@@ -736,6 +736,158 @@ const HenryData = {
         // Mark as migrated
         localStorage.setItem('henryai_migrated_to_supabase', user.id);
         console.log('✅ Migration complete!');
+    },
+
+    // ==========================================
+    // Hey Henry Conversation Persistence
+    // ==========================================
+
+    /**
+     * Get user's Hey Henry conversations (most recent first)
+     * @param {number} limit - Max number of conversations to return (default 10)
+     */
+    async getHeyHenryConversations(limit = 10) {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('hey_henry_conversations')
+            .select('id, created_at, updated_at, messages')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching Hey Henry conversations:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get a specific Hey Henry conversation by ID
+     * @param {string} conversationId - UUID of the conversation
+     */
+    async getHeyHenryConversation(conversationId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('hey_henry_conversations')
+            .select('*')
+            .eq('id', conversationId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching Hey Henry conversation:', error);
+            return null;
+        }
+
+        return data;
+    },
+
+    /**
+     * Get the most recent Hey Henry conversation (if updated within last 24 hours)
+     * @returns {Object|null} - The conversation or null if none recent
+     */
+    async getMostRecentHeyHenryConversation() {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+        const { data, error } = await supabase
+            .from('hey_henry_conversations')
+            .select('*')
+            .eq('user_id', user.id)
+            .gte('updated_at', twentyFourHoursAgo)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('Error fetching recent Hey Henry conversation:', error);
+        }
+
+        return data || null;
+    },
+
+    /**
+     * Create a new Hey Henry conversation
+     * @param {Array} messages - Initial messages array
+     * @returns {Object} - The created conversation with id
+     */
+    async createHeyHenryConversation(messages = []) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('hey_henry_conversations')
+            .insert({
+                user_id: user.id,
+                messages: messages
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating Hey Henry conversation:', error);
+        } else {
+            console.log('✅ Created Hey Henry conversation:', data.id);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Update a Hey Henry conversation with new messages
+     * @param {string} conversationId - UUID of the conversation
+     * @param {Array} messages - Updated messages array
+     */
+    async updateHeyHenryConversation(conversationId, messages) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { data: null, error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('hey_henry_conversations')
+            .update({
+                messages: messages
+            })
+            .eq('id', conversationId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating Hey Henry conversation:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Delete a Hey Henry conversation
+     * @param {string} conversationId - UUID of the conversation
+     */
+    async deleteHeyHenryConversation(conversationId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { error } = await supabase
+            .from('hey_henry_conversations')
+            .delete()
+            .eq('id', conversationId)
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Error deleting Hey Henry conversation:', error);
+        } else {
+            console.log('✅ Deleted Hey Henry conversation:', conversationId);
+        }
+
+        return { error };
     }
 };
 
