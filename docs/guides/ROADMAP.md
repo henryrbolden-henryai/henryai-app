@@ -293,13 +293,13 @@ Position Ask Henry as the central strategic hub, not just a help widget.
 
 ## Phase 2: Strategic Intelligence Layer
 
-**Status:** Partially Complete (~70%)
+**Status:** Partially Complete (~75%)
 
 Enhances decision-making with market intelligence and broader career positioning.
 
 ### Hey Henry Strategic Intelligence Engine ✅
 
-**Status:** Complete (Phase 2.1-2.7)
+**Status:** Complete (Phase 2.1-2.8)
 
 Transforms Hey Henry from reactive Q&A into a proactive strategic coach.
 
@@ -311,6 +311,7 @@ Transforms Hey Henry from reactive Q&A into a proactive strategic coach.
 5. **Interview Debrief Intelligence** ✅ - Structured extraction from debrief conversations
 6. **Cross-Interview Pattern Detection** ✅ - Identifies weak areas and overused stories
 7. **Conversation Persistence** ✅ - Saves Hey Henry conversations to Supabase
+8. **Story Bank UI** ✅ - Manage behavioral examples with usage tracking and effectiveness ratings
 
 **Intelligence Loop:**
 - User completes interview → debriefs with Henry
@@ -546,7 +547,7 @@ The best features mean nothing if users don't engage with them. Before adding mo
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
 | Phase 1.75: Engagement & Coaching | In Progress | ~60% |
-| Phase 2: Strategic Intelligence | **Major Progress** | ~70% |
+| Phase 2: Strategic Intelligence | **Major Progress** | ~75% |
 | Phase 3: Performance Intelligence | Partial | ~20% |
 | Phase 4: Distribution & Ecosystem | Not Started | 0% |
 | Phase 5: Monetization & Scale | Not Started | 0% |
@@ -1092,3 +1093,36 @@ When pattern analysis is available, Hey Henry receives:
 ### Migration Required
 
 Run `database/interview_debriefs.sql` in Supabase SQL Editor (completed).
+
+---
+
+**2. Story Bank UI (Behavioral Example Library) - Complete**
+
+Implemented the user-facing Story Bank page to surface `user_story_bank` data.
+
+**Frontend Pages:**
+- `story-bank.html` - Full Story Bank management interface
+
+**Features:**
+- Stats bar showing Total Stories, High Impact, Overused, Needs Work counts
+- Story cards grid with effectiveness badges (High Impact, Overused, New, Needs Work, Retired)
+- Add/Edit modal with tag input for competencies (demonstrates) and question types (best_for_questions)
+- Detail view modal with full story information
+- Filter buttons: All, High Impact, Needs Work, Overused
+- Empty state for new users
+
+**Navigation Integration:**
+- Added Story Bank card to Interview Intelligence → Practice tab
+- Added toast notification on Interview Debrief page linking to Story Bank after stories are saved
+
+**Supabase Functions Added:**
+- `updateStory(storyId, updates)` - Update story details
+- `deleteStory(storyId)` - Delete a story
+
+**Files Created:**
+- `frontend/story-bank.html` - Complete Story Bank UI
+
+**Files Modified:**
+- `frontend/interview-intelligence.html` - Added Story Bank card to Practice tab
+- `frontend/interview-debrief.html` - Added toast notification with Story Bank link
+- `frontend/js/supabase-client.js` - Added updateStory, deleteStory functions

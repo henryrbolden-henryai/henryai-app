@@ -1,7 +1,7 @@
 # HEY HENRY IMPLEMENTATION SPECIFICATION v2.2
 
 **Date:** December 25, 2025
-**Status:** PHASE 1 COMPLETE - Phase 1.5 In Progress
+**Status:** PHASE 1.5 COMPLETE - Strategic Intelligence Engine Complete
 **Purpose:** Complete implementation guide for Claude Code
 **Last Updated:** December 25, 2025
 
@@ -28,12 +28,19 @@ This document contains the complete behavioral specification and implementation 
 | Auto-expand drawer for long responses | ✅ Complete |
 | Conversation history (session-only) | ✅ Complete |
 | Welcome flows consolidated | ✅ Complete |
-| Conversation persistence (cross-session) | 🔄 Phase 1.5 |
-| Context-aware tooltips | 🔄 Phase 1.5 |
-| Proactive check-ins | 🔄 Phase 1.5 |
-| Human handoff / scheduling | 🔄 Phase 1.5 |
-| Document coaching prompts | 🔄 Phase 1.5 |
-| Long-term memory (hey_henry_memory table) | 🔄 Phase 1.5 |
+| Conversation persistence (cross-session) | ✅ Complete |
+| Pipeline Pattern Analysis | ✅ Complete |
+| Proactive Network Surfacing | ✅ Complete |
+| Rejection Forensics | ✅ Complete |
+| Outreach Tracking | ✅ Complete |
+| Interview Debrief Intelligence | ✅ Complete |
+| Cross-Interview Pattern Detection | ✅ Complete |
+| Story Bank UI | ✅ Complete |
+| Context-aware tooltips | 🔄 Future |
+| Proactive check-ins | 🔄 Future |
+| Human handoff / scheduling | 🔄 Future |
+| Document coaching prompts | 🔄 Future |
+| Long-term memory (hey_henry_memory table) | 🔄 Future |
 
 ### Phase 1 Completed (v2.1)
 1. ✅ Renamed from "Ask Henry" to "Hey Henry" (all files, references, APIs)
@@ -45,12 +52,21 @@ This document contains the complete behavioral specification and implementation 
 7. ✅ Added auto-expand for long responses
 8. ✅ Added Henry as author context for generated content
 
-### Phase 1.5 Priority (Current)
-1. **Conversation persistence** (cross-session history) - Critical based on beta feedback
-2. Context-aware tooltips (not random rotation)
-3. Proactive check-ins
-4. Human handoff / scheduling
-5. Document coaching prompts
+### Phase 1.5 Completed (Strategic Intelligence Engine)
+1. ✅ **Conversation persistence** - Cross-session history saved to Supabase
+2. ✅ **Pipeline Pattern Analysis** - Analyzes application success/failure patterns
+3. ✅ **Proactive Network Surfacing** - Surfaces LinkedIn connections at target companies
+4. ✅ **Rejection Forensics** - Identifies patterns in rejected applications
+5. ✅ **Outreach Tracking** - Tracks follow-ups and surfaces overdue contacts
+6. ✅ **Interview Debrief Intelligence** - Structured extraction from debrief conversations
+7. ✅ **Cross-Interview Pattern Detection** - Identifies weak areas and overused stories
+8. ✅ **Story Bank UI** - Manage behavioral examples with usage tracking
+
+### Future Enhancements
+1. Context-aware tooltips (not random rotation)
+2. Proactive check-ins
+3. Human handoff / scheduling
+4. Document coaching prompts
 
 ---
 
