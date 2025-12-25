@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 22, 2025
+**Last Updated:** December 25, 2025
 
 ---
 
@@ -293,9 +293,35 @@ Position Ask Henry as the central strategic hub, not just a help widget.
 
 ## Phase 2: Strategic Intelligence Layer
 
-**Status:** Partially Complete
+**Status:** Partially Complete (~70%)
 
 Enhances decision-making with market intelligence and broader career positioning.
+
+### Hey Henry Strategic Intelligence Engine ✅
+
+**Status:** Complete (Phase 2.1-2.7)
+
+Transforms Hey Henry from reactive Q&A into a proactive strategic coach.
+
+**Completed Features:**
+1. **Pipeline Pattern Analysis** ✅ - Analyzes application success/failure patterns
+2. **Proactive Network Surfacing** ✅ - Surfaces LinkedIn connections at target companies
+3. **Rejection Forensics** ✅ - Identifies patterns in rejected applications
+4. **Outreach Tracking** ✅ - Tracks follow-ups and surfaces overdue contacts
+5. **Interview Debrief Intelligence** ✅ - Structured extraction from debrief conversations
+6. **Cross-Interview Pattern Detection** ✅ - Identifies weak areas and overused stories
+7. **Conversation Persistence** ✅ - Saves Hey Henry conversations to Supabase
+
+**Intelligence Loop:**
+- User completes interview → debriefs with Henry
+- Debrief conversation → extraction → structured data stored
+- Next interview prep → pulls past debriefs → personalized coaching
+- After 3+ debriefs → pattern detection → "This keeps coming up"
+
+**Reference Documents:**
+- [Hey Henry Strategic Intelligence Spec](./HEY_HENRY_STRATEGIC_INTELLIGENCE_ENGINE_SPEC_v1.md)
+- [Interview Debrief Intelligence Spec](./HEY_HENRY_INTERVIEW_DEBRIEF_INTELLIGENCE_SPEC_v1.md)
+- [Conversation History Spec](./HENRY_HENRY_CONVERSATION_HISTORY_SPEC_v1.md)
 
 ### Multi-Resume Management (Future)
 
@@ -520,7 +546,7 @@ The best features mean nothing if users don't engage with them. Before adding mo
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
 | Phase 1.75: Engagement & Coaching | In Progress | ~60% |
-| Phase 2: Strategic Intelligence | Partial | ~50% |
+| Phase 2: Strategic Intelligence | **Major Progress** | ~70% |
 | Phase 3: Performance Intelligence | Partial | ~20% |
 | Phase 4: Distribution & Ecosystem | Not Started | 0% |
 | Phase 5: Monetization & Scale | Not Started | 0% |
@@ -999,3 +1025,70 @@ Manual browser testing required:
 | LinkedIn Upload | 3/3 ✅ | All profiles parsed correctly |
 | Error Handling | All ✅ | Proper validation errors |
 | Tracker API | ✅ | CRUD + status transitions working |
+
+---
+
+## Session Log: December 25, 2025
+
+### Completed Today
+
+**1. Interview Debrief Intelligence (Phase 2.3) - Complete**
+
+Implemented the full debrief intelligence loop that compounds coaching across interviews.
+
+**Database:**
+- Created `interview_debriefs` table with structured fields (questions, stumbles, wins, stories, ratings)
+- Created `user_story_bank` table for tracking stories across interviews
+- Added RLS policies, indexes, and auto-update triggers
+- Auto-mark stories as "overused" when used 3+ times
+
+**Backend Endpoints:**
+- `POST /api/debriefs/extract` - Uses Claude to extract structured data from debrief conversations
+- `POST /api/debriefs/analyze-patterns` - Cross-interview pattern analysis (weak categories, overused stories, confidence trends)
+- Updated `InterviewPrepRequest` to accept `past_debriefs` for debrief-informed prep
+- Updated `HeyHenryRequest` to accept `debrief_pattern_analysis` for proactive coaching
+
+**Frontend Integration:**
+- `interview-debrief.html`: On "Debrief Completed", extracts structured data and stores in Supabase
+- `interview-prep.html`: Fetches past debriefs and includes in prep request
+- `hey-henry.js`: Fetches pattern analysis (cached 5 min) and sends to backend
+- `supabase-client.js`: Full CRUD for debriefs and story bank
+
+**Intelligence Loop Flow:**
+1. User completes interview → debriefs with Henry
+2. Conversation → extraction endpoint → structured data stored
+3. User preps for next interview → prep pulls past debriefs → "Last time you stumbled on X"
+4. After 3+ debriefs → pattern detection → "You've struggled with behavioral questions 3 times"
+
+**Files Created:**
+- `database/interview_debriefs.sql` - Database migration
+
+**Files Modified:**
+- `backend/backend.py` - Extraction/analysis endpoints, prep integration, Hey Henry context
+- `frontend/interview-debrief.html` - Extraction trigger on completion
+- `frontend/interview-prep.html` - Fetches past debriefs for prep
+- `frontend/components/hey-henry.js` - Pattern analysis integration
+- `frontend/js/supabase-client.js` - Debrief and story bank CRUD functions
+
+### Key Technical Details
+
+**Debrief Extraction Prompt:**
+Claude extracts: interview_type, ratings (1-5), questions_asked with categories, stumbles, wins, stories_used with effectiveness, interviewer_signals, key_insights, improvement_areas.
+
+**Pattern Analysis (requires 3+ debriefs):**
+- Weak categories: Question types where user struggled 50%+ of the time
+- Strong categories: Question types where user excelled 50%+ of the time
+- Story usage: Tracks which stories are overused
+- Confidence trend: Improving/declining/stable based on self-ratings
+
+**Hey Henry Prompt Injection:**
+When pattern analysis is available, Hey Henry receives:
+- Recurring weak areas with struggle rates
+- Strengths to leverage
+- Overused stories needing alternatives
+- Confidence trend direction
+- Coaching insights to surface proactively
+
+### Migration Required
+
+Run `database/interview_debriefs.sql` in Supabase SQL Editor (completed).
