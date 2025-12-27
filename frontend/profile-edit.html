@@ -1281,6 +1281,17 @@
         // Determine if this is new profile or edit
         let isNewProfile = false;
 
+        // Simple toast notifications
+        function showSuccess(message) {
+            console.log('✅ ' + message);
+            // Could add a toast UI here later
+        }
+
+        function showError(message) {
+            console.error('❌ ' + message);
+            alert(message); // Simple alert for errors
+        }
+
         // Currency formatting helpers
         function formatCurrency(value) {
             if (!value && value !== 0) return '';
