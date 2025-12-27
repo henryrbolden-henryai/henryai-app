@@ -4560,7 +4560,7 @@ async def root():
 @app.post("/api/resume/parse")
 @limiter.limit("30/minute")
 async def parse_resume(
-    http_request: Request,
+    request: Request,
     file: Optional[UploadFile] = File(None),
     resume_text: Optional[str] = Form(None)
 ) -> Dict[str, Any]:
@@ -11056,7 +11056,7 @@ def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: di
 
 @app.post("/api/jd/analyze")
 @limiter.limit("20/minute")
-async def analyze_jd(http_request: Request, request: JDAnalyzeRequest) -> Dict[str, Any]:
+async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]:
     """
     Analyze job description with MANDATORY Intelligence Layer
 
@@ -11088,20 +11088,20 @@ async def analyze_jd(http_request: Request, request: JDAnalyzeRequest) -> Dict[s
     cleanup_expired_sessions()
 
     # Validate we have complete data from THIS request only
-    if not request.resume or not isinstance(request.resume, dict):
+    if not body.resume or not isinstance(body.resume, dict):
         print(f"⚠️ [{analysis_id}] No valid resume data provided")
         # Continue without resume - some analyses are valid without it
     else:
         # CRITICAL: Detect test contamination - ABORT if found
-        verify_request_isolation(request.resume, analysis_id)
+        verify_request_isolation(body.resume, analysis_id)
 
-    if not request.job_description or len(request.job_description.strip()) < 50:
+    if not body.job_description or len(body.job_description.strip()) < 50:
         print(f"⚠️ [{analysis_id}] Short or missing job description")
         # Continue - provisional profile may be used
 
     # Use request data directly - no cache, no session, no globals
-    resume_data = request.resume if request.resume else {}
-    jd_text = request.job_description or ""
+    resume_data = body.resume if body.resume else {}
+    jd_text = body.job_description or ""
 
     # Pre-compute isolated role detection for later use
     isolated_role_detection = None
@@ -12524,23 +12524,23 @@ ABSOLUTE REQUIREMENTS:
 
     # Inject candidate state calibration if available
     situation = None
-    if request.preferences:
-        situation = request.preferences.get("situation")
+    if body.preferences:
+        situation = body.preferences.get("situation")
     calibration_prompt = build_candidate_calibration_prompt(situation)
     if calibration_prompt:
         system_prompt += calibration_prompt
 
     # Command Center v2.0: Determine JD source and handle missing JDs
-    jd_source = request.jd_source or ("user_provided" if request.job_description else "missing")
-    use_provisional = jd_source in ["inferred", "missing"] or not request.job_description
+    jd_source = body.jd_source or ("user_provided" if body.job_description else "missing")
+    use_provisional = jd_source in ["inferred", "missing"] or not body.job_description
 
     # Build user message based on JD availability
-    if use_provisional and request.provisional_profile:
+    if use_provisional and body.provisional_profile:
         # Use provisional profile when real JD is not available
-        profile = request.provisional_profile
+        profile = body.provisional_profile
         user_message = f"""PROVISIONAL ROLE PROFILE (No actual JD available):
-Company: {request.company}
-Role: {request.role_title}
+Company: {body.company}
+Role: {body.role_title}
 
 Typical Responsibilities:
 {chr(10).join('- ' + r for r in profile.get('typical_responsibilities', []))}
@@ -12563,19 +12563,19 @@ if the candidate appears highly qualified - we need real JD data to confirm stro
     else:
         # Use real JD
         user_message = f"""Job Description:
-Company: {request.company}
-Role: {request.role_title}
+Company: {body.company}
+Role: {body.role_title}
 
-{request.job_description or 'No job description provided'}
+{body.job_description or 'No job description provided'}
 """
         confidence_label = "refined"
         ui_note = None
 
-    if request.resume:
-        user_message += f"\n\nCandidate Resume Data:\n{json.dumps(request.resume, indent=2)}"
+    if body.resume:
+        user_message += f"\n\nCandidate Resume Data:\n{json.dumps(body.resume, indent=2)}"
 
-    if request.preferences:
-        user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
+    if body.preferences:
+        user_message += f"\n\nCandidate Preferences:\n{json.dumps(body.preferences, indent=2)}"
 
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
@@ -12684,19 +12684,19 @@ Role: {request.role_title}
         # CRITICAL: Ensure parsed_data has job_description, company, and role_title
         # These are needed by force_apply_experience_penalties for non-transferable domain detection
         # USER INPUT TAKES PRECEDENCE: If user provided company/role_title, use those over Claude's extraction
-        if "job_description" not in parsed_data and request.job_description:
-            parsed_data["job_description"] = request.job_description
+        if "job_description" not in parsed_data and body.job_description:
+            parsed_data["job_description"] = body.job_description
 
         # Company: User input takes precedence over Claude's extraction
-        if request.company:
-            if parsed_data.get("company") != request.company:
-                print(f"📋 [{analysis_id}] Overriding company: '{parsed_data.get('company')}' → '{request.company}' (user provided)")
-            parsed_data["company"] = request.company
+        if body.company:
+            if parsed_data.get("company") != body.company:
+                print(f"📋 [{analysis_id}] Overriding company: '{parsed_data.get('company')}' → '{body.company}' (user provided)")
+            parsed_data["company"] = body.company
 
         # Role title: User input takes precedence over Claude's extraction
         # But ONLY if the user input is not a placeholder value like "Role"
-        if request.role_title:
-            user_role = request.role_title.strip()
+        if body.role_title:
+            user_role = body.role_title.strip()
             is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
             if not is_placeholder:
                 if parsed_data.get("role_title") != user_role:
@@ -12721,10 +12721,10 @@ Role: {request.role_title}
 
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
-        parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+        parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
 
         # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
-        career_gap = detect_career_gap(request.resume)
+        career_gap = detect_career_gap(body.resume)
         if career_gap:
             # Ensure gaps array exists
             if "gaps" not in parsed_data:
@@ -12789,7 +12789,7 @@ Role: {request.role_title}
         print("=" * 60)
         print("🔄 POST-PROCESSING PIPELINE - ENTRY")
         print("=" * 60)
-        candidate_name = request.resume.get("full_name", "Unknown") if request.resume else "Unknown"
+        candidate_name = body.resume.get("full_name", "Unknown") if body.resume else "Unknown"
         print(f"   Candidate: {candidate_name}")
         print(f"   Recommendation: {parsed_data.get('recommendation', 'MISSING')}")
         print(f"   Fit Score: {parsed_data.get('fit_score', 'MISSING')}")
@@ -12799,11 +12799,11 @@ Role: {request.role_title}
             from backend.postprocessors import apply_all_postprocessors, PostProcessorConfig
 
             # Build inputs for post-processors
-            resume_data = request.resume if request.resume else {}
+            resume_data = body.resume if body.resume else {}
             jd_data = {
-                "role_title": request.role_title or parsed_data.get("role_title", ""),
-                "company": request.company or parsed_data.get("company", ""),
-                "job_description": request.job_description or "",
+                "role_title": body.role_title or parsed_data.get("role_title", ""),
+                "company": body.company or parsed_data.get("company", ""),
+                "job_description": body.job_description or "",
             }
 
             # Gather pre-computed analysis results
@@ -12884,11 +12884,11 @@ Role: {request.role_title}
             if REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED:
                 try:
                     pre_score = parsed_data.get("fit_score")
-                    resume_data = request.resume if request.resume else {}
+                    resume_data = body.resume if body.resume else {}
                     jd_data = {
-                        "role_title": request.role_title or parsed_data.get("role_title", ""),
-                        "company": request.company or parsed_data.get("company", ""),
-                        "job_description": request.job_description or "",
+                        "role_title": body.role_title or parsed_data.get("role_title", ""),
+                        "company": body.company or parsed_data.get("company", ""),
+                        "job_description": body.job_description or "",
                     }
                     reality_result = analyze_reality_checks(
                         resume_data=resume_data,
@@ -13042,19 +13042,19 @@ Role: {request.role_title}
 
             # Ensure job_description, company, and role_title are in parsed_data
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
-            if "job_description" not in parsed_data and request.job_description:
-                parsed_data["job_description"] = request.job_description
-            if request.company:
-                parsed_data["company"] = request.company
+            if "job_description" not in parsed_data and body.job_description:
+                parsed_data["job_description"] = body.job_description
+            if body.company:
+                parsed_data["company"] = body.company
             # Role title: only override with non-placeholder values
-            if request.role_title:
-                user_role = request.role_title.strip()
+            if body.role_title:
+                user_role = body.role_title.strip()
                 is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
                 if not is_placeholder:
                     parsed_data["role_title"] = user_role
 
             # Continue with penalty enforcement
-            parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
 
             # CRITICAL: Apply final sanitization to remove em/en dashes
             # This must run as the absolute last step before returning
@@ -13072,7 +13072,7 @@ Role: {request.role_title}
 
 @app.post("/api/jd/analyze/stream")
 @limiter.limit("20/minute")
-async def analyze_jd_stream(http_request: Request, request: JDAnalyzeRequest):
+async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
     """
     Streaming version of job description analysis for real-time UI updates.
 
@@ -13231,17 +13231,17 @@ ABSOLUTE REQUIREMENTS:
 
     # Build user message
     user_message = f"""Job Description:
-Company: {request.company}
-Role: {request.role_title}
+Company: {body.company}
+Role: {body.role_title}
 
-{request.job_description}
+{body.job_description}
 """
 
-    if request.resume:
-        user_message += f"\n\nCandidate Resume Data:\n{json.dumps(request.resume, indent=2)}"
+    if body.resume:
+        user_message += f"\n\nCandidate Resume Data:\n{json.dumps(body.resume, indent=2)}"
 
-    if request.preferences:
-        user_message += f"\n\nCandidate Preferences:\n{json.dumps(request.preferences, indent=2)}"
+    if body.preferences:
+        user_message += f"\n\nCandidate Preferences:\n{json.dumps(body.preferences, indent=2)}"
 
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
@@ -13348,22 +13348,22 @@ Role: {request.role_title}
 
             # Ensure job_description, company, and role_title are in parsed_data
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
-            if "job_description" not in parsed_data and request.job_description:
-                parsed_data["job_description"] = request.job_description
-            if request.company:
-                parsed_data["company"] = request.company
+            if "job_description" not in parsed_data and body.job_description:
+                parsed_data["job_description"] = body.job_description
+            if body.company:
+                parsed_data["company"] = body.company
             # Role title: only override with non-placeholder values
-            if request.role_title:
-                user_role = request.role_title.strip()
+            if body.role_title:
+                user_role = body.role_title.strip()
                 is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
                 if not is_placeholder:
                     parsed_data["role_title"] = user_role
 
             # Apply experience penalties
-            parsed_data = force_apply_experience_penalties(parsed_data, request.resume)
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
 
             # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
-            career_gap = detect_career_gap(request.resume)
+            career_gap = detect_career_gap(body.resume)
             if career_gap:
                 if "gaps" not in parsed_data:
                     parsed_data["gaps"] = []
@@ -13518,7 +13518,7 @@ def generate_resume_full_text(resume_output: dict) -> str:
 
 @app.post("/api/documents/generate")
 @limiter.limit("15/minute")
-async def generate_documents(http_request: Request, request: DocumentsGenerateRequest) -> Dict[str, Any]:
+async def generate_documents(request: Request, body: DocumentsGenerateRequest) -> Dict[str, Any]:
     """
     Generate tailored resume, cover letter, interview prep, and outreach content.
     Returns complete JSON for frontend consumption including full resume preview.
@@ -13724,21 +13724,21 @@ Your response must be ONLY valid JSON. No markdown code blocks. No explanatory t
     user_message = f"""Generate complete tailored application materials for this candidate and role.
 
 CANDIDATE RESUME DATA:
-{json.dumps(request.resume, indent=2)}
+{json.dumps(body.resume, indent=2)}
 
 JOB DESCRIPTION ANALYSIS:
-{json.dumps(request.jd_analysis, indent=2)}
+{json.dumps(body.jd_analysis, indent=2)}
 """
-    
-    if request.preferences:
-        user_message += f"\n\nCANDIDATE PREFERENCES:\n{json.dumps(request.preferences, indent=2)}"
+
+    if body.preferences:
+        user_message += f"\n\nCANDIDATE PREFERENCES:\n{json.dumps(body.preferences, indent=2)}"
 
     # Add supplemental information from Strengthen Your Candidacy page
-    if request.supplements and len(request.supplements) > 0:
+    if body.supplements and len(body.supplements) > 0:
         user_message += "\n\n=== ADDITIONAL CANDIDATE CONTEXT (from Strengthen Your Candidacy) ===\n"
         user_message += "The candidate provided the following additional context to address gaps in their application.\n"
         user_message += "INCORPORATE this information into the resume and cover letter where appropriate:\n\n"
-        for supp in request.supplements:
+        for supp in body.supplements:
             user_message += f"**Gap Area: {supp.gap_area}**\n"
             user_message += f"Question: {supp.question}\n"
             user_message += f"Candidate's Answer: {supp.answer}\n\n"
@@ -13746,19 +13746,19 @@ JOB DESCRIPTION ANALYSIS:
         user_message += "Do NOT fabricate beyond what the candidate stated, but DO weave in this context naturally.\n"
 
     # Add leveling context for level-appropriate language and positioning
-    if request.leveling:
+    if body.leveling:
         user_message += "\n\n=== CAREER LEVEL ANALYSIS (from Resume Leveling Assessment) ===\n"
-        user_message += f"Current Level: {request.leveling.current_level} ({request.leveling.detected_function})\n"
-        if request.leveling.target_level:
-            user_message += f"Target Level: {request.leveling.target_level}\n"
-            if request.leveling.levels_apart and request.leveling.levels_apart > 0:
-                user_message += f"Gap: {request.leveling.levels_apart} level(s) between current and target\n"
-        user_message += f"Resume Language Level: {request.leveling.language_level}\n\n"
+        user_message += f"Current Level: {body.leveling.current_level} ({body.leveling.detected_function})\n"
+        if body.leveling.target_level:
+            user_message += f"Target Level: {body.leveling.target_level}\n"
+            if body.leveling.levels_apart and body.leveling.levels_apart > 0:
+                user_message += f"Gap: {body.leveling.levels_apart} level(s) between current and target\n"
+        user_message += f"Resume Language Level: {body.leveling.language_level}\n\n"
 
         # Add language recommendations
-        if request.leveling.recommendations:
+        if body.leveling.recommendations:
             user_message += "LEVELING RECOMMENDATIONS - Apply these to strengthen the resume:\n"
-            for rec in request.leveling.recommendations[:5]:  # Top 5 recommendations
+            for rec in body.leveling.recommendations[:5]:  # Top 5 recommendations
                 if rec.get('type') == 'language':
                     user_message += f"- Language: Replace '{rec.get('current', '')}' with '{rec.get('suggested', '')}'\n"
                 elif rec.get('type') == 'quantification':
@@ -13770,9 +13770,9 @@ JOB DESCRIPTION ANALYSIS:
             user_message += "\n"
 
         # Add leveling gaps to address
-        if request.leveling.gaps:
+        if body.leveling.gaps:
             user_message += "LEVEL GAPS TO ADDRESS in resume language:\n"
-            for gap in request.leveling.gaps[:3]:  # Top 3 gaps
+            for gap in body.leveling.gaps[:3]:  # Top 3 gaps
                 user_message += f"- {gap.get('description', '')}: {gap.get('recommendation', '')}\n"
             user_message += "\n"
 
@@ -13887,8 +13887,8 @@ Generate the complete JSON response with ALL required fields populated."""
             }
         
         if "outreach" not in parsed_data:
-            company = request.jd_analysis.get("company", "the company")
-            role = request.jd_analysis.get("role_title", "this role")
+            company = body.jd_analysis.get("company", "the company")
+            role = body.jd_analysis.get("role_title", "this role")
             parsed_data["outreach"] = {
                 "hiring_manager": f"Hi, I recently applied for the {role} position at {company} and wanted to introduce myself. My background aligns well with what you're building. I'd welcome the chance to discuss how I can contribute to your team.",
                 "recruiter": f"Hi, I just submitted my application for the {role} role at {company}. I believe I'd be a strong fit. Happy to provide any additional information that would be helpful.",
@@ -13921,7 +13921,7 @@ Generate the complete JSON response with ALL required fields populated."""
                 "resume": {
                     "summary_rationale": "Tailored summary to emphasize skills most relevant to the job requirements.",
                     "qualifications_rationale": "Prioritized experience that best matches the role's key requirements.",
-                    "ats_keywords": request.jd_analysis.get("ats_keywords", [])[:5] if request.jd_analysis.get("ats_keywords") else [],
+                    "ats_keywords": body.jd_analysis.get("ats_keywords", [])[:5] if body.jd_analysis.get("ats_keywords") else [],
                     "positioning_statement": "This positions you as a strong candidate for the role."
                 },
                 "cover_letter": {
@@ -13931,9 +13931,9 @@ Generate the complete JSON response with ALL required fields populated."""
                     "positioning_statement": "This frames you as a qualified candidate ready to contribute."
                 }
             }
-        
+
         # Validate document quality and keyword coverage
-        validation_results = validate_document_quality(parsed_data, request.resume, request.jd_analysis)
+        validation_results = validate_document_quality(parsed_data, body.resume, body.jd_analysis)
 
         # Add validation results to response
         parsed_data["validation"] = validation_results
@@ -15017,7 +15017,7 @@ def format_resume_for_prompt(resume_json: Dict[str, Any]) -> str:
 
 @app.post("/api/interview-prep/generate", response_model=InterviewPrepResponse)
 @limiter.limit("20/minute")
-async def generate_interview_prep(http_request: Request, request: InterviewPrepRequest):
+async def generate_interview_prep(request: Request, body: InterviewPrepRequest):
     """
     INTERVIEW INTELLIGENCE: Generate stage-specific interview prep
 
@@ -15031,20 +15031,20 @@ async def generate_interview_prep(http_request: Request, request: InterviewPrepR
     When jd_source is 'inferred' or 'missing', uses provisional_profile for prep generation.
     """
 
-    resume_text = format_resume_for_prompt(request.resume_json)
-    fit_analysis_text = json.dumps(request.jd_analysis, indent=2) if request.jd_analysis else "No fit analysis available"
+    resume_text = format_resume_for_prompt(body.resume_json)
+    fit_analysis_text = json.dumps(body.jd_analysis, indent=2) if body.jd_analysis else "No fit analysis available"
 
     # Determine if using provisional profile (missing JD scenario)
-    jd_source = request.jd_source or ("user_provided" if request.job_description else "missing")
-    use_provisional = jd_source in ["inferred", "missing"] or not request.job_description
+    jd_source = body.jd_source or ("user_provided" if body.job_description else "missing")
+    use_provisional = jd_source in ["inferred", "missing"] or not body.job_description
 
     # Build role context based on JD availability
-    if use_provisional and request.provisional_profile:
+    if use_provisional and body.provisional_profile:
         # Use provisional profile when real JD is not available
-        profile = request.provisional_profile
+        profile = body.provisional_profile
         role_context = f"""PROVISIONAL ROLE PROFILE (No actual JD available):
-Company: {request.company}
-Role: {request.role_title}
+Company: {body.company}
+Role: {body.role_title}
 
 Typical Responsibilities:
 {chr(10).join('- ' + r for r in profile.get('typical_responsibilities', []))}
@@ -15064,14 +15064,14 @@ NOTE: This is based on typical expectations for this role type. The actual inter
     else:
         # Use real JD
         role_context = f"""JOB DESCRIPTION:
-Company: {request.company}
-Role: {request.role_title}
+Company: {body.company}
+Role: {body.role_title}
 
-{request.job_description or 'No job description provided'}"""
+{body.job_description or 'No job description provided'}"""
         confidence = "refined"
         ui_note = None
 
-    if request.interview_stage == "recruiter_screen":
+    if body.interview_stage == "recruiter_screen":
         system_prompt = """You are generating pre-interview intelligence for a recruiter screen.
 
 Generate structured prep covering:
@@ -15120,13 +15120,13 @@ Return ONLY a valid JSON object with the structure above. No markdown, no preamb
 
     # Build past debrief insights section if available
     debrief_insights_section = ""
-    if request.past_debriefs and len(request.past_debriefs) > 0:
+    if body.past_debriefs and len(body.past_debriefs) > 0:
         debrief_lines = ["PAST INTERVIEW INTELLIGENCE (from debriefs):"]
 
         # Check for same-company debriefs
-        same_company_debriefs = [d for d in request.past_debriefs if d.get('company', '').lower() == request.company.lower()]
+        same_company_debriefs = [d for d in body.past_debriefs if d.get('company', '').lower() == body.company.lower()]
         if same_company_debriefs:
-            debrief_lines.append(f"\n📊 Previous interviews at {request.company}:")
+            debrief_lines.append(f"\n📊 Previous interviews at {body.company}:")
             for d in same_company_debriefs[:3]:  # Limit to 3 most recent
                 debrief_lines.append(f"  - {d.get('interview_type', 'Interview')}: Rating {d.get('rating_overall', 'N/A')}/5")
                 if d.get('stumbles'):
@@ -15139,7 +15139,7 @@ Return ONLY a valid JSON object with the structure above. No markdown, no preamb
         # Aggregate weak areas across all debriefs
         all_stumbles = []
         all_improvement_areas = []
-        for d in request.past_debriefs:
+        for d in body.past_debriefs:
             all_stumbles.extend(d.get('stumbles', []))
             all_improvement_areas.extend(d.get('improvement_areas', []))
 
@@ -15162,7 +15162,7 @@ Return ONLY a valid JSON object with the structure above. No markdown, no preamb
 
         # Story usage context
         all_stories = []
-        for d in request.past_debriefs:
+        for d in body.past_debriefs:
             all_stories.extend(d.get('stories_used', []))
         if all_stories:
             debrief_lines.append("\n📖 Stories used in previous interviews:")
@@ -15198,7 +15198,7 @@ Generate the interview prep now."""
         prep_content = json.loads(cleaned)
 
         return InterviewPrepResponse(
-            interview_stage=request.interview_stage,
+            interview_stage=body.interview_stage,
             prep_content=prep_content,
             confidence=confidence,
             ui_note=ui_note
@@ -15877,7 +15877,7 @@ async def debrief_chat(request: DebriefChatRequest):
 
 @app.post("/api/mock-interview/start", response_model=StartMockInterviewResponse)
 @limiter.limit("10/minute")
-async def start_mock_interview(http_request: Request, request: StartMockInterviewRequest):
+async def start_mock_interview(request: Request, body: StartMockInterviewRequest):
     """
     INTERVIEW INTELLIGENCE: Start a new mock interview session
 
@@ -15888,16 +15888,16 @@ async def start_mock_interview(http_request: Request, request: StartMockIntervie
 
     Returns session_id and first question to begin the interview.
     """
-    print(f"🎤 Starting mock interview for {request.company} - {request.role_title}")
+    print(f"🎤 Starting mock interview for {body.company} - {body.role_title}")
 
     # Generate session ID
     session_id = str(uuid.uuid4())
 
     # Format resume for prompt
-    resume_text = format_resume_for_prompt(request.resume_json)
+    resume_text = format_resume_for_prompt(body.resume_json)
 
     # Extract candidate's first name from resume (check multiple possible field names)
-    full_name = request.resume_json.get("name") or request.resume_json.get("full_name") or request.resume_json.get("candidate_name") or ""
+    full_name = body.resume_json.get("name") or body.resume_json.get("full_name") or body.resume_json.get("candidate_name") or ""
     candidate_name = full_name.split()[0] if full_name else "there"
 
     # First question is always a warm "tell me about yourself" - the 60-90 second pitch
@@ -15911,15 +15911,15 @@ async def start_mock_interview(http_request: Request, request: StartMockIntervie
     # Generate question ID
     question_id = str(uuid.uuid4())
 
-    # Store session (with optional user_id from request)
+    # Store session (with optional user_id from body)
     session_data = {
         "id": session_id,
-        "resume_json": request.resume_json,
-        "job_description": request.job_description,
-        "company": request.company,
-        "role_title": request.role_title,
-        "interview_stage": request.interview_stage,
-        "difficulty_level": request.difficulty_level,
+        "resume_json": body.resume_json,
+        "job_description": body.job_description,
+        "company": body.company,
+        "role_title": body.role_title,
+        "interview_stage": body.interview_stage,
+        "difficulty_level": body.difficulty_level,
         "started_at": datetime.now().isoformat(),
         "completed_at": None,
         "overall_score": None,
@@ -15927,8 +15927,8 @@ async def start_mock_interview(http_request: Request, request: StartMockIntervie
         "question_ids": [question_id],
         "current_question_number": 1
     }
-    # Get user_id from request if provided (for Supabase storage)
-    user_id = getattr(request, 'user_id', None)
+    # Get user_id from body if provided (for Supabase storage)
+    user_id = getattr(body, 'user_id', None)
     save_mock_session(session_id, session_data, user_id)
 
     # Store question
@@ -15947,8 +15947,8 @@ async def start_mock_interview(http_request: Request, request: StartMockIntervie
 
     return StartMockInterviewResponse(
         session_id=session_id,
-        interview_stage=request.interview_stage,
-        difficulty_level=request.difficulty_level,
+        interview_stage=body.interview_stage,
+        difficulty_level=body.difficulty_level,
         first_question=FirstQuestionResponse(
             question_id=question_id,
             question_text=question_data["question_text"],
@@ -18670,7 +18670,7 @@ ASK_HENRY_SYSTEM_PROMPT = HEY_HENRY_SYSTEM_PROMPT
 
 @app.post("/api/hey-henry", response_model=HeyHenryResponse)
 @limiter.limit("60/minute")
-async def hey_henry(http_request: Request, request: HeyHenryRequest):
+async def hey_henry(request: Request, body: HeyHenryRequest):
     """
     HEY HENRY: Strategic career coach available from any page.
 
@@ -18683,7 +18683,7 @@ async def hey_henry(http_request: Request, request: HeyHenryRequest):
     - Clarification detection for vague inputs
     - Conversation history for continuity
     """
-    print(f"💬 Hey Henry: {request.context.current_page} - {request.message[:50]}...")
+    print(f"💬 Hey Henry: {body.context.current_page} - {body.message[:50]}...")
 
     # Detect pipeline analysis request (Phase 2.2 trigger)
     pipeline_analysis_triggers = [
@@ -18707,7 +18707,7 @@ async def hey_henry(http_request: Request, request: HeyHenryRequest):
         "job search review",
         "search strategy"
     ]
-    message_lower = request.message.lower()
+    message_lower = body.message.lower()
     is_pipeline_analysis_request = any(trigger in message_lower for trigger in pipeline_analysis_triggers)
 
     # Detect rejection forensics request (Phase 2.4 trigger)
@@ -18731,9 +18731,9 @@ async def hey_henry(http_request: Request, request: HeyHenryRequest):
 
     # Build analysis context string
     analysis_context = ""
-    if request.analysis_data and request.context.has_analysis:
+    if body.analysis_data and body.context.has_analysis:
         # Extract strengths - handle both string and dict formats
-        strengths_raw = request.analysis_data.get('strengths', [])[:3]
+        strengths_raw = body.analysis_data.get('strengths', [])[:3]
         strengths_list = []
         for s in strengths_raw:
             if isinstance(s, dict):
@@ -18742,7 +18742,7 @@ async def hey_henry(http_request: Request, request: HeyHenryRequest):
                 strengths_list.append(str(s))
 
         # Extract gaps - handle both string and dict formats
-        gaps_raw = request.analysis_data.get('gaps', [])[:3]
+        gaps_raw = body.analysis_data.get('gaps', [])[:3]
         gaps_list = []
         for g in gaps_raw:
             if isinstance(g, dict):
@@ -18752,24 +18752,24 @@ async def hey_henry(http_request: Request, request: HeyHenryRequest):
 
         analysis_context = f"""
 ANALYSIS DATA AVAILABLE:
-- Company: {request.analysis_data.get('_company_name', 'Unknown')}
-- Role: {request.analysis_data.get('role_title', 'Unknown')}
-- Fit Score: {request.analysis_data.get('fit_score', 'N/A')}
+- Company: {body.analysis_data.get('_company_name', 'Unknown')}
+- Role: {body.analysis_data.get('role_title', 'Unknown')}
+- Fit Score: {body.analysis_data.get('fit_score', 'N/A')}
 - Key Strengths: {', '.join(strengths_list) if strengths_list else 'None identified'}
 - Key Gaps: {', '.join(gaps_list) if gaps_list else 'None identified'}
 """
 
-    if request.resume_data and request.context.has_resume:
+    if body.resume_data and body.context.has_resume:
         analysis_context += f"""
 RESUME DATA:
-- Candidate Name: {request.resume_data.get('name', 'Unknown')}
-- Current/Recent Role: {request.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if request.resume_data.get('experience') else 'Unknown'}
+- Candidate Name: {body.resume_data.get('name', 'Unknown')}
+- Current/Recent Role: {body.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if body.resume_data.get('experience') else 'Unknown'}
 """
 
     # Build pipeline context from pipeline data
     pipeline_context = ""
-    if request.pipeline_data and request.context.has_pipeline:
-        pd = request.pipeline_data
+    if body.pipeline_data and body.context.has_pipeline:
+        pd = body.pipeline_data
         pipeline_context = f"""
 PIPELINE DATA (USE THIS TO GIVE SPECIFIC, INFORMED ANSWERS):
 - Total Applications: {pd.get('total', 0)}
@@ -18838,9 +18838,9 @@ TOP APPLICATIONS IN PIPELINE:
 
     # Build network context from LinkedIn connections (Phase 2.1)
     network_context = ""
-    if request.network_data:
-        nd = request.network_data
-        target_company = request.context.company or "target company"
+    if body.network_data:
+        nd = body.network_data
+        target_company = body.context.company or "target company"
 
         if nd.get('hasConnections'):
             direct_connections = nd.get('directAtCompany', [])
@@ -18880,8 +18880,8 @@ When relevant, suggest:
 
     # Build outreach log context for follow-up prompts (Phase 2.7)
     outreach_log_context = ""
-    if request.outreach_log_data:
-        ol = request.outreach_log_data
+    if body.outreach_log_data:
+        ol = body.outreach_log_data
         due_for_followup = ol.get('dueForFollowUp', [])
         due_for_final = ol.get('dueForFinalFollowUp', [])
 
@@ -18907,8 +18907,8 @@ Don't be pushy, but do keep them accountable.
 
     # Build interview debrief context for missing debrief prompts (Phase 2.3)
     interview_debrief_context = ""
-    if request.interview_debrief_data:
-        idd = request.interview_debrief_data
+    if body.interview_debrief_data:
+        idd = body.interview_debrief_data
         needs_debrief = idd.get('needsDebrief', [])
         has_skipped = idd.get('hasSkippedDebriefs', False)
 
@@ -18947,8 +18947,8 @@ When appropriate, proactively encourage them to complete a debrief:
 
     # Build cross-interview pattern analysis context (Phase 2.3)
     pattern_analysis_context = ""
-    if request.debrief_pattern_analysis:
-        pa = request.debrief_pattern_analysis
+    if body.debrief_pattern_analysis:
+        pa = body.debrief_pattern_analysis
         total_debriefs = pa.get('total_debriefs', 0)
 
         if total_debriefs >= 3:
@@ -19006,8 +19006,8 @@ USE THESE PATTERNS TO:
     # Build generated content context - YOU ARE THE AUTHOR
     generated_content_context = ""
 
-    if request.documents_data:
-        dd = request.documents_data
+    if body.documents_data:
+        dd = body.documents_data
         generated_content_context += """
 DOCUMENTS YOU CREATED (speak as the author):
 """
@@ -19025,8 +19025,8 @@ COVER LETTER (you drafted this):
 - Opening hook: {cl.get('opening', cl.get('body', '')[:150] if isinstance(cl, dict) else str(cl)[:150])}...
 """
 
-    if request.outreach_data:
-        od = request.outreach_data
+    if body.outreach_data:
+        od = body.outreach_data
         generated_content_context += """
 OUTREACH TEMPLATES YOU CREATED:
 """
@@ -19037,8 +19037,8 @@ OUTREACH TEMPLATES YOU CREATED:
             else:
                 generated_content_context += f"- Template {i+1}: {str(template)[:100]}...\n"
 
-    if request.interview_prep_data:
-        ip = request.interview_prep_data
+    if body.interview_prep_data:
+        ip = body.interview_prep_data
         generated_content_context += """
 INTERVIEW PREP YOU BUILT:
 """
@@ -19049,8 +19049,8 @@ INTERVIEW PREP YOU BUILT:
             else:
                 generated_content_context += f"- {str(module)[:80]}...\n"
 
-    if request.positioning_data:
-        pp = request.positioning_data
+    if body.positioning_data:
+        pp = body.positioning_data
         generated_content_context += f"""
 POSITIONING STRATEGY YOU DEVELOPED:
 - Core positioning: {pp.get('positioning_strategy', pp.get('strategic_positioning', 'N/A'))[:200]}...
@@ -19059,13 +19059,13 @@ POSITIONING STRATEGY YOU DEVELOPED:
 
     # Build emotional context - prefer direct context fields, fall back to user_profile
     emotional_context = ""
-    holding_up = request.context.emotional_state
-    timeline = request.context.timeline
-    confidence = request.context.confidence_level
+    holding_up = body.context.emotional_state
+    timeline = body.context.timeline
+    confidence = body.context.confidence_level
 
     # Fall back to user_profile if direct fields not set
-    if not holding_up and request.user_profile:
-        situation = request.user_profile.get('situation', {})
+    if not holding_up and body.user_profile:
+        situation = body.user_profile.get('situation', {})
         holding_up = situation.get('holding_up')
         timeline = timeline or situation.get('timeline')
         confidence = confidence or situation.get('confidence')
@@ -19113,35 +19113,35 @@ POSITIONING STRATEGY YOU DEVELOPED:
     # Build tone guidance context (from frontend getToneGuidance())
     tone_guidance = ""
     tone_guidance_detail = ""
-    if request.context.tone_guidance:
-        tone_guidance = f"TONE GUIDANCE FROM CONTEXT:\n{request.context.tone_guidance}"
-        tone_guidance_detail = request.context.tone_guidance
+    if body.context.tone_guidance:
+        tone_guidance = f"TONE GUIDANCE FROM CONTEXT:\n{body.context.tone_guidance}"
+        tone_guidance_detail = body.context.tone_guidance
     else:
         tone_guidance_detail = "Adapt your tone based on the user's emotional state above."
 
     # Build clarification context
     clarification_context = ""
-    if request.context.needs_clarification and request.context.clarification_hints:
+    if body.context.needs_clarification and body.context.clarification_hints:
         clarification_context = "⚠️ CLARIFICATION NEEDED - The user's message appears vague. Before responding substantively, ask clarifying questions:\n"
-        for hint in request.context.clarification_hints:
+        for hint in body.context.clarification_hints:
             hint_type = hint.get('type', 'unknown')
             hint_text = hint.get('hint', '')
             clarification_context += f"- [{hint_type}] {hint_text}\n"
         clarification_context += "\nDo NOT acknowledge vaguely. Ask specific follow-up questions first."
 
     # Format system prompt
-    user_name = request.context.user_name
+    user_name = body.context.user_name
     name_note = "" if user_name else "(name not available - use warm generic greetings)"
     system_prompt = HEY_HENRY_SYSTEM_PROMPT.format(
         user_name=user_name or "Unknown",
         name_note=name_note,
-        current_page=request.context.current_page,
-        page_description=request.context.page_description,
-        company=request.context.company or "Not specified",
-        role=request.context.role or "Not specified",
-        has_analysis="Yes" if request.context.has_analysis else "No",
-        has_resume="Yes" if request.context.has_resume else "No",
-        has_pipeline="Yes" if request.context.has_pipeline else "No",
+        current_page=body.context.current_page,
+        page_description=body.context.page_description,
+        company=body.context.company or "Not specified",
+        role=body.context.role or "Not specified",
+        has_analysis="Yes" if body.context.has_analysis else "No",
+        has_resume="Yes" if body.context.has_resume else "No",
+        has_pipeline="Yes" if body.context.has_pipeline else "No",
         analysis_context=analysis_context,
         pipeline_context=pipeline_context,
         network_context=network_context,
@@ -19156,8 +19156,8 @@ POSITIONING STRATEGY YOU DEVELOPED:
     )
 
     # Add pipeline analysis instruction if triggered (Phase 2.2)
-    if is_pipeline_analysis_request and request.pipeline_data:
-        pd = request.pipeline_data
+    if is_pipeline_analysis_request and body.pipeline_data:
+        pd = body.pipeline_data
         total_apps = pd.get('total', 0)
         if total_apps >= 5:
             system_prompt += """
@@ -19209,8 +19209,8 @@ The user is asking about their search, but they only have {total_apps} applicati
 """
 
     # Add rejection forensics instruction if triggered (Phase 2.4)
-    if is_rejection_forensics_request and request.pipeline_data:
-        pd = request.pipeline_data
+    if is_rejection_forensics_request and body.pipeline_data:
+        pd = body.pipeline_data
         rejected_count = pd.get('rejected', 0)
         pattern_data = pd.get('patternAnalysis', {})
         rej_by_stage = pattern_data.get('rejectionsByStage', {})
@@ -19268,19 +19268,19 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
 
     # Build messages
     messages = []
-    for msg in request.conversation_history:
+    for msg in body.conversation_history:
         messages.append({
             "role": msg.role,
             "content": msg.content
         })
 
     # Build the user message content - handle attachments if present
-    if request.attachments and len(request.attachments) > 0:
+    if body.attachments and len(body.attachments) > 0:
         # Multi-modal message with attachments
         user_content = []
 
         # Process each attachment
-        for attachment in request.attachments:
+        for attachment in body.attachments:
             if attachment.type.startswith('image/'):
                 # Image attachment - use Claude's vision format
                 # Map MIME types to Claude's expected format
@@ -19338,19 +19338,19 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
         # Add the user's message text
         user_content.append({
             "type": "text",
-            "text": request.message
+            "text": body.message
         })
 
         messages.append({
             "role": "user",
             "content": user_content
         })
-        print(f"📎 Total attachments processed: {len(request.attachments)}")
+        print(f"📎 Total attachments processed: {len(body.attachments)}")
     else:
         # Simple text message (no attachments)
         messages.append({
             "role": "user",
-            "content": request.message
+            "content": body.message
         })
 
     try:
@@ -19368,11 +19368,11 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
         # QA VALIDATION: Check chat response for fabrication
         # Only validate if we have resume data to check against
         # =================================================================
-        if request.resume_data and request.context.has_resume:
+        if body.resume_data and body.context.has_resume:
             qa_validation_result = validate_chat_response(
                 response=assistant_response,
-                user_question=request.message,
-                resume_data=request.resume_data
+                user_question=body.message,
+                resume_data=body.resume_data
             )
 
             if qa_validation_result.should_block:
@@ -19380,7 +19380,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                 print("\n" + "🚫"*20)
                 print("HEY HENRY QA VALIDATION BLOCKED - POTENTIAL FABRICATION")
                 print("🚫"*20)
-                print(f"Question: {request.message[:100]}...")
+                print(f"Question: {body.message[:100]}...")
                 for issue in qa_validation_result.issues:
                     print(f"  [{issue.category.value}] {issue.message}")
                 print("🚫"*20 + "\n")
@@ -19390,12 +19390,12 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                     endpoint="/api/hey-henry",
                     result=qa_validation_result,
                     output={"response": assistant_response},
-                    resume_data=request.resume_data,
-                    request_context={"question": request.message[:200]}
+                    resume_data=body.resume_data,
+                    request_context={"question": body.message[:200]}
                 )
 
                 # Return a safe fallback response instead of blocking entirely
-                fallback_response = create_chat_fallback_response(qa_validation_result, request.message)
+                fallback_response = create_chat_fallback_response(qa_validation_result, body.message)
                 return HeyHenryResponse(response=fallback_response)
 
         return HeyHenryResponse(response=assistant_response)
