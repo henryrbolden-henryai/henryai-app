@@ -1571,6 +1571,7 @@
             saveResumeBtn.textContent = 'Saving...';
 
             try {
+                console.log('Saving resume to Supabase...');
                 const result = await HenryData.saveResume(
                     newResumeName.value.trim(),
                     pendingResumeJson,
@@ -1578,8 +1579,10 @@
                     userResumes.length === 0 // first resume is default
                 );
 
-                if (result.error) {
-                    throw new Error(result.error);
+                console.log('Save result:', result);
+
+                if (!result || result.error) {
+                    throw new Error(result?.error || 'Failed to save resume');
                 }
 
                 // Also save to localStorage for backwards compatibility
@@ -1587,18 +1590,23 @@
                 profile.resume = pendingResumeJson;
                 localStorage.setItem('userProfile', JSON.stringify(profile));
 
-                showSuccess('Resume saved successfully!');
+                // Close modal and refresh list first
                 closeModal();
+                showSuccess('Resume saved successfully!');
                 await loadResumes();
 
-                // Run LinkedIn comparison if LinkedIn data exists
+                // Run LinkedIn comparison if LinkedIn data exists (non-blocking)
                 if (result.data?.id && profile?.linkedin_parsed) {
-                    await checkLinkedInAlignment(pendingResumeJson, result.data.id);
+                    checkLinkedInAlignment(pendingResumeJson, result.data.id).catch(e => {
+                        console.error('LinkedIn comparison error:', e);
+                    });
                 }
 
             } catch (error) {
                 console.error('Save error:', error);
                 showError(error.message || 'Failed to save resume');
+            } finally {
+                // Always reset button state
                 saveResumeBtn.disabled = false;
                 saveResumeBtn.textContent = 'Save Resume';
             }
