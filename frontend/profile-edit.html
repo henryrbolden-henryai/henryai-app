@@ -1840,9 +1840,9 @@
             document.getElementById('backLink').style.display = 'block';
             document.getElementById('dangerZone').style.display = 'block';
             document.getElementById('saveBtn').textContent = 'Save Changes';
-            // Show resume info, hide file upload
+            // Hide legacy resume sections - multi-resume UI handles this now
             document.getElementById('fileUpload').style.display = 'none';
-            document.getElementById('resumeInfo').style.display = 'block';
+            document.getElementById('resumeInfo').style.display = 'none';
         }
 
         function populateForm() {
@@ -2077,10 +2077,10 @@
                 const skillCount = parsedResume.skills?.length || 0;
                 resumeMeta.textContent = `${expCount} roles · ${skillCount} skills`;
 
-                // In edit mode, switch back to info view
+                // In edit mode, hide the legacy file upload (multi-resume UI handles display)
                 if (!isNewProfile) {
                     fileUpload.style.display = 'none';
-                    resumeInfo.style.display = 'block';
+                    // Legacy resumeInfo is hidden - multi-resume list shows resumes
                 }
 
             } catch (error) {
