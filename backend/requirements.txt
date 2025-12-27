@@ -4,6 +4,9 @@
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 
+# Rate Limiting
+slowapi>=0.1.9
+
 # HTTP Client (for URL scraping)
 httpx>=0.25.0
 
@@ -25,6 +28,9 @@ pydantic>=2.5.0
 
 # Date parsing
 python-dateutil>=2.8.0
+
+# Supabase (database)
+supabase>=2.0.0
 
 # Optional: Email (for future implementation)
 # aiosmtplib>=2.0.0

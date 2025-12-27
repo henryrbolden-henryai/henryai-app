@@ -9,9 +9,19 @@ import json
 import io
 import uuid
 import random
+import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
+
+# Configure structured logging
+# In production, Railway captures stdout/stderr - this ensures proper formatting
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger("henryhq")
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 from fastapi.exceptions import RequestValidationError
@@ -20,6 +30,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import anthropic
+
+# Rate limiting
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # Add parent directory to path for document_generator import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -113,12 +128,21 @@ except ImportError:
     REALITY_CHECK_ENABLED = False
     print("⚠️ Reality Check module not available - using fallback behavior")
 
+# Initialize rate limiter
+# Limits: 30 requests per minute per IP for expensive endpoints (Claude API calls)
+# Health check and simple endpoints are not rate limited
+limiter = Limiter(key_func=get_remote_address)
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Henry Job Search Engine API",
     description="Backend for resume parsing, JD analysis, and application generation",
     version="1.0.0"
 )
+
+# Add rate limiter to app state and exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS - explicit origins for production
 ALLOWED_ORIGINS = [
@@ -141,11 +165,13 @@ app.add_middleware(
 )
 
 
+# Log startup
+logger.info("HenryHQ API starting up...")
+
 # Add validation error handler for better debugging
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    print(f"🔥 VALIDATION ERROR: {exc.errors()}")
-    print(f"🔥 REQUEST BODY: {exc.body}")
+    logger.error(f"Validation error: {exc.errors()}", extra={"body": str(exc.body)[:500]})
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": str(exc.body)[:500]}
@@ -161,13 +187,25 @@ client = anthropic.Anthropic(api_key=API_KEY, timeout=120.0)  # 2 min timeout fo
 # OpenAI API key for TTS (optional - for natural AI voice)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# In-memory storage for outcomes (Feature 2: Learning/Feedback Loop)
-# In production, replace with proper database
-outcomes_store: List[Dict[str, Any]] = []
+# Initialize Supabase client for persistent storage
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://xmbappvomvmanvybdavs.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Use service key for backend (bypasses RLS)
 
-# In-memory storage for mock interview sessions
-# In production, replace with proper database
-# WARNING: These persist in memory until server restart - implement TTL cleanup
+supabase_client = None
+if SUPABASE_KEY:
+    try:
+        from supabase import create_client, Client
+        supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        logger.info("Supabase client initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Supabase client: {e}. Falling back to in-memory storage.")
+        supabase_client = None
+else:
+    logger.warning("SUPABASE_SERVICE_KEY not set. Using in-memory storage (data will be lost on restart).")
+
+# In-memory storage fallback (used when Supabase is not available)
+# WARNING: Data is lost on server restart when using fallback
+outcomes_store: List[Dict[str, Any]] = []
 mock_interview_sessions: Dict[str, Dict[str, Any]] = {}
 mock_interview_questions: Dict[str, Dict[str, Any]] = {}
 mock_interview_responses: Dict[str, List[Dict[str, Any]]] = {}
@@ -175,6 +213,160 @@ mock_interview_analyses: Dict[str, Dict[str, Any]] = {}
 
 # Session TTL in seconds (24 hours)
 SESSION_TTL_SECONDS = 24 * 60 * 60
+
+
+# ============================================================================
+# MOCK INTERVIEW STORAGE HELPERS (Supabase with in-memory fallback)
+# ============================================================================
+
+def save_mock_session(session_id: str, session_data: Dict[str, Any], user_id: str = None) -> bool:
+    """Save mock interview session to Supabase or fallback to in-memory."""
+    if supabase_client and user_id:
+        try:
+            data = {
+                "id": session_id,
+                "user_id": user_id,
+                "resume_json": session_data.get("resume_json", {}),
+                "job_description": session_data.get("job_description"),
+                "company": session_data.get("company"),
+                "role_title": session_data.get("role_title"),
+                "interview_stage": session_data.get("interview_stage"),
+                "difficulty_level": session_data.get("difficulty_level", "medium"),
+                "current_question_number": session_data.get("current_question_number", 1),
+            }
+            supabase_client.table("mock_interview_sessions").upsert(data).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save session to Supabase: {e}")
+    # Fallback to in-memory
+    mock_interview_sessions[session_id] = session_data
+    return True
+
+def get_mock_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """Get mock interview session from Supabase or fallback."""
+    if supabase_client:
+        try:
+            result = supabase_client.table("mock_interview_sessions").select("*").eq("id", session_id).single().execute()
+            if result.data:
+                return result.data
+        except Exception as e:
+            logger.warning(f"Failed to get session from Supabase: {e}")
+    # Fallback to in-memory
+    return mock_interview_sessions.get(session_id)
+
+def save_mock_question(question_id: str, question_data: Dict[str, Any]) -> bool:
+    """Save mock interview question to Supabase or fallback."""
+    if supabase_client:
+        try:
+            data = {
+                "id": question_id,
+                "session_id": question_data.get("session_id"),
+                "question_number": question_data.get("question_number"),
+                "question_text": question_data.get("question_text"),
+                "competency_tested": question_data.get("competency_tested"),
+                "difficulty": question_data.get("difficulty", "medium"),
+            }
+            supabase_client.table("mock_interview_questions").upsert(data).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save question to Supabase: {e}")
+    # Fallback to in-memory
+    mock_interview_questions[question_id] = question_data
+    return True
+
+def get_mock_question(question_id: str) -> Optional[Dict[str, Any]]:
+    """Get mock interview question from Supabase or fallback."""
+    if supabase_client:
+        try:
+            result = supabase_client.table("mock_interview_questions").select("*").eq("id", question_id).single().execute()
+            if result.data:
+                return result.data
+        except Exception as e:
+            logger.warning(f"Failed to get question from Supabase: {e}")
+    # Fallback to in-memory
+    return mock_interview_questions.get(question_id)
+
+def save_mock_response(question_id: str, response_data: Dict[str, Any]) -> bool:
+    """Save mock interview response to Supabase or fallback."""
+    if supabase_client:
+        try:
+            data = {
+                "question_id": question_id,
+                "session_id": response_data.get("session_id"),
+                "response_text": response_data.get("response_text"),
+                "score": response_data.get("score"),
+                "feedback": response_data.get("feedback"),
+                "strengths": response_data.get("strengths", []),
+                "improvements": response_data.get("improvements", []),
+            }
+            supabase_client.table("mock_interview_responses").insert(data).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save response to Supabase: {e}")
+    # Fallback to in-memory
+    if question_id not in mock_interview_responses:
+        mock_interview_responses[question_id] = []
+    mock_interview_responses[question_id].append(response_data)
+    return True
+
+def get_mock_responses(question_id: str) -> List[Dict[str, Any]]:
+    """Get mock interview responses from Supabase or fallback."""
+    if supabase_client:
+        try:
+            result = supabase_client.table("mock_interview_responses").select("*").eq("question_id", question_id).execute()
+            if result.data:
+                return result.data
+        except Exception as e:
+            logger.warning(f"Failed to get responses from Supabase: {e}")
+    # Fallback to in-memory
+    return mock_interview_responses.get(question_id, [])
+
+def save_mock_analysis(session_id: str, analysis_data: Dict[str, Any]) -> bool:
+    """Save mock interview analysis to Supabase or fallback."""
+    if supabase_client:
+        try:
+            data = {
+                "session_id": session_id,
+                "overall_score": analysis_data.get("overall_score"),
+                "competency_scores": analysis_data.get("competency_scores"),
+                "key_strengths": analysis_data.get("key_strengths", []),
+                "areas_for_improvement": analysis_data.get("areas_for_improvement", []),
+                "recommendations": analysis_data.get("recommendations", []),
+                "detailed_feedback": analysis_data.get("detailed_feedback"),
+            }
+            supabase_client.table("mock_interview_analyses").upsert(data, on_conflict="session_id").execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save analysis to Supabase: {e}")
+    # Fallback to in-memory
+    mock_interview_analyses[session_id] = analysis_data
+    return True
+
+def get_mock_analysis(session_id: str) -> Optional[Dict[str, Any]]:
+    """Get mock interview analysis from Supabase or fallback."""
+    if supabase_client:
+        try:
+            result = supabase_client.table("mock_interview_analyses").select("*").eq("session_id", session_id).single().execute()
+            if result.data:
+                return result.data
+        except Exception as e:
+            logger.warning(f"Failed to get analysis from Supabase: {e}")
+    # Fallback to in-memory
+    return mock_interview_analyses.get(session_id)
+
+def update_mock_session(session_id: str, updates: Dict[str, Any]) -> bool:
+    """Update mock interview session in Supabase or fallback."""
+    if supabase_client:
+        try:
+            supabase_client.table("mock_interview_sessions").update(updates).eq("id", session_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update session in Supabase: {e}")
+    # Fallback to in-memory
+    if session_id in mock_interview_sessions:
+        mock_interview_sessions[session_id].update(updates)
+        return True
+    return False
 
 
 def cleanup_expired_sessions() -> int:
@@ -198,7 +390,7 @@ def cleanup_expired_sessions() -> int:
                 from datetime import datetime
                 dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
                 created_at = dt.timestamp()
-            except:
+            except (ValueError, TypeError):
                 created_at = 0
 
         if current_time - created_at > SESSION_TTL_SECONDS:
@@ -3400,7 +3592,7 @@ def calculate_mock_session_average(session_id: str) -> float:
     """
     Calculate average score across all completed questions in session.
     """
-    session = mock_interview_sessions.get(session_id)
+    session = get_mock_session(session_id)
     if not session:
         return 0.0
 
@@ -3408,7 +3600,7 @@ def calculate_mock_session_average(session_id: str) -> float:
     scores = []
 
     for qid in question_ids:
-        analysis = mock_interview_analyses.get(qid)
+        analysis = get_mock_analysis(qid)
         if analysis and analysis.get("score"):
             scores.append(analysis["score"])
 
@@ -3422,7 +3614,7 @@ def format_responses_for_analysis(question_id: str) -> str:
     """
     Format all responses to a question into text for analysis.
     """
-    responses = mock_interview_responses.get(question_id, [])
+    responses = get_mock_responses(question_id)
     formatted = []
 
     for i, response in enumerate(responses, 1):
@@ -4329,9 +4521,14 @@ def infer_industry_from_company(company_name: str) -> str:
 # API ENDPOINTS
 # ============================================================================
 
+@app.get("/health")
+async def health_check():
+    """Simple health check for load balancers and monitoring"""
+    return {"status": "ok"}
+
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    """Detailed API information endpoint"""
     return {
         "status": "running",
         "service": "Henry Job Search Engine API",
@@ -4361,7 +4558,9 @@ async def root():
     }
 
 @app.post("/api/resume/parse")
+@limiter.limit("30/minute")
 async def parse_resume(
+    http_request: Request,
     file: Optional[UploadFile] = File(None),
     resume_text: Optional[str] = Form(None)
 ) -> Dict[str, Any]:
@@ -4400,9 +4599,9 @@ async def parse_resume(
                     print(f"📁 Unknown format: {filename}, trying as text")
                     try:
                         text_content = file_bytes.decode('utf-8')
-                    except:
+                    except UnicodeDecodeError:
                         raise HTTPException(
-                            status_code=400, 
+                            status_code=400,
                             detail=f"Unsupported file type: {filename}. Please upload PDF, DOCX, or TXT file."
                         )
                 print(f"📁 Extracted text length: {len(text_content) if text_content else 0}")
@@ -10856,7 +11055,8 @@ def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: di
 
 
 @app.post("/api/jd/analyze")
-async def analyze_jd(request: JDAnalyzeRequest) -> Dict[str, Any]:
+@limiter.limit("20/minute")
+async def analyze_jd(http_request: Request, request: JDAnalyzeRequest) -> Dict[str, Any]:
     """
     Analyze job description with MANDATORY Intelligence Layer
 
@@ -12871,7 +13071,8 @@ Role: {request.role_title}
 
 
 @app.post("/api/jd/analyze/stream")
-async def analyze_jd_stream(request: JDAnalyzeRequest):
+@limiter.limit("20/minute")
+async def analyze_jd_stream(http_request: Request, request: JDAnalyzeRequest):
     """
     Streaming version of job description analysis for real-time UI updates.
 
@@ -13090,7 +13291,7 @@ Role: {request.role_title}
                                 yield f"data: {json.dumps({'type': 'partial', 'field': 'strengths', 'value': strengths})}\n\n"
                                 strengths_sent = True
                                 await asyncio.sleep(0)
-                        except:
+                        except (json.JSONDecodeError, ValueError):
                             pass  # Not complete yet, keep buffering
 
                 # Extract expected_applicants from reality_check
@@ -13316,7 +13517,8 @@ def generate_resume_full_text(resume_output: dict) -> str:
     return result
 
 @app.post("/api/documents/generate")
-async def generate_documents(request: DocumentsGenerateRequest) -> Dict[str, Any]:
+@limiter.limit("15/minute")
+async def generate_documents(http_request: Request, request: DocumentsGenerateRequest) -> Dict[str, Any]:
     """
     Generate tailored resume, cover letter, interview prep, and outreach content.
     Returns complete JSON for frontend consumption including full resume preview.
@@ -14814,7 +15016,8 @@ def format_resume_for_prompt(resume_json: Dict[str, Any]) -> str:
 
 
 @app.post("/api/interview-prep/generate", response_model=InterviewPrepResponse)
-async def generate_interview_prep(request: InterviewPrepRequest):
+@limiter.limit("20/minute")
+async def generate_interview_prep(http_request: Request, request: InterviewPrepRequest):
     """
     INTERVIEW INTELLIGENCE: Generate stage-specific interview prep
 
@@ -15673,7 +15876,8 @@ async def debrief_chat(request: DebriefChatRequest):
 # ============================================================================
 
 @app.post("/api/mock-interview/start", response_model=StartMockInterviewResponse)
-async def start_mock_interview(request: StartMockInterviewRequest):
+@limiter.limit("10/minute")
+async def start_mock_interview(http_request: Request, request: StartMockInterviewRequest):
     """
     INTERVIEW INTELLIGENCE: Start a new mock interview session
 
@@ -15707,8 +15911,8 @@ async def start_mock_interview(request: StartMockInterviewRequest):
     # Generate question ID
     question_id = str(uuid.uuid4())
 
-    # Store session
-    mock_interview_sessions[session_id] = {
+    # Store session (with optional user_id from request)
+    session_data = {
         "id": session_id,
         "resume_json": request.resume_json,
         "job_description": request.job_description,
@@ -15723,9 +15927,12 @@ async def start_mock_interview(request: StartMockInterviewRequest):
         "question_ids": [question_id],
         "current_question_number": 1
     }
+    # Get user_id from request if provided (for Supabase storage)
+    user_id = getattr(request, 'user_id', None)
+    save_mock_session(session_id, session_data, user_id)
 
     # Store question
-    mock_interview_questions[question_id] = {
+    question_record = {
         "id": question_id,
         "session_id": session_id,
         "question_number": 1,
@@ -15734,9 +15941,7 @@ async def start_mock_interview(request: StartMockInterviewRequest):
         "difficulty": question_data["difficulty"],
         "asked_at": datetime.now().isoformat()
     }
-
-    # Initialize empty responses for this question
-    mock_interview_responses[question_id] = []
+    save_mock_question(question_id, question_record)
 
     print(f"✅ Mock interview session started: {session_id}")
 
@@ -15766,12 +15971,12 @@ async def submit_mock_response(request: SubmitMockResponseRequest):
     print(f"📝 Submitting mock response for question {request.question_id}")
 
     # Verify session exists
-    session = mock_interview_sessions.get(request.session_id)
+    session = get_mock_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Mock interview session not found")
 
     # Verify question exists
-    question = mock_interview_questions.get(request.question_id)
+    question = get_mock_question(request.question_id)
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
 
@@ -15779,15 +15984,14 @@ async def submit_mock_response(request: SubmitMockResponseRequest):
     response_entry = {
         "response_number": request.response_number,
         "response_text": request.response_text,
-        "responded_at": datetime.now().isoformat()
+        "responded_at": datetime.now().isoformat(),
+        "session_id": request.session_id
     }
-
-    if request.question_id not in mock_interview_responses:
-        mock_interview_responses[request.question_id] = []
-    mock_interview_responses[request.question_id].append(response_entry)
+    save_mock_response(request.question_id, response_entry)
 
     # Format resume for prompt
-    resume_text = format_resume_for_prompt(session["resume_json"])
+    resume_json = session.get("resume_json") or session.get("resume_json", {})
+    resume_text = format_resume_for_prompt(resume_json)
 
     # Determine target level
     target_level = determine_target_level(session["job_description"])
@@ -15796,7 +16000,7 @@ async def submit_mock_response(request: SubmitMockResponseRequest):
     role_type = detect_role_type(session["job_description"], session["role_title"])
 
     # Build ALL responses for cumulative analysis
-    all_responses = mock_interview_responses.get(request.question_id, [])
+    all_responses = get_mock_responses(request.question_id)
     all_responses_text = ""
     for i, resp in enumerate(all_responses, 1):
         label = "Initial Response" if i == 1 else f"Follow-up Response #{i-1}"
@@ -15987,7 +16191,7 @@ async def get_next_mock_question(request: NextQuestionRequest):
     print(f"➡️ Getting next question for session {request.session_id}")
 
     # Verify session exists
-    session = mock_interview_sessions.get(request.session_id)
+    session = get_mock_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Mock interview session not found")
 
@@ -16008,7 +16212,7 @@ async def get_next_mock_question(request: NextQuestionRequest):
     # Get list of already asked questions
     asked_questions = []
     for qid in session.get("question_ids", []):
-        q = mock_interview_questions.get(qid)
+        q = get_mock_question(qid)
         if q:
             asked_questions.append(q["question_text"])
 
@@ -16051,7 +16255,7 @@ async def get_next_mock_question(request: NextQuestionRequest):
     question_id = str(uuid.uuid4())
 
     # Store question
-    mock_interview_questions[question_id] = {
+    question_record = {
         "id": question_id,
         "session_id": request.session_id,
         "question_number": next_question_number,
@@ -16060,13 +16264,15 @@ async def get_next_mock_question(request: NextQuestionRequest):
         "difficulty": question_data["difficulty"],
         "asked_at": datetime.now().isoformat()
     }
-
-    # Initialize empty responses for this question
-    mock_interview_responses[question_id] = []
+    save_mock_question(question_id, question_record)
 
     # Update session with new question
-    session["question_ids"].append(question_id)
-    session["current_question_number"] = next_question_number
+    question_ids = session.get("question_ids", [])
+    question_ids.append(question_id)
+    update_mock_session(request.session_id, {
+        "question_ids": question_ids,
+        "current_question_number": next_question_number
+    })
 
     # Calculate average score
     average_score = calculate_mock_session_average(request.session_id)
@@ -16101,7 +16307,7 @@ async def end_mock_interview(request: EndMockInterviewRequest):
     print(f"🏁 Ending mock interview session {request.session_id}")
 
     # Verify session exists
-    session = mock_interview_sessions.get(request.session_id)
+    session = get_mock_session(request.session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Mock interview session not found")
 
@@ -16128,8 +16334,8 @@ async def end_mock_interview(request: EndMockInterviewRequest):
     level_counts = {"mid": 0, "senior": 0, "director": 0, "executive": 0}
 
     for qid in session.get("question_ids", []):
-        question = mock_interview_questions.get(qid)
-        analysis = mock_interview_analyses.get(qid, {})
+        question = get_mock_question(qid)
+        analysis = get_mock_analysis(qid) or {}
 
         if question:
             score = analysis.get("score", 5)
@@ -18463,7 +18669,8 @@ ASK_HENRY_SYSTEM_PROMPT = HEY_HENRY_SYSTEM_PROMPT
 
 
 @app.post("/api/hey-henry", response_model=HeyHenryResponse)
-async def hey_henry(request: HeyHenryRequest):
+@limiter.limit("60/minute")
+async def hey_henry(http_request: Request, request: HeyHenryRequest):
     """
     HEY HENRY: Strategic career coach available from any page.
 
