@@ -1348,11 +1348,63 @@
 
             try {
                 userResumes = await HenryData.getResumes();
+
+                // Auto-migrate localStorage resume if Supabase has no resumes
+                if (userResumes.length === 0) {
+                    const migrated = await migrateLocalStorageResume();
+                    if (migrated) {
+                        userResumes = await HenryData.getResumes();
+                    }
+                }
+
                 renderResumeList();
             } catch (error) {
                 console.error('Error loading resumes:', error);
                 resumeCount.textContent = 'Error loading resumes';
             }
+        }
+
+        // Auto-migrate localStorage resume to Supabase (one-time migration for existing users)
+        async function migrateLocalStorageResume() {
+            const stored = localStorage.getItem('userProfile');
+            if (!stored) return false;
+
+            try {
+                const profile = JSON.parse(stored);
+                if (!profile.resume) return false;
+
+                // Check if we already migrated (prevent duplicate migrations)
+                const migrationKey = 'henryai_resume_migrated';
+                if (localStorage.getItem(migrationKey) === 'true') {
+                    console.log('Resume already migrated, skipping');
+                    return false;
+                }
+
+                console.log('Migrating localStorage resume to Supabase...');
+
+                // Extract name from resume
+                const resumeName = profile.resume.contact?.full_name ||
+                                   profile.resume.full_name ||
+                                   'My Resume';
+
+                // Save to Supabase with accuracy_confirmed = true (they were already using it)
+                const result = await HenryData.saveResume(
+                    `${resumeName} (Migrated)`,
+                    profile.resume,
+                    true,  // is_default
+                    true   // accuracy_confirmed - they've been using this resume
+                );
+
+                if (result) {
+                    console.log('Successfully migrated localStorage resume to Supabase');
+                    localStorage.setItem(migrationKey, 'true');
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error migrating localStorage resume:', error);
+            }
+
+            return false;
         }
 
         // Render the resume list
