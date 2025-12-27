@@ -35,7 +35,10 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Implement six-tier recommendation system with invariant enforcement\n\nRound 2 Testing Fixes:\n- Six-tier recommendation system (Strong Apply, Apply, Consider, Apply with Caution, Long Shot, Do Not Apply)\n- Score-decision invariant enforcement - prevents 78% + \"Do Not Apply\" mismatches\n- Seniority detection module - tier-appropriate guidance for exec/director/manager/IC\n- QA sanitization module - removes AI patterns, prevents cross-candidate leakage\n- The Opportunity section - strategic context signals (Why now, Why this org, etc.)\n\nKey Changes:\n- backend/recommendation/final_controller.py: New six-tier Recommendation enum, score-decision lock functions, invariant enforcement\n- backend/backend.py: Updated force_apply_experience_penalties() for six-tier system\n- backend/seniority_detector.py: NEW - Detects candidate seniority, provides tier-appropriate guidance\n- backend/qa_sanitization.py: NEW - Output validation, em dash removal, leakage detection\n- backend/reality_check/signal_detectors.py: Added detect_opportunity_signals() for strategic context\n- docs/guides/JOB_FIT_SCORING_SPEC.md: Updated to v3.0 with six-tier documentation\n\nFixes Issues:\n- Score-Decision inconsistency (78% + Do Not Apply now impossible)\n- Generic coaching for executives (seniority-aware guidance)\n- Reality Check too generic (The Opportunity section)\n- QA issues (typos, em dashes, repeated phrasing)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(gh pr create:*)",
       "Bash(/opt/homebrew/bin/gh pr create:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(find:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash pop:*)"
     ],
     "deny": [],
     "ask": []

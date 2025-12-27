@@ -1286,6 +1286,254 @@ const HenryData = {
         }
 
         return true;
+    },
+
+    // ==========================================
+    // Multi-Resume Management
+    // ==========================================
+
+    /**
+     * Get all resumes for the current user
+     * @returns {Array} - List of resume objects
+     */
+    async getResumes() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching resumes:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get the default resume for the current user
+     * @returns {Object|null} - The default resume or null
+     */
+    async getDefaultResume() {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_default', true)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            console.error('Error fetching default resume:', error);
+        }
+
+        return data || null;
+    },
+
+    /**
+     * Get a specific resume by ID
+     * @param {string} resumeId - UUID of the resume
+     * @returns {Object|null} - The resume or null
+     */
+    async getResume(resumeId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .select('*')
+            .eq('id', resumeId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (error) {
+            console.error('Error fetching resume:', error);
+            return null;
+        }
+
+        return data;
+    },
+
+    /**
+     * Save a new resume
+     * @param {string} resumeName - Display name for the resume
+     * @param {Object} resumeJson - Parsed resume data
+     * @param {boolean} accuracyConfirmed - User confirmed accuracy
+     * @param {boolean} isDefault - Set as default resume
+     * @returns {Object} - { data, error }
+     */
+    async saveResume(resumeName, resumeJson, accuracyConfirmed = false, isDefault = false) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        if (!accuracyConfirmed) {
+            return { error: 'You must confirm the resume accuracy' };
+        }
+
+        // Check count limit (5 max)
+        const existing = await this.getResumes();
+        if (existing.length >= 5) {
+            return { error: 'Maximum 5 resumes allowed. Please delete one before adding another.' };
+        }
+
+        // First resume is always default
+        const shouldBeDefault = isDefault || existing.length === 0;
+
+        // If setting as default, clear other defaults first
+        if (shouldBeDefault && existing.length > 0) {
+            await supabase
+                .from('user_resumes')
+                .update({ is_default: false })
+                .eq('user_id', user.id)
+                .eq('is_default', true);
+        }
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .insert({
+                user_id: user.id,
+                resume_name: resumeName,
+                resume_json: resumeJson,
+                is_default: shouldBeDefault,
+                accuracy_confirmed: accuracyConfirmed
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving resume:', error);
+        } else {
+            console.log('✅ Resume saved:', data.id);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Update a resume's name or default status
+     * @param {string} resumeId - UUID of the resume
+     * @param {Object} updates - { resume_name, is_default }
+     * @returns {Object} - { data, error }
+     */
+    async updateResume(resumeId, updates) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        // If setting as default, clear other defaults first
+        if (updates.is_default) {
+            await supabase
+                .from('user_resumes')
+                .update({ is_default: false })
+                .eq('user_id', user.id)
+                .eq('is_default', true);
+        }
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .update({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', resumeId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating resume:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Delete a resume
+     * @param {string} resumeId - UUID of the resume
+     * @returns {Object} - { success, error }
+     */
+    async deleteResume(resumeId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        // Check if this is the default
+        const resume = await this.getResume(resumeId);
+        const wasDefault = resume?.is_default;
+
+        const { error } = await supabase
+            .from('user_resumes')
+            .delete()
+            .eq('id', resumeId)
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Error deleting resume:', error);
+            return { error };
+        }
+
+        // If deleted was default, set another as default
+        if (wasDefault) {
+            const remaining = await this.getResumes();
+            if (remaining.length > 0) {
+                await this.updateResume(remaining[0].id, { is_default: true });
+            }
+        }
+
+        console.log('✅ Resume deleted:', resumeId);
+        return { success: true };
+    },
+
+    /**
+     * Set a resume as the default
+     * @param {string} resumeId - UUID of the resume
+     * @returns {Object} - { data, error }
+     */
+    async setDefaultResume(resumeId) {
+        return this.updateResume(resumeId, { is_default: true });
+    },
+
+    /**
+     * Update resume verification status after LinkedIn comparison
+     * @param {string} resumeId - UUID of the resume
+     * @param {boolean} verified - Whether it matches LinkedIn
+     * @param {Object} notes - Mismatch details if any
+     * @returns {Object} - { data, error }
+     */
+    async updateResumeVerification(resumeId, verified, notes = null) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const { data, error } = await supabase
+            .from('user_resumes')
+            .update({
+                linkedin_verified: verified,
+                verification_notes: notes,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', resumeId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating resume verification:', error);
+        }
+
+        return { data, error };
+    },
+
+    /**
+     * Get resume count for current user
+     * @returns {number} - Number of resumes
+     */
+    async getResumeCount() {
+        const resumes = await this.getResumes();
+        return resumes.length;
     }
 };
 
