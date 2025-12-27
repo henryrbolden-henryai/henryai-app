@@ -161,6 +161,190 @@
             text-align: center;
         }
 
+        /* Multi-Resume List Styles */
+        .resume-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .resume-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .resume-card:hover {
+            border-color: var(--color-accent);
+        }
+
+        .resume-card.is-default {
+            border-color: var(--color-success);
+            border-width: 2px;
+        }
+
+        .resume-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .resume-card-name {
+            font-weight: 600;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .resume-card-name .default-badge {
+            background: var(--color-success);
+            color: #000;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .resume-card-preview {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .resume-card-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .resume-card-actions button {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+        }
+
+        .resume-count {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .add-resume-btn {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed var(--color-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .add-resume-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .add-resume-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Resume Upload Modal */
+        .resume-upload-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .resume-upload-modal.show {
+            display: flex;
+        }
+
+        .resume-upload-content {
+            background: var(--color-bg-elevated);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .resume-upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .resume-upload-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .resume-upload-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .resume-name-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg);
+            color: var(--color-text);
+            font-size: 1rem;
+            margin-bottom: 16px;
+        }
+
+        .accuracy-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 16px 0;
+            padding: 12px;
+            background: var(--color-bg);
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+        }
+
+        .accuracy-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .accuracy-checkbox label {
+            font-size: 0.9rem;
+            color: var(--color-text);
+            cursor: pointer;
+        }
+
+        .accuracy-checkbox label small {
+            display: block;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Legacy single resume styles (kept for backwards compat) */
         .resume-info {
             background: var(--color-bg);
             border: 1px solid var(--color-border);
@@ -754,14 +938,27 @@
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
 
-        <!-- SECTION 1: RESUME -->
+        <!-- SECTION 1: RESUMES (Multi-Resume Support) -->
         <div class="form-section">
             <div class="section-title">
                 <span class="icon">📄</span>
-                Your Resume
+                Your Resumes
             </div>
-            <p class="section-hint">Upload once, use for every job. I'll pull out the details so you don't have to re-enter anything.</p>
+            <p class="section-hint">Upload different versions for different roles. Select which one to use when analyzing a job.</p>
+
             <div class="form-group">
+                <!-- Resume List Container -->
+                <div id="resumeListContainer">
+                    <div class="resume-count" id="resumeCount">Loading...</div>
+                    <div class="resume-list" id="resumeList">
+                        <!-- Resume cards populated dynamically -->
+                    </div>
+                    <button type="button" class="add-resume-btn" id="addResumeBtn">
+                        + Add Resume
+                    </button>
+                </div>
+
+                <!-- Legacy single resume display (hidden, for migration) -->
                 <div class="resume-info" id="resumeInfo" style="display: none;">
                     <div class="resume-info-header">
                         <span class="resume-info-name" id="resumeName">Loading...</span>
@@ -773,13 +970,51 @@
                         <button type="button" class="btn-danger-outline" id="deleteResumeBtn">Delete</button>
                     </div>
                 </div>
-                <label class="file-upload" id="fileUpload">
+
+                <!-- Legacy file upload (hidden, replaced by modal) -->
+                <label class="file-upload" id="fileUpload" style="display: none;">
                     <input type="file" id="resumeFile" accept=".pdf,.docx,.doc,.txt">
                     <div class="upload-icon">📎</div>
                     <div class="upload-text">Drop your resume here or <span>browse</span></div>
                     <div class="file-name" id="fileName"></div>
                 </label>
                 <div class="parsing-status" id="parsingStatus"></div>
+            </div>
+        </div>
+
+        <!-- Resume Upload Modal -->
+        <div class="resume-upload-modal" id="resumeUploadModal">
+            <div class="resume-upload-content">
+                <div class="resume-upload-header">
+                    <h3>Add Resume</h3>
+                    <button class="resume-upload-close" id="closeResumeModal">&times;</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Name this resume</label>
+                    <input type="text" class="resume-name-input" id="newResumeName" placeholder="e.g., Growth PM Resume, Enterprise Focus">
+                </div>
+
+                <label class="file-upload" id="modalFileUpload">
+                    <input type="file" id="modalResumeFile" accept=".pdf,.docx,.doc,.txt">
+                    <div class="upload-icon">📎</div>
+                    <div class="upload-text">Drop your resume here or <span>browse</span></div>
+                    <div class="file-name" id="modalFileName"></div>
+                </label>
+
+                <div class="parsing-status" id="modalParsingStatus"></div>
+
+                <div class="accuracy-checkbox">
+                    <input type="checkbox" id="accuracyConfirm">
+                    <label for="accuracyConfirm">
+                        I confirm this resume accurately reflects my real work experience.
+                        <small>HenryHQ tailors content based on what you provide - accuracy matters.</small>
+                    </label>
+                </div>
+
+                <button type="button" class="btn-primary" id="saveResumeBtn" disabled style="width: 100%; margin-top: 12px;">
+                    Save Resume
+                </button>
             </div>
         </div>
 
@@ -1024,6 +1259,25 @@
         const replaceResumeBtn = document.getElementById('replaceResumeBtn');
         const deleteResumeBtn = document.getElementById('deleteResumeBtn');
 
+        // Multi-resume elements
+        const resumeListContainer = document.getElementById('resumeListContainer');
+        const resumeList = document.getElementById('resumeList');
+        const resumeCount = document.getElementById('resumeCount');
+        const addResumeBtn = document.getElementById('addResumeBtn');
+        const resumeUploadModal = document.getElementById('resumeUploadModal');
+        const closeResumeModal = document.getElementById('closeResumeModal');
+        const newResumeName = document.getElementById('newResumeName');
+        const modalResumeFile = document.getElementById('modalResumeFile');
+        const modalFileName = document.getElementById('modalFileName');
+        const modalParsingStatus = document.getElementById('modalParsingStatus');
+        const accuracyConfirm = document.getElementById('accuracyConfirm');
+        const saveResumeBtn = document.getElementById('saveResumeBtn');
+
+        // Multi-resume state
+        let userResumes = [];
+        let pendingResumeJson = null;
+        const MAX_RESUMES = 5;
+
         // Determine if this is new profile or edit
         let isNewProfile = false;
 
@@ -1079,6 +1333,444 @@
         setupCurrencyInput('compMin');
         setupCurrencyInput('compTarget');
         setupCurrencyInput('compStretch');
+
+        // ==========================================
+        // Multi-Resume Functions
+        // ==========================================
+
+        // Load and display user's resumes
+        async function loadResumes() {
+            if (typeof HenryData === 'undefined') {
+                console.log('HenryData not available, skipping resume load');
+                resumeCount.textContent = 'Sign in to save multiple resumes';
+                return;
+            }
+
+            try {
+                userResumes = await HenryData.getResumes();
+                renderResumeList();
+            } catch (error) {
+                console.error('Error loading resumes:', error);
+                resumeCount.textContent = 'Error loading resumes';
+            }
+        }
+
+        // Render the resume list
+        function renderResumeList() {
+            resumeList.innerHTML = '';
+
+            if (userResumes.length === 0) {
+                resumeCount.textContent = 'No resumes uploaded yet';
+                addResumeBtn.textContent = '+ Add Your First Resume';
+            } else {
+                resumeCount.textContent = `${userResumes.length} of ${MAX_RESUMES} resumes`;
+                addResumeBtn.textContent = '+ Add Another Resume';
+            }
+
+            // Disable add button if at limit
+            addResumeBtn.disabled = userResumes.length >= MAX_RESUMES;
+            if (userResumes.length >= MAX_RESUMES) {
+                addResumeBtn.textContent = `Maximum ${MAX_RESUMES} resumes reached`;
+            }
+
+            userResumes.forEach(resume => {
+                const card = createResumeCard(resume);
+                resumeList.appendChild(card);
+            });
+        }
+
+        // Create a resume card element
+        function createResumeCard(resume) {
+            const card = document.createElement('div');
+            card.className = 'resume-card' + (resume.is_default ? ' is-default' : '');
+            card.dataset.resumeId = resume.id;
+
+            // Extract preview info from resume_json
+            const json = resume.resume_json || {};
+            const name = json.contact?.full_name || json.full_name || 'Unknown';
+            const expCount = json.experience?.length || 0;
+            const skillCount = json.skills?.length || 0;
+            const currentTitle = json.current_title || json.experience?.[0]?.title || '';
+
+            card.innerHTML = `
+                <div class="resume-card-header">
+                    <div class="resume-card-name">
+                        ${resume.resume_name}
+                        ${resume.is_default ? '<span class="default-badge">Default</span>' : ''}
+                    </div>
+                </div>
+                <div class="resume-card-preview">
+                    ${expCount} jobs • ${skillCount} skills${currentTitle ? ' • ' + currentTitle : ''}
+                </div>
+                <div class="resume-card-actions">
+                    ${!resume.is_default ? `<button class="btn-secondary" onclick="setDefaultResume('${resume.id}')">Set as Default</button>` : ''}
+                    <button class="btn-danger-outline" onclick="deleteResume('${resume.id}', '${resume.resume_name}')">Delete</button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Open the upload modal
+        function openResumeModal() {
+            // Reset modal state
+            newResumeName.value = '';
+            modalResumeFile.value = '';
+            modalFileName.textContent = '';
+            modalFileName.classList.remove('show');
+            modalParsingStatus.textContent = '';
+            modalParsingStatus.className = 'parsing-status';
+            accuracyConfirm.checked = false;
+            saveResumeBtn.disabled = true;
+            pendingResumeJson = null;
+
+            resumeUploadModal.classList.add('show');
+        }
+
+        // Close the upload modal
+        function closeModal() {
+            resumeUploadModal.classList.remove('show');
+            pendingResumeJson = null;
+        }
+
+        // Update save button state
+        function updateSaveButtonState() {
+            const hasName = newResumeName.value.trim().length > 0;
+            const hasResume = pendingResumeJson !== null;
+            const hasConfirmation = accuracyConfirm.checked;
+
+            saveResumeBtn.disabled = !(hasName && hasResume && hasConfirmation);
+        }
+
+        // Handle modal file upload
+        async function handleModalFileUpload(file) {
+            if (!file) return;
+
+            modalFileName.textContent = `📎 ${file.name}`;
+            modalFileName.classList.add('show');
+            document.getElementById('modalFileUpload').classList.add('has-file');
+
+            modalParsingStatus.textContent = `Uploading ${file.name}...`;
+            modalParsingStatus.className = 'parsing-status show';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/resume/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorDetail = errorText.substring(0, 200);
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        if (errorJson.detail) {
+                            errorDetail = typeof errorJson.detail === 'string' ? errorJson.detail : JSON.stringify(errorJson.detail);
+                        }
+                    } catch (e) {}
+                    throw new Error(`Server ${response.status}: ${errorDetail}`);
+                }
+
+                modalParsingStatus.textContent = 'Processing...';
+                pendingResumeJson = await response.json();
+
+                const name = pendingResumeJson.contact?.full_name || pendingResumeJson.full_name || 'Unknown';
+                const firstName = name.split(' ')[0];
+                modalParsingStatus.textContent = `✓ Got it, ${firstName}!`;
+                modalParsingStatus.className = 'parsing-status show success';
+
+                // Auto-suggest a name if empty
+                if (!newResumeName.value.trim()) {
+                    const title = pendingResumeJson.current_title || pendingResumeJson.experience?.[0]?.title || '';
+                    if (title) {
+                        newResumeName.value = `${title} Resume`;
+                    }
+                }
+
+                updateSaveButtonState();
+
+            } catch (error) {
+                console.error('Parse error:', error);
+                let errorMsg = '✗ ';
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMsg += 'Network error - check your connection.';
+                } else if (error.message.includes('Server 500')) {
+                    errorMsg += 'Server error - please try again.';
+                } else {
+                    errorMsg += error.message;
+                }
+                modalParsingStatus.textContent = errorMsg;
+                modalParsingStatus.className = 'parsing-status show error';
+                pendingResumeJson = null;
+                updateSaveButtonState();
+            }
+        }
+
+        // Save the resume
+        async function saveNewResume() {
+            if (!pendingResumeJson || !newResumeName.value.trim() || !accuracyConfirm.checked) {
+                return;
+            }
+
+            saveResumeBtn.disabled = true;
+            saveResumeBtn.textContent = 'Saving...';
+
+            try {
+                const result = await HenryData.saveResume(
+                    newResumeName.value.trim(),
+                    pendingResumeJson,
+                    true, // accuracy confirmed
+                    userResumes.length === 0 // first resume is default
+                );
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Also save to localStorage for backwards compatibility
+                if (!profile) profile = {};
+                profile.resume = pendingResumeJson;
+                localStorage.setItem('userProfile', JSON.stringify(profile));
+
+                showSuccess('Resume saved successfully!');
+                closeModal();
+                await loadResumes();
+
+                // Run LinkedIn comparison if LinkedIn data exists
+                if (result.data?.id && profile?.linkedin_parsed) {
+                    await checkLinkedInAlignment(pendingResumeJson, result.data.id);
+                }
+
+            } catch (error) {
+                console.error('Save error:', error);
+                showError(error.message || 'Failed to save resume');
+                saveResumeBtn.disabled = false;
+                saveResumeBtn.textContent = 'Save Resume';
+            }
+        }
+
+        // Set a resume as default
+        async function setDefaultResume(resumeId) {
+            try {
+                const result = await HenryData.setDefaultResume(resumeId);
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Update localStorage with default resume
+                const defaultResume = userResumes.find(r => r.id === resumeId);
+                if (defaultResume && defaultResume.resume_json) {
+                    if (!profile) profile = {};
+                    profile.resume = defaultResume.resume_json;
+                    localStorage.setItem('userProfile', JSON.stringify(profile));
+                }
+
+                showSuccess('Default resume updated');
+                await loadResumes();
+            } catch (error) {
+                console.error('Error setting default:', error);
+                showError(error.message || 'Failed to update default resume');
+            }
+        }
+
+        // Delete a resume
+        async function deleteResume(resumeId, resumeName) {
+            if (!confirm(`Delete "${resumeName}"? This cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const result = await HenryData.deleteResume(resumeId);
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                showSuccess('Resume deleted');
+                await loadResumes();
+
+                // Update localStorage if we deleted the last resume
+                if (userResumes.length === 0) {
+                    if (profile) {
+                        profile.resume = null;
+                        localStorage.setItem('userProfile', JSON.stringify(profile));
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting resume:', error);
+                showError(error.message || 'Failed to delete resume');
+            }
+        }
+
+        // ==========================================
+        // LinkedIn Cross-Reference Comparison
+        // ==========================================
+
+        function compareResumeToLinkedIn(resumeJson, linkedInData) {
+            const mismatches = [];
+
+            if (!linkedInData || !resumeJson) {
+                return { hasMismatches: false, mismatches: [] };
+            }
+
+            // Get experience from both sources
+            const resumeExperience = resumeJson.experience || [];
+            const linkedInExperience = linkedInData.experience || linkedInData.positions || [];
+
+            // Normalize company names for comparison
+            const normalizeCompany = (name) => {
+                if (!name) return '';
+                return name.toLowerCase()
+                    .replace(/,?\s*(inc\.?|llc|corp\.?|corporation|ltd\.?)$/i, '')
+                    .replace(/[^\w\s]/g, '')
+                    .trim();
+            };
+
+            // Normalize titles for comparison
+            const normalizeTitle = (title) => {
+                if (!title) return '';
+                return title.toLowerCase()
+                    .replace(/\s*(sr\.?|senior|jr\.?|junior|lead|principal|staff|associate)\s*/gi, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            };
+
+            // Build LinkedIn company map
+            const linkedInCompanies = new Map();
+            linkedInExperience.forEach(exp => {
+                const company = normalizeCompany(exp.company || exp.companyName);
+                if (company) {
+                    linkedInCompanies.set(company, {
+                        title: exp.title || exp.position,
+                        rawTitle: exp.title || exp.position,
+                        rawCompany: exp.company || exp.companyName,
+                        dates: exp.dates || exp.dateRange || ''
+                    });
+                }
+            });
+
+            // Check each resume experience against LinkedIn
+            resumeExperience.forEach(exp => {
+                const resumeCompany = normalizeCompany(exp.company);
+                const resumeTitle = exp.title || '';
+
+                if (!resumeCompany) return;
+
+                // Check if company exists on LinkedIn
+                const linkedInMatch = linkedInCompanies.get(resumeCompany);
+
+                if (!linkedInMatch) {
+                    // Company not found on LinkedIn
+                    mismatches.push({
+                        type: 'missing_company',
+                        resumeValue: exp.company,
+                        linkedInValue: null,
+                        message: `"${exp.company}" on your resume is not on your LinkedIn profile`
+                    });
+                } else {
+                    // Company found - check title
+                    const resumeTitleNorm = normalizeTitle(resumeTitle);
+                    const linkedInTitleNorm = normalizeTitle(linkedInMatch.title);
+
+                    // Check for title inflation (resume title seems higher than LinkedIn)
+                    const seniorKeywords = ['vp', 'vice president', 'director', 'head of', 'chief', 'cto', 'ceo', 'coo', 'cfo'];
+                    const resumeHasSenior = seniorKeywords.some(k => resumeTitleNorm.includes(k));
+                    const linkedInHasSenior = seniorKeywords.some(k => linkedInTitleNorm.includes(k));
+
+                    if (resumeHasSenior && !linkedInHasSenior && resumeTitleNorm !== linkedInTitleNorm) {
+                        mismatches.push({
+                            type: 'title_mismatch',
+                            resumeValue: resumeTitle,
+                            linkedInValue: linkedInMatch.rawTitle,
+                            company: exp.company,
+                            message: `Your resume says "${resumeTitle}" at ${exp.company}, but LinkedIn shows "${linkedInMatch.rawTitle}"`
+                        });
+                    }
+                }
+            });
+
+            return {
+                hasMismatches: mismatches.length > 0,
+                mismatches: mismatches
+            };
+        }
+
+        // Run comparison after resume upload if LinkedIn data exists
+        async function checkLinkedInAlignment(resumeJson, resumeId) {
+            // Get LinkedIn data from profile
+            const linkedInData = profile?.linkedin_parsed;
+
+            if (!linkedInData) {
+                console.log('No LinkedIn data to compare against');
+                return;
+            }
+
+            const comparison = compareResumeToLinkedIn(resumeJson, linkedInData);
+
+            if (comparison.hasMismatches) {
+                // Update the resume with verification notes
+                await HenryData.updateResumeVerification(resumeId, false, {
+                    mismatches: comparison.mismatches,
+                    checkedAt: new Date().toISOString()
+                });
+
+                // Show warning to user
+                const mismatchMessages = comparison.mismatches.map(m => `• ${m.message}`).join('\n');
+                const proceed = confirm(
+                    `⚠️ We noticed some differences between your resume and LinkedIn:\n\n` +
+                    `${mismatchMessages}\n\n` +
+                    `Please confirm which is accurate. Click OK to keep the resume, or Cancel to review.`
+                );
+
+                if (!proceed) {
+                    // User wants to review - could open edit modal or just highlight
+                    console.log('User wants to review mismatches');
+                }
+            } else {
+                // Mark as verified
+                await HenryData.updateResumeVerification(resumeId, true, {
+                    checkedAt: new Date().toISOString()
+                });
+            }
+        }
+
+        // Set up multi-resume event listeners
+        if (addResumeBtn) {
+            addResumeBtn.addEventListener('click', openResumeModal);
+        }
+
+        if (closeResumeModal) {
+            closeResumeModal.addEventListener('click', closeModal);
+        }
+
+        // Close modal on background click
+        if (resumeUploadModal) {
+            resumeUploadModal.addEventListener('click', (e) => {
+                if (e.target === resumeUploadModal) {
+                    closeModal();
+                }
+            });
+        }
+
+        if (modalResumeFile) {
+            modalResumeFile.addEventListener('change', (e) => {
+                handleModalFileUpload(e.target.files[0]);
+            });
+        }
+
+        if (newResumeName) {
+            newResumeName.addEventListener('input', updateSaveButtonState);
+        }
+
+        if (accuracyConfirm) {
+            accuracyConfirm.addEventListener('change', updateSaveButtonState);
+        }
+
+        if (saveResumeBtn) {
+            saveResumeBtn.addEventListener('click', saveNewResume);
+        }
 
         // Load existing profile - tries Supabase first, then localStorage
         async function loadProfile() {
@@ -1768,6 +2460,9 @@
 
             // Now load the profile
             await loadProfile();
+
+            // Load multi-resume list
+            await loadResumes();
         })();
     </script>
     <script src="components/hey-henry.js"></script>

@@ -4817,9 +4817,301 @@ Your response must be ONLY valid JSON, no additional text."""
         )
     except Exception as e:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Error parsing resume text: {str(e)}"
         )
+
+
+# ============================================================================
+# MULTI-RESUME MANAGEMENT
+# ============================================================================
+
+class SaveResumeRequest(BaseModel):
+    resume_name: str
+    resume_json: Dict[str, Any]
+    is_default: bool = False
+    accuracy_confirmed: bool = False
+
+class UpdateResumeRequest(BaseModel):
+    resume_name: Optional[str] = None
+    is_default: Optional[bool] = None
+
+class ResumeResponse(BaseModel):
+    id: str
+    user_id: str
+    resume_name: str
+    resume_json: Dict[str, Any]
+    is_default: bool
+    accuracy_confirmed: bool
+    linkedin_verified: Optional[bool] = None
+    verification_notes: Optional[Dict[str, Any]] = None
+    created_at: str
+    updated_at: str
+
+class ResumeListResponse(BaseModel):
+    resumes: List[ResumeResponse]
+    count: int
+
+MAX_RESUMES_PER_USER = 5
+
+@app.get("/api/resumes", response_model=ResumeListResponse)
+async def list_resumes(request: Request, user_id: str = None):
+    """
+    List all resumes for a user.
+    User ID should be passed as query param or extracted from auth.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        result = supabase_client.table('user_resumes') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .execute()
+
+        resumes = []
+        for row in result.data:
+            resumes.append(ResumeResponse(
+                id=row['id'],
+                user_id=row['user_id'],
+                resume_name=row['resume_name'],
+                resume_json=row['resume_json'],
+                is_default=row['is_default'],
+                accuracy_confirmed=row['accuracy_confirmed'],
+                linkedin_verified=row.get('linkedin_verified'),
+                verification_notes=row.get('verification_notes'),
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            ))
+
+        return ResumeListResponse(resumes=resumes, count=len(resumes))
+
+    except Exception as e:
+        logger.error(f"Error listing resumes: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list resumes: {str(e)}")
+
+
+@app.post("/api/resumes", response_model=ResumeResponse)
+async def save_resume(request: Request, body: SaveResumeRequest, user_id: str = None):
+    """
+    Save a new resume for a user.
+    Enforces 5 resume limit per user.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    if not body.accuracy_confirmed:
+        raise HTTPException(status_code=400, detail="You must confirm the resume accuracy")
+
+    try:
+        # Check resume count limit
+        count_result = supabase_client.table('user_resumes') \
+            .select('id', count='exact') \
+            .eq('user_id', user_id) \
+            .execute()
+
+        if count_result.count >= MAX_RESUMES_PER_USER:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Maximum {MAX_RESUMES_PER_USER} resumes allowed. Please delete one before adding another."
+            )
+
+        # If this is the first resume or marked as default, set is_default
+        is_default = body.is_default or count_result.count == 0
+
+        # Insert new resume
+        result = supabase_client.table('user_resumes').insert({
+            'user_id': user_id,
+            'resume_name': body.resume_name,
+            'resume_json': body.resume_json,
+            'is_default': is_default,
+            'accuracy_confirmed': body.accuracy_confirmed
+        }).execute()
+
+        if not result.data:
+            raise HTTPException(status_code=500, detail="Failed to save resume")
+
+        row = result.data[0]
+        logger.info(f"Resume saved: {row['id']} for user {user_id}")
+
+        return ResumeResponse(
+            id=row['id'],
+            user_id=row['user_id'],
+            resume_name=row['resume_name'],
+            resume_json=row['resume_json'],
+            is_default=row['is_default'],
+            accuracy_confirmed=row['accuracy_confirmed'],
+            linkedin_verified=row.get('linkedin_verified'),
+            verification_notes=row.get('verification_notes'),
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving resume: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save resume: {str(e)}")
+
+
+@app.put("/api/resumes/{resume_id}", response_model=ResumeResponse)
+async def update_resume(request: Request, resume_id: str, body: UpdateResumeRequest, user_id: str = None):
+    """
+    Update a resume (name or default status).
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        # Build update payload
+        update_data = {}
+        if body.resume_name is not None:
+            update_data['resume_name'] = body.resume_name
+        if body.is_default is not None:
+            update_data['is_default'] = body.is_default
+
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No update fields provided")
+
+        # Update resume (RLS ensures user can only update their own)
+        result = supabase_client.table('user_resumes') \
+            .update(update_data) \
+            .eq('id', resume_id) \
+            .eq('user_id', user_id) \
+            .execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        row = result.data[0]
+        logger.info(f"Resume updated: {resume_id}")
+
+        return ResumeResponse(
+            id=row['id'],
+            user_id=row['user_id'],
+            resume_name=row['resume_name'],
+            resume_json=row['resume_json'],
+            is_default=row['is_default'],
+            accuracy_confirmed=row['accuracy_confirmed'],
+            linkedin_verified=row.get('linkedin_verified'),
+            verification_notes=row.get('verification_notes'),
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating resume: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update resume: {str(e)}")
+
+
+@app.delete("/api/resumes/{resume_id}")
+async def delete_resume(request: Request, resume_id: str, user_id: str = None):
+    """
+    Delete a resume.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        # Check if this is the default resume
+        check_result = supabase_client.table('user_resumes') \
+            .select('is_default') \
+            .eq('id', resume_id) \
+            .eq('user_id', user_id) \
+            .execute()
+
+        if not check_result.data:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        was_default = check_result.data[0]['is_default']
+
+        # Delete the resume
+        result = supabase_client.table('user_resumes') \
+            .delete() \
+            .eq('id', resume_id) \
+            .eq('user_id', user_id) \
+            .execute()
+
+        # If deleted resume was default, set another as default
+        if was_default:
+            remaining = supabase_client.table('user_resumes') \
+                .select('id') \
+                .eq('user_id', user_id) \
+                .order('created_at', desc=True) \
+                .limit(1) \
+                .execute()
+
+            if remaining.data:
+                supabase_client.table('user_resumes') \
+                    .update({'is_default': True}) \
+                    .eq('id', remaining.data[0]['id']) \
+                    .execute()
+
+        logger.info(f"Resume deleted: {resume_id}")
+        return {"success": True, "message": "Resume deleted"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting resume: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete resume: {str(e)}")
+
+
+@app.get("/api/resumes/{resume_id}", response_model=ResumeResponse)
+async def get_resume(request: Request, resume_id: str, user_id: str = None):
+    """
+    Get a single resume by ID.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    try:
+        result = supabase_client.table('user_resumes') \
+            .select('*') \
+            .eq('id', resume_id) \
+            .eq('user_id', user_id) \
+            .execute()
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Resume not found")
+
+        row = result.data[0]
+        return ResumeResponse(
+            id=row['id'],
+            user_id=row['user_id'],
+            resume_name=row['resume_name'],
+            resume_json=row['resume_json'],
+            is_default=row['is_default'],
+            accuracy_confirmed=row['accuracy_confirmed'],
+            linkedin_verified=row.get('linkedin_verified'),
+            verification_notes=row.get('verification_notes'),
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting resume: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get resume: {str(e)}")
 
 
 # ============================================================================
