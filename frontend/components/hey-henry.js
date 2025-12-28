@@ -3293,6 +3293,40 @@ ${confidenceClosing}`,
                     screenshot: screenshotData
                 });
 
+                // Send acknowledgment email if feedback was saved successfully
+                if (!result.error && typeof HenryAuth !== 'undefined') {
+                    try {
+                        const user = await HenryAuth.getUser();
+                        if (user?.email) {
+                            const userName = await HenryAuth.getUserName();
+                            const displayName = userName?.firstName && userName.firstName !== 'there'
+                                ? userName.firstName
+                                : null;
+
+                            // Fire and forget - don't block on email
+                            fetch(`${API_BASE}/api/send-feedback-acknowledgment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    email: user.email,
+                                    name: displayName,
+                                    feedback_type: feedbackType,
+                                    feedback_summary: feedbackText.substring(0, 100)
+                                })
+                            }).then(response => {
+                                if (response.ok) {
+                                    console.log('📧 Feedback acknowledgment email sent');
+                                }
+                            }).catch(e => {
+                                console.warn('📧 Could not send acknowledgment email:', e.message);
+                            });
+                        }
+                    } catch (emailError) {
+                        // Don't fail feedback submission if email fails
+                        console.warn('📧 Email acknowledgment skipped:', emailError.message);
+                    }
+                }
+
                 return { success: !result.error, id: result.data?.id };
             } else {
                 // Fallback: store in localStorage for later sync
@@ -3544,9 +3578,23 @@ ${confidenceClosing}`,
                 // Update the application with new documents data
                 matchingApp.documentsData = documentsData;
                 await window.HenryData.saveApplication(matchingApp);
-                console.log('📝 Saved refined document to Supabase');
+                console.log('📝 Saved refined document to Supabase (updated existing)');
             } else {
-                console.log('No matching application found in Supabase for:', company, role);
+                // No matching application exists - create one to store the documents
+                // This ensures refined documents persist even if user hasn't added job to tracker
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                const newApp = {
+                    company: company,
+                    role: role,
+                    status: 'Preparing',
+                    fitScore: analysisData.fit_score || null,
+                    dateApplied: null,
+                    analysisData: analysisData,
+                    documentsData: documentsData,
+                    source: 'hey-henry-refinement'
+                };
+                await window.HenryData.saveApplication(newApp);
+                console.log('📝 Saved refined document to Supabase (created new application)');
             }
         } catch (e) {
             console.error('Error persisting refined document to Supabase:', e);
@@ -4076,6 +4124,20 @@ ${confidenceClosing}`,
 
             // Check for document refinement requests (Phase 1.5)
             if (detectRefinementRequest(message)) {
+                const currentPage = window.location.pathname;
+                const isOnDocumentsPage = currentPage.includes('documents') || currentPage.includes('overview');
+
+                if (!isOnDocumentsPage) {
+                    // User wants to refine but isn't on documents page - redirect them
+                    removeTypingIndicator();
+                    const redirectMessage = "To make changes to your resume or cover letter, head over to the **Documents** page first. I can refine your documents there in real-time. Want me to explain what I'd change once you're there?";
+                    addMessage('assistant', redirectMessage);
+                    conversationHistory.push({ role: 'assistant', content: redirectMessage });
+                    saveConversationHistory();
+                    isLoading = false;
+                    return;
+                }
+
                 const refinementResult = await handleRefinementRequest(message);
                 if (refinementResult) {
                     removeTypingIndicator();
@@ -4088,7 +4150,7 @@ ${confidenceClosing}`,
                     isLoading = false;
                     return;
                 }
-                // If refinementResult is null, continue with normal chat
+                // If refinementResult is null (e.g., no documents data), continue with normal chat
             }
 
             // Gather context
