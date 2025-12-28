@@ -217,6 +217,28 @@
             margin-bottom: 8px;
         }
 
+        .resume-card-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .resume-card-skills .skill-tag {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            color: var(--color-text-secondary);
+        }
+
+        .resume-card-skills .skill-tag.more {
+            background: transparent;
+            border-style: dashed;
+            color: var(--color-accent);
+        }
+
         .resume-card-actions {
             display: flex;
             gap: 8px;
@@ -424,6 +446,19 @@
 
         .parsing-status.success {
             color: var(--color-success);
+        }
+
+        .parsing-status.warning {
+            color: var(--color-warning);
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 10px 12px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .parsing-status.error {
+            color: var(--color-error);
         }
 
         .location-tags {
@@ -1452,8 +1487,22 @@
             const json = resume.resume_json || {};
             const name = json.contact?.full_name || json.full_name || 'Unknown';
             const expCount = json.experience?.length || 0;
-            const skillCount = json.skills?.length || 0;
+            const skills = json.skills || [];
+            const skillCount = skills.length;
             const currentTitle = json.current_title || json.experience?.[0]?.title || '';
+
+            // Format skills display (show first 5, then "+X more")
+            let skillsHtml = '';
+            if (skills.length > 0) {
+                const displaySkills = skills.slice(0, 5);
+                const moreCount = skills.length - 5;
+                skillsHtml = `
+                    <div class="resume-card-skills">
+                        ${displaySkills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+                        ${moreCount > 0 ? `<span class="skill-tag more">+${moreCount} more</span>` : ''}
+                    </div>
+                `;
+            }
 
             card.innerHTML = `
                 <div class="resume-card-header">
@@ -1465,6 +1514,7 @@
                 <div class="resume-card-preview">
                     ${expCount} jobs • ${skillCount} skills${currentTitle ? ' • ' + currentTitle : ''}
                 </div>
+                ${skillsHtml}
                 <div class="resume-card-actions">
                     ${!resume.is_default ? `<button class="btn-secondary" onclick="setDefaultResume('${resume.id}')">Set as Default</button>` : ''}
                     <button class="btn-danger-outline" onclick="deleteResume('${resume.id}', '${resume.resume_name}')">Delete</button>
@@ -1494,6 +1544,44 @@
         function closeModal() {
             resumeUploadModal.classList.remove('show');
             pendingResumeJson = null;
+        }
+
+        // Validate that new resume name matches existing resumes
+        function validateResumeNameConsistency(newName) {
+            if (!newName || newName === 'Unknown') return null;
+            if (userResumes.length === 0) return null;
+
+            // Normalize name for comparison (lowercase, trim)
+            const normalize = (n) => n?.toLowerCase().trim() || '';
+            const newNameNorm = normalize(newName);
+
+            // Check against existing resumes
+            for (const existing of userResumes) {
+                const existingName = existing.resume_json?.contact?.full_name ||
+                                    existing.resume_json?.full_name || '';
+                const existingNorm = normalize(existingName);
+
+                if (!existingNorm) continue;
+
+                // Check if names are different (not just formatting differences)
+                if (existingNorm && newNameNorm && existingNorm !== newNameNorm) {
+                    // Check if it's a substantially different name (not just middle name difference)
+                    const existingParts = existingNorm.split(' ').filter(p => p.length > 1);
+                    const newParts = newNameNorm.split(' ').filter(p => p.length > 1);
+
+                    // If first AND last names don't match, warn
+                    const existingFirst = existingParts[0] || '';
+                    const existingLast = existingParts[existingParts.length - 1] || '';
+                    const newFirst = newParts[0] || '';
+                    const newLast = newParts[newParts.length - 1] || '';
+
+                    if (existingFirst !== newFirst || existingLast !== newLast) {
+                        return `This resume shows "${newName}" but your existing resume shows "${existingName}". Please ensure this is your resume.`;
+                    }
+                }
+            }
+
+            return null; // No warning
         }
 
         // Update save button state
@@ -1542,8 +1630,16 @@
 
                 const name = pendingResumeJson.contact?.full_name || pendingResumeJson.full_name || 'Unknown';
                 const firstName = name.split(' ')[0];
-                modalParsingStatus.textContent = `✓ Got it, ${firstName}!`;
-                modalParsingStatus.className = 'parsing-status show success';
+
+                // Validate name consistency with existing resumes
+                const nameWarning = validateResumeNameConsistency(name);
+                if (nameWarning) {
+                    modalParsingStatus.textContent = `⚠️ ${nameWarning}`;
+                    modalParsingStatus.className = 'parsing-status show warning';
+                } else {
+                    modalParsingStatus.textContent = `✓ Got it, ${firstName}!`;
+                    modalParsingStatus.className = 'parsing-status show success';
+                }
 
                 // Auto-suggest a name if empty
                 if (!newResumeName.value.trim()) {
