@@ -3303,6 +3303,11 @@ ${confidenceClosing}`,
                                 ? userName.firstName
                                 : null;
 
+                            // Build conversation context for admin notification
+                            const recentConvo = conversationHistory.slice(-6).map(m =>
+                                `${m.role === 'user' ? 'User' : 'Henry'}: ${m.content.substring(0, 300)}`
+                            ).join('\n\n');
+
                             // Fire and forget - don't block on email
                             fetch(`${API_BASE}/api/send-feedback-acknowledgment`, {
                                 method: 'POST',
@@ -3311,7 +3316,10 @@ ${confidenceClosing}`,
                                     email: user.email,
                                     name: displayName,
                                     feedback_type: feedbackType,
-                                    feedback_summary: feedbackText.substring(0, 100)
+                                    feedback_summary: feedbackText.substring(0, 100),
+                                    full_feedback: feedbackText,
+                                    current_page: context.name || window.location.pathname,
+                                    conversation_context: recentConvo
                                 })
                             }).then(response => {
                                 if (response.ok) {
