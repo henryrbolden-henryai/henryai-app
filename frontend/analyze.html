@@ -141,7 +141,7 @@
 
     /* ========== RESUME SELECTOR ========== */
     .resume-selector {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .resume-selector-label {
@@ -153,7 +153,7 @@
 
     .resume-selector select {
       width: 100%;
-      padding: 10px 12px;
+      padding: 12px 14px;
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       border-radius: 8px;
@@ -169,16 +169,6 @@
     .resume-selector select:focus {
       outline: none;
       border-color: var(--color-accent);
-    }
-
-    .resume-selector-preview {
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-      margin-top: 6px;
-      padding: 8px 16px;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      transition: all 0.2s;
     }
 
     .profile-change:hover {
@@ -749,6 +739,14 @@
         <h1>Should you apply to <em>this role</em>?</h1>
         <p>Paste the job description. I will tell you if it is worth your time and build your application if it is.</p>
 
+        <!-- Resume Selector (for multi-resume users) - shown above profile banner -->
+        <div class="resume-selector" id="resumeSelector" style="display: none;">
+          <label class="resume-selector-label">Using resume:</label>
+          <select id="resumeSelect">
+            <option value="">Loading resumes...</option>
+          </select>
+        </div>
+
         <!-- Profile Banner -->
         <div class="profile-banner" id="profileBanner">
           <div class="profile-info">
@@ -758,15 +756,6 @@
               <div class="profile-meta" id="profileMeta">Profile loaded</div>
             </div>
           </div>
-        </div>
-
-        <!-- Resume Selector (for multi-resume users) -->
-        <div class="resume-selector" id="resumeSelector" style="display: none;">
-          <label class="resume-selector-label">Using resume:</label>
-          <select id="resumeSelect">
-            <option value="">Loading resumes...</option>
-          </select>
-          <div class="resume-selector-preview" id="resumeSelectorPreview"></div>
         </div>
 
         <div class="input-area">
@@ -1558,21 +1547,8 @@
     }
 
     function updateResumePreview(resumeJson) {
-      const previewEl = document.getElementById('resumeSelectorPreview');
-      if (!previewEl) return;
-
-      // Count jobs and skills
-      const jobCount = resumeJson.experience?.length || 0;
-      const skillCount = resumeJson.skills?.length || 0;
-
-      // Get current title
-      const currentTitle = resumeJson.current_title ||
-                          resumeJson.experience?.[0]?.title ||
-                          resumeJson.experience?.[0]?.role ||
-                          'Professional';
-
-      previewEl.textContent = `${jobCount} job${jobCount !== 1 ? 's' : ''} · ${skillCount} skill${skillCount !== 1 ? 's' : ''} · ${currentTitle}`;
-      previewEl.style.display = 'block';
+      // Preview is now shown in the profile banner meta, no separate preview needed
+      // This function is kept for potential future use
     }
 
     // ========================================================================
