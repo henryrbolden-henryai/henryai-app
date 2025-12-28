@@ -37,7 +37,9 @@
       "Bash(/opt/homebrew/bin/gh pr create:*)",
       "Bash(git stash:*)",
       "Bash(node:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add feedback acknowledgment emails + fix document refinement persistence\n\nFeedback Acknowledgment Emails:\n- Add POST /api/send-feedback-acknowledgment endpoint using Resend API\n- Create HTML email templates for each feedback type (bug, feature_request, praise, ux_issue, general)\n- Integrate email sending in hey-henry.js after successful feedback submission\n- Fire-and-forget pattern - doesn''t block feedback flow\n\nDocument Refinement Fixes:\n- Fix Hey Henry falsely claiming to make document changes when refinement can''t run\n- Add explicit page check - redirect users to Documents page if they try to refine elsewhere\n- Add DOCUMENT MODIFICATION LIMITATION section to Hey Henry prompt\n- Create application record in Supabase if none exists when refining documents\n- Ensures refined documents persist across logout/login\n\nRoot cause: Refinements only saved to sessionStorage, and if no application existed in Supabase, changes were lost on logout.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
