@@ -10,11 +10,28 @@ import io
 import uuid
 import random
 import requests
+import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
 
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
+
+# Supabase client for database operations
+try:
+    from supabase import create_client, Client
+    SUPABASE_URL = os.getenv("SUPABASE_URL")
+    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Use service role for backend
+
+    if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        print("✅ Supabase client initialized")
+    else:
+        supabase = None
+        print("⚠️ Supabase credentials not configured - database features disabled")
+except ImportError:
+    supabase = None
+    print("⚠️ Supabase package not installed - database features disabled")
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware

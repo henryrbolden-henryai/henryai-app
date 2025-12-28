@@ -26,5 +26,11 @@ pydantic>=2.5.0
 # Date parsing
 python-dateutil>=2.8.0
 
+# Database
+supabase>=2.0.0
+
+# Rate limiting
+slowapi>=0.1.9
+
 # Optional: Email (for future implementation)
 # aiosmtplib>=2.0.0
