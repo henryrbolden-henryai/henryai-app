@@ -10,6 +10,7 @@ import io
 import uuid
 import random
 import logging
+import requests
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -18826,6 +18827,24 @@ When asked "why did you do X?" - EXPLAIN YOUR REASONING. You have the data. You 
 
 === END AUTHOR INSTRUCTION ===
 
+=== DOCUMENT MODIFICATION LIMITATION (CRITICAL) ===
+
+You can ONLY make changes to documents (resume, cover letter, outreach) through the dedicated refinement system.
+In this chat interface, you CANNOT directly modify documents.
+
+When a user asks to change/update/modify/edit their resume or cover letter:
+1. If they ARE on the Documents page: The refinement system handles it automatically. DO NOT respond about document changes - the system will handle it.
+2. If they are NOT on the Documents page: Tell them to go to the Documents page first.
+
+NEVER say "I've updated your resume" or "I've made those changes" in this chat unless the refinement system has actually processed the request.
+
+If a user reports that changes aren't showing:
+1. Ask them to refresh the page
+2. If that doesn't work, tell them to go back to Results and regenerate documents
+3. Do NOT claim you made changes that didn't actually happen
+
+=== END DOCUMENT MODIFICATION LIMITATION ===
+
 === CORE INSTRUCTION (NON-NEGOTIABLE) ===
 
 "If it doesn't make the candidate better, no one wins."
@@ -21650,6 +21669,220 @@ Remember: Use ONLY information from the resume. Every number and claim must trac
             status_code=500,
             detail=f"LinkedIn optimization failed: {str(e)}"
         )
+
+
+# ============================================================================
+# FEEDBACK ACKNOWLEDGMENT EMAIL
+# ============================================================================
+
+# Resend API Configuration
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+RESEND_API_URL = "https://api.resend.com/emails"
+
+
+class FeedbackAcknowledgmentRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+    feedback_type: str  # bug, feature_request, praise, ux_issue, general
+    feedback_summary: str  # First ~100 chars of feedback
+
+
+def get_feedback_email_content(feedback_type: str, feedback_summary: str, name: Optional[str] = None):
+    """
+    Returns subject and key message based on feedback type.
+    Matches the existing welcome email dark theme with gradient logo.
+    """
+    greeting = f"Hi {name}," if name else "Hi there,"
+
+    # Content by feedback type
+    content_map = {
+        "bug": {
+            "subject": "Got it. We're looking into this.",
+            "headline": "Thanks for the heads up.",
+            "message": "We'll dig in and follow up if we need more details. Bugs like this help us make HenryHQ better for everyone.",
+            "next_steps": "We review all bug reports within 24 hours. If we need to reproduce the issue, we'll reach out."
+        },
+        "feature_request": {
+            "subject": "Idea received. We're reviewing.",
+            "headline": "We hear you.",
+            "message": "We've added this to our roadmap review. No promises, but every feature request gets considered.",
+            "next_steps": "We prioritize features based on impact. If this makes the cut, you'll be the first to know."
+        },
+        "praise": {
+            "subject": "That made our day.",
+            "headline": "Seriously, thank you.",
+            "message": "It means a lot to hear this. Building HenryHQ is a labor of love, and knowing it's helping makes all the difference.",
+            "next_steps": "Keep crushing your job search. We're rooting for you."
+        },
+        "ux_issue": {
+            "subject": "UX feedback received.",
+            "headline": "Thanks for helping us improve.",
+            "message": "We're always tuning the experience. Feedback like this is how we make HenryHQ feel right.",
+            "next_steps": "Our design team reviews UX feedback weekly. If we make changes based on your input, we'll let you know."
+        },
+        "general": {
+            "subject": "Message received.",
+            "headline": "Thanks for reaching out.",
+            "message": "We've got your note and appreciate you taking the time to share your thoughts.",
+            "next_steps": "If this needs a response, we'll get back to you within 48 hours."
+        }
+    }
+
+    content = content_map.get(feedback_type, content_map["general"])
+
+    # Truncate and escape feedback summary for display
+    display_summary = feedback_summary[:150] + "..." if len(feedback_summary) > 150 else feedback_summary
+    # Basic HTML escaping
+    display_summary = display_summary.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{content['subject']}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', sans-serif; background-color: #0a0a0a;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #111111; border: 1px solid #222222; border-radius: 12px; padding: 48px;">
+                    <tr>
+                        <td align="center">
+                            <!-- Minimal Ring Logo -->
+                            <div style="margin-bottom: 32px;">
+                                <svg width="80" height="80" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                        </linearGradient>
+                                        <linearGradient id="strokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/>
+                                    <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                                    <path d="M145 130 L145 50" stroke="url(#strokeGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                                    <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                                    <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                                </svg>
+                            </div>
+
+                            <!-- Greeting -->
+                            <p style="margin: 0 0 8px; font-size: 16px; color: #9ca3af; text-align: center;">
+                                {greeting}
+                            </p>
+
+                            <!-- Headline -->
+                            <h1 style="margin: 0 0 24px; font-size: 28px; font-weight: 600; color: #ffffff; letter-spacing: -0.5px; text-align: center;">
+                                {content['headline']}
+                            </h1>
+
+                            <!-- Main Message -->
+                            <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #d1d5db; text-align: center;">
+                                {content['message']}
+                            </p>
+
+                            <!-- What You Shared -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px; background-color: #0a0a0a; border: 1px solid #222222; border-radius: 8px;">
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <p style="margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280;">
+                                            What you shared
+                                        </p>
+                                        <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #9ca3af; font-style: italic;">
+                                            "{display_summary}"
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- What Happens Next -->
+                            <p style="margin: 0 0 8px; font-size: 14px; color: #9ca3af; text-align: center;">
+                                <strong style="color: #ffffff;">What happens next:</strong>
+                            </p>
+                            <p style="margin: 0 0 32px; font-size: 14px; line-height: 1.5; color: #9ca3af; text-align: center;">
+                                {content['next_steps']}
+                            </p>
+
+                            <!-- Reply Prompt -->
+                            <p style="margin: 0; font-size: 14px; color: #6b7280; text-align: center; font-style: italic;">
+                                Questions? Just reply to this email.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Footer -->
+                <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+                    <tr>
+                        <td style="text-align: center; font-size: 13px; color: #4b5563;">
+                            HenryHQ | Strategic job search intelligence
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
+
+    return content['subject'], html
+
+
+@app.post("/api/send-feedback-acknowledgment")
+async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
+    """
+    Send acknowledgment email after user submits feedback via Hey Henry chat.
+
+    Supports feedback types: bug, feature_request, praise, ux_issue, general
+    Each type gets a tailored subject line and message.
+    """
+
+    if not RESEND_API_KEY:
+        print("⚠️ RESEND_API_KEY not configured - skipping feedback acknowledgment email")
+        return {"success": False, "error": "Email service not configured"}
+
+    subject, html = get_feedback_email_content(
+        feedback_type=request.feedback_type,
+        feedback_summary=request.feedback_summary,
+        name=request.name
+    )
+
+    payload = {
+        "from": "Henry <hello@henryhq.ai>",
+        "to": request.email,
+        "subject": subject,
+        "html": html,
+        "reply_to": "hello@henryhq.ai"
+    }
+
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
+        response.raise_for_status()
+
+        email_id = response.json().get("id")
+        print(f"📧 Feedback acknowledgment email sent to {request.email} (type: {request.feedback_type}, id: {email_id})")
+
+        return {
+            "success": True,
+            "message": "Acknowledgment email sent",
+            "email_id": email_id
+        }
+    except requests.exceptions.Timeout:
+        print(f"⚠️ Email send timeout for {request.email}")
+        return {"success": False, "error": "Email service timeout"}
+    except requests.exceptions.RequestException as e:
+        print(f"🔥 Failed to send feedback acknowledgment email: {str(e)}")
+        # Don't raise - we don't want email failures to break the feedback flow
+        return {"success": False, "error": str(e)}
 
 
 @app.delete("/api/linkedin/profile")

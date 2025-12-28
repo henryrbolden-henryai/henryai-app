@@ -36,10 +36,8 @@
       "Bash(gh pr create:*)",
       "Bash(/opt/homebrew/bin/gh pr create:*)",
       "Bash(git stash:*)",
-      "Bash(find:*)",
-      "Bash(git rebase:*)",
-      "Bash(git stash pop:*)",
-      "Bash(/opt/homebrew/bin/gh pr create --title \"feat: Add multi-resume support with 5 resume limit\" --body \"$(cat <<''EOF''\n## Summary\n- Add multi-resume support allowing users to upload and manage up to 5 resumes\n- Add confirmation checkbox requiring users to verify resume accuracy before saving\n- Add LinkedIn cross-reference comparison to detect potential fabrication (title inflation, missing companies)\n- Add resume selector dropdown on analyze page for users with multiple resumes\n- Deprecate resume-builder.html with redirect to profile-edit.html\n\n## Changes\n- `backend/migrations/create_user_resumes_table.sql` - New table with RLS policies\n- `backend/backend.py` - CRUD endpoints for /api/resumes\n- `frontend/js/supabase-client.js` - Resume management methods\n- `frontend/profile-edit.html` - Multi-resume UI with upload modal\n- `frontend/analyze.html` - Resume selector for multi-resume users\n- `frontend/resume-builder.html` - Redirect to profile-edit.html\n- `frontend/resume-chat.html` - Updated back button link\n\n## Test plan\n- [ ] Upload a resume with confirmation checkbox\n- [ ] Upload multiple resumes (up to 5)\n- [ ] Set default resume\n- [ ] Test resume selector on analyze page\n- [ ] Verify LinkedIn comparison when both data sources exist\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\nEOF\n)\")"
+      "Bash(node:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []
