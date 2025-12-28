@@ -4436,4 +4436,87 @@ ${confidenceClosing}`,
 
     // Keep legacy function for backwards compatibility
     window.closeAskHenry = window.closeHeyHenry;
+
+    // ==========================================
+    // Admin Notification Polling (Real-time alerts)
+    // ==========================================
+
+    let adminNotificationInterval = null;
+    let lastNotificationCheck = 0;
+    const NOTIFICATION_CHECK_INTERVAL = 30000; // 30 seconds
+
+    async function checkAdminNotifications() {
+        // Only check if HenryAuth is available
+        if (typeof HenryAuth === 'undefined') return;
+
+        try {
+            const user = await HenryAuth.getUser();
+            if (!user?.email) return;
+
+            const response = await fetch(`${API_BASE}/api/admin/notifications?user_email=${encodeURIComponent(user.email)}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            // Not an admin, stop polling
+            if (!data.is_admin) {
+                if (adminNotificationInterval) {
+                    clearInterval(adminNotificationInterval);
+                    adminNotificationInterval = null;
+                }
+                return;
+            }
+
+            // Show notifications in Hey Henry
+            if (data.notifications && data.notifications.length > 0) {
+                const notification = data.notifications[0]; // Show most recent
+
+                // Open Hey Henry drawer
+                openDrawer();
+
+                // Add notification message
+                const typeEmoji = {
+                    'bug': '🐛', 'feature_request': '💡', 'praise': '🎉',
+                    'ux_issue': '🎨', 'general': '💬'
+                }[notification.feedback_type] || '📬';
+
+                const fromDisplay = notification.from_name || notification.from_email || 'Someone';
+                const notificationMessage = `**${typeEmoji} New Feedback Alert**\n\n**From:** ${fromDisplay} (${notification.from_email})\n**Type:** ${notification.feedback_type?.replace('_', ' ')}\n**Page:** ${notification.current_page || 'Unknown'}\n\n> ${notification.summary || notification.full_content?.substring(0, 200) || 'No details'}\n\n*Click here or reply to respond to them directly.*`;
+
+                addMessage('assistant', notificationMessage);
+                conversationHistory.push({ role: 'assistant', content: notificationMessage });
+                saveConversationHistory();
+
+                // Mark as read
+                fetch(`${API_BASE}/api/admin/notifications/${notification.id}/read?user_email=${encodeURIComponent(user.email)}`, {
+                    method: 'POST'
+                }).catch(e => console.warn('Could not mark notification read:', e));
+
+                // Play a subtle sound or visual indicator
+                const fab = document.querySelector('.ask-henry-fab');
+                if (fab) {
+                    fab.style.animation = 'pulse 0.5s ease-in-out 3';
+                    setTimeout(() => fab.style.animation = '', 1500);
+                }
+            }
+        } catch (e) {
+            console.warn('Admin notification check failed:', e);
+        }
+    }
+
+    // Start polling after widget is created
+    function startAdminNotificationPolling() {
+        // Initial check after 5 seconds
+        setTimeout(checkAdminNotifications, 5000);
+
+        // Then poll every 30 seconds
+        adminNotificationInterval = setInterval(checkAdminNotifications, NOTIFICATION_CHECK_INTERVAL);
+    }
+
+    // Start polling when widget initializes
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startAdminNotificationPolling);
+    } else {
+        startAdminNotificationPolling();
+    }
 })();

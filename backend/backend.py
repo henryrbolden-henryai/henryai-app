@@ -21722,8 +21722,10 @@ class FeedbackAcknowledgmentRequest(BaseModel):
     conversation_context: Optional[str] = None  # Recent conversation for context
 
 
-# Admin notification email
-ADMIN_EMAIL = "henry.r.bolden@gmail.com"  # Where to send feedback notifications
+# Admin notification emails
+ADMIN_EMAIL = "henry.r.bolden@gmail.com"  # Where to send detailed feedback notifications (support@)
+ADMIN_PERSONAL_EMAIL = "hb@henryhq.ai"  # Personal quick notification (hb@)
+ADMIN_USER_EMAIL = "hb@henryhq.ai"  # Admin's HenryHQ login email (for real-time Hey Henry notifications)
 
 
 def get_feedback_email_content(feedback_type: str, feedback_summary: str, name: Optional[str] = None):
@@ -21992,11 +21994,11 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
         )
 
         payload = {
-            "from": "Henry <hello@henryhq.ai>",
+            "from": "Henry <support@henryhq.ai>",
             "to": request.email,
             "subject": subject,
             "html": html,
-            "reply_to": "hello@henryhq.ai"
+            "reply_to": "support@henryhq.ai"
         }
 
         response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
@@ -22012,7 +22014,7 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
         admin_subject, admin_html = get_admin_notification_email(request)
 
         admin_payload = {
-            "from": "HenryHQ Feedback <hello@henryhq.ai>",
+            "from": "HenryHQ Feedback <support@henryhq.ai>",
             "to": ADMIN_EMAIL,
             "subject": admin_subject,
             "html": admin_html,
@@ -22027,12 +22029,140 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
     except requests.exceptions.RequestException as e:
         print(f"⚠️ Failed to send admin notification: {str(e)}")
 
+    # 3. Send quick personal notification to hb@henryhq.ai
+    personal_email_id = None
+    try:
+        type_emoji = {
+            "bug": "🐛", "feature_request": "💡", "praise": "🎉",
+            "ux_issue": "🎨", "general": "💬"
+        }.get(request.feedback_type, "💬")
+
+        user_display = request.name or "Someone"
+        personal_subject = f"{type_emoji} {user_display}: {request.feedback_summary[:50]}..."
+
+        personal_payload = {
+            "from": "Hey Henry <hb@henryhq.ai>",
+            "to": ADMIN_PERSONAL_EMAIL,
+            "subject": personal_subject,
+            "html": f"""<p><strong>{user_display}</strong> ({request.email}) submitted {request.feedback_type.replace('_', ' ')}:</p>
+<blockquote style="border-left: 3px solid #667eea; padding-left: 12px; color: #555;">{request.full_feedback or request.feedback_summary}</blockquote>
+<p style="color: #888; font-size: 12px;">Page: {request.current_page or 'Unknown'}</p>""",
+            "reply_to": request.email
+        }
+
+        response = requests.post(RESEND_API_URL, json=personal_payload, headers=headers, timeout=10)
+        response.raise_for_status()
+        personal_email_id = response.json().get("id")
+        print(f"📧 Personal notification sent to {ADMIN_PERSONAL_EMAIL} (id: {personal_email_id})")
+
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ Failed to send personal notification: {str(e)}")
+
+    # 4. Store notification for real-time Hey Henry pickup (if Supabase available)
+    try:
+        if supabase:
+            supabase.table("admin_notifications").insert({
+                "notification_type": "feedback",
+                "feedback_type": request.feedback_type,
+                "from_email": request.email,
+                "from_name": request.name,
+                "summary": request.feedback_summary,
+                "full_content": request.full_feedback,
+                "current_page": request.current_page,
+                "read": False
+            }).execute()
+            print(f"📝 Notification stored for real-time pickup")
+    except Exception as e:
+        print(f"⚠️ Could not store notification: {str(e)}")
+
     return {
         "success": True,
         "message": "Emails sent",
         "user_email_id": user_email_id,
-        "admin_email_id": admin_email_id
+        "admin_email_id": admin_email_id,
+        "personal_email_id": personal_email_id
     }
+
+
+# ============================================================================
+# ADMIN NOTIFICATIONS (Real-time Hey Henry alerts)
+# ============================================================================
+
+@app.get("/api/admin/notifications")
+async def get_admin_notifications(user_email: str = None):
+    """
+    Get unread admin notifications for real-time Hey Henry alerts.
+    Only returns notifications if the requesting user is an admin.
+    """
+    if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"notifications": [], "is_admin": False}
+
+    if not supabase:
+        return {"notifications": [], "is_admin": True, "error": "Database not available"}
+
+    try:
+        result = supabase.table("admin_notifications") \
+            .select("*") \
+            .eq("read", False) \
+            .order("created_at", desc=True) \
+            .limit(10) \
+            .execute()
+
+        return {
+            "notifications": result.data if result.data else [],
+            "is_admin": True
+        }
+    except Exception as e:
+        print(f"⚠️ Error fetching admin notifications: {str(e)}")
+        return {"notifications": [], "is_admin": True, "error": str(e)}
+
+
+@app.post("/api/admin/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user_email: str = None):
+    """
+    Mark a notification as read.
+    Only works if the requesting user is an admin.
+    """
+    if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"success": False, "error": "Not authorized"}
+
+    if not supabase:
+        return {"success": False, "error": "Database not available"}
+
+    try:
+        supabase.table("admin_notifications") \
+            .update({"read": True}) \
+            .eq("id", notification_id) \
+            .execute()
+
+        return {"success": True}
+    except Exception as e:
+        print(f"⚠️ Error marking notification read: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/admin/notifications/read-all")
+async def mark_all_notifications_read(user_email: str = None):
+    """
+    Mark all notifications as read.
+    Only works if the requesting user is an admin.
+    """
+    if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"success": False, "error": "Not authorized"}
+
+    if not supabase:
+        return {"success": False, "error": "Database not available"}
+
+    try:
+        supabase.table("admin_notifications") \
+            .update({"read": True}) \
+            .eq("read", False) \
+            .execute()
+
+        return {"success": True}
+    except Exception as e:
+        print(f"⚠️ Error marking all notifications read: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 
 @app.delete("/api/linkedin/profile")
