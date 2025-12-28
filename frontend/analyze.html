@@ -1451,14 +1451,22 @@
     let selectedResumeId = null;
 
     async function loadUserResumes() {
-      // Only load if user is authenticated with Supabase
-      if (!window.HenryData || !HenryData.isAuthenticated()) {
-        console.log('User not authenticated, using localStorage resume');
+      // Only load if HenryData is available
+      if (!window.HenryData) {
+        console.log('HenryData not available, using localStorage resume');
         return;
       }
 
       try {
+        // Check if user is authenticated
+        const user = await HenryAuth.getUser();
+        if (!user) {
+          console.log('User not authenticated, using localStorage resume');
+          return;
+        }
+
         const resumes = await HenryData.getResumes();
+        console.log('Loaded resumes from Supabase:', resumes?.length || 0, 'resumes');
 
         if (!resumes || resumes.length === 0) {
           console.log('No resumes in Supabase, using localStorage resume');
@@ -1469,9 +1477,11 @@
 
         // Show the resume selector if user has multiple resumes
         if (resumes.length > 1) {
+          console.log('Multiple resumes found, showing selector');
           showResumeSelector(resumes);
         } else if (resumes.length === 1) {
           // Single resume - use it but don't show selector
+          console.log('Single resume found, using it directly');
           selectResume(resumes[0]);
         }
 
