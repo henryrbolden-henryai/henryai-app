@@ -3179,7 +3179,7 @@ ${confidenceClosing}`,
 
         if (feedbackType === 'bug') {
             // Check if they already provided details
-            const hasDetails = lowerMessage.length > 50 ||
+            const hasDetails = lowerMessage.length > 60 ||
                 lowerMessage.includes('when i') ||
                 lowerMessage.includes('after i') ||
                 lowerMessage.includes('tried to');
@@ -3187,11 +3187,11 @@ ${confidenceClosing}`,
             if (hasDetails) {
                 return null; // Already detailed enough
             }
-            return "Can you tell me what you were trying to do when this happened? That'll help the team track it down faster.";
+            return "Thanks for flagging. To help the team fix this fast:\n\n1. What were you trying to do?\n2. What happened instead?\n3. What page were you on?\n\nA screenshot helps too if you can attach one.";
         }
 
         if (feedbackType === 'feature_request') {
-            const hasContext = lowerMessage.length > 40 ||
+            const hasContext = lowerMessage.length > 50 ||
                 lowerMessage.includes('would help') ||
                 lowerMessage.includes('because') ||
                 lowerMessage.includes('so that');
@@ -3199,27 +3199,31 @@ ${confidenceClosing}`,
             if (hasContext) {
                 return null;
             }
-            return "What would that help you accomplish? Understanding the 'why' helps the team prioritize.";
+            return "Interesting idea. What problem would this solve for you? And have you seen this done well somewhere else?";
         }
 
         if (feedbackType === 'ux_issue') {
-            const hasContext = lowerMessage.length > 40 ||
+            const hasContext = lowerMessage.length > 50 ||
                 lowerMessage.includes('expected') ||
                 lowerMessage.includes('thought it');
 
             if (hasContext) {
                 return null;
             }
-            return "What were you expecting to happen instead? That context really helps.";
+            return "What were you trying to do, and what did you expect to happen? Knowing the gap helps us fix it.";
         }
 
         if (feedbackType === 'praise') {
-            // For praise, we can ask what specifically worked well
-            return "That's great to hear! What specifically made it helpful for you?";
+            // For praise, ask specific questions to understand what's working
+            const hasContext = lowerMessage.length > 60;
+            if (hasContext) {
+                return null;
+            }
+            return "That means a lot! Which feature or part of the experience stood out most? And anything we could do even better?";
         }
 
-        // General feedback - ask for more context
-        return "Can you tell me more about that? The more detail, the better the team can act on it.";
+        // General feedback - ask targeted questions
+        return "Thanks for sharing. A few quick questions:\n\n1. What page or feature is this about?\n2. What were you trying to accomplish?\n3. What would make it better?";
     }
 
     function categorizeFeedback(message) {
