@@ -1539,6 +1539,18 @@
       }
       userProfile.resume = resumeRecord.resume_json;
 
+      // Update the profile banner with selected resume's info
+      const resume = resumeRecord.resume_json;
+      const contact = resume.contact || {};
+      const name = contact.full_name || resume.full_name || 'Your Profile';
+      document.getElementById('profileName').textContent = name;
+
+      // Update meta with title info
+      const title = resume.current_title || (resume.experience && resume.experience[0]?.title) || '';
+      if (title) {
+        document.getElementById('profileMeta').textContent = title;
+      }
+
       // Update preview
       updateResumePreview(resumeRecord.resume_json);
 
