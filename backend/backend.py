@@ -21717,6 +21717,13 @@ class FeedbackAcknowledgmentRequest(BaseModel):
     name: Optional[str] = None
     feedback_type: str  # bug, feature_request, praise, ux_issue, general
     feedback_summary: str  # First ~100 chars of feedback
+    current_page: Optional[str] = None  # What page they were on
+    full_feedback: Optional[str] = None  # Full feedback text for admin
+    conversation_context: Optional[str] = None  # Recent conversation for context
+
+
+# Admin notification email
+ADMIN_EMAIL = "henry.r.bolden@gmail.com"  # Where to send feedback notifications
 
 
 def get_feedback_email_content(feedback_type: str, feedback_summary: str, name: Optional[str] = None):
@@ -21864,10 +21871,101 @@ def get_feedback_email_content(feedback_type: str, feedback_summary: str, name: 
     return content['subject'], html
 
 
+def get_admin_notification_email(request: FeedbackAcknowledgmentRequest):
+    """
+    Creates an admin notification email with full feedback details.
+    """
+    type_labels = {
+        "bug": "🐛 Bug Report",
+        "feature_request": "💡 Feature Request",
+        "praise": "🎉 Praise",
+        "ux_issue": "🎨 UX Issue",
+        "general": "💬 General Feedback"
+    }
+
+    type_label = type_labels.get(request.feedback_type, "💬 Feedback")
+    user_display = request.name or "Anonymous"
+
+    # Escape HTML in user content
+    def escape_html(text):
+        if not text:
+            return ""
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+
+    full_feedback = escape_html(request.full_feedback or request.feedback_summary)
+    conversation = escape_html(request.conversation_context) if request.conversation_context else "No conversation context"
+    current_page = request.current_page or "Unknown"
+
+    subject = f"{type_label} from {user_display}"
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{subject}</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; color: white;">
+                <h1 style="margin: 0; font-size: 20px;">{type_label}</h1>
+                <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">New feedback from HenryHQ</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 24px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="padding-bottom: 16px; border-bottom: 1px solid #eee;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">From</strong>
+                            <p style="margin: 4px 0 0; font-size: 16px; color: #333;">{user_display}</p>
+                            <p style="margin: 2px 0 0; font-size: 14px; color: #666;">{request.email}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Page</strong>
+                            <p style="margin: 4px 0 0; font-size: 14px; color: #333;">{current_page}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Feedback</strong>
+                            <div style="margin: 8px 0 0; padding: 12px; background-color: #f8f9fa; border-radius: 6px; font-size: 14px; color: #333; line-height: 1.5;">
+                                {full_feedback}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 16px 0;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Conversation Context</strong>
+                            <div style="margin: 8px 0 0; padding: 12px; background-color: #f0f0f0; border-radius: 6px; font-size: 12px; color: #666; line-height: 1.5; max-height: 200px; overflow-y: auto;">
+                                {conversation}
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 16px 24px; background-color: #f8f9fa; border-top: 1px solid #eee;">
+                <p style="margin: 0; font-size: 12px; color: #666;">
+                    Reply to this email to respond directly to {request.email}
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
+
+    return subject, html
+
+
 @app.post("/api/send-feedback-acknowledgment")
 async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
     """
     Send acknowledgment email after user submits feedback via Hey Henry chat.
+    Also sends notification to admin with full details.
 
     Supports feedback types: bug, feature_request, praise, ux_issue, general
     Each type gets a tailored subject line and message.
@@ -21877,44 +21975,64 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
         print("⚠️ RESEND_API_KEY not configured - skipping feedback acknowledgment email")
         return {"success": False, "error": "Email service not configured"}
 
-    subject, html = get_feedback_email_content(
-        feedback_type=request.feedback_type,
-        feedback_summary=request.feedback_summary,
-        name=request.name
-    )
-
-    payload = {
-        "from": "Henry <hello@henryhq.ai>",
-        "to": request.email,
-        "subject": subject,
-        "html": html,
-        "reply_to": "hello@henryhq.ai"
-    }
-
     headers = {
         "Authorization": f"Bearer {RESEND_API_KEY}",
         "Content-Type": "application/json"
     }
 
+    user_email_id = None
+    admin_email_id = None
+
+    # 1. Send acknowledgment to user
     try:
+        subject, html = get_feedback_email_content(
+            feedback_type=request.feedback_type,
+            feedback_summary=request.feedback_summary,
+            name=request.name
+        )
+
+        payload = {
+            "from": "Henry <hello@henryhq.ai>",
+            "to": request.email,
+            "subject": subject,
+            "html": html,
+            "reply_to": "hello@henryhq.ai"
+        }
+
         response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
+        user_email_id = response.json().get("id")
+        print(f"📧 Feedback acknowledgment sent to {request.email} (type: {request.feedback_type}, id: {user_email_id})")
 
-        email_id = response.json().get("id")
-        print(f"📧 Feedback acknowledgment email sent to {request.email} (type: {request.feedback_type}, id: {email_id})")
-
-        return {
-            "success": True,
-            "message": "Acknowledgment email sent",
-            "email_id": email_id
-        }
-    except requests.exceptions.Timeout:
-        print(f"⚠️ Email send timeout for {request.email}")
-        return {"success": False, "error": "Email service timeout"}
     except requests.exceptions.RequestException as e:
-        print(f"🔥 Failed to send feedback acknowledgment email: {str(e)}")
-        # Don't raise - we don't want email failures to break the feedback flow
-        return {"success": False, "error": str(e)}
+        print(f"⚠️ Failed to send user acknowledgment: {str(e)}")
+
+    # 2. Send notification to admin with full details
+    try:
+        admin_subject, admin_html = get_admin_notification_email(request)
+
+        admin_payload = {
+            "from": "HenryHQ Feedback <hello@henryhq.ai>",
+            "to": ADMIN_EMAIL,
+            "subject": admin_subject,
+            "html": admin_html,
+            "reply_to": request.email  # Reply goes directly to the user
+        }
+
+        response = requests.post(RESEND_API_URL, json=admin_payload, headers=headers, timeout=10)
+        response.raise_for_status()
+        admin_email_id = response.json().get("id")
+        print(f"📧 Admin notification sent to {ADMIN_EMAIL} (id: {admin_email_id})")
+
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ Failed to send admin notification: {str(e)}")
+
+    return {
+        "success": True,
+        "message": "Emails sent",
+        "user_email_id": user_email_id,
+        "admin_email_id": admin_email_id
+    }
 
 
 @app.delete("/api/linkedin/profile")
