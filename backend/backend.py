@@ -75,6 +75,21 @@ from qa_validation import (
     ValidationLogger
 )
 
+# Tier Configuration and Service for subscription management
+try:
+    from tier_config import (
+        TIER_LIMITS,
+        TIER_PRICES,
+        TIER_ORDER,
+        TIER_NAMES,
+        get_all_tier_info,
+    )
+    from tier_service import TierService
+    TIER_SERVICE_AVAILABLE = True
+except ImportError:
+    TIER_SERVICE_AVAILABLE = False
+    print("⚠️ Tier service not available - tier features disabled")
+
 # Recruiter Calibration module for gap classification and red flag detection
 # Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
 # CRITICAL: Calibration explains gaps, does NOT override Job Fit recommendation
@@ -4010,7 +4025,7 @@ def build_candidate_calibration_prompt(situation: Optional[Dict[str, Any]]) -> s
 === CANDIDATE STATE CALIBRATION ===
 
 The candidate has shared their current emotional and situational context. 
-Use this to calibrate your tone, prioritization, and framing—not to change the facts, but to change how you deliver them.
+Use this to calibrate your tone, prioritization, and framing. Not to change the facts, but to change how you deliver them.
 
 **Candidate State:**
 """
@@ -4051,7 +4066,7 @@ Use this to calibrate your tone, prioritization, and framing—not to change the
 - "pivot" → Emphasize transferable skills, adjacent experience, and learning agility. Acknowledge the narrative gap and help bridge it.
 - "returning" → Normalize the gap. Emphasize what they did during it (if anything) and how their prior experience still applies. Don't make them feel like they're starting over.
 
-**CRITICAL:** These calibrations affect *delivery*, not *accuracy*. Never inflate fit scores, hide real gaps, or sugarcoat bad-fit roles. The candidate deserves honesty—just delivered in a way that meets them where they are.
+**CRITICAL:** These calibrations affect *delivery*, not *accuracy*. Never inflate fit scores, hide real gaps, or sugarcoat bad-fit roles. The candidate deserves honesty. Just delivered in a way that meets them where they are.
 
 """
     return calibration
@@ -4257,7 +4272,7 @@ def determine_action_for_status(
     # Applied status
     if "applied" in status_lower:
         if days_since_activity <= 6:
-            return ("None—wait", "Most responses Days 3-7. Wait.", "none")
+            return ("None: wait", "Most responses Days 3-7. Wait.", "none")
         elif days_since_activity == 7:
             return ("Send follow-up email", "70% respond by now. Silence = ghosting.", "draft_email")
         elif days_since_activity <= 14:
@@ -4271,7 +4286,7 @@ def determine_action_for_status(
 
     if "recruiter" in status_lower and ("complete" in status_lower or "done" in status_lower):
         if days_since_activity <= 5:
-            return ("None—wait for next steps", "Typical response: 3-5 days. Don't follow up.", "none")
+            return ("None: wait for next steps", "Typical response: 3-5 days. Don't follow up.", "none")
         else:
             return ("Send status check-in", "They're deciding or ghosting. Force clarity.", "draft_email")
 
@@ -4295,7 +4310,7 @@ def determine_action_for_status(
 
     # Offer
     if "offer" in status_lower:
-        return ("None—negotiate or accept thoughtfully", "Don't rush. This locks 2+ years.", "none")
+        return ("None: negotiate or accept thoughtfully", "Don't rush. This locks 2+ years.", "none")
 
     # Decision confidence guidance
     if decision_confidence < 40:
@@ -4303,7 +4318,7 @@ def determine_action_for_status(
     elif decision_confidence <= 70:
         return ("Continue but don't overinvest", "Decent fit. Watch for stalls.", "none")
     else:
-        return ("Prioritize—stay aggressive here", "Strong alignment. This is worth energy.", "none")
+        return ("Prioritize: stay aggressive here", "Strong alignment. This is worth energy.", "none")
 
 def calculate_ui_signals(
     decision_confidence: int,
@@ -4337,7 +4352,7 @@ def calculate_ui_signals(
         urgency = "immediate"
     elif "archive" in next_action.lower():
         urgency = "immediate"
-    elif next_action == "None—wait" or "wait" in next_action.lower():
+    elif next_action == "None: wait" or "wait" in next_action.lower():
         urgency = "none"
     elif days_since_activity >= 5 and "complete" in status_lower:
         urgency = "soon"
@@ -4349,7 +4364,7 @@ def calculate_ui_signals(
         priority = "low"
     elif days_since_activity >= 21:
         priority = "archive"
-    elif next_action != "None—wait" and urgency == "immediate":
+    elif next_action != "None: wait" and urgency == "immediate":
         priority = "high"
     elif decision_confidence >= 70:
         priority = "high"
@@ -4391,7 +4406,7 @@ def calculate_ui_signals(
         badge = None
 
     # Action available
-    action_available = next_action not in ["None—wait", "None—wait for next steps", "None—negotiate or accept thoughtfully"]
+    action_available = next_action not in ["None: wait", "None: wait for next steps", "None: negotiate or accept thoughtfully"]
 
     # Dimmed (for focus mode)
     if priority in ["low", "archive"]:
@@ -4473,7 +4488,7 @@ def calculate_pipeline_health(
         recommendation = "Apply to 3 new roles now"
         reason = "Pipeline's too thin. You need momentum."
     elif status == "healthy":
-        recommendation = "None—maintain pace, focus on interviews"
+        recommendation = "None: maintain pace, focus on interviews"
         reason = "Good volume. Shift energy to conversion."
     elif status == "overloaded":
         recommendation = "Pause applications. Focus on interviews only."
@@ -8975,7 +8990,7 @@ def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
             "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
             "evidence_status": "missing",
             "resume_evidence": None,
-            "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background. Note: JD does not explicitly require healthcare—domain gap auto-downgraded to coachable.",
+            "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background. Note: JD does not explicitly require healthcare. Domain gap auto-downgraded to coachable.",
             "distance": f"0 → {required_domain.replace('_', ' ')} domain gap (auto-downgraded to coachable)",
             "coachable": True,  # Auto-downgraded per guardrail
             "criticality": "preferred"  # Downgrade criticality too
@@ -8987,7 +9002,7 @@ def evaluate_domain_adjacency(response_data: dict, resume_data: dict) -> dict:
         "jd_requirement": f"Experience in {required_domain.replace('_', ' ')} domain",
         "evidence_status": "missing",
         "resume_evidence": None,
-        "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background—unrelated domain.",
+        "diagnosis": f"No direct {required_domain.replace('_', ' ')} experience. Resume shows {resume_domain_str} background. Unrelated domain.",
         "distance": f"0 → {required_domain.replace('_', ' ')} domain gap (not coachable in current search)",
         "coachable": False,
         "criticality": "required"
@@ -9400,7 +9415,7 @@ def get_lepe_positioning_decision(
         result["coaching_available"] = True
         result["skepticism_level"] = "mild"
         result["transition_narrative_possible"] = True
-        result["messaging"]["headline"] = "Addressable gap — positioning strategy available."
+        result["messaging"]["headline"] = "Addressable gap. Positioning strategy available."
         result["messaging"]["explanation"] = (
             f"You have {people_years:.1f} years of people leadership. "
             f"This role screens for {required_leadership_years:.0f}+. "
@@ -9431,7 +9446,7 @@ def get_lepe_positioning_decision(
         result["positioning_mode"] = False
         result["coaching_available"] = True
         result["skepticism_level"] = "significant"
-        result["messaging"]["headline"] = "Significant leadership gap — apply with realistic expectations."
+        result["messaging"]["headline"] = "Significant leadership gap. Apply with realistic expectations."
         result["messaging"]["explanation"] = (
             f"You have {people_years:.1f} years of people leadership. "
             f"This role requires {required_leadership_years:.0f}+. "
@@ -11910,7 +11925,7 @@ Evaluate the job posting quality using these criteria:
 You MUST provide one of these EXACT strings:
 - "Apply" (strong opportunity, good fit, clear role)
 - "Apply with Caution" (red flags present but salvageable)
-- "Skip — poor quality or low close rate" (multiple issues, waste of time)
+- "Skip: poor quality or low close rate" (multiple issues, waste of time)
 
 Then explain in 3-5 substantive sentences why you gave this rating. DO NOT leave this empty.
 
@@ -12068,7 +12083,7 @@ Evaluate the job posting quality using these criteria:
 You MUST provide one of these EXACT strings:
 - "Apply" (strong opportunity, good fit, clear role)
 - "Apply with Caution" (red flags present but salvageable)
-- "Skip — poor quality or low close rate" (multiple issues, waste of time)
+- "Skip: poor quality or low close rate" (multiple issues, waste of time)
 
 Then explain in 3-5 substantive sentences why you gave this rating. DO NOT leave this empty.
 
@@ -12410,7 +12425,7 @@ Example framings:
 REQUIRED RESPONSE FORMAT - Every field must be populated:
 {
   "intelligence_layer": {
-    "job_quality_score": "Apply|Apply with caution|Skip — poor quality or low close rate",
+    "job_quality_score": "Apply|Apply with caution|Skip: poor quality or low close rate",
     "quality_explanation": "MUST be 3-5 substantive sentences",
     "strategic_positioning": {
       "lead_with_strengths": ["MUST have 2-3 items", "NOT empty"],
@@ -12869,7 +12884,7 @@ typical requirements. Since this is directional guidance, do NOT exceed 75% fit_
 if the candidate appears highly qualified - we need real JD data to confirm strong fit.
 """
         confidence_label = "directional"
-        ui_note = "This is based on typical expectations for Senior PMs at fintech companies. Your actual fit may vary—add JD text anytime to refine."
+        ui_note = "This is based on typical expectations for Senior PMs at fintech companies. Your actual fit may vary. Add JD text anytime to refine."
     else:
         # Use real JD
         user_message = f"""Job Description:
@@ -15063,7 +15078,7 @@ async def interview_feedback(request: InterviewFeedbackRequest) -> InterviewFeed
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -15182,7 +15197,7 @@ async def generate_thank_you(request: ThankYouRequest) -> ThankYouResponse:
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -15399,8 +15414,8 @@ Generate structured prep covering:
 CRITICAL RULES:
 - Use ONLY information from the candidate's actual resume
 - Include specific metrics and achievements from resume
-- Be direct about red flags—provide mitigation strategies
-- No generic advice—everything must be tailored to this candidate and role
+- Be direct about red flags. Provide mitigation strategies
+- No generic advice. Everything must be tailored to this candidate and role
 - If working from a provisional profile, base prep on typical expectations for this role type
 
 Return ONLY a valid JSON object with the structure above. No markdown, no preamble."""
@@ -15644,7 +15659,7 @@ async def analyze_intro_sell(request: IntroSellFeedbackRequest):
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -15825,7 +15840,7 @@ Return JSON:
 }
 
 RULES:
-- Be specific—reference actual questions/answers when possible
+- Be specific. Reference actual questions/answers when possible
 - Provide rewritten answers that use candidate's real experience
 - Coaching must be actionable, not generic
 
@@ -15940,7 +15955,7 @@ If not, revise.
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -16013,7 +16028,7 @@ If not, revise.
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -17499,7 +17514,7 @@ Your task is to analyze a candidate's resume and determine:
 
 === CAREER LEVEL ASSESSMENT (STRICT CALIBRATION) ===
 
-Assess the candidate's ACTUAL career level based on these criteria. Be CONSERVATIVE—do not inflate levels.
+Assess the candidate's ACTUAL career level based on these criteria. Be CONSERVATIVE. Do not inflate levels.
 
 CRITICAL RULES (APPLY BEFORE LEVELING):
 
@@ -21459,7 +21474,7 @@ TARGET JOB DESCRIPTION:
 
 === HENRYHQ VOICE (NON-NEGOTIABLE) ===
 
-You are HenryHQ — a direct, honest, supportive career coach.
+You are HenryHQ, a direct, honest, supportive career coach.
 You tell candidates the truth without shame, and you always give them a clear next step.
 Your tone is calm, confident, human, and never robotic or overly optimistic.
 Your goal is simple: make the candidate better with every message.
@@ -22191,6 +22206,255 @@ async def delete_linkedin_profile():
     This endpoint exists for API consistency and future server-side storage.
     """
     return {"success": True, "message": "LinkedIn profile deleted"}
+
+
+# ============================================================================
+# TIER AND USAGE ENDPOINTS
+# ============================================================================
+
+# Pydantic models for tier endpoints
+class UserUsageResponse(BaseModel):
+    """Response model for user usage and tier information."""
+    tier: str
+    tier_display: str
+    tier_price: int
+    is_beta_user: bool
+    beta_expires_at: Optional[str] = None
+    usage: Dict[str, Any]
+    features: Dict[str, Any]
+
+
+class TierInfoResponse(BaseModel):
+    """Response model for tier information."""
+    tiers: List[Dict[str, Any]]
+
+
+class FeatureCheckResponse(BaseModel):
+    """Response model for feature access check."""
+    allowed: bool
+    limited: bool
+    upgrade_to: Optional[str] = None
+    feature: str
+
+
+class UsageLimitResponse(BaseModel):
+    """Response model for usage limit check."""
+    allowed: bool
+    used: int
+    limit: int
+    remaining: Optional[int] = None
+    is_unlimited: bool
+    usage_type: str
+
+
+@app.get("/api/user/usage", response_model=UserUsageResponse)
+async def get_user_usage(user_id: str = None):
+    """
+    Get current usage stats and tier information for a user.
+
+    Returns tier, features, and usage limits for the current billing period.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Return default sourcer tier if tier service not available
+        return UserUsageResponse(
+            tier='sourcer',
+            tier_display='Sourcer',
+            tier_price=0,
+            is_beta_user=False,
+            beta_expires_at=None,
+            usage={
+                'applications': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'resumes': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'cover_letters': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'henry_conversations': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+                'mock_interviews': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+                'coaching_sessions': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+            },
+            features=TIER_LIMITS.get('sourcer', {}).get('features', {})
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        usage_summary = await tier_service.get_user_usage_summary(user_id)
+        return UserUsageResponse(**usage_summary)
+    except Exception as e:
+        logger.error(f"Error getting user usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting user usage: {str(e)}")
+
+
+@app.get("/api/tiers", response_model=TierInfoResponse)
+async def get_tiers():
+    """
+    Get information about all available subscription tiers.
+
+    Returns pricing, limits, and features for each tier.
+    """
+    if not TIER_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Tier service not available")
+
+    try:
+        return TierInfoResponse(tiers=get_all_tier_info())
+    except Exception as e:
+        logger.error(f"Error getting tier info: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting tier info: {str(e)}")
+
+
+@app.get("/api/user/feature-access/{feature_name}", response_model=FeatureCheckResponse)
+async def check_feature_access(feature_name: str, user_id: str = None):
+    """
+    Check if a user has access to a specific feature.
+
+    Returns whether the feature is allowed, limited, or locked.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Default to sourcer tier features
+        feature_value = TIER_LIMITS.get('sourcer', {}).get('features', {}).get(feature_name, False)
+        return FeatureCheckResponse(
+            allowed=feature_value is True or feature_value == 'limited',
+            limited=feature_value == 'limited',
+            upgrade_to='recruiter' if not feature_value else None,
+            feature=feature_name
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        access = tier_service.check_feature_access(tier, feature_name)
+        return FeatureCheckResponse(
+            allowed=access['allowed'],
+            limited=access['limited'],
+            upgrade_to=access['upgrade_to'],
+            feature=feature_name
+        )
+    except Exception as e:
+        logger.error(f"Error checking feature access: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking feature access: {str(e)}")
+
+
+@app.get("/api/user/usage-limit/{usage_type}", response_model=UsageLimitResponse)
+async def check_usage_limit(usage_type: str, user_id: str = None):
+    """
+    Check if a user has remaining usage for a specific type.
+
+    Returns current usage, limit, and whether more usage is allowed.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions']
+    if usage_type not in valid_usage_types:
+        raise HTTPException(status_code=400, detail=f"Invalid usage_type. Must be one of: {', '.join(valid_usage_types)}")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Default to sourcer tier limits
+        limit = TIER_LIMITS.get('sourcer', {}).get(f'{usage_type}_per_month', 0)
+        return UsageLimitResponse(
+            allowed=limit > 0,
+            used=0,
+            limit=limit,
+            remaining=limit,
+            is_unlimited=False,
+            usage_type=usage_type
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        usage = await tier_service.check_usage_limit(user_id, tier, usage_type)
+        return UsageLimitResponse(
+            allowed=usage['allowed'],
+            used=usage['used'],
+            limit=usage['limit'],
+            remaining=usage['remaining'],
+            is_unlimited=usage['is_unlimited'],
+            usage_type=usage_type
+        )
+    except Exception as e:
+        logger.error(f"Error checking usage limit: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking usage limit: {str(e)}")
+
+
+@app.post("/api/user/usage/increment/{usage_type}")
+async def increment_usage(usage_type: str, user_id: str = None):
+    """
+    Increment usage counter for a specific type.
+
+    This is typically called after a successful action (resume generated, etc.)
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions']
+    if usage_type not in valid_usage_types:
+        raise HTTPException(status_code=400, detail=f"Invalid usage_type. Must be one of: {', '.join(valid_usage_types)}")
+
+    if not TIER_SERVICE_AVAILABLE:
+        return {"success": True, "message": "Usage tracking not available"}
+
+    try:
+        tier_service = TierService(supabase)
+        await tier_service.increment_usage(user_id, usage_type)
+        return {"success": True, "usage_type": usage_type}
+    except Exception as e:
+        logger.error(f"Error incrementing usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error incrementing usage: {str(e)}")
+
+
+@app.get("/api/user/tier")
+async def get_user_tier(user_id: str = None):
+    """
+    Get the effective tier for a user.
+
+    Returns the tier, considering beta overrides if applicable.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        return {
+            "tier": "sourcer",
+            "tier_display": "Sourcer",
+            "tier_price": 0,
+            "is_beta_user": False
+        }
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        return {
+            "tier": tier,
+            "tier_display": TIER_NAMES.get(tier, 'Sourcer'),
+            "tier_price": TIER_PRICES.get(tier, 0),
+            "is_beta_user": profile.get('is_beta_user', False),
+            "beta_expires_at": profile.get('beta_expires_at')
+        }
+    except Exception as e:
+        logger.error(f"Error getting user tier: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting user tier: {str(e)}")
 
 
 # ============================================================================

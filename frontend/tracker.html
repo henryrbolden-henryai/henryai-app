@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipeline Command Center | HenryHQ</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HenryHQ">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -3949,11 +3958,11 @@
                 <button class="header-btn primary" onclick="openScheduleInterviewModal()" title="Add an interview you've scheduled">
                     <span>🎉</span> Got an Interview
                 </button>
-                <button class="header-btn" onclick="exportBackup()" title="Download all your data as a backup file">
-                    <span>📥</span> Export Backup
+                <button class="header-btn" onclick="goToDebrief()" title="Debrief a recent interview" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000;">
+                    <span>📝</span> Let's Debrief
                 </button>
                 <button class="header-btn" onclick="showImportOptions()" title="Import applications">
-                    <span>📤</span> Import
+                    <span>📤</span> Import Tracker
                 </button>
                 <input type="file" id="importFile" accept=".json,.csv,.xlsx,.xls" style="display: none;" onchange="handleImport(event)">
                 <input type="file" id="screenshotFile" accept="image/*" style="display: none;" onchange="handleScreenshotImport(event)">
@@ -4276,6 +4285,37 @@
             <a href="analyze.html" class="analyze-btn">Analyze New Role</a>
         </div>
         </div>
+
+    <!-- DEBRIEF SELECTION MODAL -->
+    <div class="modal-overlay" id="debriefSelectModal">
+        <div class="modal" style="max-width: 500px;">
+            <h2>📝 Which interview are you debriefing?</h2>
+            <p style="color: var(--color-text-muted);">Select the role you just interviewed for</p>
+
+            <div style="margin-top: 24px;">
+                <select id="debriefAppSelect" style="width: 100%; padding: 12px; font-size: 1rem; background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 8px;">
+                    <option value="">-- Select an application --</option>
+                </select>
+            </div>
+
+            <div id="debriefInterviewType" style="margin-top: 16px; display: none;">
+                <label style="display: block; margin-bottom: 8px; color: var(--color-text-secondary);">Interview type</label>
+                <select id="debriefTypeSelect" style="width: 100%; padding: 12px; font-size: 1rem; background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border); border-radius: 8px;">
+                    <option value="Recruiter Screen">Recruiter Screen</option>
+                    <option value="Hiring Manager">Hiring Manager</option>
+                    <option value="Technical Round">Technical Round</option>
+                    <option value="Panel Interview">Panel Interview</option>
+                    <option value="Final Round">Final Round</option>
+                    <option value="Executive Interview">Executive Interview</option>
+                </select>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+                <button class="modal-btn secondary" onclick="closeDebriefSelectModal()">Cancel</button>
+                <button class="modal-btn primary" id="proceedDebriefBtn" onclick="proceedToDebrief()" disabled>Start Debrief</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ARCHIVE MODAL -->
     <!-- IMPORT OPTIONS MODAL -->
@@ -4998,7 +5038,7 @@
                     return {
                         type: 'dead',
                         context: `${daysSinceApplied} days since applying. Likely ghosted.`,
-                        action: "Archive and focus on active opportunities. Not personal—this market is brutal."
+                        action: "Archive and focus on active opportunities. Not personal. This market is brutal."
                     };
                 }
             }
@@ -5166,13 +5206,13 @@
                     factors.push({
                         severity: 'medium',
                         title: 'High-Volume Role',
-                        explanation: `Rejected within ${daysSinceApply} day(s) of applying. Fast rejections often indicate high applicant volume or strict ATS filtering—not necessarily a reflection of your qualifications.`
+                        explanation: `Rejected within ${daysSinceApply} day(s) of applying. Fast rejections often indicate high applicant volume or strict ATS filtering, not necessarily a reflection of your qualifications.`
                     });
                 } else if (daysSinceApply > 21) {
                     factors.push({
                         severity: 'low',
                         title: 'Extended Timeline',
-                        explanation: `${daysSinceApply} days between application and rejection. This often means you were in consideration but ultimately passed over—possibly due to internal candidates or budget changes.`
+                        explanation: `${daysSinceApply} days between application and rejection. This often means you were in consideration but ultimately passed over, possibly due to internal candidates or budget changes.`
                     });
                 }
             }
@@ -5194,7 +5234,7 @@
                 factors.push({
                     severity: 'medium',
                     title: 'Career Transition Pattern',
-                    explanation: `Your positioning suggests a career shift. Transitioning candidates face higher scrutiny—direct experience often wins at the resume screen stage.`
+                    explanation: `Your positioning suggests a career shift. Transitioning candidates face higher scrutiny. Direct experience often wins at the resume screen stage.`
                 });
             }
 
@@ -5210,13 +5250,13 @@
             // Generate emotionally intelligent insight based on rejection count
             let insight = '';
             if (preInterviewRejections === 1) {
-                insight = `One silent rejection is data, not a verdict. This market is brutal—companies ghost even strong candidates. Use this analysis to refine your approach, not to question your worth.`;
+                insight = `One silent rejection is data, not a verdict. This market is brutal. Companies ghost even strong candidates. Use this analysis to refine your approach, not to question your worth.`;
             } else if (preInterviewRejections <= 3) {
                 insight = `${preInterviewRejections} rejections without interviews is frustrating, but it's still within normal range for this market. Focus on roles where your fit score is 75%+ and always pair applications with direct outreach.`;
             } else if (preInterviewRejections <= 5) {
                 insight = `You've had ${preInterviewRejections} rejections without interviews. Time to audit your approach. Are you applying to roles that match your profile? Is your resume making it past ATS filters? Consider getting a resume review.`;
             } else {
-                insight = `${preInterviewRejections} rejections without interviews signals a pattern that needs attention. This isn't about your abilities—it's about matching your profile to the right opportunities. Let's look at common threads across these rejections.`;
+                insight = `${preInterviewRejections} rejections without interviews signals a pattern that needs attention. This isn't about your abilities. It's about matching your profile to the right opportunities. Let's look at common threads across these rejections.`;
             }
 
             // If no factors identified, provide a default
@@ -5283,7 +5323,7 @@
 
             if (patterns.quickRejects >= total * 0.5) {
                 if (!primaryPattern) {
-                    primaryPattern = `${Math.round(patterns.quickRejects/total*100)}% of rejections came within 5 days—suggesting ATS filtering.`;
+                    primaryPattern = `${Math.round(patterns.quickRejects/total*100)}% of rejections came within 5 days, suggesting ATS filtering.`;
                 }
                 recommendations.push('Run your resume through an ATS checker');
                 recommendations.push('Ensure key terms from job descriptions appear in your resume');
@@ -5297,7 +5337,7 @@
             }
 
             if (!primaryPattern) {
-                primaryPattern = `No single factor dominates—rejections may be due to high competition or internal candidates.`;
+                primaryPattern = `No single factor dominates. Rejections may be due to high competition or internal candidates.`;
                 recommendations.push('Continue applying but diversify your target companies');
                 recommendations.push('Consider roles at smaller companies with less competition');
             }
@@ -5441,7 +5481,7 @@
                         'Double down on that profile, not below it',
                         'Get warm intros for high-fit roles (bypass volume)'
                     ],
-                    insight: `You started with a clear strategy. You're applying down now. This happens when rejections pile up and timeline pressure increases. I get it—but applying to roles you're not competitive for won't speed things up. It'll just add more rejections.`
+                    insight: `You started with a clear strategy. You're applying down now. This happens when rejections pile up and timeline pressure increases. I get it, but applying to roles you're not competitive for won't speed things up. It'll just add more rejections.`
                 };
             }
 
@@ -5516,7 +5556,7 @@
                         'Adjust targeting to 75%+ fit roles only',
                         'Pair EVERY application with direct outreach'
                     ],
-                    insight: `This isn't working. More volume won't fix it—strategy will. You're qualified, but something in your approach has systemic issues. Let's diagnose and fix before you burn more energy.`
+                    insight: `This isn't working. More volume won't fix it. Strategy will. You're qualified, but something in your approach has systemic issues. Let's diagnose and fix before you burn more energy.`
                 };
             }
 
@@ -5786,7 +5826,7 @@
                             'Note: What questions stumped you? What answers felt weak?',
                             'Run a mock final-round interview to identify gaps'
                         ],
-                        insight: `You're doing the hard part—getting there. But something systemic is costing you offers. Without interview data, we can't diagnose what's happening. Let's fix that.`
+                        insight: `You're doing the hard part, getting there. But something systemic is costing you offers. Without interview data, we can't diagnose what's happening. Let's fix that.`
                     };
                 }
 
@@ -5846,7 +5886,7 @@
                             'For your next final-round: record it or take detailed notes',
                             'This gives us data to diagnose if the pattern continues'
                         ],
-                        insight: `If you convert your next final round? Great—ignore this. If you don't? We'll have the intel to figure out why.`
+                        insight: `If you convert your next final round? Great, ignore this. If you don't? We'll have the intel to figure out why.`
                     };
                 }
             }
@@ -5925,7 +5965,7 @@
                 ${appsHtml}
 
                 <div class="intervention-intro">
-                    <strong>You're doing the hard part—getting to final rounds.</strong><br>
+                    <strong>You're doing the hard part, getting to final rounds.</strong><br>
                     But something is costing you offers at the last stage.
                 </div>
 
@@ -7429,7 +7469,7 @@
                         <span class="debrief-title">Why This Happened</span>
                     </div>
                     <div class="debrief-subtitle">
-                        No interview means no feedback—so <em style="color: #22d3ee;">Henry</em> analyzed what we know to help you learn from this.
+                        No interview means no feedback, so <em style="color: #22d3ee;">Henry</em> analyzed what we know to help you learn from this.
                     </div>
                     <div class="debrief-factors">
                         ${debrief.factors.map(factor => `
@@ -8201,6 +8241,74 @@ Thanks so much!
         }
 
         // ========================================================================
+        // DEBRIEF NAVIGATION
+        // ========================================================================
+        let selectedDebriefAppId = null;
+
+        function goToDebrief() {
+            // Show modal to select which application to debrief
+            const modal = document.getElementById('debriefSelectModal');
+            const select = document.getElementById('debriefAppSelect');
+            const proceedBtn = document.getElementById('proceedDebriefBtn');
+            const typeSection = document.getElementById('debriefInterviewType');
+
+            // Populate with all active applications
+            const apps = getApplications().filter(a => STATUSES[a.status]?.active);
+            select.innerHTML = '<option value="">-- Select an application --</option>' +
+                apps.map(app => `<option value="${app.id}">${app.company} - ${app.role}</option>`).join('');
+
+            // Reset state
+            selectedDebriefAppId = null;
+            proceedBtn.disabled = true;
+            typeSection.style.display = 'none';
+
+            // Listen for selection changes
+            select.onchange = function() {
+                selectedDebriefAppId = this.value || null;
+                proceedBtn.disabled = !selectedDebriefAppId;
+                typeSection.style.display = selectedDebriefAppId ? 'block' : 'none';
+            };
+
+            modal.classList.add('show');
+        }
+
+        function closeDebriefSelectModal() {
+            document.getElementById('debriefSelectModal').classList.remove('show');
+            selectedDebriefAppId = null;
+        }
+
+        function proceedToDebrief() {
+            if (!selectedDebriefAppId) return;
+
+            const apps = getApplications();
+            const app = apps.find(a => a.id === selectedDebriefAppId);
+            if (!app) return;
+
+            const interviewType = document.getElementById('debriefTypeSelect').value;
+
+            // Create an interview object from the application
+            const interview = {
+                id: `debrief-${Date.now()}`,
+                company: app.company,
+                role: app.role,
+                type: interviewType,
+                date: new Date().toISOString(), // Today
+                jobDescription: app._jd_text || app.jobDescription || '',
+                applicationId: app.id,
+                needsDebrief: true
+            };
+
+            // Save to upcoming interviews so debrief page can find it
+            const upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            upcomingInterviews.push(interview);
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Set the interview ID and navigate to debrief
+            sessionStorage.setItem('currentInterviewId', interview.id);
+            closeDebriefSelectModal();
+            window.location.href = 'interview-debrief.html';
+        }
+
         // SCHEDULE INTERVIEW MODAL
         // ========================================================================
         let selectedInterviewAppId = null;
@@ -8689,7 +8797,7 @@ Thanks so much!
 
             // Zen + exploring
             if (holding_up === 'zen' && timeline === 'exploring') {
-                return `You've got ${activeCount} active application${activeCount !== 1 ? 's' : ''}. No rush—let's keep the bar high.`;
+                return `You've got ${activeCount} active application${activeCount !== 1 ? 's' : ''}. No rush. Let's keep the bar high.`;
             }
 
             // Zen (without exploring)
@@ -8756,7 +8864,7 @@ Thanks so much!
                 if (holding_up === 'zen' && timeline === 'exploring') {
                     suggestionText = `<strong>Suggestion:</strong> Your pipeline has ${activeApps.length} active apps. Room to add higher-quality matches.`;
                 } else if (timeline === 'clock_ticking' || holding_up === 'desperate') {
-                    suggestionText = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. You need more options—broaden your search.`;
+                    suggestionText = `<strong>Pipeline thin:</strong> Only ${activeApps.length} active apps. You need more options. Broaden your search.`;
                     buttonText = 'Find More Roles';
                 } else if (holding_up === 'stressed' || timeline === 'urgent') {
                     suggestionText = `<strong>Pipeline check:</strong> ${activeApps.length} active apps. Consider adding 2-3 more to strengthen your position.`;
@@ -8815,7 +8923,7 @@ Thanks so much!
             }
 
             // Default (zen/exploring)
-            return `${count} application${count !== 1 ? 's' : ''} stalled at ${days}+ days. Not urgent, but worth deciding—follow up or deprioritize?`;
+            return `${count} application${count !== 1 ? 's' : ''} stalled at ${days}+ days. Not urgent, but worth deciding. Follow up or deprioritize?`;
         }
 
         // ========================================================================
@@ -8843,14 +8951,14 @@ Thanks so much!
                     action: 'Focus on 85%+ fit roles'
                 });
             } else if (timeline === 'active') {
-                const pacingAdvice = activeApps.length < 5 ? 'Need to accelerate—find more matches' : 'On track';
+                const pacingAdvice = activeApps.length < 5 ? 'Need to accelerate. Find more matches' : 'On track';
                 recommendations.push({
                     type: 'pacing',
                     message: 'Target pace: 5-7 applications per week.',
                     action: pacingAdvice
                 });
             } else if (timeline === 'urgent') {
-                const pacingAdvice = activeApps.length < 8 ? 'Falling behind—broaden to 65%+ fit roles' : 'Keep pushing';
+                const pacingAdvice = activeApps.length < 8 ? 'Falling behind. Broaden to 65%+ fit roles' : 'Keep pushing';
                 recommendations.push({
                     type: 'pacing',
                     message: 'Target pace: 8-10 applications per week.',
@@ -10884,5 +10992,8 @@ Thanks so much!
 <script src="components/strategy-nav.js"></script>
 <script src="components/interview-notifications.js"></script>
     <script src="components/status-banner.js"></script>
+<script src="components/top-nav.js"></script>
+<script src="components/mobile-nav.js"></script>
+<script src="js/pwa-install.js"></script>
 </body>
 </html>

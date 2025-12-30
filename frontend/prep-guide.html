@@ -1578,7 +1578,7 @@
             document.getElementById('intelStrengths').innerHTML = (intel.strengths_to_highlight || [])
                 .map(s => `
                     <div class="strength-item">
-                        <p><strong>${s.strength}</strong> — ${s.why_relevant}</p>
+                        <p><strong>${s.strength}</strong>: ${s.why_relevant}</p>
                     </div>
                 `)
                 .join('');
@@ -1607,5 +1607,6 @@
 <script src="components/hey-henry.js"></script>
 <script src="components/strategy-nav.js"></script>
     <script src="components/status-banner.js"></script>
+<script src="components/top-nav.js"></script>
 </body>
 </html>
