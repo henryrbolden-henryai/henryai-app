@@ -3958,11 +3958,11 @@
                 <button class="header-btn primary" onclick="openScheduleInterviewModal()" title="Add an interview you've scheduled">
                     <span>🎉</span> Got an Interview
                 </button>
-                <button class="header-btn" onclick="exportBackup()" title="Download all your data as a backup file">
-                    <span>📥</span> Export Backup
+                <button class="header-btn" onclick="goToDebrief()" title="Debrief a recent interview" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #000;">
+                    <span>📝</span> Let's Debrief
                 </button>
                 <button class="header-btn" onclick="showImportOptions()" title="Import applications">
-                    <span>📤</span> Import
+                    <span>📤</span> Import Tracker
                 </button>
                 <input type="file" id="importFile" accept=".json,.csv,.xlsx,.xls" style="display: none;" onchange="handleImport(event)">
                 <input type="file" id="screenshotFile" accept="image/*" style="display: none;" onchange="handleScreenshotImport(event)">
@@ -8210,6 +8210,13 @@ Thanks so much!
         }
 
         // ========================================================================
+        // DEBRIEF NAVIGATION
+        // ========================================================================
+        function goToDebrief() {
+            // Navigate to Interview Intelligence page where past interviews can be debriefed
+            window.location.href = 'interview-intelligence.html';
+        }
+
         // SCHEDULE INTERVIEW MODAL
         // ========================================================================
         let selectedInterviewAppId = null;
