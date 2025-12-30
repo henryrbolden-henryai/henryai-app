@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HenryHQ">
-  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -704,7 +704,10 @@
       header { padding: 3rem 1.25rem; }
       header h1 { font-size: 2.8rem; }
       .hero-tagline { font-size: 1.5rem; }
-      .hero-value-prop { font-size: 1.05rem; }
+      .hero-value-prop {
+        font-size: 1.05rem;
+        white-space: normal;
+      }
 
       .button-group {
         flex-direction: column;
@@ -726,6 +729,25 @@
 
       .input-row {
         grid-template-columns: 1fr;
+      }
+    }
+
+    /* Mobile Navigation - Hide desktop nav on small screens */
+    @media (max-width: 768px) {
+      .top-nav-links {
+        display: none;
+      }
+
+      .top-nav {
+        padding: 12px 16px 12px 60px; /* Space for hamburger menu */
+      }
+
+      .hero-value-prop {
+        white-space: normal;
+      }
+
+      header {
+        padding-top: 80px !important;
       }
     }
   </style>
