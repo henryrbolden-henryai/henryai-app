@@ -13,20 +13,34 @@ _client = None
 
 
 def initialize_client(api_key: str = None, timeout: float = 120.0):
-    """Initialize the Anthropic client. Call this once at app startup."""
+    """Initialize the Anthropic client. Call this once at app startup.
+
+    Returns None if API key is not available (graceful degradation).
+    """
     global _client
     key = api_key or os.getenv("ANTHROPIC_API_KEY")
     if not key:
-        raise ValueError("ANTHROPIC_API_KEY environment variable must be set")
+        logger.warning("ANTHROPIC_API_KEY not set - Claude API calls will fail")
+        return None
     _client = anthropic.Anthropic(api_key=key, timeout=timeout)
+    logger.info("Anthropic client initialized successfully")
     return _client
 
 
 def get_client() -> anthropic.Anthropic:
-    """Get the initialized Anthropic client."""
+    """Get the initialized Anthropic client.
+
+    Raises HTTPException if client is not initialized.
+    """
     global _client
     if _client is None:
+        # Try to initialize (might work if env var was set after import)
         _client = initialize_client()
+    if _client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="AI service temporarily unavailable. Please try again."
+        )
     return _client
 
 
