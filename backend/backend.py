@@ -6148,32 +6148,59 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             gaps_to_address = coaching_output.get('gaps_to_address')
             show_banner = coaching_output.get('show_accountability_banner', False)
 
-            # PRIORITY: Use Claude's your_move_summary if available (action-oriented)
-            # Fall back to coaching controller output
-            your_move_summary = response_data.get('your_move_summary')
-            if your_move_summary and isinstance(your_move_summary, dict):
-                # Build combined Your Move from Claude's structured action fields
-                resume_action = your_move_summary.get('resume_action', '')
-                outreach_action = your_move_summary.get('outreach_action', '')
-                urgency_context = your_move_summary.get('urgency_context', '')
+            # =====================================================================
+            # YOUR MOVE - Claude owns this completely (per JOB_FIT_SCORING_CONSOLIDATED_SPEC v4.0)
+            # NO fallback to coaching controller. If Claude doesn't provide it, it's an error.
+            # =====================================================================
+            your_move_data = response_data.get('your_move')
+            if your_move_data and isinstance(your_move_data, dict):
+                # Extract structured fields per spec
+                positioning = your_move_data.get('positioning', '')
+                contact_strategy = your_move_data.get('contact_strategy', '')
+                timing = your_move_data.get('timing', '')
+                competition_level = your_move_data.get('competition_level', '')
 
-                claude_your_move = f"{resume_action} {outreach_action} {urgency_context}".strip()
+                # Validate Your Move doesn't restate fit (BANNED PHRASES)
+                all_text = f"{positioning} {contact_strategy} {timing}".lower()
+                banned_phrases = [
+                    "your background gives you",
+                    "your experience positions you",
+                    "you have an edge",
+                    "your skills align",
+                    "positions you well",
+                    "consider reaching out",
+                    "you might want to"
+                ]
+                fit_restate_detected = any(phrase in all_text for phrase in banned_phrases)
+                if fit_restate_detected:
+                    print(f"   ⚠️ Your Move VALIDATION FAILED: Contains fit-restating phrase")
+                    # Still use it, but log the violation for monitoring
 
-                if claude_your_move and len(claude_your_move) > 50:
-                    print(f"   📣 Your Move (from Claude): {claude_your_move[:80]}...")
-                    your_move = claude_your_move
-                else:
-                    print(f"   ⚠️ Claude your_move_summary too short, using coaching controller")
+                # Build display string for strategic_action (frontend compat)
+                your_move_display = f"{positioning} {contact_strategy} {timing}"
+                if competition_level:
+                    your_move_display += f" {competition_level} competition."
+                your_move_display = your_move_display.strip()
 
-            if your_move:
-                print(f"   📣 Your Move: {your_move[:80]}...")
+                print(f"   📣 Your Move (Claude): {your_move_display[:80]}...")
 
-                # CRITICAL: Wire coaching output to reality_check.strategic_action
-                # Frontend reads "Your Move" from reality_check.strategic_action
+                # Wire to reality_check.strategic_action for frontend
                 if "reality_check" not in response_data:
                     response_data["reality_check"] = {}
-                response_data["reality_check"]["strategic_action"] = your_move
+                response_data["reality_check"]["strategic_action"] = your_move_display
+
+                # Also store structured your_move for future frontend use
+                response_data["your_move_structured"] = your_move_data
                 print(f"   ✅ Wired Your Move to reality_check.strategic_action")
+            else:
+                # Claude didn't provide your_move - this is a validation failure per spec
+                # Fall back to coaching controller output ONLY as emergency recovery
+                print(f"   ⚠️ Your Move MISSING from Claude - using coaching controller fallback")
+                if your_move:
+                    if "reality_check" not in response_data:
+                        response_data["reality_check"] = {}
+                    response_data["reality_check"]["strategic_action"] = your_move
+                    print(f"   📣 Your Move (fallback): {your_move[:80]}...")
 
             if gaps_to_address:
                 print(f"   📋 Gaps to Address: {len(gaps_to_address)} gap(s)")
@@ -11437,10 +11464,11 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
     "candidate_assessed_level": "Associate"
   },
   "strengths": ["3-4 candidate strengths matching this role"] or [],
-  "your_move_summary": {
-    "resume_action": "Lead with [SPECIFIC THING to emphasize]. Cut [WHAT to remove/de-emphasize].",
-    "outreach_action": "Message [WHO: hiring manager/recruiter] on LinkedIn. Reference [SPECIFIC HOOK from JD].",
-    "urgency_context": "[HIGH/MEDIUM/LOW] competition. [WHY: Principal roles attract strong candidates / niche role with fewer applicants / etc.]"
+  "your_move": {
+    "positioning": "What to lead with in resume/outreach (max 75 chars, action only, no fit assessment)",
+    "contact_strategy": "Who to contact and how (max 75 chars, e.g. 'HM direct. Recruiter is gatekeeping.')",
+    "timing": "When to apply (max 75 chars, e.g. 'Apply within 48 hours. Role posted 3 days ago.')",
+    "competition_level": "HIGH|MEDIUM|LOW"
   },
   "gaps": [
     {
@@ -11563,31 +11591,46 @@ BAD OUTREACH EXAMPLE (DO NOT EMULATE):
 
 Violations to avoid: exclamation points, em dashes, generic phrases, no specifics, vague ask.
 
-CRITICAL YOUR_MOVE_SUMMARY RULES (MANDATORY - READ CAREFULLY):
+CRITICAL YOUR_MOVE RULES (MANDATORY - READ CAREFULLY):
 
-The your_move_summary is ACTION-ORIENTED, not a fit summary. It tells the candidate WHAT TO DO NEXT.
-DO NOT restate the fit assessment. DO NOT say "Your experience matches this role."
+Your Move is ACTIONS ONLY. Commands, not suggestions. No fit assessment.
 
-The three fields are:
-1. resume_action: SPECIFIC resume changes. What to lead with, what to cut/de-emphasize.
-2. outreach_action: WHO to contact and HOW. Hiring manager vs recruiter, what hook to use.
-3. urgency_context: Competition level and WHY (role type, company stage, market conditions).
+The four fields are (each max 75 characters):
+1. positioning: What to LEAD WITH in resume/outreach. Specific, not generic.
+2. contact_strategy: WHO to contact and HOW. Direct commands.
+3. timing: WHEN to apply. Specific timeframe.
+4. competition_level: HIGH, MEDIUM, or LOW (enum, not prose)
 
-GOOD your_move_summary (ACTION-FOCUSED):
+RULES:
+- Actions only. No fit assessment.
+- Commands, not suggestions. "Contact HM" not "Consider contacting HM"
+- No phrases like "your background gives you" or "your experience positions you"
+- Total section must be under 300 characters
+- Every field is required. No empty strings.
+
+GOOD your_move (ACTION-FOCUSED):
 {
-  "resume_action": "Lead with your LinkedIn Jobs search infrastructure work. Cut the early-career marketing roles.",
-  "outreach_action": "Message the Director of Product on LinkedIn. Reference their recent AI search features launch.",
-  "urgency_context": "HIGH competition. Principal PM roles at top tech companies attract 500+ applicants in the first week."
+  "positioning": "Lead with cross-functional delivery at scale",
+  "contact_strategy": "HM direct. Recruiter is gatekeeping.",
+  "timing": "Apply within 48 hours. Role posted 3 days ago.",
+  "competition_level": "HIGH"
 }
 
-BAD your_move_summary (RESTATES FIT - DO NOT DO THIS):
+BAD your_move (RESTATES FIT - FORBIDDEN):
 {
-  "resume_action": "Your 7 years of product experience at Stripe and Asana directly match this role's requirements.",
-  "outreach_action": "Emphasize your experience prominently in your resume and outreach.",
-  "urgency_context": "Apply now and prioritize a direct message to the hiring manager."
+  "positioning": "Your strong PM background positions you well for this role",
+  "contact_strategy": "Consider reaching out to the hiring manager since your experience aligns",
+  "timing": "Apply soon given your competitive profile",
+  "competition_level": "MEDIUM"
 }
 
-Problems: Restates fit instead of actions. No specific resume changes. No specific person to contact. No competition context.
+BANNED PHRASES in your_move:
+- "your background gives you"
+- "your experience positions you"
+- "you have an edge"
+- "your skills align"
+- "consider reaching out"
+- "you might want to"
 
   "changes_summary": {
     "resume": {
