@@ -75,6 +75,21 @@ from qa_validation import (
     ValidationLogger
 )
 
+# Tier Configuration and Service for subscription management
+try:
+    from tier_config import (
+        TIER_LIMITS,
+        TIER_PRICES,
+        TIER_ORDER,
+        TIER_NAMES,
+        get_all_tier_info,
+    )
+    from tier_service import TierService
+    TIER_SERVICE_AVAILABLE = True
+except ImportError:
+    TIER_SERVICE_AVAILABLE = False
+    print("⚠️ Tier service not available - tier features disabled")
+
 # Recruiter Calibration module for gap classification and red flag detection
 # Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
 # CRITICAL: Calibration explains gaps, does NOT override Job Fit recommendation
@@ -22191,6 +22206,255 @@ async def delete_linkedin_profile():
     This endpoint exists for API consistency and future server-side storage.
     """
     return {"success": True, "message": "LinkedIn profile deleted"}
+
+
+# ============================================================================
+# TIER AND USAGE ENDPOINTS
+# ============================================================================
+
+# Pydantic models for tier endpoints
+class UserUsageResponse(BaseModel):
+    """Response model for user usage and tier information."""
+    tier: str
+    tier_display: str
+    tier_price: int
+    is_beta_user: bool
+    beta_expires_at: Optional[str] = None
+    usage: Dict[str, Any]
+    features: Dict[str, Any]
+
+
+class TierInfoResponse(BaseModel):
+    """Response model for tier information."""
+    tiers: List[Dict[str, Any]]
+
+
+class FeatureCheckResponse(BaseModel):
+    """Response model for feature access check."""
+    allowed: bool
+    limited: bool
+    upgrade_to: Optional[str] = None
+    feature: str
+
+
+class UsageLimitResponse(BaseModel):
+    """Response model for usage limit check."""
+    allowed: bool
+    used: int
+    limit: int
+    remaining: Optional[int] = None
+    is_unlimited: bool
+    usage_type: str
+
+
+@app.get("/api/user/usage", response_model=UserUsageResponse)
+async def get_user_usage(user_id: str = None):
+    """
+    Get current usage stats and tier information for a user.
+
+    Returns tier, features, and usage limits for the current billing period.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Return default sourcer tier if tier service not available
+        return UserUsageResponse(
+            tier='sourcer',
+            tier_display='Sourcer',
+            tier_price=0,
+            is_beta_user=False,
+            beta_expires_at=None,
+            usage={
+                'applications': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'resumes': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'cover_letters': {'allowed': True, 'used': 0, 'limit': 3, 'remaining': 3, 'is_unlimited': False},
+                'henry_conversations': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+                'mock_interviews': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+                'coaching_sessions': {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'is_unlimited': False},
+            },
+            features=TIER_LIMITS.get('sourcer', {}).get('features', {})
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        usage_summary = await tier_service.get_user_usage_summary(user_id)
+        return UserUsageResponse(**usage_summary)
+    except Exception as e:
+        logger.error(f"Error getting user usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting user usage: {str(e)}")
+
+
+@app.get("/api/tiers", response_model=TierInfoResponse)
+async def get_tiers():
+    """
+    Get information about all available subscription tiers.
+
+    Returns pricing, limits, and features for each tier.
+    """
+    if not TIER_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Tier service not available")
+
+    try:
+        return TierInfoResponse(tiers=get_all_tier_info())
+    except Exception as e:
+        logger.error(f"Error getting tier info: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting tier info: {str(e)}")
+
+
+@app.get("/api/user/feature-access/{feature_name}", response_model=FeatureCheckResponse)
+async def check_feature_access(feature_name: str, user_id: str = None):
+    """
+    Check if a user has access to a specific feature.
+
+    Returns whether the feature is allowed, limited, or locked.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Default to sourcer tier features
+        feature_value = TIER_LIMITS.get('sourcer', {}).get('features', {}).get(feature_name, False)
+        return FeatureCheckResponse(
+            allowed=feature_value is True or feature_value == 'limited',
+            limited=feature_value == 'limited',
+            upgrade_to='recruiter' if not feature_value else None,
+            feature=feature_name
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        access = tier_service.check_feature_access(tier, feature_name)
+        return FeatureCheckResponse(
+            allowed=access['allowed'],
+            limited=access['limited'],
+            upgrade_to=access['upgrade_to'],
+            feature=feature_name
+        )
+    except Exception as e:
+        logger.error(f"Error checking feature access: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking feature access: {str(e)}")
+
+
+@app.get("/api/user/usage-limit/{usage_type}", response_model=UsageLimitResponse)
+async def check_usage_limit(usage_type: str, user_id: str = None):
+    """
+    Check if a user has remaining usage for a specific type.
+
+    Returns current usage, limit, and whether more usage is allowed.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions']
+    if usage_type not in valid_usage_types:
+        raise HTTPException(status_code=400, detail=f"Invalid usage_type. Must be one of: {', '.join(valid_usage_types)}")
+
+    if not TIER_SERVICE_AVAILABLE:
+        # Default to sourcer tier limits
+        limit = TIER_LIMITS.get('sourcer', {}).get(f'{usage_type}_per_month', 0)
+        return UsageLimitResponse(
+            allowed=limit > 0,
+            used=0,
+            limit=limit,
+            remaining=limit,
+            is_unlimited=False,
+            usage_type=usage_type
+        )
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        usage = await tier_service.check_usage_limit(user_id, tier, usage_type)
+        return UsageLimitResponse(
+            allowed=usage['allowed'],
+            used=usage['used'],
+            limit=usage['limit'],
+            remaining=usage['remaining'],
+            is_unlimited=usage['is_unlimited'],
+            usage_type=usage_type
+        )
+    except Exception as e:
+        logger.error(f"Error checking usage limit: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking usage limit: {str(e)}")
+
+
+@app.post("/api/user/usage/increment/{usage_type}")
+async def increment_usage(usage_type: str, user_id: str = None):
+    """
+    Increment usage counter for a specific type.
+
+    This is typically called after a successful action (resume generated, etc.)
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions']
+    if usage_type not in valid_usage_types:
+        raise HTTPException(status_code=400, detail=f"Invalid usage_type. Must be one of: {', '.join(valid_usage_types)}")
+
+    if not TIER_SERVICE_AVAILABLE:
+        return {"success": True, "message": "Usage tracking not available"}
+
+    try:
+        tier_service = TierService(supabase)
+        await tier_service.increment_usage(user_id, usage_type)
+        return {"success": True, "usage_type": usage_type}
+    except Exception as e:
+        logger.error(f"Error incrementing usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error incrementing usage: {str(e)}")
+
+
+@app.get("/api/user/tier")
+async def get_user_tier(user_id: str = None):
+    """
+    Get the effective tier for a user.
+
+    Returns the tier, considering beta overrides if applicable.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not TIER_SERVICE_AVAILABLE:
+        return {
+            "tier": "sourcer",
+            "tier_display": "Sourcer",
+            "tier_price": 0,
+            "is_beta_user": False
+        }
+
+    try:
+        tier_service = TierService(supabase)
+        profile = await tier_service.ensure_user_profile(user_id)
+        tier = tier_service.get_effective_tier(profile)
+        return {
+            "tier": tier,
+            "tier_display": TIER_NAMES.get(tier, 'Sourcer'),
+            "tier_price": TIER_PRICES.get(tier, 0),
+            "is_beta_user": profile.get('is_beta_user', False),
+            "beta_expires_at": profile.get('beta_expires_at')
+        }
+    except Exception as e:
+        logger.error(f"Error getting user tier: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting user tier: {str(e)}")
 
 
 # ============================================================================

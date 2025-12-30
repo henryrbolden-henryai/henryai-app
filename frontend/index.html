@@ -583,6 +583,244 @@
       display: block;
     }
 
+    /* ========== PRICING SECTION ========== */
+    #pricing {
+      padding: 120px 0;
+    }
+
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .pricing-header h2 {
+      margin-bottom: 16px;
+    }
+
+    .pricing-header p {
+      color: var(--color-text-secondary);
+      font-size: 1.1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s var(--ease-out);
+      position: relative;
+    }
+
+    .pricing-card:hover {
+      border-color: var(--color-border-hover);
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--color-accent);
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.05) 0%, var(--color-surface) 100%);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.1);
+    }
+
+    .pricing-card.premium {
+      border-color: rgba(251, 191, 36, 0.4);
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, var(--color-surface) 100%);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-accent);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pricing-badge.premium-badge {
+      background: var(--color-warning);
+    }
+
+    .pricing-tier-name {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .pricing-tagline {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      min-height: 40px;
+    }
+
+    .pricing-price {
+      font-size: 2.25rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin: 20px 0;
+      padding: 0;
+      flex-grow: 1;
+    }
+
+    .pricing-features li {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .pricing-features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--color-success);
+      font-size: 0.85rem;
+    }
+
+    .pricing-cta {
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .pricing-cta.btn-popular {
+      background: var(--color-accent);
+      color: #000;
+    }
+
+    .pricing-cta.btn-popular:hover {
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(34, 211, 238, 0.3);
+    }
+
+    /* Pricing responsive */
+    @media (max-width: 1200px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .pricing-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+
+      .pricing-card {
+        padding: 24px 20px;
+      }
+
+      .pricing-features {
+        max-height: none;
+      }
+    }
+
+    /* ========== FAQ SECTION ========== */
+    #faq {
+      padding: 120px 0;
+    }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .faq-list {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .faq-question:hover {
+      color: var(--color-accent);
+    }
+
+    .faq-icon {
+      font-size: 1.25rem;
+      color: var(--color-text-secondary);
+      transition: transform 0.3s var(--ease-out);
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+
+    .faq-item.active .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s var(--ease-out), padding 0.3s var(--ease-out);
+    }
+
+    .faq-item.active .faq-answer {
+      max-height: 500px;
+      padding-bottom: 24px;
+    }
+
+    .faq-answer p {
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
     /* ========== FOOTER ========== */
     footer {
       padding: 40px 0;
@@ -740,6 +978,7 @@
         <a href="#about-henry" class="top-nav-link">About</a>
         <a href="#how-it-works" class="top-nav-link">How it works</a>
         <a href="#capabilities" class="top-nav-link">Features</a>
+        <a href="#pricing" class="top-nav-link">Pricing</a>
         <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
       </div>
     </div>
@@ -1086,6 +1325,190 @@
       </div>
     </section>
 
+    <!-- ========== PRICING SECTION ========== -->
+    <section id="pricing">
+      <div class="container">
+        <div class="pricing-header">
+          <h2>Choose Your Plan</h2>
+          <p>Quality over quantity. Every tier gives you strategic tools to land the right role.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Sourcer - Free -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Sourcer</h3>
+            <p class="pricing-tagline">See how you stack up</p>
+            <div class="pricing-price">Free</div>
+            <ul class="pricing-features">
+              <li>Three applications with tailored resume + cover letter</li>
+              <li>Job fit analysis (50/30/20 scoring)</li>
+              <li>LinkedIn profile analysis</li>
+              <li>Interview debrief analysis</li>
+              <li>Core dashboard metrics</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html'">Get Started</button>
+          </div>
+
+          <!-- Recruiter - $25/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Recruiter</h3>
+            <p class="pricing-tagline">Tailored applications that don't get auto-rejected</p>
+            <div class="pricing-price">$25<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>15 applications per month with tailored documents</li>
+              <li>ATS optimization</li>
+              <li>Screening questions analysis</li>
+              <li>15 Henry conversations</li>
+              <li>Application tracker</li>
+              <li>One mock interview per month</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=recruiter'">Start Free Trial</button>
+          </div>
+
+          <!-- Principal - $69/mo (Most Popular) -->
+          <div class="pricing-card popular">
+            <span class="pricing-badge">Most Popular</span>
+            <h3 class="pricing-tier-name">Principal</h3>
+            <p class="pricing-tagline">The full toolkit for an active search</p>
+            <div class="pricing-price">$69<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>30 applications per month</li>
+              <li>Full outreach templates</li>
+              <li>Company & role intelligence</li>
+              <li>30 Henry conversations</li>
+              <li>Five mock interviews per month</li>
+              <li>Salary benchmarking</li>
+            </ul>
+            <button class="btn btn-popular pricing-cta" onclick="window.location.href='signup.html?plan=principal'">Start Free Trial</button>
+          </div>
+
+          <!-- Partner - $129/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Partner</h3>
+            <p class="pricing-tagline">Interview coaching and strategic guidance</p>
+            <div class="pricing-price">$129<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Applications based on your strategy</li>
+              <li>Document refinement via Henry</li>
+              <li>Story Bank for behavioral examples</li>
+              <li>Ten mock interviews per month</li>
+              <li>Negotiation guidance</li>
+              <li>One 30-min live coaching session per month</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=partner'">Start Free Trial</button>
+          </div>
+
+          <!-- Coach - $225/mo -->
+          <div class="pricing-card premium">
+            <span class="pricing-badge premium-badge">White Glove</span>
+            <h3 class="pricing-tier-name">Coach</h3>
+            <p class="pricing-tagline">White glove support until you land</p>
+            <div class="pricing-price">$225<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Partner</li>
+              <li>Unlimited mock interviews</li>
+              <li>Pattern + signal analysis</li>
+              <li>Rejection forensics</li>
+              <li>Full negotiation support</li>
+              <li>Two 45-min live coaching sessions per month</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=coach'">Start Free Trial</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ SECTION ========== -->
+    <section id="faq">
+      <div class="container">
+        <div class="faq-header">
+          <h2>Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What is Job Fit Scoring (50/30/20)?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>We evaluate your fit for each role using three weighted factors: 50% Skills Match (do you have the required technical and functional skills), 30% Experience Match (does your work history align with what the role needs), and 20% Scope/Seniority Match (are you at the right level for this role). This reflects how recruiters actually screen candidates during the hiring process.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Who is Henry?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Henry is your strategic career coach built into the platform. From the moment you start your job search, Henry guides you through every stage: analyzing your fit for roles, preparing tailored documents, prepping for interviews, and debriefing afterward. Henry understands how recruiters evaluate candidates and provides honest, actionable guidance rather than generic advice.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Why do you limit the number of applications?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Quality over quantity. Mass-applying to roles where you're not competitive wastes your time and can hurt your credibility with employers who track repeat applicants. Our limits encourage strategic targeting of roles where you can actually compete. The goal is to help you land a job faster, not apply to more jobs.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What does "based on your strategy" mean for applications?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>At Partner and Coach tiers, we don't set an arbitrary monthly limit. Instead, we help you determine the right application volume based on your target roles, timeline, and market conditions. Some searches require 10 highly-focused applications; others require 50. Your strategy determines the number, not an artificial cap.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Do you fabricate or exaggerate experience?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Never. Every claim in your tailored documents comes from your actual background. We reposition and emphasize your experience strategically for each role, but we never invent experience, metrics, or accomplishments. Recruiters and hiring managers can spot fabricated content immediately, and it will disqualify you.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What are Live Career Coaching sessions?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>One-on-one sessions with a Career Coach to work through your job search strategy, prepare for high-stakes interviews, or navigate offer negotiations. Partner members receive one 30-minute session per month. Coach members receive two 45-minute sessions per month.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can I upgrade or downgrade my plan?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. You can change your plan at any time. Upgrades take effect immediately with prorated billing. Downgrades take effect at the end of your current billing period.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What if I land a job quickly?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Congratulations! Cancel anytime. We don't lock you into long-term contracts. If you land a role in your first month, cancel before your next billing cycle and you won't be charged again.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ========== CTA SECTION ========== -->
     <section id="cta-section">
       <div class="container" style="text-align: center;">
@@ -1168,5 +1591,24 @@
   }
 </script>
 <script src="components/hey-henry.js"></script>
+<script>
+  // FAQ Accordion functionality
+  document.querySelectorAll('.faq-question').forEach(button => {
+    button.addEventListener('click', () => {
+      const faqItem = button.parentElement;
+      const isActive = faqItem.classList.contains('active');
+
+      // Close all other FAQ items
+      document.querySelectorAll('.faq-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Toggle current item
+      if (!isActive) {
+        faqItem.classList.add('active');
+      }
+    });
+  });
+</script>
 </body>
 </html>
