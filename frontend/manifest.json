@@ -1,0 +1,49 @@
+{
+  "name": "HenryHQ - Your Personal Job Search Strategist",
+  "short_name": "HenryHQ",
+  "description": "Your personal job search strategist. Get expert guidance on resumes, interviews, and landing your dream job.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/henryhq-logo.png",
+      "sizes": "450x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard.html"
+    },
+    {
+      "name": "Job Tracker",
+      "short_name": "Tracker",
+      "url": "/tracker.html"
+    },
+    {
+      "name": "Interview Prep",
+      "short_name": "Interview",
+      "url": "/interview-prep.html"
+    }
+  ]
+}
