@@ -6148,6 +6148,23 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             gaps_to_address = coaching_output.get('gaps_to_address')
             show_banner = coaching_output.get('show_accountability_banner', False)
 
+            # PRIORITY: Use Claude's your_move_summary if available (higher quality)
+            # Fall back to coaching controller output
+            your_move_summary = response_data.get('your_move_summary')
+            if your_move_summary and isinstance(your_move_summary, dict):
+                # Build combined Your Move from Claude's structured output
+                positioning = your_move_summary.get('positioning_sentence', '')
+                action = your_move_summary.get('action_sentence', '')
+                timing = your_move_summary.get('timing_sentence', '')
+
+                claude_your_move = f"{positioning} {action} {timing}".strip()
+
+                if claude_your_move and len(claude_your_move) > 50:
+                    print(f"   📣 Your Move (from Claude): {claude_your_move[:80]}...")
+                    your_move = claude_your_move
+                else:
+                    print(f"   ⚠️ Claude your_move_summary too short, using coaching controller")
+
             if your_move:
                 print(f"   📣 Your Move: {your_move[:80]}...")
 
@@ -11420,6 +11437,11 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
     "candidate_assessed_level": "Associate"
   },
   "strengths": ["3-4 candidate strengths matching this role"] or [],
+  "your_move_summary": {
+    "positioning_sentence": "Your [SPECIFIC STRENGTH from resume with metrics] and [SECOND STRENGTH] directly match this role's core requirements.",
+    "action_sentence": "Emphasize [SPECIFIC EXPERIENCE/METRIC] prominently in your resume and outreach.",
+    "timing_sentence": "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
+  },
   "gaps": [
     {
       "gap_type": "experience_years_mismatch|required_experience_missing|career_level_mismatch|career_gap|scope_level_mismatch|standard_gap",
@@ -11540,6 +11562,38 @@ BAD OUTREACH EXAMPLE (DO NOT EMULATE):
 "Hi [Name]! I'm super excited about this opportunity—it seems like a great fit for my background. I'd love to chat about how I could contribute to the team!"
 
 Violations to avoid: exclamation points, em dashes, generic phrases, no specifics, vague ask.
+
+CRITICAL YOUR_MOVE_SUMMARY RULES (MANDATORY - READ CAREFULLY):
+
+The your_move_summary field provides the candidate's immediate action plan. It MUST be:
+1. GROUNDED in the candidate's ACTUAL resume - reference real companies, real metrics, real experience
+2. SPECIFIC - mention actual product names (e.g., "Asana Goals"), actual metrics (e.g., "15K MAU"), actual team sizes (e.g., "8+ engineers")
+3. PROPERLY CAPITALIZED:
+   - Product names: "Asana Goals" not "asana goals"
+   - Company names: "Stripe" not "stripe"
+   - Acronyms: "MAU", "DAU", "ARR", "API" - always uppercase
+   - Numbers with units: "15K MAU" not "15k mau", "100M users" not "100m users"
+4. COMPLETE compound terms - never truncate:
+   - "0-to-1 product experience" not "1 product experience"
+   - "cross-functional leadership" not just "leadership"
+5. NO TRUNCATION - if a phrase is too long, rephrase it concisely rather than cutting it off with "..."
+
+GOOD your_move_summary example:
+{
+  "positioning_sentence": "Your 0-to-1 product experience with Asana Goals (reaching 15K MAU in first year) and cross-functional leadership managing teams of 8+ engineers directly match this role's core requirements.",
+  "action_sentence": "Emphasize your enterprise scale background at Stripe prominently in your resume and outreach.",
+  "timing_sentence": "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
+}
+
+BAD your_move_summary example (DO NOT EMULATE):
+{
+  "positioning_sentence": "Your 1 product experience with asana goals reaching 15k mau and leadership managing teams of 8+ through... directly match this role's core requirements.",
+  "action_sentence": "Emphasize your experience prominently.",
+  "timing_sentence": "Apply soon."
+}
+
+Problems: "0-to-1" truncated to "1", "asana goals" lowercase, "15k mau" lowercase, "through..." truncated, vague action, vague timing.
+
   "changes_summary": {
     "resume": {
       "summary_rationale": "1-2 sentences explaining HOW the resume should be tailored. Be SPECIFIC: reference actual companies/roles from the candidate's background and specific JD requirements.",
