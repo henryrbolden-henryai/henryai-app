@@ -54,56 +54,136 @@
             line-height: 1.6;
         }
 
-        /* HEADER */
-        header {
-            padding: 20px 0;
-            border-bottom: 1px solid var(--color-border);
-            background: var(--color-bg);
-            position: sticky;
+        /* TOP NAVIGATION BAR */
+        .top-nav {
+            position: fixed;
             top: 0;
-            z-index: 100;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--color-border);
+            padding: 12px 24px;
         }
 
-        header .header-container {
-            max-width: 1200px;
+        .top-nav-container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 24px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
         }
 
-        .logo {
+        .top-nav-logo {
             font-family: 'Instrument Serif', Georgia, serif;
-            font-size: 1.8rem;
-            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--color-text);
             text-decoration: none;
         }
 
-        .logo em {
+        .top-nav-logo em {
             font-style: italic;
-            color: #22d3ee;
+            color: var(--color-accent);
         }
 
-        .header-nav {
+        /* Account Dropdown */
+        .account-dropdown {
+            position: relative;
+        }
+
+        .account-btn {
             display: flex;
-            gap: 24px;
             align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .nav-link {
+        .account-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .account-btn svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .account-dropdown.open .account-btn svg {
+            transform: rotate(180deg);
+        }
+
+        .account-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 180px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 8px 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .account-dropdown.open .account-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .account-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
             color: var(--color-text-secondary);
             text-decoration: none;
             font-size: 0.9rem;
-            transition: color 0.2s ease;
+            transition: all 0.15s ease;
         }
 
-        .nav-link:hover {
-            color: var(--color-accent);
+        .account-menu-item:hover {
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
         }
 
-        .nav-link.active {
-            color: var(--color-accent);
+        .account-menu-item svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+        }
+
+        .account-menu-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 8px 0;
+        }
+
+        .account-menu-item.danger {
+            color: #f87171;
+        }
+
+        .account-menu-item.danger:hover {
+            background: rgba(248, 113, 113, 0.1);
+            color: #f87171;
+        }
+
+        /* Push content below fixed nav */
+        body {
+            padding-top: 60px;
         }
 
         /* MAIN CONTAINER */
@@ -946,16 +1026,42 @@
     <!-- LinkedIn Modal Container -->
     <div id="linkedin-modal-container"></div>
 
-    <!-- HEADER -->
-    <header>
-        <div class="header-container">
-            <a href="dashboard.html" class="logo"><em>Henry</em>HQ</a>
-            <nav class="header-nav">
-                <!-- Profile Settings moved to sidebar nav -->
-            </nav>
-            <!-- User menu moved to sidebar navigation -->
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="top-nav-container">
+            <a href="dashboard.html" class="top-nav-logo"><em>Henry</em>HQ</a>
+            <div class="account-dropdown" id="accountDropdown">
+                <button class="account-btn" onclick="toggleAccountMenu()">
+                    My Account
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div class="account-menu">
+                    <a href="profile-edit.html" class="account-menu-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+                        </svg>
+                        Edit Profile
+                    </a>
+                    <a href="settings.html" class="account-menu-item">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                        Settings
+                    </a>
+                    <div class="account-menu-divider"></div>
+                    <a href="#" class="account-menu-item danger" onclick="signOut(); return false;">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clip-rule="evenodd" />
+                        </svg>
+                        Sign Out
+                    </a>
+                </div>
+            </div>
         </div>
-    </header>
+    </nav>
 
     <!-- Milestone Celebration Toast -->
     <div class="milestone-toast" id="milestoneToast">
@@ -1099,6 +1205,32 @@
     </div>
 
     <script>
+        // ========================================================================
+        // ACCOUNT DROPDOWN & AUTH FUNCTIONS
+        // ========================================================================
+        function toggleAccountMenu() {
+            const dropdown = document.getElementById('accountDropdown');
+            dropdown.classList.toggle('open');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('accountDropdown');
+            if (dropdown && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        function signOut() {
+            // Clear all auth data
+            localStorage.removeItem('supabase_session');
+            localStorage.removeItem('beta_verified');
+            localStorage.removeItem('henryhq_user');
+            sessionStorage.clear();
+            // Redirect to login
+            window.location.href = 'login.html';
+        }
+
         // ========================================================================
         // CONSTANTS
         // ========================================================================
