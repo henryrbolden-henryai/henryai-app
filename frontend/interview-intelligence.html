@@ -1193,7 +1193,7 @@
             activeApps.forEach(app => {
                 const option = document.createElement('option');
                 option.value = app.id;
-                option.textContent = `${app.company} — ${app.role || 'Unknown Role'}`;
+                option.textContent = `${app.company}: ${app.role || 'Unknown Role'}`;
                 select.appendChild(option);
             });
         }
@@ -1656,7 +1656,7 @@
                         <div class="company-avatar">${initial}</div>
                         <div class="interview-info">
                             <div class="company-name">${interview.company}</div>
-                            <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr} @ ${timeStr}</div>
+                            <div class="interview-details">${typeLabels[interview.type] || interview.type} on ${dateStr} @ ${timeStr}</div>
                             ${interview.interviewerName ? `<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 4px;">with ${interview.interviewerName}</div>` : ''}
                         </div>
                         <div class="interview-actions">
@@ -1712,7 +1712,7 @@
                         <div class="company-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">${initial}</div>
                         <div class="interview-info">
                             <div class="company-name">${interview.company}</div>
-                            <div class="interview-details">${typeLabels[interview.type] || interview.type} — ${dateStr}</div>
+                            <div class="interview-details">${typeLabels[interview.type] || interview.type} on ${dateStr}</div>
                             <div style="font-size: 0.8rem; color: #10b981; margin-top: 4px;">✓ ${feeling}</div>
                         </div>
                         <div class="interview-actions">
