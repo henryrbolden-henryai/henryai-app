@@ -6148,16 +6148,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             gaps_to_address = coaching_output.get('gaps_to_address')
             show_banner = coaching_output.get('show_accountability_banner', False)
 
-            # PRIORITY: Use Claude's your_move_summary if available (higher quality)
+            # PRIORITY: Use Claude's your_move_summary if available (action-oriented)
             # Fall back to coaching controller output
             your_move_summary = response_data.get('your_move_summary')
             if your_move_summary and isinstance(your_move_summary, dict):
-                # Build combined Your Move from Claude's structured output
-                positioning = your_move_summary.get('positioning_sentence', '')
-                action = your_move_summary.get('action_sentence', '')
-                timing = your_move_summary.get('timing_sentence', '')
+                # Build combined Your Move from Claude's structured action fields
+                resume_action = your_move_summary.get('resume_action', '')
+                outreach_action = your_move_summary.get('outreach_action', '')
+                urgency_context = your_move_summary.get('urgency_context', '')
 
-                claude_your_move = f"{positioning} {action} {timing}".strip()
+                claude_your_move = f"{resume_action} {outreach_action} {urgency_context}".strip()
 
                 if claude_your_move and len(claude_your_move) > 50:
                     print(f"   📣 Your Move (from Claude): {claude_your_move[:80]}...")
@@ -11438,9 +11438,9 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   },
   "strengths": ["3-4 candidate strengths matching this role"] or [],
   "your_move_summary": {
-    "positioning_sentence": "Your [SPECIFIC STRENGTH from resume with metrics] and [SECOND STRENGTH] directly match this role's core requirements.",
-    "action_sentence": "Emphasize [SPECIFIC EXPERIENCE/METRIC] prominently in your resume and outreach.",
-    "timing_sentence": "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
+    "resume_action": "Lead with [SPECIFIC THING to emphasize]. Cut [WHAT to remove/de-emphasize].",
+    "outreach_action": "Message [WHO: hiring manager/recruiter] on LinkedIn. Reference [SPECIFIC HOOK from JD].",
+    "urgency_context": "[HIGH/MEDIUM/LOW] competition. [WHY: Principal roles attract strong candidates / niche role with fewer applicants / etc.]"
   },
   "gaps": [
     {
@@ -11565,33 +11565,29 @@ Violations to avoid: exclamation points, em dashes, generic phrases, no specific
 
 CRITICAL YOUR_MOVE_SUMMARY RULES (MANDATORY - READ CAREFULLY):
 
-The your_move_summary field provides the candidate's immediate action plan. It MUST be:
-1. GROUNDED in the candidate's ACTUAL resume - reference their real companies, real metrics, real experience
-2. SPECIFIC - mention their actual product names, actual metrics, actual team sizes from their resume
-3. PROPERLY CAPITALIZED:
-   - Product/company names: Capitalize as proper nouns (e.g., "Product Name" not "product name")
-   - Acronyms: "MAU", "DAU", "ARR", "API", "SDK" - always uppercase
-   - Numbers with units: "15K MAU" not "15k mau", "100M users" not "100m users"
-4. COMPLETE compound terms - never truncate:
-   - "0-to-1 product experience" not "1 product experience"
-   - "cross-functional leadership" not just "leadership"
-5. NO TRUNCATION - if a phrase is too long, rephrase it concisely rather than cutting it off with "..."
+The your_move_summary is ACTION-ORIENTED, not a fit summary. It tells the candidate WHAT TO DO NEXT.
+DO NOT restate the fit assessment. DO NOT say "Your experience matches this role."
 
-GOOD your_move_summary pattern:
+The three fields are:
+1. resume_action: SPECIFIC resume changes. What to lead with, what to cut/de-emphasize.
+2. outreach_action: WHO to contact and HOW. Hiring manager vs recruiter, what hook to use.
+3. urgency_context: Competition level and WHY (role type, company stage, market conditions).
+
+GOOD your_move_summary (ACTION-FOCUSED):
 {
-  "positioning_sentence": "Your [COMPLETE STRENGTH with proper capitalization] and [SECOND STRENGTH with metrics] directly match this role's core requirements.",
-  "action_sentence": "Emphasize your [SPECIFIC EXPERIENCE from resume] prominently in your resume and outreach.",
-  "timing_sentence": "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
+  "resume_action": "Lead with your LinkedIn Jobs search infrastructure work. Cut the early-career marketing roles.",
+  "outreach_action": "Message the Director of Product on LinkedIn. Reference their recent AI search features launch.",
+  "urgency_context": "HIGH competition. Principal PM roles at top tech companies attract 500+ applicants in the first week."
 }
 
-BAD your_move_summary (DO NOT EMULATE):
+BAD your_move_summary (RESTATES FIT - DO NOT DO THIS):
 {
-  "positioning_sentence": "Your 1 product experience with [lowercase product] reaching 15k mau and leadership managing teams of 8+ through... directly match this role's core requirements.",
-  "action_sentence": "Emphasize your experience prominently.",
-  "timing_sentence": "Apply soon."
+  "resume_action": "Your 7 years of product experience at Stripe and Asana directly match this role's requirements.",
+  "outreach_action": "Emphasize your experience prominently in your resume and outreach.",
+  "urgency_context": "Apply now and prioritize a direct message to the hiring manager."
 }
 
-Problems: "0-to-1" truncated to "1", product names lowercase, "15k mau" should be "15K MAU", "through..." truncated mid-phrase, vague action, vague timing.
+Problems: Restates fit instead of actions. No specific resume changes. No specific person to contact. No competition context.
 
   "changes_summary": {
     "resume": {
