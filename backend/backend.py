@@ -49,6 +49,65 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import anthropic
 
+# =============================================================================
+# MODULAR IMPORTS - Extracted modules for better organization
+# =============================================================================
+
+# Models - Pydantic schemas (still using inline definitions during transition)
+# TODO: Migrate to: from models import *
+
+# Utils - Helper functions
+from utils import (
+    clean_claude_json,
+    extract_pdf_text,
+    extract_docx_text,
+    calculate_days_since,
+    detect_role_type,
+    determine_target_level,
+    infer_seniority_from_title,
+    infer_industry_from_company,
+    get_competency_for_stage,
+    SIGNAL_WEIGHTS_BY_ROLE,
+    calculate_momentum_score,
+    calculate_jd_confidence,
+    calculate_decision_confidence,
+    get_confidence_label,
+    get_confidence_guidance,
+    determine_action_for_status,
+    calculate_ui_signals,
+    calculate_pipeline_health,
+    verify_ats_keyword_coverage,
+    validate_document_quality,
+)
+
+# Storage - Data persistence helpers
+from storage import (
+    save_mock_session,
+    get_mock_session,
+    save_mock_question,
+    get_mock_question,
+    save_mock_response,
+    get_mock_responses,
+    save_mock_analysis,
+    get_mock_analysis,
+    update_mock_session,
+    cleanup_expired_sessions,
+    mock_interview_sessions,
+    mock_interview_questions,
+    mock_interview_responses,
+    mock_interview_analyses,
+    outcomes_store,
+    SESSION_TTL_SECONDS,
+    set_supabase_client,
+)
+
+# Services - Core business logic
+from services import (
+    call_claude,
+    call_claude_streaming,
+    initialize_client as initialize_claude_client,
+)
+
 # Rate limiting
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -210,25 +269,23 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": str(exc.body)[:500]}
     )
 
-# Initialize Anthropic client
-API_KEY = os.getenv("ANTHROPIC_API_KEY")
-if not API_KEY:
-    raise ValueError("ANTHROPIC_API_KEY environment variable must be set")
-
-client = anthropic.Anthropic(api_key=API_KEY, timeout=120.0)  # 2 min timeout for long transcripts
+# Initialize Anthropic client via services module
+client = initialize_claude_client()
 
 # OpenAI API key for TTS (optional - for natural AI voice)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Initialize Supabase client for persistent storage
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://xmbappvomvmanvybdavs.supabase.co")
+SUPABASE_URL_STORAGE = os.getenv("SUPABASE_URL", "https://xmbappvomvmanvybdavs.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Use service key for backend (bypasses RLS)
 
 supabase_client = None
 if SUPABASE_KEY:
     try:
         from supabase import create_client, Client
-        supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        supabase_client: Client = create_client(SUPABASE_URL_STORAGE, SUPABASE_KEY)
+        # Connect storage module to Supabase
+        set_supabase_client(supabase_client)
         logger.info("Supabase client initialized successfully")
     except Exception as e:
         logger.warning(f"Failed to initialize Supabase client: {e}. Falling back to in-memory storage.")
@@ -236,16 +293,9 @@ if SUPABASE_KEY:
 else:
     logger.warning("SUPABASE_SERVICE_KEY not set. Using in-memory storage (data will be lost on restart).")
 
-# In-memory storage fallback (used when Supabase is not available)
-# WARNING: Data is lost on server restart when using fallback
-outcomes_store: List[Dict[str, Any]] = []
-mock_interview_sessions: Dict[str, Dict[str, Any]] = {}
-mock_interview_questions: Dict[str, Dict[str, Any]] = {}
-mock_interview_responses: Dict[str, List[Dict[str, Any]]] = {}
-mock_interview_analyses: Dict[str, Dict[str, Any]] = {}
-
-# Session TTL in seconds (24 hours)
-SESSION_TTL_SECONDS = 24 * 60 * 60
+# Note: In-memory storage now imported from storage module
+# mock_interview_sessions, mock_interview_questions, mock_interview_responses,
+# mock_interview_analyses, outcomes_store, SESSION_TTL_SECONDS are all from storage module
 
 
 # ============================================================================

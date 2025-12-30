@@ -11,6 +11,7 @@ from .mock_interview_store import (
     get_mock_analysis,
     update_mock_session,
     cleanup_expired_sessions,
+    set_supabase_client,
     # In-memory storage (fallback)
     mock_interview_sessions,
     mock_interview_questions,
