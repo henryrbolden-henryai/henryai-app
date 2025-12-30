@@ -655,14 +655,19 @@
         // Inject styles
         injectStyles();
 
-        // Add class to body to hide page-level headers
-        document.body.classList.add('has-strategy-nav');
+        // Check if we're on the dashboard (which has its own top-nav)
+        const isDashboard = window.location.pathname.includes('dashboard.html');
 
-        // Create and append logo
-        const logo = document.createElement('div');
-        logo.className = 'strategy-nav-logo';
-        logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
-        document.body.appendChild(logo);
+        // Add class to body to hide page-level headers (but not on dashboard)
+        if (!isDashboard) {
+            document.body.classList.add('has-strategy-nav');
+
+            // Create and append logo (only if not on dashboard)
+            const logo = document.createElement('div');
+            logo.className = 'strategy-nav-logo';
+            logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
+            document.body.appendChild(logo);
+        }
 
         // Create and append navigation
         const nav = createNavigation();
