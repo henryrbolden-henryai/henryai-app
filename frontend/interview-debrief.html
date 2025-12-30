@@ -1047,8 +1047,28 @@
             <!-- Transcript Upload -->
             <div class="transcript-section">
                 <div class="transcript-label">Interview transcript or notes (optional)</div>
-                <div class="transcript-hint">Upload a transcript, recording notes, or paste what you remember. This helps provide more specific feedback.</div>
+                <div class="transcript-hint">Upload a recording, transcript, or paste what you remember. Audio/video will be automatically transcribed.</div>
 
+                <!-- Recording Upload -->
+                <div class="upload-zone" id="recordingUploadZone" onclick="document.getElementById('recordingFile').click()">
+                    <div class="upload-icon">🎙️</div>
+                    <div class="upload-text">
+                        <span class="upload-primary">Upload interview recording</span>
+                        <span class="upload-secondary">.mp3, .m4a, .wav, .mp4, .mov, .webm</span>
+                    </div>
+                    <input type="file" id="recordingFile" accept="audio/*,video/*,.mp3,.m4a,.wav,.webm,.mp4,.mov" onchange="handleRecordingUpload(event)">
+                </div>
+                <div id="uploadedRecording" class="uploaded-file" style="display: none;"></div>
+                <div id="transcriptionProgress" style="display: none; margin-top: 12px; padding: 16px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #f59e0b;">
+                        <div class="loading-spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                        <span id="transcriptionStatus">Transcribing recording...</span>
+                    </div>
+                </div>
+
+                <div class="or-divider">or</div>
+
+                <!-- Text/Document Upload -->
                 <div class="upload-zone" id="uploadZone" onclick="document.getElementById('transcriptFile').click()">
                     <div class="upload-icon">📄</div>
                     <div class="upload-text">
@@ -1890,6 +1910,100 @@ Best regards,
             document.getElementById('uploadZone').style.display = 'flex';
         }
 
+        // ============================================================================
+        // RECORDING UPLOAD & TRANSCRIPTION
+        // ============================================================================
+        let recordingFileData = null;
+
+        async function handleRecordingUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            recordingFileData = file;
+
+            // Show uploaded file indicator
+            const uploadedEl = document.getElementById('uploadedRecording');
+            const icon = file.type.startsWith('video/') ? '🎬' : '🎙️';
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            uploadedEl.innerHTML = `
+                <span>${icon} ${file.name} (${sizeMB} MB)</span>
+                <span class="remove-file" onclick="removeRecordingFile(event)">✕</span>
+            `;
+            uploadedEl.style.display = 'flex';
+            document.getElementById('recordingUploadZone').style.display = 'none';
+
+            // Check file size (Whisper has a 25MB limit)
+            if (file.size > 25 * 1024 * 1024) {
+                alert('File is too large. Maximum size is 25MB. Please use a shorter clip or compress the file.');
+                removeRecordingFile(event);
+                return;
+            }
+
+            // Start transcription
+            await transcribeRecording(file);
+        }
+
+        async function transcribeRecording(file) {
+            const progressEl = document.getElementById('transcriptionProgress');
+            const statusEl = document.getElementById('transcriptionStatus');
+
+            progressEl.style.display = 'block';
+            statusEl.textContent = 'Transcribing recording... This may take a minute.';
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', file);
+
+                const response = await fetch(`${API_BASE}/api/transcribe`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'Transcription failed');
+                }
+
+                const data = await response.json();
+                transcriptText = data.text;
+
+                // Show success and preview
+                statusEl.textContent = '✅ Transcription complete!';
+                progressEl.style.background = 'rgba(16, 185, 129, 0.1)';
+                progressEl.querySelector('div').style.color = '#10b981';
+
+                // Show transcript preview
+                setTimeout(() => {
+                    progressEl.innerHTML = `
+                        <div style="text-align: left;">
+                            <div style="color: #10b981; margin-bottom: 8px; font-weight: 500;">✅ Transcript ready</div>
+                            <div style="color: #9ca3af; font-size: 0.85rem; max-height: 100px; overflow-y: auto; line-height: 1.5;">
+                                ${transcriptText.substring(0, 500)}${transcriptText.length > 500 ? '...' : ''}
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+
+                console.log('Transcription complete:', transcriptText.substring(0, 200) + '...');
+
+            } catch (error) {
+                console.error('Transcription error:', error);
+                statusEl.textContent = `❌ ${error.message}`;
+                progressEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                progressEl.querySelector('div').style.color = '#ef4444';
+            }
+        }
+
+        function removeRecordingFile(event) {
+            event.stopPropagation();
+            recordingFileData = null;
+            transcriptText = '';
+            document.getElementById('recordingFile').value = '';
+            document.getElementById('uploadedRecording').style.display = 'none';
+            document.getElementById('transcriptionProgress').style.display = 'none';
+            document.getElementById('recordingUploadZone').style.display = 'flex';
+        }
+
         function togglePasteSection() {
             const section = document.getElementById('pasteSection');
             const toggle = document.querySelector('.paste-toggle');
@@ -1903,6 +2017,7 @@ Best regards,
         }
 
         function setupDragAndDrop() {
+            // Document/text upload zone
             const uploadZone = document.getElementById('uploadZone');
 
             uploadZone.addEventListener('dragover', (e) => {
@@ -1927,6 +2042,31 @@ Best regards,
                     handleTranscriptUpload({ target: { files: [file] } });
                 }
             });
+
+            // Recording upload zone
+            const recordingZone = document.getElementById('recordingUploadZone');
+
+            recordingZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                recordingZone.style.borderColor = '#f59e0b';
+                recordingZone.style.background = 'rgba(245, 158, 11, 0.1)';
+            });
+
+            recordingZone.addEventListener('dragleave', () => {
+                recordingZone.style.borderColor = '#374151';
+                recordingZone.style.background = 'rgba(255, 255, 255, 0.03)';
+            });
+
+            recordingZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                recordingZone.style.borderColor = '#374151';
+                recordingZone.style.background = 'rgba(255, 255, 255, 0.03)';
+
+                const file = e.dataTransfer.files[0];
+                if (file && (file.type.startsWith('audio/') || file.type.startsWith('video/'))) {
+                    handleRecordingUpload({ target: { files: [file] } });
+                }
+            });
         }
 
         // ============================================================================
@@ -1937,14 +2077,18 @@ Best regards,
             btn.disabled = true;
             btn.textContent = 'Starting debrief...';
 
-            // Get transcript from file or text
-            if (transcriptFileData) {
+            // Get transcript from recording (already transcribed), file upload, or text
+            // Priority: recording transcription > uploaded file > pasted text
+            if (recordingFileData && transcriptText) {
+                // Recording was transcribed - transcriptText already populated
+                console.log('Using transcribed recording');
+            } else if (transcriptFileData) {
                 try {
                     transcriptText = await readFileAsText(transcriptFileData);
                 } catch (e) {
                     console.error('Error reading file:', e);
                 }
-            } else {
+            } else if (!transcriptText) {
                 transcriptText = document.getElementById('transcriptText').value.trim();
             }
 
