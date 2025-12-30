@@ -140,33 +140,13 @@
         const styles = document.createElement('style');
         styles.id = 'strategy-nav-styles';
         styles.textContent = `
-            /* Strategy Navigation Logo */
-            .strategy-nav-logo {
-                position: fixed;
-                left: 0;
-                top: 24px;
-                width: 268px;
-                text-align: center;
-                z-index: 91;
-            }
+            /* Logo now handled by top-nav.js component */
 
-            .strategy-nav-logo a {
-                font-family: 'Instrument Serif', Georgia, serif;
-                font-size: 2rem;
-                color: #ffffff;
-                text-decoration: none;
-            }
-
-            .strategy-nav-logo a em {
-                font-style: italic;
-                color: #22d3ee;
-            }
-
-            /* Strategy Navigation Sidebar */
+            /* Strategy Navigation Sidebar - positioned below top-nav (60px) */
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 150px;
+                top: 80px;
                 z-index: 90;
                 display: flex;
                 align-items: flex-start;
@@ -465,10 +445,9 @@
                 }
             }
 
-            /* Hide page headers when strategy-nav is present */
-            body.has-strategy-nav header,
-            body.has-strategy-nav .header,
-            body.has-strategy-nav .top-nav,
+            /* Hide page headers when strategy-nav is present (but NOT .top-nav) */
+            body.has-strategy-nav header:not(.top-nav),
+            body.has-strategy-nav .header:not(.top-nav),
             body.has-strategy-nav .header-container .logo {
                 display: none !important;
             }
@@ -650,19 +629,10 @@
         // Inject styles
         injectStyles();
 
-        // Check if we're on the dashboard (which has its own top-nav)
-        const isDashboard = window.location.pathname.includes('dashboard.html');
+        // Add class to body for styling (top-nav.js now handles the header on all pages)
+        document.body.classList.add('has-strategy-nav');
 
-        // Add class to body to hide page-level headers (but not on dashboard)
-        if (!isDashboard) {
-            document.body.classList.add('has-strategy-nav');
-
-            // Create and append logo (only if not on dashboard)
-            const logo = document.createElement('div');
-            logo.className = 'strategy-nav-logo';
-            logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
-            document.body.appendChild(logo);
-        }
+        // Logo is now handled by top-nav.js component - no longer injected here
 
         // Create and append navigation
         const nav = createNavigation();
