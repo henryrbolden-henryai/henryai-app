@@ -53,6 +53,12 @@ import anthropic
 # MODULAR IMPORTS - Extracted modules for better organization
 # =============================================================================
 
+# Ensure current directory is in path for local module imports
+# This is needed for Railway deployment where uvicorn runs from /app/backend/
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 # Models - Pydantic schemas (still using inline definitions during transition)
 # TODO: Migrate to: from models import *
 
