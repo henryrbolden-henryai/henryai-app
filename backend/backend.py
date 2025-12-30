@@ -6154,11 +6154,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # =====================================================================
             your_move_data = response_data.get('your_move')
             if your_move_data and isinstance(your_move_data, dict):
-                # Extract structured fields per spec
+                # Extract structured fields per spec (updated schema)
                 positioning = your_move_data.get('positioning', '')
                 contact_strategy = your_move_data.get('contact_strategy', '')
-                timing = your_move_data.get('timing', '')
-                competition_level = your_move_data.get('competition_level', '')
+                apply_window = your_move_data.get('apply_window', '') or your_move_data.get('timing', '')  # backward compat
 
                 # ===== VALIDATION: Completeness checks =====
                 validation_failures = []
@@ -6168,7 +6167,6 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 if not positioning or len(positioning) < 20:
                     validation_failures.append("positioning: too short or empty")
                 elif 'lead with' not in positioning_lower and 'cut' not in positioning_lower:
-                    # Log but allow - Claude might use alternate phrasing
                     print(f"   ⚠️ Your Move positioning missing LEAD WITH/CUT format")
 
                 # Check contact_strategy has target and approach
@@ -6176,23 +6174,15 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 if not contact_strategy or len(contact_strategy) < 15:
                     validation_failures.append("contact_strategy: too short or empty")
                 elif 'target' not in contact_lower and 'approach' not in contact_lower:
-                    # Check for common alternatives
                     has_who = any(x in contact_lower for x in ['vp', 'director', 'manager', 'recruiter', 'hm'])
                     has_how = any(x in contact_lower for x in ['dm', 'email', 'linkedin', 'mutual', 'connection'])
                     if not (has_who and has_how):
                         print(f"   ⚠️ Your Move contact_strategy missing WHO and HOW")
 
-                # Check timing has urgency context
-                timing_lower = timing.lower()
-                if not timing or len(timing) < 15:
-                    validation_failures.append("timing: too short or empty")
-                elif 'posted' not in timing_lower and 'days' not in timing_lower:
-                    print(f"   ⚠️ Your Move timing missing posting context")
-
-                # Check competition_level is valid enum
-                valid_levels = ['HIGH', 'MEDIUM', 'LOW']
-                if competition_level.upper() not in valid_levels:
-                    validation_failures.append(f"competition_level: '{competition_level}' not in {valid_levels}")
+                # Check apply_window has timeframe
+                apply_lower = apply_window.lower()
+                if not apply_window or len(apply_window) < 10:
+                    validation_failures.append("apply_window: too short or empty")
 
                 # Log validation results
                 if validation_failures:
@@ -6201,7 +6191,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     print(f"   ✅ Your Move validation passed")
 
                 # ===== VALIDATION: Banned phrases (fit-restating) =====
-                all_text = f"{positioning} {contact_strategy} {timing}".lower()
+                all_text = f"{positioning} {contact_strategy} {apply_window}".lower()
                 banned_phrases = [
                     "your background gives you",
                     "your experience positions you",
@@ -6216,10 +6206,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     print(f"   ⚠️ Your Move contains fit-restating phrase (banned)")
 
                 # Build display string for strategic_action (frontend compat)
-                your_move_display = f"{positioning} {contact_strategy} {timing}"
-                if competition_level:
-                    your_move_display += f" {competition_level} competition."
-                your_move_display = your_move_display.strip()
+                your_move_display = f"{positioning} {contact_strategy} {apply_window}".strip()
 
                 print(f"   📣 Your Move: {your_move_display[:100]}...")
 
@@ -6239,6 +6226,33 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                         response_data["reality_check"] = {}
                     response_data["reality_check"]["strategic_action"] = your_move
                     print(f"   📣 Your Move (fallback): {your_move[:80]}...")
+
+            # =====================================================================
+            # REALITY CHECK - Validate new fields
+            # =====================================================================
+            reality_check_data = response_data.get('reality_check', {})
+            brutal_truth = reality_check_data.get('brutal_truth', '')
+            referral_req = reality_check_data.get('referral_requirement', '')
+            candidate_pos = reality_check_data.get('candidate_position', '')
+            what_means = reality_check_data.get('what_this_means', '')
+
+            # Log Reality Check validation
+            rc_issues = []
+            if not brutal_truth or len(brutal_truth) < 20:
+                rc_issues.append("brutal_truth missing or too short")
+            if referral_req not in ['REQUIRED', 'HELPS', 'OPTIONAL']:
+                rc_issues.append(f"referral_requirement invalid: '{referral_req}'")
+            if not candidate_pos or len(candidate_pos) < 20:
+                rc_issues.append("candidate_position missing or too short")
+            if not what_means or len(what_means) < 20:
+                rc_issues.append("what_this_means missing or too short")
+
+            if rc_issues:
+                print(f"   ⚠️ Reality Check incomplete: {rc_issues}")
+            else:
+                print(f"   ✅ Reality Check validation passed")
+                print(f"   💀 Brutal truth: {brutal_truth[:60]}...")
+                print(f"   🔗 Referral: {referral_req}")
 
             if gaps_to_address:
                 print(f"   📋 Gaps to Address: {len(gaps_to_address)} gap(s)")
@@ -11520,8 +11534,7 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "your_move": {
     "positioning": "LEAD WITH: [specific skill/metric]. CUT: [what to de-emphasize]. Max 75 chars.",
     "contact_strategy": "TARGET: [specific title at company]. APPROACH: [DM/email/mutual connection]. Max 75 chars.",
-    "timing": "APPLY: [timeframe]. POSTED: [days ago]. URGENCY: [why]. Max 75 chars.",
-    "competition_level": "HIGH|MEDIUM|LOW"
+    "apply_window": "APPLY: [timeframe]. Why now matters. Max 60 chars."
   },
   "gaps": [
     {
@@ -11660,35 +11673,34 @@ REQUIRED FORMAT FOR EACH FIELD:
    GOOD: "TARGET: VP Product. APPROACH: Mutual connection via ex-Stripe."
    BAD: "HM direct." (no specific target, no approach method)
 
-3. timing (max 75 chars):
-   FORMAT: "APPLY: [timeframe]. POSTED: [days]. [urgency reason]."
-   GOOD: "APPLY: Within 24 hours. POSTED: 2 days ago. Pipeline fills fast."
-   BAD: "Apply within 24 hours." (no posting age, no urgency context)
+3. apply_window (max 60 chars):
+   FORMAT: "APPLY: [timeframe]. [why now matters]."
+   GOOD: "APPLY: Within 24 hours. Role posted 2 days ago."
+   BAD: "Apply soon." (no timeframe, no context)
 
-4. competition_level: "HIGH" | "MEDIUM" | "LOW" (enum only)
+NOTE: Competition level and urgency context now live in Reality Check.
+Your Move is ONLY about what to DO, not what you're up against.
 
 VALIDATION RULES:
 - positioning MUST contain both LEAD WITH and CUT directives
 - contact_strategy MUST specify WHO (title) and HOW (approach method)
-- timing MUST include posting age or urgency context
+- apply_window MUST include specific timeframe
 - Empty or vague fields = VALIDATION FAILURE
 
 GOOD your_move (COMPLETE):
 {
   "positioning": "LEAD WITH: Growth infra at 100M+ scale. CUT: B2C consumer work.",
   "contact_strategy": "TARGET: Director of Growth. APPROACH: DM via shared Stripe alumni.",
-  "timing": "APPLY: Within 24 hours. POSTED: 3 days. High-visibility AI role.",
-  "competition_level": "HIGH"
+  "apply_window": "APPLY: Within 24 hours. Role posted 3 days ago."
 }
 
 BAD your_move (INCOMPLETE - FORBIDDEN):
 {
   "positioning": "Lead with platform scale and 0-to-1 execution",
   "contact_strategy": "HM direct. Growth roles move fast.",
-  "timing": "Apply within 24 hours.",
-  "competition_level": "HIGH"
+  "apply_window": "Apply soon."
 }
-Problems: No CUT directive, no specific target title, no approach method, no posting context.
+Problems: No CUT directive, no specific target title, no approach method, vague timing.
 
 BANNED PHRASES in your_move:
 - "your background gives you"
@@ -11713,29 +11725,89 @@ BANNED PHRASES in your_move:
     }
   },
   "reality_check": {
+    "brutal_truth": "One sentence that lands. The hard truth that changes behavior. See REALITY_CHECK RULES below.",
+    "referral_requirement": "REQUIRED|HELPS|OPTIONAL",
+    "candidate_position": "Where candidate sits in the pile relative to competition. See REALITY_CHECK RULES below.",
     "expected_applicants": "300-500+",
-    "applicant_calculation": {
-      "base": 200,
-      "function_multiplier": 2.0,
-      "function_name": "Product Management",
-      "seniority_multiplier": 1.5,
-      "seniority_level": "Senior",
-      "geography_multiplier": 1.1,
-      "geography": "Remote",
-      "industry_multiplier": 1.0,
-      "industry": "Tech",
-      "total": 330
-    },
     "response_rate": "3-5%",
-    "function_context": "Full paragraph about layoffs/market for candidate's function",
-    "industry_context": "Full paragraph about the target industry",
-    "strategic_action": "See STRATEGIC_ACTION COACHING FRAMEWORK below"
+    "what_this_means": "The consequence of the numbers. What the candidate should expect. See REALITY_CHECK RULES below.",
+    "strategic_action": "DEPRECATED - Your Move owns actions now. Leave empty string."
   }
 }
 
-🚨 STRATEGIC_ACTION COACHING FRAMEWORK (MANDATORY) 🚨
+🚨🚨🚨 REALITY_CHECK RULES (MANDATORY - READ CAREFULLY) 🚨🚨🚨
 
-The strategic_action field is the most important coaching advice. It must be specific, actionable, and tone-appropriate for each score band.
+Reality Check is where Henry grabs the candidate by the shoulders and says "Here's the truth."
+It must CHANGE BEHAVIOR, not just display stats.
+
+THE THREE REQUIRED FIELDS:
+
+1. brutal_truth (REQUIRED - max 100 chars):
+   One sentence that lands. The hard truth. No hedging.
+
+   GOOD EXAMPLES:
+   - "Without a referral, this application is statistically noise."
+   - "You're competing against internal transfers who already have the job."
+   - "Cold applications to Google Growth PM have a 0.3% screen rate."
+   - "This company has a hiring freeze. The posting is aspirational."
+
+   BAD EXAMPLES:
+   - "This is a competitive role." (obvious, no punch)
+   - "Many candidates will apply." (vague)
+   - "You should consider your options." (advice, not truth)
+
+2. referral_requirement (REQUIRED - enum):
+   REQUIRED = Cold apply is noise. Must have internal connection.
+   HELPS = Cold apply possible but referral significantly improves odds.
+   OPTIONAL = Company processes cold applications fairly.
+
+   DECISION LOGIC:
+   - FAANG/Big Tech at senior+ levels = REQUIRED
+   - High-growth startups with public postings = HELPS
+   - SMB/Mid-market with active hiring = OPTIONAL
+   - Any role with 500+ expected applicants = REQUIRED or HELPS
+
+3. candidate_position (REQUIRED - max 120 chars):
+   Where the candidate sits in the pile. Be specific.
+
+   GOOD EXAMPLES:
+   - "Top 10% on paper. But 40% of hires come from internal mobility."
+   - "Mid-pack. Your consumer experience doesn't transfer to enterprise."
+   - "Strong on skills, weak on pedigree. Referral would move you to top 20%."
+   - "Overqualified. They'll assume you'll leave in 6 months."
+
+   BAD EXAMPLES:
+   - "You have relevant experience." (doesn't position)
+   - "Good fit for this role." (that's Score Summary's job)
+
+4. what_this_means (REQUIRED - max 150 chars):
+   The consequence. What happens next without action.
+
+   GOOD EXAMPLES:
+   - "ATS will auto-reject. Recruiter screens are reserved for referrals."
+   - "Your resume will sit in a queue of 800. Response in 3-4 weeks if at all."
+   - "Without the keyword match, you won't pass initial screening."
+
+   BAD EXAMPLES:
+   - "You should apply quickly." (that's Your Move's job)
+   - "Consider reaching out." (that's Your Move's job)
+
+REALITY CHECK MUST NOT:
+- Give advice (that's Your Move)
+- Assess fit (that's Score Summary)
+- Be encouraging or optimistic
+- Use phrases like "you can compete" or "you have a chance"
+
+REALITY CHECK MUST:
+- State uncomfortable truths
+- Quantify the competition
+- Position the candidate relative to the field
+- Explain what the numbers actually mean
+
+🚨 STRATEGIC_ACTION COACHING FRAMEWORK (DEPRECATED) 🚨
+
+NOTE: strategic_action is now owned by Your Move. Leave this field as empty string "".
+The framework below is kept for reference but Your Move rules take precedence.
 
 CRITICAL VOICE RULE: ALL strategic actions MUST use second-person voice ("you/your") - see IDENTITY_INSTRUCTION above.
 

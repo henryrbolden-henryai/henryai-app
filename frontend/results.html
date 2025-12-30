@@ -1440,7 +1440,16 @@
                     <!-- 3. REALITY CHECK -->
                     <div class="section" id="realityCheckSection">
                         <div class="section-title">Reality Check</div>
-                        
+
+                        <!-- Brutal Truth - The punch line -->
+                        <div class="brutal-truth" id="brutalTruth" style="font-size: 1.1em; font-weight: 600; color: #ff6b6b; margin-bottom: 16px; line-height: 1.4;">
+                            Loading...
+                        </div>
+
+                        <!-- Candidate Position -->
+                        <div class="candidate-position" id="candidatePosition" style="color: rgba(255,255,255,0.8); margin-bottom: 16px; line-height: 1.5;">
+                        </div>
+
                         <!-- Key Stats Row -->
                         <div class="reality-stats" id="realityStats" style="display: none;">
                             <div class="reality-stat">
@@ -1451,14 +1460,17 @@
                                 <div class="reality-stat-value" id="realityResponseRate">—</div>
                                 <div class="reality-stat-label">Response Rate</div>
                             </div>
+                            <div class="reality-stat">
+                                <div class="reality-stat-value" id="referralRequirement">—</div>
+                                <div class="reality-stat-label">Referral</div>
+                            </div>
                         </div>
-                        
-                        <!-- Personal Context -->
-                        <div class="reality-context" id="realityContext" style="margin-top: 16px;">
-                            <p class="section-text" id="realityCheck" style="white-space: pre-line;">Loading...</p>
+
+                        <!-- What This Means -->
+                        <div class="what-this-means" id="whatThisMeans" style="margin-top: 16px; color: rgba(255,255,255,0.7); font-style: italic;">
                         </div>
-                        
-                        <!-- Action Box -->
+
+                        <!-- Action Box (Your Move) -->
                         <div class="reality-action" id="realityAction" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0, 255, 157, 0.1); border-left: 3px solid #00ff9d; border-radius: 4px;">
                             <div style="font-weight: 600; color: #00ff9d; margin-bottom: 8px;">Your Move</div>
                             <p class="section-text" id="realityActionText" style="margin: 0;"></p>
@@ -1960,68 +1972,75 @@
         // =====================================================================
         // POPULATE: Reality Check (Feature 4 - Data-Driven Market Context)
         // =====================================================================
-        const realityCheckEl = document.getElementById('realityCheck');
+        const brutalTruthEl = document.getElementById('brutalTruth');
+        const candidatePositionEl = document.getElementById('candidatePosition');
         const realityStatsEl = document.getElementById('realityStats');
+        const whatThisMeansEl = document.getElementById('whatThisMeans');
         const realityActionEl = document.getElementById('realityAction');
         const realityActionTextEl = document.getElementById('realityActionText');
         const realityCheckData = data.reality_check || null;
-        
+
         // Get candidate's first name for personal tone (empty string if not available)
         const candidateFirstName = (data._profile?.name || data.candidate_name || '').split(' ')[0] || '';
-        
-        if (realityCheckData && realityCheckData.expected_applicants) {
+
+        if (realityCheckData) {
+            // Populate brutal truth - the punch line
+            if (realityCheckData.brutal_truth) {
+                brutalTruthEl.textContent = realityCheckData.brutal_truth;
+            } else {
+                // Fallback to generated default
+                brutalTruthEl.textContent = generateDefaultRealityCheck(fitScore, competitiveness, candidateFirstName);
+            }
+
+            // Populate candidate position
+            if (realityCheckData.candidate_position) {
+                candidatePositionEl.textContent = realityCheckData.candidate_position;
+            }
+
             // Show stats row
-            realityStatsEl.style.display = 'grid';
-            
-            // Populate stat boxes
-            document.getElementById('realityApplicants').textContent = realityCheckData.expected_applicants;
-            document.getElementById('realityResponseRate').textContent = realityCheckData.response_rate || '3-5%';
-            
-            // Build context HTML with visual indicators
-            let contextHTML = '';
-            
-            // Function-specific reality (layoff data) - warning indicator
-            if (realityCheckData.function_context) {
-                contextHTML += `<div class="reality-item warning">
-                    <span class="reality-icon">⚠️</span>
-                    <span class="reality-text">${realityCheckData.function_context}</span>
-                </div>`;
+            if (realityCheckData.expected_applicants) {
+                realityStatsEl.style.display = 'grid';
+                document.getElementById('realityApplicants').textContent = realityCheckData.expected_applicants;
+                document.getElementById('realityResponseRate').textContent = realityCheckData.response_rate || '3-5%';
+
+                // Populate referral requirement with color coding
+                const referralEl = document.getElementById('referralRequirement');
+                const referralReq = realityCheckData.referral_requirement || 'HELPS';
+                referralEl.textContent = referralReq;
+
+                // Color code the referral requirement
+                if (referralReq === 'REQUIRED') {
+                    referralEl.style.color = '#ff6b6b';  // Red - must have
+                } else if (referralReq === 'HELPS') {
+                    referralEl.style.color = '#ffd93d';  // Yellow - recommended
+                } else {
+                    referralEl.style.color = '#00ff9d';  // Green - optional
+                }
             }
-            
-            // Industry context - can be positive or warning depending on content
-            if (realityCheckData.industry_context) {
-                const isPositive = realityCheckData.industry_context.toLowerCase().includes('insulated') ||
-                                   realityCheckData.industry_context.toLowerCase().includes('still hiring') ||
-                                   realityCheckData.industry_context.toLowerCase().includes('strong funding') ||
-                                   realityCheckData.industry_context.toLowerCase().includes('demand');
-                const icon = isPositive ? '✓' : '⚠️';
-                const itemClass = isPositive ? 'positive' : 'warning';
-                contextHTML += `<div class="reality-item ${itemClass}">
-                    <span class="reality-icon">${icon}</span>
-                    <span class="reality-text">${realityCheckData.industry_context}</span>
-                </div>`;
+
+            // Populate what this means
+            if (realityCheckData.what_this_means) {
+                whatThisMeansEl.textContent = realityCheckData.what_this_means;
             }
-            
-            realityCheckEl.innerHTML = contextHTML;
-            
-            // Show action box with strategic move
+
+            // Show action box with strategic move (Your Move)
             if (realityCheckData.strategic_action) {
                 realityActionEl.style.display = 'block';
                 realityActionTextEl.textContent = realityCheckData.strategic_action;
             }
         } else {
             // Fallback to legacy formats or generated default
-            const legacyRealityCheck = data.response_likelihood || 
+            const legacyRealityCheck = data.response_likelihood ||
                                 data.intelligence_layer?.market_reality ||
                                 data.intelligence_layer?.reality_check ||
                                 data.worth_your_time_guidance ||
                                 null;
-            
+
             if (legacyRealityCheck) {
-                realityCheckEl.textContent = legacyRealityCheck;
+                brutalTruthEl.textContent = legacyRealityCheck;
             } else {
                 // Generate default based on fit score and competition
-                realityCheckEl.textContent = generateDefaultRealityCheck(fitScore, competitiveness, candidateFirstName);
+                brutalTruthEl.textContent = generateDefaultRealityCheck(fitScore, competitiveness, candidateFirstName);
             }
         }
 
