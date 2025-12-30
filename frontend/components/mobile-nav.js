@@ -7,8 +7,22 @@
     return window.innerWidth <= 768;
   }
 
-  // Navigation items
-  const navItems = [
+  // Check if on landing page
+  function isLandingPage() {
+    const path = window.location.pathname;
+    return path === '/' || path === '/index.html' || path.endsWith('/index.html');
+  }
+
+  // Landing page navigation (matches desktop nav)
+  const landingNavItems = [
+    { label: 'About', href: '#about-henry' },
+    { label: 'How it works', href: '#how-it-works' },
+    { label: 'Features', href: '#capabilities' },
+    { label: 'Pricing', href: '#pricing' }
+  ];
+
+  // App navigation (for logged-in users)
+  const appNavItems = [
     { label: 'Dashboard', href: '/dashboard.html', icon: '📊' },
     { label: 'Analyze Role', href: '/analyze.html', icon: '🔍' },
     { label: 'Job Tracker', href: '/tracker.html', icon: '📋' },
@@ -36,24 +50,31 @@
     drawer.setAttribute('aria-label', 'Mobile navigation');
 
     const currentPath = window.location.pathname;
+    const onLanding = isLandingPage();
+
+    // Choose nav items based on page
+    const navItems = onLanding ? landingNavItems : appNavItems;
 
     drawer.innerHTML = `
       <div class="mobile-nav-header">
-        <img src="/assets/henryhq-logo.png" alt="HenryHQ" class="mobile-nav-logo">
+        <a href="/index.html" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
         <button class="mobile-nav-close" aria-label="Close navigation">&times;</button>
       </div>
       <ul class="mobile-nav-links">
         ${navItems.map(item => `
           <li>
             <a href="${item.href}" class="${currentPath === item.href || currentPath.endsWith(item.href) ? 'active' : ''}">
-              <span class="nav-icon">${item.icon}</span>
+              ${item.icon ? `<span class="nav-icon">${item.icon}</span>` : ''}
               ${item.label}
             </a>
           </li>
         `).join('')}
       </ul>
       <div class="mobile-nav-footer">
-        <a href="/contact.html">Help & Support</a>
+        ${onLanding
+          ? '<a href="/login.html" class="mobile-nav-signin">Sign In</a>'
+          : '<a href="/contact.html">Help & Support</a>'
+        }
       </div>
     `;
 
@@ -149,9 +170,17 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       }
 
-      .mobile-nav-logo {
-        height: 28px;
-        width: auto;
+      .mobile-nav-logo-text {
+        font-family: 'Instrument Serif', Georgia, serif;
+        font-size: 1.75rem;
+        font-weight: 400;
+        color: #fafafa;
+        text-decoration: none;
+      }
+
+      .mobile-nav-logo-text em {
+        font-style: italic;
+        color: #22d3ee;
       }
 
       .mobile-nav-close {
@@ -190,10 +219,10 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 14px 20px;
+        padding: 16px 24px;
         color: #a1a1aa;
         text-decoration: none;
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 500;
         transition: all 0.2s;
       }
@@ -211,20 +240,31 @@
       }
 
       .mobile-nav-links .nav-icon {
-        font-size: 18px;
-        width: 24px;
+        font-size: 20px;
+        width: 28px;
         text-align: center;
       }
 
       .mobile-nav-footer {
-        padding: 16px 20px;
+        padding: 20px 24px;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .mobile-nav-footer a {
         color: #71717a;
         text-decoration: none;
-        font-size: 13px;
+        font-size: 14px;
+      }
+
+      .mobile-nav-signin {
+        display: inline-block;
+        background: #22d3ee;
+        color: #000 !important;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-align: center;
+        width: 100%;
       }
 
       @media (max-width: 768px) {
