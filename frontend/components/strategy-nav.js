@@ -577,13 +577,8 @@
             return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
 
-        // Footer section with Profile Settings and Sign Out
-        const footerHtml = `
-            <div class="strategy-nav-footer">
-                <a href="profile-edit.html" class="strategy-nav-footer-link">Profile Settings</a>
-                <a href="#" class="strategy-nav-footer-link" id="navSignOut">Sign Out</a>
-            </div>
-        `;
+        // Footer section removed - now handled by top nav "My Account" dropdown
+        const footerHtml = '';
 
         // Parent link HTML (may be disabled)
         const parentLinkHtml = parentDisabled
