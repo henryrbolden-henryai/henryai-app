@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <title>HenryHQ - Your Personal Job Search Strategist</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HenryHQ">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -583,6 +592,253 @@
       display: block;
     }
 
+    /* ========== PRICING SECTION ========== */
+    #pricing {
+      padding: 120px 0;
+    }
+
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .pricing-header h2 {
+      margin-bottom: 16px;
+    }
+
+    .pricing-header p {
+      color: var(--color-text-secondary);
+      font-size: 1.1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s var(--ease-out);
+      position: relative;
+    }
+
+    .pricing-card:hover {
+      border-color: var(--color-border-hover);
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--color-accent);
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.05) 0%, var(--color-surface) 100%);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.1);
+    }
+
+    .pricing-card.premium {
+      border-color: rgba(251, 191, 36, 0.4);
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, var(--color-surface) 100%);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-accent);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pricing-badge.premium-badge {
+      background: var(--color-warning);
+    }
+
+    .pricing-tier-name {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .pricing-tagline {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      min-height: 40px;
+    }
+
+    .pricing-price {
+      font-size: 2.25rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin: 20px 0;
+      padding: 0;
+      flex-grow: 1;
+    }
+
+    .pricing-features li {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .pricing-features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--color-success);
+      font-size: 0.85rem;
+    }
+
+    .pricing-cta {
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .pricing-cta.btn-popular {
+      background: var(--color-accent);
+      color: #000;
+    }
+
+    .pricing-cta.btn-popular:hover {
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(34, 211, 238, 0.3);
+    }
+
+    .pricing-note {
+      text-align: center;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      max-width: 700px;
+      margin: 40px auto 0;
+      line-height: 1.6;
+    }
+
+    /* Pricing responsive */
+    @media (max-width: 1200px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .pricing-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+
+      .pricing-card {
+        padding: 24px 20px;
+      }
+
+      .pricing-features {
+        max-height: none;
+      }
+    }
+
+    /* ========== FAQ SECTION ========== */
+    #faq {
+      padding: 120px 0;
+    }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    .faq-list {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .faq-question:hover {
+      color: var(--color-accent);
+    }
+
+    .faq-icon {
+      font-size: 1.25rem;
+      color: var(--color-text-secondary);
+      transition: transform 0.3s var(--ease-out);
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+
+    .faq-item.active .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s var(--ease-out), padding 0.3s var(--ease-out);
+    }
+
+    .faq-item.active .faq-answer {
+      max-height: 500px;
+      padding-bottom: 24px;
+    }
+
+    .faq-answer p {
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
     /* ========== FOOTER ========== */
     footer {
       padding: 40px 0;
@@ -695,7 +951,10 @@
       header { padding: 3rem 1.25rem; }
       header h1 { font-size: 2.8rem; }
       .hero-tagline { font-size: 1.5rem; }
-      .hero-value-prop { font-size: 1.05rem; }
+      .hero-value-prop {
+        font-size: 1.05rem;
+        white-space: normal;
+      }
 
       .button-group {
         flex-direction: column;
@@ -719,6 +978,25 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Mobile Navigation - Hide desktop nav on small screens */
+    @media (max-width: 768px) {
+      .top-nav-links {
+        display: none;
+      }
+
+      .top-nav {
+        padding: 12px 16px 12px 60px; /* Space for hamburger menu */
+      }
+
+      .hero-value-prop {
+        white-space: normal;
+      }
+
+      header {
+        padding-top: 80px !important;
+      }
+    }
   </style>
   <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
@@ -740,6 +1018,7 @@
         <a href="#about-henry" class="top-nav-link">About</a>
         <a href="#how-it-works" class="top-nav-link">How it works</a>
         <a href="#capabilities" class="top-nav-link">Features</a>
+        <a href="#pricing" class="top-nav-link">Pricing</a>
         <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
       </div>
     </div>
@@ -801,6 +1080,19 @@
     }
     header {
       padding-top: 60px !important;
+    }
+
+    /* Mobile: Hide nav links, show hamburger menu */
+    @media (max-width: 768px) {
+      .top-nav-links {
+        display: none !important;
+      }
+      .top-nav {
+        padding: 12px 16px;
+      }
+      .top-nav-logo {
+        margin-left: 50px; /* Space for hamburger */
+      }
     }
   </style>
 
@@ -1086,6 +1378,223 @@
       </div>
     </section>
 
+    <!-- ========== PRICING SECTION ========== -->
+    <section id="pricing">
+      <div class="container">
+        <div class="pricing-header">
+          <h2>Choose Your Plan</h2>
+          <p>We named each tier after recruiting roles because that's how real hires happen. You start with signal and fit, then move into strategy, execution, and closing. The higher the tier, the closer we work with you. No fluff. Just more leverage.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Sourcer - Free -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Sourcer</h3>
+            <p class="pricing-tagline">Candidates exploring a move, not rushing into one</p>
+            <div class="pricing-price">Free</div>
+            <ul class="pricing-features">
+              <li>Three ATS-optimized resumes + cover letters</li>
+              <li>Job fit analysis before you apply</li>
+              <li>LinkedIn vs resume gap check</li>
+              <li>See where you stand before wasting time</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html'">Get Started</button>
+          </div>
+
+          <!-- Recruiter - $25/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Recruiter</h3>
+            <p class="pricing-tagline">Candidates applying selectively with materials that match their caliber</p>
+            <div class="pricing-price">$25<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Sourcer, plus:</li>
+              <li>15 applications/month</li>
+              <li>Screening question guidance (avoid auto-reject traps)</li>
+              <li>Application tracking</li>
+              <li>Strategic coaching chat (15/month)</li>
+              <li>One mock recruiter screen</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=recruiter'">Start Free Trial</button>
+          </div>
+
+          <!-- Principal - $69/mo (Most Popular) -->
+          <div class="pricing-card popular">
+            <span class="pricing-badge">Most Popular</span>
+            <h3 class="pricing-tier-name">Principal</h3>
+            <p class="pricing-tagline">Candidates running a targeted search, not a spray-and-pray</p>
+            <div class="pricing-price">$69<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Recruiter, plus:</li>
+              <li>30 applications/month</li>
+              <li>Outreach templates for hiring managers and recruiters</li>
+              <li>Company and role intelligence</li>
+              <li>Salary benchmarking before you negotiate</li>
+              <li>Five mock interviews/month</li>
+              <li>Strategic coaching chat (30/month)</li>
+            </ul>
+            <button class="btn btn-popular pricing-cta" onclick="window.location.href='signup.html?plan=principal'">Start Free Trial</button>
+          </div>
+
+          <!-- Partner - $129/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Partner</h3>
+            <p class="pricing-tagline">Candidates in interviews who want to show up sharp</p>
+            <div class="pricing-price">$129<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Principal, plus:</li>
+              <li>Applications matched to your strategy</li>
+              <li>Refine docs through conversation</li>
+              <li>Story Bank for behavioral interviews</li>
+              <li>Ten mock interviews/month</li>
+              <li>Negotiation guidance</li>
+              <li>One 30-min live coaching session/month</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=partner'">Start Free Trial</button>
+          </div>
+
+          <!-- Coach - $225/mo -->
+          <div class="pricing-card premium">
+            <h3 class="pricing-tier-name">Coach</h3>
+            <p class="pricing-tagline">Candidates who want a strategist in their corner until they close</p>
+            <div class="pricing-price">$225<span>/mo</span></div>
+            <ul class="pricing-features">
+              <li>Everything in Partner, plus:</li>
+              <li>Unlimited mock interviews</li>
+              <li>Cross-interview pattern analysis</li>
+              <li>Rejection forensics (understand why you're stalling)</li>
+              <li>Full negotiation support</li>
+              <li>Two 45-min live coaching sessions/month</li>
+            </ul>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=coach'">Start Free Trial</button>
+          </div>
+        </div>
+
+        <p class="pricing-note">Why application limits? Quality over quantity. Mass-applying to roles where you're not competitive wastes time and damages credibility. At Partner and Coach, volume is based on your strategy, not an arbitrary cap.</p>
+      </div>
+    </section>
+
+    <!-- ========== FAQ SECTION ========== -->
+    <section id="faq">
+      <div class="container">
+        <div class="faq-header">
+          <h2>Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Who is HenryHQ best for?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Job seekers who are tired of spraying resumes and hearing nothing back. If you want to know where you actually stand before applying, get honest feedback on your fit, and run a strategic search instead of a desperate one, HenryHQ is for you. We're built for people who want quality over quantity.</p>
+              <p style="margin-top: 12px;">We work best with senior professionals, managers, directors, executives, and career switchers navigating competitive roles.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Is HenryHQ worth it?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>If you're spending hours tailoring resumes, guessing why you're not getting callbacks, or walking into interviews unprepared, yes. One successful interview from better positioning can be worth thousands in salary. One avoided dead-end application saves you time and energy for roles where you can actually win.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How is HenryHQ different from ChatGPT?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>ChatGPT is a general-purpose tool. You have to know what to ask. HenryHQ is built specifically for job search with recruiting logic baked in. We evaluate fit, flag gaps, tailor documents to specific roles, and guide strategy. You get structure, not a blank prompt.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Who is Hey Henry?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Hey Henry is your strategic career coach built into the platform. From the moment you start your job search, Henry guides you through every stage: analyzing your fit for roles, preparing tailored documents, prepping for interviews, and debriefing afterward. Honest, actionable guidance rather than generic advice.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Does HenryHQ create ATS-optimized resumes and cover letters?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. ATS-optimized formatting and structure so you don't get filtered out. But we're not a template factory. We care about content. Every document is tailored to the role, grounded in your real experience, and positioned to get you into conversations. No fabrication. No generic bullets.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What is Job Fit Scoring (50/30/20)?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>We evaluate your fit for each role using three weighted factors: 50% Skills Match (do you have the required technical and functional skills), 30% Experience Match (does your work history align with what the role needs), and 20% Scope/Seniority Match (are you at the right level for this role). This reflects how recruiters actually screen candidates during the hiring process.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Do you fabricate or exaggerate experience?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Never. Every claim in your tailored documents comes from your actual background. We reposition and emphasize your experience strategically for each role, but we never invent experience, metrics, or accomplishments. Recruiters and hiring managers can spot fabricated content immediately, and it will disqualify you.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Will someone be there to help me?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>You're never on your own. Henry is available in chat to guide your next move. Our support team is reachable via email, and at Partner and Coach tiers, you get live sessions with a Career Coach for moments that matter most.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Why do you limit the number of applications?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Quality over quantity. Mass-applying to roles where you're not competitive wastes your time and can hurt your credibility with employers who track repeat applicants. Our limits encourage strategic targeting of roles where you can actually compete. The goal is to help you land a job faster, not apply to more jobs.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Is my data private?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. Your resume, documents, and conversations are yours. We don't share your data with employers, recruiters, or third parties. We don't sell your information. You can delete your account and data at any time.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can I use this while still employed?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. Many of our users are employed and exploring confidentially. Your activity is private. We don't post anything publicly or contact employers on your behalf.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ========== CTA SECTION ========== -->
     <section id="cta-section">
       <div class="container" style="text-align: center;">
@@ -1167,6 +1676,27 @@
     })();
   }
 </script>
+<script>
+  // FAQ Accordion functionality
+  document.querySelectorAll('.faq-question').forEach(button => {
+    button.addEventListener('click', () => {
+      const faqItem = button.parentElement;
+      const isActive = faqItem.classList.contains('active');
+
+      // Close all other FAQ items
+      document.querySelectorAll('.faq-item').forEach(item => {
+        item.classList.remove('active');
+      });
+
+      // Toggle current item
+      if (!isActive) {
+        faqItem.classList.add('active');
+      }
+    });
+  });
+</script>
 <script src="components/hey-henry.js"></script>
+<script src="components/mobile-nav.js"></script>
+<script src="js/pwa-install.js"></script>
 </body>
 </html>

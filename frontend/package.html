@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Application Package — HenryHQ</title>
+    <title>Your Application Package | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -970,11 +970,11 @@
         </div>
 
         <div class="success-message" id="successMessage">
-            ✓ Package downloaded successfully — good luck with your application!
+            ✓ Package downloaded successfully | good luck with your application!
         </div>
         
         <div class="success-message" id="trackSuccessMessage" style="display: none;">
-            ✓ Added to your application tracker — <a href="tracker.html" style="color: var(--color-accent);">View Tracker</a>
+            ✓ Added to your application tracker | <a href="tracker.html" style="color: var(--color-accent);">View Tracker</a>
         </div>
 
         <!-- SCREENING QUESTIONS SECTION -->
@@ -983,7 +983,7 @@
                 <div class="screening-questions-title">Application Screening Questions</div>
                 <p class="screening-questions-subtitle">
                     Many applications include screening questions that are weighted heavily in ATS scoring.
-                    Paste any screening questions below and I'll generate tailored responses based on your background—no fabrication, just strategic positioning.
+                    Paste any screening questions below and I'll generate tailored responses based on your background. No fabrication, just strategic positioning.
                 </p>
             </div>
 
@@ -1439,8 +1439,8 @@
                     // Check if this line looks like a job title (usually followed by company on same or next line)
                     // Common patterns:
                     // Pattern 1: "Director of Talent Operations" (title on its own line)
-                    // Pattern 2: "Company Name (Description) — Location, State | 2021 – 2025" (company with dates)
-                    // Pattern 3: "Title | Company — Location | 2020 – Present" (combined line)
+                    // Pattern 2: "Company Name (Description) | Location, State | 2021 – 2025" (company with dates)
+                    // Pattern 3: "Title | Company | Location | 2020 – Present" (combined line)
                     
                     const hasDate = line.match(/\d{4}\s*[-–—]\s*(Present|\d{4})/i);
                     const startsWithBullet = line.match(/^[\•\-\*\►\→○●◦▪▸]/) || line.match(/^\d+\.\s/);
@@ -1454,9 +1454,9 @@
                     const isBullet = startsWithBullet || looksLikeBulletContent;
                     
                     // Helper to extract location from company string
-                    // e.g., "Arcadia Finance (Series C Fintech) — New York, NY" => { company: "Arcadia Finance (Series C Fintech)", location: "New York, NY" }
+                    // e.g., "Arcadia Finance (Series C Fintech) | New York, NY" => { company: "Arcadia Finance (Series C Fintech)", location: "New York, NY" }
                     const parseCompanyLocation = (str) => {
-                        // Look for pattern: Company — Location or Company - Location
+                        // Look for pattern: Company | Location or Company - Location
                         const dashMatch = str.match(/^(.+?)\s*[-–—]\s*([A-Z][a-zA-Z\s]+,\s*[A-Z]{2})\s*$/);
                         if (dashMatch) {
                             return { company: dashMatch[1].trim(), location: dashMatch[2].trim() };
@@ -1684,11 +1684,11 @@
             // Build body paragraph 2 - value proposition (2-3 sentences)
             let body2 = '';
             if (leadWith.length > 0) {
-                body2 = `My approach combines ${leadWith[0].toLowerCase()} with ${leadWith[1] ? leadWith[1].toLowerCase() : 'operational excellence'}—exactly what ${company} needs to scale efficiently.`;
+                body2 = `My approach combines ${leadWith[0].toLowerCase()} with ${leadWith[1] ? leadWith[1].toLowerCase() : 'operational excellence'}, exactly what ${company} needs to scale efficiently.`;
             } else if (positioning) {
                 body2 = positioning;
             } else {
-                body2 = `My approach combines recruiting expertise with operational excellence—exactly what ${company} needs to scale efficiently.`;
+                body2 = `My approach combines recruiting expertise with operational excellence, exactly what ${company} needs to scale efficiently.`;
             }
             
             // Build closing - confident, not tentative (1-2 sentences)
@@ -2505,5 +2505,6 @@
             });
         };
     </script>
+<script src="components/top-nav.js"></script>
 </body>
 </html>

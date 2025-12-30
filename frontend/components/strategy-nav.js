@@ -140,33 +140,13 @@
         const styles = document.createElement('style');
         styles.id = 'strategy-nav-styles';
         styles.textContent = `
-            /* Strategy Navigation Logo */
-            .strategy-nav-logo {
-                position: fixed;
-                left: 0;
-                top: 24px;
-                width: 268px;
-                text-align: center;
-                z-index: 91;
-            }
+            /* Logo now handled by top-nav.js component */
 
-            .strategy-nav-logo a {
-                font-family: 'Instrument Serif', Georgia, serif;
-                font-size: 2rem;
-                color: #ffffff;
-                text-decoration: none;
-            }
-
-            .strategy-nav-logo a em {
-                font-style: italic;
-                color: #22d3ee;
-            }
-
-            /* Strategy Navigation Sidebar */
+            /* Strategy Navigation Sidebar - positioned below top-nav (60px) */
             .strategy-nav {
                 position: fixed;
                 left: 0;
-                top: 150px;
+                top: 80px;
                 z-index: 90;
                 display: flex;
                 align-items: flex-start;
@@ -465,10 +445,9 @@
                 }
             }
 
-            /* Hide page headers when strategy-nav is present */
-            body.has-strategy-nav header,
-            body.has-strategy-nav .header,
-            body.has-strategy-nav .top-nav,
+            /* Hide page headers when strategy-nav is present (but NOT .top-nav) */
+            body.has-strategy-nav header:not(.top-nav),
+            body.has-strategy-nav .header:not(.top-nav),
             body.has-strategy-nav .header-container .logo {
                 display: none !important;
             }
@@ -577,13 +556,8 @@
             return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
 
-        // Footer section with Profile Settings and Sign Out
-        const footerHtml = `
-            <div class="strategy-nav-footer">
-                <a href="profile-edit.html" class="strategy-nav-footer-link">Profile Settings</a>
-                <a href="#" class="strategy-nav-footer-link" id="navSignOut">Sign Out</a>
-            </div>
-        `;
+        // Footer section removed - now handled by top nav "My Account" dropdown
+        const footerHtml = '';
 
         // Parent link HTML (may be disabled)
         const parentLinkHtml = parentDisabled
@@ -655,14 +629,10 @@
         // Inject styles
         injectStyles();
 
-        // Add class to body to hide page-level headers
+        // Add class to body for styling (top-nav.js now handles the header on all pages)
         document.body.classList.add('has-strategy-nav');
 
-        // Create and append logo
-        const logo = document.createElement('div');
-        logo.className = 'strategy-nav-logo';
-        logo.innerHTML = '<a href="dashboard.html"><em>Henry</em>HQ</a>';
-        document.body.appendChild(logo);
+        // Logo is now handled by top-nav.js component - no longer injected here
 
         // Create and append navigation
         const nav = createNavigation();
