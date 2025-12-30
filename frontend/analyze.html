@@ -1537,6 +1537,15 @@
       }
       userProfile.resume = resumeRecord.resume_json;
 
+      // CRITICAL: Also update localStorage to prevent contamination detection false positives
+      // The results.html page compares _candidate_name from analysis with localStorage profile
+      try {
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        console.log('Updated localStorage with selected resume');
+      } catch (e) {
+        console.error('Failed to update localStorage:', e);
+      }
+
       // Update the profile banner with selected resume's info
       const resume = resumeRecord.resume_json;
       const contact = resume.contact || {};
