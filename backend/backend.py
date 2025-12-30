@@ -6160,7 +6160,47 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 timing = your_move_data.get('timing', '')
                 competition_level = your_move_data.get('competition_level', '')
 
-                # Validate Your Move doesn't restate fit (BANNED PHRASES)
+                # ===== VALIDATION: Completeness checks =====
+                validation_failures = []
+
+                # Check positioning has both LEAD WITH and CUT (or meaningful content)
+                positioning_lower = positioning.lower()
+                if not positioning or len(positioning) < 20:
+                    validation_failures.append("positioning: too short or empty")
+                elif 'lead with' not in positioning_lower and 'cut' not in positioning_lower:
+                    # Log but allow - Claude might use alternate phrasing
+                    print(f"   ⚠️ Your Move positioning missing LEAD WITH/CUT format")
+
+                # Check contact_strategy has target and approach
+                contact_lower = contact_strategy.lower()
+                if not contact_strategy or len(contact_strategy) < 15:
+                    validation_failures.append("contact_strategy: too short or empty")
+                elif 'target' not in contact_lower and 'approach' not in contact_lower:
+                    # Check for common alternatives
+                    has_who = any(x in contact_lower for x in ['vp', 'director', 'manager', 'recruiter', 'hm'])
+                    has_how = any(x in contact_lower for x in ['dm', 'email', 'linkedin', 'mutual', 'connection'])
+                    if not (has_who and has_how):
+                        print(f"   ⚠️ Your Move contact_strategy missing WHO and HOW")
+
+                # Check timing has urgency context
+                timing_lower = timing.lower()
+                if not timing or len(timing) < 15:
+                    validation_failures.append("timing: too short or empty")
+                elif 'posted' not in timing_lower and 'days' not in timing_lower:
+                    print(f"   ⚠️ Your Move timing missing posting context")
+
+                # Check competition_level is valid enum
+                valid_levels = ['HIGH', 'MEDIUM', 'LOW']
+                if competition_level.upper() not in valid_levels:
+                    validation_failures.append(f"competition_level: '{competition_level}' not in {valid_levels}")
+
+                # Log validation results
+                if validation_failures:
+                    print(f"   ❌ Your Move VALIDATION FAILED: {validation_failures}")
+                else:
+                    print(f"   ✅ Your Move validation passed")
+
+                # ===== VALIDATION: Banned phrases (fit-restating) =====
                 all_text = f"{positioning} {contact_strategy} {timing}".lower()
                 banned_phrases = [
                     "your background gives you",
@@ -6173,8 +6213,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 ]
                 fit_restate_detected = any(phrase in all_text for phrase in banned_phrases)
                 if fit_restate_detected:
-                    print(f"   ⚠️ Your Move VALIDATION FAILED: Contains fit-restating phrase")
-                    # Still use it, but log the violation for monitoring
+                    print(f"   ⚠️ Your Move contains fit-restating phrase (banned)")
 
                 # Build display string for strategic_action (frontend compat)
                 your_move_display = f"{positioning} {contact_strategy} {timing}"
@@ -6182,7 +6221,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     your_move_display += f" {competition_level} competition."
                 your_move_display = your_move_display.strip()
 
-                print(f"   📣 Your Move (Claude): {your_move_display[:80]}...")
+                print(f"   📣 Your Move: {your_move_display[:100]}...")
 
                 # Wire to reality_check.strategic_action for frontend
                 if "reality_check" not in response_data:
@@ -6191,11 +6230,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
                 # Also store structured your_move for future frontend use
                 response_data["your_move_structured"] = your_move_data
-                print(f"   ✅ Wired Your Move to reality_check.strategic_action")
             else:
                 # Claude didn't provide your_move - this is a validation failure per spec
                 # Fall back to coaching controller output ONLY as emergency recovery
-                print(f"   ⚠️ Your Move MISSING from Claude - using coaching controller fallback")
+                print(f"   ❌ Your Move MISSING from Claude - using coaching controller fallback")
                 if your_move:
                     if "reality_check" not in response_data:
                         response_data["reality_check"] = {}
@@ -10521,13 +10559,28 @@ NOT: "Maya is a [X] professional, this requires [Y]"
 
 This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy, apply_decision.reasoning.
 
-🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
-The recommendation_rationale MUST match the fit_score tone:
-- fit_score < 45%: "This is a significant stretch. Only pursue if you have an inside connection or exceptional circumstances."
-- fit_score 45-54%: "This is a stretch role. Be strategic about positioning if you pursue it."
-- fit_score 55-69%: "This is a moderate fit with addressable gaps."
-- fit_score 70-84%: "This is a good fit worth pursuing."
-- fit_score >= 85%: "This is a strong match - prioritize this application."
+🚨🚨🚨 CRITICAL - SCORE SUMMARY (recommendation_rationale) RULES 🚨🚨🚨
+
+FORMAT: VERDICT FIRST, then ONE reason why. Max 2 sentences. No name-dropping.
+
+STRUCTURE:
+"[Fit verdict]. [Single most important reason]."
+
+EXAMPLES BY SCORE BAND:
+- fit_score < 45%: "Significant stretch. Missing 5+ years required experience in payments infrastructure."
+- fit_score 45-54%: "Stretch role. Consumer domain experience gap requires strong positioning."
+- fit_score 55-69%: "Moderate fit. Platform scale transfers but missing marketplace-specific execution."
+- fit_score 70-84%: "Good fit. Growth infrastructure background addresses core requirements."
+- fit_score >= 85%: "Strong match. Direct experience in both 0-to-1 and scale phases."
+
+BANNED IN SCORE SUMMARY:
+- Candidate name ("Sarah, strong platform experience...")
+- Company name-dropping in list form ("at Stripe and Asana")
+- Narrative prose ("align well with", "proven ability to")
+- Restating strengths that belong elsewhere
+
+GOOD: "Good fit. Technical depth in growth systems addresses core platform needs."
+BAD: "Sarah, strong platform experience at Stripe and 0-to-1 product success at Asana align well with growth infrastructure requirements."
 
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.
@@ -11440,7 +11493,7 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
     "penalty_explanation": "Base score of 75% reduced due to 96% experience gap (8 years required, 0.3 years credible PM experience after adjusting for company scale). Divercity experience discounted to 0.3 years due to seed-stage startup with no active website and <1 year tenure. Missing consumer apps experience adds additional penalty. Hard cap of 45% applied."
   },
   "recommendation": "Conditional Apply|Do Not Apply|Apply|Strongly Apply",
-  "recommendation_rationale": "1-2 sentences explaining why, referencing specific gaps or strengths",
+  "recommendation_rationale": "VERDICT FIRST format: '[Fit level]. [Primary reason why].' Max 2 sentences. No name-dropping. No resume prose.",
   "alternative_actions": ["Action 1 if Conditional Apply or Do Not Apply", "Action 2"],
   "experience_analysis": {
     "required_years": 8,
@@ -11465,9 +11518,9 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   },
   "strengths": ["3-4 candidate strengths matching this role"] or [],
   "your_move": {
-    "positioning": "What to lead with in resume/outreach (max 75 chars, action only, no fit assessment)",
-    "contact_strategy": "Who to contact and how (max 75 chars, e.g. 'HM direct. Recruiter is gatekeeping.')",
-    "timing": "When to apply (max 75 chars, e.g. 'Apply within 48 hours. Role posted 3 days ago.')",
+    "positioning": "LEAD WITH: [specific skill/metric]. CUT: [what to de-emphasize]. Max 75 chars.",
+    "contact_strategy": "TARGET: [specific title at company]. APPROACH: [DM/email/mutual connection]. Max 75 chars.",
+    "timing": "APPLY: [timeframe]. POSTED: [days ago]. URGENCY: [why]. Max 75 chars.",
     "competition_level": "HIGH|MEDIUM|LOW"
   },
   "gaps": [
@@ -11593,36 +11646,49 @@ Violations to avoid: exclamation points, em dashes, generic phrases, no specific
 
 CRITICAL YOUR_MOVE RULES (MANDATORY - READ CAREFULLY):
 
-Your Move is ACTIONS ONLY. Commands, not suggestions. No fit assessment.
+Your Move is ATOMIC ACTIONS. Commands, not advice. No fit assessment.
 
-The four fields are (each max 75 characters):
-1. positioning: What to LEAD WITH in resume/outreach. Specific, not generic.
-2. contact_strategy: WHO to contact and HOW. Direct commands.
-3. timing: WHEN to apply. Specific timeframe.
-4. competition_level: HIGH, MEDIUM, or LOW (enum, not prose)
+REQUIRED FORMAT FOR EACH FIELD:
 
-RULES:
-- Actions only. No fit assessment.
-- Commands, not suggestions. "Contact HM" not "Consider contacting HM"
-- No phrases like "your background gives you" or "your experience positions you"
-- Total section must be under 300 characters
-- Every field is required. No empty strings.
+1. positioning (max 75 chars):
+   FORMAT: "LEAD WITH: [specific skill/metric]. CUT: [what to de-emphasize]."
+   GOOD: "LEAD WITH: 0-to-1 execution at scale. CUT: early marketing roles."
+   BAD: "Lead with platform scale and 0-to-1 execution" (no CUT directive)
 
-GOOD your_move (ACTION-FOCUSED):
+2. contact_strategy (max 75 chars):
+   FORMAT: "TARGET: [specific title]. APPROACH: [method]."
+   GOOD: "TARGET: VP Product. APPROACH: Mutual connection via ex-Stripe."
+   BAD: "HM direct." (no specific target, no approach method)
+
+3. timing (max 75 chars):
+   FORMAT: "APPLY: [timeframe]. POSTED: [days]. [urgency reason]."
+   GOOD: "APPLY: Within 24 hours. POSTED: 2 days ago. Pipeline fills fast."
+   BAD: "Apply within 24 hours." (no posting age, no urgency context)
+
+4. competition_level: "HIGH" | "MEDIUM" | "LOW" (enum only)
+
+VALIDATION RULES:
+- positioning MUST contain both LEAD WITH and CUT directives
+- contact_strategy MUST specify WHO (title) and HOW (approach method)
+- timing MUST include posting age or urgency context
+- Empty or vague fields = VALIDATION FAILURE
+
+GOOD your_move (COMPLETE):
 {
-  "positioning": "Lead with cross-functional delivery at scale",
-  "contact_strategy": "HM direct. Recruiter is gatekeeping.",
-  "timing": "Apply within 48 hours. Role posted 3 days ago.",
+  "positioning": "LEAD WITH: Growth infra at 100M+ scale. CUT: B2C consumer work.",
+  "contact_strategy": "TARGET: Director of Growth. APPROACH: DM via shared Stripe alumni.",
+  "timing": "APPLY: Within 24 hours. POSTED: 3 days. High-visibility AI role.",
   "competition_level": "HIGH"
 }
 
-BAD your_move (RESTATES FIT - FORBIDDEN):
+BAD your_move (INCOMPLETE - FORBIDDEN):
 {
-  "positioning": "Your strong PM background positions you well for this role",
-  "contact_strategy": "Consider reaching out to the hiring manager since your experience aligns",
-  "timing": "Apply soon given your competitive profile",
-  "competition_level": "MEDIUM"
+  "positioning": "Lead with platform scale and 0-to-1 execution",
+  "contact_strategy": "HM direct. Growth roles move fast.",
+  "timing": "Apply within 24 hours.",
+  "competition_level": "HIGH"
 }
+Problems: No CUT directive, no specific target title, no approach method, no posting context.
 
 BANNED PHRASES in your_move:
 - "your background gives you"
@@ -12510,13 +12576,28 @@ NOT: "Maya is a [X] professional, this requires [Y]"
 
 This applies to ALL messaging fields: strategic_action, recommendation_rationale, gaps array descriptions, strengths array, positioning_strategy, mitigation_strategy, apply_decision.reasoning.
 
-🚨🚨🚨 CRITICAL - EXPLANATION MUST MATCH SCORE 🚨🚨🚨
-The recommendation_rationale MUST match the fit_score tone:
-- fit_score < 45%: "This is a significant stretch. Only pursue if you have an inside connection or exceptional circumstances."
-- fit_score 45-54%: "This is a stretch role. Be strategic about positioning if you pursue it."
-- fit_score 55-69%: "This is a moderate fit with addressable gaps."
-- fit_score 70-84%: "This is a good fit worth pursuing."
-- fit_score >= 85%: "This is a strong match - prioritize this application."
+🚨🚨🚨 CRITICAL - SCORE SUMMARY (recommendation_rationale) RULES 🚨🚨🚨
+
+FORMAT: VERDICT FIRST, then ONE reason why. Max 2 sentences. No name-dropping.
+
+STRUCTURE:
+"[Fit verdict]. [Single most important reason]."
+
+EXAMPLES BY SCORE BAND:
+- fit_score < 45%: "Significant stretch. Missing 5+ years required experience in payments infrastructure."
+- fit_score 45-54%: "Stretch role. Consumer domain experience gap requires strong positioning."
+- fit_score 55-69%: "Moderate fit. Platform scale transfers but missing marketplace-specific execution."
+- fit_score 70-84%: "Good fit. Growth infrastructure background addresses core requirements."
+- fit_score >= 85%: "Strong match. Direct experience in both 0-to-1 and scale phases."
+
+BANNED IN SCORE SUMMARY:
+- Candidate name ("Sarah, strong platform experience...")
+- Company name-dropping in list form ("at Stripe and Asana")
+- Narrative prose ("align well with", "proven ability to")
+- Restating strengths that belong elsewhere
+
+GOOD: "Good fit. Technical depth in growth systems addresses core platform needs."
+BAD: "Sarah, strong platform experience at Stripe and 0-to-1 product success at Asana align well with growth infrastructure requirements."
 
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.
