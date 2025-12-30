@@ -150,6 +150,29 @@
             margin: 0;
         }
 
+        .quick-move-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .move-item {
+            color: var(--color-text);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .move-item:empty {
+            display: none;
+        }
+
+        .move-label {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+
         .quick-view .button-group {
             justify-content: center;
         }
@@ -1361,10 +1384,20 @@
                 <div class="recommendation-text"><span id="candidateNameQuick"></span><span id="recommendationTextQuick">—</span></div>
             </div>
 
-            <!-- Your Move (condensed) -->
+            <!-- Your Move (scannable list) -->
             <div class="quick-move" id="quickMove">
                 <div class="quick-move-label">Your Move</div>
-                <p class="quick-move-text" id="quickMoveText">—</p>
+                <div class="quick-move-list" id="quickMoveList">
+                    <div class="move-item" id="movePositioning"></div>
+                    <div class="move-item" id="moveContact"></div>
+                    <div class="move-item" id="moveApply"></div>
+                </div>
+                <p class="quick-move-text" id="quickMoveText" style="display: none;">—</p>
+            </div>
+
+            <!-- Reality Check (one-liner for Quick View) -->
+            <div class="quick-reality" id="quickReality" style="margin-top: 12px; padding: 10px 12px; background: rgba(255,107,107,0.1); border-radius: 6px; display: none;">
+                <span style="color: #ff6b6b; font-weight: 500;" id="quickRealityText"></span>
             </div>
 
             <!-- Buttons -->
@@ -2296,30 +2329,19 @@
 
         // Populate Full View recommendation
         document.getElementById('recommendationLabel').textContent = recommendationLabel;
-        
+
         // Populate Quick View recommendation
         document.getElementById('recommendationLabelQuick').textContent = recommendationLabel;
-        
-        // Add candidate name personalization
+
+        // Score Summary: Pure verdict, no name personalization
+        // The system speaks with authority, not as a friend
         const candidateNameEl = document.getElementById('candidateName');
         const candidateNameQuickEl = document.getElementById('candidateNameQuick');
-        if (candidateName && candidateName !== 'Candidate') {
-            // Extract first name only and ensure title case (not ALL CAPS)
-            let firstName = candidateName.split(' ')[0];
-            // Convert to title case if all caps
-            if (firstName === firstName.toUpperCase()) {
-                firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-            }
-            candidateNameEl.textContent = firstName + ', ';
-            candidateNameQuickEl.textContent = firstName + ', ';
-        }
-        
-        // TRUNCATE TO 2 SENTENCES for scannability, lowercase first letter if we have name
-        let truncatedText = truncateText(recommendationText, 2);
-        if (candidateName && candidateName !== 'Candidate' && truncatedText) {
-            // Lowercase first letter since name provides the capital
-            truncatedText = truncatedText.charAt(0).toLowerCase() + truncatedText.slice(1);
-        }
+        candidateNameEl.textContent = '';  // No name - system verdict
+        candidateNameQuickEl.textContent = '';
+
+        // TRUNCATE TO 2 SENTENCES for scannability
+        const truncatedText = truncateText(recommendationText, 2);
         document.getElementById('recommendationText').textContent = truncatedText;
         document.getElementById('recommendationTextQuick').textContent = truncatedText;
 
@@ -2449,37 +2471,70 @@
         }
 
         // =====================================================================
-        // POPULATE: Quick View "Your Move" section
-        // FRONTEND CONTRACT FIX: Render fallback copy if Your Move is missing
-        // SANITY CHECK: Do Not Apply must not show optimistic messaging
+        // POPULATE: Quick View "Your Move" section (scannable list format)
         // =====================================================================
+        const quickMoveList = document.getElementById('quickMoveList');
         const quickMoveText = document.getElementById('quickMoveText');
-        // realityCheckData already declared above
+        const movePositioning = document.getElementById('movePositioning');
+        const moveContact = document.getElementById('moveContact');
+        const moveApply = document.getElementById('moveApply');
 
-        // Get strategic_action if available
-        const strategicAction = realityCheckData?.strategic_action ||
-                                data.intelligence_layer?.strategic_positioning?.recommended_action ||
-                                data.your_move || '';
+        // Get structured Your Move data
+        const yourMoveStructured = data.your_move_structured || data.your_move || null;
 
-        // SANITY CHECK: If recommendation is Do Not Apply, override any optimistic messaging
-        if (applyDisabled) {
-            // Use backend strategic_action if available, otherwise use direct language
-            if (strategicAction) {
-                quickMoveText.textContent = strategicAction;
-            } else {
-                quickMoveText.textContent = 'This role is not a fit. Review the analysis above and focus on roles where you are competitive.';
+        if (yourMoveStructured && typeof yourMoveStructured === 'object') {
+            // Use structured format - scannable list
+            quickMoveList.style.display = 'flex';
+            quickMoveText.style.display = 'none';
+
+            const positioning = yourMoveStructured.positioning || '';
+            const contactStrategy = yourMoveStructured.contact_strategy || '';
+            const applyWindow = yourMoveStructured.apply_window || yourMoveStructured.timing || '';
+
+            // Format each as a scannable item
+            if (positioning) {
+                movePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
             }
-        } else if (strategicAction) {
-            quickMoveText.textContent = strategicAction;
+            if (contactStrategy) {
+                moveContact.innerHTML = `<span class="move-label">Target:</span> ${contactStrategy.replace(/^TARGET:\s*/i, '').replace(/\.\s*APPROACH:/, ' · ')}`;
+            }
+            if (applyWindow) {
+                moveApply.innerHTML = `<span class="move-label">Apply:</span> ${applyWindow.replace(/^APPLY:\s*/i, '')}`;
+            }
         } else {
-            // Fallback: Generate a default quick move based on fit score
-            if (fitScore >= 70) {
-                quickMoveText.textContent = 'Apply within 24 hours and find the hiring manager on LinkedIn. Your fit score gives you an edge, but speed matters in this market.';
+            // Fallback to text block
+            quickMoveList.style.display = 'none';
+            quickMoveText.style.display = 'block';
+
+            const strategicAction = realityCheckData?.strategic_action ||
+                                    data.intelligence_layer?.strategic_positioning?.recommended_action ||
+                                    '';
+
+            if (applyDisabled) {
+                quickMoveText.textContent = strategicAction || 'This role is not a fit. Focus on roles where you are competitive.';
+            } else if (strategicAction) {
+                quickMoveText.textContent = strategicAction;
+            } else if (fitScore >= 70) {
+                quickMoveText.textContent = 'Apply within 24 hours. Find the hiring manager on LinkedIn.';
             } else if (fitScore >= 50) {
-                quickMoveText.textContent = 'Apply, but pair it with direct outreach. Find someone at the company who can refer you internally.';
+                quickMoveText.textContent = 'Apply with direct outreach. Find someone who can refer you internally.';
             } else {
-                quickMoveText.textContent = 'This is a stretch. Only pursue if you have an inside connection. Otherwise, focus on roles where you are 70%+ fit.';
+                quickMoveText.textContent = 'Stretch role. Only pursue with an inside connection.';
             }
+        }
+
+        // =====================================================================
+        // POPULATE: Quick View Reality Check one-liner
+        // =====================================================================
+        const quickReality = document.getElementById('quickReality');
+        const quickRealityText = document.getElementById('quickRealityText');
+
+        if (realityCheckData?.brutal_truth) {
+            quickReality.style.display = 'block';
+            quickRealityText.textContent = realityCheckData.brutal_truth;
+        } else if (realityCheckData?.referral_requirement === 'REQUIRED') {
+            quickReality.style.display = 'block';
+            quickRealityText.textContent = 'Referral required. Cold apply is low probability.';
         }
 
         // =====================================================================
