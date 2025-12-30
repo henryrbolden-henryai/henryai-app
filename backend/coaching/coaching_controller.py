@@ -1173,9 +1173,10 @@ def _clean_signal_phrase(strength: str, matched_keyword: str) -> str:
     → "distributed systems experience at scale"
 
     RULES:
-    - Preserve proper capitalization (product names, company names, acronyms)
+    - Preserve original capitalization from the input (Claude should capitalize correctly)
     - Never truncate mid-word or mid-phrase with "..."
     - Extract clean, complete phrases
+    - Find natural break points if too long
     """
     import re
 
@@ -1186,47 +1187,29 @@ def _clean_signal_phrase(strength: str, matched_keyword: str) -> str:
     # Remove parenthetical content for initial processing
     cleaned = re.sub(r'\s*\([^)]*\)', '', strength).strip()
 
-    # Preserve proper nouns and acronyms - these words should stay capitalized
-    # Common product/company names and acronyms to preserve
-    preserve_caps = [
-        'Asana', 'Goals', 'Stripe', 'Google', 'Meta', 'Amazon', 'Apple', 'Microsoft',
-        'Netflix', 'Airbnb', 'Uber', 'Lyft', 'Slack', 'Zoom', 'LinkedIn', 'Twitter',
-        'MAU', 'DAU', 'ARR', 'GMV', 'API', 'SDK', 'SRE', 'AI', 'ML', 'PM', 'VP',
-        'CEO', 'CTO', 'CFO', 'COO', 'B2B', 'B2C', 'SaaS', 'AWS', 'GCP', 'Azure',
-        'iOS', 'Android', 'React', 'Node', 'Python', 'Java', 'SQL', 'NoSQL',
-        'Kubernetes', 'K8s', 'Docker', 'DevOps', 'CI/CD'
-    ]
-
-    # Try to extract meaningful phrases
-    # Pattern 1: "X experience with Y" → "Y experience"
-    exp_match = re.search(r'experience\s+(?:with\s+)?(.+?)(?:\s+at\s+scale)?$', cleaned, re.IGNORECASE)
-    if exp_match:
-        subject = exp_match.group(1).strip()
-        if len(subject) <= 50:
-            result = f"{subject} experience"
-            # Add metric if available and short
-            if metric and len(metric) <= 20:
-                result = f"{subject} experience ({metric})"
-            return _preserve_capitalization(result, preserve_caps)
-
-    # Pattern 2: "0-to-1 product experience" or similar compound terms
+    # Pattern 1: "0-to-1 product experience" - preserve compound terms
     zero_to_one_match = re.search(r'(0-to-1|zero-to-one)\s+(.+?)(?:\s+experience)?', cleaned, re.IGNORECASE)
     if zero_to_one_match:
         subject = zero_to_one_match.group(2).strip()
         result = f"0-to-1 {subject} experience"
-        return _preserve_capitalization(result, preserve_caps)
+        if metric and len(metric) <= 25:
+            result = f"{result} ({metric})"
+        return _normalize_metrics(result)
 
-    # Pattern 3: Leadership with team size
+    # Pattern 2: Leadership with team size
     leadership_match = re.search(r'(cross-functional\s+)?leadership\s+(?:managing|leading|of)\s+(?:teams?\s+of\s+)?(\d+\+?)', cleaned, re.IGNORECASE)
     if leadership_match:
         prefix = leadership_match.group(1) or ''
         size = leadership_match.group(2)
         result = f"{prefix}leadership managing teams of {size}".strip()
-        return _preserve_capitalization(result, preserve_caps)
+        return _normalize_metrics(result)
 
     # If the cleaned string is reasonable length, use it directly
-    if len(cleaned) <= 70:
-        return _preserve_capitalization(cleaned, preserve_caps)
+    if len(cleaned) <= 80:
+        result = cleaned
+        if metric and len(metric) <= 25 and len(cleaned) <= 55:
+            result = f"{cleaned} ({metric})"
+        return _normalize_metrics(result)
 
     # For longer strings, try to find a natural break point
     # Look for conjunctions or prepositions to split at
@@ -1234,58 +1217,52 @@ def _clean_signal_phrase(strength: str, matched_keyword: str) -> str:
     for bp in break_patterns:
         if bp in cleaned.lower():
             idx = cleaned.lower().find(bp)
-            if 20 <= idx <= 60:
+            if 25 <= idx <= 70:
                 result = cleaned[:idx].strip()
-                return _preserve_capitalization(result, preserve_caps)
+                return _normalize_metrics(result)
 
-    # Last resort: take first complete phrase up to 60 chars
+    # Last resort: take first complete phrase up to 70 chars
     # But end at a word boundary, not mid-word
-    if len(cleaned) > 60:
-        # Find last space before char 60
-        last_space = cleaned[:60].rfind(' ')
+    if len(cleaned) > 70:
+        # Find last space before char 70
+        last_space = cleaned[:70].rfind(' ')
         if last_space > 30:
             result = cleaned[:last_space].strip()
-            return _preserve_capitalization(result, preserve_caps)
+            return _normalize_metrics(result)
 
-    return _preserve_capitalization(cleaned, preserve_caps)
+    return _normalize_metrics(cleaned)
 
 
-def _preserve_capitalization(text: str, preserve_words: list) -> str:
+def _normalize_metrics(text: str) -> str:
     """
-    Ensure proper nouns, product names, and acronyms are correctly capitalized.
+    Normalize common metric formats in text.
 
-    Args:
-        text: The text to fix capitalization in
-        preserve_words: List of words that should have specific capitalization
+    This handles universal patterns like:
+    - 15k → 15K, 100m → 100M (number units)
+    - mau → MAU, dau → DAU, arr → ARR (common acronyms)
 
-    Returns:
-        Text with proper capitalization preserved
+    Does NOT hardcode product names or company names - those should
+    come correctly capitalized from Claude's output.
     """
+    import re
+
     result = text
 
-    # Build a case-insensitive lookup
-    word_map = {w.lower(): w for w in preserve_words}
-
-    # Also handle common patterns
-    # Numbers with units (15k → 15K, 100m → 100M)
-    import re
+    # Normalize number units (universal pattern)
     result = re.sub(r'(\d+)k\b', r'\1K', result, flags=re.IGNORECASE)
     result = re.sub(r'(\d+)m\b', r'\1M', result, flags=re.IGNORECASE)
     result = re.sub(r'(\d+)b\b', r'\1B', result, flags=re.IGNORECASE)
+
+    # Normalize common business/tech acronyms (universal, not candidate-specific)
     result = re.sub(r'\bmau\b', 'MAU', result, flags=re.IGNORECASE)
     result = re.sub(r'\bdau\b', 'DAU', result, flags=re.IGNORECASE)
     result = re.sub(r'\barr\b', 'ARR', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bgmv\b', 'GMV', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bapi\b', 'API', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bsdk\b', 'SDK', result, flags=re.IGNORECASE)
+    result = re.sub(r'\bsre\b', 'SRE', result, flags=re.IGNORECASE)
 
-    # Replace words that should be capitalized
-    words = result.split()
-    for i, word in enumerate(words):
-        # Strip punctuation for lookup
-        clean_word = re.sub(r'[^\w]', '', word)
-        if clean_word.lower() in word_map:
-            # Replace while preserving surrounding punctuation
-            words[i] = word.replace(clean_word, word_map[clean_word.lower()])
-
-    return ' '.join(words)
+    return result
 
 
 def _get_role_context(role_title: str, job_requirements: Dict[str, Any]) -> str:

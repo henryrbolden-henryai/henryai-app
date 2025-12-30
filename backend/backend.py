@@ -11566,33 +11566,32 @@ Violations to avoid: exclamation points, em dashes, generic phrases, no specific
 CRITICAL YOUR_MOVE_SUMMARY RULES (MANDATORY - READ CAREFULLY):
 
 The your_move_summary field provides the candidate's immediate action plan. It MUST be:
-1. GROUNDED in the candidate's ACTUAL resume - reference real companies, real metrics, real experience
-2. SPECIFIC - mention actual product names (e.g., "Asana Goals"), actual metrics (e.g., "15K MAU"), actual team sizes (e.g., "8+ engineers")
+1. GROUNDED in the candidate's ACTUAL resume - reference their real companies, real metrics, real experience
+2. SPECIFIC - mention their actual product names, actual metrics, actual team sizes from their resume
 3. PROPERLY CAPITALIZED:
-   - Product names: "Asana Goals" not "asana goals"
-   - Company names: "Stripe" not "stripe"
-   - Acronyms: "MAU", "DAU", "ARR", "API" - always uppercase
+   - Product/company names: Capitalize as proper nouns (e.g., "Product Name" not "product name")
+   - Acronyms: "MAU", "DAU", "ARR", "API", "SDK" - always uppercase
    - Numbers with units: "15K MAU" not "15k mau", "100M users" not "100m users"
 4. COMPLETE compound terms - never truncate:
    - "0-to-1 product experience" not "1 product experience"
    - "cross-functional leadership" not just "leadership"
 5. NO TRUNCATION - if a phrase is too long, rephrase it concisely rather than cutting it off with "..."
 
-GOOD your_move_summary example:
+GOOD your_move_summary pattern:
 {
-  "positioning_sentence": "Your 0-to-1 product experience with Asana Goals (reaching 15K MAU in first year) and cross-functional leadership managing teams of 8+ engineers directly match this role's core requirements.",
-  "action_sentence": "Emphasize your enterprise scale background at Stripe prominently in your resume and outreach.",
+  "positioning_sentence": "Your [COMPLETE STRENGTH with proper capitalization] and [SECOND STRENGTH with metrics] directly match this role's core requirements.",
+  "action_sentence": "Emphasize your [SPECIFIC EXPERIENCE from resume] prominently in your resume and outreach.",
   "timing_sentence": "Apply now and prioritize a direct message to the hiring manager. ATS volume is high."
 }
 
-BAD your_move_summary example (DO NOT EMULATE):
+BAD your_move_summary (DO NOT EMULATE):
 {
-  "positioning_sentence": "Your 1 product experience with asana goals reaching 15k mau and leadership managing teams of 8+ through... directly match this role's core requirements.",
+  "positioning_sentence": "Your 1 product experience with [lowercase product] reaching 15k mau and leadership managing teams of 8+ through... directly match this role's core requirements.",
   "action_sentence": "Emphasize your experience prominently.",
   "timing_sentence": "Apply soon."
 }
 
-Problems: "0-to-1" truncated to "1", "asana goals" lowercase, "15k mau" lowercase, "through..." truncated, vague action, vague timing.
+Problems: "0-to-1" truncated to "1", product names lowercase, "15k mau" should be "15K MAU", "through..." truncated mid-phrase, vague action, vague timing.
 
   "changes_summary": {
     "resume": {
