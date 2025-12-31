@@ -262,6 +262,62 @@
             color: var(--color-text);
         }
 
+        .quick-win-rationale {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        .quick-win-impact {
+            display: block;
+            margin-top: 4px;
+            font-size: 0.85rem;
+            color: var(--color-success);
+        }
+
+        /* Gap Type Badges - v3.0: distinguish experience vs presentation gaps */
+        .gap-type-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .gap-type-badge.experience {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .gap-type-badge.presentation {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        /* Gap type tooltip text */
+        .gap-type-hint {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .gap-type-hint.experience {
+            color: var(--color-error);
+        }
+
+        .gap-type-hint.presentation {
+            color: var(--color-accent);
+        }
+
         /* Strengths Section */
         .strengths-section {
             background: rgba(74, 222, 128, 0.05);
@@ -1608,7 +1664,7 @@
             else if (recommendation === 'apply with caution' || recommendation === 'conditional apply') {
                 banner.style.display = 'flex';
                 banner.classList.add('caution');
-                title.textContent = 'Stretch Role - Strategic Positioning Required';
+                title.textContent = 'Stretch Role: Strategic Positioning Required';
 
                 let cautionMsg = `This is a stretch opportunity for "${targetRole}".`;
                 if (leadershipYearsRequired > 0 && leadershipYearsActual < leadershipYearsRequired) {
@@ -1884,27 +1940,27 @@
             const technicalSignals = levelingData.technical_signals || [];
 
             if (scopeSignals.length >= 2) {
-                strengths.push(`Strong scope signals (${scopeSignals.length} found) - you're showing the scale of your work`);
+                strengths.push(`Strong scope signals (${scopeSignals.length} found). You are showing the scale of your work.`);
             }
             if (impactSignals.length >= 2) {
-                strengths.push(`Clear impact evidence (${impactSignals.length} found) - you're quantifying your results`);
+                strengths.push(`Clear impact evidence (${impactSignals.length} found). You are quantifying your results.`);
             }
             if (leadershipSignals.length >= 2) {
-                strengths.push(`Leadership indicators (${leadershipSignals.length} found) - you're demonstrating influence`);
+                strengths.push(`Leadership indicators (${leadershipSignals.length} found). You are demonstrating influence.`);
             }
             if (technicalSignals.length >= 2) {
-                strengths.push(`Technical depth (${technicalSignals.length} found) - you're showing domain expertise`);
+                strengths.push(`Technical depth (${technicalSignals.length} found). You are showing domain expertise.`);
             }
 
             // Check confidence and years
             const confidence = (levelingData.level_confidence || 0) * 100;
             if (confidence >= 80) {
-                strengths.push("High confidence assessment - your experience is well-documented");
+                strengths.push("High confidence assessment. Your experience is well-documented.");
             }
 
             const quantRate = (levelingData.quantification_rate || 0) * 100;
             if (quantRate >= 50) {
-                strengths.push(`${Math.round(quantRate)}% quantified bullets - above average for specificity`);
+                strengths.push(`${Math.round(quantRate)}% quantified bullets, above average for specificity.`);
             }
 
             // Only show if we have strengths to celebrate
@@ -1915,11 +1971,36 @@
             }
         }
 
-        // Render quick win - highest impact single fix
+        // Render quick win - highest impact single fix (v3.0: use backend quick_win if available)
         function renderQuickWin() {
-            let quickWin = '';
+            const section = document.getElementById('quickWinSection');
+            const textEl = document.getElementById('quickWinText');
 
-            // Priority order for quick wins (highest impact first)
+            // v3.0: Use backend-provided quick_win if available
+            if (levelingData.quick_win) {
+                const qw = levelingData.quick_win;
+                section.style.display = 'block';
+
+                // Build rich quick win content with gap type indicator
+                let content = qw.action;
+                if (qw.rationale) {
+                    content += ` <span class="quick-win-rationale">${qw.rationale}</span>`;
+                }
+                if (qw.expected_impact) {
+                    content += ` <span class="quick-win-impact">${qw.expected_impact}</span>`;
+                }
+
+                // Add gap type indicator
+                const gapTypeLabel = qw.gap_type === 'experience'
+                    ? '<span class="gap-type-badge experience">Experience Gap</span>'
+                    : '<span class="gap-type-badge presentation">Presentation Gap</span>';
+
+                textEl.innerHTML = `${gapTypeLabel} ${content}`;
+                return;
+            }
+
+            // Fallback: Legacy logic for backward compatibility
+            let quickWin = '';
             const quantRate = (levelingData.quantification_rate || 0) * 100;
             const recommendations = levelingData.recommendations || [];
             const redFlags = levelingData.red_flags || [];
@@ -1930,7 +2011,7 @@
             } else if (redFlags.length > 0) {
                 const firstFlag = typeof redFlags[0] === 'string' ? redFlags[0] : redFlags[0].type || '';
                 if (firstFlag.toLowerCase().includes('company')) {
-                    quickWin = "Add a brief company description to your most recent role. Example: 'Acme Corp (Series B SaaS, $20M ARR, 150 employees)' - this instantly validates your scope.";
+                    quickWin = "Add a brief company description to your most recent role. Example: 'Acme Corp (Series B SaaS, $20M ARR, 150 employees).' This instantly validates your scope.";
                 } else if (firstFlag.toLowerCase().includes('title')) {
                     quickWin = "Reframe your title to reflect actual scope. If you were 'VP' at a 5-person startup, consider 'Head of Product' or 'Product Lead' with scope details in your bullets.";
                 } else if (firstFlag.toLowerCase().includes('generic')) {
@@ -1945,8 +2026,8 @@
             }
 
             if (quickWin) {
-                document.getElementById('quickWinSection').style.display = 'block';
-                document.getElementById('quickWinText').textContent = quickWin;
+                section.style.display = 'block';
+                textEl.textContent = quickWin;
             }
         }
 
@@ -2146,7 +2227,7 @@
                 qualBadge.textContent = 'Qualified for this level';
             } else if (levelingData.levels_apart <= 1) {
                 qualBadge.className = 'qualification-badge stretch';
-                qualBadge.textContent = 'Stretch role - addressable gaps';
+                qualBadge.textContent = 'Stretch role with addressable gaps';
             } else {
                 qualBadge.className = 'qualification-badge reach';
                 qualBadge.textContent = 'Significant gap to target';
@@ -2162,21 +2243,36 @@
                 levelsText.textContent = `You're ${Math.abs(levelingData.levels_apart)} level${Math.abs(levelingData.levels_apart) > 1 ? 's' : ''} above the target role requirements.`;
             }
 
-            // Gaps
+            // Gaps with v3.0 gap_type indicators
             if (levelingData.gaps && levelingData.gaps.length > 0) {
                 const gapsSection = document.getElementById('gapsSection');
                 gapsSection.innerHTML = `
                     <h4 style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Gaps to Address</h4>
-                    ${levelingData.gaps.map(gap => `
-                        <div class="gap-item">
-                            <div class="gap-header">
-                                <span class="gap-category">${gap.category}</span>
-                                <span class="gap-priority ${gap.priority}">${gap.priority} priority</span>
+                    ${levelingData.gaps.map(gap => {
+                        // v3.0: Add gap type badge
+                        const gapType = gap.gap_type || 'presentation';
+                        const gapTypeBadge = gapType === 'experience'
+                            ? '<span class="gap-type-badge experience">Experience Gap</span>'
+                            : '<span class="gap-type-badge presentation">Presentation Gap</span>';
+
+                        // v3.0: Add gap type hint
+                        const gapTypeHint = gapType === 'experience'
+                            ? '<p class="gap-type-hint experience">This requires more time or different roles to close.</p>'
+                            : '<p class="gap-type-hint presentation">You likely have this. Reframe your resume to show it.</p>';
+
+                        return `
+                            <div class="gap-item">
+                                <div class="gap-header">
+                                    <span class="gap-category">${gap.category}</span>
+                                    ${gapTypeBadge}
+                                    <span class="gap-priority ${gap.priority}">${gap.priority} priority</span>
+                                </div>
+                                <p class="gap-description">${gap.description}</p>
+                                <p class="gap-recommendation">${gap.recommendation}</p>
+                                ${gapTypeHint}
                             </div>
-                            <p class="gap-description">${gap.description}</p>
-                            <p class="gap-recommendation">${gap.recommendation}</p>
-                        </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 `;
             }
         }
@@ -2464,16 +2560,29 @@
                 const priority = (rec.priority || 'medium').toLowerCase();
                 const config = priorityConfig[priority] || priorityConfig['medium'];
 
+                // v3.0: Add gap type badge
+                const gapType = rec.gap_type || 'presentation';
+                const gapTypeBadge = gapType === 'experience'
+                    ? '<span class="gap-type-badge experience">Experience Gap</span>'
+                    : '<span class="gap-type-badge presentation">Presentation Gap</span>';
+
+                // v3.0: Add gap type hint text
+                const gapTypeHint = gapType === 'experience'
+                    ? '<p class="gap-type-hint experience">This requires building more experience over time.</p>'
+                    : '<p class="gap-type-hint presentation">You likely have this. Make it visible on your resume.</p>';
+
                 return `
                     <div class="rec-item">
                         <div class="rec-meta">
                             <span class="rec-type">${rec.type}</span>
+                            ${gapTypeBadge}
                             <span class="priority-label ${config.class}">${config.icon} ${config.label}</span>
                         </div>
                         <p class="priority-description">${config.description}</p>
                         ${rec.current ? `<div class="rec-current"><strong>Current:</strong> ${rec.current}</div>` : ''}
                         <div class="rec-suggested"><strong>Suggested:</strong> ${rec.suggested}</div>
                         <p class="rec-rationale">${rec.rationale}</p>
+                        ${gapTypeHint}
                     </div>
                 `;
             }).join('');

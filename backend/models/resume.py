@@ -91,6 +91,9 @@ class LevelingGap(BaseModel):
     description: str
     recommendation: str  # How to address in resume
     priority: str  # "high", "medium", "low"
+    gap_type: str = "presentation"  # "experience" or "presentation" - CRITICAL distinction
+    # experience = candidate genuinely needs more time/roles
+    # presentation = candidate likely has this but resume doesn't show it
 
 
 class LevelingRecommendation(BaseModel):
@@ -100,6 +103,33 @@ class LevelingRecommendation(BaseModel):
     current: str  # Current state
     suggested: str  # Recommended change
     rationale: str  # Why this matters
+    gap_type: str = "presentation"  # "experience" or "presentation"
+
+
+class QuickWin(BaseModel):
+    """Single highest-impact action for the candidate"""
+    action: str  # What to do
+    rationale: str  # Why this matters most
+    expected_impact: str  # What improvement to expect
+    gap_type: str  # "experience" or "presentation"
+
+
+class SignalItem(BaseModel):
+    """A signal with severity for sorting"""
+    text: str  # The signal text
+    severity: str  # "CRITICAL", "HIGH", "MEDIUM", "LOW"
+    source: Optional[str] = None  # Where it came from (e.g., "Uber - Senior PM")
+    gap_type: Optional[str] = None  # "experience" or "presentation" if this is a gap
+
+
+class RedFlag(BaseModel):
+    """Enhanced red flag with cause, consequence, and fix"""
+    type: str  # Category of flag
+    instance: str  # Specific instance from resume
+    why_it_matters: str  # Market perception consequence
+    gap_type: str  # "experience" or "presentation"
+    how_to_fix: List[str]  # Actionable fixes
+    source_bullets: Optional[List[str]] = None  # For context-specific replacements
 
 
 class ResumeLevelingRequest(BaseModel):
@@ -143,11 +173,23 @@ class ResumeLevelingResponse(BaseModel):
     years_in_role_type: Optional[int] = None  # Only years in actual PM/Eng/etc roles
     role_type_breakdown: Optional[RoleTypeBreakdown] = None
 
-    # Evidence for current level
-    scope_signals: List[str]  # Scope indicators found
-    impact_signals: List[str]  # Impact statements found
-    leadership_signals: List[str]  # Leadership evidence
-    technical_signals: List[str]  # Technical depth evidence
+    # What This Means - contextual summary
+    what_this_means: Optional[str] = None  # 2-3 sentence contextual explanation
+
+    # Quick Win - single highest-impact action (v3.0)
+    quick_win: Optional[QuickWin] = None
+
+    # Evidence for current level - now with severity (v3.0)
+    scope_signals: List[str]  # Legacy format for backward compat
+    impact_signals: List[str]
+    leadership_signals: List[str]
+    technical_signals: List[str]
+
+    # Enhanced signals with severity (v3.0)
+    scope_signals_enhanced: Optional[List[SignalItem]] = None
+    impact_signals_enhanced: Optional[List[SignalItem]] = None
+    leadership_signals_enhanced: Optional[List[SignalItem]] = None
+    technical_signals_enhanced: Optional[List[SignalItem]] = None
 
     # Competency breakdown
     competencies: List[LevelCompetency]
@@ -157,8 +199,15 @@ class ResumeLevelingResponse(BaseModel):
     action_verb_distribution: Dict[str, float]  # {"entry": 0.1, "mid": 0.3, "senior": 0.5, "principal": 0.1}
     quantification_rate: float  # % of bullets with numbers
 
-    # Red flags
+    # Generic phrase replacements with context (v3.0)
+    generic_phrase_replacements: Optional[List[Dict[str, str]]] = None
+    # Each: {"phrase": "team player", "suggested_replacement": "led cross-functional squad of 8", "source_bullet": "..."}
+
+    # Red flags - legacy format for backward compat
     red_flags: List[str]  # Issues found (generic claims, inconsistencies, etc.)
+
+    # Enhanced red flags with cause + consequence + fix (v3.0)
+    red_flags_enhanced: Optional[List[RedFlag]] = None
 
     # Title inflation detection
     title_inflation_detected: Optional[bool] = None
@@ -174,10 +223,10 @@ class ResumeLevelingResponse(BaseModel):
     # Level mismatch warnings
     level_mismatch_warnings: Optional[List[LevelMismatchWarning]] = None
 
-    # Gap analysis (if target provided)
+    # Gap analysis (if target provided) - now includes gap_type (v3.0)
     gaps: Optional[List[LevelingGap]] = None
 
-    # Recommendations
+    # Recommendations - now includes gap_type (v3.0)
     recommendations: List[LevelingRecommendation]
 
     # Summary

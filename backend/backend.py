@@ -2788,6 +2788,9 @@ class LevelingGap(BaseModel):
     description: str
     recommendation: str  # How to address in resume
     priority: str  # "high", "medium", "low"
+    gap_type: str = "presentation"  # "experience" or "presentation" - CRITICAL distinction
+    # experience = candidate genuinely needs more time/roles
+    # presentation = candidate likely has this but resume doesn't show it
 
 class LevelingRecommendation(BaseModel):
     """A specific recommendation to strengthen resume for target level"""
@@ -2796,6 +2799,33 @@ class LevelingRecommendation(BaseModel):
     current: str  # Current state
     suggested: str  # Recommended change
     rationale: str  # Why this matters
+    gap_type: str = "presentation"  # "experience" or "presentation"
+
+
+class QuickWin(BaseModel):
+    """Single highest-impact action for the candidate"""
+    action: str  # What to do
+    rationale: str  # Why this matters most
+    expected_impact: str  # What improvement to expect
+    gap_type: str  # "experience" or "presentation"
+
+
+class SignalItem(BaseModel):
+    """A signal with severity for sorting"""
+    text: str  # The signal text
+    severity: str  # "CRITICAL", "HIGH", "MEDIUM", "LOW"
+    source: Optional[str] = None  # Where it came from (e.g., "Uber - Senior PM")
+    gap_type: Optional[str] = None  # "experience" or "presentation" if this is a gap
+
+
+class RedFlag(BaseModel):
+    """Enhanced red flag with cause, consequence, and fix"""
+    type: str  # Category of flag
+    instance: str  # Specific instance from resume
+    why_it_matters: str  # Market perception consequence
+    gap_type: str  # "experience" or "presentation"
+    how_to_fix: List[str]  # Actionable fixes
+    source_bullets: Optional[List[str]] = None  # For context-specific replacements
 
 class ResumeLevelingRequest(BaseModel):
     """Request for resume level assessment"""
@@ -2833,15 +2863,27 @@ class ResumeLevelingResponse(BaseModel):
     level_confidence: float  # 0-1 confidence score
     years_experience: int
 
-    # NEW: Strict role-type experience tracking
+    # Strict role-type experience tracking
     years_in_role_type: Optional[int] = None  # Only years in actual PM/Eng/etc roles
     role_type_breakdown: Optional[RoleTypeBreakdown] = None
 
-    # Evidence for current level
+    # What This Means - contextual summary (v3.0)
+    what_this_means: Optional[str] = None  # 2-3 sentence contextual explanation
+
+    # Quick Win - single highest-impact action (v3.0)
+    quick_win: Optional[QuickWin] = None
+
+    # Evidence for current level - legacy format for backward compat
     scope_signals: List[str]  # Scope indicators found
     impact_signals: List[str]  # Impact statements found
     leadership_signals: List[str]  # Leadership evidence
     technical_signals: List[str]  # Technical depth evidence
+
+    # Enhanced signals with severity (v3.0)
+    scope_signals_enhanced: Optional[List[SignalItem]] = None
+    impact_signals_enhanced: Optional[List[SignalItem]] = None
+    leadership_signals_enhanced: Optional[List[SignalItem]] = None
+    technical_signals_enhanced: Optional[List[SignalItem]] = None
 
     # Competency breakdown
     competencies: List[LevelCompetency]
@@ -2851,10 +2893,17 @@ class ResumeLevelingResponse(BaseModel):
     action_verb_distribution: Dict[str, float]  # {"entry": 0.1, "mid": 0.3, "senior": 0.5, "principal": 0.1}
     quantification_rate: float  # % of bullets with numbers
 
-    # Red flags
+    # Generic phrase replacements with context (v3.0)
+    generic_phrase_replacements: Optional[List[Dict[str, str]]] = None
+    # Each: {"phrase": "team player", "suggested_replacement": "led cross-functional squad of 8", "source_bullet": "..."}
+
+    # Red flags - legacy format for backward compat
     red_flags: List[str]  # Issues found (generic claims, inconsistencies, etc.)
 
-    # NEW: Title inflation detection
+    # Enhanced red flags with cause + consequence + fix (v3.0)
+    red_flags_enhanced: Optional[List[RedFlag]] = None
+
+    # Title inflation detection
     title_inflation_detected: Optional[bool] = None
     title_inflation_explanation: Optional[str] = None
 
@@ -2865,13 +2914,13 @@ class ResumeLevelingResponse(BaseModel):
     is_qualified: Optional[bool] = None
     qualification_confidence: Optional[float] = None
 
-    # NEW: Level mismatch warnings
+    # Level mismatch warnings
     level_mismatch_warnings: Optional[List[LevelMismatchWarning]] = None
 
-    # Gap analysis (if target provided)
+    # Gap analysis (if target provided) - now includes gap_type (v3.0)
     gaps: Optional[List[LevelingGap]] = None
 
-    # Recommendations
+    # Recommendations - now includes gap_type (v3.0)
     recommendations: List[LevelingRecommendation]
 
     # Summary
@@ -16520,7 +16569,7 @@ Analyze gaps between candidate's current level and the target role requirements.
                 gap_to_target=comp.get('gap_to_target')
             ))
 
-        # Build gaps list
+        # Build gaps list with gap_type (v3.0)
         gaps = None
         if parsed_data.get('gaps'):
             gaps = []
@@ -16529,10 +16578,11 @@ Analyze gaps between candidate's current level and the target role requirements.
                     category=gap.get('category', ''),
                     description=gap.get('description', ''),
                     recommendation=gap.get('recommendation', ''),
-                    priority=gap.get('priority', 'medium')
+                    priority=gap.get('priority', 'medium'),
+                    gap_type=gap.get('gap_type', 'presentation')
                 ))
 
-        # Build recommendations list
+        # Build recommendations list with gap_type (v3.0)
         recommendations = []
         for rec in parsed_data.get('recommendations', []):
             recommendations.append(LevelingRecommendation(
@@ -16540,8 +16590,82 @@ Analyze gaps between candidate's current level and the target role requirements.
                 priority=rec.get('priority', 'medium'),
                 current=rec.get('current', ''),
                 suggested=rec.get('suggested', ''),
-                rationale=rec.get('rationale', '')
+                rationale=rec.get('rationale', ''),
+                gap_type=rec.get('gap_type', 'presentation')
             ))
+
+        # Build quick_win (v3.0)
+        quick_win = None
+        if parsed_data.get('quick_win'):
+            qw = parsed_data['quick_win']
+            quick_win = QuickWin(
+                action=qw.get('action', ''),
+                rationale=qw.get('rationale', ''),
+                expected_impact=qw.get('expected_impact', ''),
+                gap_type=qw.get('gap_type', 'presentation')
+            )
+
+        # Build enhanced signals with severity (v3.0)
+        scope_signals_enhanced = None
+        if parsed_data.get('scope_signals_enhanced'):
+            scope_signals_enhanced = [
+                SignalItem(
+                    text=s.get('text', ''),
+                    severity=s.get('severity', 'MEDIUM'),
+                    source=s.get('source'),
+                    gap_type=s.get('gap_type')
+                ) for s in parsed_data['scope_signals_enhanced']
+            ]
+
+        impact_signals_enhanced = None
+        if parsed_data.get('impact_signals_enhanced'):
+            impact_signals_enhanced = [
+                SignalItem(
+                    text=s.get('text', ''),
+                    severity=s.get('severity', 'MEDIUM'),
+                    source=s.get('source'),
+                    gap_type=s.get('gap_type')
+                ) for s in parsed_data['impact_signals_enhanced']
+            ]
+
+        leadership_signals_enhanced = None
+        if parsed_data.get('leadership_signals_enhanced'):
+            leadership_signals_enhanced = [
+                SignalItem(
+                    text=s.get('text', ''),
+                    severity=s.get('severity', 'MEDIUM'),
+                    source=s.get('source'),
+                    gap_type=s.get('gap_type')
+                ) for s in parsed_data['leadership_signals_enhanced']
+            ]
+
+        technical_signals_enhanced = None
+        if parsed_data.get('technical_signals_enhanced'):
+            technical_signals_enhanced = [
+                SignalItem(
+                    text=s.get('text', ''),
+                    severity=s.get('severity', 'MEDIUM'),
+                    source=s.get('source'),
+                    gap_type=s.get('gap_type')
+                ) for s in parsed_data['technical_signals_enhanced']
+            ]
+
+        # Build enhanced red flags (v3.0)
+        red_flags_enhanced = None
+        if parsed_data.get('red_flags_enhanced'):
+            red_flags_enhanced = [
+                RedFlag(
+                    type=rf.get('type', ''),
+                    instance=rf.get('instance', ''),
+                    why_it_matters=rf.get('why_it_matters', ''),
+                    gap_type=rf.get('gap_type', 'presentation'),
+                    how_to_fix=rf.get('how_to_fix', []),
+                    source_bullets=rf.get('source_bullets')
+                ) for rf in parsed_data['red_flags_enhanced']
+            ]
+
+        # Get generic phrase replacements (v3.0)
+        generic_phrase_replacements = parsed_data.get('generic_phrase_replacements')
 
         # Build role type breakdown if present
         role_type_breakdown = None
@@ -16616,15 +16740,29 @@ Analyze gaps between candidate's current level and the target role requirements.
             years_experience=parsed_data.get('years_experience', 0),
             years_in_role_type=parsed_data.get('years_in_role_type'),
             role_type_breakdown=role_type_breakdown,
+            # v3.0: what_this_means and quick_win
+            what_this_means=parsed_data.get('what_this_means'),
+            quick_win=quick_win,
+            # Legacy signals for backward compat
             scope_signals=parsed_data.get('scope_signals', []),
             impact_signals=parsed_data.get('impact_signals', []),
             leadership_signals=parsed_data.get('leadership_signals', []),
             technical_signals=parsed_data.get('technical_signals', []),
+            # v3.0: Enhanced signals with severity
+            scope_signals_enhanced=scope_signals_enhanced,
+            impact_signals_enhanced=impact_signals_enhanced,
+            leadership_signals_enhanced=leadership_signals_enhanced,
+            technical_signals_enhanced=technical_signals_enhanced,
             competencies=competencies,
             language_level=parsed_data.get('language_level', 'Mid'),
             action_verb_distribution=parsed_data.get('action_verb_distribution', {'entry': 0.25, 'mid': 0.5, 'senior': 0.2, 'principal': 0.05}),
             quantification_rate=parsed_data.get('quantification_rate', 0.0),
+            # v3.0: Generic phrase replacements with context
+            generic_phrase_replacements=generic_phrase_replacements,
+            # Legacy red flags for backward compat
             red_flags=parsed_data.get('red_flags', []),
+            # v3.0: Enhanced red flags with cause + consequence + fix
+            red_flags_enhanced=red_flags_enhanced,
             title_inflation_detected=parsed_data.get('title_inflation_detected'),
             title_inflation_explanation=parsed_data.get('title_inflation_explanation'),
             target_level=parsed_data.get('target_level'),
