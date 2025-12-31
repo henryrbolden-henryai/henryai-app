@@ -171,6 +171,8 @@
             font-size: 0.8rem;
             text-transform: uppercase;
             margin-right: 6px;
+            display: inline-block;
+            min-width: 65px;
         }
 
         .quick-view .button-group {
@@ -1390,6 +1392,7 @@
                 <div class="quick-move-list" id="quickMoveList">
                     <div class="move-item" id="movePositioning"></div>
                     <div class="move-item" id="moveContact"></div>
+                    <div class="move-item" id="moveApproach"></div>
                     <div class="move-item" id="moveNetwork"></div>
                     <div class="move-item" id="moveApply"></div>
                 </div>
@@ -2489,6 +2492,7 @@
         const quickMoveText = document.getElementById('quickMoveText');
         const movePositioning = document.getElementById('movePositioning');
         const moveContact = document.getElementById('moveContact');
+        const moveApproach = document.getElementById('moveApproach');
         const moveNetwork = document.getElementById('moveNetwork');
         const moveApply = document.getElementById('moveApply');
 
@@ -2509,9 +2513,21 @@
             if (positioning) {
                 movePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
             }
+
+            // Split contact_strategy into Target and Approach
             if (contactStrategy) {
-                moveContact.innerHTML = `<span class="move-label">Target:</span> ${contactStrategy.replace(/^TARGET:\s*/i, '')}`;
+                // Parse "TARGET: [title]. APPROACH: [method]." format
+                const targetMatch = contactStrategy.match(/^(?:TARGET:\s*)?([^.]+)/i);
+                const approachMatch = contactStrategy.match(/APPROACH:\s*(.+?)(?:\.|$)/i);
+
+                if (targetMatch) {
+                    moveContact.innerHTML = `<span class="move-label">Target:</span> ${targetMatch[1].trim()}`;
+                }
+                if (approachMatch) {
+                    moveApproach.innerHTML = `<span class="move-label">Approach:</span> ${approachMatch[1].trim()}`;
+                }
             }
+
             if (networkLeverage) {
                 moveNetwork.innerHTML = `<span class="move-label">Network:</span> ${networkLeverage}`;
             }
