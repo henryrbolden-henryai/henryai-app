@@ -6154,9 +6154,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             # =====================================================================
             your_move_data = response_data.get('your_move')
             if your_move_data and isinstance(your_move_data, dict):
-                # Extract structured fields per spec (updated schema)
+                # Extract structured fields per spec (updated schema with network_leverage)
                 positioning = your_move_data.get('positioning', '')
                 contact_strategy = your_move_data.get('contact_strategy', '')
+                network_leverage = your_move_data.get('network_leverage', '')
                 apply_window = your_move_data.get('apply_window', '') or your_move_data.get('timing', '')  # backward compat
 
                 # ===== VALIDATION: Completeness checks =====
@@ -6169,15 +6170,21 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 elif 'lead with' not in positioning_lower and 'cut' not in positioning_lower:
                     print(f"   ⚠️ Your Move positioning missing LEAD WITH/CUT format")
 
-                # Check contact_strategy has target and approach
+                # Check contact_strategy has target and credibility context
                 contact_lower = contact_strategy.lower()
                 if not contact_strategy or len(contact_strategy) < 15:
                     validation_failures.append("contact_strategy: too short or empty")
-                elif 'target' not in contact_lower and 'approach' not in contact_lower:
+                elif 'target' not in contact_lower:
                     has_who = any(x in contact_lower for x in ['vp', 'director', 'manager', 'recruiter', 'hm'])
-                    has_how = any(x in contact_lower for x in ['dm', 'email', 'linkedin', 'mutual', 'connection'])
-                    if not (has_who and has_how):
-                        print(f"   ⚠️ Your Move contact_strategy missing WHO and HOW")
+                    if not has_who:
+                        print(f"   ⚠️ Your Move contact_strategy missing TARGET title")
+
+                # Check network_leverage references actual background (not generic)
+                network_lower = network_leverage.lower()
+                if not network_leverage or len(network_leverage) < 15:
+                    print(f"   ⚠️ Your Move network_leverage missing or too short")
+                elif 'linkedin' in network_lower and 'alumni' not in network_lower and 'ex-' not in network_lower:
+                    print(f"   ⚠️ Your Move network_leverage may be generic (no alumni/company reference)")
 
                 # Check apply_window has timeframe
                 apply_lower = apply_window.lower()
@@ -6190,8 +6197,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 else:
                     print(f"   ✅ Your Move validation passed")
 
-                # ===== VALIDATION: Banned phrases (fit-restating) =====
-                all_text = f"{positioning} {contact_strategy} {apply_window}".lower()
+                # ===== VALIDATION: Banned phrases (fit-restating or generic) =====
+                all_text = f"{positioning} {contact_strategy} {network_leverage} {apply_window}".lower()
                 banned_phrases = [
                     "your background gives you",
                     "your experience positions you",
@@ -6199,16 +6206,22 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                     "your skills align",
                     "positions you well",
                     "consider reaching out",
-                    "you might want to"
+                    "you might want to",
+                    "use linkedin to find"  # generic network advice
                 ]
                 fit_restate_detected = any(phrase in all_text for phrase in banned_phrases)
                 if fit_restate_detected:
-                    print(f"   ⚠️ Your Move contains fit-restating phrase (banned)")
+                    print(f"   ⚠️ Your Move contains banned phrase")
 
                 # Build display string for strategic_action (frontend compat)
-                your_move_display = f"{positioning} {contact_strategy} {apply_window}".strip()
+                # Include network_leverage in the display
+                your_move_display = f"{positioning} {contact_strategy}"
+                if network_leverage:
+                    your_move_display += f" {network_leverage}"
+                your_move_display += f" {apply_window}"
+                your_move_display = your_move_display.strip()
 
-                print(f"   📣 Your Move: {your_move_display[:100]}...")
+                print(f"   📣 Your Move: {your_move_display[:120]}...")
 
                 # Wire to reality_check.strategic_action for frontend
                 if "reality_check" not in response_data:
@@ -10575,26 +10588,30 @@ This applies to ALL messaging fields: strategic_action, recommendation_rationale
 
 🚨🚨🚨 CRITICAL - SCORE SUMMARY (recommendation_rationale) RULES 🚨🚨🚨
 
-FORMAT: VERDICT FIRST, then ONE reason why. Max 2 sentences. No name-dropping.
+FORMAT: Lead with EVIDENCE, not verdict adjectives. Mirror WHY this person matters.
 
 STRUCTURE:
-"[Fit verdict]. [Single most important reason]."
+"[What makes this person relevant to THIS role]. [What transfers / what's missing]."
 
-EXAMPLES BY SCORE BAND:
-- fit_score < 45%: "Significant stretch. Missing 5+ years required experience in payments infrastructure."
-- fit_score 45-54%: "Stretch role. Consumer domain experience gap requires strong positioning."
-- fit_score 55-69%: "Moderate fit. Platform scale transfers but missing marketplace-specific execution."
-- fit_score 70-84%: "Good fit. Growth infrastructure background addresses core requirements."
-- fit_score >= 85%: "Strong match. Direct experience in both 0-to-1 and scale phases."
+THE GOAL: Make the user pause and think "Damn, that's my career." Not warmth. Recognition.
 
-BANNED IN SCORE SUMMARY:
-- Candidate name ("Sarah, strong platform experience...")
-- Company name-dropping in list form ("at Stripe and Asana")
-- Narrative prose ("align well with", "proven ability to")
-- Restating strengths that belong elsewhere
+EXAMPLES BY SCORE BAND (notice: no soft adjectives like "Good fit"):
+- fit_score < 45%: "Function mismatch. This requires backend engineering; your background is product."
+- fit_score 45-54%: "Your PM experience transfers, but missing the enterprise sales motion this role centers on."
+- fit_score 55-69%: "Platform scale work maps here, but marketplace-specific execution is the gap."
+- fit_score 70-84%: "Your growth infrastructure work solves the exact problem they're hiring for."
+- fit_score >= 85%: "Direct match. 0-to-1 and scale experience in the same domain."
 
-GOOD: "Good fit. Technical depth in growth systems addresses core platform needs."
-BAD: "Sarah, strong platform experience at Stripe and 0-to-1 product success at Asana align well with growth infrastructure requirements."
+BANNED:
+- Soft adjective openers ("Good fit.", "Strong match.", "Clear fit.")
+- Candidate name
+- Company list-dropping ("at Stripe and Asana")
+- Narrative prose ("align well with", "proven ability to", "positions you well")
+
+GOOD: "Your growth infrastructure work solves the exact problem they're hiring for."
+BAD: "Good fit. Growth infrastructure background addresses core requirements."
+
+The difference: "addresses core requirements" is system-speak. "solves the exact problem they're hiring for" mirrors identity.
 
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.
@@ -11533,8 +11550,9 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "strengths": ["3-4 candidate strengths matching this role"] or [],
   "your_move": {
     "positioning": "LEAD WITH: [specific skill/metric]. CUT: [what to de-emphasize]. Max 75 chars.",
-    "contact_strategy": "TARGET: [specific title at company]. APPROACH: [DM/email/mutual connection]. Max 75 chars.",
-    "apply_window": "APPLY: [timeframe]. Why now matters. Max 60 chars."
+    "contact_strategy": "TARGET: [specific title]. APPROACH: [method]. Where credibility transfers fastest. Max 80 chars.",
+    "network_leverage": "Who in your background gets you in the door. Alumni network, shared companies, mutual connections. Max 60 chars.",
+    "apply_window": "APPLY: [timeframe]. Why now matters. Max 50 chars."
   },
   "gaps": [
     {
@@ -11670,37 +11688,46 @@ REQUIRED FORMAT FOR EACH FIELD:
 
 2. contact_strategy (max 75 chars):
    FORMAT: "TARGET: [specific title]. APPROACH: [method]."
-   GOOD: "TARGET: VP Product. APPROACH: Mutual connection via ex-Stripe."
-   BAD: "HM direct." (no specific target, no approach method)
+   GOOD: "TARGET: VP Product Growth. Credibility transfers fastest in growth/platform orgs."
+   BAD: "HM direct." (no specific target, no credibility context)
 
-3. apply_window (max 60 chars):
+3. network_leverage (max 60 chars):
+   FORMAT: Who from YOUR background gets you in the door.
+   GOOD: "Stripe alumni in growth or platform orgs. That's where you transfer."
+   GOOD: "Ex-Asana PMs now at target company. Direct intro beats cold outreach."
+   BAD: "Use LinkedIn to find connections." (generic advice, not personalized)
+
+4. apply_window (max 50 chars):
    FORMAT: "APPLY: [timeframe]. [why now matters]."
-   GOOD: "APPLY: Within 24 hours. Role posted 2 days ago."
+   GOOD: "APPLY: Within 24 hours. Posted 2 days ago."
    BAD: "Apply soon." (no timeframe, no context)
 
-NOTE: Competition level and urgency context now live in Reality Check.
-Your Move is ONLY about what to DO, not what you're up against.
+THE GOAL: Make the user think "That's my network, that's my path."
+Not generic advice. Selective specificity based on THEIR background.
 
 VALIDATION RULES:
 - positioning MUST contain both LEAD WITH and CUT directives
-- contact_strategy MUST specify WHO (title) and HOW (approach method)
+- contact_strategy MUST specify WHO (title) and WHERE credibility transfers
+- network_leverage MUST reference candidate's actual background (companies, alumni networks)
 - apply_window MUST include specific timeframe
 - Empty or vague fields = VALIDATION FAILURE
 
-GOOD your_move (COMPLETE):
+GOOD your_move (COMPLETE - MIRRORS IDENTITY):
 {
   "positioning": "LEAD WITH: Growth infra at 100M+ scale. CUT: B2C consumer work.",
-  "contact_strategy": "TARGET: Director of Growth. APPROACH: DM via shared Stripe alumni.",
-  "apply_window": "APPLY: Within 24 hours. Role posted 3 days ago."
+  "contact_strategy": "TARGET: Director of Growth. Credibility transfers fastest in platform teams.",
+  "network_leverage": "Stripe alumni in growth orgs. That's where your signal is strongest.",
+  "apply_window": "APPLY: Within 24 hours. Posted 2 days ago."
 }
 
-BAD your_move (INCOMPLETE - FORBIDDEN):
+BAD your_move (GENERIC ADVICE - FORBIDDEN):
 {
   "positioning": "Lead with platform scale and 0-to-1 execution",
   "contact_strategy": "HM direct. Growth roles move fast.",
+  "network_leverage": "Use LinkedIn to find connections.",
   "apply_window": "Apply soon."
 }
-Problems: No CUT directive, no specific target title, no approach method, vague timing.
+Problems: No CUT directive, no credibility transfer context, generic network advice, vague timing.
 
 BANNED PHRASES in your_move:
 - "your background gives you"
@@ -12650,26 +12677,30 @@ This applies to ALL messaging fields: strategic_action, recommendation_rationale
 
 🚨🚨🚨 CRITICAL - SCORE SUMMARY (recommendation_rationale) RULES 🚨🚨🚨
 
-FORMAT: VERDICT FIRST, then ONE reason why. Max 2 sentences. No name-dropping.
+FORMAT: Lead with EVIDENCE, not verdict adjectives. Mirror WHY this person matters.
 
 STRUCTURE:
-"[Fit verdict]. [Single most important reason]."
+"[What makes this person relevant to THIS role]. [What transfers / what's missing]."
 
-EXAMPLES BY SCORE BAND:
-- fit_score < 45%: "Significant stretch. Missing 5+ years required experience in payments infrastructure."
-- fit_score 45-54%: "Stretch role. Consumer domain experience gap requires strong positioning."
-- fit_score 55-69%: "Moderate fit. Platform scale transfers but missing marketplace-specific execution."
-- fit_score 70-84%: "Good fit. Growth infrastructure background addresses core requirements."
-- fit_score >= 85%: "Strong match. Direct experience in both 0-to-1 and scale phases."
+THE GOAL: Make the user pause and think "Damn, that's my career." Not warmth. Recognition.
 
-BANNED IN SCORE SUMMARY:
-- Candidate name ("Sarah, strong platform experience...")
-- Company name-dropping in list form ("at Stripe and Asana")
-- Narrative prose ("align well with", "proven ability to")
-- Restating strengths that belong elsewhere
+EXAMPLES BY SCORE BAND (notice: no soft adjectives like "Good fit"):
+- fit_score < 45%: "Function mismatch. This requires backend engineering; your background is product."
+- fit_score 45-54%: "Your PM experience transfers, but missing the enterprise sales motion this role centers on."
+- fit_score 55-69%: "Platform scale work maps here, but marketplace-specific execution is the gap."
+- fit_score 70-84%: "Your growth infrastructure work solves the exact problem they're hiring for."
+- fit_score >= 85%: "Direct match. 0-to-1 and scale experience in the same domain."
 
-GOOD: "Good fit. Technical depth in growth systems addresses core platform needs."
-BAD: "Sarah, strong platform experience at Stripe and 0-to-1 product success at Asana align well with growth infrastructure requirements."
+BANNED:
+- Soft adjective openers ("Good fit.", "Strong match.", "Clear fit.")
+- Candidate name
+- Company list-dropping ("at Stripe and Asana")
+- Narrative prose ("align well with", "proven ability to", "positions you well")
+
+GOOD: "Your growth infrastructure work solves the exact problem they're hiring for."
+BAD: "Good fit. Growth infrastructure background addresses core requirements."
+
+The difference: "addresses core requirements" is system-speak. "solves the exact problem they're hiring for" mirrors identity.
 
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.

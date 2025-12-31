@@ -1390,6 +1390,7 @@
                 <div class="quick-move-list" id="quickMoveList">
                     <div class="move-item" id="movePositioning"></div>
                     <div class="move-item" id="moveContact"></div>
+                    <div class="move-item" id="moveNetwork"></div>
                     <div class="move-item" id="moveApply"></div>
                 </div>
                 <p class="quick-move-text" id="quickMoveText" style="display: none;">—</p>
@@ -2477,6 +2478,7 @@
         const quickMoveText = document.getElementById('quickMoveText');
         const movePositioning = document.getElementById('movePositioning');
         const moveContact = document.getElementById('moveContact');
+        const moveNetwork = document.getElementById('moveNetwork');
         const moveApply = document.getElementById('moveApply');
 
         // Get structured Your Move data
@@ -2489,6 +2491,7 @@
 
             const positioning = yourMoveStructured.positioning || '';
             const contactStrategy = yourMoveStructured.contact_strategy || '';
+            const networkLeverage = yourMoveStructured.network_leverage || '';
             const applyWindow = yourMoveStructured.apply_window || yourMoveStructured.timing || '';
 
             // Format each as a scannable item
@@ -2496,7 +2499,10 @@
                 movePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
             }
             if (contactStrategy) {
-                moveContact.innerHTML = `<span class="move-label">Target:</span> ${contactStrategy.replace(/^TARGET:\s*/i, '').replace(/\.\s*APPROACH:/, ' · ')}`;
+                moveContact.innerHTML = `<span class="move-label">Target:</span> ${contactStrategy.replace(/^TARGET:\s*/i, '')}`;
+            }
+            if (networkLeverage) {
+                moveNetwork.innerHTML = `<span class="move-label">Network:</span> ${networkLeverage}`;
             }
             if (applyWindow) {
                 moveApply.innerHTML = `<span class="move-label">Apply:</span> ${applyWindow.replace(/^APPLY:\s*/i, '')}`;
