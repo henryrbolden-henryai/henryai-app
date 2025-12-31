@@ -2081,9 +2081,14 @@
                 howToWinSection.style.display = 'block';
                 howToWinText.textContent = yourMoveData.how_to_win;
             } else if (realityCheckData.strategic_action) {
-                // Fallback to strategic_action if no how_to_win
+                // Fallback to strategic_action - format with line breaks for Lead/Cut/Apply
                 howToWinSection.style.display = 'block';
-                howToWinText.textContent = realityCheckData.strategic_action;
+                let formattedText = realityCheckData.strategic_action;
+                // Put CUT on its own line
+                formattedText = formattedText.replace(/\.\s*CUT:/gi, '.\nCUT:');
+                // Put APPLY on its own line
+                formattedText = formattedText.replace(/\.\s*APPLY:/gi, '.\nAPPLY:');
+                howToWinText.innerHTML = formattedText.replace(/\n/g, '<br>');
             }
         } else {
             // Fallback to legacy formats or generated default
