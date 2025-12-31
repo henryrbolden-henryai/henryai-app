@@ -389,12 +389,17 @@
             border-top: 1px solid rgba(255, 255, 255, 0.06);
             background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
             display: flex;
+            flex-wrap: nowrap;
             gap: 8px;
             align-items: flex-end;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .ask-henry-input {
             flex: 1;
+            min-width: 0;
+            width: 100%;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -406,6 +411,9 @@
             min-height: 52px;
             max-height: 120px;
             order: 0; /* Input first */
+            box-sizing: border-box;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
         }
 
         .ask-henry-input:focus {
