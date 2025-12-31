@@ -11552,7 +11552,8 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
     "positioning": "LEAD WITH: [specific skill/metric]. CUT: [what to de-emphasize]. Max 75 chars.",
     "contact_strategy": "TARGET: [specific title]. APPROACH: [method]. Where credibility transfers fastest. Max 80 chars.",
     "network_leverage": "Who in your background gets you in the door. Alumni network, shared companies, mutual connections. Max 60 chars.",
-    "apply_window": "APPLY: [timeframe]. Why now matters. Max 50 chars."
+    "apply_window": "APPLY: [timeframe]. Why now matters. Max 50 chars.",
+    "how_to_win": "STRATEGIC DEPTH for Full Analysis. 2-3 sentences explaining WHY this approach works HERE. Not commands - context. Why YOUR specific credibility transfers to THIS company's hiring dynamics. What signals beat ATS noise in this hiring loop. Max 200 chars."
   },
   "gaps": [
     {
@@ -11717,7 +11718,8 @@ GOOD your_move (COMPLETE - MIRRORS IDENTITY):
   "positioning": "LEAD WITH: Growth infra at 100M+ scale. CUT: B2C consumer work.",
   "contact_strategy": "TARGET: Director of Growth. Credibility transfers fastest in platform teams.",
   "network_leverage": "Stripe alumni in growth orgs. That's where your signal is strongest.",
-  "apply_window": "APPLY: Within 24 hours. Posted 2 days ago."
+  "apply_window": "APPLY: Within 24 hours. Posted 2 days ago.",
+  "how_to_win": "GoFundMe's marketplace model means they value platform scale over donations-specific experience. Your Stripe billing work at $2B+ volume signals you can handle their transaction complexity. Platform PMs from fintech consistently get past their ATS because the hiring manager came from Square."
 }
 
 BAD your_move (GENERIC ADVICE - FORBIDDEN):
@@ -11725,9 +11727,10 @@ BAD your_move (GENERIC ADVICE - FORBIDDEN):
   "positioning": "Lead with platform scale and 0-to-1 execution",
   "contact_strategy": "HM direct. Growth roles move fast.",
   "network_leverage": "Use LinkedIn to find connections.",
-  "apply_window": "Apply soon."
+  "apply_window": "Apply soon.",
+  "how_to_win": "Your experience is relevant to this role. Focus on highlighting your strengths."
 }
-Problems: No CUT directive, no credibility transfer context, generic network advice, vague timing.
+Problems: No CUT directive, no credibility transfer context, generic network advice, vague timing, how_to_win is generic advice instead of company-specific strategic context.
 
 BANNED PHRASES in your_move:
 - "your background gives you"
