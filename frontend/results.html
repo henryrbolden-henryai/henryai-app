@@ -1511,10 +1511,17 @@
                         <div class="why-still-viable" id="whyStillViable" style="margin-top: 12px; color: #00ff9d; font-weight: 500; display: none;">
                         </div>
 
-                        <!-- Action Box (Your Move) -->
+                        <!-- Action Box (Your Move) - Scannable List Format -->
                         <div class="reality-action" id="realityAction" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0, 255, 157, 0.1); border-left: 3px solid #00ff9d; border-radius: 4px;">
-                            <div style="font-weight: 600; color: #00ff9d; margin-bottom: 8px;">Your Move</div>
-                            <p class="section-text" id="realityActionText" style="margin: 0;"></p>
+                            <div style="font-weight: 600; color: #00ff9d; margin-bottom: 12px;">Your Move</div>
+                            <div class="full-move-list" id="fullMoveList" style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="move-item" id="fullMovePositioning"></div>
+                                <div class="move-item" id="fullMoveContact"></div>
+                                <div class="move-item" id="fullMoveApproach"></div>
+                                <div class="move-item" id="fullMoveNetwork"></div>
+                                <div class="move-item" id="fullMoveApply"></div>
+                            </div>
+                            <p class="section-text" id="realityActionText" style="margin: 0; display: none;"></p>
                         </div>
                     </div>
 
@@ -2071,9 +2078,53 @@
                 whyStillViableEl.style.display = 'block';
             }
 
-            // Show action box with strategic move (Your Move)
-            if (realityCheckData.strategic_action) {
+            // Show action box with Your Move (scannable list format)
+            const yourMoveData = data.your_move_structured || data.your_move || null;
+            if (yourMoveData && typeof yourMoveData === 'object') {
                 realityActionEl.style.display = 'block';
+
+                const fullMoveList = document.getElementById('fullMoveList');
+                const fullMovePositioning = document.getElementById('fullMovePositioning');
+                const fullMoveContact = document.getElementById('fullMoveContact');
+                const fullMoveApproach = document.getElementById('fullMoveApproach');
+                const fullMoveNetwork = document.getElementById('fullMoveNetwork');
+                const fullMoveApply = document.getElementById('fullMoveApply');
+
+                const positioning = yourMoveData.positioning || '';
+                const contactStrategy = yourMoveData.contact_strategy || '';
+                const networkLeverage = yourMoveData.network_leverage || '';
+                const applyWindow = yourMoveData.apply_window || yourMoveData.timing || '';
+
+                if (positioning) {
+                    fullMovePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
+                }
+
+                if (contactStrategy) {
+                    const targetMatch = contactStrategy.match(/^(?:TARGET:\s*)?([^.]+)/i);
+                    const approachMatch = contactStrategy.match(/APPROACH:\s*(.+?)(?:\.|$)/i);
+
+                    if (targetMatch) {
+                        fullMoveContact.innerHTML = `<span class="move-label">Target:</span> ${targetMatch[1].trim()}`;
+                    }
+                    if (approachMatch) {
+                        fullMoveApproach.innerHTML = `<span class="move-label">Approach:</span> ${approachMatch[1].trim()}`;
+                    }
+                }
+
+                if (networkLeverage) {
+                    fullMoveNetwork.innerHTML = `<span class="move-label">Network:</span> ${networkLeverage}`;
+                }
+                if (applyWindow) {
+                    fullMoveApply.innerHTML = `<span class="move-label">Apply:</span> ${applyWindow.replace(/^APPLY:\s*/i, '')}`;
+                }
+
+                fullMoveList.style.display = 'flex';
+                realityActionTextEl.style.display = 'none';
+            } else if (realityCheckData.strategic_action) {
+                // Fallback to text block
+                realityActionEl.style.display = 'block';
+                document.getElementById('fullMoveList').style.display = 'none';
+                realityActionTextEl.style.display = 'block';
                 realityActionTextEl.textContent = realityCheckData.strategic_action;
             }
         } else {
