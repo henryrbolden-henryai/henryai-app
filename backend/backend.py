@@ -11758,6 +11758,7 @@ BANNED PHRASES in your_move:
     "expected_applicants": "300-500+",
     "response_rate": "3-5%",
     "what_this_means": "The consequence of the numbers. What the candidate should expect. See REALITY_CHECK RULES below.",
+    "why_still_viable": "OPTIONAL. Only if fit >= 55%. Ties back to specific credential that gives them agency. Max 80 chars.",
     "strategic_action": "DEPRECATED - Your Move owns actions now. Leave empty string."
   }
 }
@@ -11819,10 +11820,24 @@ THE THREE REQUIRED FIELDS:
    - "You should apply quickly." (that's Your Move's job)
    - "Consider reaching out." (that's Your Move's job)
 
+5. why_still_viable (OPTIONAL - max 80 chars):
+   Tie back to WHY they're still in the fight despite the friction.
+   Reinforces agency without lying. Only include if fit_score >= 55%.
+
+   GOOD EXAMPLES:
+   - "But your platform scale and Stripe credibility can cut through."
+   - "Your 0-to-1 track record is the differentiator ATS can't see."
+   - "Network leverage is your edge here."
+
+   BAD EXAMPLES:
+   - "You can do this!" (motivational fluff)
+   - "You're qualified." (that's Score Summary)
+   - "Consider applying anyway." (advice)
+
 REALITY CHECK MUST NOT:
 - Give advice (that's Your Move)
 - Assess fit (that's Score Summary)
-- Be encouraging or optimistic
+- Be encouraging or optimistic without grounding it in specific credential
 - Use phrases like "you can compete" or "you have a chance"
 
 REALITY CHECK MUST:
@@ -11830,6 +11845,7 @@ REALITY CHECK MUST:
 - Quantify the competition
 - Position the candidate relative to the field
 - Explain what the numbers actually mean
+- (If viable) Tie back to the specific asset that gives them agency
 
 🚨 STRATEGIC_ACTION COACHING FRAMEWORK (DEPRECATED) 🚨
 

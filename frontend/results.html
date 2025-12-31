@@ -1504,6 +1504,10 @@
                         <div class="what-this-means" id="whatThisMeans" style="margin-top: 16px; color: rgba(255,255,255,0.7); font-style: italic;">
                         </div>
 
+                        <!-- Why Still Viable (agency tie-back) -->
+                        <div class="why-still-viable" id="whyStillViable" style="margin-top: 12px; color: #00ff9d; font-weight: 500; display: none;">
+                        </div>
+
                         <!-- Action Box (Your Move) -->
                         <div class="reality-action" id="realityAction" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0, 255, 157, 0.1); border-left: 3px solid #00ff9d; border-radius: 4px;">
                             <div style="font-weight: 600; color: #00ff9d; margin-bottom: 8px;">Your Move</div>
@@ -2055,6 +2059,13 @@
             // Populate what this means
             if (realityCheckData.what_this_means) {
                 whatThisMeansEl.textContent = realityCheckData.what_this_means;
+            }
+
+            // Populate why still viable (agency tie-back) - only for fit >= 55%
+            const whyStillViableEl = document.getElementById('whyStillViable');
+            if (realityCheckData.why_still_viable && fitScore >= 55) {
+                whyStillViableEl.textContent = realityCheckData.why_still_viable;
+                whyStillViableEl.style.display = 'block';
             }
 
             // Show action box with strategic move (Your Move)
