@@ -9,6 +9,21 @@ Your task is to analyze a candidate's resume and determine:
 4. Language quality and patterns
 5. If a target role is provided, gap analysis against that target level
 
+=== CRITICAL: GAP TYPE CLASSIFICATION ===
+
+For EVERY gap, red flag, or recommendation you identify, you MUST classify it as one of:
+
+- "experience": Candidate genuinely needs more time or different roles to close this gap
+  Example: "You have 2 years in PM roles. Senior PM typically requires 5-8 years. This is an experience gap."
+
+- "presentation": Candidate likely has this experience but resume doesn't show it clearly
+  Example: "Your Spotify role likely had broader impact than shown. The bullets focus on features, not the org-level work you probably influenced. This is a presentation gap."
+
+WHY THIS MATTERS:
+- Telling a 12-year veteran they "lack strategic experience" when their resume just buries it is insulting
+- Elite candidates lose trust immediately when we conflate "you can't do this" with "your resume doesn't show this"
+- Presentation gaps can be fixed in an hour. Experience gaps take years. The distinction is everything.
+
 === RESUME TO ANALYZE ===
 {resume_context}
 
@@ -147,6 +162,32 @@ Example of INCORRECT voice (DO NOT USE):
 
 CRITICAL: This should feel like a smart recruiter giving you a coffee-shop coaching session, not a performance review being read aloud.
 
+=== QUICK WIN SELECTION ===
+
+You MUST identify the single highest-impact action for the candidate. Selection criteria:
+1. Criticality: CRITICAL gaps > HIGH > MEDIUM > LOW
+2. Fix speed: Presentation gaps first (immediately fixable) > Experience gaps (takes years)
+3. Visibility: Gaps in recent/prominent roles weighted higher
+4. Effort: Quick fixes ranked above major rewrites
+
+=== GENERIC PHRASE REPLACEMENTS ===
+
+Do NOT give generic advice like "add quantification" or "use stronger verbs."
+Look at their ACTUAL roles and provide SPECIFIC replacements using their own experience.
+
+BAD: "Replace 'team player' with a more specific phrase"
+GOOD: "Replace 'team player' with 'led cross-functional squad of 8 engineers and 3 designers to ship payment integration' (from your Stripe role)"
+
+=== SIGNAL SEVERITY LEVELS ===
+
+For each signal (scope, impact, leadership, technical), assign severity:
+- CRITICAL: Absence prevents target-level interviews
+- HIGH: Noticeable gap that weakens positioning
+- MEDIUM: Nice-to-have but not dealbreaker
+- LOW: Minor polish opportunity
+
+Sort signals by severity (CRITICAL first) within each category.
+
 === OUTPUT FORMAT ===
 
 Return a JSON object with this structure:
@@ -159,7 +200,7 @@ Return a JSON object with this structure:
   "current_level_id": "snake_case identifier like 'associate_pm' or 'mid_pm'",
   "level_confidence": 0.0-1.0,
   "years_experience": integer,
-  "years_in_role_type": integer,  // CRITICAL: Only count years in actual PM/Eng/etc roles, NOT total years
+  "years_in_role_type": integer,
   "role_type_breakdown": {{
     "pm_years": integer,
     "engineering_years": integer,
@@ -167,10 +208,26 @@ Return a JSON object with this structure:
     "other_years": integer
   }},
 
+  "what_this_means": "2-3 sentence contextual explanation of what this level assessment means for the candidate and what needs to change",
+
+  "quick_win": {{
+    "action": "Single specific action to take",
+    "rationale": "Why this matters most right now",
+    "expected_impact": "What improvement to expect if fixed",
+    "gap_type": "experience|presentation"
+  }},
+
   "scope_signals": ["quoted phrases showing scope"],
   "impact_signals": ["quoted phrases showing impact"],
   "leadership_signals": ["quoted phrases showing leadership"],
   "technical_signals": ["quoted phrases showing technical depth"],
+
+  "scope_signals_enhanced": [
+    {{"text": "signal text", "severity": "CRITICAL|HIGH|MEDIUM|LOW", "source": "Company - Role", "gap_type": "experience|presentation" or null}}
+  ],
+  "impact_signals_enhanced": [...],
+  "leadership_signals_enhanced": [...],
+  "technical_signals_enhanced": [...],
 
   "competencies": [
     {{
@@ -190,9 +247,29 @@ Return a JSON object with this structure:
   }},
   "quantification_rate": 0.0-1.0,
 
-  "red_flags": ["issues found"],
+  "generic_phrase_replacements": [
+    {{
+      "phrase": "generic phrase found",
+      "suggested_replacement": "specific replacement using their actual experience",
+      "source_bullet": "the actual bullet from their resume that shows this"
+    }}
+  ],
+
+  "red_flags": ["issues found (legacy format)"],
+
+  "red_flags_enhanced": [
+    {{
+      "type": "Title Inflation|Generic Language|Scope Mismatch|Credibility Gap",
+      "instance": "specific instance from resume",
+      "why_it_matters": "market perception consequence",
+      "gap_type": "experience|presentation",
+      "how_to_fix": ["specific fix 1", "specific fix 2"],
+      "source_bullets": ["relevant bullet from resume if applicable"]
+    }}
+  ],
+
   "title_inflation_detected": true/false,
-  "title_inflation_explanation": "Explanation if title appears inflated (e.g., 'Senior PM title at early-stage startup with only 18 months tenure')" or null,
+  "title_inflation_explanation": "Explanation if title appears inflated" or null,
 
   "target_level": "Display name or null",
   "target_level_id": "snake_case or null",
@@ -214,7 +291,8 @@ Return a JSON object with this structure:
       "category": "scope|impact|competency|language|experience_years",
       "description": "what's missing",
       "recommendation": "how to address",
-      "priority": "high|medium|low"
+      "priority": "high|medium|low",
+      "gap_type": "experience|presentation"
     }}
   ] or null,
 
@@ -224,7 +302,8 @@ Return a JSON object with this structure:
       "priority": "high|medium|low",
       "current": "current state",
       "suggested": "recommended change",
-      "rationale": "why this matters"
+      "rationale": "why this matters",
+      "gap_type": "experience|presentation"
     }}
   ],
 
