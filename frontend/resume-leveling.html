@@ -1563,15 +1563,9 @@
 
             <!-- Action Section -->
             <div class="action-section">
-                <p class="action-text" id="actionText">
-                    You now know exactly how the market sees your resume. Let's close the gaps.
-                </p>
-                <p class="action-subtext" id="actionSubtext" style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
-                    The next step will help you reframe your experience for maximum impact.
-                </p>
                 <div class="action-buttons">
-                    <button class="btn-primary" id="continueBtn">Strengthen My Resume</button>
-                    <button class="btn-secondary" id="skipBtn">Skip to Application Strategy</button>
+                    <button class="btn-primary" id="linkedinBtn" style="display: none;">LinkedIn Profile Scoring</button>
+                    <button class="btn-secondary" id="skipBtn">Skip to My Application Strategy</button>
                 </div>
             </div>
         </div>
@@ -2107,59 +2101,15 @@
             updateActionSection();
         }
 
-        // Update action section with dynamic, empowering messaging
+        // Update action section - show LinkedIn button if profile available
         function updateActionSection() {
-            const confidence = (levelingData.level_confidence || 0) * 100;
-            const levelsApart = levelingData.levels_apart || 0;
-            const hasRedFlags = (levelingData.red_flags || []).length > 0;
-            const recCount = (levelingData.recommendations || []).length;
-
-            let mainText = '';
-            let subText = '';
-            let primaryBtnText = 'Strengthen My Resume';
-
-            if (confidence >= 85 && levelsApart <= 0) {
-                // Strong position
-                mainText = "Your resume is already well-positioned. A few polish items can make it exceptional.";
-                subText = "Small refinements often make the difference between getting an interview and getting the offer.";
-                primaryBtnText = "Add Final Polish";
-            } else if (levelsApart === 1) {
-                // Stretch role - achievable
-                mainText = "You're one level away. Strategic positioning can close this gap.";
-                subText = "Let's reframe your experience to highlight the scope and impact that supports your target level.";
-                primaryBtnText = "Close the Gap";
-            } else if (levelsApart > 1) {
-                // Significant gap
-                mainText = "This is a stretch, but every gap starts somewhere. Let's build the foundation.";
-                subText = "Focus on the high-priority items first. Each improvement compounds your positioning.";
-                primaryBtnText = "Start Building";
-            } else if (hasRedFlags) {
-                // Has issues to fix
-                mainText = "You now know exactly how the market sees your resume. Let's fix the red flags.";
-                subText = "Addressing these issues first will have the biggest impact on how recruiters perceive you.";
-                primaryBtnText = "Fix Red Flags";
-            } else if (recCount > 0) {
-                // Has recommendations
-                mainText = "You have clear next steps. Let's implement them.";
-                subText = `${recCount} recommendation${recCount > 1 ? 's' : ''} to strengthen your positioning.`;
-                primaryBtnText = "Strengthen My Resume";
-            } else {
-                // Default
-                mainText = "You now know exactly how the market sees your resume. Let's close the gaps.";
-                subText = "The next step will help you reframe your experience for maximum impact.";
-            }
-
-            document.getElementById('actionText').textContent = mainText;
-            document.getElementById('actionSubtext').textContent = subText;
-            document.getElementById('continueBtn').textContent = primaryBtnText;
-
-            // Update skip button based on LinkedIn profile availability
-            const skipBtn = document.getElementById('skipBtn');
             const hasLinkedIn = checkForLinkedInProfile();
+            const linkedinBtn = document.getElementById('linkedinBtn');
+
             if (hasLinkedIn) {
-                skipBtn.textContent = 'LinkedIn Scoring';
+                linkedinBtn.style.display = 'block';
             } else {
-                skipBtn.textContent = 'Skip to Application Strategy';
+                linkedinBtn.style.display = 'none';
             }
         }
 
@@ -2632,23 +2582,16 @@
         }
 
         // Navigation
-        document.getElementById('continueBtn').addEventListener('click', () => {
-            // Store leveling data for strengthen page
+        document.getElementById('linkedinBtn').addEventListener('click', () => {
+            // Store leveling data and go to LinkedIn scoring
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-            window.location.href = 'strengthen.html';
+            window.location.href = 'linkedin-scoring.html';
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
-            // Store leveling data
+            // Store leveling data and go to strategy overview
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-
-            // Route based on LinkedIn availability
-            const hasLinkedIn = checkForLinkedInProfile();
-            if (hasLinkedIn) {
-                window.location.href = 'linkedin-scoring.html';
-            } else {
-                window.location.href = 'generating.html';
-            }
+            window.location.href = 'overview.html';
         });
     </script>
     <script src="components/hey-henry.js"></script>
