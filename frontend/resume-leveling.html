@@ -1570,7 +1570,7 @@
                     The next step will help you reframe your experience for maximum impact.
                 </p>
                 <div class="action-buttons">
-                    <button class="btn-primary" id="continueBtn">Strengthen Your Resume</button>
+                    <button class="btn-primary" id="continueBtn">Strengthen My Resume</button>
                     <button class="btn-secondary" id="skipBtn">Skip to Application Strategy</button>
                 </div>
             </div>
@@ -2116,7 +2116,7 @@
 
             let mainText = '';
             let subText = '';
-            let primaryBtnText = 'Strengthen Your Resume';
+            let primaryBtnText = 'Strengthen My Resume';
 
             if (confidence >= 85 && levelsApart <= 0) {
                 // Strong position
@@ -2142,7 +2142,7 @@
                 // Has recommendations
                 mainText = "You have clear next steps. Let's implement them.";
                 subText = `${recCount} recommendation${recCount > 1 ? 's' : ''} to strengthen your positioning.`;
-                primaryBtnText = "Strengthen Your Resume";
+                primaryBtnText = "Strengthen My Resume";
             } else {
                 // Default
                 mainText = "You now know exactly how the market sees your resume. Let's close the gaps.";
@@ -2152,6 +2152,49 @@
             document.getElementById('actionText').textContent = mainText;
             document.getElementById('actionSubtext').textContent = subText;
             document.getElementById('continueBtn').textContent = primaryBtnText;
+
+            // Update skip button based on LinkedIn profile availability
+            const skipBtn = document.getElementById('skipBtn');
+            const hasLinkedIn = checkForLinkedInProfile();
+            if (hasLinkedIn) {
+                skipBtn.textContent = 'LinkedIn Scoring';
+            } else {
+                skipBtn.textContent = 'Skip to Application Strategy';
+            }
+        }
+
+        // Check if user has a LinkedIn profile attached
+        function checkForLinkedInProfile() {
+            // Check analysisData for LinkedIn URL
+            if (analysisData && analysisData._linkedin_url) {
+                return true;
+            }
+            // Check sessionStorage for LinkedIn data
+            const userDataStr = sessionStorage.getItem('userData');
+            if (userDataStr) {
+                try {
+                    const userData = JSON.parse(userDataStr);
+                    if (userData.linkedin_url || userData.linkedin_profile_url) {
+                        return true;
+                    }
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+            // Check resume JSON for LinkedIn
+            const resumeDataStr = sessionStorage.getItem('resumeData');
+            if (resumeDataStr) {
+                try {
+                    const resumeData = JSON.parse(resumeDataStr);
+                    if (resumeData.linkedin || resumeData.linkedin_url ||
+                        (resumeData.contact && resumeData.contact.linkedin)) {
+                        return true;
+                    }
+                } catch (e) {
+                    // Ignore parse errors
+                }
+            }
+            return false;
         }
 
         function renderSignals() {
@@ -2596,9 +2639,16 @@
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
-            // Skip strengthen, go directly to document generation
+            // Store leveling data
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-            window.location.href = 'generating.html';
+
+            // Route based on LinkedIn availability
+            const hasLinkedIn = checkForLinkedInProfile();
+            if (hasLinkedIn) {
+                window.location.href = 'linkedin-scoring.html';
+            } else {
+                window.location.href = 'generating.html';
+            }
         });
     </script>
     <script src="components/hey-henry.js"></script>
