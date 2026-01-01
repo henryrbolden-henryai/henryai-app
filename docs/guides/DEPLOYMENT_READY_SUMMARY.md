@@ -1,7 +1,8 @@
 # HenryHQ Job Fit Analysis — Deployment-Ready Summary
 
-**Status**: ✅ GREENLIT FOR DEPLOYMENT  
-**Date**: December 18, 2025  
+**Status**: ✅ DEPLOYED
+**Date**: January 1, 2026
+**Last Updated**: January 1, 2026
 **Reviewer**: Henry (Product Owner)
 
 ---
@@ -199,14 +200,78 @@ Deploy when backend audit complete and calculator fix verified.
 ---
 
 **Next Steps**:
-1. Send BACKEND_AUDIT_REQUEST.md to Claude Code
-2. Wait for BACKEND_AUDIT_RESULTS.md
-3. Implement Phase 1 (calculator fix)
-4. Deploy with both guardrails in place
+1. ~~Send BACKEND_AUDIT_REQUEST.md to Claude Code~~ ✅ Complete
+2. ~~Wait for BACKEND_AUDIT_RESULTS.md~~ ✅ Complete
+3. ~~Implement Phase 1 (calculator fix)~~ ✅ Complete
+4. ~~Deploy with both guardrails in place~~ ✅ Deployed January 1, 2026
 5. Monitor user feedback on new structure
 
 ---
 
-**Prepared by**: Claude (AI Assistant)  
-**Approved by**: Henry (Product Owner)  
-**Implementation**: Ready for engineering handoff
+## January 2026 Update: Document Quality & Trust Layer
+
+### Additional Features Deployed
+
+**1. Canonical Document System (P0 Fix)**
+- Single source of truth for preview and download
+- Content hash verification ensures preview === download
+- Keyword deduplication (max 3 occurrences)
+- Document integrity validation before download
+
+**2. Strengthen Your Resume Flow**
+- Guided remediation with constrained user inputs
+- Forbidden input validation (no fabrication)
+- Max 3 regenerations per bullet with audit trail
+- Trust Layer Model: Ground Truth → Repair & Agency → Augmentation → Payoff
+
+**3. Fit Score Delta Display**
+- Before/after comparison (NOT re-analysis)
+- Score locked at download (no gamification)
+- Honest messaging when unchanged
+
+**4. Credibility & Verifiability Section**
+- Company credibility assessment (Strong/Weak/Unverifiable)
+- Title alignment detection (Aligned/Inflated/Undersold)
+- Career switcher experience relevance (Direct/Adjacent/Exposure)
+
+**5. Resume Language Lint**
+- 4-tier pattern detection for weak language
+- Auto-rewrite for Tier 1/2 patterns
+- LinkedIn test: If 1,000 profiles could use it, it fails
+
+**6. Non-Accusatory Red Flag Language**
+- All messaging revised to neutral, constructive tone
+- Assumes good faith
+- Every flag has a remediation path
+
+### New Backend Modules
+
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| canonical_document.py | ~770 | Single source of truth |
+| strengthen_session.py | ~470 | Strengthen flow management |
+| resume_detection.py | ~760 | Credibility detection |
+| resume_language_lint.py | ~440 | Language quality analysis |
+| resume_quality_gates.py | ~790 | Pre-download validation |
+| document_versioning.py | ~600 | Version tracking |
+
+### New API Endpoints
+
+- `POST /api/strengthen/session` - Create strengthen session
+- `GET /api/strengthen/session/{id}` - Get session state
+- `POST /api/strengthen/regenerate` - Generate strengthened bullet
+- `POST /api/strengthen/accept` - Accept regeneration
+- `POST /api/strengthen/skip` - Skip issue
+- `POST /api/strengthen/complete` - Complete session
+- `GET /api/download/canonical` - Download with integrity checks
+
+### Commit History
+
+- `7df24f2` - feat: Implement Canonical Document System and Strengthen Resume Flow
+- `f680255` - Merge to main with origin changes
+
+---
+
+**Prepared by**: Claude (AI Assistant)
+**Approved by**: Henry (Product Owner)
+**Implementation**: ✅ Deployed to Production (Vercel/Railway)

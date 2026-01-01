@@ -848,6 +848,361 @@ resume-leveling-system/
 └── main.py
 ```
 
+---
+
+## New Backend Modules (January 2026)
+
+The following modules were added to support the Document Quality & Trust Layer:
+
+### 1. canonical_document.py (~770 lines)
+
+**Purpose:** Single source of truth for preview and download. Eliminates P0 bug where preview ≠ download.
+
+**Key Classes:**
+```python
+@dataclass
+class CanonicalContact:
+    """Contact information for document header."""
+    name: str
+    email: str
+    phone: str
+    location: str
+    linkedin: str
+
+@dataclass
+class CanonicalExperience:
+    """Single work experience entry."""
+    title: str
+    company: str
+    dates: str
+    bullets: List[str]
+
+@dataclass
+class CanonicalResume:
+    """Complete resume ready for preview/download."""
+    contact: CanonicalContact
+    tagline: str
+    summary: str
+    experience: List[CanonicalExperience]
+    education: List[Dict[str, Any]]
+    skills: List[str]
+    competencies: List[str]
+    full_text: str  # Pre-rendered for preview
+
+@dataclass
+class FitScoreDelta:
+    """Tracks fit score improvement from original to canonical."""
+    original_score: int
+    final_score: int
+    original_verdict: str
+    final_verdict: str
+    improvement_summary: str
+    score_locked: bool = False
+    locked_at: Optional[str] = None
+
+@dataclass
+class CanonicalDocument:
+    """The complete canonical document object - ONLY source for preview and download."""
+    resume: CanonicalResume
+    cover_letter: CanonicalCoverLetter
+    metadata: DocumentMetadata
+```
+
+**Key Functions:**
+```python
+def check_document_integrity(doc: CanonicalDocument) -> Dict[str, Any]:
+    """Validates document before download - checks contact info, keyword frequency."""
+
+def deduplicate_keywords(text: str, max_occurrences: int = 3) -> str:
+    """Caps keyword frequency at max_occurrences to prevent stuffing."""
+
+def calculate_fit_score_delta(original_score, original_verdict, canonical_resume, jd_keywords) -> FitScoreDelta:
+    """Calculate delta using SAME scoring logic as initial analysis."""
+
+def assemble_canonical_document(generation_output, source_resume, job_description, contact_info, ...) -> CanonicalDocument:
+    """Single assembly point - no reconstruction allowed after this."""
+```
+
+### 2. strengthen_session.py (~470 lines)
+
+**Purpose:** Manage strengthen flow sessions with constrained user inputs and audit trail.
+
+**Key Classes:**
+```python
+@dataclass
+class BulletRegeneration:
+    """Tracks each regeneration attempt."""
+    original_bullet: str
+    issue_type: str  # "missing_metrics", "vague_ownership", etc.
+    user_inputs: Dict[str, str]
+    generated_bullet: str
+    generation_number: int  # 1, 2, or 3 (max)
+    accepted: bool
+    timestamp: datetime
+
+@dataclass
+class StrengthenSession:
+    """Complete session state."""
+    session_id: str
+    resume_id: str
+    issues_found: List[str]
+    issues_addressed: List[str]
+    issues_skipped: List[str]
+    regenerations: List[BulletRegeneration]
+    started_at: datetime
+    completed_at: Optional[datetime]
+```
+
+**Validation Rules:**
+```python
+FORBIDDEN_PATTERNS = [
+    r"I also (did|led|managed|created)",  # New accomplishments
+    r"promoted to|became|was made",        # Title changes
+    r"learned|picked up|started using",    # New skills
+    r"worked at|joined|started at",        # New companies
+]
+
+IMPLAUSIBLE_THRESHOLDS = {
+    "revenue_impact_entry_level": 1_000_000,      # $1M+ for entry suspicious
+    "team_size_ic": 50,                           # 50+ direct reports for IC suspicious
+    "percentage_improvement": 500,                 # 500%+ improvement suspicious
+}
+
+def validate_user_input(user_input: str, context: Dict) -> Tuple[bool, Optional[str]]:
+    """Validates against forbidden patterns and implausible thresholds."""
+```
+
+### 3. resume_detection.py (~760 lines)
+
+**Purpose:** Detection systems for credibility, title inflation, and career switcher patterns.
+
+**Key Functions:**
+```python
+def assess_company_credibility(company: str, role: Dict) -> Dict[str, Any]:
+    """
+    Returns:
+    {
+        "status": "Strong" | "Weak" | "Unverifiable",
+        "explanation": str,
+        "multiplier": float  # 1.0, 0.7, 0.3, or 0
+    }
+    """
+
+def detect_title_inflation(experience: List[Dict]) -> Dict[str, Any]:
+    """
+    Returns:
+    {
+        "detected": bool,
+        "evidence_level": "Aligned" | "Inflated" | "Undersold",
+        "supporting_analysis": str
+    }
+    """
+
+def recognize_career_switcher(experience: List[Dict], target_function: str) -> Dict[str, Any]:
+    """
+    Returns:
+    {
+        "is_switcher": bool,
+        "experience_type": "Direct" | "Adjacent" | "Exposure",
+        "transferability": str
+    }
+    """
+```
+
+### 4. resume_language_lint.py (~440 lines)
+
+**Purpose:** Detect and flag mid-market language that weakens senior signal.
+
+**Pattern Tiers:**
+```python
+TIER_1_PATTERNS = [  # Kill on sight - remove entirely
+    (r"\bresults-driven\b", "Says nothing, universal filler", "Delete entirely"),
+    (r"\bpassionate about\b", "Emotion, not evidence", "Delete"),
+    (r"\bteam player\b", "Table stakes, not differentiator", "Delete"),
+    ...
+]
+
+TIER_2_PATTERNS = [  # Passive/junior-coded - rewrite
+    (r"\bresponsible for\b", "Passive, job description language", "'Owned [X]' or 'Led [X]'"),
+    (r"\bhelped? (?:drive|build|create)\b", "Who owned the decision?", "'Drove [X]'"),
+    ...
+]
+
+TIER_3_PATTERNS = [  # Vague scope hiders - replace with specifics
+    (r"\bvarious stakeholders\b", "Hides level, could be anyone", "Name the levels"),
+    (r"\bmultiple teams\b", "How many? What scope?", "'4 engineering teams (35 engineers)'"),
+    ...
+]
+
+TIER_4_PATTERNS = [  # Exposure without ownership
+    (r"\bexposure to\b", "Observer, not operator", "Remove or show what you did"),
+    (r"\bfamiliar with\b", "Learning, not doing", "Remove or upgrade"),
+    ...
+]
+```
+
+**Key Functions:**
+```python
+def fails_linkedin_test(sentence: str) -> Tuple[bool, List[str]]:
+    """If sentence could appear on 1,000+ LinkedIn profiles unchanged, it fails."""
+
+def fails_ownership_test(sentence: str) -> Tuple[bool, List[str]]:
+    """If sentence doesn't answer 'what broke if you weren't there?', it fails."""
+
+def lint_resume(resume: Dict[str, Any]) -> Dict[str, Any]:
+    """Complete lint with structured results for API response."""
+
+def auto_rewrite_bullet(bullet: str) -> Tuple[str, List[str]]:
+    """Apply automatic rewrites for Tier 1/2 patterns."""
+```
+
+### 5. resume_quality_gates.py (~790 lines)
+
+**Purpose:** Pre-submission validation to catch issues before download.
+
+**Gate System:**
+```python
+def check_contact_info_gate(document: Dict) -> Dict[str, Any]:
+    """Validates contact info is present and complete."""
+
+def check_keyword_frequency_gate(document: Dict, max_per_keyword: int = 3) -> Dict[str, Any]:
+    """Validates no keyword stuffing."""
+
+def check_quantification_gate(document: Dict, min_rate: float = 0.3) -> Dict[str, Any]:
+    """Validates sufficient metrics in bullets."""
+
+def check_bullet_length_gate(document: Dict) -> Dict[str, Any]:
+    """Validates bullet length (not too short, not too long)."""
+
+def run_all_gates(document: Dict) -> Dict[str, Any]:
+    """Run all gates and return aggregate result with pass/fail and issues."""
+```
+
+### 6. document_versioning.py (~600 lines)
+
+**Purpose:** Track document versions for audit trail and comparison.
+
+**Key Classes:**
+```python
+@dataclass
+class DocumentVersion:
+    """Single version of a document."""
+    version_id: str
+    document_type: str  # "resume" | "cover_letter"
+    content_hash: str
+    created_at: datetime
+    changes_from_previous: List[str]
+    user_approved: bool
+
+@dataclass
+class VersionHistory:
+    """Complete version history for a document."""
+    document_id: str
+    versions: List[DocumentVersion]
+    current_version_id: str
+```
+
+---
+
+## API Endpoints Added (January 2026)
+
+### Strengthen Flow Endpoints
+
+```
+POST /api/strengthen/session
+  - Creates a new strengthen session
+  - Returns: session_id, issues_list, priority_order
+
+GET /api/strengthen/session/{session_id}
+  - Gets current session state
+  - Returns: issues, progress, regenerations
+
+POST /api/strengthen/regenerate
+  - Generates strengthened bullet
+  - Body: { session_id, issue_id, user_inputs }
+  - Returns: { original, strengthened, changes, generation_number }
+  - Validates user inputs against forbidden patterns
+
+POST /api/strengthen/accept
+  - Accepts a regenerated bullet
+  - Body: { session_id, issue_id, regeneration_id }
+
+POST /api/strengthen/skip
+  - Skips an issue
+  - Body: { session_id, issue_id, reason? }
+
+POST /api/strengthen/complete
+  - Marks session complete
+  - Returns: { summary, before_after_comparison }
+```
+
+### Canonical Download Endpoint
+
+```
+GET /api/download/canonical
+  - Downloads canonical document (resume or cover letter)
+  - Uses stored canonical document (no reassembly)
+  - Runs integrity checks before download
+  - Returns: File stream with proper headers
+```
+
+---
+
+## Frontend Integration (January 2026)
+
+### documents.html Changes
+
+```javascript
+// Preview uses canonical_full_text (pre-rendered)
+function renderPreview(canonicalDoc) {
+    previewContainer.innerHTML = canonicalDoc.resume.full_text;
+}
+
+// Download uses canonical endpoint
+async function downloadDocument(type) {
+    const response = await fetch('/api/download/canonical', {
+        method: 'POST',
+        body: JSON.stringify({ document_type: type, session_id: currentSessionId })
+    });
+    // Stream file to download
+}
+
+// Fit Score Delta display
+function showFitScoreDelta(delta) {
+    if (!delta.improved && delta.delta === 0) {
+        // Show honest message
+        statusText.textContent = delta.improvement_summary;
+    } else {
+        // Show improvement
+        statusText.textContent = `+${delta.delta} points: ${delta.improvement_summary}`;
+    }
+}
+
+// Lock score at download
+function lockFitScoreAtDownload() {
+    // Called on "Approve & Download" click
+    // Prevents gamification
+}
+```
+
+### resume-leveling.html Changes
+
+```javascript
+// Credibility & Verifiability section
+function renderCredibility(data) {
+    // Company Credibility cards
+    renderCompanyCards(data.company_credibility);
+
+    // Title Alignment cards
+    renderTitleCards(data.title_alignment);
+
+    // Experience Relevance cards (for career switchers)
+    if (data.is_career_switcher) {
+        renderExperienceCards(data.experience_relevance);
+    }
+}
+```
+
 ## Sample Usage
 
 ```python

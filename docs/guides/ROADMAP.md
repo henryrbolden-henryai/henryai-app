@@ -1,6 +1,6 @@
 # HenryAI Product Roadmap
 
-**Last Updated:** December 25, 2025
+**Last Updated:** January 1, 2026
 
 ---
 
@@ -546,11 +546,24 @@ The best features mean nothing if users don't engage with them. Before adding mo
 | Phase 0: Conversational Resume Builder | **Complete (Wave 1)** | ~70% |
 | Phase 1: Core Application Engine | Complete | 100% |
 | Phase 1.5: Interview Intelligence | Complete | 100% |
-| Phase 1.75: Engagement & Coaching | In Progress | ~60% |
-| Phase 2: Strategic Intelligence | **Major Progress** | ~75% |
+| Phase 1.75: Engagement & Coaching | In Progress | ~65% |
+| Phase 2: Strategic Intelligence | **Major Progress** | ~80% |
+| Phase 2.5: Document Quality & Trust | **NEW - Complete** | 100% |
 | Phase 3: Performance Intelligence | Partial | ~20% |
 | Phase 4: Distribution & Ecosystem | Not Started | 0% |
 | Phase 5: Monetization & Scale | Not Started | 0% |
+
+### Phase 2.5: Document Quality & Trust Layer (Jan 2026)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Canonical Document System | ✅ Complete | Single source of truth for preview/download |
+| Strengthen Your Resume Flow | ✅ Complete | Constrained remediation with forbidden input validation |
+| Fit Score Delta Display | ✅ Complete | Before/after comparison, locked at download |
+| Credibility & Verifiability | ✅ Complete | Company, title, experience relevance cards |
+| Resume Language Lint | ✅ Complete | 4-tier pattern detection |
+| Resume Quality Gates | ✅ Complete | Pre-download validation |
+| Non-Accusatory Red Flags | ✅ Complete | Neutral, constructive messaging |
 
 ### Pre-Launch QA (Dec 22, 2025)
 
@@ -1026,6 +1039,248 @@ Manual browser testing required:
 | LinkedIn Upload | 3/3 ✅ | All profiles parsed correctly |
 | Error Handling | All ✅ | Proper validation errors |
 | Tracker API | ✅ | CRUD + status transitions working |
+
+---
+
+## Session Log: January 1, 2026
+
+### Completed Today
+
+**1. Canonical Document System (P0 Fix) - Complete**
+
+Fixed critical preview/download mismatch bug where preview and download showed different content.
+
+**Root Cause:**
+- Two separate data assembly paths: preview assembled from component data, download re-fetched and re-assembled
+- Missing contact info in downloads
+- Keyword stuffing (one keyword appearing 18+ times)
+- Users re-uploading because they couldn't tell if changes helped
+
+**Solution - Single Source of Truth:**
+- New `canonical_document.py` module with ~770 lines
+- One JSON object powers BOTH preview AND download (no reassembly)
+- Content hash verification ensures preview === download
+- Document integrity gate validates contact info before download
+- Keyword deduplication (max 3 occurrences per keyword)
+
+**Backend Changes:**
+- `CanonicalDocument`, `CanonicalResume`, `CanonicalCoverLetter`, `FitScoreDelta` dataclasses
+- `check_document_integrity()` - validates before download
+- `deduplicate_keywords()` - caps at 3 occurrences
+- `assemble_canonical_document()` - single assembly point
+- New endpoint: `/api/download/canonical` with integrity checks
+
+**Frontend Changes:**
+- Preview uses `canonical_full_text` (pre-rendered)
+- Download calls `/api/download/canonical` (single source)
+- Job Fit Impact module with CSS
+- `showFitScoreDelta()` and `lockFitScoreAtDownload()` functions
+
+**Files Created:**
+- `backend/canonical_document.py` - Core schema and assembly
+- `backend/document_versioning.py` - Version tracking (~600 lines)
+
+**Files Modified:**
+- `backend/backend.py` - Canonical document assembly in `/api/documents/generate`
+- `frontend/documents.html` - Canonical preview/download + fit score delta
+
+---
+
+**2. Strengthen Your Resume Flow - Complete**
+
+Implemented guided remediation for resume weaknesses with constrained user inputs.
+
+**Trust Layer Model:**
+| Layer | Step | Purpose |
+|-------|------|---------|
+| 1. Ground Truth | Job Fit Score | High-level reality check |
+| 1. Ground Truth | Resume Level Analysis | Pure diagnosis from resume |
+| 2. Repair & Agency | Strengthen My Resume | Clarify, de-risk, reframe |
+| 3. Augmentation | LinkedIn Profile Analysis | Optional enrichment |
+| 4. Payoff | Strategy Overview | Final deliverables |
+
+**Core Principle: Constrained Input, Guided Output**
+
+Users CAN provide:
+- Missing context that was true but not included
+- Clarification of ambiguous statements
+- Metrics/numbers they forgot to include
+
+Users CANNOT:
+- Invent new accomplishments
+- Inflate titles or responsibilities
+- Add skills they don't have
+- Fabricate metrics
+
+**Backend Implementation:**
+- New `strengthen_session.py` module (~470 lines)
+- `StrengthenSession`, `BulletRegeneration` dataclasses
+- `validate_user_input()` with FORBIDDEN_PATTERNS
+- Max 3 regenerations per bullet with audit trail
+- Implausible metric thresholds (e.g., $1M+ for entry-level suspicious)
+
+**API Endpoints:**
+- `POST /api/strengthen/session` - Create session
+- `GET /api/strengthen/session/{id}` - Get state
+- `POST /api/strengthen/regenerate` - Generate strengthened bullet
+- `POST /api/strengthen/accept` - Accept regeneration
+- `POST /api/strengthen/skip` - Skip issue
+- `POST /api/strengthen/complete` - Mark complete
+
+**Files Created:**
+- `backend/strengthen_session.py` - Session management
+- `docs/guides/STRENGTHEN_RESUME_SPEC.md` - Full specification
+
+---
+
+**3. Fit Score Delta Display - Complete**
+
+Shows before/after comparison of fit score improvements (NOT re-analysis).
+
+**Key Design Decisions:**
+- Delta calculated using SAME scoring logic as initial analysis
+- Score locked at download (no gamification)
+- Honest when unchanged: "Your fit score didn't change, but your resume is clearer and safer for screening."
+- Shows original score, final score, and improvement summary
+
+**Implementation:**
+- `FitScoreDelta` dataclass with `delta`, `improved` properties
+- `calculate_fit_score_delta()` function
+- Frontend display in documents.html with CSS styling
+- Score locked on "Approve & Download" click
+
+---
+
+**4. Resume Leveling Page - Credibility & Verifiability Section - Complete**
+
+Added new section to resume-leveling.html after main leveling analysis.
+
+**Three Components:**
+1. **Company Credibility** - Strong/Weak/Unverifiable assessment
+2. **Title Alignment** - Aligned/Inflated/Undersold evidence level
+3. **Experience Relevance** (career switchers) - Direct/Adjacent/Exposure
+
+**Data Sources (from resume_detection.py):**
+- `assess_company_credibility()` → Company cards
+- `detect_title_inflation()` → Title alignment cards
+- `recognize_career_switcher()` → Experience relevance cards
+
+**Files Created:**
+- `backend/resume_detection.py` - Detection systems (~760 lines)
+
+**Files Modified:**
+- `frontend/resume-leveling.html` - Added CSS and `renderCredibility()` function
+
+---
+
+**5. Red Flag Language - Non-Accusatory Tone - Complete**
+
+Revised all red flag messaging to be neutral and constructive.
+
+**Language Changes:**
+| Before (Accusatory) | After (Neutral) |
+|---------------------|-----------------|
+| "This claim appears inflated" | "We couldn't find supporting evidence for this scope" |
+| "Suspicious metric" | "This metric is unusually high - can you provide context?" |
+| "fabrication" | "metrics_context" |
+| "flight risk" | "recruiters may question this pattern" |
+
+**Tone Principles:**
+1. Assume good faith - user may have forgotten details, not fabricated
+2. Offer opportunity to clarify - "Can you help us understand..."
+3. Focus on evidence gaps - "We're missing..." not "You're lying..."
+4. Suggest remediation - every flag has a path forward
+
+**Files Modified:**
+- `backend/calibration/red_flag_detector.py` - Updated messaging
+
+---
+
+**6. Resume Language Lint System - Complete**
+
+New module for detecting mid-market language that weakens senior signal.
+
+**Core Test:** If a sentence can apply to 1,000 LinkedIn profiles, it fails.
+
+**4-Tier Pattern System:**
+
+| Tier | Name | Example Patterns | Action |
+|------|------|------------------|--------|
+| 1 | Kill on Sight | "results-driven", "passionate about" | Delete entirely |
+| 2 | Passive/Junior-Coded | "responsible for", "helped drive" | Rewrite with ownership |
+| 3 | Vague Scope Hiders | "various stakeholders", "multiple teams" | Replace with specifics |
+| 4 | Exposure Without Ownership | "exposure to", "familiar with" | Remove or upgrade |
+
+**Functions:**
+- `fails_linkedin_test()` - Generic filler detection
+- `fails_ownership_test()` - Passive language detection
+- `fails_scope_test()` - Vague scope detection
+- `fails_observer_test()` - Observer vs operator detection
+- `lint_resume()` - Complete lint with structured results
+- `auto_rewrite_bullet()` - Automatic rewrites for Tier 1/2
+
+**Files Created:**
+- `backend/resume_language_lint.py` (~440 lines)
+
+---
+
+**7. Resume Quality Gates - Complete**
+
+Pre-submission validation to catch issues before download.
+
+**Gate System:**
+- Contact info present (required)
+- Keyword frequency (max 3 per keyword)
+- Quantification rate check
+- Bullet length validation
+- Skills relevance check
+
+**Files Created:**
+- `backend/resume_quality_gates.py` (~790 lines)
+
+---
+
+**8. Documentation - Complete**
+
+Created comprehensive specification documents.
+
+**Files Created:**
+- `docs/guides/STRENGTHEN_RESUME_SPEC.md` - Full strengthen flow spec
+- `docs/guides/RESUME_COVER_LETTER_CUSTOMIZATION_SPEC.md` - Customization spec
+- `docs/guides/RESUME_GENERATOR_RED_FLAG_LANGUAGE_LINT.md` - Lint rules spec
+- `docs/guides/RESUME_QUALITY_GATES.md` - Quality gates spec
+
+---
+
+### Deployment
+
+**Commit:** `7df24f2` - feat: Implement Canonical Document System and Strengthen Resume Flow
+**Merged:** To main branch with `f680255`
+**Pushed:** To origin/main, triggering Vercel/Railway deployment
+
+### Files Summary
+
+**New Backend Modules (6 files, ~3,800 lines):**
+- `backend/canonical_document.py`
+- `backend/strengthen_session.py`
+- `backend/resume_detection.py`
+- `backend/resume_language_lint.py`
+- `backend/resume_quality_gates.py`
+- `backend/document_versioning.py`
+
+**Modified Backend:**
+- `backend/backend.py` - Strengthen endpoints, canonical assembly
+- `backend/calibration/red_flag_detector.py` - Non-accusatory language
+
+**Modified Frontend:**
+- `frontend/documents.html` - Canonical preview/download, fit score delta
+- `frontend/resume-leveling.html` - Credibility & Verifiability section
+
+**New Documentation (4 files):**
+- `docs/guides/STRENGTHEN_RESUME_SPEC.md`
+- `docs/guides/RESUME_COVER_LETTER_CUSTOMIZATION_SPEC.md`
+- `docs/guides/RESUME_GENERATOR_RED_FLAG_LANGUAGE_LINT.md`
+- `docs/guides/RESUME_QUALITY_GATES.md`
 
 ---
 
