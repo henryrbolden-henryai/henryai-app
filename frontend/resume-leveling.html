@@ -847,6 +847,120 @@
             color: var(--color-accent);
         }
 
+        /* Credibility & Verifiability Section */
+        .credibility-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .credibility-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .credibility-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .credibility-card-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .credibility-card-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .credibility-card-status.strong {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .credibility-card-status.weak {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .credibility-card-status.unverifiable {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .credibility-card-status.aligned {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .credibility-card-status.inflated {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .credibility-card-status.undersold {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+        }
+
+        .credibility-card-status.direct {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .credibility-card-status.adjacent {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .credibility-card-status.exposure {
+            background: rgba(167, 139, 250, 0.15);
+            color: var(--color-purple);
+        }
+
+        .credibility-card-explanation {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .credibility-subsection {
+            margin-bottom: 20px;
+        }
+
+        .credibility-subsection:last-child {
+            margin-bottom: 0;
+        }
+
+        .credibility-subsection-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .credibility-subsection-title::before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 14px;
+            background: var(--color-accent);
+            border-radius: 2px;
+        }
+
         /* Senior Readiness Checks - Director+ only */
         .senior-readiness-subtitle {
             color: var(--color-text-secondary);
@@ -1434,6 +1548,27 @@
                 </div>
             </div>
 
+            <!-- Credibility & Verifiability (Collapsible - Default Collapsed) -->
+            <div class="collapsible-section collapsed" id="credibilitySection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('credibilitySection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Credibility & Verifiability</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <span class="collapsible-badge" style="background: rgba(34, 211, 238, 0.15); color: var(--color-accent);" id="credibilityBadge">Assessment</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+                        How verifiable your experience appears to recruiters and hiring managers.
+                    </p>
+                    <div id="credibilityContent">
+                        <!-- Populated dynamically with company credibility, title alignment, and experience relevance -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Senior Readiness Checks (Collapsible - Director+ Only) -->
             <div class="collapsible-section collapsed" id="seniorReadinessSection" style="display: none;">
                 <div class="collapsible-header" onclick="toggleSection('seniorReadinessSection')">
@@ -2013,6 +2148,9 @@
                 renderRedFlags();
             }
 
+            // Credibility & Verifiability (from detection systems)
+            renderCredibility();
+
             // Senior Readiness Checks (Director+ only)
             renderSeniorReadiness();
 
@@ -2192,34 +2330,35 @@
             const redFlagsList = document.getElementById('redFlagsList');
 
             // Map common red flag patterns to structured format
+            // NOTE: Language is neutral and assumes good faith - gaps may be due to resume format, not dishonesty
             const redFlagTemplates = {
                 'company not found': {
-                    why: 'This creates a credibility gap because recruiters cannot validate scope or scale.',
-                    fix: ['Add company description (e.g., "Series A SaaS startup, $5M ARR, 20 employees")', 'Link to Crunchbase or LinkedIn Company Page', 'If defunct, note "acquired by [Company]" or "shut down [Year]"']
+                    why: 'We could not find public information about this company, which may make it harder for recruiters to understand your experience.',
+                    fix: ['Add a brief company description (e.g., "Series A SaaS startup, $5M ARR, 20 employees")', 'Include a link to Crunchbase or LinkedIn Company Page if available', 'If the company was acquired or shut down, note this context']
                 },
                 'title inflation': {
-                    why: 'Inflated titles at small companies raise questions about real scope and authority.',
-                    fix: ['Use functional title that reflects actual scope', 'Emphasize scope in bullets (team size, budget, stakeholders)', 'Add company context (size, stage, funding)']
+                    why: 'The responsibilities described may not fully convey the scope suggested by this title. Adding context can help recruiters understand your role.',
+                    fix: ['Consider adding scope details (team size, budget, stakeholders)', 'Include company context (size, stage, funding) to frame the role', 'Ensure bullet points reflect strategic ownership at this level']
                 },
                 'generic language': {
-                    why: 'Generic language makes it impossible to assess what you actually did. Senior roles require specificity.',
-                    fix: ['Replace buzzwords with specific skills', 'Quantify responsibilities (how many? how much?)', 'Use PAR framework (Problem, Action, Result)']
+                    why: 'These phrases could apply to many candidates. More specific language helps differentiate your experience.',
+                    fix: ['Replace general terms with specific skills and technologies', 'Add numbers where possible (how many? how much? how often?)', 'Describe specific outcomes using the PAR framework (Problem, Action, Result)']
                 },
                 'scope mismatch': {
-                    why: 'If your title claims senior level but bullets describe IC work, recruiters will assume title inflation.',
-                    fix: ['Reframe bullets to show strategic ownership', 'Add evidence of leadership and influence', 'Remove or minimize IC-level tasks']
+                    why: 'The bullet points focus on individual contributor work, which may not fully represent your leadership experience at this level.',
+                    fix: ['Add examples of strategic ownership and decision-making', 'Include evidence of leadership, mentorship, or cross-functional influence', 'Balance IC accomplishments with leadership scope']
                 },
                 'no quantification': {
-                    why: 'Without metrics, recruiters cannot assess impact. Senior roles require evidence of measurable outcomes.',
-                    fix: ['Add revenue/cost impact numbers', 'Include team sizes and budget figures', 'Quantify efficiency gains or user growth']
+                    why: 'Adding metrics helps recruiters understand the scale and impact of your work.',
+                    fix: ['Include revenue, cost savings, or efficiency improvements where known', 'Add team sizes, budget figures, or user counts', 'Even approximate ranges (e.g., "10-15%") are helpful']
                 },
                 'short tenure': {
-                    why: 'Multiple short stints can signal performance issues or lack of commitment.',
-                    fix: ['Group short contract roles together', 'Explain transitions in cover letter', 'Emphasize impact achieved despite short tenure']
+                    why: 'Multiple shorter stints may prompt questions about context. Providing narrative helps recruiters understand your career path.',
+                    fix: ['Group short contract or consulting engagements together', 'Prepare to explain transitions in your cover letter or interviews', 'Emphasize impact achieved and skills gained in each role']
                 },
                 'gap': {
-                    why: 'Unexplained gaps raise questions about what happened during that time.',
-                    fix: ['Add relevant activities (consulting, education, personal projects)', 'Be prepared to discuss in interviews', 'Focus narrative on growth and skills gained']
+                    why: 'Unexplained gaps may prompt questions. Providing context helps recruiters understand your career journey.',
+                    fix: ['Add relevant activities if applicable (consulting, education, caregiving, personal projects)', 'Prepare talking points for interviews', 'Focus on growth, learning, and skills gained during this time']
                 }
             };
 
@@ -2231,10 +2370,10 @@
                         return details;
                     }
                 }
-                // Default template for unknown flags
+                // Default template for unknown flags - neutral, helpful language
                 return {
-                    why: 'This may raise questions during resume screening or interviews.',
-                    fix: ['Review this area of your resume', 'Add more context or evidence']
+                    why: 'This area of your resume may benefit from additional context or clarity.',
+                    fix: ['Consider adding more specific details or metrics', 'Clarify the scope and impact of your work']
                 };
             }
 
@@ -2287,6 +2426,120 @@
                     `;
                 }
             }).join('');
+        }
+
+        function renderCredibility() {
+            // Check if we have credibility data from the analysis
+            const detections = analysisData.detections || {};
+            const companyCredibility = detections.company_credibility || [];
+            const titleInflation = detections.title_inflation || [];
+            const careerSwitcher = detections.career_switcher || {};
+
+            // Only show section if we have data
+            const hasData = companyCredibility.length > 0 ||
+                           titleInflation.length > 0 ||
+                           (careerSwitcher.is_career_switcher !== undefined);
+
+            if (!hasData) {
+                return;
+            }
+
+            const section = document.getElementById('credibilitySection');
+            section.style.display = 'block';
+
+            let html = '';
+
+            // Company Credibility subsection
+            if (companyCredibility.length > 0) {
+                html += `
+                    <div class="credibility-subsection">
+                        <div class="credibility-subsection-title">Company Credibility</div>
+                        ${companyCredibility.map(comp => {
+                            const status = (comp.credibility || 'unverifiable').toLowerCase();
+                            const statusLabel = status === 'strong' ? 'Strong' :
+                                              status === 'weak' ? 'Weak' : 'Unverifiable';
+                            return `
+                                <div class="credibility-card">
+                                    <div class="credibility-card-header">
+                                        <span class="credibility-card-title">${comp.company}</span>
+                                        <span class="credibility-card-status ${status}">${statusLabel}</span>
+                                    </div>
+                                    <p class="credibility-card-explanation">${comp.explanation || 'Unable to assess company credibility.'}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            // Title Alignment subsection
+            if (titleInflation.length > 0) {
+                html += `
+                    <div class="credibility-subsection">
+                        <div class="credibility-subsection-title">Title Alignment</div>
+                        ${titleInflation.map(ti => {
+                            const assessment = (ti.assessment || 'aligned').toLowerCase();
+                            const statusLabel = assessment === 'aligned' ? 'Aligned' :
+                                              assessment === 'inflated' ? 'Inflated' : 'Undersold';
+                            return `
+                                <div class="credibility-card">
+                                    <div class="credibility-card-header">
+                                        <span class="credibility-card-title">${ti.title} at ${ti.company}</span>
+                                        <span class="credibility-card-status ${assessment}">${statusLabel}</span>
+                                    </div>
+                                    <p class="credibility-card-explanation">${ti.explanation || 'Title appears consistent with demonstrated responsibilities.'}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            // Career Switcher / Experience Relevance subsection
+            if (careerSwitcher.is_career_switcher) {
+                const experienceTypes = careerSwitcher.experience_types || [];
+                html += `
+                    <div class="credibility-subsection">
+                        <div class="credibility-subsection-title">Experience Relevance</div>
+                        <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 12px;">
+                            You appear to be transitioning into this field. Here's how your experience maps to the target role:
+                        </p>
+                        ${experienceTypes.map(exp => {
+                            const type = (exp.type || 'exposure').toLowerCase();
+                            const typeLabel = type === 'direct' ? 'Direct' :
+                                            type === 'adjacent' ? 'Adjacent' : 'Exposure';
+                            return `
+                                <div class="credibility-card">
+                                    <div class="credibility-card-header">
+                                        <span class="credibility-card-title">${exp.role || exp.experience}</span>
+                                        <span class="credibility-card-status ${type}">${typeLabel}</span>
+                                    </div>
+                                    <p class="credibility-card-explanation">${exp.explanation || 'This experience provides relevant background for the target role.'}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            document.getElementById('credibilityContent').innerHTML = html;
+
+            // Update badge based on overall assessment
+            const strongCount = companyCredibility.filter(c => c.credibility === 'strong').length;
+            const totalCompanies = companyCredibility.length;
+            const inflatedCount = titleInflation.filter(t => t.assessment === 'inflated').length;
+
+            let badgeText = 'Assessment';
+            if (totalCompanies > 0 && inflatedCount === 0 && strongCount === totalCompanies) {
+                badgeText = 'Verified';
+                document.getElementById('credibilityBadge').style.background = 'rgba(74, 222, 128, 0.15)';
+                document.getElementById('credibilityBadge').style.color = 'var(--color-success)';
+            } else if (inflatedCount > 0) {
+                badgeText = 'Concerns Found';
+                document.getElementById('credibilityBadge').style.background = 'rgba(248, 113, 113, 0.15)';
+                document.getElementById('credibilityBadge').style.color = 'var(--color-error)';
+            }
+            document.getElementById('credibilityBadge').textContent = badgeText;
         }
 
         // Check if target level is Director+ (requires senior readiness checks)

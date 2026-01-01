@@ -540,6 +540,98 @@
             color: #22d3ee;
         }
 
+        /* Job Fit Impact Delta Module - reassurance, not gamification */
+        .fit-score-delta {
+            background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(34, 211, 238, 0.03));
+            border: 1px solid rgba(34, 211, 238, 0.25);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .fit-score-delta .delta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .fit-score-delta .delta-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+        }
+
+        .fit-score-delta .delta-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .fit-score-delta .delta-badge.improved {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+        }
+
+        .fit-score-delta .delta-badge.unchanged {
+            background: rgba(156, 163, 175, 0.15);
+            color: #9ca3af;
+        }
+
+        .fit-score-delta .delta-scores {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .fit-score-delta .score-before,
+        .fit-score-delta .score-after {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .fit-score-delta .score-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .fit-score-delta .score-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .fit-score-delta .score-before .score-value {
+            color: #9ca3af;
+        }
+
+        .fit-score-delta .score-after .score-value {
+            color: #22d3ee;
+        }
+
+        .fit-score-delta .score-verdict {
+            font-size: 0.7rem;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .fit-score-delta .score-arrow {
+            font-size: 1.25rem;
+            color: #4b5563;
+        }
+
+        .fit-score-delta .delta-summary {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            margin: 0;
+            font-style: italic;
+        }
+
         /* SINGLE SOURCE OF TRUTH: Job Fit Warning Banner */
         .job-fit-warning-banner {
             background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.08));
@@ -610,6 +702,28 @@
             <span>📄</span> Your Tailored Documents
         </h1>
         <p class="subtitle">ATS-optimized resume and custom cover letter for this role</p>
+
+        <!-- Job Fit Impact Module (shows delta, not re-analysis) -->
+        <div id="fitScoreDelta" class="fit-score-delta" style="display: none;">
+            <div class="delta-header">
+                <span class="delta-label">Job Fit Impact</span>
+                <span class="delta-badge" id="deltaBadge"></span>
+            </div>
+            <div class="delta-scores">
+                <div class="score-before">
+                    <span class="score-label">Before</span>
+                    <span class="score-value" id="scoreBefore">--</span>
+                    <span class="score-verdict" id="verdictBefore"></span>
+                </div>
+                <div class="score-arrow">→</div>
+                <div class="score-after">
+                    <span class="score-label">After</span>
+                    <span class="score-value" id="scoreAfter">--</span>
+                    <span class="score-verdict" id="verdictAfter"></span>
+                </div>
+            </div>
+            <p class="delta-summary" id="deltaSummary"></p>
+        </div>
 
         <!-- Tabs -->
         <div class="tabs">
@@ -829,7 +943,7 @@
             });
         }
 
-        // Download resume as DOCX (using server-side professional formatter)
+        // Download resume as DOCX - USES CANONICAL DOCUMENT (single source of truth)
         async function downloadResume() {
             if (!documentsData || !documentsData.resume_output) {
                 alert('Resume not available. Please go back and regenerate.');
@@ -842,6 +956,50 @@
             try {
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳</span> Generating...';
+
+                // CHECK FOR CANONICAL DOCUMENT - single source of truth
+                if (documentsData.canonical_document) {
+                    console.log('✅ Using canonical download endpoint (preview === download)');
+                    const response = await fetch(`${API_BASE}/api/download/canonical`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            canonical_document: documentsData.canonical_document,
+                            document_type: 'resume',
+                            expected_hash: documentsData.canonical_document?.metadata?.content_hash
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        if (error.error === 'integrity_mismatch') {
+                            alert('Document has changed. Please refresh the page and try again.');
+                            return;
+                        }
+                        if (error.error === 'integrity_failed') {
+                            const issues = error.issues?.map(i => i.message).join('\n') || 'Unknown issue';
+                            alert(`Cannot download: ${issues}`);
+                            return;
+                        }
+                        throw new Error(`Download failed: ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    const contentHash = response.headers.get('X-Document-Hash');
+                    console.log(`✅ Downloaded with hash: ${contentHash}`);
+
+                    // Lock the fit score at download (freeze it)
+                    lockFitScoreAtDownload();
+
+                    const candidateName = documentsData.canonical_document?.resume?.contact?.name || 'Resume';
+                    const filename = `${candidateName.replace(/\s+/g, '_')}_Resume.docx`;
+                    saveAs(blob, filename);
+                    showSuccess();
+                    return;
+                }
+
+                // FALLBACK: Legacy download path (deprecated)
+                console.log('⚠️ Using legacy download endpoint (may differ from preview)');
 
                 // Get candidate data from multiple possible sources
                 const candidateName = analysisData?._candidate_name ||
@@ -1057,7 +1215,7 @@
             }
         }
 
-        // Download cover letter as DOCX (using server-side professional formatter)
+        // Download cover letter as DOCX - USES CANONICAL DOCUMENT (single source of truth)
         async function downloadCoverLetter() {
             if (!documentsData || !documentsData.cover_letter) {
                 alert('Cover letter not available. Please go back and regenerate.');
@@ -1070,6 +1228,44 @@
             try {
                 btn.disabled = true;
                 btn.innerHTML = '<span>⏳</span> Generating...';
+
+                // CHECK FOR CANONICAL DOCUMENT - single source of truth
+                if (documentsData.canonical_document) {
+                    console.log('✅ Using canonical download for cover letter');
+                    const response = await fetch(`${API_BASE}/api/download/canonical`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            canonical_document: documentsData.canonical_document,
+                            document_type: 'cover_letter',
+                            expected_hash: documentsData.canonical_document?.metadata?.content_hash
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({}));
+                        if (error.error === 'integrity_mismatch') {
+                            alert('Document has changed. Please refresh the page and try again.');
+                            return;
+                        }
+                        if (error.error === 'integrity_failed') {
+                            const issues = error.issues?.map(i => i.message).join('\n') || 'Unknown issue';
+                            alert(`Cannot download: ${issues}`);
+                            return;
+                        }
+                        throw new Error(`Download failed: ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+                    const candidateName = documentsData.canonical_document?.cover_letter?.contact?.name || 'Cover_Letter';
+                    const filename = `${candidateName.replace(/\s+/g, '_')}_Cover_Letter.docx`;
+                    saveAs(blob, filename);
+                    showSuccess();
+                    return;
+                }
+
+                // FALLBACK: Legacy download path (deprecated)
+                console.log('⚠️ Using legacy cover letter download');
 
                 const candidateName = analysisData?._candidate_name ||
                                      analysisData?._profile?.full_name ||
@@ -1382,16 +1578,38 @@ ${'─'.repeat(60)}
 
 `;
 
-            // Resume preview with header
-            const resumeBody = documentsData.resume_output?.full_text ||
-                              documentsData.resume?.full_text ||
-                              'Resume content not available.';
+            // Resume preview - USE CANONICAL DOCUMENT IF AVAILABLE (single source of truth)
+            let resumeBody;
+            if (documentsData.resume_output?.canonical_full_text) {
+                // Use canonical full_text - this is the SAME data used for download
+                resumeBody = documentsData.resume_output.canonical_full_text;
+                console.log('✅ Using canonical resume preview (single source of truth)');
+            } else {
+                // Fallback to legacy full_text
+                resumeBody = documentsData.resume_output?.full_text ||
+                            documentsData.resume?.full_text ||
+                            'Resume content not available.';
+                console.log('⚠️ Using legacy resume preview (may differ from download)');
+            }
             const resumeText = resumeHeader + resumeBody;
 
             document.getElementById('resumeLoading').style.display = 'none';
             document.getElementById('resumeText').style.display = 'block';
             document.getElementById('resumeText').value = resumeText;
             document.getElementById('downloadResumeBtn').disabled = false;
+
+            // Check document integrity and show warnings if needed
+            if (documentsData.document_integrity && !documentsData.document_integrity.passed) {
+                const issues = documentsData.document_integrity.issues || [];
+                console.warn('⚠️ Document integrity issues:', issues);
+                // Show warning banner for critical issues
+                const criticalIssues = issues.filter(i =>
+                    i.type === 'missing_name' || i.type === 'missing_email'
+                );
+                if (criticalIssues.length > 0) {
+                    showIntegrityWarning(criticalIssues);
+                }
+            }
 
             // Build cover letter header (same format)
             const coverLetterHeader = `${candidateName.toUpperCase()}
@@ -1404,15 +1622,104 @@ COVER LETTER
 
 `;
 
-            // Cover letter preview with header
-            const coverLetterBody = documentsData.cover_letter?.full_text ||
-                                   'Cover letter content not available.';
+            // Cover letter preview - USE CANONICAL DOCUMENT IF AVAILABLE
+            let coverLetterBody;
+            if (documentsData.cover_letter?.canonical_full_text) {
+                coverLetterBody = documentsData.cover_letter.canonical_full_text;
+                console.log('✅ Using canonical cover letter preview');
+            } else {
+                coverLetterBody = documentsData.cover_letter?.full_text ||
+                                 'Cover letter content not available.';
+                console.log('⚠️ Using legacy cover letter preview');
+            }
             const coverLetterText = coverLetterHeader + coverLetterBody;
 
             document.getElementById('coverLetterLoading').style.display = 'none';
             document.getElementById('coverLetterText').style.display = 'block';
             document.getElementById('coverLetterText').value = coverLetterText;
             document.getElementById('downloadCoverLetterBtn').disabled = false;
+        });
+
+        // Show integrity warning banner
+        function showIntegrityWarning(issues) {
+            const banner = document.getElementById('jobFitWarningBanner');
+            if (banner) {
+                const title = document.getElementById('warningTitle');
+                const message = document.getElementById('warningMessage');
+
+                title.textContent = 'Document Issue Detected';
+                message.innerHTML = issues.map(i =>
+                    `<strong>${i.message}</strong>: ${i.fix}`
+                ).join('<br>');
+
+                banner.style.display = 'flex';
+                banner.style.background = 'linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.08))';
+            }
+        }
+
+        // Show Job Fit Impact delta - reassurance, not gamification
+        function showFitScoreDelta(fitScoreDelta) {
+            if (!fitScoreDelta) return;
+
+            const container = document.getElementById('fitScoreDelta');
+            if (!container) return;
+
+            // Populate values
+            document.getElementById('scoreBefore').textContent = `${fitScoreDelta.original_score}%`;
+            document.getElementById('scoreAfter').textContent = `${fitScoreDelta.final_score}%`;
+            document.getElementById('verdictBefore').textContent = fitScoreDelta.original_verdict;
+            document.getElementById('verdictAfter').textContent = fitScoreDelta.final_verdict;
+            document.getElementById('deltaSummary').textContent = fitScoreDelta.improvement_summary;
+
+            // Set badge based on improvement
+            const badge = document.getElementById('deltaBadge');
+            if (fitScoreDelta.delta > 0) {
+                badge.textContent = `+${fitScoreDelta.delta}%`;
+                badge.className = 'delta-badge improved';
+            } else if (fitScoreDelta.delta === 0) {
+                badge.textContent = 'No change';
+                badge.className = 'delta-badge unchanged';
+            } else {
+                badge.textContent = `${fitScoreDelta.delta}%`;
+                badge.className = 'delta-badge unchanged';
+            }
+
+            container.style.display = 'block';
+            console.log('✅ Showing fit score delta:', fitScoreDelta);
+        }
+
+        // Lock fit score at download - prevents obsessive re-running
+        function lockFitScoreAtDownload() {
+            const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
+            if (documentsData.canonical_document?.metadata?.fit_score_delta) {
+                documentsData.canonical_document.metadata.fit_score_delta.score_locked = true;
+                documentsData.canonical_document.metadata.fit_score_delta.locked_at = new Date().toISOString();
+                sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
+
+                // Update UI to show locked state
+                const deltaLabel = document.querySelector('.fit-score-delta .delta-label');
+                if (deltaLabel) {
+                    deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: #4ade80;">✓ Final</span>';
+                }
+                console.log('✅ Fit score locked at download');
+            }
+        }
+
+        // Initialize fit score delta on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
+            const fitScoreDelta = documentsData.canonical_document?.metadata?.fit_score_delta;
+            if (fitScoreDelta) {
+                showFitScoreDelta(fitScoreDelta);
+
+                // If already locked, show locked state
+                if (fitScoreDelta.score_locked) {
+                    const deltaLabel = document.querySelector('.fit-score-delta .delta-label');
+                    if (deltaLabel) {
+                        deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: #4ade80;">✓ Final</span>';
+                    }
+                }
+            }
         });
     </script>
 <script src="components/hey-henry.js"></script>

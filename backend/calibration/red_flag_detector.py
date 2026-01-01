@@ -63,9 +63,9 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
         flags.append({
             'type': 'press_release',
             'severity': 'stop_search',
-            'reason': 'Resume lacks specificity (no tension, no failures)',
+            'reason': 'Resume may benefit from more specific details',
             'action': 'Do Not Apply',
-            'detail': 'Every initiative appears to have succeeded without tradeoffs or challenges'
+            'detail': 'Adding challenges overcome and tradeoffs navigated strengthens credibility'
         })
 
     # =========================================================================
@@ -73,11 +73,11 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
     # =========================================================================
     if detect_fabrication_risk(candidate_experience):
         flags.append({
-            'type': 'fabrication',
+            'type': 'metrics_context',
             'severity': 'stop_search',
-            'reason': 'Metrics implausible for company size/role',
+            'reason': 'Metrics may need additional context for clarity',
             'action': 'Do Not Apply',
-            'detail': 'Scale claims inconsistent with company stage or timeline'
+            'detail': 'Adding company stage or team context can help validate scope claims'
         })
 
     # =========================================================================
@@ -91,7 +91,7 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
             'severity': 'stop_search',
             'reason': f"<1 year tenure at {tenure_pattern['consecutive_short']} consecutive roles",
             'action': 'Do Not Apply',
-            'detail': 'Pattern suggests flight risk or performance issues'
+            'detail': 'Recruiters may question this pattern without context'
         })
     elif tenure_pattern['avg_tenure'] < 1.5 and tenure_pattern['consecutive_short'] >= 2:
         flags.append({
@@ -99,7 +99,7 @@ def detect_red_flags(candidate_experience: Dict[str, Any]) -> List[Dict[str, Any
             'severity': 'proceed_with_caution',
             'reason': f"Short tenure pattern ({tenure_pattern['avg_tenure']:.1f} year avg)",
             'action': 'Apply with Caution - prepare narrative for tenure',
-            'detail': 'May face questions about commitment and flight risk'
+            'detail': 'Prepare talking points explaining transitions'
         })
 
     # =========================================================================

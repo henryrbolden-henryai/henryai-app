@@ -2438,6 +2438,8 @@ class CoverLetterGenerateRequest(BaseModel):
     jd_analysis: Optional[Dict[str, Any]] = None
     situation: Optional[Dict[str, Any]] = None  # Candidate emotional/situational state
     supplements: Optional[List[SupplementAnswer]] = None  # User-provided gap-filling info
+    mode: Optional[str] = None  # "standard" (4 paragraphs) or "executive" (2 paragraphs)
+    candidate_level: Optional[str] = None  # Used to auto-detect mode if not specified
 
 # ============================================================================
 # MVP+1 FEATURE MODELS
@@ -4467,13 +4469,65 @@ Remember: NO fabrication - only use information from the candidate's actual resu
         response = call_claude(system_prompt, user_message, max_tokens=4000)
         cleaned = clean_claude_json(response)
         result = json.loads(cleaned)
-        
+
         # Validate required fields
         if "tailored_resume_text" not in result:
             raise ValueError("Missing tailored_resume_text in response")
-        
+
+        # Run red flag language lint on the resume
+        lint_results = None
+        try:
+            from resume_language_lint import lint_resume
+            # Convert resume_json to format expected by linter if available
+            resume_to_lint = request.resume_json if request.resume_json else {}
+            lint_results = lint_resume(resume_to_lint)
+            result["lint_results"] = lint_results
+
+            if lint_results.get("flagged_count", 0) > 0:
+                print(f"  📝 Resume lint: {lint_results['flagged_count']} bullets flagged ({lint_results['severity_counts']})")
+        except Exception as lint_error:
+            print(f"  ⚠️ Resume lint error (non-blocking): {lint_error}")
+            # Non-blocking - continue without lint results
+
+        # Run quality gates on the resume
+        try:
+            from resume_quality_gates import run_quality_gates
+            resume_for_gates = request.resume_json if request.resume_json else {}
+
+            # Get lint severity count for credibility assessment
+            lint_high_severity = 0
+            if lint_results:
+                lint_high_severity = lint_results.get("severity_counts", {}).get("high", 0)
+
+            # Get detected level from JD analysis if available
+            detected_level = "Senior"
+            if request.jd_analysis:
+                # Try to extract level from JD requirements
+                level_match = request.jd_analysis.get("inferred_seniority", "Senior")
+                if level_match:
+                    detected_level = level_match
+
+            quality_gates_result = run_quality_gates(
+                resume=resume_for_gates,
+                detected_level=detected_level,
+                detected_function="Professional",
+                fit_score=request.jd_analysis.get("fit_score", 70) if request.jd_analysis else 70,
+                lint_high_severity_count=lint_high_severity,
+                level_gap=0,
+                session_id=str(id(request))
+            )
+            result["quality_gates"] = quality_gates_result
+
+            # Log quality gate results
+            if not quality_gates_result.get("signal_contract", {}).get("valid", True):
+                print(f"  ⚠️ Signal contract not satisfied: {quality_gates_result['signal_contract'].get('missing_signals', [])}")
+            print(f"  📊 Quality score: {quality_gates_result.get('quality_score', 'N/A')}, Credibility: {quality_gates_result.get('credibility', {}).get('credibility', 'N/A')}")
+        except Exception as qg_error:
+            print(f"  ⚠️ Quality gates error (non-blocking): {qg_error}")
+            # Non-blocking - continue without quality gates results
+
         return result
-        
+
     except json.JSONDecodeError as e:
         print(f"🔥 JSON parse error in /api/resume/customize: {e}")
         print(f"Response was: {response[:500]}...")
@@ -4490,9 +4544,101 @@ async def generate_cover_letter(request: CoverLetterGenerateRequest) -> Dict[str
     """
     Generate a tailored cover letter based on job description and candidate background.
     Returns fully formatted cover letter text ready for display/download.
+
+    Supports two modes:
+    - "standard" (default): 4-paragraph format for IC to Senior Manager levels
+    - "executive": 2-paragraph format for Director+ levels (no persuasion, only positioning)
     """
-    
-    system_prompt = """You are the document generation engine for HenryAI.
+
+    # Determine mode: explicit setting, auto-detect from level, or default to standard
+    executive_levels = ["director", "vp", "svp", "evp", "vice president", "chief", "c-suite", "ceo", "cto", "cfo", "coo", "cpo", "cmo", "principal", "staff", "head of", "gm", "general manager"]
+
+    use_executive_mode = False
+    if request.mode == "executive":
+        use_executive_mode = True
+    elif request.mode == "standard":
+        use_executive_mode = False
+    elif request.candidate_level:
+        # Auto-detect from candidate level
+        use_executive_mode = any(level in request.candidate_level.lower() for level in executive_levels)
+    elif request.target_role:
+        # Auto-detect from target role
+        use_executive_mode = any(level in request.target_role.lower() for level in executive_levels)
+
+    if use_executive_mode:
+        # Executive mode: 2-paragraph format
+        system_prompt = """You are the document generation engine for HenryAI.
+Your job is to generate executive-grade cover letters for Director+ candidates.
+
+=== 1. GLOBAL RULES ===
+
+## 1.1 Zero Fabrication Rule
+You may NOT invent:
+- job titles
+- metrics
+- tools/technologies
+- achievements
+You may only rewrite, clarify, or strengthen content that already exists.
+
+## 1.2 Executive Tone Rules
+Execs don't want persuasion. They want positioning and risk reduction.
+- No enthusiasm signaling ("excited", "passionate", "thrilled")
+- No explaining yourself, only stating credentials
+- Assume they know who you are (or should)
+- Brevity signals seniority
+- NO "I believe," "I think," "I feel"
+- NO "I am writing to express my interest..."
+- NO "I would be honored..."
+- NO apologizing for anything
+
+=== 2. HEADER FORMAT (MANDATORY) ===
+
+Use this header exactly (same as resume):
+
+{FULL NAME IN ALL CAPS}
+{TARGET ROLE} | {STRENGTH 1} | {STRENGTH 2}
+{PHONE} • {EMAIL} • {LINKEDIN} • {CITY, STATE}
+
+=== 3. EXECUTIVE COVER LETTER STRUCTURE (2 PARAGRAPHS ONLY) ===
+
+## Paragraph 1: Why This, Why Now (3-4 sentences)
+- What draws you to this specific opportunity
+- Your core thesis on the role/challenge
+- One sentence positioning your track record
+- NO enthusiasm signaling
+
+## Paragraph 2: Why Me, Credibly (3-4 sentences)
+- One quantified achievement at comparable scale
+- What you bring that reduces risk for them
+- Clean close with confidence, no ask
+- NO "I believe I would be a great fit"
+
+=== 4. EXECUTIVE RULES ===
+- Maximum 150 words total
+- Reference one specific strategic challenge from JD
+- Include one metric that signals executive-level scope
+- No persuasion, only positioning
+- Measured, authoritative, peer-level tone
+
+=== OUTPUT FORMAT ===
+
+Return a JSON object with this EXACT structure:
+
+{
+  "cover_letter_text": "FULL FORMATTED COVER LETTER TEXT - use \\n for line breaks",
+  "mode": "executive",
+  "changes_summary": {
+    "opening_rationale": "1 sentence explaining why you led with this angle",
+    "body_rationale": "1-2 sentences on what themes you emphasized and avoided",
+    "closing_rationale": "1 sentence on the tone of the close",
+    "positioning_statement": "This frames you as [strategic insight]"
+  }
+}
+
+Your response must be ONLY valid JSON."""
+    else:
+        # Standard mode: 4-paragraph format
+        system_prompt = """You are the document generation engine for HenryAI.
 Your job is to generate high-quality, recruiter-grade cover letters tailored to each job description.
 
 === 1. GLOBAL RULES ===
@@ -4557,6 +4703,7 @@ Return a JSON object with this EXACT structure:
 
 {
   "cover_letter_text": "FULL FORMATTED COVER LETTER TEXT - use \\n for line breaks",
+  "mode": "standard",
   "changes_summary": {
     "opening_rationale": "1 sentence explaining why you led with this angle",
     "body_rationale": "1-2 sentences on what themes you emphasized and avoided",
@@ -10964,6 +11111,58 @@ If any penalties were applied, add these warnings to the gaps array:
      "mitigation_strategy": "Highlight any cross-team initiatives, mentoring experience, or strategic planning work. Position this as part of your growth toward a Staff-level role. Consider targeting Senior PM roles at smaller companies where you can grow into Staff-level scope."
    }
 
+=== GAP CLASSIFICATION (CRITICAL FOR TRUST) ===
+
+For EVERY gap identified, you MUST classify it as one of:
+
+**PRESENTATION GAP:** The candidate LIKELY HAS the experience but their resume doesn't show it clearly.
+- Resume buries relevant experience in wrong section
+- Uses wrong terminology (industry jargon mismatch)
+- Missing quantification that could be inferred from role
+- Skills mentioned but not demonstrated with examples
+- Scope/scale not explicit (e.g., team size, budget)
+
+**EXPERIENCE GAP:** The candidate genuinely LACKS this experience and needs more time/roles to build it.
+- Required years in function they don't have
+- Specific domain knowledge they haven't worked in
+- Leadership scope they haven't reached
+- Technical skills they haven't used
+- Industry exposure they lack
+
+CRITICAL: Elite candidates HATE being told they "lack experience" when it's just a resume presentation problem.
+The gap_classification field is how we maintain trust. Get this right.
+
+Examples:
+- "No team leadership experience mentioned" → Check if they managed people but didn't list it → PRESENTATION if likely, EXPERIENCE if truly IC-only
+- "Missing enterprise sales experience" → Did they sell to enterprises but frame it as 'partnerships'? → PRESENTATION if yes, EXPERIENCE if truly SMB-only
+- "3 years required, has 1 year" → EXPERIENCE (can't reframe years)
+- "No budget ownership mentioned" → Did they own P&L but not state it? → PRESENTATION if inferred from title/company, EXPERIENCE if junior role
+
+=== QUICK WIN IDENTIFICATION ===
+
+Identify the SINGLE highest-impact action the candidate can take to improve their fit for THIS role.
+The quick_win should:
+1. Be actionable immediately (not "get more experience")
+2. Address the most impactful gap
+3. Be specific to THIS role and THIS candidate
+4. Indicate whether it's a presentation fix or requires actual experience
+
+Good quick_win examples:
+- action: "Add team size (8 direct reports) and budget ($2M) to your Stripe PM role"
+  gap_addressed: "scope_level_mismatch"
+  gap_classification: "presentation"
+  expected_impact: "Signals Staff-level scope, addresses seniority concern"
+
+- action: "Reframe 'product analytics' as 'data science' using their exact terminology"
+  gap_addressed: "required_experience_missing"
+  gap_classification: "presentation"
+  expected_impact: "ATS keyword match, reduces false-negative risk"
+
+Bad quick_win examples (DO NOT USE):
+- "Improve your resume" (too vague)
+- "Get more experience" (not actionable)
+- "Apply to more roles" (not specific to this role)
+
 === NOW: COMPLETE THE INTELLIGENCE LAYER ANALYSIS ===
 
 After calculating fit_score with penalties, complete the full intelligence layer analysis:
@@ -11558,6 +11757,7 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
   "gaps": [
     {
       "gap_type": "experience_years_mismatch|required_experience_missing|career_level_mismatch|career_gap|scope_level_mismatch|standard_gap",
+      "gap_classification": "presentation|experience",
       "description": "gap description",
       "severity": "critical|high|medium|low",
       "impact": "Auto-rejection risk level or scope mismatch explanation",
@@ -11567,6 +11767,12 @@ REQUIRED RESPONSE FORMAT - Every field must be populated:
       "end_date": "Optional: for career_gap type only"
     }
   ],
+  "quick_win": {
+    "action": "Single highest-impact action to improve fit. Be specific and actionable.",
+    "gap_addressed": "Which gap this addresses (reference gap_type)",
+    "gap_classification": "presentation|experience",
+    "expected_impact": "What improvement this unlocks (e.g., 'Signals senior-level scope', 'Addresses ATS keyword gap')"
+  },
   "political_sensitivity": {
     "flags": [
       {
@@ -12490,6 +12696,45 @@ Role: {body.role_title}
                     smc["action"] = correct_timing
                     il["salary_market_context"] = smc
                     parsed_data["intelligence_layer"] = il
+
+        # =========================================================================
+        # PHASE 2 DETECTION SYSTEMS: Company credibility, title inflation, career switcher
+        # These run AFTER fit scoring to provide additional context
+        # =========================================================================
+        try:
+            from resume_detection import run_all_detections
+
+            # Run detection systems on the resume
+            resume_for_detection = body.resume if body.resume else {}
+            if resume_for_detection:
+                # Detect target function from JD
+                target_function = "product_management"  # Default
+                jd_text = body.job_description or ""
+                jd_lower = jd_text.lower()
+                if "engineer" in jd_lower or "developer" in jd_lower or "swe" in jd_lower:
+                    target_function = "engineering"
+                elif "design" in jd_lower or "ux" in jd_lower or "ui" in jd_lower:
+                    target_function = "design"
+                elif "marketing" in jd_lower or "growth" in jd_lower or "brand" in jd_lower:
+                    target_function = "marketing"
+                elif "sales" in jd_lower or "account executive" in jd_lower:
+                    target_function = "sales"
+                elif "data" in jd_lower or "analytics" in jd_lower or "ml" in jd_lower:
+                    target_function = "data"
+
+                detection_results = run_all_detections(resume_for_detection, target_function)
+                parsed_data["detection_results"] = detection_results
+
+                # Log detection results
+                summary = detection_results.get("detection_summary", {})
+                print(f"  🔍 Detection results:")
+                print(f"     Company credibility concerns: {summary.get('has_credibility_concerns', False)}")
+                print(f"     Title inflation detected: {summary.get('has_title_inflation', False)}")
+                print(f"     Career switcher: {summary.get('is_career_switcher', False)}")
+                print(f"     Combined score discount: {detection_results.get('combined_score_discount', 0)}%")
+        except Exception as detect_error:
+            print(f"  ⚠️ Detection systems error (non-blocking): {detect_error}")
+            # Non-blocking - continue without detection results
 
         # =========================================================================
         # FINAL SANITIZATION: Remove em/en dashes from critical text fields
@@ -13543,12 +13788,611 @@ Generate the complete JSON response with ALL required fields populated."""
         #     print(f"  ⚠️ QA validation warnings: {len(qa_validation_result.warnings)}")
         print("  ℹ️ QA validation disabled - returning documents without validation")
 
+        # Run red flag language lint on the generated resume
+        try:
+            from resume_language_lint import lint_resume
+            # Build resume structure for linting from resume_output
+            resume_for_lint = {
+                "summary": resume_output.get("summary", ""),
+                "experience": [
+                    {
+                        "title": exp.get("title", ""),
+                        "bullets": exp.get("bullets", [])
+                    }
+                    for exp in resume_output.get("experience_sections", [])
+                ]
+            }
+            lint_results = lint_resume(resume_for_lint)
+            parsed_data["lint_results"] = lint_results
+
+            if lint_results.get("flagged_count", 0) > 0:
+                print(f"  📝 Resume lint: {lint_results['flagged_count']} bullets flagged ({lint_results['severity_counts']})")
+        except Exception as lint_error:
+            print(f"  ⚠️ Resume lint error (non-blocking): {lint_error}")
+            # Non-blocking - continue without lint results
+
+        # Run quality gates on the generated resume
+        try:
+            from resume_quality_gates import run_quality_gates
+
+            # Extract level and function from JD analysis if available
+            detected_level = body.jd_analysis.get("career_level", {}).get("target_level", "Senior") if body.jd_analysis else "Senior"
+            detected_function = body.jd_analysis.get("role_type", "Product Manager") if body.jd_analysis else "Product Manager"
+            fit_score = body.jd_analysis.get("fit_score", 70) if body.jd_analysis else 70
+
+            # Get lint high severity count if available
+            lint_high_severity = parsed_data.get("lint_results", {}).get("severity_counts", {}).get("high", 0)
+
+            quality_gates_result = run_quality_gates(
+                resume=resume_for_lint,
+                detected_level=detected_level,
+                detected_function=detected_function,
+                fit_score=fit_score,
+                lint_high_severity_count=lint_high_severity,
+                level_gap=0,  # Could be extracted from leveling if available
+                session_id=str(uuid.uuid4())[:8]
+            )
+            parsed_data["quality_gates"] = quality_gates_result
+
+            print(f"  📊 Quality gates: score={quality_gates_result['quality_score']}, credibility={quality_gates_result['credibility']['credibility']}")
+            if not quality_gates_result["signal_contract"]["valid"]:
+                print(f"  ⚠️ Signal contract not satisfied: {quality_gates_result['signal_contract']['missing_signals']}")
+        except Exception as qg_error:
+            print(f"  ⚠️ Quality gates error (non-blocking): {qg_error}")
+            # Non-blocking - continue without quality gates
+
+        # Track document version and calculate quality score
+        try:
+            from document_versioning import track_document_generation
+
+            # Generate a session ID from request context
+            session_id = str(uuid.uuid4())[:8]
+            if body.jd_analysis:
+                # Use company + role as session identifier for consistency
+                company = body.jd_analysis.get("company", "unknown")
+                role = body.jd_analysis.get("role_title", "role")
+                session_id = f"{company[:8]}-{role[:8]}".lower().replace(" ", "-")
+
+            # Track resume version
+            resume_tracking = track_document_generation(
+                session_id=session_id,
+                document_type="resume",
+                content=resume_for_lint,
+                metadata={
+                    "fit_score": parsed_data.get("quality_gates", {}).get("credibility", {}).get("credibility_score", 70),
+                    "target_company": body.jd_analysis.get("company") if body.jd_analysis else None,
+                    "target_role": body.jd_analysis.get("role_title") if body.jd_analysis else None,
+                },
+                lint_results=parsed_data.get("lint_results"),
+                quality_gates=parsed_data.get("quality_gates")
+            )
+            parsed_data["version_tracking"] = {
+                "resume": resume_tracking,
+                "session_id": session_id
+            }
+
+            # Track cover letter if generated
+            if parsed_data.get("cover_letter"):
+                cl_tracking = track_document_generation(
+                    session_id=session_id,
+                    document_type="cover_letter",
+                    content=parsed_data.get("cover_letter", {}),
+                    metadata={
+                        "target_company": body.jd_analysis.get("company") if body.jd_analysis else None,
+                        "target_role": body.jd_analysis.get("role_title") if body.jd_analysis else None,
+                    }
+                )
+                parsed_data["version_tracking"]["cover_letter"] = cl_tracking
+
+            print(f"  📋 Version tracking: session={session_id}, resume_version={resume_tracking['version_id']}")
+        except Exception as vt_error:
+            print(f"  ⚠️ Version tracking error (non-blocking): {vt_error}")
+            # Non-blocking - continue without version tracking
+
+        # =================================================================
+        # CANONICAL DOCUMENT ASSEMBLY
+        # This creates the single source of truth for preview AND download.
+        # No reassembly after this point.
+        # =================================================================
+        try:
+            from canonical_document import (
+                assemble_canonical_document,
+                check_document_integrity,
+            )
+
+            # Extract contact info from various sources
+            resume_contact = body.resume.get("contact", {}) if isinstance(body.resume, dict) else {}
+            candidate_info = body.resume.get("candidate", {}) if isinstance(body.resume, dict) else {}
+
+            contact_info = {
+                "name": (
+                    candidate_info.get("name") or
+                    resume_contact.get("name") or
+                    body.resume.get("name", "") if isinstance(body.resume, dict) else ""
+                ),
+                "email": resume_contact.get("email", ""),
+                "phone": resume_contact.get("phone", ""),
+                "location": resume_contact.get("location", ""),
+                "linkedin": resume_contact.get("linkedin", ""),
+            }
+
+            # Extract original fit score and verdict for delta calculation
+            original_fit_score = None
+            original_verdict = None
+            jd_keywords = []
+
+            if body.jd_analysis:
+                original_fit_score = body.jd_analysis.get("fit_score")
+                original_verdict = body.jd_analysis.get("verdict") or body.jd_analysis.get("recommendation")
+                jd_keywords = body.jd_analysis.get("ats_keywords", []) or body.jd_analysis.get("required_skills", [])
+
+            # Assemble canonical document with fit score delta
+            canonical_doc = assemble_canonical_document(
+                generation_output=parsed_data,
+                source_resume=body.resume if isinstance(body.resume, dict) else {},
+                job_description=body.jd_analysis.get("raw_text", "") if body.jd_analysis else "",
+                contact_info=contact_info,
+                original_fit_score=original_fit_score,
+                original_verdict=original_verdict,
+                jd_keywords=jd_keywords,
+            )
+
+            # Run integrity checks
+            integrity_result = check_document_integrity(canonical_doc)
+
+            # Add canonical document to response
+            parsed_data["canonical_document"] = canonical_doc.to_dict()
+            parsed_data["document_integrity"] = integrity_result.to_dict()
+
+            # Generate full_text from canonical for preview consistency
+            parsed_data["resume_output"]["canonical_full_text"] = canonical_doc.resume.to_full_text()
+            parsed_data["cover_letter"]["canonical_full_text"] = canonical_doc.cover_letter.full_text
+
+            print(f"  ✅ Canonical document assembled: hash={canonical_doc.metadata.content_hash}")
+            print(f"  📋 Integrity check: passed={integrity_result.passed}, issues={len(integrity_result.issues)}")
+            if not integrity_result.passed:
+                for issue in integrity_result.issues:
+                    print(f"    ⚠️ {issue['type']}: {issue['message']}")
+
+            # Log fit score delta if calculated
+            if canonical_doc.metadata.fit_score_delta:
+                delta = canonical_doc.metadata.fit_score_delta
+                print(f"  📈 Fit Score Delta: {delta.original_score}% → {delta.final_score}% ({'+' if delta.delta > 0 else ''}{delta.delta})")
+                print(f"      Verdict: {delta.original_verdict} → {delta.final_verdict}")
+                print(f"      {delta.improvement_summary}")
+
+        except Exception as cd_error:
+            print(f"  ⚠️ Canonical document error (non-blocking): {cd_error}")
+            import traceback
+            traceback.print_exc()
+            # Non-blocking - continue without canonical document
+
         return parsed_data
-        
+
     except json.JSONDecodeError as e:
         print(f"\n❌ JSON PARSE ERROR: {str(e)}")
         print(f"Raw response was: {response[:1000]}...")
         raise HTTPException(status_code=500, detail=f"Failed to parse Claude response: {str(e)}")
+
+
+# ============================================================================
+# PHASE 4: VERSION HISTORY AND FEEDBACK ENDPOINTS
+# ============================================================================
+
+class DocumentFeedbackRequest(BaseModel):
+    """Request model for submitting document feedback."""
+    version_id: str
+    document_type: str  # "resume" or "cover_letter"
+    feedback_type: str  # "quality_rating", "accuracy", "usefulness", "specific_issue", "feature_request"
+    rating: Optional[int] = None  # 1-5 for rating types
+    comment: Optional[str] = None
+    specific_location: Optional[str] = None  # e.g., "summary", "role:Company"
+    issue_category: Optional[str] = None  # e.g., "fabrication", "tone", "length"
+
+
+@app.get("/api/documents/history/{session_id}")
+async def get_document_history(session_id: str, document_type: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Get version history for a document generation session.
+
+    Returns all versions of documents (resume, cover letter) created during
+    this session, along with change diffs and feedback summaries.
+    """
+    try:
+        from document_versioning import get_document_history as fetch_history
+        return fetch_history(session_id, document_type)
+    except Exception as e:
+        print(f"Error fetching document history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/documents/version/{version_id}")
+async def get_document_version(version_id: str) -> Dict[str, Any]:
+    """
+    Restore a specific document version.
+
+    Returns the full content of a previously generated document version,
+    allowing users to revert to or compare with earlier versions.
+    """
+    try:
+        from document_versioning import restore_version
+        result = restore_version(version_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Version {version_id} not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error restoring version: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/documents/feedback")
+async def submit_document_feedback(request: DocumentFeedbackRequest) -> Dict[str, Any]:
+    """
+    Submit feedback on a generated document.
+
+    Allows users to rate document quality, report issues, or request features.
+    This feedback is used to improve future generation quality.
+    """
+    try:
+        from document_versioning import submit_feedback
+
+        feedback = submit_feedback(
+            version_id=request.version_id,
+            document_type=request.document_type,
+            feedback_type=request.feedback_type,
+            rating=request.rating,
+            comment=request.comment,
+            specific_location=request.specific_location,
+            issue_category=request.issue_category
+        )
+
+        return {
+            "success": True,
+            "feedback_id": feedback.feedback_id,
+            "message": "Feedback submitted successfully"
+        }
+    except Exception as e:
+        print(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/documents/feedback/{version_id}")
+async def get_version_feedback(version_id: str) -> Dict[str, Any]:
+    """
+    Get all feedback for a specific document version.
+
+    Returns feedback summary including average rating, issue counts, and comments.
+    """
+    try:
+        from document_versioning import get_feedback_store
+
+        store = get_feedback_store()
+        summary = store.get_feedback_summary(version_id)
+        feedback_list = store.get_version_feedback(version_id)
+
+        return {
+            "version_id": version_id,
+            "summary": summary,
+            "feedback": [f.to_dict() for f in feedback_list]
+        }
+    except Exception as e:
+        print(f"Error fetching feedback: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# STRENGTHEN YOUR RESUME ENDPOINTS
+# ============================================================================
+
+class StrengthenSessionRequest(BaseModel):
+    """Request to create a new strengthen session."""
+    resume_id: str
+    lint_results: Optional[Dict[str, Any]] = None
+    quality_gates: Optional[Dict[str, Any]] = None
+
+
+class StrengthenRegenerateRequest(BaseModel):
+    """Request to regenerate a bullet."""
+    session_id: str
+    issue_id: str
+    user_inputs: Dict[str, str]
+    candidate_level: Optional[str] = "mid"  # entry, mid, senior
+
+
+class StrengthenAcceptRequest(BaseModel):
+    """Request to accept a regeneration."""
+    session_id: str
+    issue_id: str
+    regeneration_id: str
+
+
+class StrengthenSkipRequest(BaseModel):
+    """Request to skip an issue."""
+    session_id: str
+    issue_id: str
+    reason: Optional[str] = None
+
+
+@app.post("/api/strengthen/session")
+async def create_strengthen_session(request: StrengthenSessionRequest) -> Dict[str, Any]:
+    """
+    Create a new strengthen session from lint results and quality gates.
+
+    Returns a session with prioritized issues to address.
+    """
+    try:
+        from strengthen_session import (
+            get_strengthen_store,
+            extract_strengthen_issues,
+        )
+
+        store = get_strengthen_store()
+
+        # Extract issues from lint results and quality gates
+        issues = extract_strengthen_issues(
+            lint_results=request.lint_results or {},
+            quality_gates=request.quality_gates,
+        )
+
+        if not issues:
+            return {
+                "session_id": None,
+                "message": "No issues found to strengthen",
+                "issues": [],
+            }
+
+        # Create session
+        session = store.create_session(
+            resume_id=request.resume_id,
+            issues=issues,
+        )
+
+        # Group by priority for summary
+        priority_counts = {"high": 0, "medium": 0, "low": 0}
+        for issue in session.issues:
+            priority_counts[issue.priority.value] += 1
+
+        return {
+            "session_id": session.session_id,
+            "resume_id": session.resume_id,
+            "issues": [i.to_dict() for i in session.issues],
+            "priority_summary": priority_counts,
+            "total_issues": len(session.issues),
+        }
+    except Exception as e:
+        print(f"Error creating strengthen session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/strengthen/session/{session_id}")
+async def get_strengthen_session(session_id: str) -> Dict[str, Any]:
+    """
+    Get the current state of a strengthen session.
+    """
+    try:
+        from strengthen_session import get_strengthen_store
+
+        store = get_strengthen_store()
+        session = store.get_session(session_id)
+
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        return session.to_dict()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting strengthen session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/strengthen/regenerate")
+async def regenerate_bullet(request: StrengthenRegenerateRequest) -> Dict[str, Any]:
+    """
+    Generate a strengthened bullet based on user inputs.
+
+    Validates inputs against forbidden patterns and implausible metrics,
+    then generates an improved bullet using Claude.
+    """
+    try:
+        from strengthen_session import (
+            get_strengthen_store,
+            validate_user_input,
+            build_regeneration_prompt,
+            IssueType,
+        )
+
+        store = get_strengthen_store()
+        session = store.get_session(request.session_id)
+
+        if not session:
+            raise HTTPException(status_code=404, detail=f"Session {request.session_id} not found")
+
+        issue = session.get_issue(request.issue_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail=f"Issue {request.issue_id} not found")
+
+        # Check regeneration limit
+        regen_count = session.get_regeneration_count(request.issue_id)
+        if regen_count >= 3:
+            return {
+                "success": False,
+                "error": "maximum_regenerations",
+                "message": "Maximum of 3 regenerations reached. Please accept one of the previous versions or skip this issue.",
+                "regeneration_count": regen_count,
+            }
+
+        # Validate all user inputs
+        validation_errors = []
+        for input_key, input_value in request.user_inputs.items():
+            input_type = _infer_input_type(input_key)
+            result = validate_user_input(
+                user_input=input_value,
+                input_type=input_type,
+                candidate_level=request.candidate_level or "mid",
+            )
+            if not result.valid:
+                validation_errors.append({
+                    "field": input_key,
+                    "error_type": result.forbidden_type or result.implausible_metric,
+                    "message": result.message,
+                })
+
+        if validation_errors:
+            return {
+                "success": False,
+                "error": "validation_failed",
+                "validation_errors": validation_errors,
+            }
+
+        # Build prompt and call Claude
+        prompt = build_regeneration_prompt(
+            original_bullet=issue.original_bullet,
+            issue_type=issue.issue_type,
+            user_inputs=request.user_inputs,
+            role_context=issue.role_context,
+        )
+
+        response = call_claude(
+            system_prompt="You are a resume writing expert. Only use information explicitly provided.",
+            user_message=prompt,
+            max_tokens=500,
+        )
+
+        try:
+            cleaned = clean_claude_json(response)
+            result = json.loads(cleaned)
+
+            strengthened = result.get("strengthened_bullet", "")
+            what_changed = result.get("what_changed", [])
+
+            # Store the regeneration
+            regeneration = store.add_regeneration(
+                session_id=request.session_id,
+                issue_id=request.issue_id,
+                user_inputs=request.user_inputs,
+                generated_bullet=strengthened,
+                what_changed=what_changed,
+            )
+
+            return {
+                "success": True,
+                "regeneration_id": regeneration.regeneration_id if regeneration else None,
+                "original": issue.original_bullet,
+                "strengthened": strengthened,
+                "what_changed": what_changed,
+                "generation_number": regeneration.generation_number if regeneration else regen_count + 1,
+                "regenerations_remaining": 3 - (regen_count + 1),
+            }
+        except json.JSONDecodeError as e:
+            print(f"Failed to parse regeneration response: {e}")
+            print(f"Raw: {response[:500]}")
+            raise HTTPException(status_code=500, detail="Failed to generate strengthened bullet")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error regenerating bullet: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _infer_input_type(input_key: str) -> str:
+    """Infer the input type from the key name for validation."""
+    key_lower = input_key.lower()
+    if any(word in key_lower for word in ["revenue", "savings", "cost", "dollar", "money", "budget"]):
+        return "revenue"
+    elif any(word in key_lower for word in ["team", "reports", "size", "people"]):
+        return "team_size"
+    elif any(word in key_lower for word in ["percent", "improvement", "growth", "increase"]):
+        return "metric"
+    elif any(word in key_lower for word in ["impact", "users", "customers"]):
+        return "impact"
+    return "general"
+
+
+@app.post("/api/strengthen/accept")
+async def accept_regeneration(request: StrengthenAcceptRequest) -> Dict[str, Any]:
+    """
+    Accept a regenerated bullet and mark the issue as addressed.
+    """
+    try:
+        from strengthen_session import get_strengthen_store
+
+        store = get_strengthen_store()
+        success = store.accept_regeneration(
+            session_id=request.session_id,
+            issue_id=request.issue_id,
+            regeneration_id=request.regeneration_id,
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Session, issue, or regeneration not found")
+
+        session = store.get_session(request.session_id)
+        return {
+            "success": True,
+            "progress": session.get_progress() if session else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error accepting regeneration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/strengthen/skip")
+async def skip_issue(request: StrengthenSkipRequest) -> Dict[str, Any]:
+    """
+    Skip an issue without addressing it.
+    """
+    try:
+        from strengthen_session import get_strengthen_store
+
+        store = get_strengthen_store()
+        success = store.skip_issue(
+            session_id=request.session_id,
+            issue_id=request.issue_id,
+            reason=request.reason,
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Session or issue not found")
+
+        session = store.get_session(request.session_id)
+        return {
+            "success": True,
+            "progress": session.get_progress() if session else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error skipping issue: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/strengthen/complete")
+async def complete_strengthen_session(session_id: str) -> Dict[str, Any]:
+    """
+    Mark a strengthen session as complete and return summary.
+    """
+    try:
+        from strengthen_session import get_strengthen_store
+
+        store = get_strengthen_store()
+        summary = store.complete_session(session_id)
+
+        if not summary:
+            raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+        return summary
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error completing session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ============================================================================
 # COMMAND CENTER ENDPOINTS (v2.0)
@@ -16157,10 +17001,209 @@ class CoverLetterDownloadRequest(BaseModel):
         extra = "allow"
 
 
+class CanonicalDownloadRequest(BaseModel):
+    """Request for downloading from canonical document - single source of truth."""
+    canonical_document: Dict[str, Any]
+    document_type: str = "resume"  # "resume" or "cover_letter"
+    expected_hash: Optional[str] = None  # For integrity verification
+
+
+@app.post("/api/download/canonical")
+async def download_canonical(request: CanonicalDownloadRequest):
+    """
+    Download from canonical document - SINGLE SOURCE OF TRUTH.
+
+    This endpoint accepts the canonical document that was shown in preview
+    and renders it to DOCX. No reassembly. No regeneration.
+
+    The canonical document hash must match if provided (integrity check).
+    """
+    try:
+        from canonical_document import (
+            CanonicalDocument,
+            CanonicalResume,
+            check_document_integrity,
+        )
+
+        # Reconstruct canonical document from request
+        canonical_doc = CanonicalDocument.from_dict(request.canonical_document)
+
+        # Verify integrity if hash provided
+        if request.expected_hash:
+            actual_hash = canonical_doc.compute_content_hash()
+            if actual_hash != request.expected_hash:
+                print(f"⚠️ Hash mismatch: expected {request.expected_hash}, got {actual_hash}")
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "integrity_mismatch",
+                        "message": "Document has changed since preview. Please refresh and try again.",
+                        "expected_hash": request.expected_hash,
+                        "actual_hash": actual_hash,
+                    }
+                )
+
+        # Run integrity checks before download
+        integrity_result = check_document_integrity(canonical_doc)
+        if not integrity_result.passed:
+            blocking_issues = [i for i in integrity_result.issues if i["type"] in ("missing_name", "missing_email")]
+            if blocking_issues:
+                raise HTTPException(
+                    status_code=400,
+                    detail={
+                        "error": "integrity_failed",
+                        "message": "Document failed integrity checks",
+                        "issues": blocking_issues,
+                    }
+                )
+
+        if request.document_type == "resume":
+            # Generate resume DOCX from canonical
+            resume = canonical_doc.resume
+
+            formatter = ResumeFormatter()
+
+            # Add header from canonical contact
+            formatter.add_header(
+                name=resume.contact.name,
+                tagline=resume.tagline,
+                contact_info={
+                    "phone": resume.contact.phone,
+                    "email": resume.contact.email,
+                    "linkedin": resume.contact.linkedin,
+                    "location": resume.contact.location,
+                }
+            )
+
+            # Add summary
+            if resume.summary:
+                formatter.add_section_header("Summary")
+                formatter.add_summary(resume.summary)
+
+            # Add core competencies
+            if resume.competencies:
+                formatter.add_section_header("Core Competencies")
+                formatter.add_core_competencies(resume.competencies)
+
+            # Add experience
+            if resume.experience:
+                formatter.add_section_header("Experience")
+                for exp in resume.experience:
+                    formatter.add_experience_entry(
+                        company=exp.company,
+                        title=exp.title,
+                        location=exp.location,
+                        dates=exp.dates,
+                        overview=exp.overview,
+                        bullets=exp.bullets,
+                    )
+
+            # Add skills
+            if resume.skills:
+                formatter.add_section_header("Skills")
+                formatter.add_skills(resume.skills)
+
+            # Add education
+            if resume.education.school or resume.education.degree:
+                formatter.add_section_header("Education")
+                formatter.add_education(
+                    school=resume.education.school,
+                    degree=resume.education.degree,
+                    details=resume.education.details,
+                )
+
+            # Save to buffer
+            buffer = io.BytesIO()
+            formatter.get_document().save(buffer)
+            buffer.seek(0)
+
+            filename = f"{resume.contact.name.replace(' ', '_')}_Resume.docx"
+
+            print(f"✅ Canonical resume downloaded: {resume.contact.name}, hash={canonical_doc.metadata.content_hash}")
+
+            return StreamingResponse(
+                buffer,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "X-Document-Hash": canonical_doc.metadata.content_hash,
+                }
+            )
+
+        elif request.document_type == "cover_letter":
+            # Generate cover letter DOCX from canonical
+            cover_letter = canonical_doc.cover_letter
+
+            formatter = CoverLetterFormatter()
+
+            # Add header
+            formatter.add_header(
+                name=cover_letter.contact.name,
+                tagline=cover_letter.tagline,
+                contact_info={
+                    "phone": cover_letter.contact.phone,
+                    "email": cover_letter.contact.email,
+                    "linkedin": cover_letter.contact.linkedin,
+                    "location": cover_letter.contact.location,
+                }
+            )
+
+            # Add section label
+            formatter.add_section_label()
+
+            # Add salutation
+            formatter.add_salutation(recipient_name=cover_letter.recipient_name)
+
+            # Add body paragraphs
+            if cover_letter.paragraphs:
+                for paragraph in cover_letter.paragraphs:
+                    formatter.add_body_paragraph(paragraph)
+            elif cover_letter.full_text:
+                # Split full_text into paragraphs
+                paragraphs = [p.strip() for p in cover_letter.full_text.split("\n\n") if p.strip()]
+                for paragraph in paragraphs:
+                    formatter.add_body_paragraph(paragraph)
+
+            # Add signature
+            formatter.add_signature(cover_letter.contact.name)
+
+            # Save to buffer
+            buffer = io.BytesIO()
+            formatter.get_document().save(buffer)
+            buffer.seek(0)
+
+            filename = f"{cover_letter.contact.name.replace(' ', '_')}_Cover_Letter.docx"
+
+            print(f"✅ Canonical cover letter downloaded: {cover_letter.contact.name}")
+
+            return StreamingResponse(
+                buffer,
+                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                headers={
+                    "Content-Disposition": f"attachment; filename={filename}",
+                    "X-Document-Hash": canonical_doc.metadata.content_hash,
+                }
+            )
+
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown document type: {request.document_type}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"🔥 CANONICAL DOWNLOAD ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to download: {str(e)}")
+
+
 @app.post("/api/download/resume")
 async def download_resume(request: ResumeDownloadRequest):
     """
     Generate and download a professionally formatted resume DOCX.
+
+    DEPRECATED: Use /api/download/canonical instead for preview-download consistency.
+    This endpoint is kept for backwards compatibility.
     """
     try:
         print(f"📄 Generating formatted resume for: {request.candidate_name}")
