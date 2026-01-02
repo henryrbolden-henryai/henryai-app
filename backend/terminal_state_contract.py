@@ -246,19 +246,22 @@ TERMINAL_STATES = {
 
 def has_scope_signal(text: str) -> bool:
     """
-    Detect REAL scope signals - quantified scale metrics only.
+    ARCH-003: Detect REAL scope signals - quantified scale metrics only.
 
     Activity nouns alone do NOT count as scope.
     Titles alone do NOT count as scope.
 
     Must have at least ONE of:
     - Quantified scale metric (team size, budget, user volume, revenue, geography)
-    - Clear ownership of a bounded system with complexity markers
+    - Clear ownership of a bounded system with complexity markers (for senior ICs)
     """
     if not text:
         return False
 
-    scope_patterns = [
+    text_lower = text.lower()
+
+    # Option 1: Quantified scale patterns
+    quantified_scale_patterns = [
         # Team size - must be numeric
         r'\b(\d+)[\-\s]*(person|people|engineer|member|report|team|direct)',
         # Budget/revenue - must have dollar amount
@@ -272,9 +275,43 @@ def has_scope_signal(text: str) -> bool:
         r'\b\d+[MKB]?\+?\s*(requests|transactions|orders|calls)',
     ]
 
-    for pattern in scope_patterns:
+    for pattern in quantified_scale_patterns:
         if re.search(pattern, text, re.IGNORECASE):
             return True
+
+    # Option 2: Bounded system ownership + complexity marker (ARCH-003)
+    # For senior ICs at early-stage who own bounded systems
+    # e.g., "Owned the recommendation engine" + "serving 10M requests/day"
+    # e.g., "Built the payments infrastructure" + "processing $X"
+
+    # System ownership patterns - must show clear ownership
+    system_ownership_patterns = [
+        r'\b(?:owned|built|architected|designed|created)\s+(?:the\s+)?(?:\w+\s+){0,2}(?:engine|infrastructure|platform|system|pipeline|service|api|framework)',
+        r'\b(?:owned|led)\s+(?:the\s+)?(?:entire|full|end-to-end)\s+\w+',
+        r'\bsole\s+(?:owner|architect|engineer)',
+        r'\bfrom\s+(?:scratch|zero|ground\s+up)',
+    ]
+
+    # Complexity markers - must show scale or difficulty
+    complexity_markers = [
+        r'\bserving\s+\d+',
+        r'\bprocessing\s+[\$\d]',
+        r'\bhandling\s+\d+',
+        r'\bscaling\s+(?:to|from)',
+        r'\b\d+\s*(?:ms|millisecond|latency)',
+        r'\b(?:99|99\.9|99\.99)%?\s*(?:uptime|availability|SLA)',
+        r'\bhigh[\-\s]?(?:availability|throughput|performance)',
+        r'\bdistributed\b',
+        r'\bmicroservices?\b',
+        r'\breal[\-\s]?time\b',
+        r'\bproduction\s+(?:system|traffic|load)',
+    ]
+
+    has_ownership = any(re.search(p, text_lower) for p in system_ownership_patterns)
+    has_complexity = any(re.search(p, text_lower) for p in complexity_markers)
+
+    if has_ownership and has_complexity:
+        return True
 
     return False
 
