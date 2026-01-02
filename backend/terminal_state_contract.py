@@ -1314,3 +1314,391 @@ def terminal_authority_copy_filter(
         response_data["_copy_filter_state"] = state_type.value
 
     return response_data
+
+
+# =============================================================================
+# P2 - DOMAIN TRANSLATION GUARDRAIL (ARCH-004)
+# =============================================================================
+
+# Domain categories for matching
+DOMAIN_CATEGORIES = {
+    "b2b_saas": [
+        "saas", "b2b", "enterprise software", "subscription", "recurring revenue",
+        "enterprise sales", "sales cycle", "enterprise customer", "b2b sales",
+    ],
+    "messaging": [
+        "messaging", "notifications", "push notifications", "email infrastructure",
+        "sms", "communications platform", "messaging infrastructure", "in-app messaging",
+        "twilio", "sendgrid", "braze", "iterable", "customer.io",
+    ],
+    "fintech": [
+        "fintech", "payments", "banking", "financial services", "lending",
+        "credit", "debit", "transactions", "payment processing", "stripe",
+        "checkout", "billing", "invoicing", "financial infrastructure",
+    ],
+    "adtech": [
+        "advertising", "adtech", "programmatic", "rtb", "dsp", "ssp",
+        "ad exchange", "media buying", "ad serving", "attribution",
+        "marketing technology", "martech",
+    ],
+    "ecommerce": [
+        "ecommerce", "e-commerce", "retail", "marketplace", "shopping",
+        "cart", "checkout", "product catalog", "inventory", "fulfillment",
+        "shopify", "amazon", "ebay",
+    ],
+    "healthcare": [
+        "healthcare", "health tech", "clinical", "ehr", "emr", "hipaa",
+        "patient", "provider", "telemedicine", "telehealth", "medical",
+    ],
+    "developer_tools": [
+        "developer tools", "devtools", "api", "sdk", "infrastructure",
+        "platform", "developer platform", "developer experience", "dx",
+        "ci/cd", "deployment", "cloud infrastructure",
+    ],
+    "data_analytics": [
+        "analytics", "data platform", "data infrastructure", "bi",
+        "business intelligence", "data warehouse", "etl", "data pipeline",
+        "machine learning platform", "ml platform", "data science",
+    ],
+    "security": [
+        "security", "cybersecurity", "infosec", "identity", "authentication",
+        "authorization", "iam", "sso", "encryption", "compliance",
+    ],
+    "consumer": [
+        "consumer", "b2c", "social", "content", "media", "entertainment",
+        "gaming", "mobile app", "consumer app",
+    ],
+}
+
+# Adjacent domains - reasonable translation claims
+ADJACENT_DOMAINS = {
+    "b2b_saas": ["developer_tools", "data_analytics"],
+    "messaging": ["b2b_saas", "adtech", "ecommerce"],
+    "fintech": ["ecommerce", "b2b_saas", "security"],
+    "adtech": ["messaging", "data_analytics", "ecommerce"],
+    "ecommerce": ["fintech", "consumer", "messaging"],
+    "healthcare": ["b2b_saas", "security"],
+    "developer_tools": ["b2b_saas", "data_analytics", "security"],
+    "data_analytics": ["b2b_saas", "developer_tools", "adtech"],
+    "security": ["developer_tools", "fintech", "healthcare"],
+    "consumer": ["ecommerce", "adtech"],
+}
+
+
+def detect_candidate_domains(resume_text: str) -> List[str]:
+    """
+    Detect which domains a candidate has experience in based on resume text.
+
+    Returns list of domain category keys.
+    """
+    if not resume_text:
+        return []
+
+    text_lower = resume_text.lower()
+    detected_domains = []
+
+    for domain, keywords in DOMAIN_CATEGORIES.items():
+        # Require at least 2 keyword matches to claim domain experience
+        match_count = sum(1 for kw in keywords if kw in text_lower)
+        if match_count >= 2:
+            detected_domains.append(domain)
+
+    return detected_domains
+
+
+def detect_target_domain(job_description: str) -> Optional[str]:
+    """
+    Detect the primary domain of a job description.
+
+    Returns the domain category key with the most keyword matches.
+    """
+    if not job_description:
+        return None
+
+    text_lower = job_description.lower()
+    domain_scores = {}
+
+    for domain, keywords in DOMAIN_CATEGORIES.items():
+        match_count = sum(1 for kw in keywords if kw in text_lower)
+        if match_count > 0:
+            domain_scores[domain] = match_count
+
+    if not domain_scores:
+        return None
+
+    # Return domain with highest score
+    return max(domain_scores, key=domain_scores.get)
+
+
+def validate_domain_translation(
+    candidate_domains: List[str],
+    target_domain: Optional[str]
+) -> Tuple[bool, str]:
+    """
+    P2/ARCH-004: Validate if "translates well to X" claim is supported.
+
+    Returns: (is_valid, reason)
+
+    Valid if:
+    - Candidate has direct experience in target domain
+    - Candidate has experience in adjacent domain
+    - Target domain is unknown (can't invalidate)
+
+    Invalid if:
+    - Candidate has no experience in target or adjacent domains
+    """
+    if not target_domain:
+        return True, "Target domain not identified - claim allowed"
+
+    if not candidate_domains:
+        return False, f"No domain experience detected, cannot claim translation to {target_domain}"
+
+    # Direct match
+    if target_domain in candidate_domains:
+        return True, f"Direct experience in {target_domain}"
+
+    # Adjacent domain match
+    adjacent = ADJACENT_DOMAINS.get(target_domain, [])
+    for domain in candidate_domains:
+        if domain in adjacent:
+            return True, f"{domain} is adjacent to {target_domain}"
+
+    # Also check reverse - is target adjacent to candidate's domains?
+    for domain in candidate_domains:
+        candidate_adjacent = ADJACENT_DOMAINS.get(domain, [])
+        if target_domain in candidate_adjacent:
+            return True, f"{target_domain} is adjacent to candidate's {domain} experience"
+
+    return False, f"No domain overlap: candidate has {candidate_domains}, target is {target_domain}"
+
+
+def filter_unvalidated_translation_claims(
+    text: str,
+    candidate_domains: List[str],
+    target_domain: Optional[str]
+) -> str:
+    """
+    P2/ARCH-004: Filter out "translates well to X" claims without evidence.
+
+    If domain translation is not validated, strip these phrases:
+    - "translates well to"
+    - "experience translates to"
+    - "skills transfer to"
+    - "background applies to"
+    """
+    is_valid, _ = validate_domain_translation(candidate_domains, target_domain)
+
+    if is_valid:
+        return text
+
+    # Phrases to filter when translation is NOT valid
+    translation_phrases = [
+        r"your?\s+(?:experience|background|skills?)\s+translates?\s+(?:well\s+)?to",
+        r"translates?\s+well\s+to",
+        r"skills?\s+transfer\s+(?:well\s+)?to",
+        r"background\s+applies?\s+(?:well\s+)?to",
+        r"experience\s+is\s+transferable\s+to",
+        r"directly\s+applicable\s+to",
+    ]
+
+    filtered = text
+    for pattern in translation_phrases:
+        filtered = re.sub(pattern, "", filtered, flags=re.IGNORECASE)
+
+    # Clean up
+    filtered = re.sub(r'\s{2,}', ' ', filtered)
+    filtered = re.sub(r'\s+([.,;:])', r'\1', filtered)
+
+    return filtered.strip()
+
+
+# =============================================================================
+# P2 - EXPANDED MID-MARKET PHRASE DETECTION (ARCH-013)
+# =============================================================================
+
+# Comprehensive mid-market phrase list (90+ phrases)
+EXPANDED_MID_MARKET_PHRASES = [
+    # Original phrases
+    "results-driven",
+    "results-oriented",
+    "proven track record",
+    "self-starter",
+    "team player",
+    "excellent communication skills",
+    "strong communication skills",
+    "detail-oriented",
+    "attention to detail",
+    "fast-paced environment",
+    "dynamic environment",
+    "passionate about",
+    "excited to",
+    "thrilled to",
+    "synergies",
+    "leverage",
+    "best practices",
+    "cross-functional teams",
+    "stakeholders at all levels",
+    "managed multiple projects",
+    "exceeded expectations",
+    "strong analytical skills",
+    "problem-solving skills",
+    "interpersonal skills",
+    "demonstrated ability",
+    "proven ability",
+    "willingness to learn",
+    "eager to learn",
+    "quick learner",
+    "go-getter",
+    "think outside the box",
+    "hit the ground running",
+    "wear many hats",
+    "strategic thinker",
+    "thought leader",
+    "industry expert",
+    "seasoned professional",
+    "accomplished professional",
+
+    # P2 Expansion - Common generic phrases
+    "responsible for",
+    "worked on",
+    "involved in",
+    "participated in",
+    "helped with",
+    "assisted with",
+    "contributed to",
+    "supported",
+    "exposure to",
+    "familiar with",
+    "experience with",
+
+    # P2 Expansion - Cliche accomplishment phrases
+    "successfully delivered",
+    "successfully completed",
+    "successfully implemented",
+    "key contributor",
+    "major contributor",
+    "significant contributor",
+    "played a key role",
+    "instrumental in",
+    "critical to success",
+
+    # P2 Expansion - Vague impact phrases
+    "improved efficiency",
+    "increased productivity",
+    "streamlined processes",
+    "optimized workflows",
+    "enhanced performance",
+    "drove results",
+    "delivered value",
+    "added value",
+    "created value",
+
+    # P2 Expansion - Generic leadership phrases
+    "leadership experience",
+    "leadership skills",
+    "team leadership",
+    "project leadership",
+    "strong leader",
+    "effective leader",
+    "natural leader",
+
+    # P2 Expansion - Overused soft skills
+    "excellent organizational skills",
+    "strong organizational skills",
+    "time management skills",
+    "multitasking abilities",
+    "ability to prioritize",
+    "ability to work independently",
+    "works well under pressure",
+    "performs well under pressure",
+    "deadline-driven",
+    "goal-oriented",
+
+    # P2 Expansion - Generic technical phrases
+    "technical skills",
+    "technical expertise",
+    "technical proficiency",
+    "hands-on experience",
+    "practical experience",
+    "real-world experience",
+
+    # P2 Expansion - Filler phrases
+    "various projects",
+    "numerous projects",
+    "multiple projects",
+    "many projects",
+    "various initiatives",
+    "numerous initiatives",
+    "several teams",
+    "various teams",
+    "different departments",
+    "various stakeholders",
+]
+
+
+def detect_mid_market_language_expanded(text: str) -> List[Dict[str, str]]:
+    """
+    P2/ARCH-013: Expanded mid-market phrase detection with itemized results.
+
+    Returns list of dicts with phrase and suggestion for each match.
+    """
+    if not text:
+        return []
+
+    text_lower = text.lower()
+    found = []
+
+    # Phrase replacements/suggestions
+    phrase_suggestions = {
+        "responsible for": "Use action verbs: 'Owned', 'Led', 'Built'",
+        "worked on": "Specify what you built or shipped",
+        "involved in": "Describe your specific contribution",
+        "results-driven": "Show results with numbers instead",
+        "proven track record": "List specific accomplishments",
+        "self-starter": "Give example of initiative you took",
+        "team player": "Describe cross-functional collaboration with outcomes",
+        "excellent communication skills": "Show communication impact (presentations, docs, alignment)",
+        "detail-oriented": "Give example of catching critical issue",
+        "fast-paced environment": "Quantify velocity (shipped X features in Y weeks)",
+        "cross-functional teams": "Name the functions and what you achieved together",
+        "stakeholders at all levels": "Name specific stakeholders (VP Eng, CEO, etc.)",
+        "managed multiple projects": "Quantify: 'Managed 5 concurrent projects worth $Xm'",
+        "improved efficiency": "Quantify: 'Reduced processing time by X%'",
+        "streamlined processes": "Quantify: 'Cut approval time from X days to Y hours'",
+        "leadership experience": "Specify: 'Led team of X' or 'Managed $X budget'",
+        "various projects": "Be specific: 'Led checkout redesign, fraud detection system'",
+    }
+
+    for phrase in EXPANDED_MID_MARKET_PHRASES:
+        if phrase in text_lower:
+            suggestion = phrase_suggestions.get(phrase, f"Replace '{phrase}' with specific, quantified evidence")
+            found.append({
+                "phrase": phrase,
+                "severity": "MEDIUM",
+                "suggestion": suggestion,
+            })
+
+    return found
+
+
+def get_mid_market_score(text: str) -> Tuple[int, str]:
+    """
+    Calculate a mid-market language score for text.
+
+    Returns: (score 0-100, severity level)
+    - 0-2 phrases: LOW (good)
+    - 3-5 phrases: MEDIUM (needs work)
+    - 6-10 phrases: HIGH (significant rewrite needed)
+    - 11+: CRITICAL (complete rewrite needed)
+    """
+    phrases = detect_mid_market_language_expanded(text)
+    count = len(phrases)
+
+    if count <= 2:
+        return count, "LOW"
+    elif count <= 5:
+        return count, "MEDIUM"
+    elif count <= 10:
+        return count, "HIGH"
+    else:
+        return count, "CRITICAL"
