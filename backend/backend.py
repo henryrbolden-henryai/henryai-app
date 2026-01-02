@@ -6626,6 +6626,103 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     except Exception as e:
         print(f"⚠️ Terminal authority copy filter error (non-blocking): {e}")
 
+    # ========================================================================
+    # P2 - DOMAIN TRANSLATION GUARDRAIL (ARCH-004)
+    # Filters out "translates well to X" claims without domain evidence.
+    # ========================================================================
+    try:
+        from terminal_state_contract import (
+            detect_candidate_domains,
+            detect_target_domain,
+            filter_unvalidated_translation_claims,
+        )
+        # Build resume text from resume_data
+        resume_text_for_domains = ""
+        if resume_data:
+            for role in resume_data.get("experience", []):
+                resume_text_for_domains += " " + role.get("title", "")
+                resume_text_for_domains += " " + " ".join(role.get("bullets", []))
+            resume_text_for_domains += " " + resume_data.get("summary", "")
+
+        # Get JD text
+        jd_text_for_domains = response_data.get("job_description", "") or ""
+
+        # Detect domains
+        candidate_domains = detect_candidate_domains(resume_text_for_domains)
+        target_domain = detect_target_domain(jd_text_for_domains)
+
+        # Store domain analysis
+        response_data["_domain_analysis"] = {
+            "candidate_domains": candidate_domains,
+            "target_domain": target_domain,
+        }
+
+        # Filter translation claims in key text fields
+        text_fields_to_check = ["rationale", "recommendation_text", "role_snapshot"]
+        for field in text_fields_to_check:
+            if field in response_data and response_data[field]:
+                filtered_text = filter_unvalidated_translation_claims(
+                    response_data[field],
+                    candidate_domains,
+                    target_domain
+                )
+                if filtered_text != response_data[field]:
+                    response_data[field] = filtered_text
+                    print(f"🔒 DOMAIN FILTER: Removed unvalidated translation claim from {field}")
+
+        # Filter reality_check fields
+        if "reality_check" in response_data and isinstance(response_data["reality_check"], dict):
+            for field in ["strategic_action", "brutal_truth", "why_still_viable"]:
+                if field in response_data["reality_check"] and response_data["reality_check"][field]:
+                    filtered_text = filter_unvalidated_translation_claims(
+                        response_data["reality_check"][field],
+                        candidate_domains,
+                        target_domain
+                    )
+                    if filtered_text != response_data["reality_check"][field]:
+                        response_data["reality_check"][field] = filtered_text
+                        print(f"🔒 DOMAIN FILTER: Removed unvalidated translation claim from reality_check.{field}")
+
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Domain translation filter error (non-blocking): {e}")
+
+    # ========================================================================
+    # P2 - EXPANDED MID-MARKET PHRASE DETECTION (ARCH-013)
+    # Itemized detection of generic/mid-market phrases for Resume Level display.
+    # ========================================================================
+    try:
+        from terminal_state_contract import (
+            detect_mid_market_language_expanded,
+            get_mid_market_score,
+        )
+        # Build resume text
+        resume_text_for_lint = ""
+        if resume_data:
+            for role in resume_data.get("experience", []):
+                resume_text_for_lint += " " + " ".join(role.get("bullets", []))
+            resume_text_for_lint += " " + resume_data.get("summary", "")
+
+        # Detect mid-market phrases with itemized output
+        mid_market_phrases = detect_mid_market_language_expanded(resume_text_for_lint)
+        phrase_count, severity = get_mid_market_score(resume_text_for_lint)
+
+        # Store in response for frontend display
+        response_data["_mid_market_lint"] = {
+            "phrases": mid_market_phrases[:15],  # Top 15 for display
+            "total_count": len(mid_market_phrases),
+            "severity": severity,
+        }
+
+        if mid_market_phrases:
+            print(f"📋 MID-MARKET LINT: Found {len(mid_market_phrases)} generic phrases (severity: {severity})")
+
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Mid-market lint error (non-blocking): {e}")
+
     return response_data
 
 
