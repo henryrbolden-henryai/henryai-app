@@ -1326,7 +1326,7 @@
             color: var(--color-accent);
         }
 
-        /* SINGLE SOURCE OF TRUTH: Proceed Anyway Button */
+        /* P1-5: "Ignore Recommendation" Button (was "Proceed Anyway") for hard blocks */
         .proceed-anyway-btn {
             background: transparent;
             border: 1px solid rgba(251, 191, 36, 0.4);
@@ -2484,10 +2484,11 @@
                     `;
                 }
 
+                // P1-5: Renamed "Proceed Anyway" to "Ignore Recommendation" for hard blocks
                 helperHtml += `
                     <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
                         <button id="proceedAnywayBtn" class="proceed-anyway-btn" onclick="proceedDespiteGuidance()">
-                            Proceed Anyway
+                            Ignore Recommendation
                         </button>
                         <span style="font-size: 0.8rem; color: var(--color-text-secondary); display: block; margin-top: 8px;">
                             You can still access Resume Leveling and LinkedIn Analysis, but HenryHQ recommends focusing elsewhere.

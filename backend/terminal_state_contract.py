@@ -180,12 +180,14 @@ TERMINAL_STATES = {
             "strong match",
             "well-suited",
             "competitive for this role",
+            "years of experience",  # P1-4: Say "function experience" not "years"
         ],
         required_messaging=[
             "function mismatch",
-            "different career path",
+            "different function",
+            "requires [function] experience",  # P1-4: Specify function, not years
         ],
-        reason="Experience is in different function than target role"
+        reason="This role requires experience in a different function than your background"
     ),
 
     TerminalStateType.MISSING_CORE_SIGNAL: TerminalStateContract(
@@ -303,9 +305,16 @@ def has_impact_signal(text: str) -> bool:
     return has_metric and has_consequence
 
 
-def has_ownership_signal(text: str) -> bool:
+def has_ownership_signal(text: str, require_quantified: bool = False) -> bool:
     """
     Detect ownership signals - decision-maker language, not contributor language.
+
+    P1-3 Enhancement: Can require quantified evidence alongside ownership words.
+    For senior roles, ownership claims need proof (team size, scope, etc.)
+
+    Args:
+        text: The bullet or text to check
+        require_quantified: If True, ownership words alone are not enough - must have numbers
     """
     if not text:
         return False
@@ -328,7 +337,61 @@ def has_ownership_signal(text: str) -> bool:
     has_ownership = any(re.search(p, text_lower) for p in ownership_patterns)
     has_contributor = any(re.search(p, text_lower) for p in contributor_patterns)
 
-    return has_ownership and not has_contributor
+    if not has_ownership or has_contributor:
+        return False
+
+    # P1-3: If quantified evidence is required, check for numbers
+    if require_quantified:
+        # Must have some quantification - numbers, percentages, dollar amounts
+        has_numbers = bool(re.search(r'\d+', text))
+        if not has_numbers:
+            return False
+
+    return True
+
+
+def has_leadership_signal(text: str) -> bool:
+    """
+    P1-3: Detect REAL leadership signals with quantified evidence.
+
+    Leadership claims require proof:
+    - "Led team" must include team size
+    - "Managed" must include what/who
+    - "Hired" must include count
+
+    Words alone are not enough. Must have numbers or specific scope.
+    """
+    if not text:
+        return False
+
+    # Leadership patterns that REQUIRE numbers
+    leadership_with_numbers = [
+        r'\b(?:led|managed|oversaw)\s+(?:a\s+)?(?:team\s+of\s+)?\d+',
+        r'\b(?:led|managed)\s+\d+[\-\s]*(person|people|engineer|member|report)',
+        r'\bhired\s+\d+',
+        r'\bbuilt\s+(?:a\s+)?team\s+(?:of\s+)?\d+',
+        r'\b\d+\s*direct\s*reports?\b',
+        r'\bmentored\s+\d+',
+        r'\bgrew\s+(?:team|org)\s+(?:from\s+)?\d+',
+    ]
+
+    for pattern in leadership_with_numbers:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+
+    # Leadership patterns that require scope context (budget, P&L, etc.)
+    leadership_with_scope = [
+        r'\b(?:owned|managed)\s+(?:a\s+)?\$[\d,\.]+',
+        r'\bp&l\s*(?:of|for)?\s*\$[\d,\.]+',
+        r'\bbudget\s*(?:of|for)?\s*\$[\d,\.]+',
+        r'\bresponsible\s+for\s+\$[\d,\.]+',
+    ]
+
+    for pattern in leadership_with_scope:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+
+    return False
 
 
 def detect_keyword_stuffing(resume: dict) -> Tuple[bool, int, List[str]]:
@@ -431,19 +494,13 @@ def detect_title_inflation_from_evidence(
             evidence_found.append(f"Scope: {bullet[:50]}...")
             break
 
-    # Check for leadership evidence
-    leadership_patterns = [
-        r'\bmanaged\s+\d+', r'\bled\s+(team|org)', r'\bhired\b',
-        r'\bbuilt\s+team\b', r'\bdirect reports\b', r'\bmentored\b',
-    ]
+    # P1-3: Check for leadership evidence using new rigorous validation
+    # Leadership claims now require quantified evidence (team size, budget, etc.)
     has_leadership = False
     for bullet in bullets:
-        for pattern in leadership_patterns:
-            if re.search(pattern, bullet, re.IGNORECASE):
-                has_leadership = True
-                evidence_found.append(f"Leadership: {bullet[:50]}...")
-                break
-        if has_leadership:
+        if has_leadership_signal(bullet):
+            has_leadership = True
+            evidence_found.append(f"Leadership: {bullet[:50]}...")
             break
 
     # Check for strategic evidence (for Director+)
@@ -1060,3 +1117,200 @@ def log_decision_authority_chain(
     print("=" * 80 + "\n")
 
     return authority_chain
+
+
+# =============================================================================
+# TERMINAL AUTHORITY COPY FILTER (P1-1)
+# =============================================================================
+
+# Universal forbidden phrases when ANY terminal state is active
+UNIVERSAL_FORBIDDEN_PHRASES = [
+    "you have the foundation",
+    "supports senior pm roles",
+    "supports senior product manager roles",
+    "you likely have this",
+    "make it visible on your resume",
+    "gaps are meant to be closed",
+    "let's build the foundation",
+    "a few targeted improvements",
+    "i've done the heavy lifting",
+    "ready to apply",
+    "ready to submit",
+]
+
+# Additional phrases forbidden for specific terminal states
+TERMINAL_STATE_FORBIDDEN_PHRASES = {
+    TerminalStateType.TITLE_INFLATION: [
+        "presentation gap",
+        "you're probably operating at senior",
+        "you're close",
+        "stretch role",
+        "with some polish",
+    ],
+    TerminalStateType.CREDIBILITY_VIOLATION: [
+        "presentation gap",
+        "you're close",
+        "strong foundation",
+        "competitive",
+    ],
+    TerminalStateType.FUNCTION_MISMATCH: [
+        "years of experience",  # Should say "function experience" not "years"
+        "presentation gap",
+        "you're close to",
+    ],
+    TerminalStateType.ELIGIBILITY_VIOLATION: [
+        "presentation gap",
+        "you're close",
+    ],
+}
+
+
+def terminal_authority_copy_filter(
+    response_data: dict,
+    terminal_state: Optional[TerminalStateContract] = None
+) -> dict:
+    """
+    FINAL PASS FILTER: Nukes forbidden phrases before render.
+
+    This runs LAST, after all other processing, to ensure no optimistic
+    language leaks through when a terminal state is active.
+
+    Args:
+        response_data: The complete response dict about to be returned
+        terminal_state: The active terminal state contract (if any)
+
+    Returns:
+        response_data with forbidden phrases stripped from all text fields
+    """
+    # If no terminal state or NONE, skip filtering
+    if terminal_state is None:
+        terminal_state_dict = response_data.get("terminal_state", {})
+        if not terminal_state_dict:
+            return response_data
+        state_type_str = terminal_state_dict.get("state_type", "NONE")
+        if state_type_str == "NONE":
+            return response_data
+        try:
+            state_type = TerminalStateType(state_type_str)
+        except ValueError:
+            return response_data
+    else:
+        if terminal_state.state_type == TerminalStateType.NONE:
+            return response_data
+        state_type = terminal_state.state_type
+
+    # Build forbidden phrases list
+    forbidden_phrases = UNIVERSAL_FORBIDDEN_PHRASES.copy()
+
+    # Add state-specific forbidden phrases
+    state_specific = TERMINAL_STATE_FORBIDDEN_PHRASES.get(state_type, [])
+    forbidden_phrases.extend(state_specific)
+
+    # Also add phrases from the contract's forbidden_messaging
+    contract_forbidden = TERMINAL_STATES.get(state_type)
+    if contract_forbidden:
+        forbidden_phrases.extend(contract_forbidden.forbidden_messaging)
+
+    # De-duplicate
+    forbidden_phrases = list(set(phrase.lower() for phrase in forbidden_phrases))
+
+    # Text fields to scan and filter
+    text_fields_to_filter = [
+        "recommendation_text",
+        "rationale",
+        "role_snapshot",
+        "whats_working",
+        "quick_win",
+        "strategic_action",
+        "brutal_truth",
+        "why_still_viable",
+        "helper_text",
+        "cta_text",
+    ]
+
+    # Nested fields in reality_check
+    reality_check_fields = [
+        "strategic_action",
+        "brutal_truth",
+        "why_still_viable",
+        "what_it_takes",
+    ]
+
+    filtered_count = 0
+
+    def filter_text(text: str) -> Tuple[str, int]:
+        """Filter forbidden phrases from text, return filtered text and count."""
+        if not text:
+            return text, 0
+
+        count = 0
+        filtered = text
+
+        for phrase in forbidden_phrases:
+            # Case-insensitive replacement
+            pattern = re.compile(re.escape(phrase), re.IGNORECASE)
+            matches = pattern.findall(filtered)
+            if matches:
+                count += len(matches)
+                # Replace with empty string (or could use placeholder)
+                filtered = pattern.sub("", filtered)
+
+        # Clean up double spaces and trailing punctuation issues
+        filtered = re.sub(r'\s{2,}', ' ', filtered)
+        filtered = re.sub(r'\s+([.,;:])', r'\1', filtered)
+        filtered = filtered.strip()
+
+        return filtered, count
+
+    # Filter top-level fields
+    for field in text_fields_to_filter:
+        if field in response_data and response_data[field]:
+            filtered, count = filter_text(response_data[field])
+            if count > 0:
+                response_data[field] = filtered
+                filtered_count += count
+
+    # Filter reality_check nested fields
+    if "reality_check" in response_data and isinstance(response_data["reality_check"], dict):
+        for field in reality_check_fields:
+            if field in response_data["reality_check"] and response_data["reality_check"][field]:
+                filtered, count = filter_text(response_data["reality_check"][field])
+                if count > 0:
+                    response_data["reality_check"][field] = filtered
+                    filtered_count += count
+
+    # Filter gap_analysis items
+    if "gap_analysis" in response_data and isinstance(response_data["gap_analysis"], list):
+        for i, gap in enumerate(response_data["gap_analysis"]):
+            if isinstance(gap, dict):
+                for key in ["description", "guidance", "action"]:
+                    if key in gap and gap[key]:
+                        filtered, count = filter_text(gap[key])
+                        if count > 0:
+                            response_data["gap_analysis"][i][key] = filtered
+                            filtered_count += count
+
+    # Filter coaching sections
+    if "coaching" in response_data and isinstance(response_data["coaching"], dict):
+        for section_key, section_value in response_data["coaching"].items():
+            if isinstance(section_value, str):
+                filtered, count = filter_text(section_value)
+                if count > 0:
+                    response_data["coaching"][section_key] = filtered
+                    filtered_count += count
+            elif isinstance(section_value, list):
+                for i, item in enumerate(section_value):
+                    if isinstance(item, str):
+                        filtered, count = filter_text(item)
+                        if count > 0:
+                            response_data["coaching"][section_key][i] = filtered
+                            filtered_count += count
+
+    # Log filtering activity
+    if filtered_count > 0:
+        print(f"🔒 TERMINAL AUTHORITY FILTER: Removed {filtered_count} forbidden phrase(s) for {state_type.value}")
+        response_data["_copy_filter_applied"] = True
+        response_data["_copy_filter_count"] = filtered_count
+        response_data["_copy_filter_state"] = state_type.value
+
+    return response_data

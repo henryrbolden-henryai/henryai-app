@@ -6614,6 +6614,18 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     except Exception as e:
         print(f"⚠️ Messaging contract enforcement error (non-blocking): {e}")
 
+    # ========================================================================
+    # TERMINAL AUTHORITY COPY FILTER - FINAL PASS (P1-1)
+    # Runs LAST before render. Nukes forbidden phrases when terminal state active.
+    # ========================================================================
+    try:
+        from terminal_state_contract import terminal_authority_copy_filter
+        response_data = terminal_authority_copy_filter(response_data)
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Terminal authority copy filter error (non-blocking): {e}")
+
     return response_data
 
 

@@ -1718,6 +1718,34 @@
         let levelingData = null;
         let analysisData = null;
 
+        // =========================================================================
+        // TERMINAL STATE SECTION GATING (P1-2)
+        // When certain terminal states are active, gate optimistic sections
+        // =========================================================================
+        const HARD_BLOCK_TERMINAL_STATES = [
+            'TITLE_INFLATION',
+            'CREDIBILITY_VIOLATION',
+            'FUNCTION_MISMATCH',
+            'ELIGIBILITY_VIOLATION'
+        ];
+
+        function getTerminalStateType() {
+            if (!analysisData) return null;
+            const terminalState = analysisData.terminal_state;
+            if (!terminalState) return null;
+            return terminalState.state_type || null;
+        }
+
+        function isHardBlockTerminalState() {
+            const stateType = getTerminalStateType();
+            return stateType && HARD_BLOCK_TERMINAL_STATES.includes(stateType);
+        }
+
+        function getCoachingMode() {
+            if (!analysisData) return 'OPTIMIZATION';
+            return analysisData.coaching_mode || 'OPTIMIZATION';
+        }
+
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
             // Get analysis data from sessionStorage
@@ -2065,7 +2093,37 @@
         }
 
         // Render strengths section - celebrate what's working
+        // P1-2: GATED when hard block terminal states are active
         function renderStrengths() {
+            const section = document.getElementById('strengthsSection');
+
+            // P1-2: Section gating - hide strengths for hard block terminal states
+            // When TITLE_INFLATION, CREDIBILITY_VIOLATION, FUNCTION_MISMATCH, or ELIGIBILITY_VIOLATION
+            // is active, we should NOT show "What's Working" as it sends mixed signals
+            if (isHardBlockTerminalState()) {
+                const stateType = getTerminalStateType();
+                console.log(`🚫 SECTION GATED: Strengths hidden due to terminal state: ${stateType}`);
+
+                // Show diagnostic mode instead of hiding completely
+                section.style.display = 'block';
+                const titleEl = section.querySelector('.strengths-title');
+                if (titleEl) {
+                    titleEl.textContent = 'Diagnostic Summary';
+                }
+
+                // Show diagnostic message based on terminal state
+                const diagnosticMessages = {
+                    'TITLE_INFLATION': 'Your resume titles claim a level not supported by the evidence in your bullets. This creates credibility risk.',
+                    'CREDIBILITY_VIOLATION': 'Your resume contains claims that cannot be verified or appear inconsistent. Address these before applying.',
+                    'FUNCTION_MISMATCH': 'Your experience is in a different function than this role requires. This is a significant pivot.',
+                    'ELIGIBILITY_VIOLATION': 'You do not meet one or more eligibility requirements for this role.'
+                };
+
+                const diagnosticMsg = diagnosticMessages[stateType] || 'There are concerns with your candidacy for this role.';
+                document.getElementById('strengthsList').innerHTML = `<li class="diagnostic-warning">${diagnosticMsg}</li>`;
+                return;
+            }
+
             const strengths = [];
 
             // Check for strong signals in each category
@@ -2100,16 +2158,25 @@
 
             // Only show if we have strengths to celebrate
             if (strengths.length > 0) {
-                const section = document.getElementById('strengthsSection');
                 section.style.display = 'block';
                 document.getElementById('strengthsList').innerHTML = strengths.map(s => `<li>${s}</li>`).join('');
             }
         }
 
         // Render quick win - highest impact single fix (v3.0: use backend quick_win if available)
+        // P1-2: DISABLED when hard block terminal states are active
         function renderQuickWin() {
             const section = document.getElementById('quickWinSection');
             const textEl = document.getElementById('quickWinText');
+
+            // P1-2: Section gating - disable Quick Win for hard block terminal states
+            // When these states are active, offering "quick wins" sends mixed signals
+            if (isHardBlockTerminalState()) {
+                const stateType = getTerminalStateType();
+                console.log(`🚫 SECTION GATED: Quick Win disabled due to terminal state: ${stateType}`);
+                section.style.display = 'none';
+                return;
+            }
 
             // v3.0: Use backend-provided quick_win if available
             if (levelingData.quick_win) {
@@ -2246,6 +2313,7 @@
         }
 
         // Update action section with dynamic, empowering messaging
+        // P1-2: CTA enters REDIRECTION mode for hard block terminal states
         function updateActionSection() {
             const confidence = (levelingData.level_confidence || 0) * 100;
             const levelsApart = levelingData.levels_apart || 0;
@@ -2255,6 +2323,49 @@
             let mainText = '';
             let subText = '';
             let primaryBtnText = 'Strengthen Your Resume';
+
+            // P1-2: REDIRECTION mode for hard block terminal states
+            // When TITLE_INFLATION, CREDIBILITY_VIOLATION, FUNCTION_MISMATCH, or ELIGIBILITY_VIOLATION
+            // is active, the CTA should redirect, not encourage strengthening
+            if (isHardBlockTerminalState()) {
+                const stateType = getTerminalStateType();
+                const coachingMode = getCoachingMode();
+                console.log(`🔀 CTA REDIRECTION: Terminal state ${stateType}, coaching mode ${coachingMode}`);
+
+                const redirectMessages = {
+                    'TITLE_INFLATION': {
+                        main: "Your resume needs credibility work before this role.",
+                        sub: "Focus on aligning your titles with demonstrable evidence. Consider roles that match your current evidence level.",
+                        btn: "Recalibrate Resume"
+                    },
+                    'CREDIBILITY_VIOLATION': {
+                        main: "Address credibility concerns before continuing.",
+                        sub: "Your resume contains claims that need verification or correction. This is a prerequisite before applying.",
+                        btn: "Review Concerns"
+                    },
+                    'FUNCTION_MISMATCH': {
+                        main: "This role requires different functional experience.",
+                        sub: "Your background is in a different function. Consider roles that match your actual experience.",
+                        btn: "Find Better Matches"
+                    },
+                    'ELIGIBILITY_VIOLATION': {
+                        main: "You do not meet eligibility requirements.",
+                        sub: "Review the specific requirements you're missing and consider alternative roles.",
+                        btn: "See Alternatives"
+                    }
+                };
+
+                const msgs = redirectMessages[stateType] || {
+                    main: "There are blockers for this role.",
+                    sub: "Review the diagnostic above and consider alternative approaches.",
+                    btn: "Review Options"
+                };
+
+                document.getElementById('actionText').textContent = msgs.main;
+                document.getElementById('actionSubtext').textContent = msgs.sub;
+                document.getElementById('continueBtn').textContent = msgs.btn;
+                return;
+            }
 
             if (confidence >= 85 && levelsApart <= 0) {
                 // Strong position
@@ -2268,8 +2379,8 @@
                 primaryBtnText = "Close the Gap";
             } else if (levelsApart > 1) {
                 // Significant gap
-                mainText = "This is a stretch, but every gap starts somewhere. Let's build the foundation.";
-                subText = "Focus on the high-priority items first. Each improvement compounds your positioning.";
+                mainText = "This is a stretch. Focus on the high-priority items first.";
+                subText = "Each improvement compounds your positioning.";
                 primaryBtnText = "Start Building";
             } else if (hasRedFlags) {
                 // Has issues to fix
