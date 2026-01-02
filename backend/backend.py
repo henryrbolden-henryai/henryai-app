@@ -5325,6 +5325,71 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         pass  # Seniority detector not available
 
     # ========================================================================
+    # TERMINAL STATE CONTRACT (Jan 2026)
+    # Detect highest-authority terminal state before scoring.
+    # Once a terminal state fires, it governs ALL downstream behavior.
+    # ========================================================================
+    terminal_state_contract = None
+    try:
+        from terminal_state_contract import (
+            detect_terminal_state,
+            apply_terminal_state_contract,
+            TerminalStateType,
+        )
+
+        # Get detected level and target level for gap analysis
+        detected_level = experience_analysis.get("candidate_level", "Mid-level")
+        target_level = response_data.get("inferred_seniority", "Senior")
+
+        # Detect function match
+        function_match = True
+        if transition_info and transition_info.get("is_transition"):
+            # Career transition detected - check adjacency
+            adjacency = transition_info.get("adjacency_score", 0)
+            if adjacency < 0.5:
+                function_match = False
+
+        # Run terminal state detection
+        terminal_state_contract = detect_terminal_state(
+            resume=resume_data or {},
+            fit_score=capped_score,
+            detected_level=detected_level,
+            target_level=target_level,
+            function_match=function_match,
+            eligibility_passed=not recommendation_locked,
+            eligibility_reason=locked_reason or ""
+        )
+
+        if terminal_state_contract.state_type != TerminalStateType.NONE:
+            print(f"\n🚨 TERMINAL STATE DETECTED: {terminal_state_contract.state_type.value}")
+            print(f"   Reason: {terminal_state_contract.reason}")
+            print(f"   Fit Score Cap: {terminal_state_contract.fit_score_cap}%")
+            print(f"   Recommendation: {terminal_state_contract.recommendation}")
+            print(f"   Apply Button: {terminal_state_contract.apply_button.value}")
+            print(f"   Coaching Mode: {terminal_state_contract.coaching_mode.value}")
+
+            # Apply terminal state caps BEFORE final controller
+            if terminal_state_contract.fit_score_cap < capped_score:
+                print(f"   📉 Capping score from {capped_score}% to {terminal_state_contract.fit_score_cap}%")
+                capped_score = terminal_state_contract.fit_score_cap
+
+            # Lock recommendation if terminal state specifies
+            if terminal_state_contract.recommendation:
+                recommendation_locked = True
+                locked_recommendation = terminal_state_contract.recommendation
+                locked_reason = terminal_state_contract.reason
+
+            # Store terminal state in response
+            response_data["terminal_state"] = terminal_state_contract.to_dict()
+            response_data["apply_button_state"] = terminal_state_contract.apply_button.value
+            response_data["coaching_mode"] = terminal_state_contract.coaching_mode.value
+
+    except ImportError as e:
+        print(f"⚠️ Terminal state contract not available: {e}")
+    except Exception as e:
+        print(f"⚠️ Terminal state detection error (non-blocking): {e}")
+
+    # ========================================================================
     # SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025)
     # Per HenryHQ Scoring Spec v2.0 - Invariant enforced score-decision pairing
     #
