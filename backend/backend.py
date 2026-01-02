@@ -5330,11 +5330,14 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     # Once a terminal state fires, it governs ALL downstream behavior.
     # ========================================================================
     terminal_state_contract = None
+    authority_chain = None
     try:
         from terminal_state_contract import (
             detect_terminal_state,
             apply_terminal_state_contract,
             TerminalStateType,
+            log_decision_authority_chain,
+            enforce_messaging_contract,
         )
 
         # Get detected level and target level for gap analysis
@@ -5359,6 +5362,20 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             eligibility_passed=not recommendation_locked,
             eligibility_reason=locked_reason or ""
         )
+
+        # LOG DECISION AUTHORITY CHAIN - Full audit trail for Railway
+        authority_chain = log_decision_authority_chain(
+            resume=resume_data or {},
+            fit_score=capped_score,
+            detected_level=detected_level,
+            target_level=target_level,
+            function_match=function_match,
+            eligibility_passed=not recommendation_locked,
+            eligibility_reason=locked_reason or "",
+            final_state=terminal_state_contract,
+            analysis_id=analysis_id
+        )
+        response_data["_authority_chain"] = authority_chain
 
         if terminal_state_contract.state_type != TerminalStateType.NONE:
             print(f"\n🚨 TERMINAL STATE DETECTED: {terminal_state_contract.state_type.value}")
@@ -5388,6 +5405,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         print(f"⚠️ Terminal state contract not available: {e}")
     except Exception as e:
         print(f"⚠️ Terminal state detection error (non-blocking): {e}")
+        import traceback
+        traceback.print_exc()
 
     # ========================================================================
     # SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025)
@@ -6582,6 +6601,18 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             print(f"      - {note}")
 
     print("\n" + "=" * 80 + "\n")
+
+    # ========================================================================
+    # MESSAGING CONTRACT ENFORCEMENT - HARD ASSERTION
+    # No downstream copy renders outside allowed coaching_mode. Zero exceptions.
+    # ========================================================================
+    try:
+        from terminal_state_contract import enforce_messaging_contract
+        response_data = enforce_messaging_contract(response_data)
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Messaging contract enforcement error (non-blocking): {e}")
 
     return response_data
 

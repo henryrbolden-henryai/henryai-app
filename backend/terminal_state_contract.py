@@ -727,3 +727,336 @@ def validate_messaging(text: str, contract: TerminalStateContract) -> List[str]:
             violations.append(f"Missing required messaging. Expected one of: {contract.required_messaging}")
 
     return violations
+
+
+# =============================================================================
+# COACHING MODE ENFORCEMENT - HARD ASSERTION
+# =============================================================================
+
+# Allowed copy patterns per coaching mode
+COACHING_MODE_ALLOWED_COPY = {
+    CoachingMode.CREDIBILITY_REPAIR: {
+        "allowed": [
+            "credibility", "evidence", "support", "verify", "address",
+            "concern", "mismatch", "title", "claims", "demonstrates",
+        ],
+        "forbidden": [
+            "strong fit", "competitive", "well-positioned", "apply now",
+            "great match", "you have the foundation", "you're close",
+            "i've done the heavy lifting", "ready to apply",
+        ],
+    },
+    CoachingMode.REDIRECTION: {
+        "allowed": [
+            "not a fit", "different path", "consider", "alternative",
+            "redirect", "mismatch", "gap", "experience", "function",
+        ],
+        "forbidden": [
+            "apply", "strong candidate", "well-matched", "competitive",
+            "you have the foundation", "supports senior", "supports director",
+            "i've done the heavy lifting", "ready to submit",
+        ],
+    },
+    CoachingMode.SIGNAL_BUILDING: {
+        "allowed": [
+            "gap", "signal", "strengthen", "add", "quantify", "scope",
+            "impact", "ownership", "address", "before applying",
+        ],
+        "forbidden": [
+            "strong fit", "highly competitive", "top candidate",
+            "i've done the heavy lifting",
+        ],
+    },
+    CoachingMode.OPTIMIZATION: {
+        "allowed": [
+            "apply", "submit", "ready", "competitive", "strong",
+            "tailored", "personalize", "review",
+        ],
+        "forbidden": [],  # Optimization mode allows all positive framing
+    },
+}
+
+
+class MessagingViolationError(Exception):
+    """Raised when downstream copy violates coaching mode contract."""
+    pass
+
+
+def assert_coaching_mode_compliance(
+    text: str,
+    coaching_mode: CoachingMode,
+    raise_on_violation: bool = True
+) -> Tuple[bool, List[str]]:
+    """
+    HARD ASSERTION: No downstream copy renders outside allowed coaching_mode.
+
+    This is not advisory. This is enforcement. Zero exceptions.
+
+    Args:
+        text: The copy/messaging text to validate
+        coaching_mode: The active coaching mode from terminal state
+        raise_on_violation: If True, raises MessagingViolationError on violation
+
+    Returns:
+        Tuple of (is_compliant, list of violations)
+
+    Raises:
+        MessagingViolationError: If raise_on_violation=True and violations found
+    """
+    if not text or coaching_mode == CoachingMode.OPTIMIZATION:
+        return True, []
+
+    mode_rules = COACHING_MODE_ALLOWED_COPY.get(coaching_mode, {})
+    forbidden = mode_rules.get("forbidden", [])
+
+    text_lower = text.lower()
+    violations = []
+
+    for phrase in forbidden:
+        if phrase.lower() in text_lower:
+            violations.append(f"[{coaching_mode.value}] Forbidden: '{phrase}'")
+
+    is_compliant = len(violations) == 0
+
+    if not is_compliant and raise_on_violation:
+        raise MessagingViolationError(
+            f"Coaching mode {coaching_mode.value} violated. "
+            f"Found {len(violations)} forbidden phrases: {violations}"
+        )
+
+    return is_compliant, violations
+
+
+def enforce_messaging_contract(response_data: dict) -> dict:
+    """
+    Enforce messaging contract on entire response.
+
+    Scans all text fields and validates against coaching mode.
+    Logs violations but does not block (for observability).
+
+    Returns response_data with violations logged.
+    """
+    coaching_mode_str = response_data.get("coaching_mode", "OPTIMIZATION")
+    try:
+        coaching_mode = CoachingMode(coaching_mode_str)
+    except ValueError:
+        coaching_mode = CoachingMode.OPTIMIZATION
+
+    if coaching_mode == CoachingMode.OPTIMIZATION:
+        return response_data
+
+    # Fields to scan for messaging compliance
+    text_fields = [
+        ("recommendation_text", response_data.get("recommendation_text", "")),
+        ("rationale", response_data.get("rationale", "")),
+        ("strategic_action", response_data.get("reality_check", {}).get("strategic_action", "")),
+        ("brutal_truth", response_data.get("reality_check", {}).get("brutal_truth", "")),
+        ("why_still_viable", response_data.get("reality_check", {}).get("why_still_viable", "")),
+    ]
+
+    all_violations = []
+
+    for field_name, text in text_fields:
+        if text:
+            is_compliant, violations = assert_coaching_mode_compliance(
+                text, coaching_mode, raise_on_violation=False
+            )
+            if violations:
+                all_violations.extend([f"{field_name}: {v}" for v in violations])
+
+    if all_violations:
+        response_data["_messaging_violations"] = all_violations
+        print(f"⚠️ MESSAGING CONTRACT VIOLATIONS ({len(all_violations)}):")
+        for v in all_violations:
+            print(f"   - {v}")
+
+    return response_data
+
+
+# =============================================================================
+# DECISION AUTHORITY CHAIN LOGGING
+# =============================================================================
+
+@dataclass
+class DecisionAuthorityEntry:
+    """Single entry in the decision authority chain."""
+    check_name: str
+    triggered: bool
+    authority_level: int
+    result: str
+    evidence: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return {
+            "check": self.check_name,
+            "triggered": self.triggered,
+            "authority": self.authority_level,
+            "result": self.result,
+            "evidence": self.evidence,
+        }
+
+
+def log_decision_authority_chain(
+    resume: dict,
+    fit_score: int,
+    detected_level: str,
+    target_level: str,
+    function_match: bool,
+    eligibility_passed: bool,
+    eligibility_reason: str,
+    final_state: TerminalStateContract,
+    analysis_id: str = ""
+) -> Dict[str, Any]:
+    """
+    Log the complete decision authority chain for audit.
+
+    This produces a full trace of WHY a terminal state won,
+    showing every check that was evaluated and its result.
+
+    Returns dict with full authority chain for logging.
+    """
+    chain = []
+
+    # 1. Title Inflation Check (Authority 1)
+    title_inflation_triggered = False
+    title_evidence = []
+    for role in resume.get("experience", []):
+        title = role.get("title", "")
+        bullets = role.get("bullets", [])
+        is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, bullets)
+        if is_inflated:
+            title_inflation_triggered = True
+            title_evidence = [f"Title: {title}", f"Expected: {expected}"] + evidence
+            break
+
+    chain.append(DecisionAuthorityEntry(
+        check_name="TITLE_INFLATION",
+        triggered=title_inflation_triggered,
+        authority_level=1,
+        result="BLOCKED" if title_inflation_triggered else "PASSED",
+        evidence=title_evidence
+    ))
+
+    # 2. Eligibility Check (Authority 2)
+    chain.append(DecisionAuthorityEntry(
+        check_name="ELIGIBILITY",
+        triggered=not eligibility_passed,
+        authority_level=2,
+        result="BLOCKED" if not eligibility_passed else "PASSED",
+        evidence=[eligibility_reason] if eligibility_reason else []
+    ))
+
+    # 3. Function Mismatch Check (Authority 3)
+    chain.append(DecisionAuthorityEntry(
+        check_name="FUNCTION_MISMATCH",
+        triggered=not function_match,
+        authority_level=3,
+        result="BLOCKED" if not function_match else "PASSED",
+        evidence=["Function mismatch detected"] if not function_match else []
+    ))
+
+    # 4. Missing Core Signals Check (Authority 4)
+    bullets = []
+    for role in resume.get("experience", []):
+        bullets.extend(role.get("bullets", []))
+
+    scope_present = any(has_scope_signal(b) for b in bullets)
+    impact_present = any(has_impact_signal(b) for b in bullets)
+    ownership_present = any(has_ownership_signal(b) for b in bullets)
+
+    missing_signals = []
+    if not scope_present:
+        missing_signals.append("scope")
+    if not impact_present:
+        missing_signals.append("impact")
+    if not ownership_present:
+        missing_signals.append("ownership")
+
+    senior_levels = ["senior", "staff", "principal", "director", "vp", "head", "chief"]
+    is_senior_target = any(level in target_level.lower() for level in senior_levels)
+    signals_triggered = is_senior_target and len(missing_signals) > 0
+
+    chain.append(DecisionAuthorityEntry(
+        check_name="MISSING_CORE_SIGNAL",
+        triggered=signals_triggered,
+        authority_level=4,
+        result="BLOCKED" if signals_triggered else "PASSED",
+        evidence=[f"Missing: {', '.join(missing_signals)}"] if missing_signals else ["All signals present"]
+    ))
+
+    # 5. Experience Gap Check (Authority 5)
+    level_hierarchy = {
+        "entry": 1, "junior": 1, "associate": 2, "mid": 3, "": 3,
+        "senior": 4, "lead": 5, "staff": 5, "principal": 6, "director": 6,
+        "senior director": 7, "vp": 8, "svp": 9, "evp": 10, "chief": 11
+    }
+
+    detected_num = 3
+    target_num = 3
+    for level, num in level_hierarchy.items():
+        if level and level in detected_level.lower():
+            detected_num = max(detected_num, num)
+        if level and level in target_level.lower():
+            target_num = max(target_num, num)
+
+    level_gap = target_num - detected_num
+    gap_triggered = level_gap >= 2
+
+    chain.append(DecisionAuthorityEntry(
+        check_name="EXPERIENCE_GAP",
+        triggered=gap_triggered,
+        authority_level=5,
+        result="BLOCKED" if gap_triggered else "PASSED",
+        evidence=[f"Level gap: {level_gap} (detected: {detected_level}, target: {target_level})"]
+    ))
+
+    # 6. Presentation Gap Check (Authority 6)
+    all_text = " ".join(bullets) + " " + resume.get("summary", "")
+    is_stuffed, density, uncontextualized = detect_keyword_stuffing(resume)
+    mid_market = detect_mid_market_language(all_text)
+    presentation_triggered = is_stuffed or len(mid_market) > 5
+
+    chain.append(DecisionAuthorityEntry(
+        check_name="PRESENTATION_GAP",
+        triggered=presentation_triggered,
+        authority_level=6,
+        result="WARNING" if presentation_triggered else "PASSED",
+        evidence=[f"Keyword density: {density}%", f"Mid-market phrases: {len(mid_market)}"]
+    ))
+
+    # Determine winning state
+    winning_check = None
+    for entry in chain:
+        if entry.triggered:
+            winning_check = entry
+            break
+
+    # Build authority chain log
+    authority_chain = {
+        "analysis_id": analysis_id,
+        "checks_evaluated": [e.to_dict() for e in chain],
+        "winning_state": final_state.state_type.value,
+        "winning_authority": AUTHORITY_ORDER.get(final_state.state_type, 99),
+        "winning_check": winning_check.to_dict() if winning_check else None,
+        "final_score_cap": final_state.fit_score_cap,
+        "final_recommendation": final_state.recommendation,
+        "coaching_mode": final_state.coaching_mode.value,
+    }
+
+    # Print full authority chain to Railway logs
+    print("\n" + "=" * 80)
+    print(f"📋 DECISION AUTHORITY CHAIN - Analysis: {analysis_id[:8] if analysis_id else 'N/A'}...")
+    print("=" * 80)
+    for entry in chain:
+        status_icon = "🚫" if entry.triggered else "✅"
+        print(f"   [{entry.authority_level}] {entry.check_name}: {status_icon} {entry.result}")
+        if entry.evidence and entry.triggered:
+            for ev in entry.evidence[:3]:
+                print(f"       └─ {ev}")
+    print("-" * 80)
+    print(f"   🏆 WINNER: {final_state.state_type.value} (Authority {AUTHORITY_ORDER.get(final_state.state_type, 99)})")
+    print(f"   📊 Score Cap: {final_state.fit_score_cap}% | Recommendation: {final_state.recommendation}")
+    print(f"   🎯 Coaching Mode: {final_state.coaching_mode.value}")
+    print("=" * 80 + "\n")
+
+    return authority_chain
