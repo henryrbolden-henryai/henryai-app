@@ -1326,7 +1326,7 @@
             color: var(--color-accent);
         }
 
-        /* SINGLE SOURCE OF TRUTH: Proceed Anyway Button */
+        /* P1-5: "Ignore Recommendation" Button (was "Proceed Anyway") for hard blocks */
         .proceed-anyway-btn {
             background: transparent;
             border: 1px solid rgba(251, 191, 36, 0.4);
@@ -1799,12 +1799,28 @@
         const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
         const strengths = Array.isArray(data.strengths) ? data.strengths : [];
 
+        // TERMINAL STATE CONTRACT (Jan 2026)
+        // These fields come from the backend terminal state contract
+        const terminalState = data.terminal_state || null;
+        const applyButtonState = data.apply_button_state || 'ENABLED';
+        const coachingMode = data.coaching_mode || 'OPTIMIZATION';
+        const blockerNotice = data.blocker_notice || null;
+
+        // Determine apply button behavior from terminal state
+        const isApplyDisabled = applyButtonState === 'DISABLED' || lockedDoNotApply;
+        const isApplyDemoted = applyButtonState === 'DEMOTED';
+        const isApplyWarning = applyButtonState === 'ENABLED_WITH_WARNING';
+
         // CONTRACT ASSERTION (dev-only debugging)
         console.log('🔒 IMMUTABLE UI STATE:', {
             finalDecision,
             lockedDoNotApply,
             fitScore,
-            strengthsCount: strengths.length
+            strengthsCount: strengths.length,
+            terminalState: terminalState?.state_type,
+            applyButtonState,
+            coachingMode,
+            blockerNotice: blockerNotice?.type
         });
 
         // =====================================================================
@@ -2399,10 +2415,15 @@
         // FRONTEND CONTRACT: Use immutable lockedDoNotApply from top of script
         // No lowercase checks. No score checks. No advisory checks.
         // =====================================================================
-        const applyDisabled = lockedDoNotApply; // Single source of truth
+
+        // TERMINAL STATE CONTRACT: Apply button state is determined by terminal state
+        // Priority: terminal state > legacy lockedDoNotApply
+        const applyDisabled = isApplyDisabled;
+        const applyDemoted = isApplyDemoted && !applyDisabled;
+        const applyWarning = isApplyWarning && !applyDisabled && !applyDemoted;
 
         if (applyDisabled) {
-            console.log('🚫 APPLY DISABLED: Recommendation is Do Not Apply');
+            console.log('🚫 APPLY DISABLED: Terminal state or Do Not Apply');
 
             // Disable Full View Apply button
             const applyBtn = document.getElementById('getPackageBtn');
@@ -2438,21 +2459,81 @@
                 };
             }
 
-            // Update helper text to remove Apply-related messaging
-            // Per QA Spec: User must have agency to proceed, but with accountability
+            // Update helper text based on coaching mode
             const helperText = document.querySelector('.helper-text');
             if (helperText) {
-                helperText.innerHTML = `
-                    <strong>This role is not a match.</strong> Review the analysis above to understand why.<br>
-                    <span style="font-size: 0.85rem; opacity: 0.8;">Click "Pass" to return to your tracker and find roles where you are competitive.</span>
+                // Different messaging based on terminal state type
+                const blockerType = blockerNotice?.type || terminalState?.state_type || 'UNKNOWN';
+                const blockerMsg = blockerNotice?.message || terminalState?.reason || 'This role is not a match.';
+
+                let helperHtml = '';
+                if (coachingMode === 'CREDIBILITY_REPAIR') {
+                    helperHtml = `
+                        <strong>Credibility concern detected.</strong> ${blockerMsg}<br>
+                        <span style="font-size: 0.85rem; opacity: 0.8;">Address this before applying to similar roles.</span>
+                    `;
+                } else if (coachingMode === 'REDIRECTION') {
+                    helperHtml = `
+                        <strong>This role is not the right fit.</strong> ${blockerMsg}<br>
+                        <span style="font-size: 0.85rem; opacity: 0.8;">Click "Pass" to find roles where you are competitive.</span>
+                    `;
+                } else {
+                    helperHtml = `
+                        <strong>This role is not a match.</strong> Review the analysis above to understand why.<br>
+                        <span style="font-size: 0.85rem; opacity: 0.8;">Click "Pass" to return to your tracker and find roles where you are competitive.</span>
+                    `;
+                }
+
+                // P1-5: Renamed "Proceed Anyway" to "Ignore Recommendation" for hard blocks
+                helperHtml += `
                     <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
                         <button id="proceedAnywayBtn" class="proceed-anyway-btn" onclick="proceedDespiteGuidance()">
-                            Proceed Anyway
+                            Ignore Recommendation
                         </button>
                         <span style="font-size: 0.8rem; color: var(--color-text-secondary); display: block; margin-top: 8px;">
                             You can still access Resume Leveling and LinkedIn Analysis, but HenryHQ recommends focusing elsewhere.
                         </span>
                     </div>
+                `;
+                helperText.innerHTML = helperHtml;
+            }
+        } else if (applyDemoted) {
+            // DEMOTED: Button is enabled but styled as secondary (gray)
+            console.log('⚠️ APPLY DEMOTED: Terminal state indicates stretch/long shot');
+
+            const applyBtn = document.getElementById('getPackageBtn');
+            const applyBtnQuick = document.getElementById('getPackageBtnQuick');
+
+            [applyBtn, applyBtnQuick].forEach(btn => {
+                if (btn) {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                    btn.textContent = 'Proceed Anyway';
+                    btn.style.background = 'var(--color-surface-elevated)';
+                    btn.style.color = 'var(--color-text-secondary)';
+                    btn.style.border = '1px solid var(--color-border)';
+                }
+            });
+
+            const helperText = document.querySelector('.helper-text');
+            if (helperText) {
+                const blockerMsg = blockerNotice?.message || terminalState?.reason || 'This is a stretch role.';
+                helperText.innerHTML = `
+                    <strong>Significant gaps detected.</strong> ${blockerMsg}<br>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">Only pursue if you have an inside connection or unique angle.</span>
+                `;
+            }
+        } else if (applyWarning) {
+            // ENABLED_WITH_WARNING: Button enabled but show warning banner
+            console.log('⚠️ APPLY WITH WARNING: Terminal state indicates missing signals');
+
+            const helperText = document.querySelector('.helper-text');
+            if (helperText) {
+                const blockerMsg = blockerNotice?.message || terminalState?.reason || 'Missing core signals.';
+                helperText.innerHTML = `
+                    <strong>⚠️ Address gaps before applying.</strong> ${blockerMsg}<br>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">Your resume needs strengthening for this level. Review the gaps below.</span><br>
+                    <span style="font-size: 0.85rem; opacity: 0.8;">Includes tailored resume, cover letter, outreach templates, and interview prep.</span>
                 `;
             }
         }

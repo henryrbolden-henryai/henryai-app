@@ -5325,6 +5325,90 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         pass  # Seniority detector not available
 
     # ========================================================================
+    # TERMINAL STATE CONTRACT (Jan 2026)
+    # Detect highest-authority terminal state before scoring.
+    # Once a terminal state fires, it governs ALL downstream behavior.
+    # ========================================================================
+    terminal_state_contract = None
+    authority_chain = None
+    try:
+        from terminal_state_contract import (
+            detect_terminal_state,
+            apply_terminal_state_contract,
+            TerminalStateType,
+            log_decision_authority_chain,
+            enforce_messaging_contract,
+        )
+
+        # Get detected level and target level for gap analysis
+        detected_level = experience_analysis.get("candidate_level", "Mid-level")
+        target_level = response_data.get("inferred_seniority", "Senior")
+
+        # Detect function match
+        function_match = True
+        if transition_info and transition_info.get("is_transition"):
+            # Career transition detected - check adjacency
+            adjacency = transition_info.get("adjacency_score", 0)
+            if adjacency < 0.5:
+                function_match = False
+
+        # Run terminal state detection
+        terminal_state_contract = detect_terminal_state(
+            resume=resume_data or {},
+            fit_score=capped_score,
+            detected_level=detected_level,
+            target_level=target_level,
+            function_match=function_match,
+            eligibility_passed=not recommendation_locked,
+            eligibility_reason=locked_reason or ""
+        )
+
+        # LOG DECISION AUTHORITY CHAIN - Full audit trail for Railway
+        authority_chain = log_decision_authority_chain(
+            resume=resume_data or {},
+            fit_score=capped_score,
+            detected_level=detected_level,
+            target_level=target_level,
+            function_match=function_match,
+            eligibility_passed=not recommendation_locked,
+            eligibility_reason=locked_reason or "",
+            final_state=terminal_state_contract,
+            analysis_id=analysis_id
+        )
+        response_data["_authority_chain"] = authority_chain
+
+        if terminal_state_contract.state_type != TerminalStateType.NONE:
+            print(f"\n🚨 TERMINAL STATE DETECTED: {terminal_state_contract.state_type.value}")
+            print(f"   Reason: {terminal_state_contract.reason}")
+            print(f"   Fit Score Cap: {terminal_state_contract.fit_score_cap}%")
+            print(f"   Recommendation: {terminal_state_contract.recommendation}")
+            print(f"   Apply Button: {terminal_state_contract.apply_button.value}")
+            print(f"   Coaching Mode: {terminal_state_contract.coaching_mode.value}")
+
+            # Apply terminal state caps BEFORE final controller
+            if terminal_state_contract.fit_score_cap < capped_score:
+                print(f"   📉 Capping score from {capped_score}% to {terminal_state_contract.fit_score_cap}%")
+                capped_score = terminal_state_contract.fit_score_cap
+
+            # Lock recommendation if terminal state specifies
+            if terminal_state_contract.recommendation:
+                recommendation_locked = True
+                locked_recommendation = terminal_state_contract.recommendation
+                locked_reason = terminal_state_contract.reason
+
+            # Store terminal state in response
+            response_data["terminal_state"] = terminal_state_contract.to_dict()
+            response_data["apply_button_state"] = terminal_state_contract.apply_button.value
+            response_data["coaching_mode"] = terminal_state_contract.coaching_mode.value
+
+    except ImportError as e:
+        print(f"⚠️ Terminal state contract not available: {e}")
+    except Exception as e:
+        print(f"⚠️ Terminal state detection error (non-blocking): {e}")
+        import traceback
+        traceback.print_exc()
+
+    # ========================================================================
     # SIX-TIER RECOMMENDATION SYSTEM (Dec 21, 2025)
     # Per HenryHQ Scoring Spec v2.0 - Invariant enforced score-decision pairing
     #
@@ -6517,6 +6601,30 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             print(f"      - {note}")
 
     print("\n" + "=" * 80 + "\n")
+
+    # ========================================================================
+    # MESSAGING CONTRACT ENFORCEMENT - HARD ASSERTION
+    # No downstream copy renders outside allowed coaching_mode. Zero exceptions.
+    # ========================================================================
+    try:
+        from terminal_state_contract import enforce_messaging_contract
+        response_data = enforce_messaging_contract(response_data)
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Messaging contract enforcement error (non-blocking): {e}")
+
+    # ========================================================================
+    # TERMINAL AUTHORITY COPY FILTER - FINAL PASS (P1-1)
+    # Runs LAST before render. Nukes forbidden phrases when terminal state active.
+    # ========================================================================
+    try:
+        from terminal_state_contract import terminal_authority_copy_filter
+        response_data = terminal_authority_copy_filter(response_data)
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Terminal authority copy filter error (non-blocking): {e}")
 
     return response_data
 
