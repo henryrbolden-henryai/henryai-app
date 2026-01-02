@@ -1,8 +1,9 @@
 # HenryAI Improvements Summary
 
 **Date**: December 20, 2025
-**Sprint**: Foundation Strengthening + User Experience Polish + Reality Check System
-**Status**: ✅ COMPLETED (Phase 0 + Dec 12-20 Enhancements)
+**Sprint**: Foundation Strengthening + User Experience Polish + Reality Check System + Document Quality & Trust
+**Status**: ✅ COMPLETED (Phase 0 + Dec 12-20 + Jan 1 Enhancements)
+**Last Updated**: January 1, 2026
 
 ---
 
@@ -13,6 +14,80 @@ This document summarizes the comprehensive improvements made to HenryAI to achie
 ---
 
 ## Completed Improvements
+
+### NEW: Phase 2.5 - Document Quality & Trust Layer (January 1, 2026)
+
+**What it does**: Ensures preview === download, prevents fabrication in user inputs, and provides honest feedback about resume quality.
+
+**Implementation**:
+- Location: 6 new backend modules (~3,800 lines total)
+- Frontend: `documents.html`, `resume-leveling.html` updates
+- Documentation: `docs/guides/STRENGTHEN_RESUME_SPEC.md`
+
+**Key Features**:
+
+1. **Canonical Document System (P0 Fix)**
+   - Single source of truth for preview and download (no reassembly)
+   - Content hash verification ensures preview === download
+   - Keyword deduplication (max 3 occurrences per keyword)
+   - Document integrity gate validates contact info before download
+   - New endpoint: `/api/download/canonical`
+   - Files: `backend/canonical_document.py` (~770 lines)
+
+2. **Strengthen Your Resume Flow**
+   - Guided remediation for resume weaknesses
+   - Trust Layer Model: Ground Truth → Repair & Agency → Augmentation → Payoff
+   - Constrained inputs (users CAN provide: metrics, context, clarifications)
+   - Forbidden inputs (users CANNOT: invent accomplishments, inflate titles)
+   - Max 3 regenerations per bullet with audit trail
+   - Files: `backend/strengthen_session.py` (~470 lines)
+
+3. **Fit Score Delta Display**
+   - Before/after comparison (NOT re-analysis)
+   - Score locked at download (no gamification)
+   - Honest messaging: "Your fit score didn't change, but your resume is clearer"
+
+4. **Credibility & Verifiability Section**
+   - Company Credibility: Strong/Weak/Unverifiable
+   - Title Alignment: Aligned/Inflated/Undersold
+   - Experience Relevance: Direct/Adjacent/Exposure
+   - Files: `backend/resume_detection.py` (~760 lines)
+
+5. **Resume Language Lint System**
+   - Core Test: If it could appear on 1,000 LinkedIn profiles, it fails
+   - 4-Tier Pattern System:
+     - Tier 1: Kill on Sight ("results-driven") → Delete
+     - Tier 2: Passive ("responsible for") → Rewrite
+     - Tier 3: Vague Scope ("various stakeholders") → Specify
+     - Tier 4: Exposure ("familiar with") → Remove/upgrade
+   - Files: `backend/resume_language_lint.py` (~440 lines)
+
+6. **Resume Quality Gates**
+   - Contact info validation
+   - Keyword frequency check (max 3)
+   - Quantification rate validation
+   - Bullet length validation
+   - Files: `backend/resume_quality_gates.py` (~790 lines)
+
+7. **Non-Accusatory Red Flag Language**
+   - "fabrication" → "metrics_context"
+   - "flight risk" → "recruiters may question this pattern"
+   - Assumes good faith, offers remediation paths
+
+**API Endpoints Added**:
+```
+POST /api/strengthen/session
+GET  /api/strengthen/session/{id}
+POST /api/strengthen/regenerate
+POST /api/strengthen/accept
+POST /api/strengthen/skip
+POST /api/strengthen/complete
+GET  /api/download/canonical
+```
+
+**Status**: ✅ Deployed to production (January 1, 2026)
+
+---
 
 ### 0. ✅ Reality Check System + Ask Henry for Better Paths (Dec 20, 2025)
 

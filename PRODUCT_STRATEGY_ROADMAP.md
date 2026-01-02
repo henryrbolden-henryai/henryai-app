@@ -1,10 +1,10 @@
 # HenryAI Product Strategy Roadmap
 
 **Date**: December 19, 2025
-**Version**: 1.7
-**Status**: Phase 0-2 Complete, Strategic Intelligence Engine Complete (Phase 2.1-2.8)
-**Last Updated**: December 25, 2025
-**Next Review**: January 2, 2026
+**Version**: 1.8
+**Status**: Phase 0-2 Complete, Phase 2.5 Document Quality & Trust Complete
+**Last Updated**: January 1, 2026
+**Next Review**: January 15, 2026
 
 ---
 
@@ -280,6 +280,74 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 6. Cross-Interview Pattern Detection
 7. Conversation Persistence
 8. Story Bank UI
+
+### Recent Achievements (January 1, 2026)
+
+✅ **Phase 2.5: Document Quality & Trust Layer COMPLETED**
+
+**Canonical Document System (P0 Fix)**
+- Fixed critical preview/download mismatch bug where preview and download showed different content
+- Single source of truth: One JSON object powers BOTH preview AND download (no reassembly)
+- Content hash verification ensures preview === download
+- Keyword deduplication (max 3 occurrences per keyword)
+- Document integrity gate validates contact info before download
+- New endpoint: `/api/download/canonical` with integrity checks
+- **Files Created**: `backend/canonical_document.py` (~770 lines), `backend/document_versioning.py` (~600 lines)
+
+**Strengthen Your Resume Flow**
+- Guided remediation for resume weaknesses with constrained user inputs
+- Trust Layer Model: Ground Truth → Repair & Agency → Augmentation → Payoff
+- Users CAN provide: Missing context, clarifications, forgotten metrics
+- Users CANNOT: Invent accomplishments, inflate titles, add fake skills, fabricate metrics
+- Forbidden input validation with pattern matching
+- Max 3 regenerations per bullet with full audit trail
+- Implausible metric thresholds (e.g., $1M+ for entry-level flagged)
+- **New API Endpoints**: `/api/strengthen/session`, `/api/strengthen/regenerate`, `/api/strengthen/accept`, `/api/strengthen/skip`, `/api/strengthen/complete`
+- **Files Created**: `backend/strengthen_session.py` (~470 lines), `docs/guides/STRENGTHEN_RESUME_SPEC.md`
+
+**Fit Score Delta Display**
+- Shows before/after comparison of fit score improvements (NOT re-analysis)
+- Delta calculated using SAME scoring logic as initial analysis
+- Score locked at download (no gamification)
+- Honest messaging when unchanged: "Your fit score didn't change, but your resume is clearer and safer for screening."
+- Frontend display in documents.html with CSS styling
+
+**Resume Leveling Page - Credibility & Verifiability Section**
+- Company Credibility: Strong/Weak/Unverifiable assessment with explanation
+- Title Alignment: Aligned/Inflated/Undersold evidence level
+- Experience Relevance (career switchers): Direct/Adjacent/Exposure classification
+- **Files Created**: `backend/resume_detection.py` (~760 lines)
+
+**Resume Language Lint System**
+- Core Test: If a sentence can apply to 1,000 LinkedIn profiles, it fails
+- 4-Tier Pattern System:
+  - Tier 1: Kill on Sight ("results-driven", "passionate about") → Delete
+  - Tier 2: Passive/Junior-Coded ("responsible for", "helped drive") → Rewrite
+  - Tier 3: Vague Scope Hiders ("various stakeholders") → Replace with specifics
+  - Tier 4: Exposure Without Ownership ("exposure to") → Remove or upgrade
+- Auto-rewrite functionality for Tier 1/2 patterns
+- **Files Created**: `backend/resume_language_lint.py` (~440 lines)
+
+**Resume Quality Gates**
+- Pre-download validation gates:
+  - Contact info present (required)
+  - Keyword frequency (max 3 per keyword)
+  - Quantification rate check
+  - Bullet length validation
+  - Skills relevance check
+- **Files Created**: `backend/resume_quality_gates.py` (~790 lines)
+
+**Non-Accusatory Red Flag Language**
+- Revised all red flag messaging to neutral, constructive tone
+- "This claim appears inflated" → "We couldn't find supporting evidence for this scope"
+- "Suspicious metric" → "This metric is unusually high - can you provide context?"
+- "fabrication" type → "metrics_context" type
+- "flight risk" → "recruiters may question this pattern"
+
+**Deployment**
+- Commit: `7df24f2` - feat: Implement Canonical Document System and Strengthen Resume Flow
+- Merged to main: `f680255`
+- Documentation updates: `c6c967f`
 
 ---
 

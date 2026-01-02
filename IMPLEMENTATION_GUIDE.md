@@ -1,9 +1,9 @@
 # HenryAI Implementation Guide
 
 **Date**: December 19, 2025
-**Version**: 1.6
+**Version**: 1.7
 **Audience**: Development Team
-**Last Updated**: December 25, 2025
+**Last Updated**: January 1, 2026
 
 ---
 
@@ -70,6 +70,75 @@ All features below have been implemented and deployed to production:
 43. ✅ **Interview Debrief Intelligence** (Dec 25) - structured extraction, pattern analysis
 44. ✅ **Story Bank UI** (Dec 25) - behavioral example management with effectiveness tracking
 45. ✅ **Hey Henry Strategic Intelligence Engine** (Dec 25) - Phase 2.1-2.8 complete
+46. ✅ **Canonical Document System** (Jan 1) - single source of truth for preview/download
+47. ✅ **Strengthen Your Resume Flow** (Jan 1) - constrained remediation with forbidden input validation
+48. ✅ **Fit Score Delta Display** (Jan 1) - before/after comparison locked at download
+49. ✅ **Credibility & Verifiability Section** (Jan 1) - company, title, experience relevance cards
+50. ✅ **Resume Language Lint** (Jan 1) - 4-tier pattern detection for weak language
+51. ✅ **Resume Quality Gates** (Jan 1) - pre-download validation
+52. ✅ **Non-Accusatory Red Flags** (Jan 1) - neutral, constructive messaging
+
+---
+
+### Phase 2.5: Document Quality & Trust Layer (Jan 1, 2026)
+
+**New Backend Modules Created:**
+
+| Module | Lines | Purpose |
+|--------|-------|---------|
+| `backend/canonical_document.py` | ~770 | Single source of truth for preview/download |
+| `backend/strengthen_session.py` | ~470 | Strengthen flow session management |
+| `backend/resume_detection.py` | ~760 | Credibility, title inflation, career switcher detection |
+| `backend/resume_language_lint.py` | ~440 | Mid-market language detection and auto-rewrite |
+| `backend/resume_quality_gates.py` | ~790 | Pre-download validation gates |
+| `backend/document_versioning.py` | ~600 | Document version tracking |
+
+**New API Endpoints:**
+
+```
+POST /api/strengthen/session     - Create strengthen session
+GET  /api/strengthen/session/{id} - Get session state
+POST /api/strengthen/regenerate  - Generate strengthened bullet
+POST /api/strengthen/accept      - Accept regeneration
+POST /api/strengthen/skip        - Skip issue
+POST /api/strengthen/complete    - Mark session complete
+GET  /api/download/canonical     - Download with integrity checks
+```
+
+**Key Classes:**
+
+```python
+# canonical_document.py
+@dataclass
+class CanonicalDocument:
+    resume: CanonicalResume
+    cover_letter: CanonicalCoverLetter
+    metadata: DocumentMetadata  # includes FitScoreDelta
+
+@dataclass
+class FitScoreDelta:
+    original_score: int
+    final_score: int
+    improvement_summary: str
+    score_locked: bool  # True after download
+
+# strengthen_session.py
+@dataclass
+class StrengthenSession:
+    session_id: str
+    issues_found: List[str]
+    regenerations: List[BulletRegeneration]  # Max 3 per bullet
+
+FORBIDDEN_PATTERNS = [
+    r"I also (did|led|managed|created)",  # New accomplishments
+    r"promoted to|became|was made",        # Title changes
+    r"learned|picked up|started using",    # New skills
+]
+```
+
+**Frontend Changes:**
+- `documents.html`: Canonical preview/download + fit score delta display
+- `resume-leveling.html`: Credibility & Verifiability section with `renderCredibility()`
 
 ---
 
