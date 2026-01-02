@@ -687,28 +687,35 @@ function submitAnalysis() {
 
 ---
 
-### 💬 Phase 1.5: Application Support Features
+### ✅ Phase 1.5: Application Support Features
 
 **Goal**: Prevent silent rejections and enable document refinement
 
 **Priority**: HIGH
 **Effort**: Medium (3-5 days each feature)
 **Impact**: HIGH
-**Timeline**: 2.5 weeks (Jan 2-17, 2026) - EXPEDITED for testing
-**Status**: 📋 PLANNED - Implementation Spec Ready
-**Dependencies**: Phase 1 complete
+**Status**: ✅ COMPLETE - Deployed prior to January 1, 2026
 
-#### Sprint Overview
+#### What's Implemented
 
-| Week | Focus | Deliverables |
-|------|-------|--------------|
-| Week 1 (Jan 2-8) | Core Development | Screening Questions endpoint, Document Refine endpoint, Frontend UI |
-| Week 2 (Jan 9-15) | Beta Testing + Deploy | Internal testing, bug fixes, production deployment |
-| Week 3 (Jan 16-17) | Buffer + Monitoring | Post-deploy monitoring, user feedback collection |
+**Application Screening Questions Analysis** (`POST /api/screening-questions/analyze`):
+- Risk assessment for each question (high, medium, low, safe)
+- Knockout question detection with visual badges
+- Recommended answers with honesty flags (truthful, strategic_framing, borderline)
+- Critical dealbreakers list
+- Frontend: `frontend/screening-questions.html`
+- Models: `backend/models/screening.py`
 
-#### Clarification: Ask Henry Chat Status
+**Document Iteration via Chat** (`POST /api/documents/refine`):
+- Natural language refinement ("make this more senior")
+- Version history tracking (v1, v2, v3...)
+- Change tracking with before/after diffs
+- Grounded in original resume data (no fabrication)
+- Backend: `backend/backend.py` line 20251
 
-**What's Already Implemented** (Dec 12, 2025):
+#### Ask Henry Chat Status
+
+**What's Implemented**:
 - ✅ Contextual AI assistant (Ask Henry) - 1,058 lines
 - ✅ Full conversation history persistence (last 20 messages)
 - ✅ 13+ page-specific suggestion sets
@@ -716,14 +723,16 @@ function submitAnalysis() {
 - ✅ Global functions: `openAskHenry()`, `openAskHenryWithPrompt()`
 - ✅ Message formatting (bold, italic, lists)
 - ✅ Personalized greetings, breathing animation, tooltips
+- ✅ Document refinement via chat commands
+- ✅ Screening questions analysis
 
-**What's NOT Implemented** (actual gaps):
-- ❌ Document regeneration from chat commands ("make this more senior")
-- ❌ Screening questions analysis
+#### Implementation Reference (for historical context)
 
-#### 1.5.1 Screening Questions Analysis (RECOMMENDED PRIORITY)
+The following specs were used to build Phase 1.5. Preserved for reference.
 
-**Why this comes first**:
+##### 1.5.1 Screening Questions Analysis
+
+**Why this was prioritized**:
 1. **Critical failure point**: Users pass resume screen, then get auto-rejected for answering "No" to "5+ years Python?" when they have 4.5 years
 2. **100% of online applicants** face screening questions vs ~20% who want granular document control
 3. **No workaround exists** - document iteration has a clunky but functional workaround; screening questions have nothing
@@ -1701,7 +1710,7 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 
 ---
 
-## Incomplete Tasks for Next Week (Dec 23-31, 2025)
+## Remaining Tasks
 
 ### HIGH PRIORITY
 
@@ -1711,20 +1720,26 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 | Validation UI Display | Backend data ready | `frontend/overview.html`, `frontend/documents.html` | 1-2 days | Quality badge, keyword coverage |
 | Fix QA Validation False Positives | Disabled | `backend/qa_validation.py` | 1 day | Regex detection needs fixing |
 
-### MEDIUM PRIORITY (Phase 1.5 - Jan 2-17, 2026)
+### MEDIUM PRIORITY
 
 | Task | Status | Files | Effort | Notes |
 |------|--------|-------|--------|-------|
-| Screening Questions Analysis | Spec complete | New endpoint + `frontend/screening-questions.html` | 3-4 days | Prevents auto-rejections |
-| Document Iteration via Chat | Spec complete | `backend/backend.py` + `ask-henry.js` | 3-4 days | Refine documents from chat |
 | LinkedIn Integration Testing | Endpoints exist | LinkedIn endpoints, documents.html | 1 day | End-to-end validation |
+| Optimistic UI Patterns | Planned | Multiple frontend files | 2 days | After streaming |
 
 ### LOW PRIORITY
 
 | Task | Status | Files | Effort | Notes |
 |------|--------|-------|--------|-------|
-| Optimistic UI Patterns | Planned | Multiple frontend files | 2 days | After streaming |
-| Smart Inference Engine | Planned | `backend/backend.py` | 3-4 days | Phase 2 feature |
+| Smart Inference Engine | Planned | `backend/backend.py` | 3-4 days | Future phase |
+
+### ✅ Recently Completed (moved from incomplete)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Screening Questions Analysis | ✅ Complete | `POST /api/screening-questions/analyze` |
+| Document Iteration via Chat | ✅ Complete | `POST /api/documents/refine` |
+| Phase 2.5 Document Quality & Trust | ✅ Complete | Canonical docs, strengthen flow, quality gates |
 
 ### Current Architecture Status
 
@@ -1735,9 +1750,12 @@ We can achieve Claude-like responsiveness and recruiter-grade quality within 6 m
 | Calibration Controller | ✅ Complete | `backend/calibration/calibration_controller.py` |
 | Coaching Controller | ✅ Complete | `backend/coaching/coaching_controller.py` |
 | UI Contract Enforcement | ✅ Complete | Embedded in coaching_controller.py |
+| Canonical Document System | ✅ Complete | `backend/canonical_document.py` |
+| Strengthen Resume Flow | ✅ Complete | `backend/strengthen_session.py` |
+| Resume Quality Gates | ✅ Complete | `backend/resume_quality_gates.py` |
 
 ---
 
 **Document Owner**: Product Team
-**Last Updated**: December 25, 2025
-**Next Review**: January 2, 2026
+**Last Updated**: January 1, 2026
+**Next Review**: January 15, 2026

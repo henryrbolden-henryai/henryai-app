@@ -908,12 +908,28 @@ Core Analysis:
 - POST /api/resume/parse/text
 - POST /api/jd/extract-from-url
 - POST /api/jd/analyze
+- POST /api/jd/analyze/stream (experimental - reverted)
+- POST /api/jd/reconstruct
 
 Document Generation:
 - POST /api/documents/generate
+- POST /api/documents/refine
+- POST /api/documents/feedback
+- GET  /api/documents/feedback/{version_id}
+- POST /api/documents/history/{session_id}
+- GET  /api/documents/version/{version_id}
 - POST /api/cover-letter/generate
 - POST /api/resume/customize
 - POST /api/documents/download
+- GET  /api/download/canonical
+
+Strengthen Resume Flow:
+- POST /api/strengthen/session
+- GET  /api/strengthen/session/{session_id}
+- POST /api/strengthen/regenerate
+- POST /api/strengthen/accept
+- POST /api/strengthen/skip
+- POST /api/strengthen/complete
 
 Interview Preparation:
 - POST /api/interview-prep/generate
@@ -929,15 +945,45 @@ Mock Interviews:
 - POST /api/mock-interview/respond
 - POST /api/mock-interview/next-question
 - POST /api/mock-interview/end
-- GET /api/mock-interview/sessions/{company}/{role_title}
-- GET /api/mock-interview/question-feedback/{question_id}
+- GET  /api/mock-interview/sessions/{company}/{role_title}
+- GET  /api/mock-interview/question-feedback/{question_id}
 
 Interview Intelligence:
 - POST /api/interviewer-intelligence/analyze
 - POST /api/interviewer-intelligence/extract-text
 
+Story Bank & Debriefs:
+- POST /api/debriefs/extract
+- POST /api/debriefs/analyze-patterns
+
+Screening Questions:
+- POST /api/screening-questions/generate (interview prep)
+- POST /api/screening-questions/analyze (application form analysis)
+
+LinkedIn Integration:
+- POST /api/linkedin/upload
+- POST /api/linkedin/check-alignment
+- POST /api/linkedin/optimize
+
 Chat:
 - POST /api/ask-henry (contextual AI assistant)
+- POST /api/resume-chat
+- POST /api/generate-resume-from-chat
+
+Tracker Intelligence:
+- POST /api/tracker/intelligence
+- POST /api/tracker/calculate-confidence
+
+User & Admin:
+- GET  /api/user/usage
+- GET  /api/user/tier
+- GET  /api/user/feature-access/{feature}
+- POST /api/user/usage/increment/{type}
+- GET  /api/user/usage-limit/{type}
+- GET  /api/tiers
+- GET  /api/admin/notifications
+- POST /api/admin/notifications/{id}/read
+- POST /api/admin/notifications/read-all
 
 Other:
 - POST /api/tasks/prioritize
@@ -947,7 +993,6 @@ Other:
 - POST /api/interview/parse
 - POST /api/interview/feedback
 - POST /api/interview/thank_you
-- POST /api/screening-questions/generate
 - POST /api/resume/level-assessment
 - POST /api/experience/clarifying-questions
 - POST /api/experience/reanalyze
@@ -955,6 +1000,12 @@ Other:
 - POST /api/package/download
 - POST /api/download/resume
 - POST /api/download/cover-letter
+- POST /api/extract-jobs-from-screenshot
+- POST /api/extracttext
+- POST /api/send-feedback-acknowledgment
+- POST /api/resumes
+- GET  /api/resumes
+- GET  /api/resumes/{resume_id}
 ```
 
 ---
@@ -981,121 +1032,77 @@ All planned improvements have been **successfully implemented and deployed**. He
 **Current Status**:
 - Phase 0 (Foundation Strengthening): ✅ COMPLETE
 - Dec 12-14 Polish: ✅ COMPLETE
-- Phase 1 (Streaming & Performance): 🔄 IN PROGRESS
-- Phase 1.5 (Application Support Features): 📋 PLANNED (Jan 2-17, 2026)
+- Phase 1 (Streaming & Performance): 🔄 IN PROGRESS (streaming infrastructure ready)
+- Phase 1.5 (Application Support Features): ✅ COMPLETE
+- Phase 2 (Strategic Intelligence): ✅ COMPLETE
+- Phase 2.5 (Document Quality & Trust): ✅ COMPLETE
 
 **Next actions**:
 1. Complete frontend streaming UI integration
 2. Implement validation UI display (quality badge, keyword coverage)
 3. Add optimistic UI patterns
 4. Re-enable QA validation after fixing regex false positives
-5. Implement Phase 1.5 features (Screening Questions + Document Refinement)
 
 ---
 
-## Planned: Phase 1.5 - Application Support Features (Jan 2-17, 2026)
+## ✅ Completed: Phase 1.5 - Application Support Features
 
-**Timeline**: Expedited 2.5 weeks for additional testing before launch
+**Status**: COMPLETE (deployed prior to January 1, 2026)
 **Goal**: Prevent silent rejections and enable document refinement
 
-### Sprint Overview
+### 53. ✅ Application Screening Questions Analysis (Phase 1.5.1)
 
-| Week | Focus | Deliverables |
-|------|-------|--------------|
-| Week 1 (Jan 2-8) | Core Development | Screening Questions endpoint, Document Refine endpoint, Frontend UI |
-| Week 2 (Jan 9-15) | Beta Testing + Deploy | Internal testing, bug fixes, production deployment |
-| Week 3 (Jan 16-17) | Buffer + Monitoring | Post-deploy monitoring, user feedback collection |
+**What it does**: Analyzes application screening questions to prevent silent auto-rejections.
 
-### 20. 📋 Screening Questions Analysis (Phase 1.5.1)
-
-**What it will do**: Analyze screening questions to prevent silent auto-rejections.
-
-**Why this matters**:
-- Users pass resume screen, then get auto-rejected for answering "No" to "5+ years Python?" when they have 4.5 years
-- 100% of online applicants face screening questions
-- No workaround exists today
+**Implementation**:
+- Endpoint: `POST /api/screening-questions/analyze`
+- Frontend: `frontend/screening-questions.html`
+- Models: `backend/models/screening.py`
+- Prompts: `backend/prompts/screening.py`
 
 **Features**:
-- New endpoint: `POST /api/screening-questions/analyze`
-- Risk assessment for each question (high/medium/low)
-- "Knockout question" detection
+- Risk assessment for each question (high, medium, low, safe)
+- Knockout question detection with visual badges
 - Recommended answers with justification
-- Honesty flags (truthful, strategic framing, borderline)
-- New `screening-questions.html` page
+- Honesty flags: truthful, strategic_framing, borderline
+- Critical dealbreakers list
+- Strategic guidance summary
 
-**Key Pydantic Models**:
-- `QuestionType`: yes_no, experience_years, salary, essay, multiple_choice, availability
-- `RiskLevel`: high, medium, low
+**Key Models**:
+- `ScreeningQuestionType`: yes_no, comp_expectations, essay, multiple_choice, availability
+- `ScreeningRiskLevel`: high, medium, low, safe
 - `HonestyFlag`: truthful, strategic_framing, borderline
-- `ScreeningQuestionsRequest/Response`
 
-**Expected Impact**:
-- Auto-rejection rate: -30%
-- User confidence in screening answers: 4.5/5
+**Impact**:
+- Prevents auto-rejection from poorly answered screening questions
+- Gives candidates confidence in borderline situations (4.5 vs 5 years)
 
 ---
 
-### 21. 📋 Document Iteration via Chat (Phase 1.5.2)
+### 54. ✅ Document Iteration via Chat (Phase 1.5.2)
 
-**What it will do**: Allow users to refine documents via Ask Henry chat.
+**What it does**: Allows users to refine documents via natural language requests.
 
-**Why this matters**:
-- Users currently must restart the entire flow to regenerate documents
-- ~20% of users want granular control ("make this more senior")
-- Natural language refinement is more intuitive
+**Implementation**:
+- Endpoint: `POST /api/documents/refine` (backend.py line 20251)
+- Version tracking with document history
+- Change tracking with before/after diffs
 
 **Features**:
-- New endpoint: `POST /api/documents/refine`
-- Version tracking (v1, v2, v3...)
-- Change tracking with before/after diffs
-- Integration with Ask Henry chat
-- Automatic detection of refinement requests
+- Natural language refinement ("make this more senior")
+- Version history (v1, v2, v3...)
 - Validation runs on refined documents
+- Grounded in original resume data (no fabrication)
 
-**Refinement Triggers Detected**:
+**Refinement Triggers**:
 - "make it more", "make this more"
 - "add more", "remove the", "change the"
 - "too generic", "more specific", "more senior"
 - "less formal", "more formal", "shorter", "longer"
 
-**Expected Impact**:
-- Time to final document: -25%
-- User satisfaction with document control: 4.5/5
-
----
-
-### Phase 1.5 Testing Checklist
-
-**Screening Questions**:
-- [ ] Yes/No with exact match experience
-- [ ] Yes/No with near-miss (4.5 years vs 5 years required)
-- [ ] Salary questions with range detection
-- [ ] Essay questions with keyword coverage
-- [ ] Multiple knockout questions
-- [ ] Work authorization questions
-- [ ] Availability/start date questions
-
-**Document Refinement**:
-- [ ] "Make it more senior" increases leadership language
-- [ ] "Add more ATS keywords" improves coverage
-- [ ] Version tracking increments correctly
-- [ ] Changes tracked and displayed
-- [ ] Original resume facts unchanged
-- [ ] Refresh button appears after refinement
-
----
-
-### Phase 1.5 Deployment Timeline
-
-| Day | Date | Milestone |
-|-----|------|-----------|
-| 1-3 | Jan 2-4 | Screening Questions backend + frontend |
-| 4-5 | Jan 5-6 | Document Refine backend + ask-henry.js integration |
-| 6-7 | Jan 7-8 | Integration testing, bug fixes |
-| 8-10 | Jan 9-11 | Internal beta testing |
-| 11-12 | Jan 12-13 | Bug fixes from beta feedback |
-| 13 | Jan 14 | Production deployment |
-| 14-15 | Jan 15-17 | Monitoring, user feedback collection |
+**Impact**:
+- Users can iterate on documents without restarting flow
+- Natural language interface for document control
 
 ---
 
@@ -1529,10 +1536,13 @@ ui_contract = {
 |-------|--------|------------|
 | Phase 0: Foundation Strengthening | ✅ COMPLETE | 100% |
 | Phase 1: Core Application Engine | ✅ COMPLETE | 100% |
-| Phase 1.5: Interview Intelligence | ✅ COMPLETE | 100% |
+| Phase 1.5: Application Support Features | ✅ COMPLETE | 100% |
 | Phase 1.75: Engagement & Coaching | ✅ COMPLETE | 100% |
 | Phase 2: Strategic Intelligence | ✅ COMPLETE | 100% |
+| Phase 2.5: Document Quality & Trust | ✅ COMPLETE | 100% |
 | Phase 3: Performance Intelligence | 🔄 In Progress | ~40% |
+
+**Total Features Implemented**: 54
 
 ---
 
@@ -1541,13 +1551,13 @@ ui_contract = {
 1. ~~Test 6-tier system with users~~ ✅ Deployed and tested
 2. ~~Monitor cap enforcement~~ ✅ Backend safety net working
 3. ~~Fix Your Move / gaps contract violation~~ ✅ UI contract enforcement deployed
-4. **Re-enable streaming** - When experience penalties can be applied to partial data
-5. **Implement Phase 1.5 features** - Screening Questions + Document Refinement (Jan 2-17, 2026)
+4. ~~Implement Phase 1.5 features~~ ✅ Screening Questions + Document Refinement deployed
+5. **Re-enable streaming** - When experience penalties can be applied to partial data
 6. **Complete LinkedIn integration testing** - Full flow with real LinkedIn PDFs
 
 ---
 
-## Incomplete Tasks for Next Week
+## Remaining Tasks
 
 ### HIGH PRIORITY
 
@@ -1568,35 +1578,25 @@ ui_contract = {
 
 ### MEDIUM PRIORITY
 
-4. **Screening Questions Analysis** (Phase 1.5.1)
-   - Status: Spec complete, not implemented
-   - Files: New `backend/` endpoint + `frontend/screening-questions.html`
-   - Effort: 3-4 days
-
-5. **Document Iteration via Chat** (Phase 1.5.2)
-   - Status: Spec complete, not implemented
-   - Files: `backend/backend.py` + `frontend/components/ask-henry.js`
-   - Effort: 3-4 days
-
-6. **LinkedIn Integration Testing**
+4. **LinkedIn Integration Testing**
    - Status: Endpoints exist, need end-to-end testing
    - Files: LinkedIn endpoints in backend, documents.html tab
    - Effort: 1 day
 
-### LOW PRIORITY
-
-7. **Optimistic UI Patterns**
+5. **Optimistic UI Patterns**
    - Status: Planned for after streaming
    - Files: Multiple frontend HTML files
    - Effort: 2 days
 
-8. **Smart Inference Engine**
-   - Status: Planned for Phase 2
+### LOW PRIORITY
+
+6. **Smart Inference Engine**
+   - Status: Planned for future phase
    - Files: `backend/backend.py`
    - Effort: 3-4 days
 
 ---
 
 **Prepared by**: Engineering Team
-**Date**: December 19, 2025
+**Date**: January 1, 2026
 **Status**: Deployed to Production

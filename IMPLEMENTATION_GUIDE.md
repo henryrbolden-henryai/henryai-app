@@ -1,9 +1,10 @@
 # HenryAI Implementation Guide
 
 **Date**: December 19, 2025
-**Version**: 1.7
+**Version**: 1.8
 **Audience**: Development Team
 **Last Updated**: January 1, 2026
+**Total Features**: 54 implemented, 85 API endpoints
 
 ---
 
@@ -585,16 +586,17 @@ Example: "Rawan, this role is a stretch..." or "This role is a stretch for your 
    - `openAskHenry()` - Opens chat drawer
    - `openAskHenryWithPrompt(prompt)` - Opens and sends a message
 
-**What's NOT Implemented** (Transactional Chat - Phase 1.5):
+**Also Implemented** (Transactional Features - Phase 1.5):
 
-- ❌ **Document regeneration from chat commands**
-  - Cannot say "make this bullet more impactful" and have it regenerate
-  - Users must go back through the full flow to regenerate documents
-  - See Phase 1.5.2 in PRODUCT_STRATEGY_ROADMAP.md
+- ✅ **Document regeneration from chat commands**
+  - Endpoint: `POST /api/documents/refine`
+  - Natural language refinement ("make this more senior", "add more keywords")
+  - Version tracking with before/after diffs
 
-- ❌ **Screening questions analysis**
-  - Cannot analyze screening questions for auto-rejection risk
-  - See Phase 1.5.1 in PRODUCT_STRATEGY_ROADMAP.md (RECOMMENDED PRIORITY)
+- ✅ **Screening questions analysis**
+  - Endpoint: `POST /api/screening-questions/analyze`
+  - Frontend: `frontend/screening-questions.html`
+  - Risk assessment, knockout detection, honesty flags
 
 ---
 
