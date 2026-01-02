@@ -1,5 +1,5 @@
 // HenryHQ Service Worker
-const CACHE_NAME = 'henryhq-v1';
+const CACHE_NAME = 'henryhq-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to cache immediately on install
