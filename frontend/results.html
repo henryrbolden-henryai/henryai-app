@@ -2603,13 +2603,18 @@
         const moveNetwork = document.getElementById('moveNetwork');
         const moveApply = document.getElementById('moveApply');
 
-        // P1-NEW-4: Hard block terminal states require REDIRECTION mode for Your Move
-        const HARD_BLOCK_STATES = ['TITLE_INFLATION', 'CREDIBILITY_VIOLATION', 'FUNCTION_MISMATCH', 'ELIGIBILITY_VIOLATION'];
+        // P1.5-1: YOUR MOVE gates on RECOMMENDATION, not just terminal state type
+        // If recommendation = "Do Not Apply", YOUR MOVE must show SKIP regardless of WHY
+        const HARD_BLOCK_STATES = ['TITLE_INFLATION', 'CREDIBILITY_VIOLATION', 'FUNCTION_MISMATCH', 'ELIGIBILITY_VIOLATION', 'MISSING_CORE_SIGNAL'];
         const currentTerminalState = terminalState?.state_type || null;
         const isHardBlockState = currentTerminalState && HARD_BLOCK_STATES.includes(currentTerminalState);
 
-        // P1-NEW-4: If hard block, YOUR MOVE switches to redirection messaging
-        if (isHardBlockState || coachingMode === 'REDIRECTION' || coachingMode === 'CREDIBILITY_REPAIR') {
+        // P1.5-1 FIX: Gate on applyDisabled (which includes "Do Not Apply" recommendation)
+        // This catches ALL Do Not Apply cases, not just specific terminal state types
+        const shouldShowRedirectionMode = applyDisabled || isHardBlockState || coachingMode === 'REDIRECTION' || coachingMode === 'CREDIBILITY_REPAIR';
+
+        // P1.5-1: If Do Not Apply OR hard block, YOUR MOVE switches to redirection messaging
+        if (shouldShowRedirectionMode) {
             // Switch to text mode with redirection messaging
             quickMoveList.style.display = 'none';
             quickMoveText.style.display = 'block';
@@ -2626,6 +2631,11 @@
                 quickMoveText.innerHTML = `<strong>Credibility concern.</strong> ${blockerReason || 'Address credibility issues before pursuing this role.'}`;
             } else if (currentTerminalState === 'ELIGIBILITY_VIOLATION') {
                 quickMoveText.innerHTML = `<strong>Not eligible.</strong> ${blockerReason || 'This role has requirements you do not meet.'}`;
+            } else if (currentTerminalState === 'MISSING_CORE_SIGNAL') {
+                quickMoveText.innerHTML = `<strong>Missing core signals.</strong> ${canonicalStatement || blockerReason || 'Your resume lacks the core experience signals this role requires.'}`;
+            } else if (applyDisabled) {
+                // P1.5-1: Catch-all for any "Do Not Apply" not caught by terminal state
+                quickMoveText.innerHTML = `<strong>Skip this role.</strong> ${blockerReason || canonicalStatement || 'This role is not a fit based on your current experience.'}`;
             } else {
                 quickMoveText.textContent = blockerReason || 'This role is not a fit. Focus on roles where you are competitive.';
             }
