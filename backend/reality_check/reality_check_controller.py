@@ -35,6 +35,7 @@ from .signal_detectors import (
     detect_risk_signals,
     detect_market_bias_signals,
     detect_market_climate_signals,
+    detect_company_health_signals,
 )
 
 
@@ -98,6 +99,7 @@ class RealityCheckController:
         fit_details: Optional[Dict[str, Any]] = None,
         credibility_result: Optional[Dict[str, Any]] = None,
         risk_analysis: Optional[Dict[str, Any]] = None,
+        company_intel: Optional[Dict[str, Any]] = None,
     ) -> RealityCheckResult:
         """
         Analyze all signals and return prioritized Reality Checks.
@@ -113,6 +115,7 @@ class RealityCheckController:
             fit_details: Pre-computed fit analysis details
             credibility_result: Pre-computed credibility analysis
             risk_analysis: Pre-computed risk analysis
+            company_intel: Company intelligence data (from company_intel.py)
 
         Returns:
             RealityCheckResult with prioritized checks
@@ -166,6 +169,14 @@ class RealityCheckController:
             resume_data, jd_data
         )
         all_checks.extend(market_climate_checks)
+
+        # 7. Company Health Signals (from external company intelligence)
+        if company_intel:
+            company_name = jd_data.get("company_name", "") or jd_data.get("company", "")
+            company_health_checks = detect_company_health_signals(
+                company_name, company_intel
+            )
+            all_checks.extend(company_health_checks)
 
         # Validate each check against hard guardrails
         for check in all_checks:
@@ -345,6 +356,7 @@ def analyze_reality_checks(
     fit_details: Optional[Dict[str, Any]] = None,
     credibility_result: Optional[Dict[str, Any]] = None,
     risk_analysis: Optional[Dict[str, Any]] = None,
+    company_intel: Optional[Dict[str, Any]] = None,
     feature_flag: bool = True,
 ) -> Dict[str, Any]:
     """
@@ -362,6 +374,7 @@ def analyze_reality_checks(
         fit_details=fit_details,
         credibility_result=credibility_result,
         risk_analysis=risk_analysis,
+        company_intel=company_intel,
     )
 
     return result.to_dict()

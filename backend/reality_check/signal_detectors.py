@@ -596,6 +596,107 @@ def detect_market_climate_signals(
     return checks
 
 
+def detect_company_health_signals(
+    company_name: str,
+    company_intel: Optional[Dict[str, Any]] = None
+) -> List[RealityCheck]:
+    """
+    Generate Reality Check signals based on company health data.
+
+    Per company-intelligence-implementation-brief.md:
+    - Returns at most 1 signal to avoid overwhelming the candidate
+    - Only surfaces YELLOW or RED health signals
+    - Uses MARKET_CLIMATE signal class
+    - Severity: YELLOW -> INFORMATIONAL, RED -> COACHING
+    - Never BLOCKER or WARNING (company health informs, does not override)
+
+    Args:
+        company_name: Name of the company being analyzed
+        company_intel: CompanyIntelligence data as dict (from company_intel.py)
+
+    Returns:
+        List of RealityCheck objects (0 or 1 signal)
+    """
+    checks = []
+
+    if not company_intel:
+        return checks
+
+    # Skip if there was an error fetching data
+    if company_intel.get("error"):
+        return checks
+
+    health_signal = company_intel.get("company_health_signal", "GREEN")
+    findings = company_intel.get("findings", [])
+    what_this_means = company_intel.get("what_this_means", "")
+    negotiation_guidance = company_intel.get("negotiation_guidance", [])
+
+    # Only surface YELLOW or RED signals
+    if health_signal == "GREEN":
+        return checks
+
+    # Build the message from findings
+    finding_summaries = []
+    for f in findings[:3]:  # Max 3 findings in the one-liner
+        finding_text = f.get("finding", "")
+        source = f.get("source", "")
+        if finding_text:
+            if source:
+                finding_summaries.append(f"{finding_text} ({source})")
+            else:
+                finding_summaries.append(finding_text)
+
+    if health_signal == "RED":
+        # High-risk company: COACHING severity
+        message_parts = []
+        if finding_summaries:
+            message_parts.append(". ".join(finding_summaries) + ".")
+        if what_this_means:
+            message_parts.append(what_this_means)
+        else:
+            message_parts.append("This company shows significant risk signals. Proceed with caution and protect yourself in negotiations.")
+
+        checks.append(RealityCheck(
+            signal_class=SignalClass.MARKET_CLIMATE,
+            severity=Severity.COACHING,
+            trigger=f"company_health_risk:{company_name}",
+            message=" ".join(message_parts),
+            strategic_alternatives=negotiation_guidance if negotiation_guidance else [
+                "Negotiate for higher cash compensation over equity",
+                "Ask whether this role is new headcount or backfill",
+                "Get written offer before giving notice at current job",
+            ],
+            evidence=f"Company health signal: RED. {len(findings)} risk factor(s) detected.",
+            allowed_outputs=["coaching", "framing_guidance"],
+        ))
+
+    elif health_signal == "YELLOW":
+        # Watch signals: INFORMATIONAL severity
+        message_parts = []
+        if finding_summaries:
+            message_parts.append(". ".join(finding_summaries) + ".")
+        if what_this_means:
+            message_parts.append(what_this_means)
+        else:
+            message_parts.append("Ask about team stability and growth plans during interviews.")
+
+        checks.append(RealityCheck(
+            signal_class=SignalClass.MARKET_CLIMATE,
+            severity=Severity.INFORMATIONAL,
+            trigger=f"company_health_watch:{company_name}",
+            message=" ".join(message_parts),
+            strategic_alternatives=negotiation_guidance if negotiation_guidance else [
+                "Negotiate for balanced cash and equity mix",
+                "Ask about retention packages and team tenure",
+                "Clarify reporting structure and team stability",
+            ],
+            evidence=f"Company health signal: YELLOW. {len(findings)} factor(s) worth monitoring.",
+            allowed_outputs=["informational", "framing_guidance"],
+        ))
+
+    return checks
+
+
 def _extract_resume_text(resume_data: Dict[str, Any]) -> str:
     """Extract all text from resume data for pattern matching."""
     parts = []

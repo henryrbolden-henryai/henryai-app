@@ -245,6 +245,23 @@ except ImportError:
     REALITY_CHECK_ENABLED = False
     print("⚠️ Reality Check module not available - using fallback behavior")
 
+# Company Intelligence Service for company health signals
+try:
+    from services.company_intel import (
+        get_company_intelligence,
+        CompanyIntelligence,
+        HealthSignal,
+        clear_company_intel_cache,
+        get_cache_stats,
+    )
+    COMPANY_INTEL_AVAILABLE = True
+    # Feature flag for gradual rollout
+    COMPANY_INTEL_ENABLED = True
+except ImportError:
+    COMPANY_INTEL_AVAILABLE = False
+    COMPANY_INTEL_ENABLED = False
+    print("⚠️ Company Intelligence module not available - using fallback behavior")
+
 # Initialize rate limiter
 # Limits: 30 requests per minute per IP for expensive endpoints (Claude API calls)
 # Health check and simple endpoints are not rate limited
@@ -12857,6 +12874,21 @@ Role: {body.role_title}
                 "specific_gaps": parsed_data.get("gaps", []),
             }
 
+            # Fetch company intelligence (if enabled)
+            company_intel = None
+            if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
+                company_name = body.company or parsed_data.get("company", "")
+                if company_name:
+                    try:
+                        print(f"🔍 Fetching company intelligence for: {company_name}")
+                        intel_result = get_company_intelligence(company_name)
+                        company_intel = intel_result.to_dict()
+                        parsed_data["company_intelligence"] = company_intel
+                        print(f"✅ Company intelligence: {intel_result.company_health_signal.value}")
+                    except Exception as ci_e:
+                        print(f"⚠️ Company intelligence fetch failed (non-blocking): {str(ci_e)}")
+                        company_intel = None
+
             # Configure post-processors
             config = PostProcessorConfig(
                 reality_check_enabled=REALITY_CHECK_AVAILABLE and REALITY_CHECK_ENABLED,
@@ -12883,6 +12915,7 @@ Role: {body.role_title}
                 credibility_result=credibility_result,
                 risk_analysis=risk_analysis,
                 gap_analysis=gap_analysis,
+                company_intel=company_intel,
             )
 
             print("=" * 60)
@@ -22401,6 +22434,91 @@ async def get_user_tier(user_id: str = None):
     except Exception as e:
         logger.error(f"Error getting user tier: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting user tier: {str(e)}")
+
+
+# ============================================================================
+# COMPANY INTELLIGENCE API
+# ============================================================================
+
+@app.get("/api/company-intel")
+async def get_company_intel(company: str):
+    """
+    Get company health intelligence for a given company name.
+
+    Returns company health signal, findings, interview questions,
+    and negotiation guidance.
+
+    Args:
+        company: Name of the company to research
+
+    Returns:
+        CompanyIntelligence data with health signals and guidance
+    """
+    if not company or not company.strip():
+        raise HTTPException(status_code=400, detail="Company name is required")
+
+    if not COMPANY_INTEL_AVAILABLE or not COMPANY_INTEL_ENABLED:
+        return {
+            "company_name": company,
+            "company_health_signal": "GREEN",
+            "confidence": "LOW",
+            "findings": [],
+            "what_this_means": "Company intelligence is not currently available.",
+            "interview_questions": [
+                "What does the growth roadmap look like for this team over the next 12 months?",
+                "How is the company thinking about scaling while maintaining culture?",
+                "What is the biggest challenge the team is facing right now?",
+                "How does this role contribute to the company's strategic priorities?",
+            ],
+            "negotiation_guidance": [
+                "Standard negotiation approach applies.",
+                "Research the company independently before finalizing decisions.",
+            ],
+            "error": "Company intelligence service not available"
+        }
+
+    try:
+        intel = get_company_intelligence(company.strip())
+        return intel.to_dict()
+    except Exception as e:
+        logger.error(f"Error fetching company intelligence for {company}: {str(e)}")
+        return {
+            "company_name": company,
+            "company_health_signal": "GREEN",
+            "confidence": "LOW",
+            "findings": [],
+            "what_this_means": "Unable to fetch company data at this time.",
+            "interview_questions": [
+                "What does the growth roadmap look like for this team over the next 12 months?",
+                "How is the company thinking about scaling while maintaining culture?",
+                "What is the biggest challenge the team is facing right now?",
+                "How does this role contribute to the company's strategic priorities?",
+            ],
+            "negotiation_guidance": [
+                "Standard negotiation approach applies.",
+                "Research the company independently before finalizing decisions.",
+            ],
+            "error": str(e)
+        }
+
+
+@app.get("/api/company-intel/cache-stats")
+async def get_company_intel_cache_stats():
+    """Get company intelligence cache statistics (admin endpoint)."""
+    if not COMPANY_INTEL_AVAILABLE:
+        return {"error": "Company intelligence not available"}
+
+    return get_cache_stats()
+
+
+@app.post("/api/company-intel/clear-cache")
+async def clear_company_intel_cache_endpoint():
+    """Clear company intelligence cache (admin endpoint)."""
+    if not COMPANY_INTEL_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Company intelligence not available")
+
+    clear_company_intel_cache()
+    return {"status": "success", "message": "Company intelligence cache cleared"}
 
 
 # ============================================================================

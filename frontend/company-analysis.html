@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Analysis - HenryHQ</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="HenryHQ">
+    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 15, 15, 0.95);
+            border-bottom: 1px solid #374151;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #93c5fd;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .company-name {
+            color: #22d3ee;
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+        }
+
+        /* Health Signal Card */
+        .health-card {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 2px solid #374151;
+        }
+
+        .health-card.signal-green {
+            border-color: #4ade80;
+        }
+
+        .health-card.signal-yellow {
+            border-color: #fbbf24;
+        }
+
+        .health-card.signal-red {
+            border-color: #f87171;
+        }
+
+        .health-signal {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .health-signal-icon {
+            font-size: 1.5rem;
+        }
+
+        .health-signal-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .health-signal-text.green { color: #4ade80; }
+        .health-signal-text.yellow { color: #fbbf24; }
+        .health-signal-text.red { color: #f87171; }
+
+        .confidence-level {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        /* Sections */
+        .section {
+            background: #1f2937;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #374151;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #374151;
+            font-weight: 600;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+
+        .section-content {
+            padding: 20px;
+        }
+
+        /* Findings List */
+        .findings-list {
+            list-style: none;
+        }
+
+        .finding-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .finding-item:last-child {
+            border-bottom: none;
+        }
+
+        .finding-severity {
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 8px;
+        }
+
+        .finding-severity.high { background: #f87171; }
+        .finding-severity.medium { background: #fbbf24; }
+        .finding-severity.low { background: #4ade80; }
+
+        .finding-content {
+            flex: 1;
+        }
+
+        .finding-text {
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .finding-source {
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        /* What This Means */
+        .what-this-means {
+            color: #e0e0e0;
+            line-height: 1.7;
+            font-size: 1.05rem;
+        }
+
+        /* Questions List */
+        .questions-list {
+            list-style: none;
+        }
+
+        .question-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+            color: #e0e0e0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+        }
+
+        .question-bullet {
+            color: #22d3ee;
+            flex-shrink: 0;
+        }
+
+        /* Guidance List */
+        .guidance-list {
+            list-style: none;
+        }
+
+        .guidance-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #374151;
+            color: #e0e0e0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .guidance-item:last-child {
+            border-bottom: none;
+        }
+
+        .guidance-bullet {
+            color: #fbbf24;
+            flex-shrink: 0;
+        }
+
+        /* Research Section */
+        .research-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .research-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #374151;
+            border-radius: 8px;
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .research-link:hover {
+            background: #4b5563;
+            color: #93c5fd;
+        }
+
+        /* Footer */
+        .data-footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.85rem;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #22d3ee;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #f87171;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state h2 {
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <a href="overview.html" class="logo">Henry<em>HQ</em></a>
+        </div>
+    </header>
+
+    <div class="container">
+        <a href="overview.html" class="back-link">&larr; Back to Strategy Overview</a>
+
+        <div id="pageContent">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Analyzing company health...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get analysis data from sessionStorage
+        const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+        const companyIntel = analysisData.company_intelligence || null;
+        const companyName = analysisData._company_name || analysisData.company_name || analysisData.company || 'Unknown Company';
+
+        const pageContent = document.getElementById('pageContent');
+
+        function renderPage() {
+            if (!companyIntel) {
+                // No company intelligence available
+                pageContent.innerHTML = `
+                    <h1>Company Analysis</h1>
+                    <div class="company-name">${escapeHtml(companyName)}</div>
+                    <div class="empty-state">
+                        <h2>No Company Data Available</h2>
+                        <p>Company intelligence was not available for this analysis.</p>
+                        <p style="margin-top: 16px;">This may happen if:</p>
+                        <ul style="list-style: none; margin-top: 8px;">
+                            <li>The company name could not be determined</li>
+                            <li>No recent news was found about this company</li>
+                            <li>The analysis was performed before this feature was available</li>
+                        </ul>
+                    </div>
+                `;
+                return;
+            }
+
+            const healthSignal = companyIntel.company_health_signal || 'GREEN';
+            const confidence = companyIntel.confidence || 'LOW';
+            const findings = companyIntel.findings || [];
+            const whatThisMeans = companyIntel.what_this_means || '';
+            const interviewQuestions = companyIntel.interview_questions || [];
+            const negotiationGuidance = companyIntel.negotiation_guidance || [];
+            const sourcesChecked = companyIntel.sources_checked || [];
+            const dataFreshness = companyIntel.data_freshness ? new Date(companyIntel.data_freshness).toLocaleDateString() : 'Unknown';
+
+            // Determine styling based on health signal
+            let signalClass = 'signal-green';
+            let signalIcon = '\u2713';
+            let signalText = 'STABLE';
+            let signalTextClass = 'green';
+
+            if (healthSignal === 'YELLOW') {
+                signalClass = 'signal-yellow';
+                signalIcon = '\u26A0';
+                signalText = 'WATCH';
+                signalTextClass = 'yellow';
+            } else if (healthSignal === 'RED') {
+                signalClass = 'signal-red';
+                signalIcon = '\u26A0';
+                signalText = 'RISK';
+                signalTextClass = 'red';
+            }
+
+            // Build findings HTML
+            let findingsHtml = '';
+            if (findings.length > 0) {
+                findingsHtml = `
+                    <div class="section">
+                        <div class="section-header">Key Findings</div>
+                        <div class="section-content">
+                            <ul class="findings-list">
+                                ${findings.map(f => `
+                                    <li class="finding-item">
+                                        <span class="finding-severity ${(f.severity || 'low').toLowerCase()}"></span>
+                                        <div class="finding-content">
+                                            <div class="finding-text">${escapeHtml(f.finding)}</div>
+                                            <div class="finding-source">${escapeHtml(f.source)}${f.date ? ` (${escapeHtml(f.date)})` : ''}</div>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            } else if (healthSignal === 'GREEN') {
+                findingsHtml = `
+                    <div class="section">
+                        <div class="section-header">Key Findings</div>
+                        <div class="section-content">
+                            <p style="color: #9ca3af;">No significant risk factors detected in recent news coverage.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build what this means HTML
+            let whatThisMeansHtml = '';
+            if (whatThisMeans) {
+                whatThisMeansHtml = `
+                    <div class="section">
+                        <div class="section-header">What This Means</div>
+                        <div class="section-content">
+                            <p class="what-this-means">${escapeHtml(whatThisMeans)}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build interview questions HTML
+            let questionsHtml = '';
+            if (interviewQuestions.length > 0) {
+                questionsHtml = `
+                    <div class="section">
+                        <div class="section-header">Questions to Ask in Interviews</div>
+                        <div class="section-content">
+                            <ul class="questions-list">
+                                ${interviewQuestions.map(q => `
+                                    <li class="question-item">
+                                        <span class="question-bullet">&bull;</span>
+                                        <span>${escapeHtml(q)}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build negotiation guidance HTML
+            let guidanceHtml = '';
+            if (negotiationGuidance.length > 0) {
+                guidanceHtml = `
+                    <div class="section">
+                        <div class="section-header">If You Get an Offer</div>
+                        <div class="section-content">
+                            <ul class="guidance-list">
+                                ${negotiationGuidance.map(g => `
+                                    <li class="guidance-item">
+                                        <span class="guidance-bullet">&bull;</span>
+                                        <span>${escapeHtml(g)}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build research links
+            const encodedCompany = encodeURIComponent(companyName);
+            const researchHtml = `
+                <div class="section">
+                    <div class="section-header">Do Your Own Research</div>
+                    <div class="section-content">
+                        <div class="research-links">
+                            <a href="https://www.tiktok.com/search?q=${encodedCompany}%20layoffs" target="_blank" rel="noopener" class="research-link">
+                                TikTok: #${companyName.replace(/\s+/g, '')}layoffs
+                            </a>
+                            <a href="https://www.teamblind.com/search/${encodedCompany}" target="_blank" rel="noopener" class="research-link">
+                                Blind: ${companyName}
+                            </a>
+                            <a href="https://www.glassdoor.com/Search/results.htm?keyword=${encodedCompany}" target="_blank" rel="noopener" class="research-link">
+                                Glassdoor Reviews
+                            </a>
+                            <a href="https://www.linkedin.com/company/${encodedCompany.toLowerCase().replace(/\s+/g, '-')}/people/" target="_blank" rel="noopener" class="research-link">
+                                LinkedIn Employees
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Render the full page
+            pageContent.innerHTML = `
+                <h1>Company Analysis</h1>
+                <div class="company-name">${escapeHtml(companyName)}</div>
+
+                <div class="health-card ${signalClass}">
+                    <div class="health-signal">
+                        <span class="health-signal-icon">${signalIcon}</span>
+                        <span class="health-signal-text ${signalTextClass}">HEALTH SIGNAL: ${signalText}</span>
+                    </div>
+                    <div class="confidence-level">Confidence: ${confidence}${sourcesChecked.length > 0 ? ` (${sourcesChecked.length} source${sourcesChecked.length > 1 ? 's' : ''} checked)` : ''}</div>
+                </div>
+
+                ${findingsHtml}
+                ${whatThisMeansHtml}
+                ${questionsHtml}
+                ${guidanceHtml}
+                ${researchHtml}
+
+                <div class="data-footer">
+                    Data last updated: ${dataFreshness}<br>
+                    Sources checked: ${sourcesChecked.length > 0 ? sourcesChecked.join(', ') : 'Web search, news aggregators'}
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Render the page
+        renderPage();
+    </script>
+</body>
+</html>

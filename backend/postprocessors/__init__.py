@@ -41,6 +41,7 @@ def apply_all_postprocessors(
     credibility_result: Optional[Dict[str, Any]] = None,
     risk_analysis: Optional[Dict[str, Any]] = None,
     gap_analysis: Optional[Dict[str, Any]] = None,
+    company_intel: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     Apply all post-processors to an API response.
@@ -60,6 +61,7 @@ def apply_all_postprocessors(
         credibility_result: Pre-computed credibility analysis
         risk_analysis: Pre-computed risk analysis
         gap_analysis: Pre-computed gap analysis
+        company_intel: Company intelligence data (from company_intel.py)
 
     Returns:
         Processed response with all post-processors applied
@@ -93,6 +95,7 @@ def apply_all_postprocessors(
                 fit_details=fit_details,
                 credibility_result=credibility_result,
                 risk_analysis=risk_analysis,
+                company_intel=company_intel,
                 feature_flag=True,
             )
 

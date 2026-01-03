@@ -380,19 +380,20 @@
                 </div>
             </a>
 
-            <!-- Card 6: Pipeline Command Center -->
-            <a href="tracker.html" class="nav-card">
+            <!-- Card 6: Company Analysis -->
+            <a href="company-analysis.html" class="nav-card">
                 <span class="beta-badge">Beta</span>
-                <span class="card-icon">📊</span>
-                <h2 class="card-title">Pipeline Command Center</h2>
-                <p class="card-subtitle">Track all your applications in one place</p>
-                <p class="card-insight" id="pipelineInsight"></p>
+                <span class="card-icon">🏢</span>
+                <h2 class="card-title">Company Analysis</h2>
+                <p class="card-subtitle">Health signals, risk factors, and what to ask</p>
+                <p class="card-insight" id="companyInsight"></p>
                 <p class="card-description">
-                    See your full pipeline, prioritize what needs attention,
-                    and never lose track of where you stand with each opportunity.
+                    Understand what you are walking into. Recent layoffs, financial health,
+                    leadership changes, and employee sentiment, so you know whether this
+                    opportunity is worth your time.
                 </p>
                 <div class="card-cta">
-                    View Command Center <span>→</span>
+                    View Analysis <span>→</span>
                 </div>
             </a>
 
@@ -480,24 +481,24 @@
                 interviewEl.classList.add('visible');
             }
 
-            // Pipeline Insight - show tracker stats
-            const pipelineEl = document.getElementById('pipelineInsight');
-            const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
-            if (apps.length > 0) {
-                const activeApps = apps.filter(a => !['Rejected', 'No Response', 'Withdrawn', 'Offer Declined'].includes(a.status));
-                const interviewingApps = apps.filter(a =>
-                    ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
-                     'Final Round', 'Executive Interview', 'Awaiting Next Round', 'Awaiting Decision'].includes(a.status)
-                );
-                if (interviewingApps.length > 0) {
-                    pipelineEl.innerHTML = `<span class="insight-highlight">${interviewingApps.length} application${interviewingApps.length > 1 ? 's' : ''}</span> in interview stages. ${activeApps.length} total active.`;
-                } else {
-                    pipelineEl.innerHTML = `<span class="insight-highlight">${activeApps.length} active application${activeApps.length > 1 ? 's' : ''}</span> in your pipeline.`;
-                }
-                pipelineEl.classList.add('visible');
+            // Company Analysis Insight - show company health signal
+            const companyEl = document.getElementById('companyInsight');
+            const companyIntel = data.company_intelligence || {};
+            const companyName = data._company_name || data.company_name || 'this company';
+
+            if (companyIntel.company_health_signal === 'RED') {
+                companyEl.innerHTML = `<span class="insight-highlight" style="color: #f87171;">Risk signals detected.</span> See what this means for your candidacy.`;
+                companyEl.classList.add('visible');
+            } else if (companyIntel.company_health_signal === 'YELLOW') {
+                const topFinding = companyIntel.findings && companyIntel.findings[0] ? companyIntel.findings[0].finding : 'Review before proceeding.';
+                companyEl.innerHTML = `<span class="insight-highlight" style="color: #fbbf24;">Watch signals found.</span> ${topFinding}`;
+                companyEl.classList.add('visible');
+            } else if (companyIntel.company_health_signal === 'GREEN') {
+                companyEl.innerHTML = `<span class="insight-highlight" style="color: #4ade80;">${companyName} appears stable.</span> See interview questions and negotiation guidance.`;
+                companyEl.classList.add('visible');
             } else {
-                pipelineEl.innerHTML = `<span class="insight-highlight">Start tracking</span> this application and never lose track of where you stand.`;
-                pipelineEl.classList.add('visible');
+                companyEl.innerHTML = `<span class="insight-highlight">Research ${companyName}</span> before investing time in interviews.`;
+                companyEl.classList.add('visible');
             }
         }
     </script>

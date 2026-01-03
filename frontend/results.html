@@ -877,7 +877,7 @@
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
             gap: 1px;
             background: var(--color-border);
             border-radius: 8px;
@@ -916,16 +916,72 @@
             display: block;
         }
 
+        /* Company health link styling */
+        .company-health-link {
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .company-health-link:hover {
+            opacity: 0.8;
+        }
+
+        .company-health-link.health-green {
+            color: #4ade80;
+        }
+
+        .company-health-link.health-yellow {
+            color: #fbbf24;
+        }
+
+        .company-health-link.health-red {
+            color: #f87171;
+        }
+
+        .company-health-link.health-unknown {
+            color: var(--color-text-secondary);
+            cursor: default;
+            pointer-events: none;
+        }
+
         /* Stack vertically on mobile */
         @media (max-width: 640px) {
             .market-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .market-item:first-child {
+                border-radius: 8px 0 0 0;
+            }
+
+            .market-item:nth-child(2) {
+                border-radius: 0 8px 0 0;
+            }
+
+            .market-item:nth-child(3) {
+                border-radius: 0;
+            }
+
+            .market-item:last-child {
+                border-radius: 0 0 8px 0;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .market-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .market-item:first-child {
                 border-radius: 8px 8px 0 0;
             }
-            
+
+            .market-item:nth-child(2),
+            .market-item:nth-child(3) {
+                border-radius: 0;
+            }
+
             .market-item:last-child {
                 border-radius: 0 0 8px 8px;
             }
@@ -1477,6 +1533,10 @@
                                 <span class="market-label">Action</span>
                                 <span class="market-value" id="marketTiming">—</span>
                             </div>
+                            <div class="market-item" title="External risk signal, not role fit">
+                                <span class="market-label">Company</span>
+                                <a href="company-analysis.html" class="market-value company-health-link" id="marketCompanyHealth">—</a>
+                            </div>
                         </div>
                     </div>
 
@@ -2001,6 +2061,38 @@
         if (timing) {
             marketTimingEl.textContent = extractTimingLabel(timing);
             hasMarketData = true;
+        }
+
+        // Company Health - from company intelligence
+        const marketCompanyHealthEl = document.getElementById('marketCompanyHealth');
+        const companyIntel = data.company_intelligence || null;
+
+        if (companyIntel && companyIntel.company_health_signal) {
+            const healthSignal = companyIntel.company_health_signal;
+            let displayText = '';
+            let healthClass = '';
+
+            if (healthSignal === 'GREEN') {
+                displayText = '\u2713 Stable';
+                healthClass = 'health-green';
+            } else if (healthSignal === 'YELLOW') {
+                displayText = '\u26A0 Watch';
+                healthClass = 'health-yellow';
+            } else if (healthSignal === 'RED') {
+                displayText = '\u26A0 Risk';
+                healthClass = 'health-red';
+            } else {
+                displayText = '\u2014';
+                healthClass = 'health-unknown';
+            }
+
+            marketCompanyHealthEl.textContent = displayText;
+            marketCompanyHealthEl.classList.add(healthClass);
+            hasMarketData = true;
+        } else {
+            // No company intel available
+            marketCompanyHealthEl.textContent = '\u2014';
+            marketCompanyHealthEl.classList.add('health-unknown');
         }
 
         // Hide market section if no data
