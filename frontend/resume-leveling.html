@@ -1707,6 +1707,7 @@
                 </p>
                 <div class="action-buttons">
                     <button class="btn-primary" id="continueBtn">Strengthen Your Resume</button>
+                    <button class="btn-secondary" id="linkedinBtn">LinkedIn Scoring</button>
                     <button class="btn-secondary" id="skipBtn">Skip to Application Strategy</button>
                 </div>
             </div>
@@ -2387,7 +2388,7 @@
                 // Strong position
                 mainText = "Your resume is already well-positioned. A few polish items can make it exceptional.";
                 subText = "Small refinements often make the difference between getting an interview and getting the offer.";
-                primaryBtnText = "Add Final Polish";
+                primaryBtnText = "Strengthen Your Resume";
             } else if (levelsApart === 1) {
                 // Stretch role - achievable
                 mainText = "You're one level away. Strategic positioning can close this gap.";
@@ -3024,6 +3025,18 @@
             // Store leveling data for strengthen page
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
             window.location.href = 'strengthen.html';
+        });
+
+        document.getElementById('linkedinBtn').addEventListener('click', () => {
+            // Store leveling data and go to LinkedIn scoring
+            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+            // Check if LinkedIn data exists - go to upload if not
+            const linkedinData = sessionStorage.getItem('linkedinData');
+            if (linkedinData) {
+                window.location.href = 'linkedin-scoring.html';
+            } else {
+                window.location.href = 'linkedin-upload.html';
+            }
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
