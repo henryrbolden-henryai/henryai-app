@@ -42,26 +42,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Header */
-        .top-nav {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--color-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .top-nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            color: var(--color-text);
-            text-decoration: none;
-        }
-
-        .top-nav-logo em {
-            font-style: italic;
-            color: var(--color-accent);
-        }
+        /* Header styles provided by components/top-nav.js */
 
         /* Main content */
         main {
@@ -1428,9 +1409,7 @@
     <script src="js/supabase-client.js"></script>
 </head>
 <body>
-    <nav class="top-nav">
-        <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
-    </nav>
+    <!-- Top nav injected by components/top-nav.js -->
 
     <main>
         <!-- SINGLE SOURCE OF TRUTH: Job Fit Accountability Banner -->
