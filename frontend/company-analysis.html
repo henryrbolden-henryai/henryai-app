@@ -31,34 +31,9 @@
             line-height: 1.6;
         }
 
-        /* Header */
-        header {
-            background: rgba(15, 15, 15, 0.95);
-            border-bottom: 1px solid #374151;
-            padding: 16px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        header .header-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .logo {
-            font-family: 'Instrument Serif', Georgia, serif;
-            font-size: 1.5rem;
-            color: #ffffff;
-            text-decoration: none;
-        }
-
-        .logo em {
-            font-style: italic;
-            color: #22d3ee;
+        /* Body padding for fixed top-nav */
+        body {
+            padding-top: 60px;
         }
 
         .container {
@@ -335,14 +310,10 @@
             margin-bottom: 12px;
         }
     </style>
+    <!-- Top Navigation Component -->
+    <script src="components/top-nav.js"></script>
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <a href="overview.html" class="logo">Henry<em>HQ</em></a>
-        </div>
-    </header>
-
     <div class="container">
         <a href="overview.html" class="back-link">&larr; Back to Strategy Overview</a>
 

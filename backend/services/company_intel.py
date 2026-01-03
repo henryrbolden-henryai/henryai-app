@@ -251,29 +251,27 @@ def get_company_intelligence(
 
     client = anthropic.Anthropic(api_key=api_key, timeout=60.0)
 
-    # Build the research query
-    research_topics = [
-        f"{company_name} layoffs 2024 2025",
-        f"{company_name} stock price performance",
-        f"{company_name} funding round",
-        f"{company_name} CEO resignation leadership changes",
-    ]
-
-    if ticker_symbol:
-        research_topics.append(f"{ticker_symbol} stock earnings")
-
+    # Build the research query - more comprehensive search terms
     user_message = f"""Research the following company and provide a health assessment for a job candidate:
 
 Company: {company_name}
 {f"Stock Ticker: {ticker_symbol}" if ticker_symbol else ""}
 {f"Company URL: {company_url}" if company_url else ""}
 
-Search for recent news (past 12 months) about:
-1. Layoffs or workforce reductions
-2. Stock performance (if public company)
-3. Funding status and runway (if private company)
-4. Leadership changes (CEO, CFO, CPO turnover)
-5. Major regulatory or legal issues
+IMPORTANT: Search thoroughly using multiple queries. Look for:
+1. "{company_name} layoffs 2024" and "{company_name} layoffs 2025"
+2. "{company_name} acquisition" or "{company_name} buyout" or "{company_name} going private"
+3. "{company_name} lawsuit" or "{company_name} investigation" or "{company_name} SEC filing"
+4. "{company_name} CEO" or "{company_name} leadership" or "{company_name} executive"
+5. "{company_name} stock" or "{company_name} funding" or "{company_name} valuation"
+6. "{company_name} news" for recent press releases and coverage
+
+Search news sources like PR Newswire, Bloomberg, TechCrunch, Reuters, WSJ, Business Insider, The Verge.
+
+For any significant findings, classify the health signal appropriately:
+- Acquisitions, buyouts, or going-private deals: YELLOW if pending, potentially uncertain for employees
+- Lawsuits or investigations: YELLOW or RED depending on severity
+- Failed deals or terminated acquisitions: YELLOW, shows instability
 
 Provide your findings as structured JSON."""
 
@@ -291,7 +289,7 @@ Provide your findings as structured JSON."""
                 {
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 5,
+                    "max_uses": 10,
                 }
             ],
             messages=[{"role": "user", "content": user_message}]
@@ -329,7 +327,7 @@ Provide your findings as structured JSON."""
                     {
                         "type": "web_search_20250305",
                         "name": "web_search",
-                        "max_uses": 5,
+                        "max_uses": 10,
                     }
                 ],
                 messages=messages
