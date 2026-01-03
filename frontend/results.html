@@ -2287,8 +2287,13 @@
 
         // Process gaps - handle both string gaps and structured gap objects
         const gapsToProcess = gapsWithMitigation.length > 0 ? gapsWithMitigation : gaps;
+        const gapsSectionPrimary = document.getElementById('gapsSectionPrimary');
 
         if (gapsToProcess.length > 0) {
+            // Show the gaps section in Primary column
+            if (gapsSectionPrimary) {
+                gapsSectionPrimary.style.display = 'block';
+            }
             gapsToProcess.slice(0, 4).forEach(gap => {
                 // Check if this is a career_gap type (structured object)
                 if (typeof gap === 'object' && gap.gap_type === 'career_gap') {
@@ -2302,6 +2307,11 @@
                     gapsList.appendChild(li);
                 }
             });
+        } else {
+            // Hide section if no gaps
+            if (gapsSectionPrimary) {
+                gapsSectionPrimary.style.display = 'none';
+            }
         }
 
         // =====================================================================
