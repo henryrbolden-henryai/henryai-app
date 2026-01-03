@@ -16,7 +16,7 @@ Signal Classes:
 6. Market Climate Signals - External conditions (Informational only, NEVER modifies score)
 """
 
-from .reality_check_controller import RealityCheckController
+from .reality_check_controller import RealityCheckController, analyze_reality_checks
 from .signal_detectors import (
     detect_eligibility_signals,
     detect_fit_signals,
@@ -24,6 +24,7 @@ from .signal_detectors import (
     detect_risk_signals,
     detect_market_bias_signals,
     detect_market_climate_signals,
+    detect_company_health_signals,
 )
 from .models import (
     RealityCheck,
@@ -34,12 +35,14 @@ from .models import (
 
 __all__ = [
     'RealityCheckController',
+    'analyze_reality_checks',
     'detect_eligibility_signals',
     'detect_fit_signals',
     'detect_credibility_signals',
     'detect_risk_signals',
     'detect_market_bias_signals',
     'detect_market_climate_signals',
+    'detect_company_health_signals',
     'RealityCheck',
     'SignalClass',
     'Severity',
