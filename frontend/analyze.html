@@ -859,34 +859,55 @@
     // ========================================================================
     let userProfile = null;
 
-    function loadProfile() {
+    async function loadProfile() {
       try {
+        // First check localStorage
         const stored = localStorage.getItem('userProfile');
-        if (!stored) {
-          showNoProfileState();
-          return null;
+        if (stored) {
+          userProfile = JSON.parse(stored);
+
+          // Validate profile has required data
+          const hasResume = userProfile.resume && (
+            userProfile.resume.contact?.full_name ||
+            userProfile.resume.full_name ||
+            (userProfile.resume.experience && userProfile.resume.experience.length > 0)
+          );
+
+          if (hasResume) {
+            showAnalyzerState();
+            return userProfile;
+          }
         }
 
-        userProfile = JSON.parse(stored);
+        // FIX: If localStorage is empty/invalid, check Supabase BEFORE showing "Let's go"
+        // This handles the case where user cleared cache but still has resume in Supabase
+        if (window.HenryData) {
+          try {
+            const user = await HenryAuth.getUser();
+            if (user) {
+              const resumes = await HenryData.getResumes();
+              console.log('Checking Supabase for resumes:', resumes?.length || 0);
 
-        // Validate profile has required data
-        // Accept profile if it has resume with either:
-        // - contact.full_name (newer format)
-        // - full_name (older format)
-        // - experience array (parsed resume data)
-        const hasResume = userProfile.resume && (
-          userProfile.resume.contact?.full_name ||
-          userProfile.resume.full_name ||
-          (userProfile.resume.experience && userProfile.resume.experience.length > 0)
-        );
-
-        if (!hasResume) {
-          showNoProfileState();
-          return null;
+              if (resumes && resumes.length > 0) {
+                // User has resumes in Supabase - restore to localStorage and show analyzer
+                const defaultResume = resumes.find(r => r.is_default) || resumes[0];
+                if (defaultResume && defaultResume.resume_json) {
+                  console.log('Restoring resume from Supabase to localStorage');
+                  userProfile = { resume: defaultResume.resume_json };
+                  localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                  showAnalyzerState();
+                  return userProfile;
+                }
+              }
+            }
+          } catch (supabaseError) {
+            console.error('Error checking Supabase for resumes:', supabaseError);
+          }
         }
 
-        showAnalyzerState();
-        return userProfile;
+        // No resume in localStorage or Supabase - show onboarding
+        showNoProfileState();
+        return null;
 
       } catch (e) {
         console.error('Error loading profile:', e);
@@ -1572,10 +1593,12 @@
     // ========================================================================
     // INITIALIZE
     // ========================================================================
-    loadProfile();
-
-    // Load multi-resume support after profile loads
-    loadUserResumes();
+    // FIX: Await loadProfile() to ensure Supabase check completes before showing UI
+    (async () => {
+      await loadProfile();
+      // Load multi-resume support after profile loads
+      loadUserResumes();
+    })();
 
     // Go to profile button handler
     const goToProfileBtn = document.getElementById('goToProfileBtn');
