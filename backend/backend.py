@@ -13485,6 +13485,19 @@ Role: {body.role_title}
                     parsed_data["gaps"].append(career_gap)
                     print(f"✅ [Stream] Career gap detected via post-processing: {career_gap['description']}")
 
+            # Fetch company intelligence (if enabled)
+            if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
+                company_name = body.company or parsed_data.get("company", "")
+                if company_name:
+                    try:
+                        print(f"🔍 [Stream] Fetching company intelligence for: {company_name}")
+                        intel_result = get_company_intelligence(company_name)
+                        company_intel_data = intel_result.to_dict()
+                        parsed_data["company_intelligence"] = company_intel_data
+                        print(f"✅ [Stream] Company intelligence: {intel_result.company_health_signal.value}")
+                    except Exception as ci_e:
+                        print(f"⚠️ [Stream] Company intelligence fetch failed (non-blocking): {str(ci_e)}")
+
             # Final sanitization: Remove em/en dashes from text fields
             parsed_data = _final_sanitize_text(parsed_data)
 
