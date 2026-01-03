@@ -21,6 +21,7 @@
             --color-linkedin: #0077b5;
             --color-success: #4ade80;
             --color-warning: #fbbf24;
+            --color-error: #f87171;
             --font-display: 'Instrument Serif', Georgia, serif;
             --font-body: 'DM Sans', -apple-system, sans-serif;
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -42,7 +43,7 @@
         }
 
         .container {
-            max-width: 700px;
+            max-width: 720px;
             margin: 0 auto;
             padding: 40px 20px;
         }
@@ -64,7 +65,7 @@
 
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 32px;
         }
 
         .linkedin-badge {
@@ -93,59 +94,272 @@
             color: var(--color-text-secondary);
         }
 
-        /* Coming Soon Card */
-        .coming-soon-card {
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            border: 3px solid var(--color-surface-elevated);
+            border-top: 3px solid var(--color-linkedin);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--color-text-secondary);
+        }
+
+        /* Score Summary Card */
+        .score-summary-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 32px;
+            padding: 28px;
+            margin-bottom: 24px;
+            display: none;
         }
 
-        .coming-soon-icon {
-            font-size: 3rem;
+        .score-summary-card.show {
+            display: block;
+        }
+
+        .score-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--color-surface);
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .score-info h2 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .score-summary-text {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Section Breakdown */
+        .section-breakdown {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
             margin-bottom: 20px;
         }
 
-        .coming-soon-title {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 400;
+        @media (max-width: 500px) {
+            .section-breakdown {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background: var(--color-bg);
+            border-radius: 10px;
+            border-left: 3px solid var(--color-border);
+        }
+
+        .section-item.good { border-left-color: var(--color-success); }
+        .section-item.warning { border-left-color: var(--color-warning); }
+        .section-item.bad { border-left-color: var(--color-error); }
+
+        .section-item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            font-size: 1rem;
+        }
+
+        .section-name {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        .section-score {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .section-item.good .section-score { color: var(--color-success); }
+        .section-item.warning .section-score { color: var(--color-warning); }
+        .section-item.bad .section-score { color: var(--color-error); }
+
+        /* Priority Fixes */
+        .priority-fixes {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .priority-fixes.show {
+            display: block;
+        }
+
+        .priority-fixes-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .priority-fixes-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .fixes-count {
+            background: var(--color-error);
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .fixes-count.success {
+            background: var(--color-success);
+        }
+
+        .fix-item {
+            padding: 14px 16px;
+            background: var(--color-bg);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--color-error);
+        }
+
+        .fix-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .fix-item.critical { border-left-color: var(--color-error); }
+        .fix-item.high { border-left-color: var(--color-warning); }
+        .fix-item.medium { border-left-color: var(--color-accent); }
+
+        .fix-priority {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .fix-priority.critical {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+        }
+
+        .fix-priority.high {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+        }
+
+        .fix-priority.medium {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+        }
+
+        .fix-text {
+            font-size: 0.9rem;
+            color: var(--color-text);
+        }
+
+        .view-all-link {
+            display: block;
+            text-align: center;
+            padding: 12px;
+            color: var(--color-linkedin);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 16px;
+        }
+
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+
+        /* All Good State */
+        .all-good-card {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .all-good-card.show {
+            display: block;
+        }
+
+        .all-good-icon {
+            font-size: 2.5rem;
             margin-bottom: 12px;
         }
 
-        .coming-soon-text {
+        .all-good-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            color: var(--color-success);
+            margin-bottom: 8px;
+        }
+
+        .all-good-text {
             color: var(--color-text-secondary);
-            margin-bottom: 24px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .feature-preview {
-            display: grid;
-            gap: 16px;
-            text-align: left;
-            margin-top: 24px;
-        }
-
-        .feature-item {
-            display: flex;
-            gap: 12px;
-            padding: 12px 16px;
-            background: var(--color-bg);
-            border-radius: 10px;
-        }
-
-        .feature-icon {
-            color: var(--color-accent);
-            font-size: 1.1rem;
-        }
-
-        .feature-text {
             font-size: 0.9rem;
-            color: var(--color-text-secondary);
         }
 
         /* Profile Status */
@@ -153,7 +367,7 @@
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             gap: 16px;
@@ -161,14 +375,14 @@
         }
 
         .profile-status-icon {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             background: rgba(0, 119, 181, 0.15);
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             color: var(--color-linkedin);
         }
 
@@ -178,7 +392,8 @@
 
         .profile-status-title {
             font-weight: 500;
-            margin-bottom: 4px;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
         }
 
         .profile-status-subtitle {
@@ -231,13 +446,23 @@
             color: var(--color-text);
         }
 
+        .btn-linkedin {
+            background: var(--color-linkedin);
+            color: white;
+        }
+
+        .btn-linkedin:hover {
+            background: #005885;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 32px 16px;
             }
 
-            .coming-soon-card {
-                padding: 28px 20px;
+            .score-header {
+                flex-direction: column;
+                text-align: center;
             }
         }
     </style>
@@ -262,8 +487,14 @@
             <p class="subtitle">Ensure your online presence matches your application</p>
         </div>
 
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Analyzing your LinkedIn profile...</div>
+        </div>
+
         <!-- Profile Status -->
-        <div class="profile-status" id="profileStatus">
+        <div class="profile-status" id="profileStatus" style="display: none;">
             <div class="profile-status-icon">in</div>
             <div class="profile-status-text">
                 <div class="profile-status-title" id="statusTitle">Profile Uploaded</div>
@@ -271,39 +502,50 @@
             </div>
         </div>
 
-        <!-- Coming Soon Card -->
-        <div class="coming-soon-card">
-            <div class="coming-soon-icon">&#128736;</div>
-            <div class="coming-soon-title">Analysis Coming Soon</div>
-            <p class="coming-soon-text">
-                Full LinkedIn profile analysis is currently in development. For now, continue to your Strategy Overview.
-            </p>
+        <!-- Score Summary Card -->
+        <div class="score-summary-card" id="scoreSummaryCard">
+            <div class="score-header">
+                <div class="score-circle" id="scoreCircle">
+                    <span class="score-value" id="scoreValue">--</span>
+                </div>
+                <div class="score-info">
+                    <h2 id="scoreLabel">Analyzing...</h2>
+                    <p class="score-summary-text" id="scoreSummaryText">Please wait while we analyze your profile.</p>
+                </div>
+            </div>
 
-            <div class="feature-preview">
-                <div class="feature-item">
-                    <span class="feature-icon">&#10003;</span>
-                    <span class="feature-text">Resume vs. LinkedIn consistency check</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">&#10003;</span>
-                    <span class="feature-text">Headline and summary optimization</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">&#10003;</span>
-                    <span class="feature-text">Skills and endorsements recommendations</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">&#10003;</span>
-                    <span class="feature-text">Recruiter visibility score</span>
-                </div>
+            <div class="section-breakdown" id="sectionBreakdown">
+                <!-- Populated dynamically -->
             </div>
         </div>
 
+        <!-- Priority Fixes -->
+        <div class="priority-fixes" id="priorityFixes">
+            <div class="priority-fixes-header">
+                <span class="priority-fixes-title">Top Issues to Fix</span>
+                <span class="fixes-count" id="fixesCount">0</span>
+            </div>
+            <div id="fixesList">
+                <!-- Populated dynamically -->
+            </div>
+            <a href="linkedin-scoring.html" class="view-all-link">View Full Analysis & All Fixes →</a>
+        </div>
+
+        <!-- All Good State -->
+        <div class="all-good-card" id="allGoodCard">
+            <div class="all-good-icon">&#10024;</div>
+            <div class="all-good-title">Your LinkedIn looks strong!</div>
+            <p class="all-good-text">No major issues detected. Your profile is well-optimized for recruiter visibility.</p>
+        </div>
+
         <!-- Actions -->
-        <div class="actions">
+        <div class="actions" id="actionsSection" style="display: none;">
             <button class="btn btn-primary" onclick="continueToStrategy()">
                 Continue to Strategy Overview
             </button>
+            <a href="linkedin-scoring.html" class="btn btn-linkedin">
+                View Full LinkedIn Analysis
+            </a>
             <button class="btn btn-secondary" onclick="uploadDifferentProfile()">
                 Upload Different Profile
             </button>
@@ -311,28 +553,269 @@
     </div>
 
     <script>
-        // Check for LinkedIn data on load
-        window.addEventListener('DOMContentLoaded', () => {
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : 'https://henryai-app-production.up.railway.app';
+
+        // Section configuration matching linkedin-scoring.html
+        const SECTION_CONFIG = {
+            headline: { name: 'Headline', icon: '📌', maxPoints: 20 },
+            about: { name: 'About', icon: '📝', maxPoints: 15 },
+            experience: { name: 'Experience', icon: '💼', maxPoints: 25 },
+            skills: { name: 'Skills', icon: '🎯', maxPoints: 15 },
+            freshness: { name: 'Freshness', icon: '🕐', maxPoints: 10 },
+            resumeAlignment: { name: 'Alignment', icon: '📄', maxPoints: 10 },
+            credibility: { name: 'Credibility', icon: '✨', maxPoints: 5 }
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
             const linkedinDataStr = sessionStorage.getItem('linkedinData');
 
-            if (linkedinDataStr) {
-                const data = JSON.parse(linkedinDataStr);
-                if (data.filename) {
-                    document.getElementById('statusSubtitle').textContent = data.filename;
-                }
-            } else {
+            if (!linkedinDataStr) {
                 // No data - redirect to upload
                 window.location.href = 'linkedin-upload.html';
+                return;
+            }
+
+            const linkedinData = JSON.parse(linkedinDataStr);
+
+            // Show profile status
+            document.getElementById('profileStatus').style.display = 'flex';
+            if (linkedinData.filename) {
+                document.getElementById('statusSubtitle').textContent = linkedinData.filename;
+            }
+
+            // Check if we already have scoring results
+            const existingResults = sessionStorage.getItem('linkedinScoringResults');
+            if (existingResults) {
+                displayResults(JSON.parse(existingResults));
+            } else {
+                // Calculate score (using simplified logic from linkedin-scoring.html)
+                await calculateAndDisplayScore(linkedinData);
             }
         });
+
+        async function calculateAndDisplayScore(linkedinData) {
+            try {
+                // Try to get parsed LinkedIn data from various sources
+                const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+
+                // If we have parsed data, calculate scores
+                if (profile.linkedin_parsed || linkedinData.profile) {
+                    const result = calculateScore(profile, analysisData);
+                    sessionStorage.setItem('linkedinScoringResults', JSON.stringify(result));
+                    displayResults(result);
+                } else {
+                    // No parsed data - show placeholder with option to do full analysis
+                    displayPlaceholderResults();
+                }
+            } catch (error) {
+                console.error('Error calculating score:', error);
+                displayPlaceholderResults();
+            }
+        }
+
+        function calculateScore(profile, analysisData) {
+            const linkedin = profile.linkedin_parsed || {};
+            const sectionScores = {};
+            const fixes = [];
+
+            // Simplified scoring logic (full logic in linkedin-scoring.html)
+
+            // Headline
+            const headline = linkedin.headline || '';
+            let headlineScore = 0;
+            if (headline.length >= 100 && headline.length <= 220) headlineScore += 6;
+            else if (headline.length >= 50) headlineScore += 3;
+            else fixes.push({ severity: 'critical', section: 'Headline', text: 'Your headline is too short' });
+
+            if (/\b(manager|director|lead|senior|engineer|developer|analyst)\b/i.test(headline)) headlineScore += 5;
+            else fixes.push({ severity: 'high', section: 'Headline', text: 'No clear job title in headline' });
+
+            if (!/\b(passionate|driven|results-oriented|team player)\b/i.test(headline)) headlineScore += 4;
+            if (/\d+[%+]?|\$\d+/i.test(headline)) headlineScore += 5;
+
+            sectionScores.headline = headlineScore;
+
+            // About
+            const about = linkedin.summary || '';
+            let aboutScore = 0;
+            if (about.length > 0) aboutScore += 3;
+            else fixes.push({ severity: 'critical', section: 'About', text: 'No About section - add one for visibility' });
+
+            const wordCount = about.split(/\s+/).length;
+            if (wordCount >= 400) aboutScore += 4;
+            else if (wordCount >= 150) aboutScore += 2;
+            else if (about.length > 0) fixes.push({ severity: 'high', section: 'About', text: 'About section is too short' });
+
+            if (about.split(/\n\n+/).filter(p => p.trim()).length >= 3) aboutScore += 3;
+            if (/\d+[%+]?|\$\d+[MBK]?/i.test(about)) aboutScore += 3;
+            if (/\b(reach out|contact|connect|let's talk)\b/i.test(about)) aboutScore += 2;
+
+            sectionScores.about = aboutScore;
+
+            // Experience
+            const experience = linkedin.experience || [];
+            let expScore = 0;
+            if (experience.length > 0) expScore += 5;
+            else fixes.push({ severity: 'critical', section: 'Experience', text: 'No work experience listed' });
+
+            const currentDesc = experience[0]?.description || '';
+            if (currentDesc.length >= 500) expScore += 6;
+            else if (currentDesc.length >= 200) expScore += 3;
+            else if (experience.length > 0) fixes.push({ severity: 'high', section: 'Experience', text: 'Current role description is too thin' });
+
+            if (experience.some(e => /^[•\-\*]/m.test(e.description || ''))) expScore += 4;
+            if (experience.some(e => /\d+[%+]?|\$\d+[MBK]?/i.test(e.description || ''))) expScore += 6;
+            else if (experience.length > 0) fixes.push({ severity: 'high', section: 'Experience', text: 'No quantified results in experience' });
+            if (experience.some(e => /^(increased|decreased|grew|reduced|generated|saved)/im.test(e.description || ''))) expScore += 4;
+
+            sectionScores.experience = expScore;
+
+            // Skills
+            const skills = linkedin.skills || [];
+            let skillsScore = 0;
+            if (skills.length >= 15) skillsScore += 4;
+            else if (skills.length >= 8) skillsScore += 2;
+            else fixes.push({ severity: 'high', section: 'Skills', text: `Only ${skills.length} skills listed (need 15+)` });
+
+            skillsScore += 5; // Assume some job match
+            skillsScore += 3; // Assume top 3 ok
+            skillsScore += 3; // Assume no generic
+
+            sectionScores.skills = Math.min(skillsScore, 15);
+
+            // Freshness, Alignment, Credibility (simplified)
+            sectionScores.freshness = 7;
+            sectionScores.resumeAlignment = 7;
+            sectionScores.credibility = 3;
+
+            // Calculate overall
+            const overall = Math.round(
+                (sectionScores.headline / 20) * 20 +
+                (sectionScores.about / 15) * 15 +
+                (sectionScores.experience / 25) * 25 +
+                (sectionScores.skills / 15) * 15 +
+                (sectionScores.freshness / 10) * 10 +
+                (sectionScores.resumeAlignment / 10) * 10 +
+                (sectionScores.credibility / 5) * 5
+            );
+
+            // Sort fixes
+            const severityOrder = { critical: 1, high: 2, medium: 3 };
+            fixes.sort((a, b) => (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4));
+
+            return {
+                overall,
+                sectionScores,
+                fixes: fixes.slice(0, 4)
+            };
+        }
+
+        function displayResults(result) {
+            const { overall, sectionScores, fixes } = result;
+
+            // Hide loading
+            document.getElementById('loadingState').style.display = 'none';
+
+            // Show score card
+            const scoreCard = document.getElementById('scoreSummaryCard');
+            scoreCard.classList.add('show');
+
+            // Set score value and color
+            document.getElementById('scoreValue').textContent = overall;
+
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreValue = document.getElementById('scoreValue');
+            if (overall >= 80) {
+                scoreCircle.style.background = `conic-gradient(var(--color-success) ${overall * 3.6}deg, var(--color-surface-elevated) 0deg)`;
+                scoreValue.style.color = 'var(--color-success)';
+                document.getElementById('scoreLabel').textContent = 'Strong Profile';
+                document.getElementById('scoreSummaryText').textContent = 'Your profile is well-optimized for recruiter visibility.';
+            } else if (overall >= 60) {
+                scoreCircle.style.background = `conic-gradient(var(--color-warning) ${overall * 3.6}deg, var(--color-surface-elevated) 0deg)`;
+                scoreValue.style.color = 'var(--color-warning)';
+                document.getElementById('scoreLabel').textContent = 'Needs Improvement';
+                document.getElementById('scoreSummaryText').textContent = 'Recruiters will find you but may not click. Fix the issues below.';
+            } else {
+                scoreCircle.style.background = `conic-gradient(var(--color-error) ${overall * 3.6}deg, var(--color-surface-elevated) 0deg)`;
+                scoreValue.style.color = 'var(--color-error)';
+                document.getElementById('scoreLabel').textContent = 'Needs Work';
+                document.getElementById('scoreSummaryText').textContent = 'Your profile is missing key elements. Address the critical issues.';
+            }
+
+            // Render section breakdown
+            const breakdownContainer = document.getElementById('sectionBreakdown');
+            breakdownContainer.innerHTML = Object.entries(SECTION_CONFIG).map(([key, config]) => {
+                const score = sectionScores[key] || 0;
+                const pct = (score / config.maxPoints) * 100;
+                const status = pct >= 80 ? 'good' : pct >= 50 ? 'warning' : 'bad';
+
+                return `
+                    <div class="section-item ${status}">
+                        <div class="section-item-left">
+                            <span class="section-icon">${config.icon}</span>
+                            <span class="section-name">${config.name}</span>
+                        </div>
+                        <span class="section-score">${score}/${config.maxPoints}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Render fixes or all good
+            if (fixes && fixes.length > 0) {
+                const fixesSection = document.getElementById('priorityFixes');
+                fixesSection.classList.add('show');
+
+                const criticalCount = fixes.filter(f => f.severity === 'critical').length;
+                const fixesCount = document.getElementById('fixesCount');
+                fixesCount.textContent = fixes.length;
+                if (criticalCount === 0) fixesCount.classList.add('success');
+
+                document.getElementById('fixesList').innerHTML = fixes.map(fix => `
+                    <div class="fix-item ${fix.severity}">
+                        <span class="fix-priority ${fix.severity}">${fix.severity}</span>
+                        <div class="fix-text">${fix.text}</div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('allGoodCard').classList.add('show');
+            }
+
+            // Show actions
+            document.getElementById('actionsSection').style.display = 'flex';
+        }
+
+        function displayPlaceholderResults() {
+            document.getElementById('loadingState').style.display = 'none';
+
+            // Show a simplified view when we don't have full scoring data
+            const scoreCard = document.getElementById('scoreSummaryCard');
+            scoreCard.classList.add('show');
+
+            document.getElementById('scoreValue').textContent = '?';
+            document.getElementById('scoreLabel').textContent = 'Profile Uploaded';
+            document.getElementById('scoreSummaryText').textContent = 'View the full analysis for your complete LinkedIn score.';
+
+            // Hide breakdown for placeholder
+            document.getElementById('sectionBreakdown').innerHTML = `
+                <div style="text-align: center; padding: 20px; color: var(--color-text-secondary);">
+                    <p>Click "View Full LinkedIn Analysis" to see your detailed score breakdown and recommendations.</p>
+                </div>
+            `;
+
+            // Show actions
+            document.getElementById('actionsSection').style.display = 'flex';
+        }
 
         function continueToStrategy() {
             window.location.href = 'overview.html';
         }
 
         function uploadDifferentProfile() {
-            // Clear existing data
             sessionStorage.removeItem('linkedinData');
+            sessionStorage.removeItem('linkedinScoringResults');
             window.location.href = 'linkedin-upload.html';
         }
     </script>
