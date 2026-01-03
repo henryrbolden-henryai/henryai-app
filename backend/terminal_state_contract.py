@@ -349,12 +349,21 @@ def build_canonical_profile(
     summary = resume_data.get("summary", "")
     full_text = f"{summary} {bullets_text}"
 
-    # Calculate years of experience
+    # Calculate years of experience (EXCLUDING internships)
+    # CRITICAL: Internships do NOT count toward professional experience
     years_exp = None
     experience_list = resume_data.get("experience", [])
     if experience_list:
-        # Rough estimate based on number of roles
-        years_exp = len(experience_list) * 2.5
+        # Count only non-internship roles
+        internship_patterns = [r'\bintern\b', r'\binternship\b', r'\bco-?op\b', r'\bfellow\b', r'\btrainee\b', r'\bstudent\b']
+        full_time_roles = 0
+        for role in experience_list:
+            title = (role.get("title", "") or "").lower()
+            is_intern = any(re.search(p, title) for p in internship_patterns)
+            if not is_intern:
+                full_time_roles += 1
+        # Estimate years based on full-time roles only
+        years_exp = full_time_roles * 2.5 if full_time_roles > 0 else 0
 
     # Detect function and level
     detected_function, func_strength, func_evidence = detect_function_type(full_text, titles)
@@ -1027,6 +1036,178 @@ def detect_mid_market_language(text: str) -> List[str]:
 
 
 # =============================================================================
+# P1-CRITICAL: EXPERIENCE DETECTION HELPERS
+# Internships do NOT count toward professional experience in ANY function
+# =============================================================================
+
+# Patterns that indicate a role is an internship/non-professional
+INTERNSHIP_PATTERNS = [
+    r'\bintern\b',
+    r'\binternship\b',
+    r'\bco-?op\b',
+    r'\bfellow(?:ship)?\b',
+    r'\bapprentice\b',
+    r'\btrainee\b',
+    r'\bstudent\b',
+]
+
+
+def _is_internship_role(title: str, company: str = "") -> bool:
+    """
+    Check if a role is an internship or non-professional position.
+
+    Internships do NOT count toward professional experience regardless of function.
+    """
+    title_lower = (title or "").lower()
+    company_lower = (company or "").lower()
+
+    for pattern in INTERNSHIP_PATTERNS:
+        if re.search(pattern, title_lower):
+            return True
+        if re.search(pattern, company_lower):
+            return True
+
+    return False
+
+
+def _count_professional_experience(resume: dict) -> Tuple[int, int, int]:
+    """
+    Count PROFESSIONAL experience from resume, excluding internships.
+
+    Returns: (total_roles, internship_count, full_time_months)
+
+    CRITICAL: Internships do NOT count toward professional experience.
+    A candidate with 5 years of internships has 0 years of professional experience.
+    """
+    total_roles = 0
+    internship_count = 0
+    full_time_months = 0
+
+    for role in resume.get("experience", []):
+        title = role.get("title", "") or ""
+        company = role.get("company", "") or ""
+
+        total_roles += 1
+
+        if _is_internship_role(title, company):
+            internship_count += 1
+        else:
+            # Only count full-time roles toward experience
+            duration = role.get("duration_months", 24)  # Default 24 months if unknown
+            full_time_months += duration
+
+    return total_roles, internship_count, full_time_months
+
+
+def _count_pm_experience(resume: dict) -> Tuple[int, int, int]:
+    """
+    Count PM-specific experience from resume.
+
+    Returns: (pm_role_count, pm_internship_count, pm_full_time_months)
+
+    This distinguishes between:
+    - PM internships (short-term, learning roles)
+    - Full-time PM roles (actual PM experience)
+
+    Someone with only PM internships should not be treated as having PM experience
+    for senior PM roles.
+    """
+    pm_role_count = 0
+    pm_internship_count = 0
+    pm_full_time_months = 0
+
+    pm_title_patterns = [
+        r'\bproduct\s+manager\b',
+        r'\bproduct\s+owner\b',
+        r'\bpm\b',
+        r'\bapm\b',
+        r'\bassociate\s+product\s+manager\b',
+    ]
+
+    for role in resume.get("experience", []):
+        title = (role.get("title", "") or "").lower()
+        company = role.get("company", "") or ""
+
+        # Check if this is a PM role
+        is_pm_role = any(re.search(p, title) for p in pm_title_patterns)
+
+        if not is_pm_role:
+            continue
+
+        pm_role_count += 1
+
+        # Check if it's an internship
+        if _is_internship_role(title, company):
+            pm_internship_count += 1
+        else:
+            # Only count full-time PM roles
+            duration = role.get("duration_months", 24)
+            pm_full_time_months += duration
+
+    return pm_role_count, pm_internship_count, pm_full_time_months
+
+
+def _calculate_professional_years(resume: dict) -> float:
+    """
+    Calculate years of PROFESSIONAL experience, excluding internships.
+
+    CRITICAL: This is the correct way to calculate experience.
+    Internships are learning experiences, not professional experience.
+    """
+    _, _, full_time_months = _count_professional_experience(resume)
+    return full_time_months / 12.0
+
+
+def _detect_self_declared_level(text: str) -> Optional[str]:
+    """
+    Detect if the candidate has self-declared their target level.
+
+    Patterns like:
+    - "Seeking APM role"
+    - "Looking for entry-level PM position"
+    - "Junior product manager seeking..."
+
+    If found, this should cap the candidate's assessed level.
+    """
+    if not text:
+        return None
+
+    text_lower = text.lower()
+
+    # Self-declaration patterns that indicate entry/junior level
+    entry_patterns = [
+        r'seeking\s+(?:an?\s+)?(?:entry[\-\s]?level|junior|apm|associate)',
+        r'looking\s+for\s+(?:an?\s+)?(?:entry[\-\s]?level|junior|apm|associate)',
+        r'aspiring\s+(?:product\s+manager|pm)',
+        r'transitioning\s+(?:to|into)\s+(?:product|pm)',
+        r'breaking\s+into\s+(?:product|pm)',
+        r'career\s+change\s+(?:to|into)\s+(?:product|pm)',
+        r'first\s+(?:product|pm)\s+role',
+        r'entry[\-\s]?level\s+(?:product|pm)',
+        r'junior\s+(?:product|pm)',
+        r'apm\s+(?:role|position|opportunity)',
+        r'associate\s+product\s+manager\s+(?:role|position)',
+    ]
+
+    for pattern in entry_patterns:
+        if re.search(pattern, text_lower):
+            return "entry"
+
+    # Check for associate-level declarations
+    associate_patterns = [
+        r'seeking\s+(?:an?\s+)?associate',
+        r'apm\s+or\s+junior',
+        r'2[\-\s]?3\s+years?\s+(?:of\s+)?experience',
+    ]
+
+    for pattern in associate_patterns:
+        if re.search(pattern, text_lower):
+            return "associate"
+
+    return None
+
+
+# =============================================================================
 # TERMINAL STATE DETECTION
 # =============================================================================
 
@@ -1098,8 +1279,14 @@ def detect_terminal_state(
         return contract
 
     # 5. Check experience gap (2+ levels below target)
+    # P1-CRITICAL: Check professional experience (excluding ALL internships)
+    total_roles, internship_count, full_time_months = _count_professional_experience(resume)
+    pm_role_count, pm_internship_count, pm_full_time_months = _count_pm_experience(resume)
+    self_declared_level = _detect_self_declared_level(all_text)
+    professional_years = full_time_months / 12.0
+
     level_hierarchy = {
-        "entry": 1, "junior": 1, "associate": 2,
+        "entry": 1, "junior": 1, "associate": 2, "apm": 2,
         "mid": 3, "": 3,
         "senior": 4, "lead": 5, "staff": 5,
         "principal": 6, "director": 6,
@@ -1115,7 +1302,49 @@ def detect_terminal_state(
         if level and level in target_level.lower():
             target_num = max(target_num, num)
 
+    # P1-CRITICAL: Override detected level based on ACTUAL professional experience
+    # Internships do NOT count toward experience in ANY function
+    if internship_count > 0 and full_time_months < 12:
+        # Candidate has mostly/only internships - treat as entry level
+        detected_num = 1  # Entry level
+        detected_level = f"Entry ({internship_count} internship(s), <1 year professional experience)"
+
+    # P1-CRITICAL: Override for internship-only PM experience specifically
+    # If candidate only has PM internships (no full-time PM), they are ENTRY level for PM roles
+    if pm_internship_count > 0 and pm_full_time_months < 12:
+        detected_num = 1  # Entry level
+        detected_level = "Entry (internship-only PM experience)"
+
+    # P1-CRITICAL: Self-declared level caps the detected level
+    # If resume says "seeking APM" or "entry-level position", respect that
+    if self_declared_level:
+        declared_num = level_hierarchy.get(self_declared_level, 3)
+        if declared_num < detected_num:
+            detected_num = declared_num
+            detected_level = f"{self_declared_level.title()} (self-declared)"
+
     level_gap = target_num - detected_num
+
+    # P1-CRITICAL: For severe gaps (3+ levels), use Do Not Apply
+    if level_gap >= 3:
+        # Create a more severe contract for severe experience gaps
+        contract = TerminalStateContract(
+            state_type=TerminalStateType.EXPERIENCE_GAP,
+            fit_score_cap=25,  # Stricter cap for severe gaps
+            recommendation="Do Not Apply",
+            recommendation_cap="Do Not Apply",
+            apply_button=ApplyButtonState.DISABLED,
+            coaching_mode=CoachingMode.REDIRECTION,
+            forbidden_messaging=[
+                "strong fit", "ideal candidate", "competitive",
+                "apply fast", "well-positioned", "good match"
+            ],
+            required_messaging=[
+                "experience gap", "below target level", "redirect"
+            ],
+            reason=f"Experience level ({detected_level}) is {level_gap} levels below target ({target_level}). This is a severe gap."
+        )
+        return contract
 
     if level_gap >= 2:
         contract = TERMINAL_STATES[TerminalStateType.EXPERIENCE_GAP]
