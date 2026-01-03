@@ -1795,7 +1795,9 @@
         // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
         // =====================================================================
         const finalDecision = data.final_recommendation || data.recommendation || 'Apply';
-        const lockedDoNotApply = finalDecision === 'Do Not Apply';
+        // P1.5-1 FIX: Case-insensitive check for Do Not Apply variants
+        const finalDecisionLower = finalDecision.toLowerCase();
+        const lockedDoNotApply = finalDecisionLower === 'do not apply' || finalDecisionLower === 'skip' || finalDecisionLower === 'pass';
         const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
         const strengths = Array.isArray(data.strengths) ? data.strengths : [];
 
@@ -1814,7 +1816,9 @@
         // CONTRACT ASSERTION (dev-only debugging)
         console.log('🔒 IMMUTABLE UI STATE:', {
             finalDecision,
+            finalDecisionLower,
             lockedDoNotApply,
+            isApplyDisabled,
             fitScore,
             strengthsCount: strengths.length,
             terminalState: terminalState?.state_type,
