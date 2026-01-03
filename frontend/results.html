@@ -1429,6 +1429,12 @@
                         <ul class="bullets strengths" id="strengths"></ul>
                     </div>
 
+                    <!-- 2.5. GAPS TO ADDRESS (UX-001: Below Strengths, before Recommendation) -->
+                    <div class="section" id="gapsSectionPrimary">
+                        <div class="section-title">Gaps to Address</div>
+                        <ul class="bullets gaps" id="gapsPrimary"></ul>
+                    </div>
+
                     <!-- 3. RECOMMENDATION (with candidate name) -->
                     <div class="recommendation" id="recommendation">
                         <div class="recommendation-label" id="recommendationLabel">—</div>
@@ -1455,13 +1461,7 @@
                         <p class="section-text" id="roleSummary">Loading...</p>
                     </div>
 
-                    <!-- 2. GAPS TO ADDRESS (UX-001: Moved up - gaps visible before coaching) -->
-                    <div class="section" id="gapsSection">
-                        <div class="section-title">Gaps to Address</div>
-                        <ul class="bullets gaps" id="gaps"></ul>
-                    </div>
-
-                    <!-- 3. MARKET CONTEXT -->
+                    <!-- 2. MARKET CONTEXT -->
                     <div class="section" id="marketContextSection">
                         <div class="section-title">Market Context</div>
                         <div class="market-grid">
@@ -2244,8 +2244,9 @@
         // =====================================================================
         // POPULATE: Gaps (with mitigation advice if available)
         // Enhanced to handle career_gap type with special rendering
+        // UX-001: Gaps now in Primary column below Your Strengths
         // =====================================================================
-        const gapsList = document.getElementById('gaps');
+        const gapsList = document.getElementById('gapsPrimary');
         let gaps = data.gaps || [];
 
         // Check for gaps_and_mitigation which includes advice
@@ -2582,6 +2583,7 @@
 
         // =====================================================================
         // POPULATE: Quick View "Your Move" section (scannable list format)
+        // P1-NEW-4: YOUR MOVE must obey terminal state
         // =====================================================================
         const quickMoveList = document.getElementById('quickMoveList');
         const quickMoveText = document.getElementById('quickMoveText');
@@ -2591,63 +2593,91 @@
         const moveNetwork = document.getElementById('moveNetwork');
         const moveApply = document.getElementById('moveApply');
 
-        // Get structured Your Move data
-        const yourMoveStructured = data.your_move_structured || data.your_move || null;
+        // P1-NEW-4: Hard block terminal states require REDIRECTION mode for Your Move
+        const HARD_BLOCK_STATES = ['TITLE_INFLATION', 'CREDIBILITY_VIOLATION', 'FUNCTION_MISMATCH', 'ELIGIBILITY_VIOLATION'];
+        const currentTerminalState = terminalState?.state_type || null;
+        const isHardBlockState = currentTerminalState && HARD_BLOCK_STATES.includes(currentTerminalState);
 
-        if (yourMoveStructured && typeof yourMoveStructured === 'object') {
-            // Use structured format - scannable list
-            quickMoveList.style.display = 'flex';
-            quickMoveText.style.display = 'none';
-
-            const positioning = yourMoveStructured.positioning || '';
-            const contactStrategy = yourMoveStructured.contact_strategy || '';
-            const networkLeverage = yourMoveStructured.network_leverage || '';
-            const applyWindow = yourMoveStructured.apply_window || yourMoveStructured.timing || '';
-
-            // Format each as a scannable item
-            if (positioning) {
-                movePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
-            }
-
-            // Split contact_strategy into Target and Approach
-            if (contactStrategy) {
-                // Parse "TARGET: [title]. APPROACH: [method]." format
-                const targetMatch = contactStrategy.match(/^(?:TARGET:\s*)?([^.]+)/i);
-                const approachMatch = contactStrategy.match(/APPROACH:\s*(.+?)(?:\.|$)/i);
-
-                if (targetMatch) {
-                    moveContact.innerHTML = `<span class="move-label">Target:</span> ${targetMatch[1].trim()}`;
-                }
-                if (approachMatch) {
-                    moveApproach.innerHTML = `<span class="move-label">Approach:</span> ${approachMatch[1].trim()}`;
-                }
-            }
-
-            if (networkLeverage) {
-                moveNetwork.innerHTML = `<span class="move-label">Network:</span> ${networkLeverage}`;
-            }
-            if (applyWindow) {
-                moveApply.innerHTML = `<span class="move-label">Apply:</span> ${applyWindow.replace(/^APPLY:\s*/i, '')}`;
-            }
-        } else {
-            // Fallback to text block
+        // P1-NEW-4: If hard block, YOUR MOVE switches to redirection messaging
+        if (isHardBlockState || coachingMode === 'REDIRECTION' || coachingMode === 'CREDIBILITY_REPAIR') {
+            // Switch to text mode with redirection messaging
             quickMoveList.style.display = 'none';
             quickMoveText.style.display = 'block';
 
-            const strategicAction = realityCheckData?.strategic_action ||
-                                    data.intelligence_layer?.strategic_positioning?.recommended_action ||
-                                    '';
+            // Use canonical statement from backend if available
+            const canonicalStatement = data.canonical_profile?.canonical_statement || '';
+            const blockerReason = blockerNotice?.message || terminalState?.reason || '';
 
-            if (applyDisabled) {
-                quickMoveText.textContent = strategicAction || 'This role is not a fit. Focus on roles where you are competitive.';
-            } else if (strategicAction) {
-                quickMoveText.textContent = strategicAction;
-            } else if (fitScore >= 70) {
-                quickMoveText.textContent = 'Apply within 24 hours. Find the hiring manager on LinkedIn.';
-            } else if (fitScore >= 50) {
-                quickMoveText.textContent = 'Apply with direct outreach. Find someone who can refer you internally.';
+            if (currentTerminalState === 'FUNCTION_MISMATCH') {
+                quickMoveText.innerHTML = `<strong>Function mismatch.</strong> ${canonicalStatement || blockerReason || 'This role requires experience in a different function than your background.'}`;
+            } else if (currentTerminalState === 'TITLE_INFLATION') {
+                quickMoveText.innerHTML = `<strong>Credibility concern.</strong> ${blockerReason || 'Title claims are not supported by resume evidence.'}`;
+            } else if (currentTerminalState === 'CREDIBILITY_VIOLATION') {
+                quickMoveText.innerHTML = `<strong>Credibility concern.</strong> ${blockerReason || 'Address credibility issues before pursuing this role.'}`;
+            } else if (currentTerminalState === 'ELIGIBILITY_VIOLATION') {
+                quickMoveText.innerHTML = `<strong>Not eligible.</strong> ${blockerReason || 'This role has requirements you do not meet.'}`;
             } else {
-                quickMoveText.textContent = 'Stretch role. Only pursue with an inside connection.';
+                quickMoveText.textContent = blockerReason || 'This role is not a fit. Focus on roles where you are competitive.';
+            }
+        } else {
+            // Get structured Your Move data (only for non-hard-block states)
+            const yourMoveStructured = data.your_move_structured || data.your_move || null;
+
+            if (yourMoveStructured && typeof yourMoveStructured === 'object') {
+                // Use structured format - scannable list
+                quickMoveList.style.display = 'flex';
+                quickMoveText.style.display = 'none';
+
+                const positioning = yourMoveStructured.positioning || '';
+                const contactStrategy = yourMoveStructured.contact_strategy || '';
+                const networkLeverage = yourMoveStructured.network_leverage || '';
+                const applyWindow = yourMoveStructured.apply_window || yourMoveStructured.timing || '';
+
+                // Format each as a scannable item
+                if (positioning) {
+                    movePositioning.innerHTML = `<span class="move-label">Lead:</span> ${positioning.replace(/^LEAD WITH:\s*/i, '').replace(/\.\s*CUT:/, ' · Cut:')}`;
+                }
+
+                // Split contact_strategy into Target and Approach
+                if (contactStrategy) {
+                    // Parse "TARGET: [title]. APPROACH: [method]." format
+                    const targetMatch = contactStrategy.match(/^(?:TARGET:\s*)?([^.]+)/i);
+                    const approachMatch = contactStrategy.match(/APPROACH:\s*(.+?)(?:\.|$)/i);
+
+                    if (targetMatch) {
+                        moveContact.innerHTML = `<span class="move-label">Target:</span> ${targetMatch[1].trim()}`;
+                    }
+                    if (approachMatch) {
+                        moveApproach.innerHTML = `<span class="move-label">Approach:</span> ${approachMatch[1].trim()}`;
+                    }
+                }
+
+                if (networkLeverage) {
+                    moveNetwork.innerHTML = `<span class="move-label">Network:</span> ${networkLeverage}`;
+                }
+                if (applyWindow) {
+                    moveApply.innerHTML = `<span class="move-label">Apply:</span> ${applyWindow.replace(/^APPLY:\s*/i, '')}`;
+                }
+            } else {
+                // Fallback to text block
+                quickMoveList.style.display = 'none';
+                quickMoveText.style.display = 'block';
+
+                const strategicAction = realityCheckData?.strategic_action ||
+                                        data.intelligence_layer?.strategic_positioning?.recommended_action ||
+                                        '';
+
+                if (applyDisabled) {
+                    quickMoveText.textContent = strategicAction || 'This role is not a fit. Focus on roles where you are competitive.';
+                } else if (strategicAction) {
+                    quickMoveText.textContent = strategicAction;
+                } else if (fitScore >= 70) {
+                    quickMoveText.textContent = 'Apply within 24 hours. Find the hiring manager on LinkedIn.';
+                } else if (fitScore >= 50) {
+                    quickMoveText.textContent = 'Apply with direct outreach. Find someone who can refer you internally.';
+                } else {
+                    quickMoveText.textContent = 'Stretch role. Only pursue with an inside connection.';
+                }
             }
         }
 

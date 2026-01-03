@@ -1604,6 +1604,28 @@
                 </div>
             </div>
 
+            <!-- Mid-Market Language Lint (P1-NEW-5) -->
+            <div class="collapsible-section collapsed" id="midMarketLintSection" style="display: none;">
+                <div class="collapsible-header" onclick="toggleSection('midMarketLintSection')">
+                    <div class="collapsible-header-left">
+                        <h3 class="collapsible-title">Generic Language Detected</h3>
+                    </div>
+                    <div class="collapsible-header-right">
+                        <span class="collapsible-badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;" id="midMarketBadge">—</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="collapsible-content">
+                    <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+                        These phrases are common on mid-market resumes and may not distinguish you from other candidates.
+                        Replace them with specific, quantified achievements.
+                    </p>
+                    <div id="midMarketLintList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Credibility & Verifiability (Collapsible - Default Collapsed) -->
             <div class="collapsible-section collapsed" id="credibilitySection" style="display: none;">
                 <div class="collapsible-header" onclick="toggleSection('credibilitySection')">
@@ -2296,6 +2318,9 @@
                 renderRedFlags();
             }
 
+            // P1-NEW-5: Mid-Market Language Lint (from _mid_market_lint)
+            renderMidMarketLint();
+
             // Credibility & Verifiability (from detection systems)
             renderCredibility();
 
@@ -2633,6 +2658,57 @@
                     `;
                 }
             }).join('');
+        }
+
+        // P1-NEW-5: Render Mid-Market Language Lint from _mid_market_lint data
+        function renderMidMarketLint() {
+            // Get mid-market lint data from analysisData (not levelingData)
+            const midMarketData = analysisData._mid_market_lint || {};
+            const phrases = midMarketData.phrases || [];
+            const totalCount = midMarketData.total_count || 0;
+            const severity = midMarketData.severity || 'LOW';
+
+            // Only show section if we have phrases to display
+            if (phrases.length === 0) {
+                return;
+            }
+
+            const section = document.getElementById('midMarketLintSection');
+            section.style.display = 'block';
+
+            // Update badge with severity-based styling
+            const badge = document.getElementById('midMarketBadge');
+            if (severity === 'CRITICAL') {
+                badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                badge.style.color = '#ef4444';
+                badge.textContent = `${totalCount} phrases (Critical)`;
+            } else if (severity === 'HIGH') {
+                badge.style.background = 'rgba(251, 191, 36, 0.15)';
+                badge.style.color = '#fbbf24';
+                badge.textContent = `${totalCount} phrases (High)`;
+            } else if (severity === 'MEDIUM') {
+                badge.style.background = 'rgba(251, 191, 36, 0.15)';
+                badge.style.color = '#fbbf24';
+                badge.textContent = `${totalCount} phrases`;
+            } else {
+                badge.style.background = 'rgba(34, 197, 94, 0.15)';
+                badge.style.color = '#22c55e';
+                badge.textContent = `${totalCount} phrases (Low)`;
+            }
+
+            // Render each phrase with suggestion
+            const listEl = document.getElementById('midMarketLintList');
+            listEl.innerHTML = phrases.map(item => `
+                <div class="red-flag-item" style="border-left-color: #fbbf24;">
+                    <div class="red-flag-header">
+                        <span class="red-flag-icon" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24;">✎</span>
+                        <span class="red-flag-title">"${item.phrase}"</span>
+                    </div>
+                    <div class="red-flag-fix" style="color: var(--color-text-secondary); margin-top: 8px;">
+                        💡 ${item.suggestion}
+                    </div>
+                </div>
+            `).join('');
         }
 
         function renderCredibility() {

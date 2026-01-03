@@ -22,6 +22,404 @@ from enum import Enum
 import re
 
 
+# =============================================================================
+# CANONICAL CANDIDATE PROFILE (Round 3 Fix)
+# Single source of truth - runs ONCE, consumed by ALL downstream modules
+# =============================================================================
+
+class FunctionType(str, Enum):
+    """P1-NEW-1: Unified PM taxonomy - these are DISTINCT functions."""
+    PRODUCT_MANAGEMENT = "PRODUCT_MANAGEMENT"      # Product ownership, roadmap, strategy
+    PROJECT_MANAGEMENT = "PROJECT_MANAGEMENT"      # Delivery, timelines, coordination
+    PROGRAM_MANAGEMENT = "PROGRAM_MANAGEMENT"      # Cross-functional programs, PMO
+    PM_ADJACENT = "PM_ADJACENT"                    # TPM, Scrum Master, BA with PM overlap
+    ENGINEERING = "ENGINEERING"
+    DESIGN = "DESIGN"
+    DATA_SCIENCE = "DATA_SCIENCE"
+    MARKETING = "MARKETING"
+    SALES = "SALES"
+    OPERATIONS = "OPERATIONS"
+    OTHER = "OTHER"
+
+
+class CandidateLevel(str, Enum):
+    """Canonical seniority levels."""
+    ENTRY = "ENTRY"           # 0-2 years
+    ASSOCIATE = "ASSOCIATE"   # 2-4 years
+    MID = "MID"               # 4-6 years
+    SENIOR = "SENIOR"         # 6-10 years
+    STAFF = "STAFF"           # 8-12 years (IC track)
+    PRINCIPAL = "PRINCIPAL"   # 10+ years (IC track)
+    DIRECTOR = "DIRECTOR"     # 8+ years (management track)
+    VP = "VP"                 # 12+ years
+    EXECUTIVE = "EXECUTIVE"   # C-level
+
+
+class SignalStrength(str, Enum):
+    """How strong the evidence is for detected function/level."""
+    STRONG = "STRONG"       # Multiple clear signals with quantified evidence
+    MODERATE = "MODERATE"   # Some signals present, partial evidence
+    WEAK = "WEAK"           # Indirect signals, inferred
+    NONE = "NONE"           # No signals detected
+
+
+@dataclass
+class CanonicalCandidateProfile:
+    """
+    P1-NEW-2: Single canonical output consumed by ALL modules.
+
+    This is the ONLY place candidate function and level are determined.
+    All downstream modules (Resume Leveling, Fit Analysis, Quick View, etc.)
+    MUST consume this - no independent re-evaluation allowed.
+    """
+    detected_function: FunctionType
+    detected_level: CandidateLevel
+    signal_strength: SignalStrength
+
+    # Canonical statement - THE source of truth for all copy
+    canonical_statement: str
+
+    # Evidence supporting the determination
+    function_evidence: List[str] = field(default_factory=list)
+    level_evidence: List[str] = field(default_factory=list)
+
+    # Target role comparison
+    target_function: Optional[FunctionType] = None
+    target_level: Optional[CandidateLevel] = None
+    function_match: bool = True
+    level_gap: int = 0  # Positive = target higher, negative = candidate higher
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "detected_function": self.detected_function.value,
+            "detected_level": self.detected_level.value,
+            "signal_strength": self.signal_strength.value,
+            "canonical_statement": self.canonical_statement,
+            "function_evidence": self.function_evidence,
+            "level_evidence": self.level_evidence,
+            "target_function": self.target_function.value if self.target_function else None,
+            "target_level": self.target_level.value if self.target_level else None,
+            "function_match": self.function_match,
+            "level_gap": self.level_gap,
+        }
+
+
+# Product Management signal patterns (DISTINCT from Project Management)
+PRODUCT_MANAGEMENT_SIGNALS = [
+    r'\b(?:product\s+)?roadmap\b',
+    r'\bproduct\s+strategy\b',
+    r'\bproduct\s+vision\b',
+    r'\bproduct\s+discovery\b',
+    r'\bproduct\s+requirements?\b',
+    r'\bprd\b',
+    r'\buser\s+research\b',
+    r'\bcustomer\s+discovery\b',
+    r'\bfeature\s+prioritization\b',
+    r'\bbacklog\s+(?:management|prioritization|grooming)\b',
+    r'\bproduct\s+metrics\b',
+    r'\bproduct\s+analytics\b',
+    r'\ba/b\s+test(?:ing)?\b',
+    r'\bexperimentation\b',
+    r'\bproduct[\-\s]led\b',
+    r'\bproduct\s+owner\b',
+    r'\bproduct\s+manager\b',
+    r'\bpm\s+(?:at|for|on)\b',  # "PM at Stripe" pattern
+]
+
+# Project Management signal patterns (delivery-focused, NOT product ownership)
+PROJECT_MANAGEMENT_SIGNALS = [
+    r'\bproject\s+plan(?:ning)?\b',
+    r'\bproject\s+timeline\b',
+    r'\bgantt\b',
+    r'\bproject\s+schedule\b',
+    r'\bmilestone\s+tracking\b',
+    r'\bdelivery\s+management\b',
+    r'\bproject\s+coordination\b',
+    r'\bresource\s+allocation\b',
+    r'\bpmp\b',
+    r'\bprince2\b',
+    r'\bwaterfall\b',
+    r'\bproject\s+manager\b',
+    r'\bproject\s+management\s+(?:office|professional)\b',
+]
+
+# PM-Adjacent patterns (has overlap but not core PM)
+PM_ADJACENT_SIGNALS = [
+    r'\btechnical\s+program\s+manager\b',
+    r'\btpm\b',
+    r'\bscrum\s+master\b',
+    r'\bagile\s+coach\b',
+    r'\bbusiness\s+analyst\b',
+    r'\brequirements\s+analyst\b',
+    r'\bsolutions?\s+architect\b',
+]
+
+
+def detect_function_type(resume_text: str, titles: List[str]) -> Tuple[FunctionType, SignalStrength, List[str]]:
+    """
+    P1-NEW-1: Detect candidate's PRIMARY function with proper PM taxonomy.
+
+    Project Manager ≠ Product Manager ≠ PM-Adjacent
+
+    Returns: (function_type, signal_strength, evidence_list)
+    """
+    if not resume_text:
+        return FunctionType.OTHER, SignalStrength.NONE, []
+
+    text_lower = resume_text.lower()
+    titles_lower = " ".join(titles).lower() if titles else ""
+    evidence = []
+
+    # Count signals for each function type
+    product_count = sum(1 for p in PRODUCT_MANAGEMENT_SIGNALS if re.search(p, text_lower))
+    project_count = sum(1 for p in PROJECT_MANAGEMENT_SIGNALS if re.search(p, text_lower))
+    pm_adjacent_count = sum(1 for p in PM_ADJACENT_SIGNALS if re.search(p, text_lower))
+
+    # Check titles for explicit function
+    has_product_title = bool(re.search(r'\bproduct\s+(?:manager|management|owner)\b', titles_lower))
+    has_project_title = bool(re.search(r'\bproject\s+manager\b', titles_lower))
+    has_tpm_title = bool(re.search(r'\b(?:technical\s+program|tpm)\b', titles_lower))
+
+    # Determine primary function
+    if has_product_title and product_count >= 3:
+        evidence.append(f"Product Manager title + {product_count} product signals")
+        return FunctionType.PRODUCT_MANAGEMENT, SignalStrength.STRONG, evidence
+
+    if has_product_title or product_count >= 5:
+        evidence.append(f"Product signals: {product_count}")
+        strength = SignalStrength.STRONG if product_count >= 5 else SignalStrength.MODERATE
+        return FunctionType.PRODUCT_MANAGEMENT, strength, evidence
+
+    if has_project_title or project_count >= 3:
+        evidence.append(f"Project Manager signals: {project_count}")
+        strength = SignalStrength.STRONG if project_count >= 5 else SignalStrength.MODERATE
+        return FunctionType.PROJECT_MANAGEMENT, strength, evidence
+
+    if has_tpm_title or pm_adjacent_count >= 2:
+        evidence.append(f"PM-Adjacent signals: {pm_adjacent_count}")
+        return FunctionType.PM_ADJACENT, SignalStrength.MODERATE, evidence
+
+    # Check for product signals without title (weaker)
+    if product_count >= 2:
+        evidence.append(f"Product signals without PM title: {product_count}")
+        return FunctionType.PRODUCT_MANAGEMENT, SignalStrength.WEAK, evidence
+
+    # Check for engineering
+    if re.search(r'\b(?:software|backend|frontend|fullstack|engineer|developer|swe)\b', titles_lower):
+        return FunctionType.ENGINEERING, SignalStrength.STRONG, ["Engineering title detected"]
+
+    # Check for design
+    if re.search(r'\b(?:product\s+)?design(?:er)?\b', titles_lower):
+        return FunctionType.DESIGN, SignalStrength.STRONG, ["Design title detected"]
+
+    return FunctionType.OTHER, SignalStrength.WEAK, ["No clear function signals"]
+
+
+def detect_candidate_level(resume_text: str, titles: List[str], years_experience: Optional[int] = None) -> Tuple[CandidateLevel, SignalStrength, List[str]]:
+    """
+    Detect candidate's seniority level based on evidence.
+
+    Returns: (level, signal_strength, evidence_list)
+    """
+    if not resume_text and not titles:
+        return CandidateLevel.MID, SignalStrength.NONE, ["No data to assess"]
+
+    titles_lower = " ".join(titles).lower() if titles else ""
+    text_lower = (resume_text or "").lower()
+    evidence = []
+
+    # Check for explicit level in titles
+    if re.search(r'\b(?:chief|cto|cpo|ceo|coo)\b', titles_lower):
+        evidence.append("C-level title")
+        return CandidateLevel.EXECUTIVE, SignalStrength.STRONG, evidence
+
+    if re.search(r'\b(?:vp|vice\s+president)\b', titles_lower):
+        evidence.append("VP title")
+        return CandidateLevel.VP, SignalStrength.STRONG, evidence
+
+    if re.search(r'\b(?:senior\s+)?director\b', titles_lower):
+        evidence.append("Director title")
+        return CandidateLevel.DIRECTOR, SignalStrength.STRONG, evidence
+
+    if re.search(r'\bprincipal\b', titles_lower):
+        evidence.append("Principal title")
+        return CandidateLevel.PRINCIPAL, SignalStrength.STRONG, evidence
+
+    if re.search(r'\bstaff\b', titles_lower):
+        evidence.append("Staff title")
+        return CandidateLevel.STAFF, SignalStrength.STRONG, evidence
+
+    if re.search(r'\bsenior\b', titles_lower):
+        evidence.append("Senior title")
+        return CandidateLevel.SENIOR, SignalStrength.STRONG, evidence
+
+    if re.search(r'\b(?:associate|junior|jr\.?)\b', titles_lower):
+        evidence.append("Associate/Junior title")
+        return CandidateLevel.ASSOCIATE, SignalStrength.STRONG, evidence
+
+    # Infer from years if available
+    if years_experience is not None:
+        if years_experience >= 12:
+            evidence.append(f"{years_experience} years experience")
+            return CandidateLevel.DIRECTOR, SignalStrength.MODERATE, evidence
+        elif years_experience >= 8:
+            evidence.append(f"{years_experience} years experience")
+            return CandidateLevel.SENIOR, SignalStrength.MODERATE, evidence
+        elif years_experience >= 4:
+            evidence.append(f"{years_experience} years experience")
+            return CandidateLevel.MID, SignalStrength.MODERATE, evidence
+        elif years_experience >= 2:
+            evidence.append(f"{years_experience} years experience")
+            return CandidateLevel.ASSOCIATE, SignalStrength.MODERATE, evidence
+        else:
+            evidence.append(f"{years_experience} years experience")
+            return CandidateLevel.ENTRY, SignalStrength.MODERATE, evidence
+
+    # Default to mid if no signals
+    evidence.append("No explicit level signals, defaulting to mid")
+    return CandidateLevel.MID, SignalStrength.WEAK, evidence
+
+
+def generate_canonical_statement(
+    function: FunctionType,
+    level: CandidateLevel,
+    signal_strength: SignalStrength,
+    target_function: Optional[FunctionType] = None,
+    function_match: bool = True
+) -> str:
+    """
+    P1-NEW-3: Generate the canonical statement that ALL modules must use.
+
+    Replaces harsh "zero PM" language with accurate, professional copy.
+    """
+    level_name = level.value.replace("_", " ").title()
+    function_name = function.value.replace("_", " ").title()
+
+    # Function mismatch cases
+    if not function_match and target_function:
+        target_name = target_function.value.replace("_", " ").title()
+
+        if function == FunctionType.PROJECT_MANAGEMENT and target_function == FunctionType.PRODUCT_MANAGEMENT:
+            return f"Your resume shows {level_name} Project Management experience. This role requires Product Management - a different function focused on product ownership, strategy, and customer discovery rather than delivery coordination."
+
+        if function == FunctionType.PM_ADJACENT and target_function == FunctionType.PRODUCT_MANAGEMENT:
+            return f"Your resume shows PM-adjacent experience ({function_name}). While there's overlap with Product Management, this role requires explicit product ownership signals - roadmap authority, customer discovery, and feature prioritization."
+
+        if function == FunctionType.ENGINEERING and target_function == FunctionType.PRODUCT_MANAGEMENT:
+            return f"Your resume shows {level_name} Engineering experience. This role requires Product Management experience - product ownership, roadmap authority, and customer-facing discovery work."
+
+        return f"Your resume shows {level_name} {function_name} experience. This role requires {target_name} experience."
+
+    # No product ownership signals detected (replaces "zero PM")
+    if function == FunctionType.OTHER and target_function == FunctionType.PRODUCT_MANAGEMENT:
+        if signal_strength == SignalStrength.NONE:
+            return "No explicit product ownership signals detected in your resume. This role requires demonstrated product management experience - roadmap authority, customer discovery, and feature prioritization."
+        else:
+            return "Your resume shows project delivery but not product ownership. This role requires demonstrated product ownership - defining what to build and why, not just delivering what others define."
+
+    # Matched function
+    if signal_strength == SignalStrength.STRONG:
+        return f"Your resume demonstrates {level_name} {function_name} experience with strong supporting evidence."
+    elif signal_strength == SignalStrength.MODERATE:
+        return f"Your resume shows {level_name} {function_name} experience. Some signals could be strengthened with more quantified evidence."
+    else:
+        return f"Your resume suggests {level_name} {function_name} experience, though the signals are indirect. Consider adding explicit examples of {function_name.lower()} work."
+
+
+def build_canonical_profile(
+    resume_data: dict,
+    target_role_title: str = "",
+    target_role_function: Optional[str] = None
+) -> CanonicalCandidateProfile:
+    """
+    P1-NEW-2: Build the canonical candidate profile - THE single source of truth.
+
+    This function runs ONCE. All downstream modules consume its output.
+    No module is allowed to independently re-evaluate function or level.
+    """
+    # Extract resume text and titles
+    titles = []
+    bullets_text = ""
+
+    for role in resume_data.get("experience", []):
+        if role.get("title"):
+            titles.append(role["title"])
+        bullets_text += " ".join(role.get("bullets", []))
+
+    summary = resume_data.get("summary", "")
+    full_text = f"{summary} {bullets_text}"
+
+    # Calculate years of experience
+    years_exp = None
+    experience_list = resume_data.get("experience", [])
+    if experience_list:
+        # Rough estimate based on number of roles
+        years_exp = len(experience_list) * 2.5
+
+    # Detect function and level
+    detected_function, func_strength, func_evidence = detect_function_type(full_text, titles)
+    detected_level, level_strength, level_evidence = detect_candidate_level(full_text, titles, years_exp)
+
+    # Overall signal strength is the weaker of the two
+    if func_strength == SignalStrength.NONE or level_strength == SignalStrength.NONE:
+        overall_strength = SignalStrength.NONE
+    elif func_strength == SignalStrength.WEAK or level_strength == SignalStrength.WEAK:
+        overall_strength = SignalStrength.WEAK
+    elif func_strength == SignalStrength.MODERATE or level_strength == SignalStrength.MODERATE:
+        overall_strength = SignalStrength.MODERATE
+    else:
+        overall_strength = SignalStrength.STRONG
+
+    # Determine target function from role title
+    target_function = None
+    if target_role_function:
+        try:
+            target_function = FunctionType(target_role_function)
+        except ValueError:
+            pass
+
+    if not target_function and target_role_title:
+        target_lower = target_role_title.lower()
+        if "product" in target_lower and "manager" in target_lower:
+            target_function = FunctionType.PRODUCT_MANAGEMENT
+        elif "project" in target_lower and "manager" in target_lower:
+            target_function = FunctionType.PROJECT_MANAGEMENT
+        elif "engineer" in target_lower or "developer" in target_lower:
+            target_function = FunctionType.ENGINEERING
+        elif "design" in target_lower:
+            target_function = FunctionType.DESIGN
+
+    # Determine function match
+    function_match = True
+    if target_function:
+        if target_function == FunctionType.PRODUCT_MANAGEMENT:
+            # Only PRODUCT_MANAGEMENT matches PRODUCT_MANAGEMENT
+            function_match = detected_function == FunctionType.PRODUCT_MANAGEMENT
+        else:
+            function_match = detected_function == target_function
+
+    # Generate canonical statement
+    canonical = generate_canonical_statement(
+        detected_function,
+        detected_level,
+        overall_strength,
+        target_function,
+        function_match
+    )
+
+    return CanonicalCandidateProfile(
+        detected_function=detected_function,
+        detected_level=detected_level,
+        signal_strength=overall_strength,
+        canonical_statement=canonical,
+        function_evidence=func_evidence,
+        level_evidence=level_evidence,
+        target_function=target_function,
+        function_match=function_match,
+        level_gap=0  # TODO: Calculate based on target level
+    )
+
+
 class TerminalStateType(str, Enum):
     """Terminal state types in authority order (1 = highest)."""
     TITLE_INFLATION = "TITLE_INFLATION"
