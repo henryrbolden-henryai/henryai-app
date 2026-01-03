@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Analysis | HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-linkedin: #0077b5;
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .linkedin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 119, 181, 0.15);
+            color: var(--color-linkedin);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 5vw, 2.25rem);
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Coming Soon Card */
+        .coming-soon-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .coming-soon-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .coming-soon-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 12px;
+        }
+
+        .coming-soon-text {
+            color: var(--color-text-secondary);
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .feature-preview {
+            display: grid;
+            gap: 16px;
+            text-align: left;
+            margin-top: 24px;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--color-bg);
+            border-radius: 10px;
+        }
+
+        .feature-icon {
+            color: var(--color-accent);
+            font-size: 1.1rem;
+        }
+
+        .feature-text {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Profile Status */
+        .profile-status {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .profile-status-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 119, 181, 0.15);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--color-linkedin);
+        }
+
+        .profile-status-text {
+            flex: 1;
+        }
+
+        .profile-status-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .profile-status-subtitle {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: none;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #5eead4;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-surface);
+            color: var(--color-text);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 32px 16px;
+            }
+
+            .coming-soon-card {
+                padding: 28px 20px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
+    </nav>
+
+    <div class="container">
+        <a href="strengthen.html" class="back-link">← Back</a>
+
+        <div class="header">
+            <div class="linkedin-badge">
+                <span>in</span>
+                <span>LinkedIn Analysis</span>
+            </div>
+            <h1>Profile Analysis</h1>
+            <p class="subtitle">Ensure your online presence matches your application</p>
+        </div>
+
+        <!-- Profile Status -->
+        <div class="profile-status" id="profileStatus">
+            <div class="profile-status-icon">in</div>
+            <div class="profile-status-text">
+                <div class="profile-status-title" id="statusTitle">Profile Uploaded</div>
+                <div class="profile-status-subtitle" id="statusSubtitle">Ready for analysis</div>
+            </div>
+        </div>
+
+        <!-- Coming Soon Card -->
+        <div class="coming-soon-card">
+            <div class="coming-soon-icon">&#128736;</div>
+            <div class="coming-soon-title">Analysis Coming Soon</div>
+            <p class="coming-soon-text">
+                Full LinkedIn profile analysis is currently in development. For now, continue to your Strategy Overview.
+            </p>
+
+            <div class="feature-preview">
+                <div class="feature-item">
+                    <span class="feature-icon">&#10003;</span>
+                    <span class="feature-text">Resume vs. LinkedIn consistency check</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#10003;</span>
+                    <span class="feature-text">Headline and summary optimization</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#10003;</span>
+                    <span class="feature-text">Skills and endorsements recommendations</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#10003;</span>
+                    <span class="feature-text">Recruiter visibility score</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button class="btn btn-primary" onclick="continueToStrategy()">
+                Continue to Strategy Overview
+            </button>
+            <button class="btn btn-secondary" onclick="uploadDifferentProfile()">
+                Upload Different Profile
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Check for LinkedIn data on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const linkedinDataStr = sessionStorage.getItem('linkedinData');
+
+            if (linkedinDataStr) {
+                const data = JSON.parse(linkedinDataStr);
+                if (data.filename) {
+                    document.getElementById('statusSubtitle').textContent = data.filename;
+                }
+            } else {
+                // No data - redirect to upload
+                window.location.href = 'linkedin-upload.html';
+            }
+        });
+
+        function continueToStrategy() {
+            window.location.href = 'overview.html';
+        }
+
+        function uploadDifferentProfile() {
+            // Clear existing data
+            sessionStorage.removeItem('linkedinData');
+            window.location.href = 'linkedin-upload.html';
+        }
+    </script>
+
+    <script src="components/analytics.js"></script>
+    <script src="components/top-nav.js"></script>
+</body>
+</html>

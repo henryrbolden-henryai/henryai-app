@@ -3027,9 +3027,26 @@
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
-            // Skip strengthen, go directly to document generation
+            // Skip strengthen, go through LinkedIn flow
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-            window.location.href = 'generating.html';
+            // Mark strengthen as skipped
+            sessionStorage.setItem('strengthenedData', JSON.stringify({
+                status: 'skipped',
+                verified_enhancements: [],
+                declined_items: [],
+                unresolved_items: [],
+                skipped_reason: 'User skipped from leveling page',
+                questions_asked: 0,
+                questions_answered: 0,
+                timestamp: Date.now()
+            }));
+            // Check if LinkedIn data exists
+            const linkedinData = sessionStorage.getItem('linkedinData');
+            if (linkedinData) {
+                window.location.href = 'linkedin-analysis.html';
+            } else {
+                window.location.href = 'linkedin-upload.html';
+            }
         });
     </script>
     <script src="components/analytics.js"></script>

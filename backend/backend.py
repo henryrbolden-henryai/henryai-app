@@ -14676,6 +14676,278 @@ async def complete_strengthen_session(session_id: str) -> Dict[str, Any]:
 
 
 # ============================================================================
+# STRENGTHEN YOUR RESUME v2 - TAG-BASED ENDPOINTS
+# ============================================================================
+
+@app.post("/api/strengthen/questions")
+async def generate_strengthen_questions(request: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Generate clarifying questions for flagged resume bullets.
+
+    Uses the new tag-based system (VERIFIED, VAGUE, RISKY, IMPLAUSIBLE).
+    Questions are designed to clarify ownership, scope, or outcome.
+
+    Request:
+    {
+        "flagged_bullets": [
+            {
+                "id": "exp-0-bullet-0",
+                "text": "Led company-wide digital transformation",
+                "tag": "RISKY",
+                "issues": ["Scope seems inflated for role"],
+                "section": "Experience - Acme Corp, Senior Manager"
+            }
+        ],
+        "resume_context": {
+            "role": "Senior Manager",
+            "tenure": "2 years",
+            "company_size": "Unknown"
+        }
+    }
+
+    Response:
+    {
+        "questions": [
+            {
+                "bullet_id": "exp-0-bullet-0",
+                "original_bullet": "Led company-wide digital transformation",
+                "tag": "RISKY",
+                "question": "What part of this transformation did you personally own?",
+                "clarifies": "ownership"
+            }
+        ]
+    }
+    """
+    try:
+        from prompts.strengthen import STRENGTHEN_QUESTIONS_PROMPT
+        from strengthen_session import format_bullets_for_prompt, BulletAuditItem, BulletTag, ClarificationType
+
+        flagged_bullets = request.get("flagged_bullets", [])
+        resume_context = request.get("resume_context", {})
+
+        if not flagged_bullets:
+            return {"questions": []}
+
+        # Convert to BulletAuditItem for formatting
+        bullets = []
+        for b in flagged_bullets:
+            try:
+                tag = BulletTag(b.get("tag", "VAGUE").upper())
+            except ValueError:
+                tag = BulletTag.VAGUE
+            try:
+                clarifies = ClarificationType(b.get("clarifies", "outcome").lower())
+            except ValueError:
+                clarifies = ClarificationType.OUTCOME
+
+            bullets.append(BulletAuditItem(
+                id=b.get("id", ""),
+                text=b.get("text", ""),
+                section=b.get("section", ""),
+                tag=tag,
+                issues=b.get("issues", []),
+                clarifies=clarifies,
+            ))
+
+        # Format for prompt
+        formatted_bullets = format_bullets_for_prompt(bullets)
+        formatted_context = f"""
+Role: {resume_context.get('role', 'Unknown')}
+Tenure: {resume_context.get('tenure', 'Unknown')}
+Company Size: {resume_context.get('company_size', 'Unknown')}
+"""
+
+        prompt = STRENGTHEN_QUESTIONS_PROMPT.format(
+            flagged_bullets=formatted_bullets,
+            resume_context=formatted_context
+        )
+
+        response = call_claude(
+            prompt,
+            "Generate clarifying questions for the flagged resume bullets."
+        )
+
+        result = clean_claude_json(response)
+
+        return result
+
+    except Exception as e:
+        print(f"Error generating strengthen questions: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/strengthen/apply")
+async def apply_strengthen_enhancements(request: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Apply enhancements to bullets based on candidate's clarifying answers.
+
+    CRITICAL: Only uses information explicitly provided by candidate.
+    Never invents or assumes details.
+
+    Request:
+    {
+        "answers": [
+            {
+                "bullet_id": "exp-0-bullet-0",
+                "original_bullet": "Led company-wide digital transformation",
+                "answer": "I owned the rollout for the sales org - 200 people",
+                "tag": "RISKY"
+            }
+        ],
+        "resume_data": {...}
+    }
+
+    Response:
+    {
+        "enhancements": [
+            {
+                "bullet_id": "exp-0-bullet-0",
+                "original_bullet": "Led company-wide digital transformation",
+                "enhanced_bullet": "Led digital transformation for 200-person sales org",
+                "confidence": "HIGH",
+                "changes_made": "Scoped to actual ownership"
+            }
+        ],
+        "declined": [...],
+        "unresolved": [...]
+    }
+    """
+    try:
+        from prompts.strengthen import STRENGTHEN_APPLY_PROMPT
+        from strengthen_session import (
+            format_answers_for_prompt,
+            validate_answer_for_fabrication,
+            EnhancementResult,
+            DeclinedBullet,
+            UnresolvedBullet,
+            BulletTag,
+            ConfidenceLevel
+        )
+
+        answers = request.get("answers", [])
+        resume_data = request.get("resume_data", {})
+
+        if not answers:
+            return {"enhancements": [], "declined": [], "unresolved": []}
+
+        # Determine candidate level for validation
+        candidate_level = "mid"
+        if resume_data:
+            years = resume_data.get("years_experience", 0)
+            if years < 3:
+                candidate_level = "entry"
+            elif years > 8:
+                candidate_level = "senior"
+
+        # Validate answers for fabrication attempts
+        validated_answers = []
+        declined = []
+        unresolved = []
+
+        for ans in answers:
+            answer_text = ans.get("answer", "").strip()
+            bullet_id = ans.get("bullet_id", "")
+            original_bullet = ans.get("original_bullet", "")
+            tag_str = ans.get("tag", "VAGUE")
+
+            try:
+                tag = BulletTag(tag_str.upper())
+            except ValueError:
+                tag = BulletTag.VAGUE
+
+            # Check for empty/skip answers
+            if not answer_text or answer_text.lower() in ["no", "n/a", "none", "i don't have that", "skip", "i didn't own that"]:
+                if answer_text.lower() in ["no", "i didn't own that"]:
+                    declined.append(DeclinedBullet(
+                        bullet_id=bullet_id,
+                        original_bullet=original_bullet,
+                        reason="Candidate confirmed they did not own this"
+                    ))
+                else:
+                    unresolved.append(UnresolvedBullet(
+                        bullet_id=bullet_id,
+                        original_bullet=original_bullet,
+                        tag=tag,
+                        reason="No clarification provided"
+                    ))
+                continue
+
+            # Validate for fabrication
+            validation = validate_answer_for_fabrication(answer_text, candidate_level)
+            if not validation.valid:
+                # Flag but still process (with warning)
+                print(f"Warning: Potentially invalid input for {bullet_id}: {validation.message}")
+
+            validated_answers.append(ans)
+
+        # If no valid answers to process, return early
+        if not validated_answers:
+            return {
+                "enhancements": [],
+                "declined": [d.to_dict() for d in declined],
+                "unresolved": [u.to_dict() for u in unresolved]
+            }
+
+        # Format for prompt
+        formatted_answers = format_answers_for_prompt(validated_answers)
+        formatted_context = f"""
+Resume Summary:
+Years of Experience: {resume_data.get('years_experience', 'Unknown')}
+Current Level: {resume_data.get('current_level', 'Unknown')}
+Function: {resume_data.get('detected_function', 'Unknown')}
+"""
+
+        prompt = STRENGTHEN_APPLY_PROMPT.format(
+            answers=formatted_answers,
+            resume_context=formatted_context
+        )
+
+        response = call_claude(
+            prompt,
+            "Apply enhancements to the bullets based on the candidate's answers."
+        )
+
+        result = clean_claude_json(response)
+
+        # Merge API results with local declined/unresolved
+        api_declined = result.get("declined", [])
+        api_unresolved = result.get("unresolved", [])
+
+        for d in api_declined:
+            declined.append(DeclinedBullet(
+                bullet_id=d.get("bullet_id", ""),
+                original_bullet=d.get("original_bullet", ""),
+                reason=d.get("reason", "Declined by enhancement")
+            ))
+
+        for u in api_unresolved:
+            try:
+                tag = BulletTag(u.get("tag", "VAGUE").upper())
+            except ValueError:
+                tag = BulletTag.VAGUE
+            unresolved.append(UnresolvedBullet(
+                bullet_id=u.get("bullet_id", ""),
+                original_bullet=u.get("original_bullet", ""),
+                tag=tag,
+                reason=u.get("reason", "Could not resolve")
+            ))
+
+        return {
+            "enhancements": result.get("enhancements", []),
+            "declined": [d.to_dict() for d in declined],
+            "unresolved": [u.to_dict() for u in unresolved]
+        }
+
+    except Exception as e:
+        print(f"Error applying strengthen enhancements: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # COMMAND CENTER ENDPOINTS (v2.0)
 # ============================================================================
 

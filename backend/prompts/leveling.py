@@ -135,6 +135,27 @@ STRICT LEVEL RULES (MANDATORY):
 
 {target_context}
 
+=== BULLET-LEVEL AUDIT ===
+
+You MUST audit EVERY resume bullet and assign a verification tag. This is critical for the Strengthen Your Resume flow.
+
+**Tag Definitions:**
+- VERIFIED: Bullet has quantified outcomes, clear ownership, and no credibility concerns
+- VAGUE: Bullet lacks metrics, ownership is unclear, uses generic language, or missing outcomes
+- RISKY: Scope seems inflated for role/tenure, title doesn't match evidence, or claims exceed apparent level
+- IMPLAUSIBLE: IC claiming executive scope, metrics that defy logic, or direct credibility contradictions
+
+**Clarification Types:**
+- ownership: Unclear who owned the work vs contributed
+- scope: Size/scale of impact unclear
+- outcome: Missing measurable results
+
+**How to assign tags:**
+1. If bullet has specific metrics AND clear ownership AND matches role level → VERIFIED
+2. If bullet uses vague language ("helped with", "assisted", "worked on") OR lacks metrics → VAGUE
+3. If bullet claims scope that seems large for the role/tenure OR title appears inflated → RISKY
+4. If an IC claims to have "set company strategy" or metrics are implausible (e.g., entry-level claiming $100M impact) → IMPLAUSIBLE
+
 === ANALYSIS INSTRUCTIONS ===
 
 1. **Detect Function**: Look at job titles, skills, experience descriptions
@@ -144,6 +165,7 @@ STRICT LEVEL RULES (MANDATORY):
 5. **Identify Red Flags**: Generic claims, missing quantification, title/evidence mismatch
 6. **Gap Analysis**: If target provided, identify specific gaps to that level
 7. **Recommendations**: Provide specific, actionable resume improvements
+8. **Bullet Audit**: Tag EVERY bullet with VERIFIED, VAGUE, RISKY, or IMPLAUSIBLE
 
 === VOICE AND TONE FOR ANALYSIS (CRITICAL) ===
 
@@ -304,6 +326,17 @@ Return a JSON object with this structure:
       "suggested": "recommended change",
       "rationale": "why this matters",
       "gap_type": "experience|presentation"
+    }}
+  ],
+
+  "bullet_audit": [
+    {{
+      "id": "exp-0-bullet-0",
+      "text": "The exact bullet text from resume",
+      "section": "Experience - Company Name, Role Title",
+      "tag": "VERIFIED|VAGUE|RISKY|IMPLAUSIBLE",
+      "issues": ["List of specific issues if not VERIFIED, empty array if VERIFIED"],
+      "clarifies": "ownership|scope|outcome"
     }}
   ],
 

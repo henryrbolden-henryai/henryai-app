@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Profile | HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-linkedin: #0077b5;
+            --color-success: #4ade80;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        .content {
+            text-align: center;
+        }
+
+        .linkedin-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--color-linkedin);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.75rem, 5vw, 2.25rem);
+            font-weight: 400;
+            line-height: 1.2;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 40px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-area {
+            background: var(--color-surface);
+            border: 2px dashed var(--color-border);
+            border-radius: 16px;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 24px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--color-linkedin);
+            background: var(--color-surface-elevated);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--color-linkedin);
+            background: rgba(0, 119, 181, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .upload-hint a {
+            color: var(--color-linkedin);
+            text-decoration: none;
+        }
+
+        .upload-hint a:hover {
+            text-decoration: underline;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 32px 0;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--color-border);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: none;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #5eead4;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border-color: var(--color-border-hover);
+        }
+
+        .skip-text {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .info-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .info-card-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--color-text);
+        }
+
+        .info-card-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-card-list li {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .info-card-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+        }
+
+        .upload-success {
+            display: none;
+            padding: 16px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 10px;
+            margin-bottom: 24px;
+        }
+
+        .upload-success.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .upload-success-icon {
+            color: var(--color-success);
+            font-size: 1.25rem;
+        }
+
+        .upload-success-text {
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 16px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="css/mobile.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+<body>
+    <nav class="top-nav">
+        <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
+    </nav>
+
+    <div class="container">
+        <a href="strengthen.html" class="back-link">← Back to Strengthen</a>
+
+        <div class="content">
+            <div class="linkedin-icon">in</div>
+
+            <h1>Optimize Your LinkedIn?</h1>
+            <p class="subtitle">
+                Upload your LinkedIn profile to ensure it aligns with your resume and target role.
+            </p>
+
+            <!-- Upload Success Message -->
+            <div class="upload-success" id="uploadSuccess">
+                <span class="upload-success-icon">&#10003;</span>
+                <span class="upload-success-text" id="uploadSuccessText">Profile uploaded successfully!</span>
+            </div>
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">&#128196;</div>
+                <p class="upload-text">Drop your LinkedIn PDF here</p>
+                <p class="upload-hint">
+                    or click to browse.
+                    <a href="https://www.linkedin.com/help/linkedin/answer/50191" target="_blank">How to export</a>
+                </p>
+            </div>
+
+            <input type="file" id="fileInput" accept=".pdf" onchange="handleFileSelect(event)">
+
+            <div class="divider">or</div>
+
+            <button class="btn btn-secondary" onclick="skipToStrategy()">
+                Skip - Continue to Strategy Overview
+            </button>
+
+            <p class="skip-text">
+                You can always add your LinkedIn profile later.
+            </p>
+
+            <div class="info-card">
+                <div class="info-card-title">Why add your LinkedIn?</div>
+                <ul class="info-card-list">
+                    <li>Ensure consistency between your resume and profile</li>
+                    <li>Identify gaps in your online presence</li>
+                    <li>Get optimization tips for recruiter visibility</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        // Drag and drop handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (file.type !== 'application/pdf') {
+                alert('Please upload a PDF file.');
+                return;
+            }
+
+            // For now, just simulate upload and store placeholder
+            // Full LinkedIn parsing is out of scope for this implementation
+            const linkedinData = {
+                uploaded: true,
+                filename: file.name,
+                timestamp: Date.now(),
+                // Placeholder - full parsing would happen here
+                profile: null
+            };
+
+            sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+
+            // Show success and redirect
+            document.getElementById('uploadSuccess').classList.add('show');
+            document.getElementById('uploadSuccessText').textContent = `${file.name} uploaded!`;
+            uploadArea.style.display = 'none';
+
+            setTimeout(() => {
+                window.location.href = 'linkedin-analysis.html';
+            }, 1500);
+        }
+
+        function skipToStrategy() {
+            // Mark as skipped
+            const linkedinData = {
+                uploaded: false,
+                skipped: true,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+
+            window.location.href = 'overview.html';
+        }
+    </script>
+
+    <script src="components/analytics.js"></script>
+    <script src="components/top-nav.js"></script>
+</body>
+</html>

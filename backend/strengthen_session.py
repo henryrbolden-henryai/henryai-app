@@ -6,6 +6,7 @@ This module handles:
 - Guided bullet regeneration with constraints
 - Forbidden input detection and validation
 - Audit trail for all regenerations
+- NEW: Tag-based bullet verification system (VERIFIED, VAGUE, RISKY, IMPLAUSIBLE)
 """
 
 import re
@@ -51,6 +52,35 @@ IMPLAUSIBLE_THRESHOLDS = {
 }
 
 
+# ============================================================================
+# NEW TAG-BASED SYSTEM (from Strengthen Your Resume spec)
+# ============================================================================
+
+class BulletTag(str, Enum):
+    """Verification tag for resume bullets - from leveling analysis"""
+    VERIFIED = "VERIFIED"      # Has metrics, clear ownership, no credibility concerns
+    VAGUE = "VAGUE"            # Missing metrics, unclear ownership, generic language
+    RISKY = "RISKY"            # Scope inflated for role/tenure, title mismatch
+    IMPLAUSIBLE = "IMPLAUSIBLE"  # IC claiming exec scope, impossible metrics
+
+
+class ClarificationType(str, Enum):
+    """What type of clarification is needed"""
+    OWNERSHIP = "ownership"    # Who owned vs contributed
+    SCOPE = "scope"            # Size/scale of impact
+    OUTCOME = "outcome"        # Measurable results
+
+
+class ConfidenceLevel(str, Enum):
+    """Confidence level for enhancements"""
+    HIGH = "HIGH"
+    MEDIUM = "MEDIUM"
+
+
+# ============================================================================
+# LEGACY ENUMS (kept for backward compatibility with existing endpoints)
+# ============================================================================
+
 class IssuePriority(str, Enum):
     HIGH = "high"
     MEDIUM = "medium"
@@ -65,6 +95,107 @@ class IssueType(str, Enum):
     TECHNICAL_DEPTH = "technical_depth"
     LEADERSHIP_UNCLEAR = "leadership_unclear"
 
+
+# ============================================================================
+# NEW TAG-BASED DATACLASSES
+# ============================================================================
+
+@dataclass
+class BulletAuditItem:
+    """A single audited bullet from the leveling analysis"""
+    id: str  # e.g., "exp-0-bullet-0"
+    text: str  # The exact bullet text
+    section: str  # e.g., "Experience - Acme Corp, PM"
+    tag: BulletTag
+    issues: List[str]  # Empty if VERIFIED
+    clarifies: ClarificationType
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "text": self.text,
+            "section": self.section,
+            "tag": self.tag.value,
+            "issues": self.issues,
+            "clarifies": self.clarifies.value,
+        }
+
+
+@dataclass
+class StrengthenQuestionItem:
+    """A clarifying question for a flagged bullet"""
+    bullet_id: str
+    original_bullet: str
+    tag: BulletTag
+    question: str
+    clarifies: ClarificationType
+    answer: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bullet_id": self.bullet_id,
+            "original_bullet": self.original_bullet,
+            "tag": self.tag.value,
+            "question": self.question,
+            "clarifies": self.clarifies.value,
+            "answer": self.answer,
+        }
+
+
+@dataclass
+class EnhancementResult:
+    """Result of applying an enhancement to a bullet"""
+    bullet_id: str
+    original_bullet: str
+    enhanced_bullet: str
+    confidence: ConfidenceLevel
+    changes_made: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bullet_id": self.bullet_id,
+            "original_bullet": self.original_bullet,
+            "enhanced_bullet": self.enhanced_bullet,
+            "confidence": self.confidence.value,
+            "changes_made": self.changes_made,
+        }
+
+
+@dataclass
+class DeclinedBullet:
+    """A bullet that was declined by the candidate"""
+    bullet_id: str
+    original_bullet: str
+    reason: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bullet_id": self.bullet_id,
+            "original_bullet": self.original_bullet,
+            "reason": self.reason,
+        }
+
+
+@dataclass
+class UnresolvedBullet:
+    """A bullet that couldn't be resolved"""
+    bullet_id: str
+    original_bullet: str
+    tag: BulletTag
+    reason: str = "No clarification provided"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "bullet_id": self.bullet_id,
+            "original_bullet": self.original_bullet,
+            "tag": self.tag.value,
+            "reason": self.reason,
+        }
+
+
+# ============================================================================
+# LEGACY DATACLASSES (kept for backward compatibility)
+# ============================================================================
 
 @dataclass
 class StrengthenIssue:
@@ -672,3 +803,223 @@ Return a JSON object with:
 }}
 
 Return ONLY the JSON, no other text."""
+
+
+# ============================================================================
+# NEW: TAG-BASED HELPER FUNCTIONS
+# ============================================================================
+
+def extract_flagged_bullets(leveling_data: Dict[str, Any]) -> List[BulletAuditItem]:
+    """
+    Extract non-VERIFIED bullets from leveling analysis bullet_audit.
+
+    Args:
+        leveling_data: The full leveling analysis response containing bullet_audit
+
+    Returns:
+        List of BulletAuditItem for bullets that need clarification
+    """
+    bullet_audit = leveling_data.get("bullet_audit", [])
+    flagged = []
+
+    for item in bullet_audit:
+        tag_str = item.get("tag", "VAGUE").upper()
+        if tag_str == "VERIFIED":
+            continue
+
+        try:
+            tag = BulletTag(tag_str)
+        except ValueError:
+            tag = BulletTag.VAGUE
+
+        clarifies_str = item.get("clarifies", "outcome").lower()
+        try:
+            clarifies = ClarificationType(clarifies_str)
+        except ValueError:
+            clarifies = ClarificationType.OUTCOME
+
+        flagged.append(BulletAuditItem(
+            id=item.get("id", ""),
+            text=item.get("text", ""),
+            section=item.get("section", ""),
+            tag=tag,
+            issues=item.get("issues", []),
+            clarifies=clarifies,
+        ))
+
+    # Sort by priority: IMPLAUSIBLE first, then RISKY, then VAGUE
+    priority_order = {
+        BulletTag.IMPLAUSIBLE: 0,
+        BulletTag.RISKY: 1,
+        BulletTag.VAGUE: 2,
+    }
+    flagged.sort(key=lambda x: priority_order.get(x.tag, 2))
+
+    return flagged
+
+
+def should_auto_skip_strengthen(leveling_data: Dict[str, Any]) -> bool:
+    """
+    Check if strengthen step should be auto-skipped (all bullets VERIFIED).
+
+    Args:
+        leveling_data: The full leveling analysis response
+
+    Returns:
+        True if all bullets are VERIFIED and strengthen can be skipped
+    """
+    bullet_audit = leveling_data.get("bullet_audit", [])
+
+    if not bullet_audit:
+        return False  # No audit data, don't skip
+
+    for item in bullet_audit:
+        tag = item.get("tag", "").upper()
+        if tag != "VERIFIED":
+            return False
+
+    return True
+
+
+def map_tag_to_priority(tag: BulletTag) -> IssuePriority:
+    """Map new tag system to legacy priority for backward compatibility."""
+    mapping = {
+        BulletTag.IMPLAUSIBLE: IssuePriority.HIGH,
+        BulletTag.RISKY: IssuePriority.HIGH,
+        BulletTag.VAGUE: IssuePriority.MEDIUM,
+        BulletTag.VERIFIED: IssuePriority.LOW,
+    }
+    return mapping.get(tag, IssuePriority.MEDIUM)
+
+
+def map_clarification_to_issue_type(clarifies: ClarificationType) -> IssueType:
+    """Map new clarification type to legacy issue type."""
+    mapping = {
+        ClarificationType.OWNERSHIP: IssueType.VAGUE_OWNERSHIP,
+        ClarificationType.SCOPE: IssueType.NO_SCOPE,
+        ClarificationType.OUTCOME: IssueType.MISSING_METRICS,
+    }
+    return mapping.get(clarifies, IssueType.VAGUE_OWNERSHIP)
+
+
+def format_bullets_for_prompt(bullets: List[BulletAuditItem]) -> str:
+    """
+    Format flagged bullets for inclusion in a Claude prompt.
+
+    Args:
+        bullets: List of BulletAuditItem to format
+
+    Returns:
+        Formatted string for prompt inclusion
+    """
+    lines = []
+    for bullet in bullets:
+        lines.append(f"""
+Bullet ID: {bullet.id}
+Section: {bullet.section}
+Text: "{bullet.text}"
+Tag: {bullet.tag.value}
+Issues: {', '.join(bullet.issues) if bullet.issues else 'None specified'}
+Needs clarification on: {bullet.clarifies.value}
+""")
+    return "\n".join(lines)
+
+
+def format_answers_for_prompt(answers: List[Dict[str, Any]]) -> str:
+    """
+    Format candidate answers for inclusion in enhancement prompt.
+
+    Args:
+        answers: List of answer dictionaries with bullet_id, original_bullet, answer, tag
+
+    Returns:
+        Formatted string for prompt inclusion
+    """
+    lines = []
+    for ans in answers:
+        answer_text = ans.get("answer", "").strip()
+        if not answer_text or answer_text.lower() in ["no", "n/a", "none", "i don't have that", "skip"]:
+            status = "DECLINED/SKIPPED"
+        else:
+            status = "PROVIDED"
+
+        lines.append(f"""
+Bullet ID: {ans.get('bullet_id', '')}
+Original: "{ans.get('original_bullet', '')}"
+Tag: {ans.get('tag', 'VAGUE')}
+Candidate's Answer: "{answer_text}"
+Status: {status}
+""")
+    return "\n".join(lines)
+
+
+def validate_answer_for_fabrication(answer: str, candidate_level: str = "mid") -> ValidationResult:
+    """
+    Validate a candidate's answer for fabrication attempts.
+
+    Combines forbidden pattern detection with implausibility checks.
+
+    Args:
+        answer: The candidate's answer text
+        candidate_level: Level for threshold checking (entry, mid, senior)
+
+    Returns:
+        ValidationResult with valid flag and details if invalid
+    """
+    # First check forbidden patterns
+    result = validate_user_input(answer, "general", candidate_level)
+    if not result.valid:
+        return result
+
+    # Then check for implausible metrics in the answer
+    result = validate_user_input(answer, "metric", candidate_level)
+    if not result.valid:
+        return result
+
+    # Check team size if mentioned
+    if re.search(r'\d+\s*(people|reports|team|engineers|designers)', answer, re.IGNORECASE):
+        result = validate_user_input(answer, "team_size", candidate_level)
+        if not result.valid:
+            return result
+
+    return ValidationResult(valid=True)
+
+
+def build_strengthened_data(
+    enhancements: List[EnhancementResult],
+    declined: List[DeclinedBullet],
+    unresolved: List[UnresolvedBullet],
+    questions_asked: int,
+    questions_answered: int,
+    skipped: bool = False,
+    skip_reason: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Build the final strengthenedData object for sessionStorage.
+
+    This is the data contract consumed by document generation.
+
+    Args:
+        enhancements: List of successful enhancements
+        declined: List of declined bullets
+        unresolved: List of unresolved bullets
+        questions_asked: Total questions presented
+        questions_answered: Questions with substantive answers
+        skipped: Whether the entire flow was skipped
+        skip_reason: Reason for skipping if applicable
+
+    Returns:
+        Dictionary matching the strengthenedData schema
+    """
+    import time
+
+    return {
+        "status": "skipped" if skipped else "completed",
+        "verified_enhancements": [e.to_dict() for e in enhancements],
+        "declined_items": [d.to_dict() for d in declined],
+        "unresolved_items": [u.to_dict() for u in unresolved],
+        "skipped_reason": skip_reason,
+        "questions_asked": questions_asked,
+        "questions_answered": questions_answered,
+        "timestamp": int(time.time() * 1000),
+    }
