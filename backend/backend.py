@@ -240,10 +240,14 @@ try:
     REALITY_CHECK_AVAILABLE = True
     # Feature flag for gradual rollout - set to True to enable
     REALITY_CHECK_ENABLED = True
-except ImportError:
+    print("✅ Reality Check module loaded successfully")
+except Exception as e:
     REALITY_CHECK_AVAILABLE = False
     REALITY_CHECK_ENABLED = False
-    print("⚠️ Reality Check module not available - using fallback behavior")
+    print(f"⚠️ Reality Check module not available - using fallback behavior")
+    print(f"   Import error: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Company Intelligence Service for company health signals
 try:
@@ -257,10 +261,14 @@ try:
     COMPANY_INTEL_AVAILABLE = True
     # Feature flag for gradual rollout
     COMPANY_INTEL_ENABLED = True
-except ImportError:
+    print("✅ Company Intelligence module loaded successfully")
+except Exception as e:
     COMPANY_INTEL_AVAILABLE = False
     COMPANY_INTEL_ENABLED = False
-    print("⚠️ Company Intelligence module not available - using fallback behavior")
+    print(f"⚠️ Company Intelligence module not available - using fallback behavior")
+    print(f"   Import error: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Initialize rate limiter
 # Limits: 30 requests per minute per IP for expensive endpoints (Claude API calls)
