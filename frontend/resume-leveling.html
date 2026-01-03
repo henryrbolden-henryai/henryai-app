@@ -1604,11 +1604,11 @@
                 </div>
             </div>
 
-            <!-- Mid-Market Language Lint (P1-NEW-5) -->
+            <!-- Mid-Market Language Lint (P1.5-2: Presentation Gap, not Experience Gap) -->
             <div class="collapsible-section collapsed" id="midMarketLintSection" style="display: none;">
                 <div class="collapsible-header" onclick="toggleSection('midMarketLintSection')">
                     <div class="collapsible-header-left">
-                        <h3 class="collapsible-title">Generic Language Detected</h3>
+                        <h3 class="collapsible-title">Presentation Gap: Generic Language</h3>
                     </div>
                     <div class="collapsible-header-right">
                         <span class="collapsible-badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;" id="midMarketBadge">—</span>
@@ -1617,8 +1617,8 @@
                 </div>
                 <div class="collapsible-content">
                     <p style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
-                        These phrases are common on mid-market resumes and may not distinguish you from other candidates.
-                        Replace them with specific, quantified achievements.
+                        <strong>This is a presentation gap, not an experience gap.</strong> You may have the experience, but these phrases don't communicate it effectively.
+                        Replace them with specific, quantified achievements to show the impact you've actually had.
                     </p>
                     <div id="midMarketLintList">
                         <!-- Populated dynamically -->
@@ -1741,14 +1741,16 @@
         let analysisData = null;
 
         // =========================================================================
-        // TERMINAL STATE SECTION GATING (P1-2)
-        // When certain terminal states are active, gate optimistic sections
+        // TERMINAL STATE SECTION GATING (P1.5-4)
+        // When certain terminal states OR "Do Not Apply" recommendation, gate sections
+        // P1.5-4: Gate on RECOMMENDATION, not just terminal state type
         // =========================================================================
         const HARD_BLOCK_TERMINAL_STATES = [
             'TITLE_INFLATION',
             'CREDIBILITY_VIOLATION',
             'FUNCTION_MISMATCH',
-            'ELIGIBILITY_VIOLATION'
+            'ELIGIBILITY_VIOLATION',
+            'MISSING_CORE_SIGNAL'  // P1.5-4: Added - also a Do Not Apply state
         ];
 
         function getTerminalStateType() {
@@ -1758,9 +1760,19 @@
             return terminalState.state_type || null;
         }
 
+        function isDoNotApplyRecommendation() {
+            // P1.5-4: Check if recommendation is "Do Not Apply" regardless of terminal state
+            if (!analysisData) return false;
+            const recommendation = (analysisData.final_recommendation || analysisData.recommendation || '').toLowerCase();
+            return recommendation === 'do not apply' || recommendation === 'skip';
+        }
+
         function isHardBlockTerminalState() {
+            // P1.5-4: Return true if EITHER terminal state OR Do Not Apply recommendation
             const stateType = getTerminalStateType();
-            return stateType && HARD_BLOCK_TERMINAL_STATES.includes(stateType);
+            const isTerminalBlock = stateType && HARD_BLOCK_TERMINAL_STATES.includes(stateType);
+            const isDoNotApply = isDoNotApplyRecommendation();
+            return isTerminalBlock || isDoNotApply;
         }
 
         function getCoachingMode() {
