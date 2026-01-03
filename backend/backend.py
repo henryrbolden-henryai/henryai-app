@@ -5325,6 +5325,31 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         pass  # Seniority detector not available
 
     # ========================================================================
+    # CANONICAL CANDIDATE PROFILE (Round 3 Fix)
+    # Single source of truth - runs ONCE, consumed by ALL downstream modules
+    # ========================================================================
+    canonical_profile = None
+    try:
+        from terminal_state_contract import build_canonical_profile
+        canonical_profile = build_canonical_profile(
+            resume_data=resume_data or {},
+            target_role_title=role_title or ""
+        )
+        response_data["canonical_profile"] = canonical_profile.to_dict()
+
+        print(f"\n📋 CANONICAL PROFILE:")
+        print(f"   Function: {canonical_profile.detected_function.value}")
+        print(f"   Level: {canonical_profile.detected_level.value}")
+        print(f"   Strength: {canonical_profile.signal_strength.value}")
+        print(f"   Function Match: {canonical_profile.function_match}")
+        print(f"   Statement: {canonical_profile.canonical_statement[:100]}...")
+
+    except ImportError:
+        pass  # Module not available
+    except Exception as e:
+        print(f"⚠️ Canonical profile error (non-blocking): {e}")
+
+    # ========================================================================
     # TERMINAL STATE CONTRACT (Jan 2026)
     # Detect highest-authority terminal state before scoring.
     # Once a terminal state fires, it governs ALL downstream behavior.
@@ -5344,10 +5369,12 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         detected_level = experience_analysis.get("candidate_level", "Mid-level")
         target_level = response_data.get("inferred_seniority", "Senior")
 
-        # Detect function match
+        # Use canonical profile for function match if available
         function_match = True
-        if transition_info and transition_info.get("is_transition"):
-            # Career transition detected - check adjacency
+        if canonical_profile:
+            function_match = canonical_profile.function_match
+        elif transition_info and transition_info.get("is_transition"):
+            # Fallback: Career transition detected - check adjacency
             adjacency = transition_info.get("adjacency_score", 0)
             if adjacency < 0.5:
                 function_match = False
