@@ -252,93 +252,107 @@ def get_company_intelligence(
 
     client = anthropic.Anthropic(api_key=api_key, timeout=60.0)
 
-    # Build the research query - more comprehensive search terms
-    user_message = f"""Research the following company and provide a health assessment for a job candidate:
+    # Build the research query - explicit search instructions
+    # Use current year in searches for freshness
+    current_year = datetime.now().year
+    last_year = current_year - 1
+
+    user_message = f"""Research "{company_name}" and provide a health assessment for a job candidate considering employment there.
 
 Company: {company_name}
 {f"Stock Ticker: {ticker_symbol}" if ticker_symbol else ""}
 {f"Company URL: {company_url}" if company_url else ""}
 
-IMPORTANT: Search thoroughly using multiple queries. Look for:
-1. "{company_name} layoffs 2024" and "{company_name} layoffs 2025"
-2. "{company_name} acquisition" or "{company_name} buyout" or "{company_name} going private"
-3. "{company_name} lawsuit" or "{company_name} investigation" or "{company_name} SEC filing"
-4. "{company_name} CEO" or "{company_name} leadership" or "{company_name} executive"
-5. "{company_name} stock" or "{company_name} funding" or "{company_name} valuation"
-6. "{company_name} news" for recent press releases and coverage
+YOU MUST PERFORM MULTIPLE SEARCHES. Search for each of these queries separately:
 
-Search news sources like PR Newswire, Bloomberg, TechCrunch, Reuters, WSJ, Business Insider, The Verge.
+1. FIRST SEARCH: "{company_name} layoffs {current_year}"
+2. SECOND SEARCH: "{company_name} layoffs {last_year}"
+3. THIRD SEARCH: "{company_name} acquisition buyout going private {current_year}"
+4. FOURTH SEARCH: "{company_name} lawsuit investigation SEC {current_year}"
+5. FIFTH SEARCH: "{company_name} CEO leadership changes {current_year}"
+6. SIXTH SEARCH: "{company_name} stock price funding valuation {current_year}"
+7. SEVENTH SEARCH: "{company_name} news" (for recent press coverage)
 
-For any significant findings, classify the health signal appropriately:
-- Acquisitions, buyouts, or going-private deals: YELLOW if pending, potentially uncertain for employees
-- Lawsuits or investigations: YELLOW or RED depending on severity
-- Failed deals or terminated acquisitions: YELLOW, shows instability
+IMPORTANT SEARCH GUIDANCE:
+- If you find any lawsuits, investigations, or SEC filings, dig deeper with a follow-up search
+- Look specifically at sources like: PR Newswire, Bloomberg, TechCrunch, Reuters, WSJ, Business Insider, The Verge, Layoffs.fyi
+- For app companies, also check: The Verge, Engadget, 9to5Mac/Google
+- Include the FULL company name and common variations in your searches
 
-Provide your findings as structured JSON."""
+CLASSIFICATION GUIDANCE:
+- Pending acquisition/buyout/going-private deals: YELLOW (uncertainty for employees)
+- Terminated/failed acquisitions: YELLOW (instability signal)
+- Active lawsuits against the company or leadership: YELLOW or RED based on severity
+- SEC investigations or fiduciary duty lawsuits: RED
+- Layoffs announced in past 6 months: Check percentage to determine severity
+
+After completing your searches, provide your findings as structured JSON matching the schema in your system prompt."""
 
     try:
         logger.info(f"Fetching company intelligence for: {company_name}")
         print(f"🔍 Fetching company intelligence for: {company_name}")
 
         # Call Claude with web search tool
+        # Web search is a "server tool" - Anthropic's API executes searches automatically
+        # and injects results into the response. No tool_use loop needed.
+        messages = [{"role": "user", "content": user_message}]
+
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=2048,
+            max_tokens=4096,  # Increased for detailed responses with citations
             temperature=0,
             system=COMPANY_INTEL_SYSTEM_PROMPT,
             tools=[
                 {
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 10,
+                    "max_uses": 15,  # Increased for more thorough research
                 }
             ],
-            messages=[{"role": "user", "content": user_message}]
+            messages=messages
         )
 
-        # Process the response - handle tool use loop if needed
-        result_text = None
-        messages = [{"role": "user", "content": user_message}]
+        # Handle pause_turn stop reason - API paused a long-running turn
+        # Continue the conversation to let Claude finish
+        while response.stop_reason == "pause_turn":
+            logger.info(f"Received pause_turn, continuing search for: {company_name}")
+            print(f"🔄 Continuing company intel search for: {company_name}")
 
-        # Continue conversation if Claude needs to use tools
-        while response.stop_reason == "tool_use":
-            # Add assistant's response to messages
+            # Add assistant's partial response to continue
             messages.append({"role": "assistant", "content": response.content})
 
-            # Process tool results
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    # Web search results are handled automatically by Claude
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": "Search completed."
-                    })
-
-            messages.append({"role": "user", "content": tool_results})
-
-            # Continue the conversation
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=2048,
+                max_tokens=4096,
                 temperature=0,
                 system=COMPANY_INTEL_SYSTEM_PROMPT,
                 tools=[
                     {
                         "type": "web_search_20250305",
                         "name": "web_search",
-                        "max_uses": 10,
+                        "max_uses": 15,
                     }
                 ],
                 messages=messages
             )
 
-        # Extract final text response
+        # Log web search usage for monitoring
+        if hasattr(response, 'usage') and response.usage:
+            server_tool_use = getattr(response.usage, 'server_tool_use', None)
+            if server_tool_use:
+                web_searches = getattr(server_tool_use, 'web_search_requests', 0)
+                logger.info(f"Web searches performed for {company_name}: {web_searches}")
+                print(f"🔍 Web searches performed: {web_searches}")
+
+        # Extract final text response - combine all text blocks
+        result_text = None
+        text_parts = []
         for block in response.content:
             if hasattr(block, 'text'):
-                result_text = block.text
-                break
+                text_parts.append(block.text)
+
+        if text_parts:
+            result_text = ''.join(text_parts)
 
         if not result_text:
             logger.warning(f"No text response from Claude for company: {company_name}")
