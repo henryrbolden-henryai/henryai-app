@@ -2081,6 +2081,9 @@
             } else if (healthSignal === 'RED') {
                 displayText = '\u26A0 Risk';
                 healthClass = 'health-red';
+            } else if (healthSignal === 'UNKNOWN') {
+                displayText = '\u25CB Unknown';
+                healthClass = 'health-unknown';
             } else {
                 displayText = '\u2014';
                 healthClass = 'health-unknown';

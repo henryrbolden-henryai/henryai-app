@@ -91,6 +91,10 @@
             border-color: #f87171;
         }
 
+        .health-card.signal-unknown {
+            border-color: #6b7280;
+        }
+
         .health-signal {
             display: flex;
             align-items: center;
@@ -110,6 +114,7 @@
         .health-signal-text.green { color: #4ade80; }
         .health-signal-text.yellow { color: #fbbf24; }
         .health-signal-text.red { color: #f87171; }
+        .health-signal-text.unknown { color: #9ca3af; }
 
         .confidence-level {
             color: #9ca3af;
@@ -329,7 +334,13 @@
         // Get analysis data from sessionStorage
         const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
         const companyIntel = analysisData.company_intelligence || null;
-        const companyName = analysisData._company_name || analysisData.company_name || analysisData.company || 'Unknown Company';
+
+        // Get company name, handling potential duplication
+        let rawCompanyName = analysisData._company_name || analysisData.company_name || analysisData.company || 'Unknown Company';
+        // Fix duplication bug: "Grindr Grindr" -> "Grindr"
+        // Split by newline or double space and take first unique value
+        const companyParts = rawCompanyName.split(/[\n\r]+/).map(s => s.trim()).filter(s => s);
+        const companyName = companyParts.length > 0 ? companyParts[0] : rawCompanyName;
 
         const pageContent = document.getElementById('pageContent');
 
@@ -368,7 +379,12 @@
             let signalText = 'STABLE';
             let signalTextClass = 'green';
 
-            if (healthSignal === 'YELLOW') {
+            if (healthSignal === 'UNKNOWN') {
+                signalClass = 'signal-unknown';
+                signalIcon = '\u25CB';  // Circle icon
+                signalText = 'UNKNOWN';
+                signalTextClass = 'unknown';
+            } else if (healthSignal === 'YELLOW') {
                 signalClass = 'signal-yellow';
                 signalIcon = '\u26A0';
                 signalText = 'WATCH';
@@ -398,6 +414,15 @@
                                     </li>
                                 `).join('')}
                             </ul>
+                        </div>
+                    </div>
+                `;
+            } else if (healthSignal === 'UNKNOWN') {
+                findingsHtml = `
+                    <div class="section">
+                        <div class="section-header">Key Findings</div>
+                        <div class="section-content">
+                            <p style="color: #9ca3af;">Unable to retrieve sufficient company data for analysis.</p>
                         </div>
                     </div>
                 `;
@@ -499,7 +524,7 @@
                         <span class="health-signal-icon">${signalIcon}</span>
                         <span class="health-signal-text ${signalTextClass}">HEALTH SIGNAL: ${signalText}</span>
                     </div>
-                    <div class="confidence-level">Confidence: ${confidence}${sourcesChecked.length > 0 ? ` (${sourcesChecked.length} source${sourcesChecked.length > 1 ? 's' : ''} checked)` : ''}</div>
+                    <div class="confidence-level">${healthSignal === 'UNKNOWN' ? 'Confidence: Low - limited data available' : `Confidence: ${confidence}${sourcesChecked.length > 0 ? ` (${sourcesChecked.length} source${sourcesChecked.length > 1 ? 's' : ''} checked)` : ''}`}</div>
                 </div>
 
                 ${findingsHtml}

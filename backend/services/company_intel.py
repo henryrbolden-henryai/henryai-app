@@ -32,9 +32,10 @@ CACHE_TTL_HOURS = 24
 
 class HealthSignal(str, Enum):
     """Company health signal levels."""
-    GREEN = "GREEN"   # Stable: No negative signals, or only minor concerns
-    YELLOW = "YELLOW" # Watch: Medium-severity signals (layoffs <15%, stock down 15-30%)
-    RED = "RED"       # Risk: High-severity signals (layoffs >15%, stock down >30%, leadership exodus)
+    GREEN = "GREEN"     # Stable: No negative signals, or only minor concerns (requires MEDIUM+ confidence)
+    YELLOW = "YELLOW"   # Watch: Medium-severity signals (layoffs <15%, stock down 15-30%)
+    RED = "RED"         # Risk: High-severity signals (layoffs >15%, stock down >30%, leadership exodus)
+    UNKNOWN = "UNKNOWN" # Insufficient data: LOW confidence, cannot make assessment
 
 
 class ConfidenceLevel(str, Enum):
@@ -404,6 +405,45 @@ def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntel
         except ValueError:
             health_signal = HealthSignal.GREEN
 
+        # CRITICAL RULE: LOW confidence MUST result in UNKNOWN signal
+        # We cannot claim STABLE (GREEN) without sufficient data to verify it
+        # YELLOW and RED are allowed with LOW confidence (we found something concerning)
+        if confidence == ConfidenceLevel.LOW and health_signal == HealthSignal.GREEN:
+            health_signal = HealthSignal.UNKNOWN
+            # Update the messaging for UNKNOWN state
+            what_this_means = data.get("what_this_means", "")
+            if not what_this_means or "no significant" in what_this_means.lower():
+                what_this_means = "Henry could not find enough verified data to assess this company's health. This does not mean safe or risky. Validate directly before investing significant time in this opportunity."
+
+            interview_questions = data.get("interview_questions", [])
+            if not interview_questions:
+                interview_questions = [
+                    "What does the growth roadmap look like for this team over the next 12 months?",
+                    "How has the team structure evolved over the past year?",
+                    "What is the company's current runway and funding status?",
+                    "Have there been any recent organizational changes I should know about?",
+                ]
+
+            negotiation_guidance = data.get("negotiation_guidance", [])
+            if not negotiation_guidance:
+                negotiation_guidance = [
+                    "Research the company independently. Henry does not have enough data to guide you here.",
+                    "Ask directly about team stability, runway, and recent organizational changes.",
+                    "Verify funding status and leadership stability through your own network.",
+                ]
+
+            return CompanyIntelligence(
+                company_name=company_name,
+                company_health_signal=health_signal,
+                confidence=confidence,
+                findings=findings,
+                what_this_means=what_this_means,
+                interview_questions=interview_questions,
+                negotiation_guidance=negotiation_guidance,
+                data_freshness=datetime.now(),
+                sources_checked=data.get("sources_checked", []),
+            )
+
         return CompanyIntelligence(
             company_name=company_name,
             company_health_signal=health_signal,
@@ -423,23 +463,27 @@ def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntel
 
 
 def _create_error_intel(company_name: str, error_message: str) -> CompanyIntelligence:
-    """Create a CompanyIntelligence object for error cases."""
+    """Create a CompanyIntelligence object for error/unknown cases.
+
+    CRITICAL: When confidence is LOW, health_signal MUST be UNKNOWN.
+    We cannot claim STABLE (GREEN) without sufficient data to verify it.
+    """
     return CompanyIntelligence(
         company_name=company_name,
-        company_health_signal=HealthSignal.GREEN,  # Default to GREEN when we can't verify
+        company_health_signal=HealthSignal.UNKNOWN,  # UNKNOWN when we can't verify - never falsely claim stable
         confidence=ConfidenceLevel.LOW,
         findings=[],
-        what_this_means="We were unable to retrieve recent news about this company. Proceed with your own research.",
+        what_this_means="Henry could not find enough verified data to assess this company's health. This does not mean safe or risky. Validate directly before investing significant time in this opportunity.",
         interview_questions=[
             "What does the growth roadmap look like for this team over the next 12 months?",
-            "How is the company thinking about scaling while maintaining culture?",
-            "What is the biggest challenge the team is facing right now?",
-            "How does this role contribute to the company's strategic priorities?",
+            "How has the team structure evolved over the past year?",
+            "What is the company's current runway and funding status?",
+            "Have there been any recent organizational changes I should know about?",
         ],
         negotiation_guidance=[
-            "Standard negotiation approach applies.",
-            "Research the company independently before finalizing decisions.",
-            "Ask about team stability and growth plans during interviews.",
+            "Research the company independently. Henry does not have enough data to guide you here.",
+            "Ask directly about team stability, runway, and recent organizational changes.",
+            "Verify funding status and leadership stability through your own network.",
         ],
         data_freshness=datetime.now(),
         sources_checked=[],
