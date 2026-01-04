@@ -1188,7 +1188,8 @@
         "Need strategy help?",
         "Ready when you are!",
         "Let me help!",
-        "Thinking about your next move?"
+        "Thinking about your next move?",
+        "Applying now? I can help with those questions!"
     ];
 
     // Get context-aware tooltip message (prioritizes meaningful context over random)
@@ -2955,7 +2956,7 @@ ${confidenceClosing}`,
             'documents': [
                 'Why did you change this?',
                 'Should I include more metrics?',
-                'Is this ATS-friendly?'
+                'Help me answer application questions'
             ],
             'outreach': [
                 'Best time to reach out?',
@@ -2977,10 +2978,15 @@ ${confidenceClosing}`,
                 'When to follow up?',
                 'How to prioritize?'
             ],
+            'overview': [
+                'What should I do first?',
+                'Help me answer application questions',
+                'Am I ready to apply?'
+            ],
             'default': [
                 'Help me stand out',
                 'Review my strategy',
-                'What should I do next?'
+                'Help me answer application questions'
             ]
         };
 
@@ -3774,7 +3780,7 @@ ${confidenceClosing}`,
         widget.id = 'ask-henry-widget';
         widget.innerHTML = `
             <!-- Floating Action Button -->
-            <button class="ask-henry-fab" id="askHenryFab" aria-label="Hey Henry">
+            <button class="ask-henry-fab" id="askHenryFab" aria-label="Chat with Henry">
                 <span class="ask-henry-tooltip" id="askHenryTooltip">Hey, it's Henry!</span>
                 <svg class="ask-henry-logo" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs>
