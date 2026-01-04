@@ -66,6 +66,11 @@
                 href: 'interview-intelligence.html'
             },
             {
+                id: 'company-analysis',
+                label: 'Company Analysis',
+                href: 'company-analysis.html'
+            },
+            {
                 id: 'tracker',
                 label: 'Command Center',
                 href: 'tracker.html'
