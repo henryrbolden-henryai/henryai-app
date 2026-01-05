@@ -1861,18 +1861,31 @@
         return greetings[Math.floor(Math.random() * greetings.length)];
     }
 
-    // Get user's first name from profile
+    // Get user's preferred name (nickname first, then first name)
     function getUserName() {
         try {
-            // Check resumeData in sessionStorage first (most recent)
+            // Check localStorage for saved profile (includes nickname)
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+            // Priority 1: Use nickname if set
+            if (profile.nickname) {
+                return profile.nickname;
+            }
+
+            // Priority 2: Use first_name from profile
+            if (profile.first_name) {
+                return profile.first_name;
+            }
+
+            // Priority 3: Parse from full name in profile
+            if (profile.name) {
+                return profile.name.split(' ')[0];
+            }
+
+            // Priority 4: Check resumeData in sessionStorage
             const resumeData = JSON.parse(sessionStorage.getItem('resumeData') || '{}');
             if (resumeData.name) {
                 return resumeData.name.split(' ')[0];
-            }
-            // Check localStorage for saved profile
-            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-            if (profile.name) {
-                return profile.name.split(' ')[0];
             }
         } catch (e) {
             console.error('Error getting user name:', e);
