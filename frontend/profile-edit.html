@@ -498,6 +498,57 @@
             margin-top: -8px;
         }
 
+        /* Form row for side-by-side fields */
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-group-half {
+            flex: 1;
+        }
+
+        /* Field hint text (below inputs) */
+        .field-hint {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 6px;
+        }
+
+        /* Inline checkbox style */
+        .checkbox-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .checkbox-inline input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-inline span {
+            font-size: 0.95rem;
+        }
+
+        /* Disabled input styling */
+        input:disabled {
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 640px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+
         /* Henry Response Bubbles */
         .henry-response {
             display: none;
@@ -973,7 +1024,142 @@
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
 
-        <!-- SECTION 1: RESUMES (Multi-Resume Support) -->
+        <!-- SECTION 1: ABOUT YOU (Expanded) -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="icon">👤</span>
+                About You
+            </div>
+            <div class="form-row">
+                <div class="form-group form-group-half">
+                    <label>First Name *</label>
+                    <input type="text" id="firstName" placeholder="Jane">
+                </div>
+                <div class="form-group form-group-half">
+                    <label>Last Name *</label>
+                    <input type="text" id="lastName" placeholder="Smith">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="userEmail" disabled placeholder="Loading...">
+                <span class="field-hint">From your account</span>
+            </div>
+            <div class="form-group">
+                <label>Pronouns <span style="color: #888; font-weight: 400;">(optional)</span></label>
+                <input type="text" id="pronouns" placeholder="e.g., she/her, he/him, they/them">
+            </div>
+            <div class="form-group">
+                <label>Function Area *</label>
+                <select id="functionArea">
+                    <option value="">Select your function...</option>
+                    <option value="product_management">Product Management</option>
+                    <option value="engineering">Engineering</option>
+                    <option value="design">Design</option>
+                    <option value="data_analytics">Data / Analytics</option>
+                    <option value="sales">Sales</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="customer_success">Customer Success</option>
+                    <option value="operations">Operations</option>
+                    <option value="finance">Finance</option>
+                    <option value="hr_people">HR / People</option>
+                    <option value="legal">Legal</option>
+                    <option value="other">Other</option>
+                </select>
+                <span class="field-hint" id="functionAreaHint" style="display: none;"></span>
+            </div>
+            <div class="form-group">
+                <label>Current Industry *</label>
+                <select id="currentIndustry">
+                    <option value="">Select your industry...</option>
+                    <option value="technology">Technology / Software</option>
+                    <option value="healthcare">Healthcare & Life Sciences</option>
+                    <option value="fintech">Financial Services / Fintech</option>
+                    <option value="ecommerce">E-commerce / Retail</option>
+                    <option value="media">Media & Entertainment</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="energy">Energy / Cleantech</option>
+                    <option value="real_estate">Real Estate / PropTech</option>
+                    <option value="education">Education / EdTech</option>
+                    <option value="government">Government / Public Sector</option>
+                    <option value="consulting">Consulting / Professional Services</option>
+                    <option value="telecom">Telecommunications</option>
+                    <option value="transportation">Transportation / Logistics</option>
+                    <option value="hospitality">Hospitality / Travel</option>
+                    <option value="nonprofit">Nonprofit</option>
+                    <option value="other">Other</option>
+                </select>
+                <span class="field-hint" id="industryHint" style="display: none;"></span>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="multiIndustry">
+                    <span>I work across multiple industries</span>
+                </label>
+            </div>
+            <div class="form-group" id="secondaryIndustryGroup" style="display: none;">
+                <label>Secondary Industry</label>
+                <select id="secondaryIndustry">
+                    <option value="">Select secondary industry...</option>
+                    <option value="technology">Technology / Software</option>
+                    <option value="healthcare">Healthcare & Life Sciences</option>
+                    <option value="fintech">Financial Services / Fintech</option>
+                    <option value="ecommerce">E-commerce / Retail</option>
+                    <option value="media">Media & Entertainment</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="energy">Energy / Cleantech</option>
+                    <option value="real_estate">Real Estate / PropTech</option>
+                    <option value="education">Education / EdTech</option>
+                    <option value="government">Government / Public Sector</option>
+                    <option value="consulting">Consulting / Professional Services</option>
+                    <option value="telecom">Telecommunications</option>
+                    <option value="transportation">Transportation / Logistics</option>
+                    <option value="hospitality">Hospitality / Travel</option>
+                    <option value="nonprofit">Nonprofit</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Work Authorization *</label>
+                <select id="workAuthorization">
+                    <option value="">Select your work authorization...</option>
+                    <option value="us_citizen">US Citizen</option>
+                    <option value="green_card">Green Card / Permanent Resident</option>
+                    <option value="h1b">H1B Visa</option>
+                    <option value="h1b_transfer">H1B Transfer (currently employed)</option>
+                    <option value="l1">L1 Visa</option>
+                    <option value="opt">OPT (with EAD)</option>
+                    <option value="opt_stem">OPT STEM Extension</option>
+                    <option value="tn">TN Visa (Canadian/Mexican)</option>
+                    <option value="other_visa">Other Visa</option>
+                </select>
+            </div>
+            <div class="form-group" id="sponsorshipGroup" style="display: none;">
+                <label>Do you require employer sponsorship?</label>
+                <div class="radio-group" id="sponsorshipRequired">
+                    <label class="radio-option" data-value="yes">
+                        <input type="radio" name="sponsorship" value="yes">
+                        <span class="radio-circle"></span>
+                        <span class="radio-label">Yes, I require sponsorship</span>
+                    </label>
+                    <label class="radio-option" data-value="no">
+                        <input type="radio" name="sponsorship" value="no">
+                        <span class="radio-circle"></span>
+                        <span class="radio-label">No, I do NOT require sponsorship</span>
+                    </label>
+                </div>
+                <span class="field-hint">This helps filter out roles that won't work for you</span>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-inline">
+                    <input type="checkbox" id="isVeteran">
+                    <span>I am a U.S. military veteran</span>
+                </label>
+                <span class="field-hint">Some employers actively seek to hire veterans</span>
+            </div>
+        </div>
+
+        <!-- SECTION 2: RESUMES (Multi-Resume Support) -->
         <div class="form-section">
             <div class="section-title">
                 <span class="icon">📄</span>
@@ -1053,7 +1239,7 @@
             </div>
         </div>
 
-        <!-- SECTION 1.5: LINKEDIN PROFILE -->
+        <!-- SECTION 3: LINKEDIN PROFILE -->
         <div class="form-section linkedin-profile-section">
             <div class="section-title">
                 <span class="icon">💼</span>
@@ -1065,39 +1251,43 @@
             </div>
         </div>
 
-        <!-- SECTION 2: COMPENSATION -->
+        <!-- SECTION 4: LOCATION & WORK ARRANGEMENT -->
         <div class="form-section">
             <div class="section-title">
-                <span class="icon">💰</span>
-                Compensation Expectations
+                <span class="icon">📍</span>
+                Location & Work Style
             </div>
-            <div class="form-group">
-                <label>What are you looking for? <span class="label-hint">(annual base salary, USD)</span></label>
-                <div class="comp-grid">
-                    <div>
-                        <label>Minimum</label>
-                        <input type="text" id="compMin" placeholder="$120,000" inputmode="numeric">
-                    </div>
-                    <div>
-                        <label>Target</label>
-                        <input type="text" id="compTarget" placeholder="$150,000" inputmode="numeric">
-                    </div>
-                    <div>
-                        <label>Stretch</label>
-                        <input type="text" id="compStretch" placeholder="$180,000" inputmode="numeric">
-                    </div>
+            <div class="form-row">
+                <div class="form-group form-group-half">
+                    <label>City</label>
+                    <input type="text" id="city" placeholder="e.g., San Francisco">
+                </div>
+                <div class="form-group form-group-half">
+                    <label>State / Province</label>
+                    <input type="text" id="state" placeholder="e.g., California">
                 </div>
             </div>
-        </div>
-
-        <!-- SECTION 3: WORK ARRANGEMENT -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">🏠</span>
-                Work Arrangement
-            </div>
-            <p class="section-hint">What setups work for you? Select all that apply.</p>
             <div class="form-group">
+                <label>Country</label>
+                <select id="country">
+                    <option value="">Select country...</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="UK">United Kingdom</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="AU">Australia</option>
+                    <option value="IN">India</option>
+                    <option value="SG">Singapore</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <!-- Hidden field for backward compatibility -->
+            <input type="hidden" id="currentLocation">
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Work Arrangement</label>
+                <p class="section-hint" style="margin-top: 4px;">What setups work for you? Select all that apply.</p>
                 <div class="checkbox-group" id="workArrangementGroup">
                     <div class="checkbox-option" data-value="remote">
                         <span class="checkbox-box"></span>
@@ -1112,18 +1302,6 @@
                         <span>On-site</span>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- SECTION 4: LOCATION -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">📍</span>
-                Location
-            </div>
-            <div class="form-group">
-                <label>Where are you based?</label>
-                <input type="text" id="currentLocation" placeholder="e.g., New York, NY">
             </div>
             <div class="form-group">
                 <label>Open to relocating?</label>
@@ -1155,15 +1333,73 @@
             </div>
         </div>
 
-        <!-- SECTION 5: ABOUT YOU -->
+        <!-- SECTION 5: WHAT YOU'RE LOOKING FOR -->
         <div class="form-section">
             <div class="section-title">
-                <span class="icon">👤</span>
-                About You
+                <span class="icon">🎯</span>
+                What You're Looking For
             </div>
             <div class="form-group">
-                <label>Pronouns <span style="color: #888; font-weight: 400;">(optional)</span></label>
-                <input type="text" id="pronouns" placeholder="e.g., she/her, he/him, they/them">
+                <label>Target Industry (Primary)</label>
+                <select id="targetIndustryPrimary">
+                    <option value="">Same as current / Open to all</option>
+                    <option value="technology">Technology / Software</option>
+                    <option value="healthcare">Healthcare & Life Sciences</option>
+                    <option value="fintech">Financial Services / Fintech</option>
+                    <option value="ecommerce">E-commerce / Retail</option>
+                    <option value="media">Media & Entertainment</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="energy">Energy / Cleantech</option>
+                    <option value="real_estate">Real Estate / PropTech</option>
+                    <option value="education">Education / EdTech</option>
+                    <option value="government">Government / Public Sector</option>
+                    <option value="consulting">Consulting / Professional Services</option>
+                    <option value="telecom">Telecommunications</option>
+                    <option value="transportation">Transportation / Logistics</option>
+                    <option value="hospitality">Hospitality / Travel</option>
+                    <option value="nonprofit">Nonprofit</option>
+                    <option value="other">Other</option>
+                </select>
+                <span class="field-hint">Leave blank if you want to stay in your current industry or are open to any</span>
+            </div>
+            <div class="form-group">
+                <label>Target Industry (Secondary) <span style="color: #888; font-weight: 400;">(optional)</span></label>
+                <select id="targetIndustrySecondary">
+                    <option value="">None</option>
+                    <option value="technology">Technology / Software</option>
+                    <option value="healthcare">Healthcare & Life Sciences</option>
+                    <option value="fintech">Financial Services / Fintech</option>
+                    <option value="ecommerce">E-commerce / Retail</option>
+                    <option value="media">Media & Entertainment</option>
+                    <option value="manufacturing">Manufacturing</option>
+                    <option value="energy">Energy / Cleantech</option>
+                    <option value="real_estate">Real Estate / PropTech</option>
+                    <option value="education">Education / EdTech</option>
+                    <option value="government">Government / Public Sector</option>
+                    <option value="consulting">Consulting / Professional Services</option>
+                    <option value="telecom">Telecommunications</option>
+                    <option value="transportation">Transportation / Logistics</option>
+                    <option value="hospitality">Hospitality / Travel</option>
+                    <option value="nonprofit">Nonprofit</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <label>Compensation Expectations <span class="label-hint">(annual base salary, USD)</span></label>
+                <div class="comp-grid">
+                    <div>
+                        <label>Minimum</label>
+                        <input type="text" id="compMin" placeholder="$120,000" inputmode="numeric">
+                    </div>
+                    <div>
+                        <label>Target</label>
+                        <input type="text" id="compTarget" placeholder="$150,000" inputmode="numeric">
+                    </div>
+                    <div>
+                        <label>Stretch</label>
+                        <input type="text" id="compStretch" placeholder="$180,000" inputmode="numeric">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2020,6 +2256,64 @@
                 const expCount = profile.resume.experience?.length || 0;
                 const skillCount = profile.resume.skills?.length || 0;
                 resumeMeta.textContent = `${expCount} roles · ${skillCount} skills`;
+
+                // Pre-populate first/last name from resume if not already set
+                if (!profile.first_name && !profile.last_name && name && name !== 'Unknown') {
+                    const nameParts = name.trim().split(' ');
+                    if (nameParts.length >= 2) {
+                        document.getElementById('firstName').value = nameParts[0];
+                        document.getElementById('lastName').value = nameParts.slice(1).join(' ');
+                    } else if (nameParts.length === 1) {
+                        document.getElementById('firstName').value = nameParts[0];
+                    }
+                }
+            }
+
+            // About You section - new fields
+            document.getElementById('firstName').value = profile.first_name || document.getElementById('firstName').value || '';
+            document.getElementById('lastName').value = profile.last_name || document.getElementById('lastName').value || '';
+            document.getElementById('pronouns').value = profile.pronouns || '';
+
+            // Function Area
+            if (profile.function_area) {
+                document.getElementById('functionArea').value = profile.function_area;
+            }
+
+            // Current Industry
+            if (profile.current_industry) {
+                document.getElementById('currentIndustry').value = profile.current_industry;
+            }
+
+            // Secondary Industry (multi-industry)
+            if (profile.secondary_industry) {
+                document.getElementById('multiIndustry').checked = true;
+                document.getElementById('secondaryIndustryGroup').style.display = 'block';
+                document.getElementById('secondaryIndustry').value = profile.secondary_industry;
+            }
+
+            // Work Authorization
+            if (profile.work_authorization) {
+                document.getElementById('workAuthorization').value = profile.work_authorization;
+                // Show sponsorship question for visa types that might require it
+                const visaTypesRequiringSponsorship = ['h1b', 'h1b_transfer', 'l1', 'opt', 'opt_stem', 'other_visa'];
+                if (visaTypesRequiringSponsorship.includes(profile.work_authorization)) {
+                    document.getElementById('sponsorshipGroup').style.display = 'block';
+                }
+            }
+
+            // Sponsorship Required
+            if (profile.requires_sponsorship !== undefined) {
+                const sponsorshipValue = profile.requires_sponsorship ? 'yes' : 'no';
+                const option = document.querySelector(`#sponsorshipRequired .radio-option[data-value="${sponsorshipValue}"]`);
+                if (option) {
+                    option.classList.add('selected');
+                    option.querySelector('input').checked = true;
+                }
+            }
+
+            // Veteran Status
+            if (profile.is_veteran) {
+                document.getElementById('isVeteran').checked = true;
             }
 
             // Compensation (format as currency)
@@ -2040,10 +2334,28 @@
                 });
             }
 
-            // Location
+            // Location - new structured fields
             if (profile.location) {
+                // New structured fields
+                document.getElementById('city').value = profile.location.city || '';
+                document.getElementById('state').value = profile.location.state || '';
+                document.getElementById('country').value = profile.location.country || '';
+
+                // Backward compatibility - populate hidden field
                 document.getElementById('currentLocation').value = profile.location.current || '';
-                
+
+                // If we have old-style current location but no structured, try to parse
+                if (profile.location.current && !profile.location.city) {
+                    const parts = profile.location.current.split(',').map(p => p.trim());
+                    if (parts.length >= 2) {
+                        document.getElementById('city').value = parts[0];
+                        document.getElementById('state').value = parts[1];
+                        if (!profile.location.country) {
+                            document.getElementById('country').value = 'US'; // Default assumption
+                        }
+                    }
+                }
+
                 if (profile.location.open_to_relocate) {
                     const option = document.querySelector(`#relocateGroup .radio-option[data-value="${profile.location.open_to_relocate}"]`);
                     if (option) {
@@ -2055,13 +2367,18 @@
                         }
                     }
                 }
-                
+
                 relocateLocations = profile.location.relocate_to || [];
                 renderRelocateLocations();
             }
 
-            // Pronouns
-            document.getElementById('pronouns').value = profile.pronouns || '';
+            // Target Industries (What You're Looking For section)
+            if (profile.target_industry_primary) {
+                document.getElementById('targetIndustryPrimary').value = profile.target_industry_primary;
+            }
+            if (profile.target_industry_secondary) {
+                document.getElementById('targetIndustrySecondary').value = profile.target_industry_secondary;
+            }
 
             // Situation (dropdown-based)
             if (profile.situation) {
@@ -2279,6 +2596,64 @@
             }
         });
 
+        // Multi-industry checkbox toggle
+        const multiIndustryCheckbox = document.getElementById('multiIndustry');
+        const secondaryIndustryGroup = document.getElementById('secondaryIndustryGroup');
+        if (multiIndustryCheckbox) {
+            multiIndustryCheckbox.addEventListener('change', (e) => {
+                secondaryIndustryGroup.style.display = e.target.checked ? 'block' : 'none';
+                if (!e.target.checked) {
+                    document.getElementById('secondaryIndustry').value = '';
+                }
+            });
+        }
+
+        // Work authorization change - show sponsorship question for visa types
+        const workAuthorizationSelect = document.getElementById('workAuthorization');
+        const sponsorshipGroup = document.getElementById('sponsorshipGroup');
+        if (workAuthorizationSelect) {
+            workAuthorizationSelect.addEventListener('change', (e) => {
+                const visaTypesRequiringSponsorship = ['h1b', 'h1b_transfer', 'l1', 'opt', 'opt_stem', 'other_visa'];
+                if (visaTypesRequiringSponsorship.includes(e.target.value)) {
+                    sponsorshipGroup.style.display = 'block';
+                } else {
+                    sponsorshipGroup.style.display = 'none';
+                    // Auto-set to "no sponsorship required" for US citizens, green card holders, TN visa
+                    document.querySelectorAll('#sponsorshipRequired .radio-option').forEach(o => o.classList.remove('selected'));
+                }
+            });
+        }
+
+        // Load user email and name from Supabase auth
+        async function loadUserAuthData() {
+            if (typeof HenryAuth !== 'undefined') {
+                try {
+                    const session = await HenryAuth.getSession();
+                    if (session?.user?.email) {
+                        document.getElementById('userEmail').value = session.user.email;
+                    }
+
+                    // Load name from auth metadata (set during signup)
+                    const nameData = await HenryAuth.getUserName();
+                    if (nameData) {
+                        const firstNameInput = document.getElementById('firstName');
+                        const lastNameInput = document.getElementById('lastName');
+
+                        // Only auto-populate if the fields are empty (don't override saved profile data)
+                        if (!firstNameInput.value && nameData.firstName) {
+                            firstNameInput.value = nameData.firstName;
+                        }
+                        if (!lastNameInput.value && nameData.lastName) {
+                            lastNameInput.value = nameData.lastName;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error loading user auth data:', e);
+                }
+            }
+        }
+        loadUserAuthData();
+
         // Radio/Checkbox handlers
         document.querySelectorAll('.radio-group').forEach(group => {
             group.querySelectorAll('.radio-option').forEach(option => {
@@ -2357,6 +2732,41 @@
             // Clear previous errors
             errorMessage.classList.remove('show');
 
+            // Validate required fields
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const functionArea = document.getElementById('functionArea').value;
+            const currentIndustry = document.getElementById('currentIndustry').value;
+            const workAuthorization = document.getElementById('workAuthorization').value;
+
+            if (!firstName || !lastName) {
+                errorMessage.textContent = 'Please enter your first and last name.';
+                errorMessage.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (!functionArea) {
+                errorMessage.textContent = 'Please select your function area.';
+                errorMessage.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (!currentIndustry) {
+                errorMessage.textContent = 'Please select your current industry.';
+                errorMessage.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (!workAuthorization) {
+                errorMessage.textContent = 'Please select your work authorization status.';
+                errorMessage.classList.add('show');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
             // Validate required fields for new profile
             if (isNewProfile) {
                 if (!profile || !profile.resume) {
@@ -2392,6 +2802,35 @@
                     }
                 }
 
+                // About You section - new fields
+                profile.first_name = firstName;
+                profile.last_name = lastName;
+                profile.pronouns = document.getElementById('pronouns').value.trim() || null;
+                profile.function_area = functionArea;
+                profile.current_industry = currentIndustry;
+
+                // Secondary industry (if multi-industry selected)
+                if (document.getElementById('multiIndustry').checked) {
+                    profile.secondary_industry = document.getElementById('secondaryIndustry').value || null;
+                } else {
+                    profile.secondary_industry = null;
+                }
+
+                // Work authorization
+                profile.work_authorization = workAuthorization;
+
+                // Sponsorship required (for visa types)
+                const visaTypesRequiringSponsorship = ['h1b', 'h1b_transfer', 'l1', 'opt', 'opt_stem', 'other_visa'];
+                if (visaTypesRequiringSponsorship.includes(workAuthorization)) {
+                    profile.requires_sponsorship = getSelectedRadioValue('sponsorshipRequired') === 'yes';
+                } else {
+                    profile.requires_sponsorship = false;
+                }
+
+                // Veteran status
+                profile.is_veteran = document.getElementById('isVeteran').checked;
+
+                // Compensation
                 profile.compensation = {
                     min: parseCurrency(document.getElementById('compMin').value),
                     target: parseCurrency(document.getElementById('compTarget').value),
@@ -2400,13 +2839,31 @@
 
                 profile.work_arrangement = workArrangements;
 
+                // Location - structured + backward compatible
+                const city = document.getElementById('city').value.trim();
+                const state = document.getElementById('state').value.trim();
+                const country = document.getElementById('country').value;
+
+                // Build current location string for backward compatibility
+                let currentLocationStr = '';
+                if (city && state) {
+                    currentLocationStr = `${city}, ${state}`;
+                } else if (city) {
+                    currentLocationStr = city;
+                }
+
                 profile.location = {
-                    current: document.getElementById('currentLocation').value.trim(),
+                    current: currentLocationStr,
+                    city: city || null,
+                    state: state || null,
+                    country: country || null,
                     open_to_relocate: getSelectedRadioValue('relocateGroup'),
                     relocate_to: relocateLocations
                 };
 
-                profile.pronouns = document.getElementById('pronouns').value.trim() || null;
+                // Target industries (What You're Looking For)
+                profile.target_industry_primary = document.getElementById('targetIndustryPrimary').value || null;
+                profile.target_industry_secondary = document.getElementById('targetIndustrySecondary').value || null;
 
                 profile.situation = {
                     holding_up: document.getElementById('holdingUp').value || null,

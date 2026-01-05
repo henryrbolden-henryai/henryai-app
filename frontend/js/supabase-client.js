@@ -38,18 +38,31 @@ const HenryAuth = {
 
     /**
      * Get user's display name (from signup or Google)
+     * Now supports first_name/last_name stored separately
      */
     async getUserName() {
         const user = await this.getUser();
         if (!user) return null;
 
-        // Try different sources for the name
+        // Try to get first/last name from metadata (new format)
+        const firstName = user.user_metadata?.first_name;
+        const lastName = user.user_metadata?.last_name;
+
+        if (firstName) {
+            return {
+                fullName: lastName ? `${firstName} ${lastName}` : firstName,
+                firstName: firstName,
+                lastName: lastName || ''
+            };
+        }
+
+        // Fallback to old full_name format for existing users
         const fullName = user.user_metadata?.full_name ||
                         user.user_metadata?.name ||
                         user.email?.split('@')[0] ||
                         'there';
 
-        // Parse first/last name
+        // Parse first/last name from full_name
         const parts = fullName.trim().split(' ');
         return {
             fullName: fullName,
@@ -60,13 +73,29 @@ const HenryAuth = {
 
     /**
      * Sign up with email and password
+     * Now accepts firstName and lastName separately
+     * Backward compatible: if lastName is undefined, treats firstName as fullName
      */
-    async signUp(email, password, fullName) {
+    async signUp(email, password, firstName, lastName) {
+        // Build metadata - support both old (fullName) and new (first/last) formats
+        let metadata;
+        if (lastName !== undefined) {
+            // New format: separate first/last name
+            metadata = {
+                first_name: firstName,
+                last_name: lastName,
+                full_name: `${firstName} ${lastName}`.trim()  // For backward compatibility
+            };
+        } else {
+            // Old format: single fullName (for backward compatibility)
+            metadata = { full_name: firstName };
+        }
+
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                data: { full_name: fullName }
+                data: metadata
             }
         });
         return { data, error };
@@ -1410,9 +1439,183 @@ const HenryData = {
             console.error('Error saving resume:', error);
         } else {
             console.log('✅ Resume saved:', data.id);
+
+            // Extract and save companies from resume with pedigree tagging
+            if (resumeJson.experience && Array.isArray(resumeJson.experience)) {
+                await this.extractAndSaveCompaniesFromResume(user.id, data.id, resumeJson.experience);
+            }
         }
 
         return { data, error };
+    },
+
+    /**
+     * Extract companies from resume experience and save with pedigree tagging
+     * @param {string} userId - User's UUID
+     * @param {string} resumeId - Resume UUID
+     * @param {Array} experience - Array of experience objects from resume
+     */
+    async extractAndSaveCompaniesFromResume(userId, resumeId, experience) {
+        if (!experience || !Array.isArray(experience)) return;
+
+        // Get the pedigree lookup table
+        const { data: pedigreeLookup } = await supabase
+            .from('company_pedigree_lookup')
+            .select('company_normalized, company_aliases, pedigree_tags');
+
+        // Build a lookup map for fast matching
+        const pedigreeMap = new Map();
+        if (pedigreeLookup) {
+            pedigreeLookup.forEach(company => {
+                // Add normalized name
+                pedigreeMap.set(company.company_normalized, company.pedigree_tags);
+                // Add aliases
+                if (company.company_aliases) {
+                    company.company_aliases.forEach(alias => {
+                        pedigreeMap.set(alias.toLowerCase(), company.pedigree_tags);
+                    });
+                }
+            });
+        }
+
+        // Helper to normalize company name
+        const normalizeCompany = (name) => {
+            if (!name) return '';
+            return name.toLowerCase()
+                .replace(/,?\s*(inc\.?|llc|ltd\.?|corp\.?|corporation|company|co\.?)$/i, '')
+                .replace(/[.,]/g, '')
+                .trim();
+        };
+
+        // Helper to parse date (handles various formats)
+        const parseDate = (dateStr) => {
+            if (!dateStr) return null;
+            // Handle "Present", "Current", etc.
+            if (/present|current|now/i.test(dateStr)) return null;
+            // Try to parse
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) {
+                return parsed.toISOString().split('T')[0]; // Return YYYY-MM-DD
+            }
+            return null;
+        };
+
+        // Helper to calculate duration in months
+        const calculateDuration = (startDate, endDate) => {
+            if (!startDate) return null;
+            const start = new Date(startDate);
+            const end = endDate ? new Date(endDate) : new Date();
+            const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+            return Math.max(1, months); // At least 1 month
+        };
+
+        // Process each experience entry
+        const companiesToSave = [];
+        const seenCompanies = new Set(); // Avoid duplicates
+
+        for (const exp of experience) {
+            const companyName = exp.company || exp.organization || exp.employer;
+            if (!companyName) continue;
+
+            const normalized = normalizeCompany(companyName);
+            if (!normalized || seenCompanies.has(normalized)) continue;
+            seenCompanies.add(normalized);
+
+            // Look up pedigree tags
+            const pedigreeTags = pedigreeMap.get(normalized) || [];
+
+            // Parse dates
+            const startDate = parseDate(exp.start_date || exp.startDate || exp.from);
+            const endDate = parseDate(exp.end_date || exp.endDate || exp.to);
+            const isCurrent = !endDate || /present|current|now/i.test(exp.end_date || exp.endDate || exp.to || '');
+
+            companiesToSave.push({
+                user_id: userId,
+                company_name: companyName,
+                company_normalized: normalized,
+                pedigree_tags: pedigreeTags,
+                title: exp.title || exp.position || exp.role,
+                start_date: startDate,
+                end_date: endDate,
+                is_current: isCurrent,
+                duration_months: calculateDuration(startDate, endDate),
+                source: 'resume',
+                resume_id: resumeId
+            });
+        }
+
+        if (companiesToSave.length === 0) return;
+
+        // Delete existing companies from this resume (to handle updates)
+        await supabase
+            .from('candidate_companies')
+            .delete()
+            .eq('user_id', userId)
+            .eq('resume_id', resumeId);
+
+        // Insert new companies
+        const { error } = await supabase
+            .from('candidate_companies')
+            .insert(companiesToSave);
+
+        if (error) {
+            console.error('Error saving companies from resume:', error);
+        } else {
+            console.log(`✅ Extracted ${companiesToSave.length} companies from resume`);
+
+            // Update candidate profile with pedigree summary
+            await this.updateCandidatePedigreeSummary(userId);
+        }
+    },
+
+    /**
+     * Update candidate profile with aggregated pedigree summary
+     * @param {string} userId - User's UUID
+     */
+    async updateCandidatePedigreeSummary(userId) {
+        // Get all companies for this user
+        const { data: companies } = await supabase
+            .from('candidate_companies')
+            .select('pedigree_tags')
+            .eq('user_id', userId);
+
+        if (!companies) return;
+
+        // Aggregate all pedigree tags
+        const tagCounts = {};
+        let hasPedigree = false;
+
+        companies.forEach(company => {
+            if (company.pedigree_tags && company.pedigree_tags.length > 0) {
+                hasPedigree = true;
+                company.pedigree_tags.forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            }
+        });
+
+        // Build summary object: { faang: true, mbb: false, ... }
+        const pedigreeSummary = {};
+        const knownTags = ['faang', 'big_tech', 'mbb', 'big4', 'unicorn', 'bulge_bracket', 'consulting', 'finance'];
+        knownTags.forEach(tag => {
+            pedigreeSummary[tag] = tagCounts[tag] > 0;
+        });
+
+        // Update candidate profile
+        const { error } = await supabase
+            .from('candidate_profiles')
+            .update({
+                pedigree_summary: pedigreeSummary,
+                has_pedigree: hasPedigree,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error updating pedigree summary:', error);
+        } else {
+            console.log('✅ Updated pedigree summary:', pedigreeSummary);
+        }
     },
 
     /**
