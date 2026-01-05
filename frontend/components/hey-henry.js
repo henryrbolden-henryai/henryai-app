@@ -3037,7 +3037,7 @@ ${confidenceClosing}`,
             const veteranThanked = localStorage.getItem('henryai_veteran_thanked') === 'true';
             if (profile.is_veteran && !veteranThanked) {
                 localStorage.setItem('henryai_veteran_thanked', 'true');
-                return `Hey ${userName}! Thank you for your service. I'm here to support your job search.`;
+                return `Hey ${userName}! Thank you for your service. I'm Henry! I'm here to support you with your job search.`;
             }
         } catch (e) {
             console.error('Error checking veteran status:', e);
