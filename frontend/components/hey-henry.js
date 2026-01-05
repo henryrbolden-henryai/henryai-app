@@ -3031,6 +3031,18 @@ ${confidenceClosing}`,
             console.error('Error checking name mismatch:', e);
         }
 
+        // Check for veteran status - thank them once
+        try {
+            const profile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const veteranThanked = localStorage.getItem('henryai_veteran_thanked') === 'true';
+            if (profile.is_veteran && !veteranThanked) {
+                localStorage.setItem('henryai_veteran_thanked', 'true');
+                return `Hey ${userName}! Thank you for your service. How can I help with your job search today?`;
+            }
+        } catch (e) {
+            console.error('Error checking veteran status:', e);
+        }
+
         // Get emotional state and pipeline data for context-aware greetings
         const emotionalState = getUserEmotionalState();
         const pipeline = getPipelineData();
