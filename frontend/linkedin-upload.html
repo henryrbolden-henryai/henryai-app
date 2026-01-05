@@ -277,9 +277,7 @@
     <script src="js/supabase-client.js"></script>
 </head>
 <body>
-    <nav class="top-nav">
-        <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
-    </nav>
+    <!-- Top nav will be injected by top-nav.js component -->
 
     <div class="container">
         <a href="strengthen.html" class="back-link">← Back to Strengthen</a>
@@ -334,6 +332,160 @@
     <script>
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
+        const uploadSuccess = document.getElementById('uploadSuccess');
+        const uploadSuccessText = document.getElementById('uploadSuccessText');
+
+        // Check if LinkedIn profile was already uploaded during profile setup
+        async function checkExistingLinkedInProfile() {
+            try {
+                // First check localStorage for user profile
+                const userProfileStr = localStorage.getItem('userProfile');
+                if (userProfileStr) {
+                    const userProfile = JSON.parse(userProfileStr);
+                    if (userProfile.linkedin_pdf_url || userProfile.linkedin_uploaded) {
+                        showExistingProfile(userProfile);
+                        return;
+                    }
+                }
+
+                // Then check Supabase if available
+                if (typeof supabase !== 'undefined') {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        const { data: profile } = await supabase
+                            .from('user_profiles')
+                            .select('linkedin_pdf_url, linkedin_uploaded_at')
+                            .eq('user_id', user.id)
+                            .single();
+
+                        if (profile && profile.linkedin_pdf_url) {
+                            showExistingProfile({
+                                linkedin_uploaded: true,
+                                linkedin_uploaded_at: profile.linkedin_uploaded_at
+                            });
+                            return;
+                        }
+                    }
+                }
+
+                // Also check sessionStorage as fallback
+                const linkedinData = sessionStorage.getItem('linkedinData');
+                if (linkedinData) {
+                    const data = JSON.parse(linkedinData);
+                    if (data.uploaded) {
+                        showExistingProfile(data);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('Error checking existing LinkedIn profile:', e);
+            }
+        }
+
+        function showExistingProfile(profileData) {
+            // Hide the upload area
+            uploadArea.style.display = 'none';
+            document.querySelector('.divider').style.display = 'none';
+            document.querySelector('.btn-secondary').style.display = 'none';
+            document.querySelector('.skip-text').style.display = 'none';
+
+            // Update the page content to show existing profile
+            const content = document.querySelector('.content');
+            const infoCard = document.querySelector('.info-card');
+
+            // Create existing profile display
+            const existingProfileHTML = `
+                <div class="existing-profile" style="
+                    background: var(--color-surface);
+                    border: 1px solid var(--color-border);
+                    border-radius: 16px;
+                    padding: 24px;
+                    margin-bottom: 24px;
+                ">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                        <span style="font-size: 1.5rem;">📄</span>
+                        <div>
+                            <div style="font-weight: 500; color: var(--color-text);">LinkedIn Profile</div>
+                            <div style="font-size: 0.85rem; color: var(--color-text-secondary);">
+                                Optional, but recommended. I'll check for alignment gaps between your resume and LinkedIn, then help you optimize your profile.
+                            </div>
+                        </div>
+                    </div>
+                    <div style="
+                        background: rgba(74, 222, 128, 0.1);
+                        border-radius: 8px;
+                        padding: 12px 16px;
+                        color: #4ade80;
+                        font-size: 0.9rem;
+                        margin-bottom: 16px;
+                    ">Uploaded</div>
+                    <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+                        Last updated: ${profileData.linkedin_uploaded_at ? new Date(profileData.linkedin_uploaded_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : new Date(profileData.timestamp || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn" onclick="replaceProfile()" style="
+                            background: var(--color-surface-elevated);
+                            color: var(--color-text);
+                            border: 1px solid var(--color-border);
+                            padding: 10px 20px;
+                            width: auto;
+                        ">Replace LinkedIn Profile PDF</button>
+                        <button class="btn" onclick="deleteProfile()" style="
+                            background: transparent;
+                            color: #f87171;
+                            border: none;
+                            padding: 10px 20px;
+                            width: auto;
+                        ">Delete</button>
+                    </div>
+                    <div style="
+                        margin-top: 16px;
+                        padding: 12px 16px;
+                        background: var(--color-surface-elevated);
+                        border-radius: 8px;
+                        font-size: 0.85rem;
+                        color: var(--color-text-secondary);
+                    ">
+                        We recommend updating your LinkedIn profile every 90 days to stay visible to recruiters.
+                    </div>
+                </div>
+                <a href="linkedin-analysis.html" class="btn btn-primary" style="margin-bottom: 16px;">
+                    Continue to Analysis →
+                </a>
+            `;
+
+            // Insert before info card
+            infoCard.style.display = 'none';
+            content.innerHTML = content.innerHTML.replace(
+                uploadSuccess.outerHTML + uploadArea.outerHTML,
+                existingProfileHTML
+            );
+        }
+
+        function replaceProfile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function deleteProfile() {
+            if (confirm('Are you sure you want to delete your LinkedIn profile?')) {
+                sessionStorage.removeItem('linkedinData');
+                localStorage.removeItem('linkedinProfile');
+                // Also update userProfile in localStorage
+                const userProfileStr = localStorage.getItem('userProfile');
+                if (userProfileStr) {
+                    const userProfile = JSON.parse(userProfileStr);
+                    delete userProfile.linkedin_pdf_url;
+                    delete userProfile.linkedin_uploaded;
+                    delete userProfile.linkedin_uploaded_at;
+                    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                }
+                // Reload the page
+                window.location.reload();
+            }
+        }
+
+        // Check for existing profile on page load
+        checkExistingLinkedInProfile();
 
         // Drag and drop handlers
         uploadArea.addEventListener('dragover', (e) => {
@@ -361,23 +513,31 @@
             }
         }
 
-        function handleFile(file) {
+        async function handleFile(file) {
             if (file.type !== 'application/pdf') {
                 alert('Please upload a PDF file.');
                 return;
             }
 
-            // For now, just simulate upload and store placeholder
-            // Full LinkedIn parsing is out of scope for this implementation
+            // Store LinkedIn data
             const linkedinData = {
                 uploaded: true,
                 filename: file.name,
                 timestamp: Date.now(),
-                // Placeholder - full parsing would happen here
                 profile: null
             };
 
             sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+
+            // Also update userProfile in localStorage for persistence
+            const userProfileStr = localStorage.getItem('userProfile');
+            if (userProfileStr) {
+                const userProfile = JSON.parse(userProfileStr);
+                userProfile.linkedin_uploaded = true;
+                userProfile.linkedin_uploaded_at = new Date().toISOString();
+                userProfile.linkedin_filename = file.name;
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            }
 
             // Show success and redirect
             document.getElementById('uploadSuccess').classList.add('show');
