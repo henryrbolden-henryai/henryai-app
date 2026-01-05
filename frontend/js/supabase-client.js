@@ -1444,9 +1444,86 @@ const HenryData = {
             if (resumeJson.experience && Array.isArray(resumeJson.experience)) {
                 await this.extractAndSaveCompaniesFromResume(user.id, data.id, resumeJson.experience);
             }
+
+            // Extract and save location from resume if available
+            await this.extractAndSaveLocationFromResume(user.id, resumeJson);
         }
 
         return { data, error };
+    },
+
+    /**
+     * Extract location from resume and update candidate profile
+     * @param {string} userId - User's UUID
+     * @param {object} resumeJson - Parsed resume JSON
+     */
+    async extractAndSaveLocationFromResume(userId, resumeJson) {
+        if (!resumeJson) return;
+
+        // Try to find location from various possible fields in resume
+        let location = resumeJson.location ||
+                       resumeJson.contact?.location ||
+                       resumeJson.basics?.location ||
+                       resumeJson.header?.location ||
+                       resumeJson.personalInfo?.location;
+
+        if (!location) return;
+
+        // Parse location string or object
+        let city = null, state = null, country = null;
+
+        if (typeof location === 'string') {
+            // Parse "City, State" or "City, State, Country" format
+            const parts = location.split(',').map(p => p.trim());
+            if (parts.length >= 1) city = parts[0];
+            if (parts.length >= 2) state = parts[1];
+            if (parts.length >= 3) country = parts[2];
+
+            // Try to detect US states and default country
+            if (state && !country) {
+                const usStates = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY', 'DC',
+                    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'];
+                if (usStates.some(s => state.toLowerCase() === s.toLowerCase())) {
+                    country = 'US';
+                }
+            }
+        } else if (typeof location === 'object') {
+            // Handle structured location object
+            city = location.city || location.City;
+            state = location.state || location.State || location.region || location.Region;
+            country = location.country || location.Country || location.countryCode;
+        }
+
+        if (!city && !state && !country) return;
+
+        // Check if user already has location set - don't override
+        const { data: existingProfile } = await supabase
+            .from('candidate_profiles')
+            .select('city, state, country')
+            .eq('id', userId)
+            .single();
+
+        // Only update if fields are empty
+        const updates = {};
+        if (city && (!existingProfile?.city)) updates.city = city;
+        if (state && (!existingProfile?.state)) updates.state = state;
+        if (country && (!existingProfile?.country)) updates.country = country;
+
+        if (Object.keys(updates).length === 0) return;
+
+        const { error } = await supabase
+            .from('candidate_profiles')
+            .upsert({
+                id: userId,
+                ...updates,
+                updated_at: new Date().toISOString()
+            });
+
+        if (error) {
+            console.error('Error saving location from resume:', error);
+        } else {
+            console.log('✅ Extracted location from resume:', updates);
+        }
     },
 
     /**
