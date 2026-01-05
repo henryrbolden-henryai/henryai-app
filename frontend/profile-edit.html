@@ -2626,11 +2626,40 @@
 
         // Load user email and name from Supabase auth
         async function loadUserAuthData() {
+            // Wait for HenryAuth to be available
+            const waitForAuth = () => {
+                return new Promise((resolve) => {
+                    if (typeof HenryAuth !== 'undefined') {
+                        resolve();
+                    } else {
+                        const check = setInterval(() => {
+                            if (typeof HenryAuth !== 'undefined') {
+                                clearInterval(check);
+                                resolve();
+                            }
+                        }, 50);
+                        // Timeout after 3 seconds
+                        setTimeout(() => {
+                            clearInterval(check);
+                            resolve();
+                        }, 3000);
+                    }
+                });
+            };
+
+            await waitForAuth();
+
             if (typeof HenryAuth !== 'undefined') {
                 try {
                     const session = await HenryAuth.getSession();
+                    const emailInput = document.getElementById('userEmail');
+
                     if (session?.user?.email) {
-                        document.getElementById('userEmail').value = session.user.email;
+                        emailInput.value = session.user.email;
+                        emailInput.placeholder = '';
+                    } else {
+                        emailInput.value = '';
+                        emailInput.placeholder = 'Not logged in';
                     }
 
                     // Load name from auth metadata (set during signup)
@@ -2649,7 +2678,11 @@
                     }
                 } catch (e) {
                     console.error('Error loading user auth data:', e);
+                    document.getElementById('userEmail').placeholder = 'Error loading email';
                 }
+            } else {
+                console.error('HenryAuth not available');
+                document.getElementById('userEmail').placeholder = 'Auth not available';
             }
         }
         loadUserAuthData();
