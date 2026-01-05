@@ -357,3 +357,12 @@ COMMENT ON TABLE candidate_companies IS 'Prior employers for each candidate, wit
 COMMENT ON TABLE company_pedigree_lookup IS 'Reference table mapping company names to pedigree categories (FAANG, MBB, etc.)';
 
 SELECT 'Migration completed successfully!' as status;
+
+-- Add nickname column if it doesn't exist
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'candidate_profiles' AND column_name = 'nickname') THEN
+        ALTER TABLE candidate_profiles ADD COLUMN nickname TEXT;
+    END IF;
+END $$;
+
+COMMENT ON COLUMN candidate_profiles.nickname IS 'Preferred name/nickname for the candidate (used by Hey Henry and in communications)';
