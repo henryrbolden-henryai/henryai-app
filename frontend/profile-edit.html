@@ -1041,10 +1041,30 @@
                 </div>
             </div>
             <span class="field-hint" style="margin-top: -12px; margin-bottom: 16px; display: block;">Need to update your name? Contact <a href="mailto:support@henryhq.com" style="color: var(--color-accent);">support@henryhq.com</a></span>
-            <div class="form-group">
-                <label>Nickname <span style="color: #888; font-weight: 400;">(optional)</span></label>
-                <input type="text" id="nickname" placeholder="e.g., Mike, Liz, AJ">
-                <span class="field-hint">What you prefer to be called</span>
+            <div class="form-row">
+                <div class="form-group" style="flex: 0 0 100px;">
+                    <label>Middle Initial <span style="color: #888; font-weight: 400;">(opt)</span></label>
+                    <input type="text" id="middleInitial" placeholder="R" maxlength="2" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="flex: 0 0 120px;">
+                    <label>Suffix <span style="color: #888; font-weight: 400;">(opt)</span></label>
+                    <select id="nameSuffix">
+                        <option value="">None</option>
+                        <option value="Jr.">Jr.</option>
+                        <option value="Sr.">Sr.</option>
+                        <option value="II">II</option>
+                        <option value="III">III</option>
+                        <option value="IV">IV</option>
+                        <option value="V">V</option>
+                        <option value="Esq.">Esq.</option>
+                        <option value="PhD">PhD</option>
+                        <option value="MD">MD</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Nickname <span style="color: #888; font-weight: 400;">(opt)</span></label>
+                    <input type="text" id="nickname" placeholder="e.g., Mike, Liz, AJ">
+                </div>
             </div>
             <div class="form-group">
                 <label>Email</label>
@@ -2277,6 +2297,8 @@
             // About You section - new fields
             document.getElementById('firstName').value = profile.first_name || document.getElementById('firstName').value || '';
             document.getElementById('lastName').value = profile.last_name || document.getElementById('lastName').value || '';
+            document.getElementById('middleInitial').value = profile.middle_initial || '';
+            document.getElementById('nameSuffix').value = profile.name_suffix || '';
             document.getElementById('nickname').value = profile.nickname || '';
             document.getElementById('pronouns').value = profile.pronouns || '';
 
@@ -2844,6 +2866,8 @@
                 // About You section - new fields
                 profile.first_name = firstName;
                 profile.last_name = lastName;
+                profile.middle_initial = document.getElementById('middleInitial').value.trim().toUpperCase() || null;
+                profile.name_suffix = document.getElementById('nameSuffix').value || null;
                 profile.nickname = document.getElementById('nickname').value.trim() || null;
                 profile.pronouns = document.getElementById('pronouns').value.trim() || null;
                 profile.function_area = functionArea;

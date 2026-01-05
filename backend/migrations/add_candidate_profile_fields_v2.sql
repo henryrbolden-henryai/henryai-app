@@ -375,3 +375,21 @@ DO $$ BEGIN
 END $$;
 
 COMMENT ON COLUMN candidate_profiles.name_match_status IS 'Comparison of signup name vs resume name: matched, minor_mismatch (formatting diff), major_mismatch (different first name - potential fraud)';
+
+-- Add middle_initial column
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'candidate_profiles' AND column_name = 'middle_initial') THEN
+        ALTER TABLE candidate_profiles ADD COLUMN middle_initial VARCHAR(2);
+    END IF;
+END $$;
+
+COMMENT ON COLUMN candidate_profiles.middle_initial IS 'Middle initial (1-2 characters)';
+
+-- Add name_suffix column
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'candidate_profiles' AND column_name = 'name_suffix') THEN
+        ALTER TABLE candidate_profiles ADD COLUMN name_suffix VARCHAR(10);
+    END IF;
+END $$;
+
+COMMENT ON COLUMN candidate_profiles.name_suffix IS 'Name suffix (Jr., Sr., II, III, IV, V, Esq., PhD, MD)';
