@@ -1331,23 +1331,12 @@
             </div>
             <div class="form-group">
                 <label>Open to relocating?</label>
-                <div class="radio-group" id="relocateGroup">
-                    <label class="radio-option" data-value="yes">
-                        <input type="radio" name="relocate" value="yes">
-                        <span class="radio-circle"></span>
-                        <span class="radio-label">Yes</span>
-                    </label>
-                    <label class="radio-option" data-value="maybe">
-                        <input type="radio" name="relocate" value="maybe">
-                        <span class="radio-circle"></span>
-                        <span class="radio-label">Maybe, for the right role</span>
-                    </label>
-                    <label class="radio-option" data-value="no">
-                        <input type="radio" name="relocate" value="no">
-                        <span class="radio-circle"></span>
-                        <span class="radio-label">No</span>
-                    </label>
-                </div>
+                <select id="openToRelocate">
+                    <option value="">Select...</option>
+                    <option value="yes">Yes</option>
+                    <option value="maybe">Maybe, for the right role</option>
+                    <option value="no">No</option>
+                </select>
             </div>
             <div class="form-group" id="relocateLocationsGroup" style="display: none;">
                 <label>Where would you consider?</label>
@@ -2386,14 +2375,10 @@
                 }
 
                 if (profile.location.open_to_relocate) {
-                    const option = document.querySelector(`#relocateGroup .radio-option[data-value="${profile.location.open_to_relocate}"]`);
-                    if (option) {
-                        option.classList.add('selected');
-                        option.querySelector('input').checked = true;
-                        // Show relocate locations if yes or maybe
-                        if (profile.location.open_to_relocate === 'yes' || profile.location.open_to_relocate === 'maybe') {
-                            document.getElementById('relocateLocationsGroup').style.display = 'block';
-                        }
+                    document.getElementById('openToRelocate').value = profile.location.open_to_relocate;
+                    // Show relocate locations if yes or maybe
+                    if (profile.location.open_to_relocate === 'yes' || profile.location.open_to_relocate === 'maybe') {
+                        document.getElementById('relocateLocationsGroup').style.display = 'block';
                     }
                 }
 
@@ -2726,14 +2711,14 @@
                     option.classList.add('selected');
                     option.querySelector('input').checked = true;
 
-                    // Show/hide relocate locations based on answer
-                    if (group.id === 'relocateGroup') {
-                        const value = option.dataset.value;
-                        const relocateLocationsGroup = document.getElementById('relocateLocationsGroup');
-                        relocateLocationsGroup.style.display = (value === 'yes' || value === 'maybe') ? 'block' : 'none';
-                    }
                 });
             });
+        });
+
+        // Open to relocate dropdown - show/hide location input
+        document.getElementById('openToRelocate').addEventListener('change', function() {
+            const relocateLocationsGroup = document.getElementById('relocateLocationsGroup');
+            relocateLocationsGroup.style.display = (this.value === 'yes' || this.value === 'maybe') ? 'block' : 'none';
         });
 
         document.querySelectorAll('.checkbox-option').forEach(option => {
@@ -2922,7 +2907,7 @@
                     city: city || null,
                     state: state || null,
                     country: country || null,
-                    open_to_relocate: getSelectedRadioValue('relocateGroup'),
+                    open_to_relocate: document.getElementById('openToRelocate').value || null,
                     relocate_to: relocateLocations
                 };
 
