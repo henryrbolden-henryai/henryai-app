@@ -281,6 +281,19 @@ HenryAI is positioned to become the most intelligent, seamless job application a
 7. Conversation Persistence
 8. Story Bank UI
 
+### Recent Achievements (January 5, 2026)
+
+✅ **Name Mismatch Detection (Identity Verification MVP)**
+- Detects discrepancies between signup name and resume name
+- Hey Henry alerts users about mismatches with appropriate messaging
+- Major mismatches (different first name) trigger stronger fraud warning
+- Minor mismatches (last name differences) trigger softer heads-up
+- Acknowledgment tracking so message only shows once per session
+- `name_match_status` column added to candidate_profiles for tracking
+- Support workflow: Users contact support@henryhq.com for name changes
+- **Files Modified**: `frontend/components/hey-henry.js`, `frontend/js/supabase-client.js`, `backend/migrations/add_candidate_profile_fields_v2.sql`
+- **Future Enhancements** (Phase 3): Admin dashboard, fuzzy matching, pattern detection
+
 ### Recent Achievements (January 1, 2026)
 
 ✅ **Phase 2.5: Document Quality & Trust Layer COMPLETED**

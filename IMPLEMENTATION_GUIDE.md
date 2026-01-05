@@ -1,10 +1,10 @@
 # HenryAI Implementation Guide
 
 **Date**: December 19, 2025
-**Version**: 1.8
+**Version**: 1.9
 **Audience**: Development Team
-**Last Updated**: January 1, 2026
-**Total Features**: 54 implemented, 85 API endpoints
+**Last Updated**: January 5, 2026
+**Total Features**: 56 implemented, 85 API endpoints
 
 ---
 
@@ -78,6 +78,44 @@ All features below have been implemented and deployed to production:
 50. ✅ **Resume Language Lint** (Jan 1) - 4-tier pattern detection for weak language
 51. ✅ **Resume Quality Gates** (Jan 1) - pre-download validation
 52. ✅ **Non-Accusatory Red Flags** (Jan 1) - neutral, constructive messaging
+53. ✅ **Name Mismatch Detection** (Jan 5) - signup vs resume name comparison
+54. ✅ **Hey Henry Name Mismatch Alerts** (Jan 5) - proactive fraud/error messaging
+
+---
+
+### Name Mismatch Detection (Jan 5, 2026)
+
+**Overview:** Detects discrepancies between the name provided at signup and the name on the uploaded resume to identify potential fraud or data entry errors.
+
+**Components:**
+
+1. **`checkNameMismatch()` in supabase-client.js**
+   - Compares signup first/last name against resume name
+   - Normalizes names (removes punctuation, extra spaces)
+   - Classifies as 'major' (first name different) or 'minor' (last name different)
+   - Stores mismatch data in localStorage for Hey Henry
+   - Updates `name_match_status` column in candidate_profiles
+
+2. **Hey Henry Greeting Integration**
+   - Checks `henryai_name_mismatch` in localStorage
+   - Major mismatch: "I noticed your resume shows [X] but you signed up as [Y]..."
+   - Minor mismatch: "Quick heads up—your resume shows [X] but your account has [Y]..."
+   - Acknowledgment tracking prevents repeated alerts (`henryai_name_mismatch_ack`)
+
+3. **Database Schema**
+   - `name_match_status` column: 'matched' | 'minor_mismatch' | 'major_mismatch'
+   - Stored in `candidate_profiles` table for admin review
+
+**Files Modified:**
+- `frontend/js/supabase-client.js` - Added `checkNameMismatch()` function
+- `frontend/components/hey-henry.js` - Added mismatch detection in greeting + acknowledgment handling
+- `backend/migrations/add_candidate_profile_fields_v2.sql` - Added `name_match_status` column
+
+**Future Enhancements (Phase 3):**
+- Admin dashboard for reviewing flagged accounts
+- Fuzzy matching for common name variations (Bob/Robert, etc.)
+- Pattern detection across multiple resume uploads
+- Third-party identity verification integration (Persona, Jumio)
 
 ---
 
