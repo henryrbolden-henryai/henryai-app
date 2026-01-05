@@ -91,6 +91,207 @@ def detect_eligibility_signals(
     return checks
 
 
+def detect_overqualification(
+    resume_data: Dict[str, Any],
+    jd_data: Dict[str, Any],
+    fit_details: Optional[Dict[str, Any]] = None
+) -> Optional[RealityCheck]:
+    """
+    Detect overqualification - candidate operates at higher level than target role.
+
+    Compares candidate's demonstrated level against target role level.
+    Provides strategic negotiation guidance if overqualified.
+
+    Returns: RealityCheck if overqualified, None otherwise
+    """
+    # Detect candidate's demonstrated level from resume
+    candidate_level = _detect_candidate_level(resume_data)
+
+    # Detect target role level from JD
+    role_title = (jd_data.get("role_title", "") or "").lower()
+    target_level = _detect_role_level(role_title)
+
+    # Get hands-on percentage if available in JD
+    jd_text = (jd_data.get("job_description", "") or "").lower()
+    hands_on_pct = _extract_hands_on_percentage(jd_text)
+
+    # Level hierarchy for comparison
+    level_hierarchy = {
+        "entry": 1,
+        "mid": 2,
+        "senior": 3,
+        "manager": 4,
+        "director_plus": 5
+    }
+
+    candidate_rank = level_hierarchy.get(candidate_level, 2)
+    target_rank = level_hierarchy.get(target_level, 2)
+
+    # Check if overqualified (candidate level higher than target)
+    level_gap = candidate_rank - target_rank
+
+    if level_gap >= 1:
+        # Build contextual message based on the gap
+        concerns = []
+        alternatives = []
+
+        if candidate_level == "director_plus" and target_level in ["manager", "senior"]:
+            # Director applying to Manager role
+            concerns.append("title compression")
+            if hands_on_pct and hands_on_pct >= 20:
+                concerns.append(f"scope creep into IC work ({hands_on_pct}% hands-on expectation)")
+            else:
+                concerns.append("reduced strategic scope")
+
+            alternatives = [
+                "Negotiate title to Director or Senior Manager",
+                "Clarify team size and growth trajectory in interviews",
+                "Ask about path to VP/Director if starting at Manager",
+                "Negotiate compensation to reflect your experience level",
+            ]
+
+            message = (
+                f"You're overqualified. This is a Manager-level role and you've operated at Director level. "
+            )
+            if hands_on_pct:
+                message += f"The {hands_on_pct}% hands-on expectation suggests they may want senior execution at a mid-level title. "
+            message += f"Potential concerns: {', '.join(concerns)}."
+
+        elif candidate_level == "director_plus" and target_level == "mid":
+            # Director applying to mid-level role
+            concerns = ["significant title compression", "reduced scope and strategic influence"]
+            alternatives = [
+                "Reconsider if this role aligns with your career trajectory",
+                "If pursuing, negotiate hard on title (at least Senior Manager)",
+                "Clarify why the role is scoped this way - may indicate limited budget",
+                "Ask about team growth plans and your potential to lead expansion",
+            ]
+
+            message = (
+                f"You're significantly overqualified. This is a mid-level role and you've operated at Director level. "
+                f"Potential concerns: {', '.join(concerns)}. Only proceed if you have specific reasons for stepping back."
+            )
+
+        elif candidate_level == "manager" and target_level in ["senior", "mid"]:
+            # Manager applying to IC role
+            concerns.append("return to IC track")
+            if hands_on_pct and hands_on_pct >= 30:
+                concerns.append("high hands-on expectation")
+            alternatives = [
+                "Clarify if this is truly IC or has team lead potential",
+                "Negotiate for Senior or Lead title if available",
+                "Discuss path to management if that's your goal",
+            ]
+
+            message = (
+                f"You've been managing and this appears to be an IC role. "
+                f"Potential concerns: {', '.join(concerns)}. Clarify scope in interviews."
+            )
+
+        elif candidate_level == "senior" and target_level in ["entry", "mid"]:
+            # Senior applying to junior role
+            concerns = ["title step-back", "salary expectations mismatch"]
+            alternatives = [
+                "Ask if Senior-level candidates are being considered",
+                "Clarify salary band before investing time",
+                "Emphasize interest in the company/team specifically",
+            ]
+
+            message = (
+                f"Your experience suggests Senior level, but this appears to be a more junior role. "
+                f"Potential concerns: {', '.join(concerns)}."
+            )
+
+        else:
+            # Generic overqualification
+            message = (
+                f"Your experience level ({candidate_level}) appears higher than the target role ({target_level}). "
+                "Consider negotiating title and scope."
+            )
+            alternatives = [
+                "Negotiate title to reflect your experience",
+                "Clarify growth trajectory in interviews",
+                "Ensure compensation matches your level",
+            ]
+
+        return RealityCheck(
+            signal_class=SignalClass.FIT,
+            severity=Severity.COACHING,
+            trigger=f"overqualified:{candidate_level}_to_{target_level}",
+            message=message,
+            strategic_alternatives=alternatives,
+            evidence=f"Candidate level: {candidate_level}, Target role level: {target_level}",
+            allowed_outputs=["coaching", "framing_guidance"],
+        )
+
+    return None
+
+
+def _detect_candidate_level(resume_data: Dict[str, Any]) -> str:
+    """
+    Detect candidate's highest demonstrated career level from resume.
+
+    Looks at job titles across experience to find the highest level achieved.
+    """
+    experience = resume_data.get("experience", []) or resume_data.get("roles", [])
+
+    highest_level = "entry"
+    level_priority = {"entry": 1, "mid": 2, "senior": 3, "manager": 4, "director_plus": 5}
+
+    for role in experience:
+        title = (role.get("title", "") or "").lower()
+
+        # Director+ level
+        if any(x in title for x in [
+            "director", "vp", "vice president", "head of", "chief",
+            "president", "svp", "evp", "ceo", "cfo", "cto", "coo", "chro",
+            "global head", "general manager"
+        ]):
+            if level_priority.get("director_plus", 0) > level_priority.get(highest_level, 0):
+                highest_level = "director_plus"
+
+        # Manager level
+        elif any(x in title for x in ["manager", "lead", "supervisor", "team lead"]) and "senior" not in title:
+            if level_priority.get("manager", 0) > level_priority.get(highest_level, 0):
+                highest_level = "manager"
+
+        # Senior level
+        elif any(x in title for x in ["senior", "staff", "principal", "sr.", "lead"]):
+            if level_priority.get("senior", 0) > level_priority.get(highest_level, 0):
+                highest_level = "senior"
+
+        # Mid level (default for recognized roles)
+        elif any(x in title for x in ["engineer", "analyst", "recruiter", "designer", "specialist", "coordinator"]):
+            if level_priority.get("mid", 0) > level_priority.get(highest_level, 0):
+                highest_level = "mid"
+
+    return highest_level
+
+
+def _extract_hands_on_percentage(jd_text: str) -> Optional[int]:
+    """
+    Extract hands-on work percentage from JD text if mentioned.
+
+    Examples:
+    - "20-30% hands-on recruiting"
+    - "30% of time on individual recruiting"
+    - "expect 40% hands-on work"
+    """
+    # Pattern to find percentage + hands-on indicators
+    patterns = [
+        r'(\d+)(?:\s*-\s*\d+)?%?\s*(?:of\s+(?:the\s+)?time\s+)?(?:on\s+)?(?:hands[- ]?on|individual|direct)',
+        r'(?:hands[- ]?on|individual|direct)\s*(?:work|recruiting|work)\s*(?:[\(\:]?\s*)?(\d+)%',
+        r'(\d+)%\s*(?:of\s+)?(?:the\s+)?(?:role\s+)?(?:is\s+)?(?:hands[- ]?on|individual|direct)',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, jd_text)
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
 def detect_fit_signals(
     resume_data: Dict[str, Any],
     jd_data: Dict[str, Any],
@@ -105,12 +306,18 @@ def detect_fit_signals(
     - Skill alignment gaps
     - Experience level mismatch
     - Scope disconnect
+    - Overqualification
 
     CRITICAL: Internships never count toward years of experience.
 
     Returns: List of RealityCheck objects (Warning, Coaching)
     """
     checks = []
+
+    # Detect overqualification BEFORE other fit signals
+    overqualification_check = detect_overqualification(resume_data, jd_data, fit_details)
+    if overqualification_check:
+        checks.append(overqualification_check)
 
     # Fit score threshold check
     if fit_score < 40:
