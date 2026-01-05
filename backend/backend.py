@@ -257,6 +257,10 @@ try:
         HealthSignal,
         clear_company_intel_cache,
         get_cache_stats,
+        # New employer scale functions
+        get_company_scale,
+        get_candidate_employer_scales,
+        CompanyScale,
     )
     COMPANY_INTEL_AVAILABLE = True
     # Feature flag for gradual rollout
@@ -1518,45 +1522,98 @@ def evaluate_credibility_alignment(resume_data: dict, response_data: dict) -> di
     elif any(sig in combined_jd for sig in startup_signals):
         target_scale = "startup"
 
-    # Detect candidate's scale from resume
-    # Check for enterprise keywords in company descriptions
+    # Detect candidate's scale from resume using Company Intelligence
+    # This is more accurate than keyword heuristics
     candidate_scale = None
-    enterprise_company_keywords = ["inc.", "corporation", "corp.", "global", "worldwide"]
-    startup_company_keywords = ["startup", "founded", "co-founder", "early stage"]
+    employer_scales = []
 
-    # Analyze company signals
-    enterprise_signal_count = 0
-    startup_signal_count = 0
-    mid_signal_count = 0
+    # Use Company Intelligence for employer scale detection if available
+    if COMPANY_INTEL_AVAILABLE and resume_data:
+        try:
+            employer_scales = get_candidate_employer_scales(resume_data)
+            # Store for later use in the result
+            result["employer_scale_data"] = employer_scales
 
-    for company in candidate_companies:
-        if any(kw in company for kw in enterprise_company_keywords):
-            enterprise_signal_count += 1
+            # Determine candidate's primary scale from employer history
+            # Weight recent experience more heavily
+            enterprise_count = 0
+            mid_count = 0
+            startup_count = 0
+            high_confidence_count = 0
 
-    for exp in experience:
-        if isinstance(exp, dict):
-            desc = (exp.get("description", "") or "").lower()
-            highlights = exp.get("highlights", [])
-            desc_combined = desc + " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+            for i, emp in enumerate(employer_scales):
+                # Weight: first (most recent) job counts more
+                weight = 2 if i == 0 else 1
 
-            # Check scale signals in experience descriptions
-            if any(sig in desc_combined for sig in ["fortune 500", "enterprise", "global team", "10000+"]):
+                if emp.get("confidence") == "high":
+                    high_confidence_count += 1
+                    weight *= 1.5  # High confidence counts more
+
+                scale = emp.get("scale", "mid")
+                if scale == "enterprise":
+                    enterprise_count += weight
+                elif scale == "startup":
+                    startup_count += weight
+                else:
+                    mid_count += weight
+
+            # Determine candidate scale based on weighted counts
+            if enterprise_count > mid_count and enterprise_count > startup_count:
+                candidate_scale = "enterprise"
+            elif startup_count > mid_count and startup_count > enterprise_count:
+                candidate_scale = "startup"
+            else:
+                candidate_scale = "mid"
+
+            # Log the determination
+            print(f"🏢 Candidate scale from employer intel: {candidate_scale}")
+            print(f"   Enterprise: {enterprise_count}, Mid: {mid_count}, Startup: {startup_count}")
+            print(f"   High confidence employers: {high_confidence_count}/{len(employer_scales)}")
+
+        except Exception as e:
+            print(f"⚠️ Employer scale lookup failed, falling back to heuristics: {e}")
+            employer_scales = []
+
+    # Fallback to keyword heuristics if Company Intelligence not available or failed
+    if not candidate_scale:
+        enterprise_company_keywords = ["inc.", "corporation", "corp.", "global", "worldwide"]
+        startup_company_keywords = ["startup", "founded", "co-founder", "early stage"]
+
+        # Analyze company signals
+        enterprise_signal_count = 0
+        startup_signal_count = 0
+        mid_signal_count = 0
+
+        for company in candidate_companies:
+            if any(kw in company for kw in enterprise_company_keywords):
                 enterprise_signal_count += 1
-            if any(sig in desc_combined for sig in ["series c", "series d", "scale-up", "hypergrowth"]):
-                mid_signal_count += 1
-            if any(sig in desc_combined for sig in ["startup", "founded", "first hire", "0 to 1", "series a", "series b"]):
-                startup_signal_count += 1
 
-    # Determine candidate scale
-    if enterprise_signal_count >= 2:
-        candidate_scale = "enterprise"
-    elif startup_signal_count >= 2:
-        candidate_scale = "startup"
-    elif mid_signal_count >= 1 or (enterprise_signal_count == 1 and startup_signal_count == 1):
-        candidate_scale = "mid"
-    else:
-        # Default to mid if unclear
-        candidate_scale = "mid"
+        for exp in experience:
+            if isinstance(exp, dict):
+                desc = (exp.get("description", "") or "").lower()
+                highlights = exp.get("highlights", [])
+                desc_combined = desc + " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+
+                # Check scale signals in experience descriptions
+                if any(sig in desc_combined for sig in ["fortune 500", "enterprise", "global team", "10000+"]):
+                    enterprise_signal_count += 1
+                if any(sig in desc_combined for sig in ["series c", "series d", "scale-up", "hypergrowth"]):
+                    mid_signal_count += 1
+                if any(sig in desc_combined for sig in ["startup", "founded", "first hire", "0 to 1", "series a", "series b"]):
+                    startup_signal_count += 1
+
+        # Determine candidate scale
+        if enterprise_signal_count >= 2:
+            candidate_scale = "enterprise"
+        elif startup_signal_count >= 2:
+            candidate_scale = "startup"
+        elif mid_signal_count >= 1 or (enterprise_signal_count == 1 and startup_signal_count == 1):
+            candidate_scale = "mid"
+        else:
+            # Default to mid if unclear
+            candidate_scale = "mid"
+
+        print(f"🏢 Candidate scale from heuristics (fallback): {candidate_scale}")
 
     result["company_scale_alignment"]["candidate_scale"] = candidate_scale
     result["company_scale_alignment"]["target_scale"] = target_scale
@@ -9945,12 +10002,25 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
             return True
         return False
 
-    # Strategy 1: Look for explicit markers
+    # Strategy 1: Look for explicit markers (must be at start of line to avoid matching mid-sentence)
     patterns = [
-        r'(?:job title|position|role):\s*([^\n]+)',
+        r'^(?:job title|position title):\s*([^\n]+)',  # Only match "Job Title:" or "Position Title:" at line start
         r'^([^\n]+)(?:\s*-\s*(?:corporate|hybrid|remote|full.time))',
         r'(?:hiring|hiring a|we\'re hiring|is hiring)\s+(?:a\s+)?([^\n\.]+)',
     ]
+
+    def is_sentence_fragment(text: str) -> bool:
+        """Check if text looks like a sentence fragment rather than a job title."""
+        text_lower = text.lower().strip()
+        # Sentence fragments often start with conjunctions, articles, or verbs
+        fragment_starters = ['and ', 'or ', 'the ', 'a ', 'an ', 'plans', 'including',
+                            'such as', 'with ', 'for ', 'to ', 'in ', 'on ', 'at ']
+        if any(text_lower.startswith(starter) for starter in fragment_starters):
+            return True
+        # Too many words suggests a sentence, not a title (titles rarely exceed 8 words)
+        if len(text.split()) > 8:
+            return True
+        return False
 
     for pattern in patterns:
         match = re.search(pattern, jd_text, re.IGNORECASE | re.MULTILINE)
@@ -9962,7 +10032,7 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 title,
                 flags=re.IGNORECASE
             )
-            if 5 < len(title) < 100 and not is_navigation_text(title):
+            if 5 < len(title) < 100 and not is_navigation_text(title) and not is_sentence_fragment(title):
                 print(f"  ✅ Extracted: '{title}'")
                 return title
 
@@ -10211,7 +10281,9 @@ def calculate_relevant_years_isolated(
         "recruiting": [
             "recruiter", "recruiting", "talent acquisition",
             "sourcer", "sourcing", "talent partner", "recruitment",
-            "technical recruiter", "ta ", "talent lead", "head of talent"
+            "technical recruiter", "ta ", "talent lead", "head of talent",
+            "talent advisor", "search analyst", "executive search",
+            "headhunter", "talent consultant", "hiring"
         ],
         "pm": [
             "product manager", "product lead", "pm", "product owner",
@@ -10234,29 +10306,43 @@ def calculate_relevant_years_isolated(
     patterns = role_patterns.get(role_type, [])
     total_years = 0.0
 
+    # Company-based relevance (e.g., executive search firms = recruiting experience)
+    recruiting_companies = [
+        "heidrick", "korn ferry", "spencer stuart", "egon zehnder",
+        "russell reynolds", "executive search", "staffing", "recruiting agency"
+    ]
+
     for exp in resume_data.get("experience", []):
         if not isinstance(exp, dict):
             continue
 
         title = (exp.get("title", "") or "").lower()
-        company = exp.get("company", "")
+        company = (exp.get("company", "") or "").lower()
         dates = exp.get("dates", "")
 
         # For general type, count all experience
         if role_type == "general" or not patterns:
             years = parse_duration_to_years_isolated(dates)
             total_years += years
-            print(f"  📊 {exp.get('title')} @ {company}: +{years:.1f} years (all experience)")
+            print(f"  📊 {exp.get('title')} @ {exp.get('company')}: +{years:.1f} years (all experience)")
             continue
 
         is_relevant = any(pattern in title for pattern in patterns)
 
+        # For recruiting roles, also check if company is a known recruiting/search firm
+        if role_type == "recruiting" and not is_relevant:
+            is_relevant = any(rc in company for rc in recruiting_companies)
+            if is_relevant:
+                print(f"  ✅ {exp.get('title')} @ {exp.get('company')}: +{parse_duration_to_years_isolated(dates):.1f} years (recruiting firm)")
+                total_years += parse_duration_to_years_isolated(dates)
+                continue
+
         if is_relevant:
             years = parse_duration_to_years_isolated(dates)
             total_years += years
-            print(f"  ✅ {exp.get('title')} @ {company}: +{years:.1f} years")
+            print(f"  ✅ {exp.get('title')} @ {exp.get('company')}: +{years:.1f} years")
         else:
-            print(f"  ⏭️  {exp.get('title')} @ {company}: Not relevant to {role_type.upper()}")
+            print(f"  ⏭️  {exp.get('title')} @ {exp.get('company')}: Not relevant to {role_type.upper()}")
 
     print(f"📊 [{analysis_id}] Total {role_type.upper()} experience: {total_years:.1f} years")
     return total_years
@@ -10928,11 +11014,19 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             candidate_years = calculate_relevant_years_isolated(resume_data, isolated_role_type, analysis_id)
             gap_info = calculate_career_gap_penalty_isolated(resume_data, analysis_id)
 
-            # Skip leadership check if not required (reduces noise)
+            # Extract leadership requirements from JD before checking
+            # Build a minimal response_data dict for the existing extraction function
+            temp_response_data = {
+                "job_description": jd_text,
+                "role_title": extracted_title
+            }
+            required_leadership_years, is_hard_requirement = extract_required_people_leadership_years(temp_response_data)
+
+            # Check leadership if JD requires it
             leadership_info = check_people_leadership_requirement_isolated(
                 resume_data,
-                required_years=0.0,  # Will be extracted from JD if needed
-                hard_requirement=False,
+                required_years=required_leadership_years,
+                hard_requirement=is_hard_requirement,
                 analysis_id=analysis_id
             )
         else:
@@ -12613,6 +12707,31 @@ Role: {body.role_title}
     if body.resume:
         user_message += f"\n\nCandidate Resume Data:\n{json.dumps(body.resume, indent=2)}"
 
+        # Add employer scale intelligence for scope/seniority evaluation
+        if COMPANY_INTEL_AVAILABLE:
+            try:
+                employer_scales = get_candidate_employer_scales(body.resume)
+                if employer_scales:
+                    user_message += "\n\n=== CANDIDATE EMPLOYER SCALE DATA ===\n"
+                    user_message += "Use this data to accurately evaluate the 20% scope/seniority component of fit_score.\n"
+                    user_message += "Higher confidence (✓) indicates verified company data.\n\n"
+                    for emp in employer_scales:
+                        conf_marker = "✓" if emp.get("confidence") == "high" else "?"
+                        public_marker = " (Public)" if emp.get("is_public") else ""
+                        emp_count = f" [{emp.get('employee_count')}]" if emp.get("employee_count") else ""
+                        funding = f" - {emp.get('funding_stage')}" if emp.get("funding_stage") else ""
+                        user_message += f"  {conf_marker} {emp['company']}: {emp['scale'].upper()}{emp_count}{public_marker}{funding}\n"
+                        user_message += f"      Role: {emp.get('title', 'Unknown')} ({emp.get('dates', 'Unknown')})\n"
+
+                    # Summarize candidate's scale profile
+                    scale_counts = {"enterprise": 0, "mid": 0, "startup": 0}
+                    for emp in employer_scales:
+                        scale_counts[emp.get("scale", "mid")] += 1
+                    dominant_scale = max(scale_counts.items(), key=lambda x: x[1])[0]
+                    user_message += f"\nCandidate's dominant scale: {dominant_scale.upper()}\n"
+            except Exception as e:
+                print(f"⚠️ Failed to add employer scale data to prompt: {e}")
+
     if body.preferences:
         user_message += f"\n\nCandidate Preferences:\n{json.dumps(body.preferences, indent=2)}"
 
@@ -13352,6 +13471,31 @@ Role: {body.role_title}
 
     if body.resume:
         user_message += f"\n\nCandidate Resume Data:\n{json.dumps(body.resume, indent=2)}"
+
+        # Add employer scale intelligence for scope/seniority evaluation
+        if COMPANY_INTEL_AVAILABLE:
+            try:
+                employer_scales = get_candidate_employer_scales(body.resume)
+                if employer_scales:
+                    user_message += "\n\n=== CANDIDATE EMPLOYER SCALE DATA ===\n"
+                    user_message += "Use this data to accurately evaluate the 20% scope/seniority component of fit_score.\n"
+                    user_message += "Higher confidence (✓) indicates verified company data.\n\n"
+                    for emp in employer_scales:
+                        conf_marker = "✓" if emp.get("confidence") == "high" else "?"
+                        public_marker = " (Public)" if emp.get("is_public") else ""
+                        emp_count = f" [{emp.get('employee_count')}]" if emp.get("employee_count") else ""
+                        funding = f" - {emp.get('funding_stage')}" if emp.get("funding_stage") else ""
+                        user_message += f"  {conf_marker} {emp['company']}: {emp['scale'].upper()}{emp_count}{public_marker}{funding}\n"
+                        user_message += f"      Role: {emp.get('title', 'Unknown')} ({emp.get('dates', 'Unknown')})\n"
+
+                    # Summarize candidate's scale profile
+                    scale_counts = {"enterprise": 0, "mid": 0, "startup": 0}
+                    for emp in employer_scales:
+                        scale_counts[emp.get("scale", "mid")] += 1
+                    dominant_scale = max(scale_counts.items(), key=lambda x: x[1])[0]
+                    user_message += f"\nCandidate's dominant scale: {dominant_scale.upper()}\n"
+            except Exception as e:
+                print(f"⚠️ [Stream] Failed to add employer scale data to prompt: {e}")
 
     if body.preferences:
         user_message += f"\n\nCandidate Preferences:\n{json.dumps(body.preferences, indent=2)}"

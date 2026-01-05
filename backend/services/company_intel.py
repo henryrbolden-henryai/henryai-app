@@ -524,3 +524,352 @@ def get_cache_stats() -> Dict[str, Any]:
         "expired_entries": expired_entries,
         "cache_ttl_hours": CACHE_TTL_HOURS,
     }
+
+
+# =============================================================================
+# COMPANY SCALE LOOKUP - Lightweight scale detection for experience evaluation
+# =============================================================================
+
+# Cache for company scale lookups (separate from full intel cache)
+_company_scale_cache: Dict[str, tuple] = {}  # {company_name: (scale_info, expiry_datetime)}
+SCALE_CACHE_TTL_HOURS = 168  # 7 days - scale doesn't change often
+
+
+@dataclass
+class CompanyScale:
+    """Lightweight company scale information for experience evaluation."""
+    company_name: str
+    scale: str  # "startup" | "mid" | "enterprise"
+    employee_count: Optional[str] = None  # "50-200", "1000-5000", "10000+"
+    is_public: bool = False
+    funding_stage: Optional[str] = None  # "Series A", "Series D", "Public", etc.
+    confidence: str = "medium"  # "high" | "medium" | "low"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "company_name": self.company_name,
+            "scale": self.scale,
+            "employee_count": self.employee_count,
+            "is_public": self.is_public,
+            "funding_stage": self.funding_stage,
+            "confidence": self.confidence,
+        }
+
+
+# Well-known companies with pre-defined scale (no API call needed)
+KNOWN_COMPANY_SCALES: Dict[str, CompanyScale] = {
+    # FAANG / Big Tech (Enterprise)
+    "google": CompanyScale("Google", "enterprise", "100000+", True, "Public", "high"),
+    "alphabet": CompanyScale("Alphabet", "enterprise", "100000+", True, "Public", "high"),
+    "meta": CompanyScale("Meta", "enterprise", "50000+", True, "Public", "high"),
+    "facebook": CompanyScale("Facebook", "enterprise", "50000+", True, "Public", "high"),
+    "amazon": CompanyScale("Amazon", "enterprise", "1000000+", True, "Public", "high"),
+    "aws": CompanyScale("AWS", "enterprise", "100000+", True, "Public", "high"),
+    "apple": CompanyScale("Apple", "enterprise", "100000+", True, "Public", "high"),
+    "microsoft": CompanyScale("Microsoft", "enterprise", "200000+", True, "Public", "high"),
+    "netflix": CompanyScale("Netflix", "enterprise", "10000+", True, "Public", "high"),
+    "nvidia": CompanyScale("NVIDIA", "enterprise", "20000+", True, "Public", "high"),
+
+    # Major Tech Companies (Enterprise)
+    "uber": CompanyScale("Uber", "enterprise", "30000+", True, "Public", "high"),
+    "lyft": CompanyScale("Lyft", "enterprise", "5000+", True, "Public", "high"),
+    "airbnb": CompanyScale("Airbnb", "enterprise", "6000+", True, "Public", "high"),
+    "salesforce": CompanyScale("Salesforce", "enterprise", "70000+", True, "Public", "high"),
+    "oracle": CompanyScale("Oracle", "enterprise", "140000+", True, "Public", "high"),
+    "ibm": CompanyScale("IBM", "enterprise", "280000+", True, "Public", "high"),
+    "cisco": CompanyScale("Cisco", "enterprise", "80000+", True, "Public", "high"),
+    "intel": CompanyScale("Intel", "enterprise", "120000+", True, "Public", "high"),
+    "adobe": CompanyScale("Adobe", "enterprise", "25000+", True, "Public", "high"),
+
+    # Fintech (Enterprise/Mid)
+    "stripe": CompanyScale("Stripe", "enterprise", "8000+", False, "Series I", "high"),
+    "square": CompanyScale("Square", "enterprise", "10000+", True, "Public", "high"),
+    "block": CompanyScale("Block", "enterprise", "10000+", True, "Public", "high"),
+    "paypal": CompanyScale("PayPal", "enterprise", "25000+", True, "Public", "high"),
+    "venmo": CompanyScale("Venmo", "enterprise", "25000+", True, "Public", "high"),
+    "coinbase": CompanyScale("Coinbase", "enterprise", "3000+", True, "Public", "high"),
+    "robinhood": CompanyScale("Robinhood", "mid", "2000+", True, "Public", "high"),
+    "plaid": CompanyScale("Plaid", "mid", "1000+", False, "Series D", "high"),
+
+    # Social/Consumer (Enterprise)
+    "spotify": CompanyScale("Spotify", "enterprise", "10000+", True, "Public", "high"),
+    "twitter": CompanyScale("Twitter", "enterprise", "2000+", False, "Private", "high"),
+    "x": CompanyScale("X", "enterprise", "2000+", False, "Private", "high"),
+    "linkedin": CompanyScale("LinkedIn", "enterprise", "20000+", True, "Public", "high"),
+    "snap": CompanyScale("Snap", "enterprise", "5000+", True, "Public", "high"),
+    "snapchat": CompanyScale("Snapchat", "enterprise", "5000+", True, "Public", "high"),
+    "pinterest": CompanyScale("Pinterest", "enterprise", "3000+", True, "Public", "high"),
+    "reddit": CompanyScale("Reddit", "mid", "2000+", True, "Public", "high"),
+    "discord": CompanyScale("Discord", "mid", "1000+", False, "Series H", "high"),
+    "tiktok": CompanyScale("TikTok", "enterprise", "10000+", False, "Private", "high"),
+    "bytedance": CompanyScale("ByteDance", "enterprise", "100000+", False, "Private", "high"),
+
+    # SaaS / B2B (Mid/Enterprise)
+    "slack": CompanyScale("Slack", "enterprise", "3000+", True, "Public", "high"),
+    "zoom": CompanyScale("Zoom", "enterprise", "8000+", True, "Public", "high"),
+    "dropbox": CompanyScale("Dropbox", "enterprise", "3000+", True, "Public", "high"),
+    "atlassian": CompanyScale("Atlassian", "enterprise", "10000+", True, "Public", "high"),
+    "notion": CompanyScale("Notion", "mid", "500+", False, "Series C", "high"),
+    "figma": CompanyScale("Figma", "mid", "1000+", False, "Acquired", "high"),
+    "asana": CompanyScale("Asana", "mid", "2000+", True, "Public", "high"),
+    "hubspot": CompanyScale("HubSpot", "enterprise", "7000+", True, "Public", "high"),
+    "zendesk": CompanyScale("Zendesk", "enterprise", "5000+", False, "Private", "high"),
+    "twilio": CompanyScale("Twilio", "enterprise", "8000+", True, "Public", "high"),
+    "datadog": CompanyScale("Datadog", "enterprise", "5000+", True, "Public", "high"),
+    "snowflake": CompanyScale("Snowflake", "enterprise", "5000+", True, "Public", "high"),
+    "databricks": CompanyScale("Databricks", "enterprise", "5000+", False, "Series I", "high"),
+    "palantir": CompanyScale("Palantir", "enterprise", "3000+", True, "Public", "high"),
+    "splunk": CompanyScale("Splunk", "enterprise", "8000+", False, "Acquired", "high"),
+    "servicenow": CompanyScale("ServiceNow", "enterprise", "20000+", True, "Public", "high"),
+    "workday": CompanyScale("Workday", "enterprise", "15000+", True, "Public", "high"),
+    "shopify": CompanyScale("Shopify", "enterprise", "10000+", True, "Public", "high"),
+
+    # AI Companies (Startup/Mid)
+    "openai": CompanyScale("OpenAI", "mid", "1000+", False, "Series E", "high"),
+    "anthropic": CompanyScale("Anthropic", "mid", "500+", False, "Series D", "high"),
+    "cohere": CompanyScale("Cohere", "startup", "200+", False, "Series D", "high"),
+    "scale ai": CompanyScale("Scale AI", "mid", "500+", False, "Series F", "high"),
+    "hugging face": CompanyScale("Hugging Face", "mid", "200+", False, "Series D", "high"),
+
+    # Delivery/Logistics (Enterprise)
+    "doordash": CompanyScale("DoorDash", "enterprise", "10000+", True, "Public", "high"),
+    "instacart": CompanyScale("Instacart", "enterprise", "10000+", True, "Public", "high"),
+    "grubhub": CompanyScale("Grubhub", "enterprise", "3000+", False, "Acquired", "high"),
+
+    # Travel (Enterprise)
+    "booking": CompanyScale("Booking.com", "enterprise", "20000+", True, "Public", "high"),
+    "expedia": CompanyScale("Expedia", "enterprise", "15000+", True, "Public", "high"),
+
+    # Traditional Enterprise / Fortune 500
+    "walmart": CompanyScale("Walmart", "enterprise", "2000000+", True, "Public", "high"),
+    "target": CompanyScale("Target", "enterprise", "400000+", True, "Public", "high"),
+    "jpmorgan": CompanyScale("JPMorgan", "enterprise", "300000+", True, "Public", "high"),
+    "jp morgan": CompanyScale("JP Morgan", "enterprise", "300000+", True, "Public", "high"),
+    "goldman sachs": CompanyScale("Goldman Sachs", "enterprise", "45000+", True, "Public", "high"),
+    "morgan stanley": CompanyScale("Morgan Stanley", "enterprise", "80000+", True, "Public", "high"),
+    "bank of america": CompanyScale("Bank of America", "enterprise", "200000+", True, "Public", "high"),
+    "citibank": CompanyScale("Citibank", "enterprise", "200000+", True, "Public", "high"),
+    "citi": CompanyScale("Citi", "enterprise", "200000+", True, "Public", "high"),
+    "wells fargo": CompanyScale("Wells Fargo", "enterprise", "230000+", True, "Public", "high"),
+    "capital one": CompanyScale("Capital One", "enterprise", "50000+", True, "Public", "high"),
+    "american express": CompanyScale("American Express", "enterprise", "60000+", True, "Public", "high"),
+    "visa": CompanyScale("Visa", "enterprise", "25000+", True, "Public", "high"),
+    "mastercard": CompanyScale("Mastercard", "enterprise", "30000+", True, "Public", "high"),
+
+    # Consulting
+    "mckinsey": CompanyScale("McKinsey", "enterprise", "40000+", False, "Private", "high"),
+    "bain": CompanyScale("Bain", "enterprise", "15000+", False, "Private", "high"),
+    "bcg": CompanyScale("BCG", "enterprise", "25000+", False, "Private", "high"),
+    "boston consulting": CompanyScale("Boston Consulting Group", "enterprise", "25000+", False, "Private", "high"),
+    "deloitte": CompanyScale("Deloitte", "enterprise", "400000+", False, "Private", "high"),
+    "pwc": CompanyScale("PwC", "enterprise", "300000+", False, "Private", "high"),
+    "kpmg": CompanyScale("KPMG", "enterprise", "250000+", False, "Private", "high"),
+    "ey": CompanyScale("EY", "enterprise", "350000+", False, "Private", "high"),
+    "ernst young": CompanyScale("Ernst & Young", "enterprise", "350000+", False, "Private", "high"),
+    "accenture": CompanyScale("Accenture", "enterprise", "700000+", True, "Public", "high"),
+
+    # Executive Search Firms (for recruiting experience)
+    "heidrick": CompanyScale("Heidrick & Struggles", "mid", "2000+", True, "Public", "high"),
+    "heidrick & struggles": CompanyScale("Heidrick & Struggles", "mid", "2000+", True, "Public", "high"),
+    "korn ferry": CompanyScale("Korn Ferry", "enterprise", "8000+", True, "Public", "high"),
+    "spencer stuart": CompanyScale("Spencer Stuart", "mid", "1000+", False, "Private", "high"),
+    "egon zehnder": CompanyScale("Egon Zehnder", "mid", "500+", False, "Private", "high"),
+    "russell reynolds": CompanyScale("Russell Reynolds", "mid", "500+", False, "Private", "high"),
+
+    # Energy / Utilities
+    "national grid": CompanyScale("National Grid", "enterprise", "29000+", True, "Public", "high"),
+
+    # Automotive / EV
+    "tesla": CompanyScale("Tesla", "enterprise", "120000+", True, "Public", "high"),
+    "rivian": CompanyScale("Rivian", "enterprise", "15000+", True, "Public", "high"),
+    "lucid": CompanyScale("Lucid", "mid", "7000+", True, "Public", "high"),
+    "ford": CompanyScale("Ford", "enterprise", "170000+", True, "Public", "high"),
+    "gm": CompanyScale("GM", "enterprise", "160000+", True, "Public", "high"),
+    "general motors": CompanyScale("General Motors", "enterprise", "160000+", True, "Public", "high"),
+    "waymo": CompanyScale("Waymo", "mid", "2500+", False, "Subsidiary", "high"),
+    "cruise": CompanyScale("Cruise", "mid", "2000+", False, "Subsidiary", "high"),
+
+    # Aerospace
+    "spacex": CompanyScale("SpaceX", "enterprise", "13000+", False, "Private", "high"),
+    "blue origin": CompanyScale("Blue Origin", "mid", "10000+", False, "Private", "high"),
+    "boeing": CompanyScale("Boeing", "enterprise", "140000+", True, "Public", "high"),
+    "lockheed martin": CompanyScale("Lockheed Martin", "enterprise", "120000+", True, "Public", "high"),
+
+    # Healthcare Tech
+    "epic systems": CompanyScale("Epic Systems", "enterprise", "13000+", False, "Private", "high"),
+    "cerner": CompanyScale("Cerner", "enterprise", "25000+", False, "Acquired", "high"),
+
+    # Legal Tech (for Harvey context)
+    "harvey": CompanyScale("Harvey", "startup", "200+", False, "Series D", "high"),
+}
+
+
+def _normalize_company_name(name: str) -> str:
+    """Normalize company name for lookup."""
+    normalized = name.lower().strip()
+    # Remove common suffixes
+    for suffix in [" inc", " inc.", " llc", " ltd", " corp", " corporation", " co", " co."]:
+        if normalized.endswith(suffix):
+            normalized = normalized[:-len(suffix)].strip()
+    return normalized
+
+
+def get_company_scale(company_name: str) -> CompanyScale:
+    """
+    Get company scale information for experience evaluation.
+
+    This is a lightweight lookup that:
+    1. First checks known companies (no API call)
+    2. Falls back to heuristic-based detection
+    3. Uses cached results when available
+
+    Args:
+        company_name: Name of the company
+
+    Returns:
+        CompanyScale with scale classification
+    """
+    if not company_name or not company_name.strip():
+        return CompanyScale(
+            company_name="Unknown",
+            scale="mid",  # Default to mid when unknown
+            confidence="low"
+        )
+
+    normalized = _normalize_company_name(company_name)
+
+    # Check known companies first (instant, no API call)
+    if normalized in KNOWN_COMPANY_SCALES:
+        known = KNOWN_COMPANY_SCALES[normalized]
+        logger.info(f"Company scale lookup (known): {company_name} -> {known.scale}")
+        return known
+
+    # Check cache
+    cache_key = hashlib.md5(normalized.encode()).hexdigest()
+    if cache_key in _company_scale_cache:
+        scale_info, expiry = _company_scale_cache[cache_key]
+        if datetime.now() < expiry:
+            logger.info(f"Company scale lookup (cached): {company_name} -> {scale_info.scale}")
+            return scale_info
+
+    # Heuristic-based detection for unknown companies
+    # This avoids expensive API calls for every company
+    scale_info = _infer_company_scale_heuristic(company_name)
+
+    # Cache the result
+    expiry = datetime.now() + timedelta(hours=SCALE_CACHE_TTL_HOURS)
+    _company_scale_cache[cache_key] = (scale_info, expiry)
+
+    logger.info(f"Company scale lookup (heuristic): {company_name} -> {scale_info.scale}")
+    return scale_info
+
+
+def _infer_company_scale_heuristic(company_name: str) -> CompanyScale:
+    """
+    Infer company scale using heuristics when not in known list.
+
+    This is a best-effort classification that avoids API calls.
+    """
+    name_lower = company_name.lower()
+
+    # Startup indicators
+    startup_signals = [
+        "ai", "labs", "studio", "ventures", "stealth",
+        "technologies", "tech", "software", "solutions", "digital",
+        "health", "bio", "medical", "therapeutics", "genomics"
+    ]
+
+    # Enterprise indicators (usually older, established names)
+    enterprise_signals = [
+        "bank", "financial", "insurance", "capital", "group",
+        "international", "global", "national", "american", "united",
+        "general", "electric", "motors", "airlines", "telecom"
+    ]
+
+    # Check for startup signals
+    startup_score = sum(1 for s in startup_signals if s in name_lower)
+
+    # Check for enterprise signals
+    enterprise_score = sum(1 for s in enterprise_signals if s in name_lower)
+
+    if enterprise_score > startup_score:
+        return CompanyScale(
+            company_name=company_name,
+            scale="enterprise",
+            confidence="low"  # Low confidence for heuristic
+        )
+    elif startup_score > 0:
+        return CompanyScale(
+            company_name=company_name,
+            scale="startup",
+            confidence="low"
+        )
+    else:
+        # Default to mid for unknown companies
+        return CompanyScale(
+            company_name=company_name,
+            scale="mid",
+            confidence="low"
+        )
+
+
+def get_candidate_employer_scales(resume_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    Get company scale information for all employers in a candidate's resume.
+
+    This function processes the candidate's work history and returns
+    scale information for each employer, which can be used in
+    credibility/scope evaluation.
+
+    Args:
+        resume_data: Parsed resume data with "experience" array
+
+    Returns:
+        List of employer scale dictionaries with company name and scale info
+    """
+    if not resume_data:
+        return []
+
+    experience = resume_data.get("experience", [])
+    if not experience or not isinstance(experience, list):
+        return []
+
+    employer_scales = []
+    seen_companies = set()  # Avoid duplicate lookups
+
+    for exp in experience:
+        if not isinstance(exp, dict):
+            continue
+
+        company = exp.get("company", "")
+        if not company or company.lower() in seen_companies:
+            continue
+
+        seen_companies.add(company.lower())
+
+        # Get scale info
+        scale_info = get_company_scale(company)
+
+        employer_scales.append({
+            "company": company,
+            "title": exp.get("title", ""),
+            "dates": exp.get("dates", ""),
+            "scale": scale_info.scale,
+            "employee_count": scale_info.employee_count,
+            "is_public": scale_info.is_public,
+            "funding_stage": scale_info.funding_stage,
+            "confidence": scale_info.confidence,
+        })
+
+    # Log summary
+    scale_summary = {}
+    for emp in employer_scales:
+        s = emp["scale"]
+        scale_summary[s] = scale_summary.get(s, 0) + 1
+
+    print(f"📊 Candidate employer scale analysis: {scale_summary}")
+    for emp in employer_scales:
+        conf_marker = "✓" if emp["confidence"] == "high" else "?"
+        print(f"   {conf_marker} {emp['company']}: {emp['scale'].upper()}")
+
+    return employer_scales
