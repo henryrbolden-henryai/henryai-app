@@ -281,9 +281,23 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Form row for side-by-side fields */
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-group-half {
+            flex: 1;
+        }
+
         @media (max-width: 480px) {
             .auth-card {
                 padding: 24px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
             }
         }
     </style>
@@ -354,9 +368,15 @@
 
             <!-- Sign Up Form -->
             <form class="auth-form" id="signupForm" onsubmit="handleSignUp(event)">
-                <div class="form-group">
-                    <label for="signupName">Full Name</label>
-                    <input type="text" id="signupName" placeholder="John Smith" required>
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="signupFirstName">First Name</label>
+                        <input type="text" id="signupFirstName" placeholder="John" required>
+                    </div>
+                    <div class="form-group form-group-half">
+                        <label for="signupLastName">Last Name</label>
+                        <input type="text" id="signupLastName" placeholder="Smith" required>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="signupEmail">Email</label>
@@ -492,11 +512,12 @@
             hideMessages();
             setLoading('signupBtn', true);
 
-            const name = document.getElementById('signupName').value;
+            const firstName = document.getElementById('signupFirstName').value.trim();
+            const lastName = document.getElementById('signupLastName').value.trim();
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
 
-            const { data, error } = await HenryAuth.signUp(email, password, name);
+            const { data, error } = await HenryAuth.signUp(email, password, firstName, lastName);
 
             if (error) {
                 showError(error.message);
