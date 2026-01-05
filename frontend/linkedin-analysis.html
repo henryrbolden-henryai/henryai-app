@@ -810,7 +810,9 @@
         }
 
         function continueToStrategy() {
-            window.location.href = 'overview.html';
+            // Route through generating.html to generate tailored documents
+            // Documents must be generated before overview/documents pages can display them
+            window.location.href = 'generating.html';
         }
 
         function uploadDifferentProfile() {

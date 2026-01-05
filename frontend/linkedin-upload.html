@@ -335,36 +335,38 @@
         const uploadSuccess = document.getElementById('uploadSuccess');
         const uploadSuccessText = document.getElementById('uploadSuccessText');
 
-        // Check if LinkedIn profile was already uploaded during profile setup
+        // Check if LinkedIn profile was already uploaded - if so, auto-redirect to analysis
         async function checkExistingLinkedInProfile() {
             try {
-                // First check localStorage for user profile
+                // First check localStorage for user profile (primary check)
                 const userProfileStr = localStorage.getItem('userProfile');
                 if (userProfileStr) {
                     const userProfile = JSON.parse(userProfileStr);
-                    if (userProfile.linkedin_pdf_url || userProfile.linkedin_uploaded) {
-                        showExistingProfile(userProfile);
+                    // Check linkedin_profile_uploaded (used by linkedin-upload.js) or legacy fields
+                    if (userProfile.linkedin_profile_uploaded || userProfile.linkedin_pdf_url || userProfile.linkedin_uploaded) {
+                        // Auto-redirect to analysis if profile exists
+                        window.location.href = 'linkedin-analysis.html';
                         return;
                     }
                 }
 
-                // Then check Supabase if available
-                if (typeof supabase !== 'undefined') {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (user) {
-                        const { data: profile } = await supabase
-                            .from('user_profiles')
-                            .select('linkedin_pdf_url, linkedin_uploaded_at')
-                            .eq('user_id', user.id)
-                            .single();
+                // Then check Supabase if HenryData is available
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        const supabaseProfile = await HenryData.getCandidateProfile();
+                        if (supabaseProfile && supabaseProfile.linkedin_profile_uploaded) {
+                            // Sync to localStorage and redirect
+                            let localProfile = userProfileStr ? JSON.parse(userProfileStr) : {};
+                            localProfile.linkedin_profile_uploaded = true;
+                            localProfile.linkedin_last_updated = supabaseProfile.linkedin_last_updated;
+                            localProfile.linkedin_parsed = supabaseProfile.linkedin_parsed;
+                            localStorage.setItem('userProfile', JSON.stringify(localProfile));
 
-                        if (profile && profile.linkedin_pdf_url) {
-                            showExistingProfile({
-                                linkedin_uploaded: true,
-                                linkedin_uploaded_at: profile.linkedin_uploaded_at
-                            });
+                            window.location.href = 'linkedin-analysis.html';
                             return;
                         }
+                    } catch (e) {
+                        console.log('Error checking Supabase:', e);
                     }
                 }
 
@@ -373,7 +375,8 @@
                 if (linkedinData) {
                     const data = JSON.parse(linkedinData);
                     if (data.uploaded) {
-                        showExistingProfile(data);
+                        // Auto-redirect to analysis if profile exists
+                        window.location.href = 'linkedin-analysis.html';
                         return;
                     }
                 }
@@ -466,18 +469,33 @@
             document.getElementById('fileInput').click();
         }
 
-        function deleteProfile() {
+        async function deleteProfile() {
             if (confirm('Are you sure you want to delete your LinkedIn profile?')) {
                 sessionStorage.removeItem('linkedinData');
                 localStorage.removeItem('linkedinProfile');
-                // Also update userProfile in localStorage
+
+                // Update userProfile in localStorage - clear ALL LinkedIn fields
                 const userProfileStr = localStorage.getItem('userProfile');
                 if (userProfileStr) {
                     const userProfile = JSON.parse(userProfileStr);
+                    // Clear all possible LinkedIn fields
+                    userProfile.linkedin_profile_uploaded = false;
+                    userProfile.linkedin_last_updated = null;
+                    userProfile.linkedin_parsed = null;
                     delete userProfile.linkedin_pdf_url;
                     delete userProfile.linkedin_uploaded;
                     delete userProfile.linkedin_uploaded_at;
+                    delete userProfile.linkedin_filename;
                     localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+                    // Also update Supabase if available
+                    if (typeof HenryData !== 'undefined') {
+                        try {
+                            await HenryData.saveCandidateProfile(userProfile);
+                        } catch (e) {
+                            console.error('Error updating Supabase:', e);
+                        }
+                    }
                 }
                 // Reload the page
                 window.location.reload();
@@ -519,34 +537,101 @@
                 return;
             }
 
-            // Store LinkedIn data
-            const linkedinData = {
-                uploaded: true,
-                filename: file.name,
-                timestamp: Date.now(),
-                profile: null
-            };
-
-            sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
-
-            // Also update userProfile in localStorage for persistence
-            const userProfileStr = localStorage.getItem('userProfile');
-            if (userProfileStr) {
-                const userProfile = JSON.parse(userProfileStr);
-                userProfile.linkedin_uploaded = true;
-                userProfile.linkedin_uploaded_at = new Date().toISOString();
-                userProfile.linkedin_filename = file.name;
-                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            // Validate file size (10MB max)
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File size exceeds 10MB limit. LinkedIn PDFs are typically 1-3MB.');
+                return;
             }
 
-            // Show success and redirect
-            document.getElementById('uploadSuccess').classList.add('show');
-            document.getElementById('uploadSuccessText').textContent = `${file.name} uploaded!`;
-            uploadArea.style.display = 'none';
+            // Show loading state
+            uploadArea.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="width: 40px; height: 40px; border: 3px solid var(--color-border); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+                    <p style="color: var(--color-text-secondary);">Uploading and analyzing...</p>
+                </div>
+                <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+            `;
 
-            setTimeout(() => {
-                window.location.href = 'linkedin-analysis.html';
-            }, 1500);
+            // Determine API base URL
+            const API_BASE = window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : 'https://henryai-app-production.up.railway.app';
+
+            try {
+                // Upload to backend API for parsing
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`${API_BASE}/api/linkedin/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Upload failed');
+                }
+
+                const data = await response.json();
+
+                // Update userProfile in localStorage with the same format as linkedin-upload.js
+                // This ensures profile-edit.html sees the uploaded state
+                let userProfile = {};
+                const userProfileStr = localStorage.getItem('userProfile');
+                if (userProfileStr) {
+                    userProfile = JSON.parse(userProfileStr);
+                }
+
+                userProfile.linkedin_profile_uploaded = true;
+                userProfile.linkedin_last_updated = new Date().toISOString();
+                userProfile.linkedin_parsed = data.parsed_data;
+                userProfile.linkedin_uploaded = true; // Legacy field for backwards compat
+                userProfile.linkedin_uploaded_at = new Date().toISOString();
+                userProfile.linkedin_filename = file.name;
+
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+                // Also store in sessionStorage for immediate use
+                const linkedinData = {
+                    uploaded: true,
+                    filename: file.name,
+                    timestamp: Date.now(),
+                    profile: data.parsed_data
+                };
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+
+                // Save to Supabase if available
+                if (typeof HenryData !== 'undefined') {
+                    try {
+                        await HenryData.saveCandidateProfile(userProfile);
+                    } catch (e) {
+                        console.error('Error saving LinkedIn data to Supabase:', e);
+                    }
+                }
+
+                // Show success and redirect
+                document.getElementById('uploadSuccess').classList.add('show');
+                document.getElementById('uploadSuccessText').textContent = `${file.name} uploaded successfully!`;
+                uploadArea.style.display = 'none';
+
+                setTimeout(() => {
+                    window.location.href = 'linkedin-analysis.html';
+                }, 1500);
+
+            } catch (error) {
+                console.error('LinkedIn upload error:', error);
+                // Restore upload area
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">&#128196;</div>
+                    <p class="upload-text">Drop your LinkedIn PDF here</p>
+                    <p class="upload-hint">
+                        or click to browse.
+                        <a href="https://www.linkedin.com/help/linkedin/answer/50191" target="_blank">How to export</a>
+                    </p>
+                `;
+                alert('Failed to upload LinkedIn profile: ' + error.message + '. Please try again.');
+            }
         }
 
         function skipToStrategy() {
@@ -558,7 +643,9 @@
             };
             sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
 
-            window.location.href = 'overview.html';
+            // Route through generating.html to generate tailored documents
+            // Documents must be generated before overview/documents pages can display them
+            window.location.href = 'generating.html';
         }
     </script>
 
