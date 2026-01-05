@@ -632,7 +632,8 @@ def detect_company_health_signals(
     negotiation_guidance = company_intel.get("negotiation_guidance", [])
 
     # Only surface YELLOW or RED signals
-    if health_signal == "GREEN":
+    # UNKNOWN and GREEN signals do not generate Reality Check cards
+    if health_signal == "GREEN" or health_signal == "UNKNOWN":
         return checks
 
     # Build the message from findings

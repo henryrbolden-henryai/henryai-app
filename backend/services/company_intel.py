@@ -32,9 +32,10 @@ CACHE_TTL_HOURS = 24
 
 class HealthSignal(str, Enum):
     """Company health signal levels."""
-    GREEN = "GREEN"   # Stable: No negative signals, or only minor concerns
-    YELLOW = "YELLOW" # Watch: Medium-severity signals (layoffs <15%, stock down 15-30%)
-    RED = "RED"       # Risk: High-severity signals (layoffs >15%, stock down >30%, leadership exodus)
+    GREEN = "GREEN"     # Stable: No negative signals, or only minor concerns (requires MEDIUM+ confidence)
+    YELLOW = "YELLOW"   # Watch: Medium-severity signals (layoffs <15%, stock down 15-30%)
+    RED = "RED"         # Risk: High-severity signals (layoffs >15%, stock down >30%, leadership exodus)
+    UNKNOWN = "UNKNOWN" # Insufficient data: LOW confidence, cannot make assessment
 
 
 class ConfidenceLevel(str, Enum):
@@ -251,95 +252,107 @@ def get_company_intelligence(
 
     client = anthropic.Anthropic(api_key=api_key, timeout=60.0)
 
-    # Build the research query
-    research_topics = [
-        f"{company_name} layoffs 2024 2025",
-        f"{company_name} stock price performance",
-        f"{company_name} funding round",
-        f"{company_name} CEO resignation leadership changes",
-    ]
+    # Build the research query - explicit search instructions
+    # Use current year in searches for freshness
+    current_year = datetime.now().year
+    last_year = current_year - 1
 
-    if ticker_symbol:
-        research_topics.append(f"{ticker_symbol} stock earnings")
-
-    user_message = f"""Research the following company and provide a health assessment for a job candidate:
+    user_message = f"""Research "{company_name}" and provide a health assessment for a job candidate considering employment there.
 
 Company: {company_name}
 {f"Stock Ticker: {ticker_symbol}" if ticker_symbol else ""}
 {f"Company URL: {company_url}" if company_url else ""}
 
-Search for recent news (past 12 months) about:
-1. Layoffs or workforce reductions
-2. Stock performance (if public company)
-3. Funding status and runway (if private company)
-4. Leadership changes (CEO, CFO, CPO turnover)
-5. Major regulatory or legal issues
+YOU MUST PERFORM MULTIPLE SEARCHES. Search for each of these queries separately:
 
-Provide your findings as structured JSON."""
+1. FIRST SEARCH: "{company_name} layoffs {current_year}"
+2. SECOND SEARCH: "{company_name} layoffs {last_year}"
+3. THIRD SEARCH: "{company_name} acquisition buyout going private {current_year}"
+4. FOURTH SEARCH: "{company_name} lawsuit investigation SEC {current_year}"
+5. FIFTH SEARCH: "{company_name} CEO leadership changes {current_year}"
+6. SIXTH SEARCH: "{company_name} stock price funding valuation {current_year}"
+7. SEVENTH SEARCH: "{company_name} news" (for recent press coverage)
+
+IMPORTANT SEARCH GUIDANCE:
+- If you find any lawsuits, investigations, or SEC filings, dig deeper with a follow-up search
+- Look specifically at sources like: PR Newswire, Bloomberg, TechCrunch, Reuters, WSJ, Business Insider, The Verge, Layoffs.fyi
+- For app companies, also check: The Verge, Engadget, 9to5Mac/Google
+- Include the FULL company name and common variations in your searches
+
+CLASSIFICATION GUIDANCE:
+- Pending acquisition/buyout/going-private deals: YELLOW (uncertainty for employees)
+- Terminated/failed acquisitions: YELLOW (instability signal)
+- Active lawsuits against the company or leadership: YELLOW or RED based on severity
+- SEC investigations or fiduciary duty lawsuits: RED
+- Layoffs announced in past 6 months: Check percentage to determine severity
+
+After completing your searches, provide your findings as structured JSON matching the schema in your system prompt."""
 
     try:
         logger.info(f"Fetching company intelligence for: {company_name}")
         print(f"🔍 Fetching company intelligence for: {company_name}")
 
         # Call Claude with web search tool
+        # Web search is a "server tool" - Anthropic's API executes searches automatically
+        # and injects results into the response. No tool_use loop needed.
+        messages = [{"role": "user", "content": user_message}]
+
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=2048,
+            max_tokens=4096,  # Increased for detailed responses with citations
             temperature=0,
             system=COMPANY_INTEL_SYSTEM_PROMPT,
             tools=[
                 {
                     "type": "web_search_20250305",
                     "name": "web_search",
-                    "max_uses": 5,
+                    "max_uses": 15,  # Increased for more thorough research
                 }
             ],
-            messages=[{"role": "user", "content": user_message}]
+            messages=messages
         )
 
-        # Process the response - handle tool use loop if needed
-        result_text = None
-        messages = [{"role": "user", "content": user_message}]
+        # Handle pause_turn stop reason - API paused a long-running turn
+        # Continue the conversation to let Claude finish
+        while response.stop_reason == "pause_turn":
+            logger.info(f"Received pause_turn, continuing search for: {company_name}")
+            print(f"🔄 Continuing company intel search for: {company_name}")
 
-        # Continue conversation if Claude needs to use tools
-        while response.stop_reason == "tool_use":
-            # Add assistant's response to messages
+            # Add assistant's partial response to continue
             messages.append({"role": "assistant", "content": response.content})
 
-            # Process tool results
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    # Web search results are handled automatically by Claude
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": "Search completed."
-                    })
-
-            messages.append({"role": "user", "content": tool_results})
-
-            # Continue the conversation
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=2048,
+                max_tokens=4096,
                 temperature=0,
                 system=COMPANY_INTEL_SYSTEM_PROMPT,
                 tools=[
                     {
                         "type": "web_search_20250305",
                         "name": "web_search",
-                        "max_uses": 5,
+                        "max_uses": 15,
                     }
                 ],
                 messages=messages
             )
 
-        # Extract final text response
+        # Log web search usage for monitoring
+        if hasattr(response, 'usage') and response.usage:
+            server_tool_use = getattr(response.usage, 'server_tool_use', None)
+            if server_tool_use:
+                web_searches = getattr(server_tool_use, 'web_search_requests', 0)
+                logger.info(f"Web searches performed for {company_name}: {web_searches}")
+                print(f"🔍 Web searches performed: {web_searches}")
+
+        # Extract final text response - combine all text blocks
+        result_text = None
+        text_parts = []
         for block in response.content:
             if hasattr(block, 'text'):
-                result_text = block.text
-                break
+                text_parts.append(block.text)
+
+        if text_parts:
+            result_text = ''.join(text_parts)
 
         if not result_text:
             logger.warning(f"No text response from Claude for company: {company_name}")
@@ -406,6 +419,45 @@ def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntel
         except ValueError:
             health_signal = HealthSignal.GREEN
 
+        # CRITICAL RULE: LOW confidence MUST result in UNKNOWN signal
+        # We cannot claim STABLE (GREEN) without sufficient data to verify it
+        # YELLOW and RED are allowed with LOW confidence (we found something concerning)
+        if confidence == ConfidenceLevel.LOW and health_signal == HealthSignal.GREEN:
+            health_signal = HealthSignal.UNKNOWN
+            # Update the messaging for UNKNOWN state
+            what_this_means = data.get("what_this_means", "")
+            if not what_this_means or "no significant" in what_this_means.lower():
+                what_this_means = "Henry could not find enough verified data to assess this company's health. This does not mean safe or risky. Validate directly before investing significant time in this opportunity."
+
+            interview_questions = data.get("interview_questions", [])
+            if not interview_questions:
+                interview_questions = [
+                    "What does the growth roadmap look like for this team over the next 12 months?",
+                    "How has the team structure evolved over the past year?",
+                    "What is the company's current runway and funding status?",
+                    "Have there been any recent organizational changes I should know about?",
+                ]
+
+            negotiation_guidance = data.get("negotiation_guidance", [])
+            if not negotiation_guidance:
+                negotiation_guidance = [
+                    "Research the company independently. Henry does not have enough data to guide you here.",
+                    "Ask directly about team stability, runway, and recent organizational changes.",
+                    "Verify funding status and leadership stability through your own network.",
+                ]
+
+            return CompanyIntelligence(
+                company_name=company_name,
+                company_health_signal=health_signal,
+                confidence=confidence,
+                findings=findings,
+                what_this_means=what_this_means,
+                interview_questions=interview_questions,
+                negotiation_guidance=negotiation_guidance,
+                data_freshness=datetime.now(),
+                sources_checked=data.get("sources_checked", []),
+            )
+
         return CompanyIntelligence(
             company_name=company_name,
             company_health_signal=health_signal,
@@ -425,23 +477,27 @@ def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntel
 
 
 def _create_error_intel(company_name: str, error_message: str) -> CompanyIntelligence:
-    """Create a CompanyIntelligence object for error cases."""
+    """Create a CompanyIntelligence object for error/unknown cases.
+
+    CRITICAL: When confidence is LOW, health_signal MUST be UNKNOWN.
+    We cannot claim STABLE (GREEN) without sufficient data to verify it.
+    """
     return CompanyIntelligence(
         company_name=company_name,
-        company_health_signal=HealthSignal.GREEN,  # Default to GREEN when we can't verify
+        company_health_signal=HealthSignal.UNKNOWN,  # UNKNOWN when we can't verify - never falsely claim stable
         confidence=ConfidenceLevel.LOW,
         findings=[],
-        what_this_means="We were unable to retrieve recent news about this company. Proceed with your own research.",
+        what_this_means="Henry could not find enough verified data to assess this company's health. This does not mean safe or risky. Validate directly before investing significant time in this opportunity.",
         interview_questions=[
             "What does the growth roadmap look like for this team over the next 12 months?",
-            "How is the company thinking about scaling while maintaining culture?",
-            "What is the biggest challenge the team is facing right now?",
-            "How does this role contribute to the company's strategic priorities?",
+            "How has the team structure evolved over the past year?",
+            "What is the company's current runway and funding status?",
+            "Have there been any recent organizational changes I should know about?",
         ],
         negotiation_guidance=[
-            "Standard negotiation approach applies.",
-            "Research the company independently before finalizing decisions.",
-            "Ask about team stability and growth plans during interviews.",
+            "Research the company independently. Henry does not have enough data to guide you here.",
+            "Ask directly about team stability, runway, and recent organizational changes.",
+            "Verify funding status and leadership stability through your own network.",
         ],
         data_freshness=datetime.now(),
         sources_checked=[],

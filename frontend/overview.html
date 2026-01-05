@@ -380,24 +380,7 @@
                 </div>
             </a>
 
-            <!-- Card 6: Company Analysis -->
-            <a href="company-analysis.html" class="nav-card">
-                <span class="beta-badge">Beta</span>
-                <span class="card-icon">🏢</span>
-                <h2 class="card-title">Company Analysis</h2>
-                <p class="card-subtitle">Health signals, risk factors, and what to ask</p>
-                <p class="card-insight" id="companyInsight"></p>
-                <p class="card-description">
-                    Understand what you are walking into. Recent layoffs, financial health,
-                    leadership changes, and employee sentiment, so you know whether this
-                    opportunity is worth your time.
-                </p>
-                <div class="card-cta">
-                    View Analysis <span>→</span>
-                </div>
-            </a>
-
-            <!-- Card 7: Offer Negotiation (Coming Soon) -->
+            <!-- Card 6: Offer Negotiation (Coming Soon) -->
             <div class="nav-card coming-soon">
                 <span class="coming-soon-badge">Coming Soon</span>
                 <span class="card-icon">💰</span>
@@ -481,25 +464,6 @@
                 interviewEl.classList.add('visible');
             }
 
-            // Company Analysis Insight - show company health signal
-            const companyEl = document.getElementById('companyInsight');
-            const companyIntel = data.company_intelligence || {};
-            const companyName = data._company_name || data.company_name || 'this company';
-
-            if (companyIntel.company_health_signal === 'RED') {
-                companyEl.innerHTML = `<span class="insight-highlight" style="color: #f87171;">Risk signals detected.</span> See what this means for your candidacy.`;
-                companyEl.classList.add('visible');
-            } else if (companyIntel.company_health_signal === 'YELLOW') {
-                const topFinding = companyIntel.findings && companyIntel.findings[0] ? companyIntel.findings[0].finding : 'Review before proceeding.';
-                companyEl.innerHTML = `<span class="insight-highlight" style="color: #fbbf24;">Watch signals found.</span> ${topFinding}`;
-                companyEl.classList.add('visible');
-            } else if (companyIntel.company_health_signal === 'GREEN') {
-                companyEl.innerHTML = `<span class="insight-highlight" style="color: #4ade80;">${companyName} appears stable.</span> See interview questions and negotiation guidance.`;
-                companyEl.classList.add('visible');
-            } else {
-                companyEl.innerHTML = `<span class="insight-highlight">Research ${companyName}</span> before investing time in interviews.`;
-                companyEl.classList.add('visible');
-            }
         }
     </script>
 <script src="components/analytics.js"></script>
