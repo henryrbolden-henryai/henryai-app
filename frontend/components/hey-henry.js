@@ -1856,7 +1856,7 @@
         const greetings = [
             `Hey${userName ? ` ${userName}` : ''}! What's on your mind?`,
             `Hey${userName ? ` ${userName}` : ''}! What are you working on?`,
-            `Hey${userName ? ` ${userName}` : ''}! How can I help?`,
+            `Hey${userName ? ` ${userName}` : ''}! I'm here to support your job search.`,
             `Hey${userName ? ` ${userName}` : ''}! What do you need?`
         ];
         return greetings[Math.floor(Math.random() * greetings.length)];
@@ -3010,7 +3010,7 @@ ${confidenceClosing}`,
     function getPersonalizedGreeting(userName, context) {
         // No name - first time visitor
         if (!userName) {
-            return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
+            return `Hi, I'm Henry! I'm here to support you with your job search.`;
         }
 
         // Check for name mismatch (highest priority - fraud/error detection)
@@ -3037,7 +3037,7 @@ ${confidenceClosing}`,
             const veteranThanked = localStorage.getItem('henryai_veteran_thanked') === 'true';
             if (profile.is_veteran && !veteranThanked) {
                 localStorage.setItem('henryai_veteran_thanked', 'true');
-                return `Hey ${userName}! Thank you for your service. How can I help with your job search today?`;
+                return `Hey ${userName}! Thank you for your service. I'm here to support your job search.`;
             }
         } catch (e) {
             console.error('Error checking veteran status:', e);
@@ -3078,7 +3078,7 @@ ${confidenceClosing}`,
         const standardGreetings = [
             `Hey ${userName}! What's on your mind?`,
             `Hey ${userName}! What are you working on?`,
-            `Hey ${userName}! How can I help?`,
+            `Hey ${userName}! I'm here to support your job search.`,
             `Hey ${userName}! What are you thinking about?`,
             `Hey ${userName}! What do you need?`,
             `Hey ${userName}! What's up?`
