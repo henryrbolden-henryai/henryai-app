@@ -904,7 +904,8 @@ def detect_keyword_stuffing(resume: dict) -> Tuple[bool, int, List[str]]:
 
 def detect_title_inflation_from_evidence(
     title: str,
-    bullets: List[str]
+    bullets: List[str],
+    company: str = ""
 ) -> Tuple[bool, str, List[str]]:
     """
     Detect if title is inflated relative to bullet evidence.
@@ -915,6 +916,25 @@ def detect_title_inflation_from_evidence(
         return False, "", ["No bullets to assess"]
 
     title_lower = title.lower()
+    company_lower = (company or "").lower()
+
+    # Enterprise companies where Director+ titles are automatically credible
+    # These companies have strict title policies - a Director at these companies
+    # definitionally has people leadership
+    established_enterprise_companies = [
+        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
+        "uber", "lyft", "airbnb", "stripe", "salesforce", "adobe", "oracle",
+        "ibm", "cisco", "intel", "linkedin", "twitter", "snap", "pinterest",
+        "spotify", "shopify", "hubspot", "datadog", "snowflake",
+        # Energy / Utilities (enterprise scale)
+        "national grid", "pg&e", "con edison", "duke energy", "southern company",
+        # Fintech / Payments
+        "venmo", "paypal", "block", "coinbase", "robinhood", "plaid",
+        # Executive Search / Recruiting
+        "heidrick", "heidrick & struggles", "korn ferry", "spencer stuart",
+    ]
+
+    is_established_company = any(ec in company_lower for ec in established_enterprise_companies)
 
     # Senior/leadership titles that require evidence
     senior_titles = [
@@ -926,6 +946,12 @@ def detect_title_inflation_from_evidence(
 
     if not is_senior_title:
         return False, title, []
+
+    # CRITICAL FIX: Director+ at established enterprise = automatically credible
+    # These companies have strict title policies - Director definitionally has people leadership
+    is_director_plus = any(t in title_lower for t in ["director", "vp", "vice president", "chief", "head of"])
+    if is_director_plus and is_established_company:
+        return False, title, [f"Director+ at established enterprise ({company}) - automatically credible"]
 
     # Check for evidence of senior work in bullets
     evidence_found = []
@@ -964,8 +990,6 @@ def detect_title_inflation_from_evidence(
 
     # Determine inflation
     # Director+ needs scope + leadership + strategic
-    is_director_plus = any(t in title_lower for t in ["director", "vp", "vice president", "chief", "head of"])
-
     if is_director_plus:
         signals_present = sum([has_scope, has_leadership, has_strategic])
         if signals_present < 2:
@@ -1234,9 +1258,10 @@ def detect_terminal_state(
     # 1. Check title inflation (highest authority for credibility violations)
     for role in resume.get("experience", []):
         title = role.get("title", "")
+        company = role.get("company", "")
         role_bullets = role.get("bullets", [])
 
-        is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, role_bullets)
+        is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, role_bullets, company)
 
         if is_inflated:
             contract = TERMINAL_STATES[TerminalStateType.TITLE_INFLATION]
@@ -1643,8 +1668,9 @@ def log_decision_authority_chain(
     title_evidence = []
     for role in resume.get("experience", []):
         title = role.get("title", "")
+        company = role.get("company", "")
         bullets = role.get("bullets", [])
-        is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, bullets)
+        is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, bullets, company)
         if is_inflated:
             title_inflation_triggered = True
             title_evidence = [f"Title: {title}", f"Expected: {expected}"] + evidence

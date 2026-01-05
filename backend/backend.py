@@ -7340,6 +7340,15 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
         "new relic", "mparticle", "amplitude", "mixpanel", "braze",
         "intercom", "drift", "gong", "outreach", "salesloft",
+        # Energy / Utilities (enterprise scale)
+        "national grid", "pg&e", "con edison", "duke energy", "southern company",
+        # Fintech / Payments
+        "venmo", "paypal", "block", "coinbase", "robinhood", "plaid",
+        # Executive Search / Recruiting (verified people management)
+        "heidrick", "heidrick & struggles", "korn ferry", "spencer stuart",
+        "egon zehnder", "russell reynolds",
+        # Additional major companies
+        "spotify", "doordash", "instacart", "grubhub",
     ]
 
     # ========================================================================
@@ -7475,12 +7484,11 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
                 "tier_years": tier_years
             })
 
-    # Calculate totals (don't double-count - use max of each role's highest tier)
-    total_leadership = max(strategic_total, people_total, org_total)
-    if people_total > 0:
-        total_leadership = people_total
-    if org_total > 0:
-        total_leadership = max(total_leadership, org_total)
+    # Calculate totals
+    # CRITICAL FIX: Org-level leadership INCLUDES people leadership by definition
+    # A VP/Director/Head of always has direct reports, so org_total should count toward people
+    effective_people_total = people_total + org_total  # Org-level implies people leadership
+    total_leadership = max(strategic_total, effective_people_total)
 
     # Build summary
     summaries = []
@@ -7488,14 +7496,14 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         summaries.append(f"Org-level: {org_total:.1f}y")
     if people_total > 0:
         summaries.append(f"People: {people_total:.1f}y")
-    if strategic_total > 0 and people_total == 0 and org_total == 0:
+    if strategic_total > 0 and effective_people_total == 0:
         summaries.append(f"Strategic/Functional: {strategic_total:.1f}y")
 
     has_any = org_total > 0 or people_total > 0 or strategic_total > 0
 
     result.update({
         "strategic_leadership_years": round(strategic_total, 1),
-        "people_leadership_years": round(people_total, 1),
+        "people_leadership_years": round(effective_people_total, 1),  # FIXED: includes org-level
         "org_leadership_years": round(org_total, 1),
         "total_leadership_years": round(total_leadership, 1),
         "has_any_leadership": has_any,
