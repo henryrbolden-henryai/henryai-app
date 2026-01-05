@@ -1033,12 +1033,18 @@
             <div class="form-row">
                 <div class="form-group form-group-half">
                     <label>First Name *</label>
-                    <input type="text" id="firstName" placeholder="Jane">
+                    <input type="text" id="firstName" placeholder="Jane" disabled>
                 </div>
                 <div class="form-group form-group-half">
                     <label>Last Name *</label>
-                    <input type="text" id="lastName" placeholder="Smith">
+                    <input type="text" id="lastName" placeholder="Smith" disabled>
                 </div>
+            </div>
+            <span class="field-hint" style="margin-top: -12px; margin-bottom: 16px; display: block;">From your account signup. Must match your resume.</span>
+            <div class="form-group">
+                <label>Nickname <span style="color: #888; font-weight: 400;">(optional)</span></label>
+                <input type="text" id="nickname" placeholder="e.g., Mike, Liz, AJ">
+                <span class="field-hint">What you prefer to be called</span>
             </div>
             <div class="form-group">
                 <label>Email</label>
@@ -2272,6 +2278,7 @@
             // About You section - new fields
             document.getElementById('firstName').value = profile.first_name || document.getElementById('firstName').value || '';
             document.getElementById('lastName').value = profile.last_name || document.getElementById('lastName').value || '';
+            document.getElementById('nickname').value = profile.nickname || '';
             document.getElementById('pronouns').value = profile.pronouns || '';
 
             // Function Area
@@ -2838,6 +2845,7 @@
                 // About You section - new fields
                 profile.first_name = firstName;
                 profile.last_name = lastName;
+                profile.nickname = document.getElementById('nickname').value.trim() || null;
                 profile.pronouns = document.getElementById('pronouns').value.trim() || null;
                 profile.function_area = functionArea;
                 profile.current_industry = currentIndustry;
