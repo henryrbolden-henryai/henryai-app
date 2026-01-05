@@ -1447,9 +1447,74 @@ const HenryData = {
 
             // Extract and save location from resume if available
             await this.extractAndSaveLocationFromResume(user.id, resumeJson);
+
+            // Check for name mismatch between signup and resume
+            await this.checkNameMismatch(user.id, resumeJson);
         }
 
         return { data, error };
+    },
+
+    /**
+     * Check if resume name matches signup name and flag if different
+     * @param {string} userId - User's UUID
+     * @param {object} resumeJson - Parsed resume JSON
+     */
+    async checkNameMismatch(userId, resumeJson) {
+        if (!resumeJson) return;
+
+        // Get resume name from various possible fields
+        const resumeName = resumeJson.name ||
+                          resumeJson.full_name ||
+                          resumeJson.contact?.name ||
+                          resumeJson.basics?.name ||
+                          resumeJson.header?.name;
+
+        if (!resumeName) return;
+
+        // Get signup name from auth metadata
+        const nameData = await HenryAuth.getUserName();
+        if (!nameData) return;
+
+        const signupFullName = nameData.fullName?.toLowerCase().trim() || '';
+        const resumeFullName = resumeName.toLowerCase().trim();
+
+        // Normalize names for comparison (remove extra spaces, punctuation)
+        const normalize = (name) => name.replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+        const normalizedSignup = normalize(signupFullName);
+        const normalizedResume = normalize(resumeFullName);
+
+        // Check for mismatch
+        if (normalizedSignup && normalizedResume && normalizedSignup !== normalizedResume) {
+            // Check if it's a minor mismatch (same first name, different format)
+            const signupFirst = normalizedSignup.split(' ')[0];
+            const resumeFirst = normalizedResume.split(' ')[0];
+            const isMajorMismatch = signupFirst !== resumeFirst;
+
+            // Store mismatch status for Hey Henry to reference
+            const mismatchData = {
+                signup_name: nameData.fullName,
+                resume_name: resumeName,
+                mismatch_type: isMajorMismatch ? 'major' : 'minor',
+                detected_at: new Date().toISOString()
+            };
+
+            // Save to localStorage for Hey Henry to pick up
+            localStorage.setItem('henryai_name_mismatch', JSON.stringify(mismatchData));
+            console.log('⚠️ Name mismatch detected:', mismatchData);
+
+            // Update candidate profile with mismatch flag
+            await supabase
+                .from('candidate_profiles')
+                .upsert({
+                    id: userId,
+                    name_match_status: isMajorMismatch ? 'major_mismatch' : 'minor_mismatch',
+                    updated_at: new Date().toISOString()
+                });
+        } else {
+            // Names match - clear any previous mismatch
+            localStorage.removeItem('henryai_name_mismatch');
+        }
     },
 
     /**

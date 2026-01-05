@@ -366,3 +366,12 @@ DO $$ BEGIN
 END $$;
 
 COMMENT ON COLUMN candidate_profiles.nickname IS 'Preferred name/nickname for the candidate (used by Hey Henry and in communications)';
+
+-- Add name_match_status column for fraud detection
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'candidate_profiles' AND column_name = 'name_match_status') THEN
+        ALTER TABLE candidate_profiles ADD COLUMN name_match_status TEXT CHECK (name_match_status IS NULL OR name_match_status IN ('matched', 'minor_mismatch', 'major_mismatch'));
+    END IF;
+END $$;
+
+COMMENT ON COLUMN candidate_profiles.name_match_status IS 'Comparison of signup name vs resume name: matched, minor_mismatch (formatting diff), major_mismatch (different first name - potential fraud)';

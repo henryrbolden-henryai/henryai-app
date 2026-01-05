@@ -3007,6 +3007,24 @@ ${confidenceClosing}`,
             return `Hi, I'm Henry! I'm always around if you need to chat. How can I help you?`;
         }
 
+        // Check for name mismatch (highest priority - fraud/error detection)
+        // Only show if not already acknowledged
+        try {
+            const nameMismatch = JSON.parse(localStorage.getItem('henryai_name_mismatch') || 'null');
+            const alreadyAcknowledged = localStorage.getItem('henryai_name_mismatch_ack') === 'true';
+            if (nameMismatch && !alreadyAcknowledged) {
+                if (nameMismatch.mismatch_type === 'major') {
+                    // Major mismatch - first name is different
+                    return `Hey ${userName}, I noticed your resume shows "${nameMismatch.resume_name}" but you signed up as "${nameMismatch.signup_name}". If your legal name has changed, please contact <a href="mailto:support@henryhq.com">support@henryhq.com</a> so we can update your account.`;
+                } else {
+                    // Minor mismatch - last name different (could be maiden name, typo, etc.)
+                    return `Hey ${userName}, quick heads up—your resume shows "${nameMismatch.resume_name}" but your account has "${nameMismatch.signup_name}". If this needs updating, reach out to <a href="mailto:support@henryhq.com">support@henryhq.com</a>.`;
+                }
+            }
+        } catch (e) {
+            console.error('Error checking name mismatch:', e);
+        }
+
         // Get emotional state and pipeline data for context-aware greetings
         const emotionalState = getUserEmotionalState();
         const pipeline = getPipelineData();
@@ -4093,8 +4111,17 @@ ${confidenceClosing}`,
                 return;
             }
 
-            // Check if user is asking HOW to give feedback or attach screenshots
+            // Check if user is acknowledging a name mismatch message - clear it so it doesn't show again
             const lowerMessage = message.toLowerCase();
+            const nameMismatch = localStorage.getItem('henryai_name_mismatch');
+            if (nameMismatch) {
+                const ackPatterns = ['ok', 'okay', 'got it', 'thanks', 'thank you', 'understood', 'will do', "i'll contact", "i will contact", "i'll email", "i will email"];
+                if (ackPatterns.some(p => lowerMessage.includes(p))) {
+                    localStorage.setItem('henryai_name_mismatch_ack', 'true');
+                }
+            }
+
+            // Check if user is asking HOW to give feedback or attach screenshots
             const askingAboutFeedback = (
                 (lowerMessage.includes('how') || lowerMessage.includes('can i') || lowerMessage.includes('where')) &&
                 (lowerMessage.includes('feedback') || lowerMessage.includes('screenshot') || lowerMessage.includes('report') || lowerMessage.includes('bug') || lowerMessage.includes('attach'))
