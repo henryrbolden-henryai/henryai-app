@@ -929,6 +929,69 @@ def detect_keyword_stuffing(resume: dict) -> Tuple[bool, int, List[str]]:
     return is_stuffed, int(density), uncontextualized
 
 
+def get_demonstrated_career_level(resume: dict) -> Tuple[str, List[str]]:
+    """
+    Determine the highest level the candidate has demonstrated across their career.
+
+    Looks at ALL roles (not just current) for evidence of senior work.
+    A candidate who was a Director at a prior company has demonstrated
+    Director-level capability even if their current role is different.
+
+    Returns: (level, evidence_list)
+        level: "director_plus", "manager", "senior_ic", "ic"
+        evidence_list: List of evidence strings
+    """
+    evidence = []
+    has_director_plus_evidence = False
+    has_manager_evidence = False
+    has_senior_ic_evidence = False
+
+    for role in resume.get("experience", []):
+        title = role.get("title", "").lower()
+        bullets = role.get("bullets", [])
+        company = role.get("company", "")
+
+        # Check title for level indicators
+        is_director_plus_title = any(t in title for t in [
+            "director", "vp", "vice president", "chief", "head of",
+            "svp", "evp", "president", "ceo", "cfo", "cto", "coo", "chro"
+        ])
+        is_manager_title = any(t in title for t in [
+            "manager", "lead", "supervisor", "team lead"
+        ])
+        is_senior_title = any(t in title for t in [
+            "senior", "staff", "principal", "sr."
+        ])
+
+        # Check bullets for quantified leadership evidence
+        for bullet in bullets:
+            # Team management evidence
+            if has_leadership_signal(bullet):
+                if is_director_plus_title:
+                    has_director_plus_evidence = True
+                    evidence.append(f"Director+ at {company}: {bullet[:60]}...")
+                elif is_manager_title:
+                    has_manager_evidence = True
+                    evidence.append(f"Manager at {company}: {bullet[:60]}...")
+
+            # Scope evidence (for senior ICs and above)
+            if has_scope_signal(bullet):
+                if is_director_plus_title:
+                    has_director_plus_evidence = True
+                elif is_senior_title or is_manager_title:
+                    has_senior_ic_evidence = True
+
+    # Return highest demonstrated level
+    if has_director_plus_evidence:
+        return "director_plus", evidence
+    elif has_manager_evidence:
+        return "manager", evidence
+    elif has_senior_ic_evidence:
+        return "senior_ic", evidence
+    else:
+        return "ic", evidence
+
+
 def detect_title_inflation_from_evidence(
     title: str,
     bullets: List[str],
@@ -940,12 +1003,23 @@ def detect_title_inflation_from_evidence(
     Uses generic pattern matching to detect legitimate senior signals.
     Does NOT use company-specific exceptions - relies purely on evidence.
 
+    NOTE: This checks a SINGLE role in isolation. The caller should also
+    check get_demonstrated_career_level() to avoid false positives on
+    career transition roles (e.g., consulting after Director role).
+
     Returns: (is_inflated, expected_level, evidence)
     """
     if not bullets:
         return False, "", ["No bullets to assess"]
 
     title_lower = title.lower()
+
+    # Founder/Owner roles are exempt from inflation checks
+    # They definitionally own the business - no evidence needed
+    founder_patterns = ["founder", "owner", "co-founder", "cofounder", "proprietor"]
+    is_founder = any(p in title_lower for p in founder_patterns)
+    if is_founder:
+        return False, title, ["Founder/Owner role - exempt from inflation check"]
 
     # Senior/leadership titles that require evidence
     senior_titles = [
@@ -1274,6 +1348,10 @@ def detect_terminal_state(
     all_text = " ".join(bullets) + " " + resume.get("summary", "")
 
     # 1. Check title inflation (highest authority for credibility violations)
+    # FIRST: Check the candidate's demonstrated career level across ALL roles
+    # If they've demonstrated Director-level work elsewhere, don't flag current role
+    demonstrated_level, career_evidence = get_demonstrated_career_level(resume)
+
     for role in resume.get("experience", []):
         title = role.get("title", "")
         company = role.get("company", "")
@@ -1282,6 +1360,23 @@ def detect_terminal_state(
         is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, role_bullets, company)
 
         if is_inflated:
+            # Before flagging, check if candidate has demonstrated this level elsewhere
+            title_lower = title.lower()
+            is_director_plus_title = any(t in title_lower for t in [
+                "director", "vp", "vice president", "chief", "head of",
+                "svp", "evp", "principal", "founder"
+            ])
+            is_manager_title = any(t in title_lower for t in ["manager", "lead"])
+
+            # If candidate has demonstrated Director+ level in career, don't flag Director+ titles
+            if is_director_plus_title and demonstrated_level == "director_plus":
+                continue  # Skip this role - candidate has proven capability
+
+            # If candidate has demonstrated Manager level in career, don't flag Manager titles
+            if is_manager_title and demonstrated_level in ["director_plus", "manager"]:
+                continue  # Skip this role - candidate has proven capability
+
+            # Otherwise, flag as inflated
             contract = TERMINAL_STATES[TerminalStateType.TITLE_INFLATION]
             contract.evidence = evidence
             contract.reason = f"Title '{title}' not supported by evidence. Evidence suggests {expected}."
@@ -1682,6 +1777,9 @@ def log_decision_authority_chain(
     chain = []
 
     # 1. Title Inflation Check (Authority 1)
+    # FIRST: Check the candidate's demonstrated career level across ALL roles
+    demonstrated_level, career_evidence = get_demonstrated_career_level(resume)
+
     title_inflation_triggered = False
     title_evidence = []
     for role in resume.get("experience", []):
@@ -1690,6 +1788,22 @@ def log_decision_authority_chain(
         bullets = role.get("bullets", [])
         is_inflated, expected, evidence = detect_title_inflation_from_evidence(title, bullets, company)
         if is_inflated:
+            # Before flagging, check if candidate has demonstrated this level elsewhere
+            title_lower = title.lower()
+            is_director_plus_title = any(t in title_lower for t in [
+                "director", "vp", "vice president", "chief", "head of",
+                "svp", "evp", "principal", "founder"
+            ])
+            is_manager_title = any(t in title_lower for t in ["manager", "lead"])
+
+            # If candidate has demonstrated Director+ level in career, don't flag Director+ titles
+            if is_director_plus_title and demonstrated_level == "director_plus":
+                continue  # Skip - candidate has proven capability
+
+            # If candidate has demonstrated Manager level in career, don't flag Manager titles
+            if is_manager_title and demonstrated_level in ["director_plus", "manager"]:
+                continue  # Skip - candidate has proven capability
+
             title_inflation_triggered = True
             title_evidence = [f"Title: {title}", f"Expected: {expected}"] + evidence
             break
