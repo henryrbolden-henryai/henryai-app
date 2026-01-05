@@ -13011,6 +13011,8 @@ Role: {body.role_title}
 
             # Fetch company intelligence (if enabled)
             company_intel = None
+            print(f"🔍 Company Intel check: AVAILABLE={COMPANY_INTEL_AVAILABLE}, ENABLED={COMPANY_INTEL_ENABLED}")
+            print(f"   body.company='{body.company}', parsed_data.company='{parsed_data.get('company', '')}'")
             if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 company_name = body.company or parsed_data.get("company", "")
                 if company_name:
@@ -13022,7 +13024,13 @@ Role: {body.role_title}
                         print(f"✅ Company intelligence: {intel_result.company_health_signal.value}")
                     except Exception as ci_e:
                         print(f"⚠️ Company intelligence fetch failed (non-blocking): {str(ci_e)}")
+                        import traceback
+                        traceback.print_exc()
                         company_intel = None
+                else:
+                    print(f"⚠️ Company intelligence skipped: company_name is empty")
+            else:
+                print(f"⚠️ Company intelligence disabled or unavailable")
 
             # Configure post-processors
             config = PostProcessorConfig(
@@ -13638,6 +13646,8 @@ Role: {body.role_title}
                     print(f"✅ [Stream] Career gap detected via post-processing: {career_gap['description']}")
 
             # Fetch company intelligence (if enabled)
+            print(f"🔍 [Stream] Company Intel check: AVAILABLE={COMPANY_INTEL_AVAILABLE}, ENABLED={COMPANY_INTEL_ENABLED}")
+            print(f"   body.company='{body.company}', parsed_data.company='{parsed_data.get('company', '')}'")
             if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 company_name = body.company or parsed_data.get("company", "")
                 if company_name:
@@ -13649,6 +13659,12 @@ Role: {body.role_title}
                         print(f"✅ [Stream] Company intelligence: {intel_result.company_health_signal.value}")
                     except Exception as ci_e:
                         print(f"⚠️ [Stream] Company intelligence fetch failed (non-blocking): {str(ci_e)}")
+                        import traceback
+                        traceback.print_exc()
+                else:
+                    print(f"⚠️ [Stream] Company intelligence skipped: company_name is empty")
+            else:
+                print(f"⚠️ [Stream] Company intelligence disabled or unavailable")
 
             # Final sanitization: Remove em/en dashes from text fields
             parsed_data = _final_sanitize_text(parsed_data)
