@@ -669,17 +669,25 @@ def has_scope_signal(text: str) -> bool:
 
     # Option 1: Quantified scale patterns
     quantified_scale_patterns = [
-        # Team size - must be numeric
+        # Team size - must be numeric (various formats)
         r'\b(\d+)[\-\s]*(person|people|engineer|member|report|team|direct)',
+        r'\bteam\s+of\s+\d+',
+        r'\b\d+\s*\+?\s*(direct\s*reports?|employees|staff)',
         # Budget/revenue - must have dollar amount
         r'\$[\d,\.]+\s*[MBK]?(?:\s|$|\b)',
-        r'\b[\d,\.]+\s*[MBK]\s*(budget|revenue|ARR|GMV|pipeline)',
+        r'\b[\d,\.]+\s*[MBK]\s*(budget|revenue|ARR|GMV|pipeline|spend|cost)',
+        # Cost/spend impact
+        r'(?:reduced|saved|cut)\s+(?:\$[\d,\.]+|\d+%|[\d,\.]+[MBK])',
+        r'\$[\d,\.]+[MBK]?\s*(?:reduction|savings|cost\s*(?:savings?|reduction|cut))',
         # User scale - must be numeric
         r'\b\d+[MKB]?\+?\s*(users|customers|MAU|DAU|accounts|subscribers)',
         # Geographic scale - quantified
         r'\b\d+\s*(countries|markets|regions|offices|locations)',
         # Requests/transactions scale
         r'\b\d+[MKB]?\+?\s*(requests|transactions|orders|calls)',
+        # Throughput/output metrics
+        r'(?:tripled|doubled|10x|5x|3x|2x)\s+(?:output|throughput|capacity|volume)',
+        r'\b\d+x\s+(?:improvement|increase|growth)',
     ]
 
     for pattern in quantified_scale_patterns:
@@ -817,6 +825,10 @@ def has_leadership_signal(text: str) -> bool:
         r'\b\d+\s*direct\s*reports?\b',
         r'\bmentored\s+\d+',
         r'\bgrew\s+(?:team|org)\s+(?:from\s+)?\d+',
+        # Additional team size patterns
+        r'\bmanaged\s+(?:a\s+)?team\s+of\s+\d+',
+        r'\b\d+[\-\s]*(?:person|member)\s+team\b',
+        r'\bteam\s+of\s+\d+\+?',
     ]
 
     for pattern in leadership_with_numbers:
@@ -829,9 +841,24 @@ def has_leadership_signal(text: str) -> bool:
         r'\bp&l\s*(?:of|for)?\s*\$[\d,\.]+',
         r'\bbudget\s*(?:of|for)?\s*\$[\d,\.]+',
         r'\bresponsible\s+for\s+\$[\d,\.]+',
+        # Cost reduction/savings patterns
+        r'\$[\d,\.]+[MBK]?\s*(?:cost\s*)?(?:reduction|savings?)',
+        r'(?:reduced|saved|cut)\s+\$[\d,\.]+',
+        r'(?:reduced|saved|cut)\s+[\d,\.]+[MBK]\b',
     ]
 
     for pattern in leadership_with_scope:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+
+    # Org-level ownership patterns (for Director+ roles)
+    org_level_patterns = [
+        r'\b(?:owned|led)\s+(?:all\s+)?(?:hiring|recruiting|talent\s+acquisition)\s+(?:for|across)',
+        r'\b(?:head|director|vp)\s+of\s+(?:hiring|recruiting|talent)',
+        r'\bownership\s+(?:of|for)\s+(?:department|function|org)',
+    ]
+
+    for pattern in org_level_patterns:
         if re.search(pattern, text, re.IGNORECASE):
             return True
 
@@ -910,31 +937,15 @@ def detect_title_inflation_from_evidence(
     """
     Detect if title is inflated relative to bullet evidence.
 
+    Uses generic pattern matching to detect legitimate senior signals.
+    Does NOT use company-specific exceptions - relies purely on evidence.
+
     Returns: (is_inflated, expected_level, evidence)
     """
     if not bullets:
         return False, "", ["No bullets to assess"]
 
     title_lower = title.lower()
-    company_lower = (company or "").lower()
-
-    # Enterprise companies where Director+ titles are automatically credible
-    # These companies have strict title policies - a Director at these companies
-    # definitionally has people leadership
-    established_enterprise_companies = [
-        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
-        "uber", "lyft", "airbnb", "stripe", "salesforce", "adobe", "oracle",
-        "ibm", "cisco", "intel", "linkedin", "twitter", "snap", "pinterest",
-        "spotify", "shopify", "hubspot", "datadog", "snowflake",
-        # Energy / Utilities (enterprise scale)
-        "national grid", "pg&e", "con edison", "duke energy", "southern company",
-        # Fintech / Payments
-        "venmo", "paypal", "block", "coinbase", "robinhood", "plaid",
-        # Executive Search / Recruiting
-        "heidrick", "heidrick & struggles", "korn ferry", "spencer stuart",
-    ]
-
-    is_established_company = any(ec in company_lower for ec in established_enterprise_companies)
 
     # Senior/leadership titles that require evidence
     senior_titles = [
@@ -947,11 +958,7 @@ def detect_title_inflation_from_evidence(
     if not is_senior_title:
         return False, title, []
 
-    # CRITICAL FIX: Director+ at established enterprise = automatically credible
-    # These companies have strict title policies - Director definitionally has people leadership
     is_director_plus = any(t in title_lower for t in ["director", "vp", "vice president", "chief", "head of"])
-    if is_director_plus and is_established_company:
-        return False, title, [f"Director+ at established enterprise ({company}) - automatically credible"]
 
     # Check for evidence of senior work in bullets
     evidence_found = []
@@ -977,6 +984,17 @@ def detect_title_inflation_from_evidence(
     strategic_patterns = [
         r'\bstrategy\b', r'\bstrategic\b', r'\broadmap\b', r'\bvision\b',
         r'\bp&l\b', r'\bbudget.*\$', r'\bcompany-wide\b', r'\borg-wide\b',
+        # Org-level scope language
+        r'\b(?:department|division|org|organization|function|business\s*unit)\s*(?:wide|level)?',
+        r'\b(?:across|for)\s+(?:the\s+)?(?:department|division|org|company|function)',
+        r'\b(?:global|regional|national)\s+(?:team|strategy|operations|hiring)',
+        # Executive-level activities
+        r'\breport(?:ed|ing)?\s+(?:to|directly\s+to)\s+(?:ceo|cfo|coo|cto|chro|cpo|president|evp|svp)',
+        r'\bexecutive\s+(?:team|leadership|committee)',
+        r'\bboard\s+(?:of\s+directors|meeting|presentation)',
+        # Transformation/change language
+        r'\btransform(?:ed|ation)\b',
+        r'\b(?:built|established|created)\s+(?:the\s+)?(?:function|department|team|practice)',
     ]
     has_strategic = False
     for bullet in bullets:
