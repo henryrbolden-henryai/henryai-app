@@ -4403,22 +4403,24 @@ You may only rewrite, clarify, reorder, or strengthen content that already exist
 
 Before writing the resume, extract keywords from the JD into three tiers:
 
-**Tier 1 (Critical - MUST appear 4-6 times each):**
+**Tier 1 (Critical - appear 2-4 times, naturally embedded):**
 - Keywords in the job title itself
 - Keywords repeated 3+ times in the JD
 - Keywords in "required qualifications" section
+- IMPORTANT: Keywords must be embedded in decision, outcome, or system context - never standalone
 Examples: If JD title is "Director of Talent Acquisition" and mentions "executive search" 4 times, both are Tier 1.
 
-**Tier 2 (Important - MUST appear 2-3 times each):**
+**Tier 2 (Important - appear 1-2 times each):**
 - Keywords in "required qualifications" that appear 1-2 times
 - Industry-specific terms and tools mentioned
 - Action verbs the JD emphasizes (lead, build, scale, optimize)
 Examples: "Workday ATS", "high-volume recruiting", "workforce planning"
 
-**Tier 3 (Nice-to-have - appear 1-2 times):**
+**Tier 3 (Nice-to-have - appear 1 time if natural):**
 - Keywords in "preferred qualifications"
 - Soft skills mentioned (collaborative, data-driven)
 - Secondary tools or methodologies
+- Only include if can be integrated naturally - skip if it feels forced
 
 **Keyword Placement Priority (ATS Weight):**
 1. HIGHEST: Job title line in header, Summary section (first 3 sentences), Skills section
@@ -4484,7 +4486,13 @@ Identify what the JD emphasizes most and lead with matching experience:
 {Phone} • {Email} • {LinkedIn URL} • {City, State}
 
 SUMMARY
-[4-5 sentences, 80-100 words. Must include: role being pursued, 2-3 core strengths matching JD, 1 measurable impact. Load with Tier 1 keywords. First sentence must state professional identity + years + core function.]
+[3-4 sentences, 60-80 words MAX. Must include: role being pursued, 2-3 core strengths matching JD, 1 measurable impact with specific metric. First sentence must state professional identity + years + core function.
+
+SUMMARY RULES (CRITICAL):
+- NEVER use these phrases: "results-driven", "passionate", "motivated professional", "proven track record", "team player", "detail-oriented", "excellent communication skills", "dynamic", "self-starter", "strong work ethic"
+- MUST include at least one scope indicator (team size, budget, users, or geography)
+- MUST include at least one quantified outcome
+- Format: [Level] [Function] with [X years] at [scale]. [Ownership statement with metric]. [Domain expertise].]
 
 SKILLS
 [8-16 skills in format: Skill 1 | Skill 2 | Skill 3 | ... ]
@@ -14310,6 +14318,42 @@ Generate the complete JSON response with ALL required fields populated."""
 
             if lint_results.get("flagged_count", 0) > 0:
                 print(f"  📝 Resume lint: {lint_results['flagged_count']} bullets flagged ({lint_results['severity_counts']})")
+
+                # Auto-rewrite flagged bullets to remove generic/passive language
+                try:
+                    from resume_language_lint import auto_rewrite_resume
+
+                    # Only auto-rewrite if there are auto-fixable issues
+                    if lint_results.get("auto_fixable_count", 0) > 0:
+                        rewritten_resume, rewrite_log = auto_rewrite_resume(resume_for_lint)
+
+                        # Apply rewrites back to resume_output
+                        if rewrite_log.get("bullet_changes"):
+                            # Update bullets in experience_sections
+                            for change in rewrite_log["bullet_changes"]:
+                                role_title = change.get("role", "")
+                                bullet_idx = change.get("bullet_index", 0)
+                                new_bullet = change.get("rewritten", "")
+
+                                # Find matching role and update bullet
+                                for exp in resume_output.get("experience_sections", []):
+                                    if exp.get("title", "") == role_title:
+                                        if bullet_idx < len(exp.get("bullets", [])):
+                                            exp["bullets"][bullet_idx] = new_bullet
+
+                            print(f"  ✏️ Auto-rewrote {len(rewrite_log['bullet_changes'])} bullets")
+                            parsed_data["auto_rewrite_log"] = rewrite_log
+
+                            # Update resume_for_lint with rewritten content
+                            resume_for_lint = rewritten_resume
+
+                        if rewrite_log.get("summary_changes"):
+                            resume_output["summary"] = rewritten_resume.get("summary", resume_output["summary"])
+                            print(f"  ✏️ Auto-rewrote summary: {rewrite_log['summary_changes']}")
+
+                except Exception as rewrite_error:
+                    print(f"  ⚠️ Auto-rewrite error (non-blocking): {rewrite_error}")
+
         except Exception as lint_error:
             print(f"  ⚠️ Resume lint error (non-blocking): {lint_error}")
             # Non-blocking - continue without lint results
@@ -14382,6 +14426,66 @@ Generate the complete JSON response with ALL required fields populated."""
 
             if strength_result.get("recommendation") == "amplify":
                 print(f"  📝 Recommendation: Amplification needed - {len(strength.get('weak_bullets', []))} bullets below threshold")
+
+                # Run amplification pass on weak bullets
+                try:
+                    from resume_amplification import run_amplification, prepare_amplification_summary
+                    from resume_strength_gate import apply_amplification
+
+                    weak_bullets = strength.get("weak_bullets", [])
+                    target_role = body.jd_analysis.get("role_title", "") if body.jd_analysis else ""
+
+                    if weak_bullets:
+                        # Call Claude to amplify weak bullets
+                        amplified_results = await run_amplification(
+                            weak_bullets=weak_bullets,
+                            level=level_category,
+                            call_claude_fn=call_claude,
+                            target_role=target_role
+                        )
+
+                        # Process results and apply confident rewrites
+                        applied_count = 0
+                        queued_for_phase_2 = []
+
+                        for i, amp_result in enumerate(amplified_results):
+                            if i < len(weak_bullets):
+                                original = weak_bullets[i]["bullet"]
+                                applied = apply_amplification(amp_result, original, level_category)
+
+                                if applied.applied and applied.action == "apply":
+                                    # Find and update the bullet in resume_output
+                                    for exp in resume_output.get("experience_sections", []):
+                                        for j, bullet in enumerate(exp.get("bullets", [])):
+                                            if bullet == original:
+                                                exp["bullets"][j] = applied.rewritten
+                                                applied_count += 1
+                                                break
+
+                                elif applied.action == "queue_for_phase_2":
+                                    queued_for_phase_2.append({
+                                        "original": original,
+                                        "question": applied.user_prompt,
+                                        "score": weak_bullets[i].get("score", 0)
+                                    })
+
+                        # Add amplification results to response
+                        parsed_data["amplification_results"] = {
+                            "bullets_amplified": applied_count,
+                            "bullets_queued_for_input": len(queued_for_phase_2),
+                            "queued_questions": queued_for_phase_2
+                        }
+
+                        if applied_count > 0:
+                            print(f"  ✨ Amplified {applied_count} weak bullets")
+                        if queued_for_phase_2:
+                            print(f"  ❓ {len(queued_for_phase_2)} bullets need user input")
+
+                except Exception as amp_error:
+                    print(f"  ⚠️ Amplification error (non-blocking): {amp_error}")
+                    import traceback
+                    traceback.print_exc()
+
                 # Include Phase 2 questions if there are weak bullets needing user input
                 if strength_result.get("phase_2_questions"):
                     print(f"  ❓ Phase 2 questions generated: {len(strength_result['phase_2_questions'])}")
