@@ -14814,6 +14814,136 @@ async def get_version_feedback(version_id: str) -> Dict[str, Any]:
 
 
 # ============================================================================
+# FIT SCORE RECALCULATION ENDPOINT
+# ============================================================================
+
+class FitScoreRecalculateRequest(BaseModel):
+    """Request model for recalculating fit score after resume edits."""
+    job_id: str
+    edited_resume_text: str
+
+
+@app.post("/api/fit-score/recalculate")
+async def recalculate_fit_score(request: FitScoreRecalculateRequest) -> Dict[str, Any]:
+    """
+    Recalculate fit score based on user's edited resume text.
+
+    This allows users to see how their manual edits impact their ATS compatibility
+    and fit score, encouraging thoughtful improvements.
+    """
+    try:
+        from canonical_document import FitScoreDelta
+
+        # Get the original analysis data
+        job_id = request.job_id
+        edited_text = request.edited_resume_text
+
+        # Get analysis from session storage (passed via job_id lookup)
+        # For now, we'll calculate based on the edited text directly
+
+        # Parse the edited resume text to extract key signals
+        resume_text_lower = edited_text.lower()
+
+        # Count quantified bullets (lines with numbers)
+        lines = edited_text.strip().split('\n')
+        bullet_lines = [l for l in lines if l.strip().startswith('•') or l.strip().startswith('-')]
+        quantified_bullets = sum(1 for b in bullet_lines if any(c.isdigit() for c in b))
+        total_bullets = max(len(bullet_lines), 1)
+        quantification_rate = (quantified_bullets / total_bullets) * 100
+
+        # Look for strong action verbs
+        strong_verbs = ['led', 'drove', 'built', 'launched', 'scaled', 'delivered',
+                        'achieved', 'increased', 'reduced', 'generated', 'managed',
+                        'created', 'designed', 'developed', 'implemented', 'transformed']
+        verb_matches = sum(1 for v in strong_verbs if v in resume_text_lower)
+        verb_strength = min(verb_matches * 5, 25)  # Up to 25 points
+
+        # Look for metrics and scope indicators
+        import re
+        metric_patterns = [
+            r'\d+%',  # Percentages
+            r'\$\d+',  # Dollar amounts
+            r'\d+\s*(million|billion|k|m|b)',  # Large numbers
+            r'\d+\s*team',  # Team sizes
+            r'\d+\s*(user|customer|client)',  # User counts
+        ]
+        metric_count = sum(len(re.findall(p, resume_text_lower, re.IGNORECASE)) for p in metric_patterns)
+        metric_score = min(metric_count * 3, 20)  # Up to 20 points
+
+        # Calculate new score
+        new_score = int(
+            30 +  # Base score
+            quantification_rate * 0.25 +  # Up to 25 points
+            verb_strength +  # Up to 25 points
+            metric_score  # Up to 20 points
+        )
+        new_score = min(95, max(40, new_score))  # Cap between 40-95
+
+        # Determine verdict
+        if new_score >= 80:
+            new_verdict = "Apply"
+        elif new_score >= 60:
+            new_verdict = "Conditional Apply"
+        else:
+            new_verdict = "Do Not Apply"
+
+        # Get original score from job cache
+        original_score = 65  # Default fallback
+        original_verdict = "Conditional Apply"
+
+        try:
+            # Try to get the original score from job cache
+            job_cache = job_cache_store.get(job_id)
+            if job_cache and 'analysis_data' in job_cache:
+                analysis_data = job_cache['analysis_data']
+                original_score = analysis_data.get('raw_fit_score') or analysis_data.get('fit_score') or 65
+                original_verdict = analysis_data.get('verdict') or "Conditional Apply"
+        except Exception as cache_error:
+            print(f"Could not retrieve original score from cache: {cache_error}")
+
+        delta = new_score - original_score
+
+        # Generate improvement summary
+        if delta > 0:
+            improvements = []
+            if quantification_rate > 60:
+                improvements.append("more quantified results")
+            if verb_matches > 5:
+                improvements.append("stronger action verbs")
+            if metric_count > 3:
+                improvements.append("clearer metrics")
+
+            if improvements:
+                improvement_summary = f"Score improved by {', '.join(improvements)}."
+            else:
+                improvement_summary = f"Score improved by {delta} points through better tailoring."
+        elif delta == 0:
+            improvement_summary = "Score unchanged. Try adding more specific metrics and achievements."
+        else:
+            improvement_summary = "Score decreased. Consider keeping quantified achievements."
+
+        fit_score_delta = {
+            "original_score": original_score,
+            "final_score": new_score,
+            "delta": delta,
+            "original_verdict": original_verdict,
+            "final_verdict": new_verdict,
+            "improvement_summary": improvement_summary
+        }
+
+        return {
+            "success": True,
+            "fit_score_delta": fit_score_delta
+        }
+
+    except Exception as e:
+        print(f"Error recalculating fit score: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
 # STRENGTHEN YOUR RESUME ENDPOINTS
 # ============================================================================
 
