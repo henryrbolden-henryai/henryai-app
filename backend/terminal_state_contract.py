@@ -39,6 +39,11 @@ class FunctionType(str, Enum):
     MARKETING = "MARKETING"
     SALES = "SALES"
     OPERATIONS = "OPERATIONS"
+    RECRUITING = "RECRUITING"                      # Recruiting, talent acquisition, TA
+    FINANCE = "FINANCE"                            # Finance, accounting, FP&A
+    HR = "HR"                                      # HR (non-recruiting), people ops
+    LEGAL = "LEGAL"                                # Legal, compliance
+    CUSTOMER_SUCCESS = "CUSTOMER_SUCCESS"          # CS, account management
     OTHER = "OTHER"
 
 
@@ -154,12 +159,66 @@ PM_ADJACENT_SIGNALS = [
     r'\bsolutions?\s+architect\b',
 ]
 
+# Recruiting/Talent Acquisition signal patterns
+RECRUITING_SIGNALS = [
+    r'\brecruit(?:er|ing|ment)?\b',
+    r'\btalent\s+acquis(?:ition|er)\b',
+    r'\bta\s+(?:lead|manager|director|head|partner)\b',
+    r'\bsourc(?:er|ing)\b',
+    r'\bcandidate\s+(?:pipeline|experience|sourcing)\b',
+    r'\bhiring\s+(?:manager|partner|team)\b',
+    r'\bemployer\s+brand(?:ing)?\b',
+    r'\bats\b',  # Applicant tracking system
+    r'\bheadcount\s+planning\b',
+    r'\brecruiting\s+(?:team|org|strategy|operations)\b',
+    r'\btalent\s+(?:pipeline|strategy|operations|partner)\b',
+    r'\buniversity\s+recruiting\b',
+    r'\bcampus\s+recruiting\b',
+    r'\bexecutive\s+search\b',
+    r'\bworkday\b',
+    r'\bgreenhouse\b',
+    r'\blever\b',
+    r'\bicims\b',
+    r'\blinkedin\s+recruiter\b',
+]
+
+# Finance signal patterns
+FINANCE_SIGNALS = [
+    r'\bfp&a\b',
+    r'\bfinancial\s+(?:planning|analysis|analyst|controller)\b',
+    r'\baccounting\b',
+    r'\bcfo\b',
+    r'\bcontroller\b',
+    r'\baudit(?:or|ing)?\b',
+    r'\bbudget(?:ing)?\b',
+    r'\bforecast(?:ing)?\b',
+    r'\btreasury\b',
+    r'\btax\s+(?:planning|compliance)\b',
+    r'\bfinance\s+(?:manager|director|lead)\b',
+]
+
+# Customer Success signal patterns
+CUSTOMER_SUCCESS_SIGNALS = [
+    r'\bcustomer\s+success\b',
+    r'\bcsm\b',
+    r'\baccount\s+manag(?:er|ement)\b',
+    r'\bclient\s+(?:success|management|relations)\b',
+    r'\brelationship\s+manag(?:er|ement)\b',
+    r'\brenewal(?:s)?\b',
+    r'\bretention\b',
+    r'\bnrr\b',  # Net revenue retention
+    r'\bchurn\b',
+    r'\bonboarding\b',
+    r'\bcustomer\s+health\b',
+]
+
 
 def detect_function_type(resume_text: str, titles: List[str]) -> Tuple[FunctionType, SignalStrength, List[str]]:
     """
-    P1-NEW-1: Detect candidate's PRIMARY function with proper PM taxonomy.
+    P1-NEW-1: Detect candidate's PRIMARY function with proper taxonomy.
 
     Project Manager ≠ Product Manager ≠ PM-Adjacent
+    Recruiting ≠ HR ≠ Operations
 
     Returns: (function_type, signal_strength, evidence_list)
     """
@@ -174,13 +233,29 @@ def detect_function_type(resume_text: str, titles: List[str]) -> Tuple[FunctionT
     product_count = sum(1 for p in PRODUCT_MANAGEMENT_SIGNALS if re.search(p, text_lower))
     project_count = sum(1 for p in PROJECT_MANAGEMENT_SIGNALS if re.search(p, text_lower))
     pm_adjacent_count = sum(1 for p in PM_ADJACENT_SIGNALS if re.search(p, text_lower))
+    recruiting_count = sum(1 for p in RECRUITING_SIGNALS if re.search(p, text_lower))
+    finance_count = sum(1 for p in FINANCE_SIGNALS if re.search(p, text_lower))
+    cs_count = sum(1 for p in CUSTOMER_SUCCESS_SIGNALS if re.search(p, text_lower))
 
     # Check titles for explicit function
     has_product_title = bool(re.search(r'\bproduct\s+(?:manager|management|owner)\b', titles_lower))
     has_project_title = bool(re.search(r'\bproject\s+manager\b', titles_lower))
     has_tpm_title = bool(re.search(r'\b(?:technical\s+program|tpm)\b', titles_lower))
+    has_recruiting_title = bool(re.search(r'\b(?:recruit(?:er|ing)|talent\s+acquis(?:ition|er)|ta\s+(?:lead|manager|director|head))\b', titles_lower))
+    has_finance_title = bool(re.search(r'\b(?:finance|fp&a|controller|accounting)\b', titles_lower))
+    has_cs_title = bool(re.search(r'\b(?:customer\s+success|csm|account\s+manag)\b', titles_lower))
 
-    # Determine primary function
+    # Check for recruiting FIRST (before PM checks, since TA roles may have some PM-like language)
+    if has_recruiting_title and recruiting_count >= 2:
+        evidence.append(f"Recruiting title + {recruiting_count} recruiting signals")
+        return FunctionType.RECRUITING, SignalStrength.STRONG, evidence
+
+    if has_recruiting_title or recruiting_count >= 5:
+        evidence.append(f"Recruiting signals: {recruiting_count}")
+        strength = SignalStrength.STRONG if recruiting_count >= 5 else SignalStrength.MODERATE
+        return FunctionType.RECRUITING, strength, evidence
+
+    # Determine primary function - PM types
     if has_product_title and product_count >= 3:
         evidence.append(f"Product Manager title + {product_count} product signals")
         return FunctionType.PRODUCT_MANAGEMENT, SignalStrength.STRONG, evidence
@@ -211,6 +286,23 @@ def detect_function_type(resume_text: str, titles: List[str]) -> Tuple[FunctionT
     # Check for design
     if re.search(r'\b(?:product\s+)?design(?:er)?\b', titles_lower):
         return FunctionType.DESIGN, SignalStrength.STRONG, ["Design title detected"]
+
+    # Check for finance
+    if has_finance_title or finance_count >= 3:
+        evidence.append(f"Finance signals: {finance_count}")
+        strength = SignalStrength.STRONG if finance_count >= 5 else SignalStrength.MODERATE
+        return FunctionType.FINANCE, strength, evidence
+
+    # Check for customer success
+    if has_cs_title or cs_count >= 3:
+        evidence.append(f"Customer Success signals: {cs_count}")
+        strength = SignalStrength.STRONG if cs_count >= 5 else SignalStrength.MODERATE
+        return FunctionType.CUSTOMER_SUCCESS, strength, evidence
+
+    # Check for recruiting signals without explicit title (weaker)
+    if recruiting_count >= 3:
+        evidence.append(f"Recruiting signals without title: {recruiting_count}")
+        return FunctionType.RECRUITING, SignalStrength.WEAK, evidence
 
     return FunctionType.OTHER, SignalStrength.WEAK, ["No clear function signals"]
 
@@ -317,7 +409,20 @@ def generate_canonical_statement(
         else:
             return "Your resume shows project delivery but not product ownership. This role requires demonstrated product ownership - defining what to build and why, not just delivering what others define."
 
-    # Matched function
+    # No recruiting signals detected
+    if function == FunctionType.OTHER and target_function == FunctionType.RECRUITING:
+        return "No recruiting or talent acquisition signals detected in your resume. This role requires demonstrated recruiting experience - candidate sourcing, pipeline management, hiring partnerships, and talent strategy."
+
+    # Matched function - specific messages for different functions
+    if function == FunctionType.RECRUITING and function_match:
+        if signal_strength == SignalStrength.STRONG:
+            return f"Your resume demonstrates {level_name} Recruiting/Talent Acquisition experience with strong supporting evidence."
+        elif signal_strength == SignalStrength.MODERATE:
+            return f"Your resume shows {level_name} Recruiting experience. Some signals could be strengthened with more quantified evidence (hires made, time-to-fill, pipeline metrics)."
+        else:
+            return f"Your resume suggests {level_name} Recruiting experience, though the signals are indirect. Consider adding explicit recruiting metrics and outcomes."
+
+    # Matched function - general case
     if signal_strength == SignalStrength.STRONG:
         return f"Your resume demonstrates {level_name} {function_name} experience with strong supporting evidence."
     elif signal_strength == SignalStrength.MODERATE:
@@ -389,7 +494,10 @@ def build_canonical_profile(
 
     if not target_function and target_role_title:
         target_lower = target_role_title.lower()
-        if "product" in target_lower and "manager" in target_lower:
+        # Check recruiting first (before PM checks)
+        if re.search(r'\b(?:recruit(?:er|ing)|talent\s+acquis|ta\s+(?:lead|manager|director|head)|sourcer)\b', target_lower):
+            target_function = FunctionType.RECRUITING
+        elif "product" in target_lower and "manager" in target_lower:
             target_function = FunctionType.PRODUCT_MANAGEMENT
         elif "project" in target_lower and "manager" in target_lower:
             target_function = FunctionType.PROJECT_MANAGEMENT
@@ -397,6 +505,10 @@ def build_canonical_profile(
             target_function = FunctionType.ENGINEERING
         elif "design" in target_lower:
             target_function = FunctionType.DESIGN
+        elif re.search(r'\b(?:customer\s+success|csm|account\s+manag)\b', target_lower):
+            target_function = FunctionType.CUSTOMER_SUCCESS
+        elif re.search(r'\b(?:finance|fp&a|controller|accounting)\b', target_lower):
+            target_function = FunctionType.FINANCE
 
     # Determine function match
     function_match = True
@@ -404,6 +516,9 @@ def build_canonical_profile(
         if target_function == FunctionType.PRODUCT_MANAGEMENT:
             # Only PRODUCT_MANAGEMENT matches PRODUCT_MANAGEMENT
             function_match = detected_function == FunctionType.PRODUCT_MANAGEMENT
+        elif target_function == FunctionType.RECRUITING:
+            # Only RECRUITING matches RECRUITING
+            function_match = detected_function == FunctionType.RECRUITING
         else:
             function_match = detected_function == target_function
 
@@ -809,14 +924,28 @@ def has_leadership_signal(text: str) -> bool:
         return False
 
     # Leadership patterns that REQUIRE numbers
+    # These patterns allow words between the verb and the number
     leadership_with_numbers = [
+        # "Managed 25-person team", "Led a team of 10"
         r'\b(?:led|managed|oversaw)\s+(?:a\s+)?(?:team\s+of\s+)?\d+',
+        # "Managed 25-person global team", "Led 10-person engineering team"
         r'\b(?:led|managed)\s+\d+[\-\s]*(person|people|engineer|member|report)',
+        # "Managed a 25-person team", "Led the 10-person team"
+        r'\b(?:led|managed|oversaw)\s+(?:a|the)?\s*\d+[\-\s]*(person|people|member)',
+        # "Managed global team of 25", "Led recruiting team of 10"
+        r'\b(?:led|managed|oversaw)\s+(?:\w+\s+){0,3}team\s+of\s+\d+',
+        # "Managed 25 recruiters", "Led 10 engineers"
+        r'\b(?:led|managed|oversaw)\s+\d+\s+\w+',
         r'\bhired\s+\d+',
         r'\bbuilt\s+(?:a\s+)?team\s+(?:of\s+)?\d+',
         r'\b\d+\s*direct\s*reports?\b',
         r'\bmentored\s+\d+',
         r'\bgrew\s+(?:team|org)\s+(?:from\s+)?\d+',
+        # "team of 25", "org of 100" anywhere in text with a number
+        r'\bteam\s+of\s+\d+',
+        r'\borg(?:anization)?\s+of\s+\d+',
+        # "25-person team", "100-member organization"
+        r'\b\d+[\-\s]*(?:person|people|member|head)\s+(?:team|org|department|group)',
     ]
 
     for pattern in leadership_with_numbers:
