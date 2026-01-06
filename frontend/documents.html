@@ -188,10 +188,183 @@
             background: #ffffff;
             border: 1px solid #d1d5db;
             border-radius: 8px;
-            padding: 60px 80px;
+            padding: 40px 50px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             min-height: 700px;
             width: 100%;
+        }
+
+        /* Visual Resume Layout - Enhancv-style */
+        .resume-visual {
+            display: none;
+            color: #1f2937;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .resume-visual.active {
+            display: block;
+        }
+
+        .resume-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #2563eb;
+        }
+
+        .resume-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin: 0 0 6px 0;
+            letter-spacing: 1px;
+        }
+
+        .resume-header .tagline {
+            font-size: 13px;
+            color: #2563eb;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .resume-header .contact-info {
+            font-size: 11px;
+            color: #4b5563;
+        }
+
+        .resume-header .contact-info span {
+            margin: 0 8px;
+        }
+
+        .resume-body {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 30px;
+        }
+
+        .resume-main {
+            /* Left column - Experience */
+        }
+
+        .resume-sidebar {
+            /* Right column - Summary, Skills */
+        }
+
+        .resume-section {
+            margin-bottom: 18px;
+        }
+
+        .resume-section h2 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1e3a5f;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 4px;
+            margin: 0 0 10px 0;
+        }
+
+        .experience-item {
+            margin-bottom: 14px;
+        }
+
+        .experience-item .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3px;
+        }
+
+        .experience-item .job-title {
+            font-weight: 600;
+            font-size: 12px;
+            color: #1f2937;
+        }
+
+        .experience-item .job-meta {
+            font-size: 10px;
+            color: #6b7280;
+            text-align: right;
+        }
+
+        .experience-item .company-name {
+            font-size: 11px;
+            color: #2563eb;
+            margin-bottom: 2px;
+        }
+
+        .experience-item .company-overview {
+            font-size: 10px;
+            color: #6b7280;
+            font-style: italic;
+            margin-bottom: 5px;
+        }
+
+        .experience-item ul {
+            margin: 0;
+            padding-left: 14px;
+        }
+
+        .experience-item li {
+            font-size: 11px;
+            color: #374151;
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+
+        .summary-text {
+            font-size: 11px;
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .competencies-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .competency-tag {
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .skills-category {
+            margin-bottom: 8px;
+        }
+
+        .skills-category .category-name {
+            font-weight: 600;
+            font-size: 11px;
+            color: #2563eb;
+            margin-bottom: 2px;
+        }
+
+        .skills-category .skills-list {
+            font-size: 10px;
+            color: #4b5563;
+        }
+
+        .education-item {
+            margin-bottom: 8px;
+        }
+
+        .education-item .school-name {
+            font-weight: 600;
+            font-size: 11px;
+            color: #1f2937;
+        }
+
+        .education-item .degree {
+            font-size: 10px;
+            color: #4b5563;
         }
 
         .document-preview::-webkit-scrollbar {
@@ -808,6 +981,11 @@
                         <div class="loading-spinner"></div>
                         <div>Loading resume...</div>
                     </div>
+                    <!-- Visual Resume Preview (Enhancv-style) -->
+                    <div id="resumeVisual" class="resume-visual">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                    <!-- Plain text fallback (hidden, used for editing/download) -->
                     <textarea class="document-text" id="resumeText" style="display: none;"></textarea>
                 </div>
             </div>
@@ -995,8 +1173,139 @@
             });
         }
 
+        // Render visual resume preview (Enhancv-style layout)
+        function renderVisualResume(data) {
+            const container = document.getElementById('resumeVisual');
+            if (!container) return;
+
+            // Extract data from canonical document or resume_output
+            const canonical = data.canonical_document?.resume || {};
+            const resumeOutput = data.resume_output || {};
+
+            const name = canonical.contact?.name || resumeOutput.candidate_name || 'Candidate';
+            const tagline = canonical.tagline || resumeOutput.headline || '';
+            const contact = canonical.contact || {};
+            const summary = canonical.summary || resumeOutput.summary || '';
+            const competencies = canonical.competencies || resumeOutput.core_competencies || [];
+            const experience = canonical.experience || resumeOutput.experience_sections || [];
+            const skills = canonical.skills || resumeOutput.skills || {};
+            const education = canonical.education || resumeOutput.education || {};
+
+            // Build contact info string
+            const contactParts = [];
+            if (contact.phone) contactParts.push(contact.phone);
+            if (contact.email) contactParts.push(contact.email);
+            if (contact.linkedin) contactParts.push(contact.linkedin);
+            if (contact.location) contactParts.push(contact.location);
+            const contactString = contactParts.map(p => `<span>${p}</span>`).join(' | ');
+
+            // Build experience HTML
+            let experienceHtml = '';
+            const expArray = Array.isArray(experience) ? experience : [];
+            expArray.forEach(exp => {
+                const title = exp.title || exp.role || '';
+                const company = exp.company || '';
+                const location = exp.location || '';
+                const dates = exp.dates || exp.date_range || '';
+                const overview = exp.overview || exp.company_overview || '';
+                const bullets = exp.bullets || exp.achievements || [];
+
+                experienceHtml += `
+                    <div class="experience-item">
+                        <div class="job-header">
+                            <div class="job-title">${title}</div>
+                            <div class="job-meta">${dates}<br>${location}</div>
+                        </div>
+                        <div class="company-name">${company}</div>
+                        ${overview ? `<div class="company-overview">${overview}</div>` : ''}
+                        <ul>
+                            ${bullets.map(b => `<li>${b.replace(/^[•\-]\s*/, '')}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+
+            // Build competencies HTML
+            let competenciesHtml = '';
+            if (competencies && competencies.length > 0) {
+                competenciesHtml = `
+                    <div class="resume-section">
+                        <h2>Core Competencies</h2>
+                        <div class="competencies-list">
+                            ${competencies.map(c => `<span class="competency-tag">${c}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build skills HTML
+            let skillsHtml = '';
+            if (skills && Object.keys(skills).length > 0) {
+                if (typeof skills === 'object' && !Array.isArray(skills)) {
+                    skillsHtml = Object.entries(skills).map(([category, skillList]) => {
+                        const skillArray = Array.isArray(skillList) ? skillList : [skillList];
+                        return `
+                            <div class="skills-category">
+                                <div class="category-name">${category}:</div>
+                                <div class="skills-list">${skillArray.join(', ')}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // Build education HTML
+            let educationHtml = '';
+            if (education) {
+                const school = education.school || education.institution || '';
+                const degree = education.degree || '';
+                const details = education.details || '';
+                if (school || degree) {
+                    educationHtml = `
+                        <div class="education-item">
+                            <div class="school-name">${school}</div>
+                            <div class="degree">${degree}</div>
+                            ${details ? `<div class="degree">${Array.isArray(details) ? details.join(', ') : details}</div>` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            // Assemble the visual resume
+            container.innerHTML = `
+                <div class="resume-header">
+                    <h1>${name.toUpperCase()}</h1>
+                    ${tagline ? `<div class="tagline">${tagline}</div>` : ''}
+                    <div class="contact-info">${contactString}</div>
+                </div>
+                <div class="resume-body">
+                    <div class="resume-main">
+                        <div class="resume-section">
+                            <h2>Experience</h2>
+                            ${experienceHtml}
+                        </div>
+                    </div>
+                    <div class="resume-sidebar">
+                        <div class="resume-section">
+                            <h2>Summary</h2>
+                            <p class="summary-text">${summary}</p>
+                        </div>
+                        ${competenciesHtml}
+                        ${skillsHtml ? `<div class="resume-section"><h2>Skills</h2>${skillsHtml}</div>` : ''}
+                        ${educationHtml ? `<div class="resume-section"><h2>Education</h2>${educationHtml}</div>` : ''}
+                    </div>
+                </div>
+            `;
+
+            container.classList.add('active');
+        }
+
         // Download resume as DOCX - USES CANONICAL DOCUMENT (single source of truth)
         async function downloadResume() {
+            console.log('📥 Download resume clicked');
+            console.log('documentsData:', documentsData);
+            console.log('canonical_document:', documentsData?.canonical_document);
+
             if (!documentsData || !documentsData.resume_output) {
                 alert('Resume not available. Please go back and regenerate.');
                 return;
@@ -1012,6 +1321,7 @@
                 // CHECK FOR CANONICAL DOCUMENT - single source of truth
                 if (documentsData.canonical_document) {
                     console.log('✅ Using canonical download endpoint (preview === download)');
+                    console.log('API_BASE:', API_BASE);
                     const response = await fetch(`${API_BASE}/api/download/canonical`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1655,12 +1965,14 @@ ${'─'.repeat(60)}
             }
 
             document.getElementById('resumeLoading').style.display = 'none';
+
+            // Render visual resume preview (Enhancv-style)
+            renderVisualResume(documentsData);
+
+            // Also keep plain text in hidden textarea for download/editing fallback
             const resumeTextarea = document.getElementById('resumeText');
-            resumeTextarea.style.display = 'block';
             resumeTextarea.value = resumeText;
-            // Auto-resize textarea to fit content
-            resumeTextarea.style.height = 'auto';
-            resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
+
             document.getElementById('downloadResumeBtn').disabled = false;
 
             // Check document integrity and show warnings if needed
