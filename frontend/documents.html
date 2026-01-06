@@ -215,8 +215,10 @@
             font-family: 'Georgia', 'Times New Roman', serif;
             font-size: 15px;
             line-height: 1.9;
-            resize: vertical;
+            resize: none;
             min-height: 700px;
+            overflow: hidden;
+            height: auto;
         }
 
         .document-text:focus {
@@ -1482,6 +1484,14 @@
 
         // Load documents on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            // Auto-resize textareas on input
+            document.querySelectorAll('.document-text').forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+            });
+
             // Get analysis data for candidate name
             const analysisDataStr = sessionStorage.getItem('analysisData');
             if (!analysisDataStr) {
@@ -1645,8 +1655,12 @@ ${'─'.repeat(60)}
             }
 
             document.getElementById('resumeLoading').style.display = 'none';
-            document.getElementById('resumeText').style.display = 'block';
-            document.getElementById('resumeText').value = resumeText;
+            const resumeTextarea = document.getElementById('resumeText');
+            resumeTextarea.style.display = 'block';
+            resumeTextarea.value = resumeText;
+            // Auto-resize textarea to fit content
+            resumeTextarea.style.height = 'auto';
+            resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
             document.getElementById('downloadResumeBtn').disabled = false;
 
             // Check document integrity and show warnings if needed
@@ -1686,8 +1700,12 @@ COVER LETTER
             const coverLetterText = coverLetterHeader + coverLetterBody;
 
             document.getElementById('coverLetterLoading').style.display = 'none';
-            document.getElementById('coverLetterText').style.display = 'block';
-            document.getElementById('coverLetterText').value = coverLetterText;
+            const coverLetterTextarea = document.getElementById('coverLetterText');
+            coverLetterTextarea.style.display = 'block';
+            coverLetterTextarea.value = coverLetterText;
+            // Auto-resize textarea to fit content
+            coverLetterTextarea.style.height = 'auto';
+            coverLetterTextarea.style.height = coverLetterTextarea.scrollHeight + 'px';
             document.getElementById('downloadCoverLetterBtn').disabled = false;
         });
 
