@@ -13673,6 +13673,77 @@ Role: {body.role_title}
     )
 
 
+def validate_resume_completeness(source_resume: dict, generated_resume: dict) -> dict:
+    """
+    Validate that generated resume includes all required sections from source.
+    Returns dict with validation status and any issues found.
+    """
+    issues = []
+    recovered = []
+
+    # Check education - CRITICAL: never drop education
+    source_education = source_resume.get("education", [])
+    generated_education = generated_resume.get("education", [])
+
+    # Handle education as string or list
+    if isinstance(source_education, str) and source_education.strip():
+        source_has_education = True
+    elif isinstance(source_education, list) and len(source_education) > 0:
+        source_has_education = True
+    else:
+        source_has_education = False
+
+    if isinstance(generated_education, list) and len(generated_education) > 0:
+        generated_has_education = True
+    else:
+        generated_has_education = False
+
+    if source_has_education and not generated_has_education:
+        issues.append({
+            "type": "dropped_section",
+            "section": "education",
+            "severity": "critical",
+            "message": "Education present in source but missing from output"
+        })
+        # RECOVER: Copy education from source
+        if isinstance(source_education, str):
+            generated_resume["education"] = [{"institution": source_education, "degree": "", "details": ""}]
+        else:
+            generated_resume["education"] = source_education
+        recovered.append("education")
+        print(f"⚠️ COMPLETENESS: Education was dropped - recovered from source: {generated_resume['education']}")
+
+    # Check all companies from source are in generated (may be consolidated)
+    source_companies = set()
+    for role in source_resume.get("experience", []):
+        company = role.get("company", "").strip().lower()
+        if company:
+            source_companies.add(company)
+
+    generated_companies = set()
+    generated_exp = generated_resume.get("experience_sections", []) or generated_resume.get("experience", [])
+    for role in generated_exp:
+        company = role.get("company", "").strip().lower()
+        if company:
+            generated_companies.add(company)
+
+    dropped_companies = source_companies - generated_companies
+    if dropped_companies:
+        issues.append({
+            "type": "dropped_roles",
+            "roles": list(dropped_companies),
+            "severity": "warning",
+            "message": f"Companies dropped from output: {dropped_companies}"
+        })
+        print(f"⚠️ COMPLETENESS: Companies dropped (may be intentional consolidation): {dropped_companies}")
+
+    return {
+        "complete": len([i for i in issues if i["severity"] == "critical"]) == 0,
+        "issues": issues,
+        "recovered": recovered
+    }
+
+
 def generate_resume_full_text(resume_output: dict) -> str:
     """
     Generate formatted full resume text from resume_output structure.
@@ -13887,6 +13958,22 @@ For each company, add scale context if it strengthens credibility:
 2. **Length** - Concise and impactful beats comprehensive and forgettable
 3. **Safety** - Don't water down language to avoid any possible objection
 
+=== COMPLETENESS CHECK (MANDATORY - RUN BEFORE RETURNING) ===
+
+Before generating output, verify ALL of these are included:
+
+**Required sections (if present in source):**
+□ Education - degree, institution, year, concentration/honors (NEVER DROP)
+□ Certifications - if any exist in source
+□ All work experience entries - none dropped unless consolidating titles at same company
+
+**Never drop under any circumstances:**
+□ Education section (if source has it, output MUST have it)
+□ Current/most recent role
+□ Any role from the last 10 years
+
+**Completeness rule:** If source resume has education, the education field in your JSON output MUST be populated. Empty education array when source has education = FAILURE.
+
 === SELF-CHECK BEFORE RETURNING ===
 
 For each bullet, ask:
@@ -13900,6 +13987,10 @@ For the summary, ask:
 For the overall resume, ask:
 - Would I remember this candidate after reading 10 others? (Must say yes)
 - Is there ONE thing that makes this person stand out? (Must be obvious)
+
+For completeness, verify:
+- If source had education → output has education (check the education array)
+- All companies from source appear in output (may be consolidated, but not dropped)
 
 === CONVERSATIONAL CONTEXT ===
 Before the JSON output, provide a 3-4 sentence summary:
@@ -14131,7 +14222,19 @@ Generate the complete JSON response with ALL required fields populated."""
             resume_output["additional_sections"] = []
         if "ats_keywords" not in resume_output:
             resume_output["ats_keywords"] = parsed_data.get("changes_summary", {}).get("resume", {}).get("ats_keywords", [])
-        
+
+        # COMPLETENESS VALIDATION: Ensure nothing critical was dropped
+        # This checks education, companies, etc. and recovers from source if needed
+        source_resume = body.resume if body.resume else {}
+        completeness_result = validate_resume_completeness(source_resume, resume_output)
+        if not completeness_result["complete"]:
+            print(f"⚠️ COMPLETENESS VALIDATION FAILED:")
+            for issue in completeness_result["issues"]:
+                print(f"   - {issue['severity'].upper()}: {issue['message']}")
+            if completeness_result["recovered"]:
+                print(f"   ✅ Recovered sections: {completeness_result['recovered']}")
+        parsed_data["completeness_validation"] = completeness_result
+
         # Generate full_text if missing
         if "full_text" not in resume_output or not resume_output["full_text"]:
             print("\n⚠️  WARNING: full_text missing from Claude response, generating fallback...")
