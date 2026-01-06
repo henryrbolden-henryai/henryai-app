@@ -148,73 +148,68 @@ class CanonicalResume:
         )
 
     def to_full_text(self) -> str:
-        """Generate the full text representation for preview."""
-        lines = []
+        """
+        Generate the full text representation for preview.
 
-        # Header
-        lines.append(self.contact.name.upper())
-        if self.tagline:
-            lines.append(self.tagline)
+        Uses ResumeFormatter to ensure preview === download.
+        The formatter builds both DOCX and plain text from the same source.
+        """
+        from document_generator import ResumeFormatter
 
-        contact_parts = []
-        if self.contact.phone:
-            contact_parts.append(self.contact.phone)
-        if self.contact.email:
-            contact_parts.append(self.contact.email)
-        if self.contact.linkedin:
-            contact_parts.append(self.contact.linkedin)
-        if self.contact.location:
-            contact_parts.append(self.contact.location)
-        if contact_parts:
-            lines.append(" | ".join(contact_parts))
+        # Create formatter and populate it with canonical data
+        formatter = ResumeFormatter()
 
-        lines.append("")
-        lines.append("-" * 60)
-        lines.append("")
+        # Add header
+        formatter.add_header(
+            name=self.contact.name,
+            tagline=self.tagline,
+            contact_info={
+                "phone": self.contact.phone,
+                "email": self.contact.email,
+                "linkedin": self.contact.linkedin,
+                "location": self.contact.location,
+            }
+        )
 
-        # Summary
+        # Add summary
         if self.summary:
-            lines.append("PROFESSIONAL SUMMARY")
-            lines.append(self.summary)
-            lines.append("")
+            formatter.add_section_header("Summary")
+            formatter.add_summary(self.summary)
 
-        # Core Competencies
+        # Add core competencies
         if self.competencies:
-            lines.append("CORE COMPETENCIES")
-            lines.append(" | ".join(self.competencies))
-            lines.append("")
+            formatter.add_section_header("Core Competencies")
+            formatter.add_core_competencies(self.competencies)
 
-        # Experience
+        # Add experience
         if self.experience:
-            lines.append("PROFESSIONAL EXPERIENCE")
-            lines.append("")
+            formatter.add_section_header("Experience")
             for exp in self.experience:
-                lines.append(f"{exp.title}")
-                lines.append(f"{exp.company} | {exp.location} | {exp.dates}")
-                if exp.overview:
-                    lines.append(exp.overview)
-                for bullet in exp.bullets:
-                    lines.append(f"  - {bullet}")
-                lines.append("")
+                formatter.add_experience_entry(
+                    company=exp.company,
+                    title=exp.title,
+                    location=exp.location,
+                    dates=exp.dates,
+                    overview=exp.overview,
+                    bullets=exp.bullets,
+                )
 
-        # Skills
+        # Add skills
         if self.skills:
-            lines.append("SKILLS")
-            for category, skill_list in self.skills.items():
-                lines.append(f"{category}: {', '.join(skill_list)}")
-            lines.append("")
+            formatter.add_section_header("Skills")
+            formatter.add_skills(self.skills)
 
-        # Education
+        # Add education
         if self.education.school or self.education.degree:
-            lines.append("EDUCATION")
-            if self.education.degree:
-                lines.append(self.education.degree)
-            if self.education.school:
-                lines.append(self.education.school)
-            if self.education.details:
-                lines.append(self.education.details)
+            formatter.add_section_header("Education")
+            formatter.add_education(
+                school=self.education.school,
+                degree=self.education.degree,
+                details=self.education.details,
+            )
 
-        return "\n".join(lines)
+        # Return plain text from formatter (same content as DOCX)
+        return formatter.to_plain_text()
 
 
 @dataclass
