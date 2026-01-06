@@ -100,12 +100,35 @@ class Education:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Education":
-        details = data.get("details", "") or ""
+        details = data.get("details", "") or data.get("highlights", "") or ""
         if isinstance(details, list):
-            details = ", ".join(details)
+            details = ", ".join(str(d) for d in details if d)
+
+        # Handle various key names for school
+        school = (
+            data.get("school") or
+            data.get("institution") or
+            data.get("university") or
+            data.get("name") or
+            ""
+        )
+
+        # Handle various key names for degree
+        degree = (
+            data.get("degree") or
+            data.get("qualification") or
+            data.get("field_of_study") or
+            ""
+        )
+        # Combine degree_name and field_of_study if both present
+        if data.get("degree_name"):
+            degree = data["degree_name"]
+            if data.get("field_of_study"):
+                degree = f"{degree}, {data['field_of_study']}"
+
         return cls(
-            school=str(data.get("school", "") or ""),
-            degree=str(data.get("degree", "") or ""),
+            school=str(school or ""),
+            degree=str(degree or ""),
             details=str(details),
         )
 
