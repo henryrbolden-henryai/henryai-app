@@ -1040,21 +1040,22 @@
                             alert(`Cannot download: ${issues}`);
                             return;
                         }
-                        throw new Error(`Download failed: ${response.status}`);
+                        // Fall through to legacy download on server error
+                        console.warn(`⚠️ Canonical download failed (${response.status}), falling back to legacy`);
+                    } else {
+                        const blob = await response.blob();
+                        const contentHash = response.headers.get('X-Document-Hash');
+                        console.log(`✅ Downloaded with hash: ${contentHash}`);
+
+                        // Lock the fit score at download (freeze it)
+                        lockFitScoreAtDownload();
+
+                        const candidateName = documentsData.canonical_document?.resume?.contact?.name || 'Resume';
+                        const filename = `${candidateName.replace(/\s+/g, '_')}_Resume.docx`;
+                        saveAs(blob, filename);
+                        showSuccess();
+                        return;
                     }
-
-                    const blob = await response.blob();
-                    const contentHash = response.headers.get('X-Document-Hash');
-                    console.log(`✅ Downloaded with hash: ${contentHash}`);
-
-                    // Lock the fit score at download (freeze it)
-                    lockFitScoreAtDownload();
-
-                    const candidateName = documentsData.canonical_document?.resume?.contact?.name || 'Resume';
-                    const filename = `${candidateName.replace(/\s+/g, '_')}_Resume.docx`;
-                    saveAs(blob, filename);
-                    showSuccess();
-                    return;
                 }
 
                 // FALLBACK: Legacy download path (deprecated)
