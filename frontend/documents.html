@@ -187,8 +187,7 @@
             border: 1px solid #d1d5db;
             border-radius: 8px;
             padding: 40px;
-            max-height: 600px;
-            overflow-y: auto;
+            /* Removed max-height to allow full document display */
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
@@ -1579,19 +1578,20 @@ ${'─'.repeat(60)}
 `;
 
             // Resume preview - USE CANONICAL DOCUMENT IF AVAILABLE (single source of truth)
-            let resumeBody;
+            let resumeText;
             if (documentsData.resume_output?.canonical_full_text) {
-                // Use canonical full_text - this is the SAME data used for download
-                resumeBody = documentsData.resume_output.canonical_full_text;
+                // Use canonical full_text directly - it already includes the header
+                // DO NOT prepend resumeHeader to avoid duplication
+                resumeText = documentsData.resume_output.canonical_full_text;
                 console.log('✅ Using canonical resume preview (single source of truth)');
             } else {
-                // Fallback to legacy full_text
-                resumeBody = documentsData.resume_output?.full_text ||
+                // Fallback to legacy full_text - prepend header since legacy may not include it
+                const resumeBody = documentsData.resume_output?.full_text ||
                             documentsData.resume?.full_text ||
                             'Resume content not available.';
+                resumeText = resumeHeader + resumeBody;
                 console.log('⚠️ Using legacy resume preview (may differ from download)');
             }
-            const resumeText = resumeHeader + resumeBody;
 
             document.getElementById('resumeLoading').style.display = 'none';
             document.getElementById('resumeText').style.display = 'block';
