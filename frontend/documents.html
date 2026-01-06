@@ -1302,6 +1302,10 @@
 
         // Download resume as DOCX - USES CANONICAL DOCUMENT (single source of truth)
         async function downloadResume() {
+            console.log('📥 Download resume clicked');
+            console.log('documentsData:', documentsData);
+            console.log('canonical_document:', documentsData?.canonical_document);
+
             if (!documentsData || !documentsData.resume_output) {
                 alert('Resume not available. Please go back and regenerate.');
                 return;
@@ -1317,6 +1321,7 @@
                 // CHECK FOR CANONICAL DOCUMENT - single source of truth
                 if (documentsData.canonical_document) {
                     console.log('✅ Using canonical download endpoint (preview === download)');
+                    console.log('API_BASE:', API_BASE);
                     const response = await fetch(`${API_BASE}/api/download/canonical`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
