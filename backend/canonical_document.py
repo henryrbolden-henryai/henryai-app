@@ -318,6 +318,20 @@ class DocumentMetadata:
             result["fit_score_delta"] = self.fit_score_delta.to_dict()
         return result
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DocumentMetadata":
+        fit_score_delta = None
+        if data.get("fit_score_delta"):
+            fit_score_delta = FitScoreDelta.from_dict(data["fit_score_delta"])
+        return cls(
+            generated_at=data.get("generated_at", ""),
+            source_resume_hash=data.get("source_resume_hash", ""),
+            jd_hash=data.get("jd_hash", ""),
+            version=data.get("version", "1.0"),
+            content_hash=data.get("content_hash", ""),
+            fit_score_delta=fit_score_delta,
+        )
+
 
 @dataclass
 class CanonicalDocument:
@@ -340,14 +354,15 @@ class CanonicalDocument:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CanonicalDocument":
+        metadata_dict = data.get("metadata", {
+            "generated_at": datetime.now().isoformat(),
+            "source_resume_hash": "",
+            "jd_hash": "",
+        })
         return cls(
             resume=CanonicalResume.from_dict(data.get("resume", {})),
             cover_letter=CanonicalCoverLetter.from_dict(data.get("cover_letter", {})),
-            metadata=DocumentMetadata(**data.get("metadata", {
-                "generated_at": datetime.now().isoformat(),
-                "source_resume_hash": "",
-                "jd_hash": "",
-            })),
+            metadata=DocumentMetadata.from_dict(metadata_dict),
         )
 
     def compute_content_hash(self) -> str:
