@@ -52,7 +52,9 @@
       "Bash(/opt/homebrew/bin/railway up:*)",
       "Bash(~/.railway/bin/railway up --detach)",
       "Bash(~/.local/bin/railway up:*)",
-      "Bash(npx @railway/cli:*)"
+      "Bash(npx @railway/cli:*)",
+      "Bash(brew list:*)",
+      "Bash(/opt/homebrew/bin/railway:*)"
     ],
     "deny": [],
     "ask": []
