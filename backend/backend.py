@@ -14320,6 +14320,65 @@ Generate the complete JSON response with ALL required fields populated."""
             print(f"  ⚠️ Quality gates error (non-blocking): {qg_error}")
             # Non-blocking - continue without quality gates
 
+        # =================================================================
+        # STRENGTH GATE ASSESSMENT
+        # Scores bullets 0-100 and identifies weak bullets for amplification.
+        # Runs on TAILORED output (after Claude generation).
+        # =================================================================
+        try:
+            from resume_strength_gate import (
+                run_strength_gate,
+                title_to_level_category,
+                generate_phase_2_questions,
+            )
+
+            # Determine candidate level from JD analysis or leveling data
+            if body.leveling and body.leveling.current_level:
+                level_category = title_to_level_category(body.leveling.current_level)
+            elif body.jd_analysis:
+                target_level = body.jd_analysis.get("career_level", {}).get("target_level", "")
+                level_category = title_to_level_category(target_level) if target_level else "mid"
+            else:
+                level_category = "mid"
+
+            # Run strength gate on the tailored resume
+            strength_result = run_strength_gate(
+                resume=resume_for_lint,
+                level=level_category,
+                include_trajectory=True
+            )
+
+            # Add to response
+            parsed_data["strength_assessment"] = strength_result
+
+            # Log results
+            strength = strength_result.get("strength_assessment", {})
+            print(f"  💪 Strength Gate: avg={strength.get('avg_strength', 'N/A')}/100, "
+                  f"strong={strength.get('strong_count', 0)}, weak={strength.get('weak_count', 0)}")
+
+            if strength_result.get("recommendation") == "amplify":
+                print(f"  📝 Recommendation: Amplification needed - {len(strength.get('weak_bullets', []))} bullets below threshold")
+                # Include Phase 2 questions if there are weak bullets needing user input
+                if strength_result.get("phase_2_questions"):
+                    print(f"  ❓ Phase 2 questions generated: {len(strength_result['phase_2_questions'])}")
+
+            elif strength_result.get("recommendation") == "block":
+                print(f"  🚫 Recommendation: Resume too weak (avg={strength.get('avg_strength', 0)})")
+
+            # Check trajectory
+            trajectory = strength_result.get("trajectory_assessment", {})
+            if trajectory and not trajectory.get("trajectory_healthy", True):
+                issues = trajectory.get("issues", [])
+                warnings = [i for i in issues if i.get("severity") == "warning"]
+                if warnings:
+                    print(f"  ⚠️ Trajectory issues: {[w['type'] for w in warnings]}")
+
+        except Exception as sg_error:
+            print(f"  ⚠️ Strength gate error (non-blocking): {sg_error}")
+            import traceback
+            traceback.print_exc()
+            # Non-blocking - continue without strength assessment
+
         # Track document version and calculate quality score
         try:
             from document_versioning import track_document_generation
