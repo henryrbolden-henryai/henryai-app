@@ -28,10 +28,12 @@ logger = logging.getLogger("henryhq")
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 
 # Supabase client for database operations
+# Supports both SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SERVICE_KEY for backwards compatibility
 try:
     from supabase import create_client, Client
-    SUPABASE_URL = os.getenv("SUPABASE_URL")
-    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")  # Use service role for backend
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "https://xmbappvomvmanvybdavs.supabase.co")
+    # Try both key names for backwards compatibility
+    SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
 
     if SUPABASE_URL and SUPABASE_SERVICE_KEY:
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -39,6 +41,8 @@ try:
     else:
         supabase = None
         print("⚠️ Supabase credentials not configured - database features disabled")
+        print(f"   SUPABASE_URL: {'set' if SUPABASE_URL else 'missing'}")
+        print(f"   SUPABASE_SERVICE_KEY: {'set' if SUPABASE_SERVICE_KEY else 'missing'}")
 except ImportError:
     supabase = None
     print("⚠️ Supabase package not installed - database features disabled")
