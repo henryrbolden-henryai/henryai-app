@@ -620,6 +620,8 @@
     <!-- Supabase Auth -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
+    <!-- PapaParse for reliable CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -1100,27 +1102,247 @@
             }
         });
 
-        // Parse LinkedIn CSV
+        // Parse LinkedIn CSV - handles quoted fields with commas correctly
         function parseLinkedInCSV(csv) {
-            const lines = csv.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            
-            const connections = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                const connection = {};
-                
-                headers.forEach((header, index) => {
-                    connection[header] = values[index] || '';
-                });
-                
-                connections.push(connection);
+            const result = Papa.parse(csv, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: h => h.trim()
+            });
+
+            // Filter out empty rows (LinkedIn exports sometimes have blank lines)
+            return result.data.filter(row =>
+                (row['First Name'] && row['First Name'].trim()) ||
+                (row['Last Name'] && row['Last Name'].trim())
+            );
+        }
+
+        // ========================================================================
+        // NETWORK INTELLIGENCE FUNCTIONS
+        // ========================================================================
+
+        /**
+         * Detect seniority level from job title
+         */
+        function detectSeniority(title) {
+            if (!title) return 'unknown';
+            const titleLower = title.toLowerCase();
+
+            const executivePatterns = [
+                /\b(ceo|cfo|cto|coo|cmo|cpo|chief)\b/,
+                /\b(president|founder|owner|partner)\b/,
+                /\bvp\b/, /\bvice president\b/,
+                /\bevp\b/, /\bsvp\b/
+            ];
+
+            const seniorPatterns = [
+                /\b(director|head of|principal)\b/,
+                /\bsenior\b/, /\bsr\.?\b/,
+                /\blead\b/, /\bstaff\b/
+            ];
+
+            const midPatterns = [
+                /\bmanager\b/,
+                /\bspecialist\b/,
+                /\banalyst\b/,
+                /\bconsultant\b/
+            ];
+
+            const entryPatterns = [
+                /\b(associate|coordinator|assistant|intern|junior|jr\.?)\b/,
+                /\bentry level\b/
+            ];
+
+            if (executivePatterns.some(p => p.test(titleLower))) return 'executive';
+            if (seniorPatterns.some(p => p.test(titleLower))) return 'senior';
+            if (midPatterns.some(p => p.test(titleLower))) return 'mid';
+            if (entryPatterns.some(p => p.test(titleLower))) return 'entry';
+            return 'unknown';
+        }
+
+        /**
+         * Detect if connection is a recruiter or in talent acquisition
+         */
+        function detectRecruiterType(title) {
+            if (!title) return { isRecruiter: false, isTalentAcquisition: false };
+            const titleLower = title.toLowerCase();
+
+            const recruiterKeywords = [
+                'recruiter', 'recruiting', 'recruitment',
+                'sourcer', 'sourcing',
+                'talent acquisition', 'talent partner',
+                'headhunter', 'executive search'
+            ];
+
+            const taKeywords = [
+                'talent', 'people operations', 'hr business partner',
+                'human resources', 'hrbp'
+            ];
+
+            const isRecruiter = recruiterKeywords.some(k => titleLower.includes(k));
+            const isTalentAcquisition = taKeywords.some(k => titleLower.includes(k));
+
+            return { isRecruiter, isTalentAcquisition };
+        }
+
+        /**
+         * Calculate connection recency from "Connected On" field
+         */
+        function calculateRecency(connectedOnStr) {
+            if (!connectedOnStr) return { connectionAge: 999, connectionRecency: 'cold' };
+
+            // Parse "19 Nov 2025" format
+            const date = new Date(connectedOnStr);
+            if (isNaN(date.getTime())) return { connectionAge: 999, connectionRecency: 'cold' };
+
+            const now = new Date();
+            const daysDiff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+            return {
+                connectionAge: daysDiff,
+                connectionRecency: daysDiff < 90 ? 'recent' : daysDiff < 365 ? 'warm' : 'cold'
+            };
+        }
+
+        /**
+         * Calculate relevance score for a connection
+         */
+        function calculateRelevance(connection, targetCompany, targetRole) {
+            let score = 0;
+
+            // Direct company match (highest value)
+            if (connection.company && targetCompany &&
+                connection.company.toLowerCase().includes(targetCompany.toLowerCase())) {
+                score += 50;
             }
-            
-            return connections;
+
+            // Recruiter at target company (very high value)
+            if (score >= 50 && connection.isRecruiter) {
+                score += 25;
+            }
+
+            // Seniority bonus for non-recruiters (potential hiring managers)
+            if (!connection.isRecruiter) {
+                if (connection.seniorityLevel === 'executive') score += 15;
+                if (connection.seniorityLevel === 'senior') score += 10;
+            }
+
+            // Connection recency
+            if (connection.connectionRecency === 'recent') score += 10;
+            if (connection.connectionRecency === 'warm') score += 5;
+
+            // Email available (direct outreach possible)
+            if (connection.email) score += 5;
+
+            return Math.min(score, 100);
+        }
+
+        /**
+         * Process raw connection into enhanced connection object
+         */
+        function processConnection(rawConnection, targetCompany, targetRole) {
+            const title = rawConnection['Position'] || rawConnection['position'] || '';
+            const company = rawConnection['Company'] || rawConnection['company'] || '';
+            const email = rawConnection['Email Address'] || rawConnection['email'] || '';
+            const connectedOn = rawConnection['Connected On'] || '';
+            const url = rawConnection['URL'] || rawConnection['url'] || '';
+
+            const { isRecruiter, isTalentAcquisition } = detectRecruiterType(title);
+            const seniorityLevel = detectSeniority(title);
+            const { connectionAge, connectionRecency } = calculateRecency(connectedOn);
+
+            const processed = {
+                firstName: rawConnection['First Name'] || '',
+                lastName: rawConnection['Last Name'] || '',
+                name: `${rawConnection['First Name'] || ''} ${rawConnection['Last Name'] || ''}`.trim(),
+                title,
+                company,
+                linkedinUrl: url,
+                email: email || null,
+                connectedOn,
+                connectionAge,
+                connectionRecency,
+                seniorityLevel,
+                isRecruiter,
+                isTalentAcquisition,
+                isHiringManager: !isRecruiter && !isTalentAcquisition &&
+                    (seniorityLevel === 'executive' || seniorityLevel === 'senior')
+            };
+
+            processed.relevanceScore = calculateRelevance(processed, targetCompany, targetRole);
+
+            return processed;
+        }
+
+        /**
+         * Group and sort connections by relevance
+         */
+        function groupAndSortConnections(connections, targetCompany, targetRole) {
+            // Process all connections
+            const processed = connections.map(c => processConnection(c, targetCompany, targetRole));
+
+            const atCompany = processed.filter(c =>
+                c.company && targetCompany &&
+                c.company.toLowerCase().includes(targetCompany.toLowerCase())
+            );
+
+            const notAtCompany = processed.filter(c =>
+                !c.company || !targetCompany ||
+                !c.company.toLowerCase().includes(targetCompany.toLowerCase())
+            );
+
+            // Sort by relevance within groups
+            const sortByRelevance = (a, b) => b.relevanceScore - a.relevanceScore;
+
+            const directRecruiters = atCompany
+                .filter(c => c.isRecruiter || c.isTalentAcquisition)
+                .sort(sortByRelevance);
+
+            const directOthers = atCompany
+                .filter(c => !c.isRecruiter && !c.isTalentAcquisition)
+                .sort(sortByRelevance);
+
+            const relevantOthers = notAtCompany
+                .filter(c => c.relevanceScore > 20)
+                .sort(sortByRelevance)
+                .slice(0, 10); // Limit to top 10
+
+            return {
+                directRecruiters,
+                directOthers,
+                relevantOthers,
+                allAtCompany: [...directRecruiters, ...directOthers],
+                totalAtCompany: atCompany.length,
+                totalConnections: connections.length
+            };
+        }
+
+        /**
+         * Generate dynamic approach guidance based on connection profile
+         */
+        function generateApproachGuidance(connection, targetRole) {
+            const { isRecruiter, seniorityLevel, connectionRecency, email } = connection;
+
+            if (isRecruiter) {
+                if (connectionRecency === 'recent') {
+                    return `You connected recently. Send a direct message mentioning the ${targetRole || 'open'} role and ask if they're the right person to speak with or can point you to the hiring team.`;
+                }
+                return `As a recruiter, they can likely provide insight into the hiring process or connect you with the hiring manager. Reference your existing connection and express interest in the ${targetRole || 'open'} role.`;
+            }
+
+            if (seniorityLevel === 'executive' || seniorityLevel === 'senior') {
+                return `This is likely a decision-maker or peer to the hiring manager. Ask for an informational conversation about the team and culture. Do not lead with asking for a referral.`;
+            }
+
+            if (connectionRecency === 'recent') {
+                return `Recent connection. A warm outreach asking about their experience at the company and any advice for someone interested in the ${targetRole || 'role'}.`;
+            }
+
+            if (email) {
+                return `You have their email. Consider a brief, professional note asking for 15 minutes to learn about their experience. LinkedIn message as backup.`;
+            }
+
+            return `Send a personalized LinkedIn message referencing how you're connected and your interest in the ${targetRole || 'opportunity'}. Ask for insights or advice rather than directly asking for a referral.`;
         }
 
         // Check network for connections at target company
@@ -1320,10 +1542,13 @@
             resultsContainer.style.display = 'block';
         }
 
-        // Display results (fallback when API fails)
+        // Display results with enhanced network intelligence
         function displayLinkedInResults(directConnections, secondDegreeConnections, company) {
             const resultsContainer = document.getElementById('linkedinResults');
             if (!resultsContainer) return;
+
+            // Get target role from sessionStorage
+            const targetRole = sessionStorage.getItem('targetRoleTitle') || '';
 
             if (directConnections.length === 0 && secondDegreeConnections.length === 0) {
                 resultsContainer.innerHTML = `
@@ -1348,40 +1573,131 @@
                 return;
             }
 
+            // Process and group connections using network intelligence
+            const grouped = groupAndSortConnections(directConnections, company, targetRole);
+            const totalFound = grouped.directRecruiters.length + grouped.directOthers.length + grouped.relevantOthers.length;
+
             let html = `
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
                     <span style="font-size: 1.5rem;">🎯</span>
-                    <h4 style="margin: 0; color: #ffffff;">Direct Connections at ${company}</h4>
-                    <span style="background: #10b981; color: #ffffff; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">${directConnections.length} found</span>
+                    <h4 style="margin: 0; color: #ffffff;">Your Network at ${company}</h4>
+                    <span style="background: #10b981; color: #ffffff; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">${totalFound} found</span>
                 </div>
             `;
 
-            if (directConnections.length > 0) {
-                html += `<div class="connection-group">`;
+            // Helper function to render a connection card
+            function renderConnectionCard(conn) {
+                const linkedInUrl = conn.linkedInUrl || `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(conn.fullName)}`;
 
-                directConnections.forEach(conn => {
-                    const name = `${conn['First Name'] || ''} ${conn['Last Name'] || ''}`.trim();
-                    const title = conn['Position'] || 'Position not listed';
-                    const connectedDate = conn['Connected On'] || '';
+                // Badge colors by type
+                const badges = [];
+                badges.push(`<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">1st</span>`);
 
-                    html += `
-                        <div class="connection-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div>
-                                    <div style="font-weight: 600; font-size: 1.05rem; color: #ffffff;">${name}</div>
-                                    <div style="color: #9ca3af; margin-top: 4px;">${title} at ${company}</div>
-                                    ${connectedDate ? `<div style="color: #6b7280; font-size: 0.8rem; margin-top: 4px;">Connected: ${connectedDate}</div>` : ''}
+                if (conn.isRecruiter) {
+                    badges.push(`<span style="background: rgba(168, 85, 247, 0.2); color: #a855f7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">Recruiter</span>`);
+                } else if (conn.isTalentAcquisition) {
+                    badges.push(`<span style="background: rgba(168, 85, 247, 0.2); color: #a855f7; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">TA</span>`);
+                }
+
+                if (conn.seniority === 'executive') {
+                    badges.push(`<span style="background: rgba(234, 179, 8, 0.2); color: #eab308; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">Exec</span>`);
+                } else if (conn.seniority === 'senior') {
+                    badges.push(`<span style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">Senior</span>`);
+                }
+
+                // Recency indicator
+                let recencyColor = '#6b7280';
+                if (conn.connectionRecency === 'recent') recencyColor = '#10b981';
+                else if (conn.connectionRecency === 'warm') recencyColor = '#f59e0b';
+
+                const recencyText = conn.connectionAge !== null
+                    ? `Connected ${conn.connectionAge} days ago`
+                    : (conn.connectedOn ? `Connected: ${conn.connectedOn}` : '');
+
+                // Email section
+                const emailHtml = conn.email
+                    ? `<div style="margin-top: 6px;">
+                        <a href="mailto:${conn.email}" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem;">
+                            📧 ${conn.email}
+                        </a>
+                       </div>`
+                    : '';
+
+                // Dynamic approach guidance
+                const approachGuidance = generateApproachGuidance(conn, targetRole);
+
+                return `
+                    <div class="connection-item" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <a href="${linkedInUrl}" target="_blank" rel="noopener" style="font-weight: 600; font-size: 1.05rem; color: #60a5fa; text-decoration: none;">
+                                        ${conn.fullName}
+                                    </a>
+                                    ${badges.join('')}
                                 </div>
-                                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">1st Degree</span>
+                                <div style="color: #9ca3af; margin-top: 4px;">${conn.title} at ${conn.company}</div>
+                                ${recencyText ? `<div style="color: ${recencyColor}; font-size: 0.8rem; margin-top: 4px;">${recencyText}</div>` : ''}
+                                ${emailHtml}
                             </div>
-                            <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid #10b981;">
-                                <strong style="color: #10b981;">Best approach:</strong> <span style="color: #d1d5db;">Send a personalized message asking for insights on the role or a referral. Mention how you're connected and why you're excited about this opportunity.</span>
+                            <div style="text-align: right; min-width: 60px;">
+                                <div style="color: #6b7280; font-size: 0.75rem;">Score</div>
+                                <div style="font-weight: 700; font-size: 1.1rem; color: ${conn.relevanceScore >= 70 ? '#10b981' : conn.relevanceScore >= 40 ? '#f59e0b' : '#6b7280'};">${conn.relevanceScore}</div>
                             </div>
                         </div>
-                    `;
-                });
+                        <div style="margin-top: 12px; padding: 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; font-size: 0.9rem; border-left: 3px solid ${conn.isRecruiter || conn.isTalentAcquisition ? '#a855f7' : '#10b981'};">
+                            <strong style="color: ${conn.isRecruiter || conn.isTalentAcquisition ? '#a855f7' : '#10b981'};">Best approach:</strong> <span style="color: #d1d5db;">${approachGuidance}</span>
+                        </div>
+                    </div>
+                `;
+            }
 
-                html += `</div>`;
+            // Render recruiters at company (highest priority)
+            if (grouped.directRecruiters.length > 0) {
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 1.1rem;">⭐</span>
+                            <h5 style="margin: 0; color: #a855f7; font-size: 0.95rem;">Recruiters at ${company}</h5>
+                            <span style="color: #6b7280; font-size: 0.8rem;">(${grouped.directRecruiters.length})</span>
+                        </div>
+                        <div class="connection-group">
+                            ${grouped.directRecruiters.map(renderConnectionCard).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render other employees at company
+            if (grouped.directOthers.length > 0) {
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 1.1rem;">👥</span>
+                            <h5 style="margin: 0; color: #10b981; font-size: 0.95rem;">Other Connections at ${company}</h5>
+                            <span style="color: #6b7280; font-size: 0.8rem;">(${grouped.directOthers.length})</span>
+                        </div>
+                        <div class="connection-group">
+                            ${grouped.directOthers.map(renderConnectionCard).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Render relevant others (recruiters not at company, etc.)
+            if (grouped.relevantOthers.length > 0) {
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 1.1rem;">🔗</span>
+                            <h5 style="margin: 0; color: #f59e0b; font-size: 0.95rem;">Other Relevant Connections</h5>
+                            <span style="color: #6b7280; font-size: 0.8rem;">(${grouped.relevantOthers.length})</span>
+                        </div>
+                        <div class="connection-group">
+                            ${grouped.relevantOthers.map(renderConnectionCard).join('')}
+                        </div>
+                    </div>
+                `;
             }
 
             resultsContainer.innerHTML = html;
