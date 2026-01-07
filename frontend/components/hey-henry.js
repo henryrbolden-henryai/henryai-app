@@ -3355,6 +3355,17 @@ ${confidenceClosing}`,
     let pendingDataCorrection = null;
     let dataCorrectionFlowState = null; // 'awaiting_confirmation' | null
 
+    // Archive action state
+    let pendingArchiveAction = null;
+    let archiveFlowState = null; // 'awaiting_confirmation' | null
+
+    // Archive triggers - user wants to archive applications
+    const ARCHIVE_TRIGGERS = [
+        'archive', 'remove', 'hide', 'clean up', 'clear out',
+        'get rid of', 'delete the long shots', 'archive the long shots',
+        'archive all', 'archive these', 'yes archive', 'yes, archive'
+    ];
+
     // Data correction triggers - user wants to fix incorrect data
     const DATA_CORRECTION_TRIGGERS = [
         'wrong', 'incorrect', 'should be', 'change to', 'change it to',
@@ -3634,6 +3645,139 @@ Page: ${context.name} (${window.location.href})`;
         } catch (e) {
             console.warn('Could not log auto-fix:', e);
         }
+    }
+
+    // ==========================================
+    // Archive Actions (Phase: Pipeline Management)
+    // ==========================================
+
+    // Detect if user wants to archive applications
+    function detectArchiveIntent(message) {
+        const lowerMessage = message.toLowerCase();
+        return ARCHIVE_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+    }
+
+    // Get applications that match archive criteria
+    function getArchivableApplications(criteria) {
+        const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+
+        if (criteria === 'long_shots') {
+            // Long shots = fit score < 50%
+            return trackedApps.filter(app =>
+                (app.fitScore || 0) < 50 &&
+                app.status !== 'No Response' &&
+                app.status !== 'Rejected' &&
+                !app.archivedAt
+            );
+        }
+
+        if (criteria === 'ghosted') {
+            // Ghosted = applied > 14 days ago with no response
+            const twoWeeksAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
+            return trackedApps.filter(app =>
+                app.status === 'Applied' &&
+                new Date(app.dateAdded || app.lastUpdated).getTime() < twoWeeksAgo &&
+                !app.archivedAt
+            );
+        }
+
+        if (criteria === 'stale') {
+            // Stale = no activity in 21+ days
+            const threeWeeksAgo = Date.now() - (21 * 24 * 60 * 60 * 1000);
+            return trackedApps.filter(app =>
+                new Date(app.lastUpdated || app.dateAdded).getTime() < threeWeeksAgo &&
+                app.status !== 'No Response' &&
+                app.status !== 'Rejected' &&
+                !app.archivedAt
+            );
+        }
+
+        return [];
+    }
+
+    // Actually archive the applications
+    async function executeArchive(appIds, reason) {
+        try {
+            const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            let archivedCount = 0;
+
+            for (const id of appIds) {
+                const idx = trackedApps.findIndex(a => String(a.id) === String(id));
+                if (idx !== -1) {
+                    trackedApps[idx].status = 'No Response';
+                    trackedApps[idx].archivedAt = new Date().toISOString();
+                    trackedApps[idx].archiveReason = reason;
+                    trackedApps[idx].lastUpdated = new Date().toISOString();
+                    archivedCount++;
+                }
+            }
+
+            // Save to localStorage
+            localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+
+            // Sync to Supabase if available
+            if (typeof HenryData !== 'undefined' && HenryData.saveApplications) {
+                await HenryData.saveApplications(trackedApps);
+            }
+
+            // Dispatch event to refresh the page
+            window.dispatchEvent(new CustomEvent('henryDataCorrected', {
+                detail: { action: 'archive', count: archivedCount }
+            }));
+
+            return { success: true, count: archivedCount };
+        } catch (e) {
+            console.error('Error archiving applications:', e);
+            return { success: false, error: e.message };
+        }
+    }
+
+    // Handle archive confirmation
+    async function handleArchiveConfirmation(confirmed) {
+        if (!pendingArchiveAction) return;
+
+        // Remove confirmation buttons
+        const confirmContainer = document.getElementById('archiveConfirmContainer');
+        if (confirmContainer) confirmContainer.remove();
+
+        if (confirmed) {
+            const result = await executeArchive(pendingArchiveAction.appIds, pendingArchiveAction.reason);
+
+            if (result.success) {
+                const message = `Done! I've archived ${result.count} application${result.count !== 1 ? 's' : ''}. The page will update in a moment. Is there anything else you'd like me to help with?`;
+                addMessage('assistant', message);
+                conversationHistory.push({ role: 'assistant', content: message });
+            } else {
+                addMessage('assistant', "I ran into an issue archiving those applications. Try refreshing the page and using the bulk archive feature in the Command Center.");
+                conversationHistory.push({ role: 'assistant', content: "I ran into an issue archiving those applications. Try refreshing the page and using the bulk archive feature in the Command Center." });
+            }
+        } else {
+            addMessage('assistant', "No problem! The applications are still in your pipeline. Let me know if you change your mind.");
+            conversationHistory.push({ role: 'assistant', content: "No problem! The applications are still in your pipeline. Let me know if you change your mind." });
+        }
+
+        saveConversationHistory();
+        pendingArchiveAction = null;
+        archiveFlowState = null;
+    }
+
+    // Add archive confirmation buttons
+    function addArchiveConfirmation() {
+        const messagesContainer = document.getElementById('askHenryMessages');
+        if (!messagesContainer) return;
+
+        const confirmDiv = document.createElement('div');
+        confirmDiv.id = 'archiveConfirmContainer';
+        confirmDiv.style.cssText = 'display: flex; gap: 8px; padding: 8px 12px; justify-content: flex-end;';
+        confirmDiv.innerHTML = `
+            <button onclick="window.handleArchiveConfirmation(false)" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #444; background: transparent; color: #888; cursor: pointer; font-size: 14px;">No, keep them</button>
+            <button onclick="window.handleArchiveConfirmation(true)" style="padding: 8px 16px; border-radius: 8px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; font-size: 14px;">Yes, archive them</button>
+        `;
+        messagesContainer.appendChild(confirmDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Expose handler globally
+        window.handleArchiveConfirmation = handleArchiveConfirmation;
     }
 
     function detectFeedbackIntent(message) {
@@ -4973,6 +5117,77 @@ Page: ${context.name} (${window.location.href})`;
                 addDataCorrectionConfirmation();
                 isLoading = false;
                 return;
+            }
+
+            // Check for archive confirmation (if we're awaiting one)
+            if (archiveFlowState === 'awaiting_confirmation' && pendingArchiveAction) {
+                removeTypingIndicator();
+                const lowerMessage = message.toLowerCase();
+                const isYes = lowerMessage.includes('yes') || lowerMessage === 'y' || lowerMessage.includes('do it') || lowerMessage.includes('go ahead');
+                const isNo = lowerMessage.includes('no') || lowerMessage === 'n' || lowerMessage.includes('cancel') || lowerMessage.includes('never mind');
+
+                if (isYes || isNo) {
+                    await handleArchiveConfirmation(isYes);
+                    isLoading = false;
+                    return;
+                }
+                // If neither yes nor no, fall through to normal processing
+            }
+
+            // Check for archive intent (user wants to archive applications)
+            if (detectArchiveIntent(message) && !pendingArchiveAction && !archiveFlowState) {
+                removeTypingIndicator();
+
+                // Get pipeline data to identify archivable applications
+                const pipelineData = getPipelineData();
+                const lowerMessage = message.toLowerCase();
+
+                // Determine what type of applications to archive
+                let criteria = null;
+                let apps = [];
+
+                if (lowerMessage.includes('long shot') || lowerMessage.includes('low fit')) {
+                    criteria = 'long_shots';
+                    apps = getArchivableApplications('long_shots');
+                } else if (lowerMessage.includes('ghost') || lowerMessage.includes('no response')) {
+                    criteria = 'ghosted';
+                    apps = getArchivableApplications('ghosted');
+                } else if (lowerMessage.includes('stale') || lowerMessage.includes('old')) {
+                    criteria = 'stale';
+                    apps = getArchivableApplications('stale');
+                }
+
+                if (apps.length > 0) {
+                    pendingArchiveAction = {
+                        criteria: criteria,
+                        appIds: apps.map(a => a.id),
+                        count: apps.length,
+                        reason: `Archived via Hey Henry: ${criteria}`
+                    };
+                    archiveFlowState = 'awaiting_confirmation';
+
+                    const companyList = apps.slice(0, 5).map(a => a.company).join(', ');
+                    const moreText = apps.length > 5 ? ` and ${apps.length - 5} more` : '';
+
+                    const confirmMessage = `I found **${apps.length}** ${criteria === 'long_shots' ? 'long shot (fit < 50%)' : criteria === 'ghosted' ? 'likely ghosted' : 'stale'} applications:\n\n${companyList}${moreText}\n\nWant me to archive these so you can focus on your better opportunities?`;
+
+                    addMessage('assistant', confirmMessage);
+                    conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                    saveConversationHistory();
+                    addArchiveConfirmation();
+                    isLoading = false;
+                    return;
+                } else {
+                    const noAppsMessage = criteria
+                        ? `I looked for ${criteria === 'long_shots' ? 'long shot' : criteria === 'ghosted' ? 'ghosted' : 'stale'} applications but didn't find any that aren't already archived. Your pipeline is pretty clean!`
+                        : "I can help you archive applications. What type would you like to clean up? Long shots (fit < 50%), likely ghosted (no response in 2+ weeks), or stale applications (no activity in 3+ weeks)?";
+
+                    addMessage('assistant', noAppsMessage);
+                    conversationHistory.push({ role: 'assistant', content: noAppsMessage });
+                    saveConversationHistory();
+                    isLoading = false;
+                    return;
+                }
             }
 
             // Check for NEW feedback intent (not already in a flow)
