@@ -4367,13 +4367,7 @@
             </div>
         </div>
 
-        <!-- VIEW TOGGLE (Legacy) -->
-        <div class="view-toggle-container" id="viewToggleContainer" style="display: none;">
-            <div class="view-toggle">
-                <button class="view-toggle-btn active" data-view="priorities" onclick="switchView('priorities')">Priorities</button>
-                <button class="view-toggle-btn" data-view="details" onclick="switchView('details')">All Applications</button>
-            </div>
-        </div>
+        <!-- Legacy VIEW TOGGLE removed - Command Center v2.0 handles views -->
 
         <!-- PRIORITIES VIEW -->
         <div class="view-section active" id="prioritiesView">
@@ -8685,21 +8679,8 @@ Thanks so much!
         });
 
         // ========================================================================
-        // VIEW TOGGLE
+        // Legacy VIEW TOGGLE removed - Command Center v2.0 handles views
         // ========================================================================
-        function switchView(view) {
-            // Update button states
-            document.querySelectorAll('.view-toggle-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.view === view) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // Show/hide view sections
-            document.getElementById('prioritiesView').classList.toggle('active', view === 'priorities');
-            document.getElementById('detailsView').classList.toggle('active', view === 'details');
-        }
 
         // ========================================================================
         // FILTER HANDLERS
@@ -10484,9 +10465,7 @@ Thanks so much!
             renderPatternAlert(apps);
             renderApplications(apps);
 
-            // Show/hide view toggle based on whether there are applications
-            const viewToggleContainer = document.getElementById('viewToggleContainer');
-            viewToggleContainer.style.display = apps.length > 0 ? 'flex' : 'none';
+            // Legacy view toggle removed - Command Center v2.0 has its own view management
 
             // Check for desperation pattern
             checkDesperationIntervention(apps);

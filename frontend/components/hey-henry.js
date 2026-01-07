@@ -4893,7 +4893,27 @@ Page: ${context.name} (${window.location.href})`;
                     const appContext = await getCurrentApplicationContext();
 
                     if (!appContext) {
-                        // Can't determine which app to fix - ask for clarification
+                        // Can't determine which app to fix
+                        // Check if this is a resume parsing issue (not application data)
+                        const lowerMessage = message.toLowerCase();
+                        const isResumeIssue = lowerMessage.includes('resume') ||
+                            lowerMessage.includes('parsed') ||
+                            lowerMessage.includes('profile') ||
+                            lowerMessage.includes('my name') ||
+                            lowerMessage.includes('work history');
+
+                        if (isResumeIssue || detectFeedbackIntent(message)) {
+                            // This is likely a bug with resume parsing or data extraction - offer to file a bug
+                            pendingFeedback = { text: message, type: 'bug' };
+                            feedbackFlowState = 'awaiting_details';
+                            addMessage('assistant', "That sounds like a parsing issue that I can't fix directly. Let me get this to the team. Can you describe what's wrong and what it should say? A screenshot would help too.");
+                            conversationHistory.push({ role: 'assistant', content: "That sounds like a parsing issue that I can't fix directly. Let me get this to the team. Can you describe what's wrong and what it should say? A screenshot would help too." });
+                            saveConversationHistory();
+                            isLoading = false;
+                            return;
+                        }
+
+                        // Otherwise ask for clarification about which application
                         addMessage('assistant', "I'd be happy to fix that! But I'm not sure which job you're referring to. Could you tell me the company name so I can find the right application?");
                         conversationHistory.push({ role: 'assistant', content: "I'd be happy to fix that! But I'm not sure which job you're referring to. Could you tell me the company name so I can find the right application?" });
                         saveConversationHistory();
