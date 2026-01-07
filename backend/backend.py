@@ -22310,9 +22310,8 @@ class FeedbackAcknowledgmentRequest(BaseModel):
     conversation_context: Optional[str] = None  # Recent conversation for context
 
 
-# Admin notification emails
-ADMIN_EMAIL = "henry.r.bolden@gmail.com"  # Where to send detailed feedback notifications (support@)
-ADMIN_PERSONAL_EMAIL = "hb@henryhq.ai"  # Personal quick notification (hb@)
+# Admin notification emails (consolidated to single recipient)
+ADMIN_EMAIL = "hb@henryhq.ai"  # Primary admin email for all notifications
 ADMIN_USER_EMAIL = "hb@henryhq.ai"  # Admin's HenryHQ login email (for real-time Hey Henry notifications)
 
 
@@ -22555,15 +22554,17 @@ def get_admin_notification_email(request: FeedbackAcknowledgmentRequest):
 async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
     """
     Send acknowledgment email after user submits feedback via Hey Henry chat.
-    Also sends notification to admin with full details.
+    Also sends notification to admin with full details and stores for real-time pickup.
 
     Supports feedback types: bug, feature_request, praise, ux_issue, general
     Each type gets a tailored subject line and message.
     """
+    print(f"📨 Feedback acknowledgment request received: type={request.feedback_type}, from={request.email}")
 
     if not RESEND_API_KEY:
-        print("⚠️ RESEND_API_KEY not configured - skipping feedback acknowledgment email")
-        return {"success": False, "error": "Email service not configured"}
+        print("❌ RESEND_API_KEY not configured - skipping feedback acknowledgment email")
+        print("   To fix: Set RESEND_API_KEY environment variable in Railway")
+        return {"success": False, "error": "Email service not configured", "details": "RESEND_API_KEY missing"}
 
     headers = {
         "Authorization": f"Bearer {RESEND_API_KEY}",
@@ -22572,12 +22573,15 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
 
     user_email_id = None
     admin_email_id = None
+    notification_stored = False
+    errors = []
 
-    # 1. Send acknowledgment to user
+    # 1. Send acknowledgment to user (includes issue recap)
     try:
+        # Pass full feedback for recap in email
         subject, html = get_feedback_email_content(
             feedback_type=request.feedback_type,
-            feedback_summary=request.feedback_summary,
+            feedback_summary=request.full_feedback or request.feedback_summary,
             name=request.name
         )
 
@@ -22586,18 +22590,25 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
             "to": request.email,
             "subject": subject,
             "html": html,
-            "reply_to": "support@henryhq.ai"
+            "reply_to": "hb@henryhq.ai"
         }
 
+        print(f"📧 Sending user acknowledgment to {request.email}...")
         response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        user_email_id = response.json().get("id")
-        print(f"📧 Feedback acknowledgment sent to {request.email} (type: {request.feedback_type}, id: {user_email_id})")
+
+        if response.status_code != 200:
+            print(f"❌ Resend API error: {response.status_code} - {response.text}")
+            errors.append(f"User email failed: {response.status_code}")
+        else:
+            user_email_id = response.json().get("id")
+            print(f"✅ Feedback acknowledgment sent to {request.email} (id: {user_email_id})")
 
     except requests.exceptions.RequestException as e:
-        print(f"⚠️ Failed to send user acknowledgment: {str(e)}")
+        error_msg = f"User email request failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        errors.append(error_msg)
 
-    # 2. Send notification to admin with full details
+    # 2. Send notification to admin (hb@henryhq.ai) with full details
     try:
         admin_subject, admin_html = get_admin_notification_email(request)
 
@@ -22609,47 +22620,26 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
             "reply_to": request.email  # Reply goes directly to the user
         }
 
+        print(f"📧 Sending admin notification to {ADMIN_EMAIL}...")
         response = requests.post(RESEND_API_URL, json=admin_payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        admin_email_id = response.json().get("id")
-        print(f"📧 Admin notification sent to {ADMIN_EMAIL} (id: {admin_email_id})")
+
+        if response.status_code != 200:
+            print(f"❌ Resend API error (admin): {response.status_code} - {response.text}")
+            errors.append(f"Admin email failed: {response.status_code}")
+        else:
+            admin_email_id = response.json().get("id")
+            print(f"✅ Admin notification sent to {ADMIN_EMAIL} (id: {admin_email_id})")
 
     except requests.exceptions.RequestException as e:
-        print(f"⚠️ Failed to send admin notification: {str(e)}")
+        error_msg = f"Admin email request failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        errors.append(error_msg)
 
-    # 3. Send quick personal notification to hb@henryhq.ai
-    personal_email_id = None
-    try:
-        type_emoji = {
-            "bug": "🐛", "feature_request": "💡", "praise": "🎉",
-            "ux_issue": "🎨", "general": "💬"
-        }.get(request.feedback_type, "💬")
-
-        user_display = request.name or "Someone"
-        personal_subject = f"{type_emoji} {user_display}: {request.feedback_summary[:50]}..."
-
-        personal_payload = {
-            "from": "Hey Henry <hb@henryhq.ai>",
-            "to": ADMIN_PERSONAL_EMAIL,
-            "subject": personal_subject,
-            "html": f"""<p><strong>{user_display}</strong> ({request.email}) submitted {request.feedback_type.replace('_', ' ')}:</p>
-<blockquote style="border-left: 3px solid #667eea; padding-left: 12px; color: #555;">{request.full_feedback or request.feedback_summary}</blockquote>
-<p style="color: #888; font-size: 12px;">Page: {request.current_page or 'Unknown'}</p>""",
-            "reply_to": request.email
-        }
-
-        response = requests.post(RESEND_API_URL, json=personal_payload, headers=headers, timeout=10)
-        response.raise_for_status()
-        personal_email_id = response.json().get("id")
-        print(f"📧 Personal notification sent to {ADMIN_PERSONAL_EMAIL} (id: {personal_email_id})")
-
-    except requests.exceptions.RequestException as e:
-        print(f"⚠️ Failed to send personal notification: {str(e)}")
-
-    # 4. Store notification for real-time Hey Henry pickup (if Supabase available)
+    # 3. Store notification for real-time Hey Henry pickup (if Supabase available)
     try:
         if supabase:
-            supabase.table("admin_notifications").insert({
+            print(f"📝 Storing notification in admin_notifications table...")
+            result = supabase.table("admin_notifications").insert({
                 "notification_type": "feedback",
                 "feedback_type": request.feedback_type,
                 "from_email": request.email,
@@ -22659,22 +22649,132 @@ async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
                 "current_page": request.current_page,
                 "read": False
             }).execute()
-            print(f"📝 Notification stored for real-time pickup")
+
+            if result.data:
+                notification_stored = True
+                print(f"✅ Notification stored for real-time pickup (id: {result.data[0].get('id', 'unknown')})")
+            else:
+                print(f"⚠️ Notification insert returned no data")
+                errors.append("Notification storage returned empty")
+        else:
+            print(f"⚠️ Supabase not available - cannot store notification for real-time pickup")
+            errors.append("Supabase not configured")
     except Exception as e:
-        print(f"⚠️ Could not store notification: {str(e)}")
+        error_msg = f"Notification storage failed: {str(e)}"
+        print(f"❌ {error_msg}")
+        errors.append(error_msg)
+
+    # Summary
+    success = user_email_id is not None or admin_email_id is not None
+    print(f"📊 Feedback acknowledgment complete: user_email={'✅' if user_email_id else '❌'}, admin_email={'✅' if admin_email_id else '❌'}, notification={'✅' if notification_stored else '❌'}")
 
     return {
-        "success": True,
-        "message": "Emails sent",
+        "success": success,
+        "message": "Feedback processed",
         "user_email_id": user_email_id,
         "admin_email_id": admin_email_id,
-        "personal_email_id": personal_email_id
+        "notification_stored": notification_stored,
+        "errors": errors if errors else None
     }
 
 
 # ============================================================================
 # ADMIN NOTIFICATIONS (Real-time Hey Henry alerts)
 # ============================================================================
+
+@app.get("/api/test/feedback-system")
+async def test_feedback_system():
+    """
+    Test endpoint to verify the feedback/notification system is working.
+    Returns status of all components: Resend API, Supabase, tables.
+
+    Call this to debug why emails or notifications aren't working.
+    """
+    results = {
+        "timestamp": datetime.now().isoformat(),
+        "resend_api": {"configured": False, "status": "unknown"},
+        "supabase": {"configured": False, "status": "unknown"},
+        "admin_notifications_table": {"exists": False, "status": "unknown"},
+        "beta_feedback_table": {"exists": False, "status": "unknown"},
+        "admin_email": ADMIN_EMAIL
+    }
+
+    # Check Resend API
+    if RESEND_API_KEY:
+        results["resend_api"]["configured"] = True
+        results["resend_api"]["key_prefix"] = RESEND_API_KEY[:8] + "..."
+        results["resend_api"]["status"] = "ready"
+    else:
+        results["resend_api"]["status"] = "MISSING - Set RESEND_API_KEY in Railway"
+
+    # Check Supabase
+    if supabase:
+        results["supabase"]["configured"] = True
+        results["supabase"]["status"] = "connected"
+
+        # Check admin_notifications table
+        try:
+            test_result = supabase.table("admin_notifications").select("id").limit(1).execute()
+            results["admin_notifications_table"]["exists"] = True
+            results["admin_notifications_table"]["status"] = "ready"
+        except Exception as e:
+            results["admin_notifications_table"]["status"] = f"ERROR: {str(e)}"
+            if "does not exist" in str(e).lower() or "42P01" in str(e):
+                results["admin_notifications_table"]["status"] = "TABLE MISSING - Run migration SQL in Supabase"
+
+        # Check beta_feedback table
+        try:
+            test_result = supabase.table("beta_feedback").select("id").limit(1).execute()
+            results["beta_feedback_table"]["exists"] = True
+            results["beta_feedback_table"]["status"] = "ready"
+        except Exception as e:
+            results["beta_feedback_table"]["status"] = f"ERROR: {str(e)}"
+            if "does not exist" in str(e).lower() or "42P01" in str(e):
+                results["beta_feedback_table"]["status"] = "TABLE MISSING - Run create_beta_feedback_table.sql in Supabase"
+    else:
+        results["supabase"]["status"] = "NOT CONNECTED - Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY"
+
+    # Overall status
+    all_ready = (
+        results["resend_api"]["configured"] and
+        results["supabase"]["configured"] and
+        results["admin_notifications_table"]["exists"] and
+        results["beta_feedback_table"]["exists"]
+    )
+    results["overall_status"] = "READY" if all_ready else "INCOMPLETE - See individual component statuses"
+
+    print(f"🔍 Feedback system test: {results['overall_status']}")
+    return results
+
+
+@app.post("/api/test/send-test-notification")
+async def send_test_notification(user_email: str = None):
+    """
+    Send a test notification through the full pipeline.
+    Only works for admin users. Creates a test feedback entry and sends emails.
+    """
+    if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"success": False, "error": "Not authorized - admin only"}
+
+    # Create a test feedback request
+    test_request = FeedbackAcknowledgmentRequest(
+        email=user_email,
+        name="Test User",
+        feedback_type="general",
+        feedback_summary="This is a test notification to verify the feedback system is working.",
+        full_feedback="This is a test notification sent via /api/test/send-test-notification to verify emails and real-time notifications are working correctly.",
+        current_page="Test Endpoint"
+    )
+
+    print(f"🧪 Sending test notification to {user_email}...")
+    result = await send_feedback_acknowledgment(test_request)
+
+    return {
+        "success": result.get("success", False),
+        "test_type": "full_pipeline",
+        "details": result
+    }
+
 
 @app.get("/api/admin/notifications")
 async def get_admin_notifications(user_email: str = None):
