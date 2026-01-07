@@ -7639,10 +7639,31 @@
         }
 
         /**
+         * Track the currently focused application for Hey Henry context
+         * Called when user interacts with an app card
+         */
+        function setFocusedApplication(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (app) {
+                sessionStorage.setItem('focusedApplication', JSON.stringify({
+                    id: app.id,
+                    company: app.company,
+                    role: app.role || app.roleTitle,
+                    status: app.status,
+                    fitScore: app.fitScore,
+                    timestamp: Date.now()
+                }));
+                console.log('Focused application set:', app.company, app.role);
+            }
+        }
+
+        /**
          * Navigate to a page with the application's analysis data loaded
          * This ensures overview, documents, outreach, etc. have the context they need
          */
         function navigateWithAnalysis(appId, targetPage) {
+            // Track this as the focused app before navigating
+            setFocusedApplication(appId);
             // Handle both string and number IDs
             const app = getApplications().find(a => String(a.id) === String(appId));
             if (!app) {
@@ -11477,6 +11498,23 @@ Thanks so much!
             }
             // Re-render the applications
             renderApplications(getApplications());
+        });
+
+        // Track focused application when user interacts with cards (for Hey Henry context)
+        document.addEventListener('click', function(e) {
+            // Check if clicking on an app card or its children
+            const card = e.target.closest('.app-card, .app-card-v2, .priority-item, [data-id]');
+            if (card && card.dataset.id) {
+                setFocusedApplication(card.dataset.id);
+            }
+        });
+
+        // Also track on focus (keyboard navigation)
+        document.addEventListener('focusin', function(e) {
+            const card = e.target.closest('.app-card-v2[data-id]');
+            if (card && card.dataset.id) {
+                setFocusedApplication(card.dataset.id);
+            }
         });
     </script>
 <script src="js/supabase-client.js"></script>

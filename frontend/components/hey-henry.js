@@ -1182,6 +1182,55 @@
         });
     }
 
+    // Compress image file before upload (for screenshots)
+    function compressImage(file, maxWidth = 1200, quality = 0.7) {
+        return new Promise((resolve, reject) => {
+            // If not an image, return as-is
+            if (!file.type.startsWith('image/')) {
+                resolve(file);
+                return;
+            }
+
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            img.onload = () => {
+                // Calculate new dimensions
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Draw and compress
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to base64 with compression
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                console.log(`📸 Image compressed: ${(file.size / 1024).toFixed(1)}KB → ${(compressedBase64.length * 0.75 / 1024).toFixed(1)}KB`);
+                resolve(compressedBase64);
+            };
+
+            img.onerror = () => {
+                console.error('Failed to load image for compression');
+                // Fall back to regular base64
+                fileToBase64(file).then(resolve).catch(reject);
+            };
+
+            // Load the image
+            const reader = new FileReader();
+            reader.onload = (e) => { img.src = e.target.result; };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
     // Default tooltip messages (used when no context available)
     const defaultTooltipMessages = [
         "Got questions?",
@@ -3412,6 +3461,26 @@ ${confidenceClosing}`,
                 };
             }
 
+            // Check for focused application (set by tracker.html when user clicks a card)
+            const focusedApp = JSON.parse(sessionStorage.getItem('focusedApplication') || 'null');
+            if (focusedApp && focusedApp.company) {
+                // Only use if recent (within last 10 minutes)
+                const age = Date.now() - (focusedApp.timestamp || 0);
+                if (age < 10 * 60 * 1000) {
+                    // Get full app data if available
+                    const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                    const fullApp = trackedApps.find(a => String(a.id) === String(focusedApp.id));
+                    return {
+                        id: focusedApp.id,
+                        company: focusedApp.company,
+                        role: focusedApp.role,
+                        status: focusedApp.status,
+                        source: 'focused',
+                        fullApp: fullApp || focusedApp
+                    };
+                }
+            }
+
             // Try to get from URL parameters or page context
             const urlParams = new URLSearchParams(window.location.search);
             const appId = urlParams.get('id') || urlParams.get('app');
@@ -3747,12 +3816,13 @@ Page: ${context.name} (${window.location.href})`;
 
             const context = getPageContext();
 
-            // Handle screenshot if present
+            // Handle screenshot if present - compress to reduce payload size
             let screenshotData = null;
             if (pendingFeedback?.screenshot) {
                 try {
-                    screenshotData = await fileToBase64(pendingFeedback.screenshot);
-                    console.log('📸 Screenshot attached to feedback');
+                    // Compress screenshots to avoid payload size issues
+                    screenshotData = await compressImage(pendingFeedback.screenshot, 1200, 0.7);
+                    console.log('📸 Screenshot compressed and attached to feedback');
                 } catch (e) {
                     console.error('Failed to process screenshot:', e);
                 }
@@ -3763,7 +3833,7 @@ Page: ${context.name} (${window.location.href})`;
                 // Build scope info if available from pendingFeedback
                 const scopeInfo = pendingFeedback?.scope || null;
 
-                const result = await HenryData.saveFeedback({
+                let result = await HenryData.saveFeedback({
                     type: feedbackType,
                     text: feedbackText,
                     currentPage: context.name,
@@ -3779,6 +3849,27 @@ Page: ${context.name} (${window.location.href})`;
                     conversationSnippet: conversationSnippet,
                     screenshot: screenshotData
                 });
+
+                // If save failed and we had a screenshot, try again without it
+                if (result.error && screenshotData) {
+                    console.warn('⚠️ Feedback save failed with screenshot, retrying without it...');
+                    result = await HenryData.saveFeedback({
+                        type: feedbackType,
+                        text: feedbackText + '\n\n[Screenshot could not be attached due to size limits]',
+                        currentPage: context.name,
+                        context: {
+                            pageDescription: context.description,
+                            url: window.location.href,
+                            userAgent: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            hasScreenshot: false,
+                            screenshotFailed: true,
+                            scope: scopeInfo
+                        },
+                        conversationSnippet: conversationSnippet,
+                        screenshot: null
+                    });
+                }
 
                 // Send acknowledgment email if feedback was saved successfully
                 if (!result.error && typeof HenryAuth !== 'undefined') {
@@ -4949,6 +5040,10 @@ Page: ${context.name} (${window.location.href})`;
             const userName = getUserName();
             const emotionalState = getUserEmotionalState();
 
+            // Check for focused application (from Command Center interactions)
+            const focusedApp = JSON.parse(sessionStorage.getItem('focusedApplication') || 'null');
+            const focusedAppContext = focusedApp && (Date.now() - (focusedApp.timestamp || 0)) < 10 * 60 * 1000 ? focusedApp : null;
+
             // Gather generated content - Henry is the AUTHOR of these
             const documentsData = getDocumentsData();
             const outreachData = getOutreachData();
@@ -4999,9 +5094,16 @@ Page: ${context.name} (${window.location.href})`;
                     context: {
                         current_page: context.name,
                         page_description: context.description,
-                        company: analysisData._company_name || analysisData.company || null,
-                        role: analysisData.role_title || analysisData.role || null,
+                        company: analysisData._company_name || analysisData.company || focusedAppContext?.company || null,
+                        role: analysisData.role_title || analysisData.role || focusedAppContext?.role || null,
                         has_analysis: !!analysisData._company_name,
+                        // Focused application from Command Center (if any)
+                        focused_app: focusedAppContext ? {
+                            company: focusedAppContext.company,
+                            role: focusedAppContext.role,
+                            status: focusedAppContext.status,
+                            fitScore: focusedAppContext.fitScore
+                        } : null,
                         has_resume: !!resumeData.name,
                         has_pipeline: !!pipelineData,
                         user_name: userName,

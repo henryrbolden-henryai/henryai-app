@@ -19627,6 +19627,14 @@ Format as plain text, preserving the structure. Be thorough - capture every piec
 # ASK HENRY - FLOATING CHAT ASSISTANT
 # ============================================================================
 
+class HeyHenryFocusedApp(BaseModel):
+    """Information about the application the user is currently focused on."""
+    company: str
+    role: Optional[str] = None
+    status: Optional[str] = None
+    fitScore: Optional[int] = None
+
+
 class HeyHenryContext(BaseModel):
     """Context about where the user is in the app."""
     current_page: str
@@ -19638,6 +19646,8 @@ class HeyHenryContext(BaseModel):
     has_pipeline: bool = False
     has_attachments: bool = False
     user_name: Optional[str] = None
+    # Focused application from Command Center (if user clicked on a card)
+    focused_app: Optional[HeyHenryFocusedApp] = None
     # Emotional state fields (from frontend)
     emotional_state: Optional[str] = None  # zen, stressed, struggling, desperate, crushed
     confidence_level: Optional[str] = None  # low, need_validation, shaky, strong
@@ -19829,6 +19839,19 @@ ANALYSIS DATA AVAILABLE:
 RESUME DATA:
 - Candidate Name: {body.resume_data.get('name', 'Unknown')}
 - Current/Recent Role: {body.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if body.resume_data.get('experience') else 'Unknown'}
+"""
+
+    # Add focused application context if available (from Command Center interactions)
+    if body.context.focused_app:
+        fa = body.context.focused_app
+        analysis_context += f"""
+CURRENTLY FOCUSED APPLICATION (user clicked on this in Command Center):
+- Company: {fa.company}
+- Role: {fa.role or 'Unknown'}
+- Status: {fa.status or 'Unknown'}
+- Fit Score: {fa.fitScore or 'N/A'}%
+
+When the user mentions "this application", "this job", "this company", or similar, they are referring to the {fa.company} - {fa.role or 'Unknown'} application above.
 """
 
     # Build pipeline context from pipeline data
