@@ -22793,11 +22793,12 @@ async def get_admin_notifications(user_email: str = None):
         return {"notifications": [], "is_admin": True, "error": "Database not available"}
 
     try:
+        # Get unresolved notifications (both read and unread, but not resolved)
         result = supabase.table("admin_notifications") \
             .select("*") \
-            .eq("read", False) \
+            .or_("resolved.is.null,resolved.eq.false") \
             .order("created_at", desc=True) \
-            .limit(10) \
+            .limit(20) \
             .execute()
 
         return {
@@ -22855,6 +22856,181 @@ async def mark_all_notifications_read(user_email: str = None):
     except Exception as e:
         print(f"⚠️ Error marking all notifications read: {str(e)}")
         return {"success": False, "error": str(e)}
+
+
+@app.post("/api/admin/notifications/{notification_id}/resolve")
+async def mark_notification_resolved(notification_id: str, user_email: str = None):
+    """
+    Mark a notification as resolved (removes from active list).
+    Only works if the requesting user is an admin.
+    """
+    if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"success": False, "error": "Not authorized"}
+
+    if not supabase:
+        return {"success": False, "error": "Database not available"}
+
+    try:
+        supabase.table("admin_notifications") \
+            .update({
+                "read": True,
+                "resolved": True,
+                "resolved_at": datetime.now().isoformat()
+            }) \
+            .eq("id", notification_id) \
+            .execute()
+
+        return {"success": True}
+    except Exception as e:
+        print(f"⚠️ Error resolving notification: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+class AdminReplyRequest(BaseModel):
+    admin_email: str
+    reply_text: str
+    to_email: str
+    to_name: Optional[str] = None
+
+
+@app.post("/api/admin/notifications/{notification_id}/reply")
+async def reply_to_notification(notification_id: str, request: AdminReplyRequest):
+    """
+    Send a reply email to the user who submitted feedback.
+    - Sends email to user
+    - BCCs admin
+    - Records reply in database for tracking
+    """
+    # Verify admin
+    if request.admin_email.lower() != ADMIN_USER_EMAIL.lower():
+        return {"success": False, "error": "Not authorized"}
+
+    if not RESEND_API_KEY:
+        return {"success": False, "error": "Email service not configured"}
+
+    print(f"📧 Admin replying to {request.to_email} for notification {notification_id}")
+
+    headers = {
+        "Authorization": f"Bearer {RESEND_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    # Get notification details for context
+    notification_data = None
+    if supabase:
+        try:
+            result = supabase.table("admin_notifications") \
+                .select("*") \
+                .eq("id", notification_id) \
+                .single() \
+                .execute()
+            notification_data = result.data
+        except Exception as e:
+            print(f"⚠️ Could not fetch notification: {e}")
+
+    # Build email
+    to_display = request.to_name or request.to_email.split('@')[0]
+    feedback_type = notification_data.get('feedback_type', 'feedback') if notification_data else 'feedback'
+    original_message = notification_data.get('full_content') or notification_data.get('summary', '') if notification_data else ''
+
+    # Determine subject based on feedback type
+    subject_prefix = {
+        'bug': 'Re: Your bug report',
+        'feature_request': 'Re: Your feature suggestion',
+        'ux_issue': 'Re: Your UX feedback',
+        'praise': 'Re: Thanks for the kind words!',
+        'meeting_request': 'Re: Your meeting request',
+        'general': 'Re: Your feedback'
+    }.get(feedback_type, 'Re: Your feedback')
+
+    subject = f"{subject_prefix} - HenryHQ"
+
+    # Build HTML email
+    html = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background-color: #0a0a0a;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #111111; border: 1px solid #222222; border-radius: 12px; padding: 32px;">
+                    <tr>
+                        <td>
+                            <p style="margin: 0 0 16px; font-size: 16px; color: #9ca3af;">Hi {to_display},</p>
+
+                            <div style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #e5e7eb; white-space: pre-wrap;">{request.reply_text}</div>
+
+                            {f'''<div style="margin: 24px 0; padding: 16px; background-color: #0a0a0a; border-left: 3px solid #667eea; border-radius: 4px;">
+                                <p style="margin: 0 0 8px; font-size: 12px; color: #6b7280; text-transform: uppercase;">Your original message:</p>
+                                <p style="margin: 0; font-size: 14px; color: #9ca3af; font-style: italic;">"{original_message[:300]}{"..." if len(original_message) > 300 else ""}"</p>
+                            </div>''' if original_message else ''}
+
+                            <p style="margin: 24px 0 0; font-size: 14px; color: #9ca3af;">
+                                Best,<br>
+                                <strong style="color: #ffffff;">Henry</strong><br>
+                                <span style="color: #6b7280;">HenryHQ</span>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+                <table width="600" cellpadding="0" cellspacing="0" style="margin-top: 16px;">
+                    <tr>
+                        <td style="text-align: center; font-size: 12px; color: #4b5563;">
+                            HenryHQ | Strategic job search intelligence
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>"""
+
+    email_id = None
+    try:
+        payload = {
+            "from": "Henry <hb@henryhq.ai>",
+            "to": request.to_email,
+            "bcc": ADMIN_EMAIL,  # BCC admin on all replies
+            "subject": subject,
+            "html": html,
+            "reply_to": "hb@henryhq.ai"
+        }
+
+        response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
+
+        if response.status_code != 200:
+            print(f"❌ Resend API error: {response.status_code} - {response.text}")
+            return {"success": False, "error": f"Email failed: {response.status_code}"}
+
+        email_id = response.json().get("id")
+        print(f"✅ Reply sent to {request.to_email} (id: {email_id})")
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Reply email failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+    # Record reply in database
+    if supabase:
+        try:
+            supabase.table("admin_notifications") \
+                .update({
+                    "replied_at": datetime.now().isoformat(),
+                    "reply_text": request.reply_text,
+                    "reply_email_id": email_id
+                }) \
+                .eq("id", notification_id) \
+                .execute()
+            print(f"📝 Reply recorded in database")
+        except Exception as e:
+            print(f"⚠️ Could not record reply: {e}")
+
+    return {
+        "success": True,
+        "email_id": email_id,
+        "message": f"Reply sent to {request.to_email}"
+    }
 
 
 @app.delete("/api/linkedin/profile")

@@ -3274,6 +3274,18 @@ ${confidenceClosing}`,
         'so helpful', 'super helpful', 'really appreciate'
     ];
 
+    // Triggers that indicate user wants to speak with a human/schedule a meeting
+    const MEETING_REQUEST_TRIGGERS = [
+        'talk to someone', 'speak with someone', 'speak to someone',
+        'talk to a human', 'speak with a human', 'talk to a person',
+        'schedule a call', 'schedule a meeting', 'book a call',
+        'can i talk to', 'can i speak with', 'can i meet with',
+        'want to talk', 'need to talk', 'like to talk',
+        'real person', 'actual person', 'human help',
+        'career coach', 'career counselor', 'meet with henry',
+        'call with you', 'chat with you', 'meeting with you'
+    ];
+
     // Simple acknowledgments that should NOT trigger feedback flow
     const SIMPLE_ACKNOWLEDGMENTS = [
         'thank you for letting me know', 'thanks for letting me know',
@@ -3282,6 +3294,9 @@ ${confidenceClosing}`,
         'got it', 'okay', 'ok thanks', 'ok thank you',
         'sounds good', 'perfect', 'great thanks', 'understood'
     ];
+
+    // State for meeting request flow
+    let pendingMeetingRequest = null;
 
     // State for feedback flow
     let pendingFeedback = null;
@@ -3301,6 +3316,75 @@ ${confidenceClosing}`,
         }
 
         return FEEDBACK_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+    }
+
+    function detectMeetingRequestIntent(message) {
+        const lowerMessage = message.toLowerCase();
+        return MEETING_REQUEST_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+    }
+
+    async function submitMeetingRequest(reason) {
+        try {
+            const context = getPageContext();
+            const conversationSnippet = conversationHistory.slice(-6).map(m => ({
+                role: m.role,
+                content: m.content.substring(0, 500)
+            }));
+
+            // Get user info
+            let userEmail = 'anonymous';
+            let userName = null;
+            if (typeof HenryAuth !== 'undefined') {
+                try {
+                    const user = await HenryAuth.getUser();
+                    userEmail = user?.email || 'anonymous';
+                    const nameData = await HenryAuth.getUserName();
+                    userName = nameData?.firstName && nameData.firstName !== 'there' ? nameData.firstName : null;
+                } catch (e) {
+                    console.warn('Could not get user info:', e);
+                }
+            }
+
+            // Save to database via feedback mechanism
+            if (typeof HenryData !== 'undefined' && HenryData.saveFeedback) {
+                await HenryData.saveFeedback({
+                    type: 'meeting_request',
+                    text: reason,
+                    currentPage: context.name,
+                    context: {
+                        pageDescription: context.description,
+                        url: window.location.href,
+                        timestamp: new Date().toISOString()
+                    },
+                    conversationSnippet: conversationSnippet
+                });
+            }
+
+            // Create admin notification
+            const recentConvo = conversationHistory.slice(-6).map(m =>
+                `${m.role === 'user' ? 'User' : 'Henry'}: ${m.content.substring(0, 300)}`
+            ).join('\n\n');
+
+            await fetch(`${API_BASE}/api/send-feedback-acknowledgment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: userEmail,
+                    name: userName,
+                    feedback_type: 'meeting_request',
+                    feedback_summary: reason.substring(0, 100),
+                    full_feedback: reason,
+                    current_page: context.name || window.location.pathname,
+                    conversation_context: recentConvo
+                })
+            });
+
+            console.log('📅 Meeting request submitted');
+            return { success: true };
+        } catch (error) {
+            console.error('Error submitting meeting request:', error);
+            return { success: false, error: error.message };
+        }
     }
 
     function getFollowUpQuestion(feedbackType, originalMessage) {
@@ -4223,6 +4307,39 @@ ${confidenceClosing}`,
                 addMessage('assistant', helpMessage);
                 conversationHistory.push({ role: 'assistant', content: helpMessage });
                 saveConversationHistory();
+                isLoading = false;
+                return;
+            }
+
+            // Check for meeting request intent
+            if (detectMeetingRequestIntent(message) && !pendingMeetingRequest) {
+                pendingMeetingRequest = { text: message };
+                removeTypingIndicator();
+
+                const meetingPrompt = "I'd be happy to connect you with Henry directly. To make sure he can help you best, could you tell me briefly what you'd like to discuss? For example:\n\n• Career strategy questions\n• Resume or positioning feedback\n• Interview preparation\n• General job search guidance";
+                addMessage('assistant', meetingPrompt);
+                conversationHistory.push({ role: 'assistant', content: meetingPrompt });
+                saveConversationHistory();
+                isLoading = false;
+                return;
+            }
+
+            // Handle meeting request follow-up (user provided reason)
+            if (pendingMeetingRequest && message.length > 10) {
+                removeTypingIndicator();
+                pendingMeetingRequest.reason = message;
+
+                // Submit the meeting request
+                const result = await submitMeetingRequest(`Meeting Request: ${pendingMeetingRequest.text}\n\nReason: ${message}`);
+
+                const confirmMessage = result.success
+                    ? "Got it! I've sent your meeting request to Henry. He typically responds within 24 hours. In the meantime, is there anything else I can help you with?"
+                    : "I had trouble sending the request, but don't worry - you can email Henry directly at hb@henryhq.ai. Is there anything else I can help with?";
+
+                addMessage('assistant', confirmMessage);
+                conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                saveConversationHistory();
+                pendingMeetingRequest = null;
                 isLoading = false;
                 return;
             }

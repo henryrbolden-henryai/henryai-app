@@ -54,7 +54,8 @@
       "Bash(~/.local/bin/railway up:*)",
       "Bash(npx @railway/cli:*)",
       "Bash(brew list:*)",
-      "Bash(/opt/homebrew/bin/railway:*)"
+      "Bash(/opt/homebrew/bin/railway:*)",
+      "Bash(git remote set-url:*)"
     ],
     "deny": [],
     "ask": []
