@@ -2268,6 +2268,7 @@ ${confidenceClosing}`,
 
         const contexts = {
             'index': { name: 'Home', description: 'Getting started with HenryHQ' },
+            'dashboard': { name: 'Dashboard', description: 'Your job search command center' },
             'analyze': { name: 'Job Analysis', description: 'Analyzing a new job posting' },
             'results': { name: 'Analysis Results', description: 'Reviewing job match analysis' },
             'overview': { name: 'Strategy Overview', description: 'Viewing your application strategy' },
@@ -2277,9 +2278,17 @@ ${confidenceClosing}`,
             'interview-intelligence': { name: 'Interview Intelligence', description: 'Preparing for interviews' },
             'prep-guide': { name: 'Interview Prep', description: 'Reviewing interview prep guide' },
             'interview-debrief': { name: 'Interview Debrief', description: 'Debriefing after an interview' },
+            'interview-prep': { name: 'Interview Prep', description: 'Preparing for upcoming interviews' },
             'mock-interview': { name: 'Mock Interview', description: 'Practicing interview skills' },
-            'tracker': { name: 'Application Tracker', description: 'Managing job applications' },
-            'profile-edit': { name: 'Profile', description: 'Editing your profile' }
+            'mock-debrief': { name: 'Mock Debrief', description: 'Reviewing mock interview performance' },
+            'tracker': { name: 'Command Center', description: 'Managing job applications' },
+            'profile-edit': { name: 'Profile', description: 'Editing your profile' },
+            'profile': { name: 'Profile', description: 'Viewing your profile' },
+            'story-bank': { name: 'Story Bank', description: 'Managing your behavioral stories' },
+            'resume-builder': { name: 'Resume Builder', description: 'Building your resume' },
+            'linkedin-upload': { name: 'LinkedIn Upload', description: 'Uploading LinkedIn data' },
+            'linkedin-analysis': { name: 'LinkedIn Analysis', description: 'Analyzing LinkedIn network' },
+            'strengthen': { name: 'Strengthen Resume', description: 'Improving your resume' }
         };
 
         const context = contexts[page] || { name: 'HenryHQ', description: 'Your personal job search guide' };
@@ -3259,9 +3268,19 @@ ${confidenceClosing}`,
         // Complaints/confusion
         'confusing', 'confused', 'don\'t understand', 'unclear', 'hard to use',
         'frustrating', 'annoying', 'wrong', 'incorrect',
-        // Praise (also valuable)
-        'love this', 'great feature', 'really helpful', 'awesome', 'works great',
-        'thank you', 'thanks for', 'amazing'
+        // Praise (only specific praise phrases, not simple acknowledgments)
+        'love this', 'love henry', 'love the', 'great feature', 'really helpful',
+        'awesome feature', 'works great', 'this is amazing', 'you are amazing',
+        'so helpful', 'super helpful', 'really appreciate'
+    ];
+
+    // Simple acknowledgments that should NOT trigger feedback flow
+    const SIMPLE_ACKNOWLEDGMENTS = [
+        'thank you for letting me know', 'thanks for letting me know',
+        'thank you for the info', 'thanks for the info',
+        'thank you for telling me', 'thanks for telling me',
+        'got it', 'okay', 'ok thanks', 'ok thank you',
+        'sounds good', 'perfect', 'great thanks', 'understood'
     ];
 
     // State for feedback flow
@@ -3270,6 +3289,17 @@ ${confidenceClosing}`,
 
     function detectFeedbackIntent(message) {
         const lowerMessage = message.toLowerCase();
+
+        // First check if this is a simple acknowledgment - don't trigger feedback flow
+        if (SIMPLE_ACKNOWLEDGMENTS.some(ack => lowerMessage.includes(ack))) {
+            return false;
+        }
+
+        // Short thank-you messages are usually acknowledgments, not feedback
+        if (lowerMessage.length < 40 && (lowerMessage.includes('thank') || lowerMessage.includes('thanks'))) {
+            return false;
+        }
+
         return FEEDBACK_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
     }
 
