@@ -3300,7 +3300,7 @@ ${confidenceClosing}`,
 
     // State for feedback flow
     let pendingFeedback = null;
-    let feedbackFlowState = null; // 'awaiting_details' | 'awaiting_confirmation' | null
+    let feedbackFlowState = null; // 'awaiting_details' | 'awaiting_scope' | 'awaiting_confirmation' | null
 
     function detectFeedbackIntent(message) {
         const lowerMessage = message.toLowerCase();
@@ -3495,6 +3495,9 @@ ${confidenceClosing}`,
 
             // Use HenryData if available, otherwise store locally
             if (typeof HenryData !== 'undefined' && HenryData.saveFeedback) {
+                // Build scope info if available from pendingFeedback
+                const scopeInfo = pendingFeedback?.scope || null;
+
                 const result = await HenryData.saveFeedback({
                     type: feedbackType,
                     text: feedbackText,
@@ -3504,7 +3507,9 @@ ${confidenceClosing}`,
                         url: window.location.href,
                         userAgent: navigator.userAgent,
                         timestamp: new Date().toISOString(),
-                        hasScreenshot: !!screenshotData
+                        hasScreenshot: !!screenshotData,
+                        // Include scope data for bugs
+                        scope: scopeInfo
                     },
                     conversationSnippet: conversationSnippet,
                     screenshot: screenshotData
@@ -3536,6 +3541,8 @@ ${confidenceClosing}`,
                                     feedback_summary: feedbackText.substring(0, 100),
                                     full_feedback: feedbackText,
                                     current_page: context.name || window.location.pathname,
+                                    page_url: window.location.href,
+                                    scope: scopeInfo,
                                     conversation_context: recentConvo
                                 })
                             }).then(response => {
@@ -4258,18 +4265,31 @@ ${confidenceClosing}`,
         try {
             // Handle ongoing feedback flow - user is providing additional details
             if (feedbackFlowState === 'awaiting_details' && pendingFeedback) {
-                // User provided follow-up details - append to feedback and ask for confirmation
+                // User provided follow-up details - append to feedback
                 pendingFeedback.details = message;
                 pendingFeedback.text = `${pendingFeedback.text}\n\nAdditional context: ${message}`;
-                feedbackFlowState = 'awaiting_confirmation';
 
                 removeTypingIndicator();
 
+                // For bugs, ask about scope (which pages affected)
+                if (pendingFeedback.type === 'bug') {
+                    feedbackFlowState = 'awaiting_scope';
+                    const pageContext = getPageContext();
+                    const currentPageName = pageContext.name || 'this page';
+                    const scopeQuestion = `Got it! Quick question to help the team narrow this down faster:\n\nIs this issue only happening on **${currentPageName}**, or have you seen it on other pages too?`;
+                    addMessage('assistant', scopeQuestion);
+                    conversationHistory.push({ role: 'assistant', content: scopeQuestion });
+                    saveConversationHistory();
+                    isLoading = false;
+                    return;
+                }
+
+                // For non-bugs, go straight to confirmation
+                feedbackFlowState = 'awaiting_confirmation';
+
                 // Now ask for confirmation to send
                 let confirmMessage;
-                if (pendingFeedback.type === 'bug') {
-                    confirmMessage = "Got it, that's really helpful. Would you like me to send this to the team so they can look into it?";
-                } else if (pendingFeedback.type === 'feature_request') {
+                if (pendingFeedback.type === 'feature_request') {
                     confirmMessage = "That makes sense! Would you like me to pass this along to the Henry team?";
                 } else if (pendingFeedback.type === 'praise') {
                     confirmMessage = "Love it! Would you like me to share this with the team? They'll appreciate hearing it.";
@@ -4277,6 +4297,62 @@ ${confidenceClosing}`,
                     confirmMessage = "Thanks for the context. Would you like me to send this to the team?";
                 }
 
+                addMessage('assistant', confirmMessage);
+                conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                saveConversationHistory();
+                addFeedbackConfirmation(pendingFeedback.type);
+                isLoading = false;
+                return;
+            }
+
+            // Handle scope question response for bugs
+            if (feedbackFlowState === 'awaiting_scope' && pendingFeedback) {
+                const lowerResponse = message.toLowerCase();
+
+                // Parse the user's response about scope
+                const isMultiplePages = lowerResponse.includes('multiple') ||
+                    lowerResponse.includes('other pages') ||
+                    lowerResponse.includes('other sections') ||
+                    lowerResponse.includes('everywhere') ||
+                    lowerResponse.includes('both') ||
+                    lowerResponse.includes('all') ||
+                    lowerResponse.includes('several') ||
+                    lowerResponse.includes('different page');
+
+                const isThisPageOnly = lowerResponse.includes('just this') ||
+                    lowerResponse.includes('only this') ||
+                    lowerResponse.includes('only here') ||
+                    lowerResponse.includes('just here') ||
+                    lowerResponse.includes('this page only') ||
+                    lowerResponse.includes('just on this');
+
+                // Capture the current page URL
+                const currentUrl = window.location.href;
+                const pageContext = getPageContext();
+
+                // Store scope info
+                pendingFeedback.scope = {
+                    currentPage: pageContext.name,
+                    currentUrl: currentUrl,
+                    affectsMultiplePages: isMultiplePages,
+                    affectsThisPageOnly: isThisPageOnly,
+                    userResponse: message
+                };
+
+                // Append scope info to feedback text
+                if (isMultiplePages) {
+                    pendingFeedback.text = `${pendingFeedback.text}\n\nScope: Affects MULTIPLE pages\nUser noted: ${message}\nReported from: ${pageContext.name} (${currentUrl})`;
+                } else if (isThisPageOnly) {
+                    pendingFeedback.text = `${pendingFeedback.text}\n\nScope: ${pageContext.name} only\nPage URL: ${currentUrl}`;
+                } else {
+                    // User gave a specific answer - include their exact response
+                    pendingFeedback.text = `${pendingFeedback.text}\n\nScope: ${message}\nReported from: ${pageContext.name} (${currentUrl})`;
+                }
+
+                removeTypingIndicator();
+                feedbackFlowState = 'awaiting_confirmation';
+
+                const confirmMessage = "Got it, that's really helpful! Would you like me to send this to the team so they can look into it?";
                 addMessage('assistant', confirmMessage);
                 conversationHistory.push({ role: 'assistant', content: confirmMessage });
                 saveConversationHistory();

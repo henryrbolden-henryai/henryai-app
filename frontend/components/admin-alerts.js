@@ -387,6 +387,62 @@
             color: #888;
         }
 
+        .admin-alert-url-box {
+            background: #1a1a2e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .admin-alert-url-label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .admin-alert-url-link {
+            color: #60a5fa;
+            font-size: 13px;
+            text-decoration: none;
+            word-break: break-all;
+            display: block;
+        }
+
+        .admin-alert-url-link:hover {
+            text-decoration: underline;
+            color: #93c5fd;
+        }
+
+        .admin-alert-scope-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .admin-alert-scope-box.multi-page {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .admin-alert-scope-label {
+            font-size: 11px;
+            color: #f59e0b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .admin-alert-scope-text {
+            font-size: 13px;
+            color: #fcd34d;
+        }
+
         .admin-alert-success {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.3);
@@ -548,6 +604,67 @@
         renderNotificationDetail();
     }
 
+    // Helper to extract and display page URL
+    function getPageUrlHtml(notification) {
+        // Try to get URL from context or full_content
+        let pageUrl = null;
+
+        // Check if URL is in the full_content (from the scope info we added)
+        if (notification.full_content) {
+            const urlMatch = notification.full_content.match(/Page URL: (https?:\/\/[^\s\n]+)/);
+            if (urlMatch) {
+                pageUrl = urlMatch[1];
+            } else {
+                // Try alternate format
+                const altMatch = notification.full_content.match(/Reported from: [^(]+\((https?:\/\/[^)]+)\)/);
+                if (altMatch) {
+                    pageUrl = altMatch[1];
+                }
+            }
+        }
+
+        if (!pageUrl) return '';
+
+        return `
+            <div class="admin-alert-url-box">
+                <div class="admin-alert-url-label">🔗 Page URL</div>
+                <a href="${pageUrl}" target="_blank" class="admin-alert-url-link">${pageUrl}</a>
+            </div>
+        `;
+    }
+
+    // Helper to extract and display scope info for bugs
+    function getScopeInfoHtml(notification) {
+        if (notification.feedback_type !== 'bug') return '';
+
+        // Check for scope info in content
+        if (!notification.full_content) return '';
+
+        const isMultiPage = notification.full_content.includes('Scope: Affects MULTIPLE pages') ||
+            notification.full_content.includes('multiple') ||
+            notification.full_content.includes('both pages');
+
+        // Extract user's scope response
+        const userNoteMatch = notification.full_content.match(/User noted: ([^\n]+)/);
+        const scopeMatch = notification.full_content.match(/Scope: ([^\n]+)/);
+
+        let scopeText = '';
+        if (userNoteMatch) {
+            scopeText = userNoteMatch[1];
+        } else if (scopeMatch) {
+            scopeText = scopeMatch[1];
+        }
+
+        if (!scopeText) return '';
+
+        return `
+            <div class="admin-alert-scope-box ${isMultiPage ? 'multi-page' : ''}">
+                <div class="admin-alert-scope-label">${isMultiPage ? '⚠️ Multiple Pages Affected' : '📍 Scope'}</div>
+                <div class="admin-alert-scope-text">${scopeText}</div>
+            </div>
+        `;
+    }
+
     // Render notification detail
     function renderNotificationDetail() {
         const detailContainer = document.querySelector('.admin-alert-detail');
@@ -576,6 +693,9 @@
                 <span>📍 ${n.current_page || 'Unknown page'}</span>
                 <span>🕐 ${formatRelativeTime(n.created_at)}</span>
             </div>
+
+            ${getPageUrlHtml(n)}
+            ${getScopeInfoHtml(n)}
 
             ${n.screenshot_url ? `
                 <div class="admin-alert-screenshot">

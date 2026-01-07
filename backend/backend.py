@@ -22309,9 +22309,11 @@ class FeedbackAcknowledgmentRequest(BaseModel):
     name: Optional[str] = None
     feedback_type: str  # bug, feature_request, praise, ux_issue, general
     feedback_summary: str  # First ~100 chars of feedback
-    current_page: Optional[str] = None  # What page they were on
+    current_page: Optional[str] = None  # What page they were on (friendly name)
+    page_url: Optional[str] = None  # Full URL of the page
     full_feedback: Optional[str] = None  # Full feedback text for admin
     conversation_context: Optional[str] = None  # Recent conversation for context
+    scope: Optional[dict] = None  # For bugs: which pages are affected
 
 
 # Admin notification emails (consolidated to single recipient)
@@ -22467,6 +22469,7 @@ def get_feedback_email_content(feedback_type: str, feedback_summary: str, name: 
 def get_admin_notification_email(request: FeedbackAcknowledgmentRequest):
     """
     Creates an admin notification email with full feedback details.
+    Now includes page URL and scope information for bugs.
     """
     type_labels = {
         "bug": "🐛 Bug Report",
@@ -22488,6 +22491,44 @@ def get_admin_notification_email(request: FeedbackAcknowledgmentRequest):
     full_feedback = escape_html(request.full_feedback or request.feedback_summary)
     conversation = escape_html(request.conversation_context) if request.conversation_context else "No conversation context"
     current_page = request.current_page or "Unknown"
+    page_url = request.page_url or None
+
+    # Build scope info section for bugs
+    scope_html = ""
+    if request.feedback_type == "bug" and request.scope:
+        scope = request.scope
+        is_multi_page = scope.get("affectsMultiplePages", False)
+        scope_text = scope.get("userResponse", "")
+
+        if is_multi_page:
+            scope_html = f"""
+                    <tr>
+                        <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
+                            <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
+                                <strong style="color: #b45309; font-size: 12px; text-transform: uppercase;">⚠️ AFFECTS MULTIPLE PAGES</strong>
+                                <p style="margin: 4px 0 0; font-size: 14px; color: #92400e;">{escape_html(scope_text)}</p>
+                            </div>
+                        </td>
+                    </tr>"""
+        elif scope_text:
+            scope_html = f"""
+                    <tr>
+                        <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Scope</strong>
+                            <p style="margin: 4px 0 0; font-size: 14px; color: #333;">{escape_html(scope_text)}</p>
+                        </td>
+                    </tr>"""
+
+    # Build page URL section
+    page_url_html = ""
+    if page_url:
+        page_url_html = f"""
+                    <tr>
+                        <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
+                            <strong style="color: #666; font-size: 12px; text-transform: uppercase;">🔗 Page URL</strong>
+                            <p style="margin: 4px 0 0; font-size: 14px;"><a href="{page_url}" style="color: #667eea; text-decoration: none;">{page_url}</a></p>
+                        </td>
+                    </tr>"""
 
     subject = f"{type_label} from {user_display}"
 
@@ -22521,6 +22562,8 @@ def get_admin_notification_email(request: FeedbackAcknowledgmentRequest):
                             <p style="margin: 4px 0 0; font-size: 14px; color: #333;">{current_page}</p>
                         </td>
                     </tr>
+                    {page_url_html}
+                    {scope_html}
                     <tr>
                         <td style="padding: 16px 0; border-bottom: 1px solid #eee;">
                             <strong style="color: #666; font-size: 12px; text-transform: uppercase;">Feedback</strong>
