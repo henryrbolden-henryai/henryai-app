@@ -2374,6 +2374,20 @@
                         console.error('Error loading from Supabase:', err);
                     }
                 }
+
+                // Listen for Hey Henry data corrections to auto-refresh the dashboard
+                window.addEventListener('henryDataCorrected', async (event) => {
+                    console.log('=== HEY HENRY DATA CORRECTED (dashboard) ===', event.detail);
+                    // Re-fetch from Supabase to get fresh data
+                    if (typeof HenryData !== 'undefined') {
+                        const apps = await HenryData.getApplications(true); // Force refresh
+                        if (apps) {
+                            dashboardAppsCache = apps;
+                            localStorage.setItem('trackedApplications', JSON.stringify(apps));
+                            renderDashboard();
+                        }
+                    }
+                });
             }
         })();
     </script>

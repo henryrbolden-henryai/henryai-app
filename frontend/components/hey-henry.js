@@ -3899,11 +3899,20 @@ Page: ${context.name} (${window.location.href})`;
                 // Log it as an auto-fixed bug
                 await logAutoFixedBug(pendingDataCorrection, pendingDataCorrection.appContext, result);
 
-                addMessage('assistant', `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". The page will reflect the change when you refresh. Is there anything else I can help you with?`);
+                addMessage('assistant', `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". Is there anything else I can help you with?`);
                 conversationHistory.push({
                     role: 'assistant',
-                    content: `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". The page will reflect the change when you refresh. Is there anything else I can help you with?`
+                    content: `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". Is there anything else I can help you with?`
                 });
+
+                // Dispatch event to refresh page data
+                window.dispatchEvent(new CustomEvent('henryDataCorrected', {
+                    detail: {
+                        applicationId: pendingDataCorrection.appContext?.id,
+                        field: pendingDataCorrection.dataField,
+                        newValue: pendingDataCorrection.newValue
+                    }
+                }));
             } else {
                 addMessage('assistant', `I ran into an issue updating that: ${result.error}. You might need to update it manually in the Command Center. Is there anything else I can help with?`);
                 conversationHistory.push({

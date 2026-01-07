@@ -11467,6 +11467,17 @@ Thanks so much!
                 }
             }, 200);
         });
+
+        // Listen for Hey Henry data corrections to auto-refresh the view
+        window.addEventListener('henryDataCorrected', async (event) => {
+            console.log('=== HEY HENRY DATA CORRECTED ===', event.detail);
+            // Re-fetch from Supabase to get fresh data
+            if (window.HenryData && typeof HenryData.getApplications === 'function') {
+                await HenryData.getApplications(true); // Force refresh from server
+            }
+            // Re-render the applications
+            renderApplications(getApplications());
+        });
     </script>
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-check.js"></script>
