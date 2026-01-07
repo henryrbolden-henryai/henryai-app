@@ -3923,6 +3923,201 @@
             top: 0;
         }
 
+        /* ========================================
+           REVIEW HISTORY (Skipped Roles)
+           ======================================== */
+        .review-history-section {
+            margin-top: var(--space-xxl);
+            border-top: 1px solid var(--color-border);
+            padding-top: var(--space-xl);
+        }
+
+        .review-history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: var(--space-md) 0;
+            user-select: none;
+        }
+
+        .review-history-header:hover {
+            opacity: 0.8;
+        }
+
+        .review-history-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 0.9rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+
+        .review-history-count {
+            background: var(--color-surface-elevated);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+
+        .review-history-toggle {
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .review-history-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .review-history-content {
+            display: none;
+            padding-top: var(--space-md);
+        }
+
+        .review-history-content.expanded {
+            display: block;
+        }
+
+        .skipped-roles-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .skipped-role-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-md) var(--space-lg);
+            opacity: 0.6;
+            transition: opacity var(--transition-fast), border-color var(--transition-fast);
+        }
+
+        .skipped-role-card:hover {
+            opacity: 0.85;
+            border-color: var(--color-border-hover);
+        }
+
+        .skipped-role-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-md);
+        }
+
+        .skipped-role-info {
+            display: flex;
+            align-items: center;
+            gap: var(--space-lg);
+            flex: 1;
+            min-width: 0;
+        }
+
+        .skipped-role-company {
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .skipped-role-title {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .skipped-role-score {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .skipped-role-score.low {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .skipped-role-score.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: #fbbf24;
+        }
+
+        .skipped-role-score.high {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+        }
+
+        .skipped-role-date {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+        }
+
+        .skipped-role-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .reconsider-btn {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .reconsider-btn:hover {
+            background: var(--color-surface-elevated);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .review-history-empty {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Reconsider Modal */
+        #reconsiderModal .modal {
+            max-width: 520px;
+        }
+
+        #reconsiderModal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .skipped-role-row {
+                flex-wrap: wrap;
+            }
+            .skipped-role-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--space-xs);
+            }
+            .skipped-role-company {
+                max-width: 100%;
+            }
+        }
+
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
@@ -4278,6 +4473,53 @@
         <!-- CARD VIEW (legacy) -->
         <div id="applicationsContainer" style="display: none;">
             <!-- Dynamically populated -->
+        </div>
+
+        <!-- REVIEW HISTORY (Skipped Roles) -->
+        <div class="review-history-section" id="reviewHistorySection" style="display: none;">
+            <div class="review-history-header" onclick="toggleReviewHistory()">
+                <div class="review-history-title">
+                    <span>Roles You've Reviewed</span>
+                    <span class="review-history-count" id="skippedRolesCount">0</span>
+                </div>
+                <span class="review-history-toggle" id="reviewHistoryToggle">▼</span>
+            </div>
+            <div class="review-history-content" id="reviewHistoryContent">
+                <div class="skipped-roles-list" id="skippedRolesList">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- RECONSIDER MODAL -->
+        <div class="modal-overlay" id="reconsiderModal" style="display: none;">
+            <div class="modal" style="max-width: 520px;">
+                <div class="modal-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                    <div>
+                        <h2 id="reconsiderCompany" style="margin: 0 0 4px 0;"></h2>
+                        <p id="reconsiderRole" style="margin: 0; color: var(--color-text-secondary); font-size: 0.95rem;"></p>
+                    </div>
+                    <span id="reconsiderScore" class="skipped-role-score" style="font-size: 1.1rem;"></span>
+                </div>
+
+                <p id="reconsiderTimestamp" style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;"></p>
+
+                <div id="reconsiderSummary" style="background: var(--color-surface-elevated); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                    <!-- Analysis summary rendered here -->
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn-primary" id="reconsiderViewFull" style="flex: 1;">
+                        View Full Analysis
+                    </button>
+                    <button class="btn-secondary" id="reconsiderReanalyze" style="flex: 1;">
+                        Re-analyze
+                    </button>
+                </div>
+                <button class="btn-text" id="reconsiderCancel" style="width: 100%; margin-top: 12px;">
+                    Never mind
+                </button>
+            </div>
         </div>
 
         <!-- ANALYZE NEW ROLE BUTTON -->
@@ -10900,6 +11142,9 @@ Thanks so much!
 
                     renderAll(apps);
 
+                    // Load review history (skipped roles)
+                    loadSkippedRoles();
+
                     // Override getApplications and saveApplications for this session
                     window.getApplicationsFromSupabase = async () => await HenryData.getApplications();
                     window.saveApplicationsToSupabase = async (apps) => await HenryData.saveAllApplications(apps);
@@ -10918,6 +11163,11 @@ Thanks so much!
             // Set the global cache so getApplications() returns consistent data
             window.trackerAppsCache = apps;
             renderAll(apps);
+
+            // Load review history (skipped roles) - only if HenryData is available
+            if (typeof HenryData !== 'undefined') {
+                loadSkippedRoles();
+            }
         }
 
         // Migrate localStorage applications to Supabase
@@ -10944,6 +11194,238 @@ Thanks so much!
             }
             console.log('Migration complete!');
         }
+
+        // ========================================================================
+        // REVIEW HISTORY (Skipped Roles)
+        // ========================================================================
+
+        let skippedRoles = [];
+        let currentReconsiderRole = null;
+
+        /**
+         * Load and render skipped roles
+         */
+        async function loadSkippedRoles() {
+            if (typeof HenryData === 'undefined') {
+                console.log('[ReviewHistory] HenryData not available');
+                return;
+            }
+
+            try {
+                console.log('[ReviewHistory] Loading skipped roles...');
+                skippedRoles = await HenryData.getSkippedRoles();
+                console.log('[ReviewHistory] Loaded', skippedRoles.length, 'skipped roles');
+                renderSkippedRoles();
+            } catch (err) {
+                console.error('[ReviewHistory] Error loading skipped roles:', err);
+            }
+        }
+
+        /**
+         * Escape HTML for safe rendering
+         */
+        function escapeHtmlSafe(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        /**
+         * Render the skipped roles list
+         */
+        function renderSkippedRoles() {
+            const section = document.getElementById('reviewHistorySection');
+            const countEl = document.getElementById('skippedRolesCount');
+            const listEl = document.getElementById('skippedRolesList');
+
+            if (!section || !listEl) return;
+
+            // Update count
+            if (countEl) countEl.textContent = skippedRoles.length;
+
+            // Show/hide section
+            section.style.display = skippedRoles.length > 0 ? 'block' : 'none';
+
+            if (skippedRoles.length === 0) {
+                listEl.innerHTML = '<div class="review-history-empty">No skipped roles yet</div>';
+                return;
+            }
+
+            listEl.innerHTML = skippedRoles.map(role => {
+                const score = role.fit_score || 0;
+                const scoreClass = score >= 75 ? 'high' : score >= 60 ? 'medium' : 'low';
+                const skippedDate = new Date(role.skipped_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="skipped-role-card" data-role-id="${role.id}">
+                        <div class="skipped-role-row">
+                            <div class="skipped-role-info">
+                                <span class="skipped-role-company">${escapeHtmlSafe(role.company)}</span>
+                                <span class="skipped-role-title">${escapeHtmlSafe(role.role_title)}</span>
+                            </div>
+                            <span class="skipped-role-score ${scoreClass}">${score}%</span>
+                            <span class="skipped-role-date">${skippedDate}</span>
+                            <div class="skipped-role-actions">
+                                <button class="reconsider-btn" onclick="openReconsiderModal('${role.id}')">
+                                    Reconsider
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Toggle review history section
+         */
+        function toggleReviewHistory() {
+            const content = document.getElementById('reviewHistoryContent');
+            const toggle = document.getElementById('reviewHistoryToggle');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+
+        /**
+         * Open reconsider modal with analysis summary
+         */
+        function openReconsiderModal(roleId) {
+            currentReconsiderRole = skippedRoles.find(r => r.id === roleId);
+            if (!currentReconsiderRole) return;
+
+            const modal = document.getElementById('reconsiderModal');
+            const snapshot = currentReconsiderRole.analysis_snapshot || {};
+
+            // Populate header
+            document.getElementById('reconsiderCompany').textContent = currentReconsiderRole.company;
+            document.getElementById('reconsiderRole').textContent = currentReconsiderRole.role_title;
+
+            // Score with color
+            const scoreEl = document.getElementById('reconsiderScore');
+            const score = currentReconsiderRole.fit_score || 0;
+            scoreEl.textContent = `${score}%`;
+            scoreEl.className = 'skipped-role-score ' + (score >= 75 ? 'high' : score >= 60 ? 'medium' : 'low');
+
+            // Timestamp
+            const reviewDate = new Date(currentReconsiderRole.skipped_at).toLocaleDateString('en-US', {
+                month: 'long', day: 'numeric', year: 'numeric'
+            });
+            document.getElementById('reconsiderTimestamp').innerHTML =
+                `You reviewed this role on <strong>${reviewDate}</strong>. Analysis was based on your resume at that time.`;
+
+            // Render summary from snapshot
+            const summaryEl = document.getElementById('reconsiderSummary');
+            const recommendation = snapshot.final_recommendation || currentReconsiderRole.recommendation || 'N/A';
+            const strengths = (snapshot.strengths || []).slice(0, 3);
+            const gaps = (snapshot.gaps || []).slice(0, 2);
+
+            summaryEl.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase;">Recommendation</span>
+                    <p style="margin: 4px 0 0 0; font-weight: 500;">${escapeHtmlSafe(recommendation)}</p>
+                </div>
+                ${strengths.length > 0 ? `
+                    <div style="margin-bottom: 12px;">
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase;">Key Strengths</span>
+                        <ul style="margin: 4px 0 0 0; padding-left: 16px; color: var(--color-text-secondary);">
+                            ${strengths.map(s => `<li style="font-size: 0.9rem;">${escapeHtmlSafe(typeof s === 'string' ? s : s.description || s.strength || '')}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+                ${gaps.length > 0 ? `
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase;">Gaps Identified</span>
+                        <ul style="margin: 4px 0 0 0; padding-left: 16px; color: var(--color-text-secondary);">
+                            ${gaps.map(g => `<li style="font-size: 0.9rem;">${escapeHtmlSafe(typeof g === 'string' ? g : g.description || g.gap || '')}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Close reconsider modal
+         */
+        function closeReconsiderModal() {
+            document.getElementById('reconsiderModal').style.display = 'none';
+            currentReconsiderRole = null;
+        }
+
+        /**
+         * View full analysis - restore to results page
+         */
+        async function reconsiderViewFull() {
+            if (!currentReconsiderRole) return;
+
+            // Edge case: validate analysis snapshot before navigating
+            const snapshot = currentReconsiderRole.analysis_snapshot;
+            if (!snapshot || typeof snapshot.fit_score === 'undefined') {
+                alert('Original analysis unavailable. Please re-analyze this role.');
+                return;
+            }
+
+            // Restore original analysis to session
+            sessionStorage.setItem('analysisData', JSON.stringify(snapshot));
+
+            // Record reconsideration (creates new row in unified table)
+            if (typeof HenryData !== 'undefined') {
+                await HenryData.recordReconsideration(currentReconsiderRole.id, currentReconsiderRole);
+            }
+
+            closeReconsiderModal();
+            window.location.href = 'results.html';
+        }
+
+        /**
+         * Re-analyze with current resume
+         */
+        async function reconsiderReanalyze() {
+            if (!currentReconsiderRole) return;
+
+            // Store JD for pre-population on analyze page
+            if (currentReconsiderRole.job_description) {
+                sessionStorage.setItem('reconsider_jd', JSON.stringify({
+                    company: currentReconsiderRole.company,
+                    roleTitle: currentReconsiderRole.role_title,
+                    jobDescription: currentReconsiderRole.job_description,
+                    jobUrl: currentReconsiderRole.job_url
+                }));
+            }
+
+            // Record reconsideration (creates new row in unified table)
+            if (typeof HenryData !== 'undefined') {
+                await HenryData.recordReconsideration(currentReconsiderRole.id, currentReconsiderRole);
+            }
+
+            closeReconsiderModal();
+            window.location.href = 'analyze.html?reconsider=true';
+        }
+
+        // Set up reconsider modal event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('reconsiderViewFull')?.addEventListener('click', reconsiderViewFull);
+            document.getElementById('reconsiderReanalyze')?.addEventListener('click', reconsiderReanalyze);
+            document.getElementById('reconsiderCancel')?.addEventListener('click', closeReconsiderModal);
+
+            // Close modal if clicking outside
+            document.getElementById('reconsiderModal')?.addEventListener('click', function(e) {
+                if (e.target.id === 'reconsiderModal') {
+                    closeReconsiderModal();
+                }
+            });
+        });
 
         // Start initialization - wait for henryAuthReady event from auth-check.js
         // or fallback to localStorage if no auth

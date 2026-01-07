@@ -393,6 +393,235 @@ const HenryData = {
         return { error };
     },
 
+    // ========================================
+    // ROLE INTERACTIONS (Unified Tracking)
+    // ========================================
+
+    /**
+     * Record a role interaction
+     * @param {Object} interaction - Interaction data
+     * @param {string} interaction.type - 'analyzed', 'skipped', 'applied', 'reconsidered', 'override'
+     */
+    async recordRoleInteraction(interaction) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        const interactionData = {
+            user_id: user.id,
+            company: interaction.company,
+            role_title: interaction.roleTitle,
+            job_url: interaction.jobUrl || null,
+            interaction_type: interaction.type,
+            fit_score: interaction.fitScore,
+            recommendation: interaction.recommendation,
+            analysis_snapshot: interaction.analysisSnapshot || null,
+            job_description: interaction.jobDescription || null,
+            pass_reason: interaction.passReason || null,
+            override_type: interaction.overrideType || null,
+            source: interaction.source || 'results_page',
+            application_id: interaction.applicationId || null
+        };
+
+        const { data, error } = await supabase
+            .from('candidate_role_interactions')
+            .insert(interactionData)
+            .select()
+            .single();
+
+        if (error) console.error('Error recording interaction:', error);
+        return { data, error };
+    },
+
+    /**
+     * Get current skipped roles (not yet reconsidered/applied)
+     * Uses the skipped_roles_current view
+     * @returns {Array} - List of skipped role objects
+     */
+    async getSkippedRoles() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('skipped_roles_current')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('skipped_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching skipped roles:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Get a specific skipped role by ID
+     * @param {string} interactionId - ID of the interaction
+     */
+    async getSkippedRoleById(interactionId) {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('candidate_role_interactions')
+            .select('*')
+            .eq('id', interactionId)
+            .eq('user_id', user.id)
+            .eq('interaction_type', 'skipped')
+            .single();
+
+        if (error) {
+            console.error('Error fetching skipped role:', error);
+            return null;
+        }
+        return data;
+    },
+
+    /**
+     * Record reconsideration of a skipped role
+     * Creates a new 'reconsidered' interaction row
+     * @param {string} originalInteractionId - ID of the original skipped interaction
+     * @param {Object} originalRole - The original skipped role data
+     */
+    async recordReconsideration(originalInteractionId, originalRole) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        // Record the reconsideration as a new interaction
+        const { data, error } = await supabase
+            .from('candidate_role_interactions')
+            .insert({
+                user_id: user.id,
+                company: originalRole.company,
+                role_title: originalRole.role_title,
+                job_url: originalRole.job_url,
+                interaction_type: 'reconsidered',
+                fit_score: originalRole.fit_score,
+                recommendation: originalRole.recommendation,
+                source: 'tracker_reconsider'
+            })
+            .select()
+            .single();
+
+        if (error) console.error('Error recording reconsideration:', error);
+        return { data, error };
+    },
+
+    /**
+     * Get full role journey (all interactions for a specific role)
+     * @param {string} company - Company name
+     * @param {string} roleTitle - Role title
+     */
+    async getRoleJourney(company, roleTitle) {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('candidate_role_interactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('company', company)
+            .eq('role_title', roleTitle)
+            .order('interaction_at', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching role journey:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Get all interactions for analytics
+     * @param {Object} filters - Optional filters
+     */
+    async getInteractions(filters = {}) {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        let query = supabase
+            .from('candidate_role_interactions')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (filters.type) {
+            query = query.eq('interaction_type', filters.type);
+        }
+        if (filters.since) {
+            query = query.gte('interaction_at', filters.since);
+        }
+
+        const { data, error } = await query.order('interaction_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching interactions:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    /**
+     * Save a skipped role (convenience wrapper)
+     */
+    async saveSkippedRole(role) {
+        return this.recordRoleInteraction({
+            type: 'skipped',
+            company: role.company,
+            roleTitle: role.roleTitle,
+            fitScore: role.fitScore,
+            recommendation: role.recommendation,
+            jobDescription: role.jobDescription,
+            jobUrl: role.jobUrl,
+            analysisSnapshot: role.analysisSnapshot,
+            passReason: role.passReason,
+            source: role.source
+        });
+    },
+
+    /**
+     * Track guidance override (convenience wrapper)
+     */
+    async trackGuidanceOverride(override) {
+        return this.recordRoleInteraction({
+            type: 'override',
+            company: override.company,
+            roleTitle: override.roleTitle,
+            fitScore: override.fitScore,
+            recommendation: override.recommendation,
+            overrideType: override.overrideType,
+            applicationId: override.applicationId,
+            source: 'results_page'
+        });
+    },
+
+    /**
+     * Check for prior interactions with a specific role
+     * Used to detect if candidate has already skipped/applied/analyzed this role
+     * @param {string} company - Company name
+     * @param {string} roleTitle - Role title
+     * @returns {Object|null} - Most recent prior interaction or null
+     */
+    async checkPriorInteraction(company, roleTitle) {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const { data, error } = await supabase
+            .from('candidate_role_interactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('company', company)
+            .eq('role_title', roleTitle)
+            .order('interaction_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.error('Error checking prior interaction:', error);
+            return null;
+        }
+
+        return data && data.length > 0 ? data[0] : null;
+    },
+
     /**
      * Save all applications (bulk update)
      */

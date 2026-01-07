@@ -462,6 +462,53 @@
       display: none;
     }
 
+    /* ========== RECONSIDER NOTICE ========== */
+    .reconsider-notice {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .reconsider-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .reconsider-content {
+      flex: 1;
+    }
+
+    .reconsider-content strong {
+      display: block;
+      color: var(--color-warning);
+      margin-bottom: 4px;
+    }
+
+    .reconsider-content p {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .reconsider-dismiss {
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .reconsider-dismiss:hover {
+      color: var(--color-text);
+    }
+
     /* ========== BUTTONS ========== */
     .btn-primary {
       width: 100%;
@@ -1591,6 +1638,94 @@
     }
 
     // ========================================================================
+    // RECONSIDER FLOW
+    // ========================================================================
+    function checkReconsiderFlow() {
+      const reconsiderData = sessionStorage.getItem('reconsiderRole');
+      if (!reconsiderData) return;
+
+      try {
+        const data = JSON.parse(reconsiderData);
+        console.log('[Reconsider] Found reconsider data:', data.company, data.role_title);
+
+        // Pre-populate the job description
+        const jdTextarea = document.getElementById('jobDescription');
+        if (jdTextarea && data.job_description) {
+          jdTextarea.value = data.job_description;
+          console.log('[Reconsider] Pre-populated JD with', data.job_description.length, 'chars');
+        }
+
+        // Show the reconsider notice banner
+        showReconsiderNotice(data);
+
+        // Record the reconsideration interaction
+        recordReconsiderationStart(data);
+
+        // Clear the sessionStorage so it doesn't show again on refresh
+        sessionStorage.removeItem('reconsiderRole');
+
+      } catch (err) {
+        console.error('[Reconsider] Error parsing reconsider data:', err);
+        sessionStorage.removeItem('reconsiderRole');
+      }
+    }
+
+    function showReconsiderNotice(data) {
+      // Create a notice banner above the form
+      const formCard = document.querySelector('.form-card');
+      if (!formCard) return;
+
+      const skippedDate = data.skipped_at ? new Date(data.skipped_at).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }) : 'previously';
+
+      const notice = document.createElement('div');
+      notice.className = 'reconsider-notice';
+      notice.innerHTML = `
+        <div class="reconsider-icon">🔄</div>
+        <div class="reconsider-content">
+          <strong>Reconsidering: ${escapeHtml(data.company)} - ${escapeHtml(data.role_title)}</strong>
+          <p>You passed on this role ${skippedDate}. Your resume may have changed since then - this analysis will use your current resume.</p>
+        </div>
+        <button class="reconsider-dismiss" onclick="this.parentElement.remove()">×</button>
+      `;
+
+      // Insert before the form card
+      formCard.parentNode.insertBefore(notice, formCard);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function recordReconsiderationStart(data) {
+      if (typeof HenryData === 'undefined') {
+        console.log('[Reconsider] HenryData not available, skipping interaction record');
+        return;
+      }
+
+      try {
+        await HenryData.recordRoleInteraction({
+          company: data.company,
+          role_title: data.role_title,
+          job_url: data.job_url,
+          interaction_type: 'reconsidered',
+          source: 'tracker_reconsider',
+          fit_score: data.fit_score,
+          recommendation: data.recommendation
+        });
+        console.log('[Reconsider] Recorded reconsideration interaction');
+      } catch (err) {
+        console.error('[Reconsider] Error recording interaction:', err);
+      }
+    }
+
+    // ========================================================================
     // INITIALIZE
     // ========================================================================
     // FIX: Await loadProfile() to ensure Supabase check completes before showing UI
@@ -1598,6 +1733,8 @@
       await loadProfile();
       // Load multi-resume support after profile loads
       loadUserResumes();
+      // Check for reconsider flow (pre-populate JD from skipped role)
+      checkReconsiderFlow();
     })();
 
     // Go to profile button handler
