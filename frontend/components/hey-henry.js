@@ -2607,8 +2607,48 @@ ${confidenceClosing}`,
 
     function getNetworkData(targetCompany) {
         try {
+            // Try to use enhanced network context from outreach.html (if available)
+            // This provides richer data with seniority, recruiter detection, relevance scores
+            if (typeof window.getNetworkContextForHeyHenry === 'function') {
+                const enhancedContext = window.getNetworkContextForHeyHenry();
+                if (enhancedContext) {
+                    return {
+                        hasConnections: true,
+                        totalConnections: enhancedContext.total_connections,
+                        connectionsAtCompany: enhancedContext.connections_at_company,
+                        recruitersAtCompany: enhancedContext.recruiters_at_company,
+                        directAtCompany: enhancedContext.top_connections || [],
+                        warmestConnection: enhancedContext.warmest_connection,
+                        relevantConnections: [],
+                        // Flag that this is enhanced data for backend to use appropriately
+                        hasEnhancedData: true
+                    };
+                }
+            }
+
+            // Fallback to basic localStorage check
             const connectionsRaw = localStorage.getItem('linkedinConnections');
-            if (!connectionsRaw) return null;
+            if (!connectionsRaw) {
+                // Check new storage format
+                const stored = localStorage.getItem('henryhq_linkedin_connections');
+                if (!stored) return null;
+
+                try {
+                    const data = JSON.parse(stored);
+                    if (!data.connections || data.connections.length === 0) return null;
+
+                    // Basic summary from new format
+                    return {
+                        hasConnections: true,
+                        totalConnections: data.connectionCount,
+                        directAtCompany: [],
+                        relevantConnections: [],
+                        hasEnhancedData: false
+                    };
+                } catch (e) {
+                    return null;
+                }
+            }
 
             const connections = JSON.parse(connectionsRaw);
             if (!connections || connections.length === 0) return null;
@@ -2619,7 +2659,8 @@ ${confidenceClosing}`,
                     hasConnections: true,
                     totalConnections: connections.length,
                     directAtCompany: [],
-                    relevantConnections: []
+                    relevantConnections: [],
+                    hasEnhancedData: false
                 };
             }
 
@@ -2655,7 +2696,8 @@ ${confidenceClosing}`,
                     position: conn.position || conn.Position || conn.title || '',
                     connectedOn: conn.connectedOn || conn['Connected On'] || ''
                 })),
-                relevantConnections: relevantConnections
+                relevantConnections: relevantConnections,
+                hasEnhancedData: false
             };
         } catch (e) {
             console.error('Error getting network data:', e);

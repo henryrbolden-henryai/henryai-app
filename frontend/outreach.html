@@ -601,6 +601,18 @@
             color: #9ca3af;
         }
 
+        /* Hey Henry connection highlighting */
+        .connection-item.hey-henry-highlighted {
+            border-color: #22d3ee !important;
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+            animation: pulse-highlight 2s ease-in-out;
+        }
+
+        @keyframes pulse-highlight {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
+            50% { box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.3); }
+        }
+
         @media (max-width: 768px) {
             .tips-grid {
                 grid-template-columns: 1fr;
@@ -1049,56 +1061,26 @@
             }
         });
 
-        // Handle CSV upload
+        // Handle CSV upload and persistence
         document.addEventListener('DOMContentLoaded', () => {
-            // Check if connections already uploaded
-            const existingConnections = localStorage.getItem('linkedinConnections');
-            if (existingConnections) {
-                try {
-                    const connections = JSON.parse(existingConnections);
-                    if (connections.length > 0) {
-                        // Hide the value explanation since they already have connections
-                        const valueSection = document.getElementById('linkedinValueSection');
-                        if (valueSection) valueSection.style.display = 'none';
+            // Check if connections already stored (using new enhanced format)
+            const stored = loadConnectionsFromStorage();
 
-                        // Hide the upload prompt since they already have connections
-                        const promptSection = document.getElementById('linkedinPrompt');
-                        if (promptSection) promptSection.style.display = 'none';
+            if (stored && stored.connections && stored.connections.length > 0) {
+                // Show "connections loaded" state with metadata
+                updateUIForStoredConnections(stored);
 
-                        // Auto-check network for this company
-                        checkLinkedInNetwork(connections);
-                    }
-                } catch (e) {
-                    console.error('Error parsing stored connections:', e);
-                }
+                // Convert to CSV format for existing functions
+                const connections = storedToCSVFormat(stored.connections);
+
+                // Auto-check network for this company
+                checkLinkedInNetwork(connections);
             }
 
+            // Attach upload handler
             const uploadInput = document.getElementById('linkedinUpload');
             if (uploadInput) {
-                uploadInput.addEventListener('change', async (event) => {
-                    const file = event.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        const csv = e.target.result;
-                        const connections = parseLinkedInCSV(csv);
-
-                        // Store for future use
-                        localStorage.setItem('linkedinConnections', JSON.stringify(connections));
-
-                        // Hide value explanation after upload
-                        const valueSection = document.getElementById('linkedinValueSection');
-                        if (valueSection) valueSection.style.display = 'none';
-
-                        // Hide the prompt
-                        dismissLinkedInPrompt();
-
-                        // Check network
-                        checkLinkedInNetwork(connections);
-                    };
-                    reader.readAsText(file);
-                });
+                uploadInput.addEventListener('change', handleFileUpload);
             }
         });
 
@@ -1116,6 +1098,265 @@
                 (row['Last Name'] && row['Last Name'].trim())
             );
         }
+
+        // ========================================================================
+        // CONNECTION PERSISTENCE (localStorage)
+        // ========================================================================
+
+        const CONNECTIONS_STORAGE_KEY = 'henryhq_linkedin_connections';
+
+        /**
+         * Save connections to localStorage with metadata
+         */
+        function saveConnectionsToStorage(connections, fileName) {
+            const data = {
+                version: 1,
+                uploadedAt: new Date().toISOString(),
+                fileName: fileName || 'Connections.csv',
+                connectionCount: connections.length,
+                connections: connections.map(c => ({
+                    firstName: c['First Name'] || '',
+                    lastName: c['Last Name'] || '',
+                    url: c['URL'] || '',
+                    email: c['Email Address'] || '',
+                    company: c['Company'] || '',
+                    position: c['Position'] || '',
+                    connectedOn: c['Connected On'] || ''
+                }))
+            };
+
+            try {
+                localStorage.setItem(CONNECTIONS_STORAGE_KEY, JSON.stringify(data));
+                // Also keep old key for backwards compatibility during transition
+                localStorage.setItem('linkedinConnections', JSON.stringify(connections));
+                return true;
+            } catch (e) {
+                console.error('Failed to save connections:', e);
+                return false;
+            }
+        }
+
+        /**
+         * Load connections from localStorage
+         */
+        function loadConnectionsFromStorage() {
+            try {
+                const stored = localStorage.getItem(CONNECTIONS_STORAGE_KEY);
+                if (!stored) {
+                    // Check for legacy format
+                    const legacy = localStorage.getItem('linkedinConnections');
+                    if (legacy) {
+                        const connections = JSON.parse(legacy);
+                        // Migrate to new format
+                        saveConnectionsToStorage(connections, 'Connections.csv');
+                        return loadConnectionsFromStorage();
+                    }
+                    return null;
+                }
+
+                const data = JSON.parse(stored);
+
+                // Version check for future migrations
+                if (data.version !== 1) {
+                    console.warn('Unknown connection data version:', data.version);
+                    return null;
+                }
+
+                return data;
+            } catch (e) {
+                console.error('Failed to load connections:', e);
+                return null;
+            }
+        }
+
+        /**
+         * Convert stored format back to CSV-like format for existing functions
+         */
+        function storedToCSVFormat(storedConnections) {
+            return storedConnections.map(c => ({
+                'First Name': c.firstName,
+                'Last Name': c.lastName,
+                'URL': c.url,
+                'Email Address': c.email,
+                'Company': c.company,
+                'Position': c.position,
+                'Connected On': c.connectedOn
+            }));
+        }
+
+        /**
+         * Clear stored connections
+         */
+        function clearStoredConnections() {
+            localStorage.removeItem(CONNECTIONS_STORAGE_KEY);
+            localStorage.removeItem('linkedinConnections');
+        }
+
+        /**
+         * Format relative time for display
+         */
+        function formatRelativeTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'today';
+            if (diffDays === 1) return 'yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`;
+            return date.toLocaleDateString();
+        }
+
+        /**
+         * Update UI to show loaded connections state
+         */
+        function updateUIForStoredConnections(stored) {
+            const uploadSection = document.getElementById('linkedinPrompt');
+            const valueSection = document.getElementById('linkedinValueSection');
+
+            if (uploadSection) {
+                uploadSection.innerHTML = `
+                    <div class="linkedin-prompt-icon" style="color: #10b981;">✓</div>
+                    <div class="linkedin-prompt-content">
+                        <div class="linkedin-prompt-title" style="color: #10b981;">
+                            ${stored.connectionCount.toLocaleString()} connections loaded
+                        </div>
+                        <div class="linkedin-prompt-text">
+                            From ${stored.fileName} · Uploaded ${formatRelativeTime(stored.uploadedAt)}
+                        </div>
+                        <div class="linkedin-prompt-buttons">
+                            <label class="linkedin-btn linkedin-btn-secondary" style="cursor: pointer;">
+                                📁 Upload New CSV
+                                <input type="file" id="linkedinUpload" accept=".csv" style="display: none;">
+                            </label>
+                            <button class="linkedin-btn linkedin-btn-secondary" onclick="clearAndReload()">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+                // Re-attach upload listener to new input
+                const newUploadInput = uploadSection.querySelector('#linkedinUpload');
+                if (newUploadInput) {
+                    newUploadInput.addEventListener('change', handleFileUpload);
+                }
+            }
+
+            if (valueSection) {
+                valueSection.style.display = 'none';
+            }
+        }
+
+        /**
+         * Clear connections and reload page
+         */
+        function clearAndReload() {
+            if (confirm('Remove your LinkedIn connections? You can upload again anytime.')) {
+                clearStoredConnections();
+                location.reload();
+            }
+        }
+
+        /**
+         * Handle file upload (extracted for reuse)
+         */
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csv = e.target.result;
+                const connections = parseLinkedInCSV(csv);
+
+                // Store with new format including metadata
+                saveConnectionsToStorage(connections, file.name);
+
+                // Hide value explanation after upload
+                const valueSection = document.getElementById('linkedinValueSection');
+                if (valueSection) valueSection.style.display = 'none';
+
+                // Update UI to show loaded state
+                const stored = loadConnectionsFromStorage();
+                if (stored) {
+                    updateUIForStoredConnections(stored);
+                }
+
+                // Check network
+                checkLinkedInNetwork(connections);
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Get network context for Hey Henry integration (Partner+ tiers)
+         */
+        function getNetworkContextForHeyHenry() {
+            const stored = loadConnectionsFromStorage();
+            if (!stored) return null;
+
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            const targetCompany = analysisData._company_name || analysisData.company || analysisData._company || '';
+            const targetRole = analysisData.role_title || analysisData._role || '';
+
+            if (!targetCompany) return null;
+
+            // Process and group
+            const connections = storedToCSVFormat(stored.connections);
+            const processed = connections
+                .map(c => processConnection(c, targetCompany, targetRole))
+                .filter(c => c.fullName && c.fullName.trim());
+
+            const grouped = groupAndSortConnections(connections, targetCompany, targetRole);
+
+            return {
+                target_company: targetCompany,
+                target_role: targetRole,
+
+                // Summary for Hey Henry's awareness
+                has_connections: true,
+                total_connections: stored.connectionCount,
+                connections_at_company: grouped.directRecruiters.length + grouped.directOthers.length,
+                recruiters_at_company: grouped.directRecruiters.length,
+
+                // Top connections Hey Henry can reference by name
+                top_connections: [
+                    ...grouped.directRecruiters.slice(0, 3),
+                    ...grouped.directOthers.slice(0, 3)
+                ].map(c => ({
+                    name: c.fullName,
+                    title: c.title,
+                    company: c.company,
+                    is_recruiter: c.isRecruiter,
+                    seniority: c.seniority,
+                    connection_age_days: c.connectionAge,
+                    has_email: !!c.email,
+                    approach_guidance: generateApproachGuidance(c, targetRole)
+                })),
+
+                // Warmest connection for proactive suggestions
+                warmest_connection: grouped.directRecruiters[0] || grouped.directOthers[0] || null
+            };
+        }
+
+        /**
+         * Highlight a connection card when Hey Henry references them
+         */
+        function highlightConnection(connectionName) {
+            const cards = document.querySelectorAll('.connection-item');
+            cards.forEach(card => {
+                card.classList.remove('hey-henry-highlighted');
+                const nameEl = card.querySelector('a[href*="linkedin"]');
+                if (nameEl && nameEl.textContent.toLowerCase().includes(connectionName.toLowerCase())) {
+                    card.classList.add('hey-henry-highlighted');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        // Expose functions globally for Hey Henry integration
+        window.getNetworkContextForHeyHenry = getNetworkContextForHeyHenry;
+        window.highlightConnection = highlightConnection;
 
         // ========================================================================
         // NETWORK INTELLIGENCE FUNCTIONS
