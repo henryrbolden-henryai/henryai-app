@@ -1750,13 +1750,57 @@
         </div>
     </div>
 
-    <!-- PASS MODAL -->
+    <!-- PASS MODAL (Enhanced with optional reason tracking) -->
     <div class="modal-overlay" id="passModal">
         <div class="modal">
             <div class="modal-icon">✨</div>
             <h2>Good call.</h2>
-            <p>Passing on a weak fit is a smart move. In this market, your energy is better spent on roles where you are 75% or higher aligned. Focus beats volume every time.</p>
-            <a href="analyze.html" class="modal-btn" id="passModalBtn">Find the Right Role</a>
+            <p>Passing on a weak fit is a smart move. In this market, your energy is better spent on roles where you're 75%+ aligned.</p>
+
+            <!-- Optional: Why did you pass? (not required) -->
+            <div style="margin: 20px 0; text-align: left;">
+                <label style="font-size: 0.85rem; color: var(--color-text-secondary); display: block; margin-bottom: 8px;">
+                    Why did you pass? <span style="opacity: 0.6;">(optional)</span>
+                </label>
+                <select id="passReason" style="width: 100%; padding: 10px 12px; background: var(--color-surface-elevated); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.9rem;">
+                    <option value="">-- Select a reason --</option>
+                    <option value="low_fit">Fit score too low</option>
+                    <option value="wrong_level">Wrong seniority level</option>
+                    <option value="wrong_domain">Not my domain/industry</option>
+                    <option value="comp_mismatch">Compensation doesn't match</option>
+                    <option value="location">Location doesn't work</option>
+                    <option value="company_culture">Company culture concerns</option>
+                    <option value="following_guidance">Following Henry's guidance</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <a href="#" class="modal-btn" id="passModalBtn">Back to Command Center</a>
+        </div>
+    </div>
+
+    <!-- PRIOR INTERACTION MODAL (Duplicate detection) -->
+    <div class="modal-overlay" id="priorInteractionModal">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-icon" id="priorModalIcon">🔄</div>
+            <h2 id="priorModalTitle">You've seen this role before</h2>
+            <p id="priorModalMessage" style="margin-bottom: 16px;"></p>
+
+            <div id="priorModalDetails" style="background: var(--color-surface-elevated); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; text-align: left;">
+                <!-- Prior interaction details rendered here -->
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="modal-btn" id="priorContinueBtn" style="flex: 1; background: var(--color-accent); color: #0a0a0b;">
+                    Continue Anyway
+                </button>
+                <button class="modal-btn" id="priorReviewBtn" style="flex: 1; background: var(--color-surface-elevated); color: var(--color-text);">
+                    Review Previous
+                </button>
+            </div>
+            <button id="priorCancelBtn" style="width: 100%; margin-top: 12px; background: none; border: none; color: var(--color-text-secondary); cursor: pointer; padding: 8px; font-size: 0.9rem;">
+                Never mind
+            </button>
         </div>
     </div>
 
@@ -2604,6 +2648,25 @@
             // Log for debugging
             console.log('⚠️ ACCOUNTABILITY: User chose to proceed despite "Do Not Apply" guidance');
 
+            // Track guidance override silently (for analytics)
+            const companyName = data._company_name || data._company || data.company;
+            const roleTitle = data.role_title || data._role;
+
+            if (typeof HenryData !== 'undefined' && companyName) {
+                try {
+                    await HenryData.trackGuidanceOverride({
+                        company: companyName,
+                        roleTitle: roleTitle || 'Unknown Role',
+                        fitScore: fitScore,
+                        recommendation: recommendationLabel,
+                        overrideType: fitScore < 60 ? 'applied_low_fit' : 'applied_despite_dna'
+                    });
+                    console.log('Guidance override tracked');
+                } catch (err) {
+                    console.error('Error tracking override:', err);
+                }
+            }
+
             // Update UI to show acknowledgment
             const btn = document.getElementById('proceedAnywayBtn');
             if (btn) {
@@ -2841,42 +2904,230 @@
             }
         }
 
-        // Generate documents before navigating to overview
-        async function generateDocumentsAndNavigate() {
-            console.log('=== APPLY BUTTON CLICKED ===');
-            const btn = event.target;
-            const originalText = btn.textContent;
+        // =====================================================================
+        // PRIOR INTERACTION DETECTION
+        // Check if candidate has already interacted with this role
+        // =====================================================================
+        let pendingPriorInteraction = null;
 
+        async function checkAndProceedWithApply() {
+            console.log('=== APPLY BUTTON CLICKED ===');
+
+            const companyName = data._company_name || data._company || data.company;
+            const roleTitle = data.role_title || data._role || 'Unknown Role';
+
+            // Check for prior interactions if HenryData is available
+            if (typeof HenryData !== 'undefined' && companyName) {
+                try {
+                    const prior = await HenryData.checkPriorInteraction(companyName, roleTitle);
+
+                    if (prior && prior.interaction_type !== 'analyzed') {
+                        console.log('[DuplicateDetection] Found prior interaction:', prior.interaction_type);
+                        pendingPriorInteraction = prior;
+                        showPriorInteractionModal(prior);
+                        return; // Don't proceed yet - wait for modal response
+                    }
+                } catch (err) {
+                    console.error('[DuplicateDetection] Error checking prior:', err);
+                    // On error, proceed normally
+                }
+            }
+
+            // No prior interaction found or not authenticated - proceed normally
+            await proceedWithApply();
+        }
+
+        function showPriorInteractionModal(prior) {
+            const modal = document.getElementById('priorInteractionModal');
+            const iconEl = document.getElementById('priorModalIcon');
+            const titleEl = document.getElementById('priorModalTitle');
+            const messageEl = document.getElementById('priorModalMessage');
+            const detailsEl = document.getElementById('priorModalDetails');
+            const reviewBtn = document.getElementById('priorReviewBtn');
+
+            const interactionDate = new Date(prior.interaction_at).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric'
+            });
+
+            // Customize based on interaction type
+            if (prior.interaction_type === 'skipped') {
+                iconEl.textContent = '⏸️';
+                titleEl.textContent = 'You passed on this role';
+                messageEl.innerHTML = `On <strong>${interactionDate}</strong>, you reviewed this role and chose to pass.`;
+
+                const reasonLabels = {
+                    low_fit: 'Fit score too low',
+                    wrong_level: 'Wrong seniority level',
+                    wrong_domain: 'Not your domain',
+                    comp_mismatch: 'Compensation mismatch',
+                    location: 'Location issue',
+                    company_culture: 'Company culture concerns',
+                    following_guidance: 'Following Henry\'s guidance',
+                    other: 'Other'
+                };
+
+                detailsEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="color: var(--color-text-secondary);">Fit Score</span>
+                        <span style="font-weight: 600; color: ${prior.fit_score >= 75 ? 'var(--color-success)' : prior.fit_score >= 60 ? 'var(--color-warning)' : 'var(--color-error)'};">${prior.fit_score || 'N/A'}%</span>
+                    </div>
+                    ${prior.pass_reason ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--color-text-secondary);">Reason</span>
+                        <span style="font-weight: 500;">${reasonLabels[prior.pass_reason] || prior.pass_reason}</span>
+                    </div>
+                    ` : ''}
+                `;
+
+                // Show review button if we have analysis snapshot
+                reviewBtn.style.display = prior.analysis_snapshot ? 'block' : 'none';
+                reviewBtn.textContent = 'View Previous Analysis';
+
+            } else if (prior.interaction_type === 'applied' || prior.interaction_type === 'override') {
+                iconEl.textContent = '📋';
+                titleEl.textContent = 'You\'ve already applied';
+                messageEl.innerHTML = `On <strong>${interactionDate}</strong>, you applied to this role.`;
+
+                detailsEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--color-text-secondary);">Fit Score</span>
+                        <span style="font-weight: 600; color: ${prior.fit_score >= 75 ? 'var(--color-success)' : prior.fit_score >= 60 ? 'var(--color-warning)' : 'var(--color-error)'};">${prior.fit_score || 'N/A'}%</span>
+                    </div>
+                `;
+
+                reviewBtn.style.display = 'block';
+                reviewBtn.textContent = 'View in Tracker';
+
+            } else if (prior.interaction_type === 'reconsidered') {
+                iconEl.textContent = '🔄';
+                titleEl.textContent = 'You reconsidered this role';
+                messageEl.innerHTML = `On <strong>${interactionDate}</strong>, you reconsidered this role after previously passing.`;
+
+                detailsEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--color-text-secondary);">Fit Score</span>
+                        <span style="font-weight: 600; color: ${prior.fit_score >= 75 ? 'var(--color-success)' : prior.fit_score >= 60 ? 'var(--color-warning)' : 'var(--color-error)'};">${prior.fit_score || 'N/A'}%</span>
+                    </div>
+                `;
+
+                reviewBtn.style.display = prior.analysis_snapshot ? 'block' : 'none';
+                reviewBtn.textContent = 'View Previous Analysis';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closePriorInteractionModal() {
+            document.getElementById('priorInteractionModal').classList.remove('show');
+            pendingPriorInteraction = null;
+        }
+
+        async function proceedWithApply() {
             // Auto-add to tracker when user commits to building application
-            // Now async to handle Supabase save
             await addToTrackerAutomatically();
 
             // Small delay to ensure writes complete before navigation
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // Always route to resume-leveling first for ALL candidates
-            // The leveling page provides career level analysis and recommendations
-            // that feed into the strengthen page and document generation
             window.location.href = 'resume-leveling.html';
         }
 
-        document.getElementById('getPackageBtn').addEventListener('click', generateDocumentsAndNavigate);
-        document.getElementById('getPackageBtnQuick').addEventListener('click', generateDocumentsAndNavigate);
-
-        document.getElementById('skipBtn').addEventListener('click', () => {
-            document.getElementById('passModal').classList.add('show');
+        // Prior interaction modal handlers
+        document.getElementById('priorContinueBtn').addEventListener('click', async () => {
+            closePriorInteractionModal();
+            await proceedWithApply();
         });
 
-        document.getElementById('skipBtnQuick').addEventListener('click', () => {
-            document.getElementById('passModal').classList.add('show');
+        document.getElementById('priorReviewBtn').addEventListener('click', () => {
+            if (!pendingPriorInteraction) return;
+
+            if (pendingPriorInteraction.interaction_type === 'applied' || pendingPriorInteraction.interaction_type === 'override') {
+                // Go to tracker
+                window.location.href = 'tracker.html';
+            } else if (pendingPriorInteraction.analysis_snapshot) {
+                // Restore previous analysis
+                sessionStorage.setItem('analysisData', JSON.stringify(pendingPriorInteraction.analysis_snapshot));
+                window.location.reload();
+            }
         });
 
-        // Modal button clears data and redirects
-        document.getElementById('passModalBtn').addEventListener('click', (e) => {
+        document.getElementById('priorCancelBtn').addEventListener('click', closePriorInteractionModal);
+
+        document.getElementById('priorInteractionModal').addEventListener('click', (e) => {
+            if (e.target.id === 'priorInteractionModal') {
+                closePriorInteractionModal();
+            }
+        });
+
+        document.getElementById('getPackageBtn').addEventListener('click', checkAndProceedWithApply);
+        document.getElementById('getPackageBtnQuick').addEventListener('click', checkAndProceedWithApply);
+
+        // =====================================================================
+        // SKIP/PASS BUTTON - Now saves to database for review history
+        // =====================================================================
+        let pendingSkipData = null;
+
+        function showPassModal() {
+            const companyName = data._company_name || data._company || data.company;
+            const roleTitle = data.role_title || data._role;
+
+            // Store data for saving after modal
+            pendingSkipData = {
+                company: companyName,
+                roleTitle: roleTitle || 'Unknown Role',
+                fitScore: fitScore,
+                recommendation: recommendationLabel,
+                jobDescription: data.jd_text || data.job_description || null,
+                jobUrl: data.job_url || data.jd_url || null,
+                analysisSnapshot: data,
+                source: 'results_page'
+            };
+
+            // Reset dropdown
+            const reasonSelect = document.getElementById('passReason');
+            if (reasonSelect) reasonSelect.value = '';
+
+            document.getElementById('passModal').classList.add('show');
+        }
+
+        async function saveSkippedRoleAndNavigate(e) {
             e.preventDefault();
+
+            if (!pendingSkipData) {
+                window.location.href = 'tracker.html';
+                return;
+            }
+
+            // Get optional reason
+            const reasonSelect = document.getElementById('passReason');
+            const passReason = reasonSelect?.value || null;
+
+            // Save to database if authenticated
+            if (typeof HenryData !== 'undefined' && pendingSkipData.company) {
+                try {
+                    const result = await HenryData.saveSkippedRole({
+                        ...pendingSkipData,
+                        passReason: passReason
+                    });
+
+                    if (result.error) {
+                        console.error('Failed to save skipped role:', result.error);
+                    } else {
+                        console.log('Skipped role saved:', result.data?.id);
+                    }
+                } catch (err) {
+                    console.error('Error saving skipped role:', err);
+                }
+            }
+
             sessionStorage.removeItem('analysisData');
-            window.location.href = 'analyze.html';
-        });
+            window.location.href = 'tracker.html';
+        }
+
+        document.getElementById('skipBtn').addEventListener('click', showPassModal);
+        document.getElementById('skipBtnQuick').addEventListener('click', showPassModal);
+        document.getElementById('passModalBtn').addEventListener('click', saveSkippedRoleAndNavigate);
 
         // Close modal if clicking outside
         document.getElementById('passModal').addEventListener('click', (e) => {
