@@ -2566,18 +2566,20 @@ I'm always here. If you're unsure about a role or how to position yourself, just
                 return;
             }
 
-            // Check if should show welcome back (only on subsequent logins)
-            const hasSeenWelcomeBack = localStorage.getItem('hasSeenWelcomeBack');
-            const signupTime = localStorage.getItem('signupTimestamp');
-            const timeSinceSignup = signupTime ? Date.now() - parseInt(signupTime) : Infinity;
+            // NOTE: The "Welcome back" flow should ONLY show ONCE after profile creation.
+            // It is NOT meant to show on every return visit.
+            // The first action prompt (showFirstActionPrompt) shows when coming from profile setup.
+            // The welcome back flow was previously showing incorrectly on subsequent logins.
+            //
+            // Removing this flow entirely - the normal Hey Henry greeting handles returning users.
+            // If you want to re-enable a one-time welcome, use a per-user flag stored in Supabase,
+            // not localStorage which gets cleared on logout/different browser.
 
-            // Only show welcome back if:
-            // 1. Profile exists
-            // 2. Haven't seen welcome back yet
-            // 3. It's been at least 1 hour since signup (new session)
-            if (!hasSeenWelcomeBack && timeSinceSignup > 3600000) {
-                await showWelcomeBackFlow(user, profile);
-            }
+            // DISABLED: Welcome back flow - was showing incorrectly on every login
+            // const hasSeenWelcomeBack = localStorage.getItem('hasSeenWelcomeBack');
+            // if (!hasSeenWelcomeBack) {
+            //     await showWelcomeBackFlow(user, profile);
+            // }
         }
 
         async function showWelcomeBackFlow(user, profile) {
