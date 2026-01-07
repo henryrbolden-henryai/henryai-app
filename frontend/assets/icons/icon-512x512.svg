@@ -1,5 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#000000" rx="64"/>
-  <text x="256" y="220" font-family="Georgia, serif" font-size="128" font-style="italic" fill="#22d3ee" text-anchor="middle">H</text>
-  <text x="256" y="360" font-family="Georgia, serif" font-size="86" fill="#fafafa" text-anchor="middle">HQ</text>
+<svg width="512" height="512" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="strokeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle for visibility -->
+  <circle cx="100" cy="100" r="100" fill="#0a0a0a"/>
+
+  <!-- Thin ring -->
+  <circle cx="100" cy="100" r="85"
+          stroke="url(#ringGradient)"
+          stroke-width="4"
+          fill="none"/>
+
+  <!-- Left vertical (grounded) -->
+  <path d="M55 130 L55 70"
+        stroke="#667eea"
+        stroke-width="9"
+        stroke-linecap="round"
+        fill="none"/>
+
+  <!-- Right vertical (ascending) -->
+  <path d="M145 130 L145 50"
+        stroke="url(#strokeGradient)"
+        stroke-width="9"
+        stroke-linecap="round"
+        fill="none"/>
+
+  <!-- Horizontal connector -->
+  <path d="M55 100 L145 100"
+        stroke="#764ba2"
+        stroke-width="9"
+        stroke-linecap="round"
+        fill="none"/>
+
+  <!-- Peak dot -->
+  <circle cx="145" cy="50" r="9" fill="#764ba2"/>
 </svg>
