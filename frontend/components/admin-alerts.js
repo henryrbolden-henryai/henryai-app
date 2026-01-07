@@ -381,6 +381,33 @@
             color: #9ca3af;
         }
 
+        .admin-alert-status.auto-fixed {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .admin-alert-auto-fixed-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .admin-alert-auto-fixed-label {
+            font-size: 11px;
+            color: #a78bfa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .admin-alert-auto-fixed-text {
+            font-size: 13px;
+            color: #c4b5fd;
+        }
+
         .admin-alert-sending {
             text-align: center;
             padding: 20px;
@@ -562,6 +589,7 @@
         list.innerHTML = notifications.map(n => {
             const type = ALERT_TYPES[n.feedback_type] || ALERT_TYPES.general;
             const isSelected = currentNotification?.id === n.id;
+            const isAutoFixed = n.summary?.includes('[AUTO-FIXED]') || n.full_content?.includes('Auto-fixed by Hey Henry');
             const statusClass = n.replied_at ? 'replied' : (n.read ? '' : 'unread');
 
             return `
@@ -569,7 +597,8 @@
                     <div class="admin-alert-header">
                         <span>${type.emoji}</span>
                         <span class="admin-alert-type">${type.label}</span>
-                        ${!n.read ? '<span class="admin-alert-status new">New</span>' : ''}
+                        ${isAutoFixed ? '<span class="admin-alert-status auto-fixed">🔧 Fixed by Henry</span>' : ''}
+                        ${!n.read && !isAutoFixed ? '<span class="admin-alert-status new">New</span>' : ''}
                         ${n.replied_at ? '<span class="admin-alert-status replied">Replied</span>' : ''}
                         <span class="admin-alert-time">${formatRelativeTime(n.created_at)}</span>
                     </div>
@@ -665,6 +694,32 @@
         `;
     }
 
+    // Helper to display auto-fixed info for bugs fixed by Hey Henry
+    function getAutoFixedInfoHtml(notification) {
+        if (!notification.full_content?.includes('Auto-fixed by Hey Henry')) return '';
+
+        // Parse the fix details
+        const fieldMatch = notification.full_content.match(/Field: ([^\n]+)/);
+        const oldValueMatch = notification.full_content.match(/Old value: ([^\n]+)/);
+        const newValueMatch = notification.full_content.match(/New value: ([^\n]+)/);
+        const appMatch = notification.full_content.match(/Application: ([^\n]+)/);
+
+        const field = fieldMatch ? fieldMatch[1] : 'Unknown';
+        const oldValue = oldValueMatch ? oldValueMatch[1] : 'Unknown';
+        const newValue = newValueMatch ? newValueMatch[1] : 'Unknown';
+        const app = appMatch ? appMatch[1] : 'Unknown';
+
+        return `
+            <div class="admin-alert-auto-fixed-box">
+                <div class="admin-alert-auto-fixed-label">🔧 Auto-Fixed by Hey Henry</div>
+                <div class="admin-alert-auto-fixed-text">
+                    <strong>${field}</strong> changed from "${oldValue}" to "${newValue}"<br>
+                    <small style="color: #888;">Application: ${app}</small>
+                </div>
+            </div>
+        `;
+    }
+
     // Render notification detail
     function renderNotificationDetail() {
         const detailContainer = document.querySelector('.admin-alert-detail');
@@ -694,6 +749,7 @@
                 <span>🕐 ${formatRelativeTime(n.created_at)}</span>
             </div>
 
+            ${getAutoFixedInfoHtml(n)}
             ${getPageUrlHtml(n)}
             ${getScopeInfoHtml(n)}
 

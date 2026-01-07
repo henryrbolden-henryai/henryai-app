@@ -3302,6 +3302,271 @@ ${confidenceClosing}`,
     let pendingFeedback = null;
     let feedbackFlowState = null; // 'awaiting_details' | 'awaiting_scope' | 'awaiting_confirmation' | null
 
+    // State for data correction flow
+    let pendingDataCorrection = null;
+    let dataCorrectionFlowState = null; // 'awaiting_confirmation' | null
+
+    // Data correction triggers - user wants to fix incorrect data
+    const DATA_CORRECTION_TRIGGERS = [
+        'wrong', 'incorrect', 'should be', 'change to', 'change it to',
+        'update to', 'update it to', 'fix the', 'the job title is',
+        'the company is', 'company name is', 'title is wrong',
+        'not correct', 'isn\'t correct', 'isnt correct', 'says',
+        'but it should', 'but should be', 'it shows', 'shows'
+    ];
+
+    // Fields that Hey Henry can auto-fix
+    const EDITABLE_FIELDS = {
+        'job title': 'role',
+        'title': 'role',
+        'role': 'role',
+        'position': 'role',
+        'company': 'company',
+        'company name': 'company',
+        'salary': 'salary',
+        'compensation': 'salary',
+        'location': 'location',
+        'notes': 'notes'
+    };
+
+    // Detect if user wants to correct data
+    function detectDataCorrectionIntent(message) {
+        const lowerMessage = message.toLowerCase();
+
+        // Must have a correction trigger
+        const hasCorrection = DATA_CORRECTION_TRIGGERS.some(trigger => lowerMessage.includes(trigger));
+        if (!hasCorrection) return null;
+
+        // Try to identify which field they want to change
+        let targetField = null;
+        let fieldDisplayName = null;
+        for (const [keyword, fieldName] of Object.entries(EDITABLE_FIELDS)) {
+            if (lowerMessage.includes(keyword)) {
+                targetField = fieldName;
+                fieldDisplayName = keyword;
+                break;
+            }
+        }
+
+        if (!targetField) return null;
+
+        // Try to extract the new value
+        // Patterns: "should be X", "change to X", "it's actually X", quotes, etc.
+        let newValue = null;
+
+        // Pattern: "should be [value]" or "should say [value]"
+        const shouldBeMatch = message.match(/should (?:be|say)\s+['"]?([^'".,]+)['"]?/i);
+        if (shouldBeMatch) {
+            newValue = shouldBeMatch[1].trim();
+        }
+
+        // Pattern: "change to [value]" or "update to [value]"
+        if (!newValue) {
+            const changeToMatch = message.match(/(?:change|update)\s+(?:it\s+)?to\s+['"]?([^'".,]+)['"]?/i);
+            if (changeToMatch) {
+                newValue = changeToMatch[1].trim();
+            }
+        }
+
+        // Pattern: "is [value] not [old value]" or "it's [value]"
+        if (!newValue) {
+            const isActuallyMatch = message.match(/(?:is|it's|its)\s+(?:actually\s+)?['"]?([^'".,]+)['"]?\s+(?:not|instead)/i);
+            if (isActuallyMatch) {
+                newValue = isActuallyMatch[1].trim();
+            }
+        }
+
+        // Pattern: quoted value anywhere
+        if (!newValue) {
+            const quotedMatch = message.match(/['"]([^'"]+)['"]/);
+            if (quotedMatch) {
+                newValue = quotedMatch[1].trim();
+            }
+        }
+
+        // Pattern: "but it should be X" - get X
+        if (!newValue) {
+            const butShouldMatch = message.match(/but\s+(?:it\s+)?should\s+(?:be|say)\s+['"]?([^'".,]+)['"]?/i);
+            if (butShouldMatch) {
+                newValue = butShouldMatch[1].trim();
+            }
+        }
+
+        return {
+            field: targetField,
+            fieldDisplayName: fieldDisplayName,
+            newValue: newValue
+        };
+    }
+
+    // Get current application context (what job they're looking at)
+    async function getCurrentApplicationContext() {
+        try {
+            // First try sessionStorage analysis data (if on results page)
+            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            if (analysisData._company_name || analysisData.company) {
+                return {
+                    company: analysisData._company_name || analysisData.company,
+                    role: analysisData.role_title || analysisData.role || analysisData._role,
+                    source: 'analysis'
+                };
+            }
+
+            // Try to get from URL parameters or page context
+            const urlParams = new URLSearchParams(window.location.search);
+            const appId = urlParams.get('id') || urlParams.get('app');
+            if (appId && typeof HenryData !== 'undefined') {
+                const apps = await HenryData.getApplications();
+                const app = apps.find(a => a.id === appId);
+                if (app) {
+                    return {
+                        id: app.id,
+                        company: app.company,
+                        role: app.role,
+                        source: 'url_param',
+                        fullApp: app
+                    };
+                }
+            }
+
+            // Try localStorage tracked applications (most recent or active)
+            const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            if (trackedApps.length > 0) {
+                // Sort by most recently updated
+                const sorted = [...trackedApps].sort((a, b) =>
+                    new Date(b.lastUpdated || b.dateAdded || 0) - new Date(a.lastUpdated || a.dateAdded || 0)
+                );
+                const recent = sorted[0];
+                return {
+                    id: recent.id,
+                    company: recent.company,
+                    role: recent.role,
+                    source: 'recent',
+                    fullApp: recent
+                };
+            }
+
+            return null;
+        } catch (e) {
+            console.error('Error getting application context:', e);
+            return null;
+        }
+    }
+
+    // Apply the data correction
+    async function applyDataCorrection(correction, appContext) {
+        try {
+            if (!appContext?.id && !appContext?.fullApp) {
+                // Need to find the app in Supabase
+                if (typeof HenryData === 'undefined') {
+                    return { success: false, error: 'HenryData not available' };
+                }
+
+                const apps = await HenryData.getApplications();
+                const matchingApp = apps.find(a =>
+                    a.company?.toLowerCase() === appContext.company?.toLowerCase() &&
+                    a.role?.toLowerCase() === appContext.role?.toLowerCase()
+                );
+
+                if (!matchingApp) {
+                    return { success: false, error: 'Could not find matching application' };
+                }
+
+                appContext.id = matchingApp.id;
+                appContext.fullApp = matchingApp;
+            }
+
+            const app = appContext.fullApp;
+            const oldValue = app[correction.field];
+
+            // Update the field
+            app[correction.field] = correction.newValue;
+            app.lastUpdated = new Date().toISOString();
+
+            // Save to database
+            const result = await HenryData.saveApplication(app);
+
+            if (result.error) {
+                return { success: false, error: result.error };
+            }
+
+            // Update localStorage cache too
+            const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+            const appIndex = trackedApps.findIndex(a => a.id === app.id);
+            if (appIndex >= 0) {
+                trackedApps[appIndex] = app;
+                localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
+            }
+
+            return {
+                success: true,
+                oldValue: oldValue,
+                newValue: correction.newValue,
+                field: correction.field,
+                appId: app.id
+            };
+        } catch (e) {
+            console.error('Error applying data correction:', e);
+            return { success: false, error: e.message };
+        }
+    }
+
+    // Log the auto-fix as a resolved bug
+    async function logAutoFixedBug(correction, appContext, result) {
+        try {
+            const context = getPageContext();
+
+            // Get user info
+            let userEmail = 'anonymous';
+            let userName = null;
+            if (typeof HenryAuth !== 'undefined') {
+                try {
+                    const user = await HenryAuth.getUser();
+                    userEmail = user?.email || 'anonymous';
+                    const nameData = await HenryAuth.getUserName();
+                    userName = nameData?.firstName && nameData.firstName !== 'there' ? nameData.firstName : null;
+                } catch (e) { /* ignore */ }
+            }
+
+            const fullFeedback = `Auto-fixed by Hey Henry
+
+Field: ${correction.fieldDisplayName}
+Old value: ${result.oldValue || '(empty)'}
+New value: ${result.newValue}
+
+Application: ${appContext.company} - ${appContext.role}
+Page: ${context.name} (${window.location.href})`;
+
+            // Send to backend to log as resolved bug
+            await fetch(`${API_BASE}/api/send-feedback-acknowledgment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: userEmail,
+                    name: userName,
+                    feedback_type: 'bug',
+                    feedback_summary: `[AUTO-FIXED] ${correction.fieldDisplayName} corrected`,
+                    full_feedback: fullFeedback,
+                    current_page: context.name || window.location.pathname,
+                    page_url: window.location.href,
+                    scope: {
+                        autoFixed: true,
+                        fixedBy: 'hey_henry',
+                        field: correction.field,
+                        oldValue: result.oldValue,
+                        newValue: result.newValue,
+                        appId: result.appId
+                    },
+                    conversation_context: 'User requested data correction via Hey Henry chat'
+                })
+            });
+
+            console.log('🔧 Auto-fix logged to admin notifications');
+        } catch (e) {
+            console.warn('Could not log auto-fix:', e);
+        }
+    }
+
     function detectFeedbackIntent(message) {
         const lowerMessage = message.toLowerCase();
 
@@ -3616,6 +3881,103 @@ ${confidenceClosing}`,
         // Reset feedback flow state
         pendingFeedback = null;
         feedbackFlowState = null;
+    }
+
+    // Handle data correction confirmation (Yes/No buttons)
+    async function handleDataCorrectionConfirmation(confirmed) {
+        if (!pendingDataCorrection) return;
+
+        // Remove the confirmation buttons
+        const confirmContainer = document.getElementById('dataCorrectionConfirmContainer');
+        if (confirmContainer) confirmContainer.remove();
+
+        if (confirmed) {
+            // Apply the correction
+            const result = await applyDataCorrection(pendingDataCorrection, pendingDataCorrection.appContext);
+
+            if (result.success) {
+                // Log it as an auto-fixed bug
+                await logAutoFixedBug(pendingDataCorrection, pendingDataCorrection.appContext, result);
+
+                addMessage('assistant', `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". The page will reflect the change when you refresh. Is there anything else I can help you with?`);
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: `Done! I've updated the ${pendingDataCorrection.fieldDisplayName} to "${pendingDataCorrection.newValue}". The page will reflect the change when you refresh. Is there anything else I can help you with?`
+                });
+            } else {
+                addMessage('assistant', `I ran into an issue updating that: ${result.error}. You might need to update it manually in the Command Center. Is there anything else I can help with?`);
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: `I ran into an issue updating that: ${result.error}. You might need to update it manually in the Command Center. Is there anything else I can help with?`
+                });
+            }
+        } else {
+            // User declined
+            addMessage('assistant', "No problem! Let me know if there's anything else I can help with.");
+            conversationHistory.push({ role: 'assistant', content: "No problem! Let me know if there's anything else I can help with." });
+        }
+
+        saveConversationHistory();
+
+        // Reset data correction flow state
+        pendingDataCorrection = null;
+        dataCorrectionFlowState = null;
+    }
+
+    // Add data correction confirmation buttons
+    function addDataCorrectionConfirmation() {
+        const messagesContainer = document.getElementById('askHenryMessages');
+
+        const confirmContainer = document.createElement('div');
+        confirmContainer.id = 'dataCorrectionConfirmContainer';
+        confirmContainer.style.cssText = `
+            display: flex;
+            gap: 10px;
+            margin: 12px 0;
+        `;
+
+        // Yes button
+        const yesButton = document.createElement('button');
+        yesButton.textContent = 'Yes, fix it';
+        yesButton.style.cssText = `
+            flex: 1;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        yesButton.onmouseenter = () => { yesButton.style.opacity = '0.9'; };
+        yesButton.onmouseleave = () => { yesButton.style.opacity = '1'; };
+        yesButton.onclick = () => handleDataCorrectionConfirmation(true);
+
+        // No button
+        const noButton = document.createElement('button');
+        noButton.textContent = 'No, leave it';
+        noButton.style.cssText = `
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        `;
+        noButton.onmouseenter = () => { noButton.style.background = 'rgba(255, 255, 255, 0.15)'; };
+        noButton.onmouseleave = () => { noButton.style.background = 'rgba(255, 255, 255, 0.1)'; };
+        noButton.onclick = () => handleDataCorrectionConfirmation(false);
+
+        confirmContainer.appendChild(yesButton);
+        confirmContainer.appendChild(noButton);
+        messagesContainer.appendChild(confirmContainer);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
     function addFeedbackConfirmation(feedbackType) {
@@ -4416,6 +4778,79 @@ ${confidenceClosing}`,
                 conversationHistory.push({ role: 'assistant', content: confirmMessage });
                 saveConversationHistory();
                 pendingMeetingRequest = null;
+                isLoading = false;
+                return;
+            }
+
+            // Check for data correction intent (user wants to fix wrong data)
+            // This takes priority over bug reports since it's a quick fix Hey Henry can do directly
+            if (!pendingDataCorrection && !dataCorrectionFlowState && !pendingFeedback && !feedbackFlowState) {
+                const correctionIntent = detectDataCorrectionIntent(message);
+                if (correctionIntent && correctionIntent.field) {
+                    removeTypingIndicator();
+
+                    // Get current application context
+                    const appContext = await getCurrentApplicationContext();
+
+                    if (!appContext) {
+                        // Can't determine which app to fix - ask for clarification
+                        addMessage('assistant', "I'd be happy to fix that! But I'm not sure which job you're referring to. Could you tell me the company name so I can find the right application?");
+                        conversationHistory.push({ role: 'assistant', content: "I'd be happy to fix that! But I'm not sure which job you're referring to. Could you tell me the company name so I can find the right application?" });
+                        saveConversationHistory();
+                        isLoading = false;
+                        return;
+                    }
+
+                    if (!correctionIntent.newValue) {
+                        // We know the field but not the new value - ask for it
+                        pendingDataCorrection = {
+                            field: correctionIntent.field,
+                            fieldDisplayName: correctionIntent.fieldDisplayName,
+                            appContext: appContext,
+                            awaitingValue: true
+                        };
+                        dataCorrectionFlowState = 'awaiting_value';
+
+                        const askMessage = `Got it! What should the ${correctionIntent.fieldDisplayName} be for the ${appContext.company} role?`;
+                        addMessage('assistant', askMessage);
+                        conversationHistory.push({ role: 'assistant', content: askMessage });
+                        saveConversationHistory();
+                        isLoading = false;
+                        return;
+                    }
+
+                    // We have field and new value - ask for confirmation
+                    pendingDataCorrection = {
+                        field: correctionIntent.field,
+                        fieldDisplayName: correctionIntent.fieldDisplayName,
+                        newValue: correctionIntent.newValue,
+                        appContext: appContext
+                    };
+                    dataCorrectionFlowState = 'awaiting_confirmation';
+
+                    const confirmMessage = `I can fix that! Should I update the **${correctionIntent.fieldDisplayName}** to "**${correctionIntent.newValue}**" for the ${appContext.company} role?`;
+                    addMessage('assistant', confirmMessage);
+                    conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                    saveConversationHistory();
+                    addDataCorrectionConfirmation();
+                    isLoading = false;
+                    return;
+                }
+            }
+
+            // Handle data correction flow - user providing the new value
+            if (dataCorrectionFlowState === 'awaiting_value' && pendingDataCorrection) {
+                removeTypingIndicator();
+
+                // User provided the new value
+                pendingDataCorrection.newValue = message.trim();
+                dataCorrectionFlowState = 'awaiting_confirmation';
+
+                const confirmMessage = `Got it! Should I update the **${pendingDataCorrection.fieldDisplayName}** to "**${pendingDataCorrection.newValue}**" for the ${pendingDataCorrection.appContext.company} role?`;
+                addMessage('assistant', confirmMessage);
+                conversationHistory.push({ role: 'assistant', content: confirmMessage });
+                saveConversationHistory();
+                addDataCorrectionConfirmation();
                 isLoading = false;
                 return;
             }
