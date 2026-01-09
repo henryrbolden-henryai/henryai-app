@@ -327,6 +327,70 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": str(exc.body)[:500]}
     )
 
+# =============================================================================
+# LEADERSHIP DETECTION CONSTANTS
+# Single source of truth for people leadership patterns.
+# Used by extract_tiered_leadership() and extract_people_leadership_years()
+# =============================================================================
+
+# Evidence patterns that indicate direct people management
+PEOPLE_LEADERSHIP_EVIDENCE = [
+    "direct report", "direct reports", "managed a team", "led a team",
+    "team of", "people manager", "managed team", "lead a team",
+    "built the team", "grew the team", "hiring manager",
+    "performance review", "promoted", "mentored", "coached team",
+    "developed team", "team lead", "engineering manager", "people management",
+    "hired", "fired", "onboarded", "trained team", "built team",
+    # Additional patterns from real resumes
+    "built and led", "led marketing team", "led team", "scaled marketing",
+    "scaled team", "scaled function", "team from", "grew from",
+    "marketing team of", "engineering team of", "led the team",
+    "managed budget", "annual budget", "led organization",
+    "built organization", "reporting to", "reports to me",
+    "oversaw team", "supervised", "led cross-functional"
+]
+
+# Title patterns that typically indicate people leadership
+PEOPLE_LEADERSHIP_TITLES = [
+    "manager", "director", "head of", "vp ", "vice president",
+    "chief", "lead", "supervisor", "team lead"
+]
+
+# Strong leadership titles that inherently imply people management at established companies
+STRONG_LEADERSHIP_TITLES = [
+    "vp ", "vice president", "vp,", "director", "head of", "chief",
+    "senior manager", "senior product marketing manager", "group manager",
+    "marketing manager", "product marketing manager"
+]
+
+# Well-known companies where VP/Director definitely means people leadership
+ESTABLISHED_COMPANIES = [
+    "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
+    "uber", "lyft", "airbnb", "stripe", "square", "twilio", "segment",
+    "salesforce", "adobe", "oracle", "sap", "ibm", "cisco", "intel",
+    "linkedin", "twitter", "x corp", "snap", "pinterest", "dropbox",
+    "slack", "atlassian", "asana", "notion", "figma", "canva",
+    "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
+    "new relic", "mparticle", "amplitude", "mixpanel", "braze",
+    "intercom", "drift", "gong", "outreach", "salesloft",
+    # Energy / Utilities (enterprise scale)
+    "national grid", "pg&e", "con edison", "duke energy", "southern company",
+    # Fintech / Payments
+    "venmo", "paypal", "block", "coinbase", "robinhood", "plaid",
+    # Executive Search / Recruiting (verified people management)
+    "heidrick", "heidrick & struggles", "korn ferry", "spencer stuart",
+    "egon zehnder", "russell reynolds",
+    # Additional major companies
+    "spotify", "doordash", "instacart", "grubhub",
+]
+
+# Operational-only patterns (NO leadership credit)
+OPERATIONAL_ONLY_PATTERNS = [
+    "program manager", "project manager", "technical lead",
+    "staff engineer", "principal engineer", "architect",
+    "operations lead", "process lead", "systems lead"
+]
+
 # Initialize Anthropic client via services module
 client = initialize_claude_client()
 
@@ -7348,58 +7412,12 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         "led the", "leading the", "drove the", "driving"
     ]
 
-    # ========================================================================
-    # TIER 2: DIRECT PEOPLE LEADERSHIP EVIDENCE
-    # Must match patterns in extract_people_leadership_years() for consistency
-    # ========================================================================
-    people_evidence = [
-        "direct report", "direct reports", "managed a team", "led a team",
-        "team of", "people manager", "managed team", "lead a team",
-        "built the team", "grew the team", "hiring manager",
-        "performance review", "promoted", "mentored", "coached team",
-        "developed team", "team lead", "engineering manager", "people management",
-        "hired", "fired", "onboarded", "trained team", "built team",
-        # Additional patterns from real resumes (synced with extract_people_leadership_years)
-        "built and led", "led marketing team", "led team", "scaled marketing",
-        "scaled team", "scaled function", "team from", "grew from",
-        "marketing team of", "engineering team of", "led the team",
-        "managed budget", "annual budget", "led organization",
-        "built organization", "reporting to", "reports to me",
-        "oversaw team", "supervised", "led cross-functional"
-    ]
-
-    people_titles = [
-        "manager", "director", "head of", "vp ", "vice president",
-        "chief", "supervisor", "team lead"
-    ]
-
-    # Strong leadership titles at established companies = automatic people credit
-    strong_leadership_titles = [
-        "vp ", "vice president", "vp,", "director", "head of", "chief",
-        "senior manager", "senior product marketing manager", "group manager",
-        "marketing manager", "product marketing manager"
-    ]
-
-    # Well-known companies where VP/Director definitely means people leadership
-    established_companies = [
-        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
-        "uber", "lyft", "airbnb", "stripe", "square", "twilio", "segment",
-        "salesforce", "adobe", "oracle", "sap", "ibm", "cisco", "intel",
-        "linkedin", "twitter", "x corp", "snap", "pinterest", "dropbox",
-        "slack", "atlassian", "asana", "notion", "figma", "canva",
-        "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
-        "new relic", "mparticle", "amplitude", "mixpanel", "braze",
-        "intercom", "drift", "gong", "outreach", "salesloft",
-        # Energy / Utilities (enterprise scale)
-        "national grid", "pg&e", "con edison", "duke energy", "southern company",
-        # Fintech / Payments
-        "venmo", "paypal", "block", "coinbase", "robinhood", "plaid",
-        # Executive Search / Recruiting (verified people management)
-        "heidrick", "heidrick & struggles", "korn ferry", "spencer stuart",
-        "egon zehnder", "russell reynolds",
-        # Additional major companies
-        "spotify", "doordash", "instacart", "grubhub",
-    ]
+    # Use shared constants for people leadership (single source of truth)
+    people_evidence = PEOPLE_LEADERSHIP_EVIDENCE
+    people_titles = PEOPLE_LEADERSHIP_TITLES
+    strong_leadership_titles = STRONG_LEADERSHIP_TITLES
+    established_companies = ESTABLISHED_COMPANIES
+    operational_only_patterns = OPERATIONAL_ONLY_PATTERNS
 
     # ========================================================================
     # TIER 3: ORG-LEVEL LEADERSHIP EVIDENCE
@@ -7415,13 +7433,6 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         "ceo", "cto", "cfo", "coo", "cmo", "cio", "cpo", "cro",
         "chief", "president", "evp", "svp", "executive vp", "senior vp",
         "gm", "general manager"
-    ]
-
-    # Operational-only patterns (NO leadership credit)
-    operational_only_patterns = [
-        "program manager", "project manager", "technical lead",
-        "staff engineer", "principal engineer", "architect",
-        "operations lead", "process lead", "systems lead"
     ]
 
     tier_breakdown = []
@@ -9262,55 +9273,12 @@ def extract_people_leadership_years(resume_data: dict) -> float:
     if not experience or not isinstance(experience, list):
         return 0.0
 
-    # PEOPLE leadership indicators - must show direct reports/team management
-    people_leadership_evidence = [
-        "direct report", "direct reports", "managed a team", "led a team",
-        "team of", "people manager", "managed team", "lead a team",
-        "built the team", "grew the team", "hiring manager",
-        "performance review", "promoted", "mentored", "coached team",
-        "developed team", "team lead", "engineering manager", "people management",
-        # Additional patterns from real resumes
-        "built and led", "led marketing team", "led team", "scaled marketing",
-        "scaled team", "scaled function", "team from", "grew from",
-        "marketing team of", "engineering team of", "led the team",
-        "managed budget", "annual budget", "led organization",
-        "built organization", "reporting to", "reports to me",
-        "oversaw team", "supervised", "led cross-functional"
-    ]
-
-    # Title patterns that typically indicate people leadership
-    people_leadership_titles = [
-        "manager", "director", "head of", "vp ", "vice president",
-        "chief", "lead", "supervisor", "team lead"
-    ]
-
-    # STRONG leadership titles that inherently imply people management at established companies
-    # VP/Director at real companies = you manage people (no explicit evidence needed)
-    strong_leadership_titles = [
-        "vp ", "vice president", "vp,", "director", "head of", "chief",
-        # Senior Manager titles at established companies also typically have reports
-        "senior manager", "senior product marketing manager", "group manager",
-        "marketing manager", "product marketing manager"
-    ]
-
-    # Explicitly NOT people leadership (operational/systems leadership)
-    operational_only_patterns = [
-        "program manager", "project manager", "technical lead",
-        "staff engineer", "principal engineer", "architect",
-        "operations lead", "process lead", "systems lead"
-    ]
-
-    # Well-known companies where VP/Director definitely means people leadership
-    established_companies = [
-        "google", "meta", "facebook", "amazon", "apple", "microsoft", "netflix",
-        "uber", "lyft", "airbnb", "stripe", "square", "twilio", "segment",
-        "salesforce", "adobe", "oracle", "sap", "ibm", "cisco", "intel",
-        "linkedin", "twitter", "x corp", "snap", "pinterest", "dropbox",
-        "slack", "atlassian", "asana", "notion", "figma", "canva",
-        "shopify", "hubspot", "zendesk", "datadog", "snowflake", "mongodb",
-        "new relic", "mparticle", "amplitude", "mixpanel", "braze",
-        "intercom", "drift", "gong", "outreach", "salesloft",
-    ]
+    # Use shared constants for people leadership (single source of truth)
+    people_leadership_evidence = PEOPLE_LEADERSHIP_EVIDENCE
+    people_leadership_titles = PEOPLE_LEADERSHIP_TITLES
+    strong_leadership_titles = STRONG_LEADERSHIP_TITLES
+    operational_only_patterns = OPERATIONAL_ONLY_PATTERNS
+    established_companies = ESTABLISHED_COMPANIES
 
     total_people_years = 0.0
 
