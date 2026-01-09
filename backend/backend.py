@@ -7446,7 +7446,9 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
 
         title = (exp.get("title", "") or "").lower()
         description = (exp.get("description", "") or "").lower()
-        highlights = exp.get("highlights", [])
+
+        # Check both highlights and bullets fields (parsers use different names)
+        highlights = exp.get("highlights", []) or exp.get("bullets", []) or []
         if highlights and isinstance(highlights, list):
             highlights_text = " ".join([h.lower() for h in highlights if isinstance(h, str)])
         else:
