@@ -1132,7 +1132,8 @@
       // =========================================================================
       sessionStorage.removeItem('analysisData');
       sessionStorage.removeItem('pendingAnalysis');
-      console.log('🧹 Cleared old analysis data from sessionStorage');
+      localStorage.removeItem('analysisData_backup');  // Also clear localStorage backup
+      console.log('🧹 Cleared old analysis data from sessionStorage and localStorage');
 
       // Log detailed resume info for debugging cross-candidate contamination
       console.log('========================================');

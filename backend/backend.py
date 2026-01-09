@@ -10076,7 +10076,8 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                                     'coordinator', 'specialist', 'vp', 'vice president',
                                     'head of', 'senior', 'junior', 'associate', 'chief',
                                     'officer', 'developer', 'designer', 'architect',
-                                    'recruiter', 'marketing', 'sales', 'product', 'operations']
+                                    'recruiter', 'marketing', 'sales', 'product', 'operations',
+                                    'program', 'project', 'tpm']  # Added for TPM/Project Manager detection
             line_lower = line.lower()
             if any(indicator in line_lower for indicator in job_title_indicators):
                 print(f"  ✅ Extracted from content: '{line}'")
@@ -10147,7 +10148,52 @@ def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -
         print(f"  ✅ RECRUITING detected from JD ({recruiting_signal_count} signals)")
         return "recruiting"
 
-    # PRIORITY 2: PRODUCT
+    # PRIORITY 2: PROGRAM MANAGEMENT (TPM, Program Manager, Project Manager)
+    # Check BEFORE Product Manager because "Technical Program Manager" should NOT be classified as PM
+    # These are distinct roles with different skill sets:
+    # - TPM: Technical delivery across workstreams (HOW and WHEN)
+    # - Program Manager: Portfolio/initiative coordination
+    # - Project Manager: Single project delivery
+    # - Product Manager: Product strategy (WHAT and WHY)
+
+    # TPM patterns - check first as most specific
+    tpm_patterns = [
+        "technical program manager", "tpm", "sr tpm", "senior tpm",
+        "staff tpm", "principal tpm", "lead tpm"
+    ]
+
+    if any(pattern in title_lower for pattern in tpm_patterns):
+        print(f"  ✅ TPM detected from title")
+        return "tpm"
+
+    # Program Manager patterns (not product, not technical)
+    program_manager_patterns = [
+        "program manager", "sr program manager", "senior program manager",
+        "program director", "head of program", "vp program"
+    ]
+
+    # Check for program manager but NOT technical program manager (already handled)
+    # and NOT product program manager (should be PM)
+    if any(pattern in title_lower for pattern in program_manager_patterns):
+        # Exclude if "product" is in title - those are PMs
+        if "product" not in title_lower:
+            print(f"  ✅ PROGRAM_MANAGER detected from title")
+            return "program_manager"
+
+    # Project Manager patterns - distinct from Product Manager
+    project_manager_patterns = [
+        "project manager", "sr project manager", "senior project manager",
+        "project coordinator", "project lead", "pmo", "it project manager",
+        "technical project manager"
+    ]
+
+    if any(pattern in title_lower for pattern in project_manager_patterns):
+        # Exclude if "product" is in title - those are PMs
+        if "product" not in title_lower:
+            print(f"  ✅ PROJECT_MANAGER detected from title")
+            return "project_manager"
+
+    # PRIORITY 3: PRODUCT MANAGER
     product_patterns = [
         "product manager", "product lead", "product owner",
         "product director", "head of product", "vp product", "cpo"
@@ -10160,7 +10206,7 @@ def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -
             print(f"  ✅ PRODUCT detected from title")
             return "pm"
 
-    # PRIORITY 3: ENGINEERING
+    # PRIORITY 4: ENGINEERING
     engineering_patterns = [
         "engineer", "developer", "software", "technical lead",
         "architect", "sre", "devops", "engineering manager"
@@ -10170,7 +10216,7 @@ def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -
         print(f"  ✅ ENGINEERING detected from title")
         return "engineering"
 
-    # PRIORITY 4: SALES
+    # PRIORITY 5: SALES
     sales_patterns = [
         "sales", "account executive", "account manager",
         "business development", "revenue", "ae ", "sdr", "bdr"
@@ -10180,7 +10226,7 @@ def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -
         print(f"  ✅ SALES detected from title")
         return "sales"
 
-    # PRIORITY 5: MARKETING
+    # PRIORITY 6: MARKETING
     marketing_patterns = [
         "marketing", "growth", "demand gen",
         "brand", "marketing manager", "cmo"
@@ -10312,6 +10358,22 @@ def calculate_relevant_years_isolated(
             "technical recruiter", "ta ", "talent lead", "head of talent",
             "talent advisor", "search analyst", "executive search",
             "headhunter", "talent consultant", "hiring"
+        ],
+        "tpm": [
+            "technical program manager", "tpm", "sr tpm", "senior tpm",
+            "staff tpm", "principal tpm", "lead tpm",
+            # Also count program management experience with technical context
+            "program manager"  # TPM roles often have "program manager" in title
+        ],
+        "program_manager": [
+            "program manager", "sr program manager", "senior program manager",
+            "program director", "head of program", "vp program",
+            "portfolio manager", "initiative lead"
+        ],
+        "project_manager": [
+            "project manager", "sr project manager", "senior project manager",
+            "project coordinator", "project lead", "pmo", "it project manager",
+            "technical project manager", "project director"
         ],
         "pm": [
             "product manager", "product lead", "pm", "product owner",
