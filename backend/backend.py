@@ -7350,6 +7350,7 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
 
     # ========================================================================
     # TIER 2: DIRECT PEOPLE LEADERSHIP EVIDENCE
+    # Must match patterns in extract_people_leadership_years() for consistency
     # ========================================================================
     people_evidence = [
         "direct report", "direct reports", "managed a team", "led a team",
@@ -7357,7 +7358,14 @@ def extract_tiered_leadership(resume_data: dict) -> dict:
         "built the team", "grew the team", "hiring manager",
         "performance review", "promoted", "mentored", "coached team",
         "developed team", "team lead", "engineering manager", "people management",
-        "hired", "fired", "onboarded", "trained team", "built team"
+        "hired", "fired", "onboarded", "trained team", "built team",
+        # Additional patterns from real resumes (synced with extract_people_leadership_years)
+        "built and led", "led marketing team", "led team", "scaled marketing",
+        "scaled team", "scaled function", "team from", "grew from",
+        "marketing team of", "engineering team of", "led the team",
+        "managed budget", "annual budget", "led organization",
+        "built organization", "reporting to", "reports to me",
+        "oversaw team", "supervised", "led cross-functional"
     ]
 
     people_titles = [
