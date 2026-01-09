@@ -5465,8 +5465,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             from function_mismatch import detect_function_mismatch, format_mismatch_for_response
             # Run enhanced function mismatch detection
             jd_data_for_mismatch = {
-                "role_title": body.role_title or response_data.get("role_title", ""),
-                "job_description": body.job_description or "",
+                "role_title": response_data.get("role_title", ""),
+                "job_description": response_data.get("job_description", ""),
                 "responsibilities": response_data.get("responsibilities", [])
             }
             function_mismatch_result = detect_function_mismatch(
