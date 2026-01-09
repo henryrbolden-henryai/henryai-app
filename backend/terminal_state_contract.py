@@ -1545,7 +1545,7 @@ def detect_terminal_state(
                 recommendation = "Conditional Apply"
                 recommendation_cap = "Apply with Caution"
                 apply_button = ApplyButtonState.ENABLED_WITH_WARNING
-                coaching_mode = CoachingMode.COACHING
+                coaching_mode = CoachingMode.SIGNAL_BUILDING  # Fixed: COACHING enum doesn't exist
             elif severity == MismatchSeverity.SIGNIFICANT:
                 recommendation = "Long Shot"
                 recommendation_cap = "Long Shot"
