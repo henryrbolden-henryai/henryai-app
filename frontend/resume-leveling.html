@@ -1700,7 +1700,7 @@
             <!-- Action Section -->
             <div class="action-section">
                 <p class="action-text" id="actionText">
-                    You now know exactly how the market sees your resume. Let's close the gaps.
+                    You now know exactly how the market sees your resume. Let's strengthen your positioning.
                 </p>
                 <p class="action-subtext" id="actionSubtext" style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 16px;">
                     The next step will help you reframe your experience for maximum impact.
@@ -1762,8 +1762,18 @@
 
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
-            // Get analysis data from sessionStorage
-            const analysisDataStr = sessionStorage.getItem('analysisData');
+            // Get analysis data from sessionStorage with localStorage fallback (Safari compatibility)
+            let analysisDataStr = sessionStorage.getItem('analysisData');
+
+            // Safari fallback: check localStorage if sessionStorage is empty
+            if (!analysisDataStr) {
+                analysisDataStr = localStorage.getItem('analysisData_backup');
+                if (analysisDataStr) {
+                    console.log('Safari fallback: loaded analysisData from localStorage');
+                    sessionStorage.setItem('analysisData', analysisDataStr);
+                }
+            }
+
             if (!analysisDataStr) {
                 window.location.href = 'analyze.html';
                 return;
@@ -2407,9 +2417,9 @@
                 primaryBtnText = "Strengthen Your Resume";
             } else if (levelsApart === 1) {
                 // Stretch role - achievable
-                mainText = "You're one level away. Strategic positioning can close this gap.";
+                mainText = "You're one level away. Strategic positioning can help bridge the difference.";
                 subText = "Let's reframe your experience to highlight the scope and impact that supports your target level.";
-                primaryBtnText = "Close the Gap";
+                primaryBtnText = "Strengthen Your Resume";
             } else if (levelsApart > 1) {
                 // Significant gap
                 mainText = "This is a stretch. Focus on the high-priority items first.";
@@ -2427,7 +2437,7 @@
                 primaryBtnText = "Strengthen Your Resume";
             } else {
                 // Default
-                mainText = "You now know exactly how the market sees your resume. Let's close the gaps.";
+                mainText = "You now know exactly how the market sees your resume. Let's strengthen your positioning.";
                 subText = "The next step will help you reframe your experience for maximum impact.";
             }
 

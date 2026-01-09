@@ -1500,8 +1500,18 @@
                 });
             });
 
-            // Get analysis data for candidate name
-            const analysisDataStr = sessionStorage.getItem('analysisData');
+            // Get analysis data for candidate name with localStorage fallback (Safari compatibility)
+            let analysisDataStr = sessionStorage.getItem('analysisData');
+
+            // Safari fallback: check localStorage if sessionStorage is empty
+            if (!analysisDataStr) {
+                analysisDataStr = localStorage.getItem('analysisData_backup');
+                if (analysisDataStr) {
+                    console.log('Safari fallback: loaded analysisData from localStorage');
+                    sessionStorage.setItem('analysisData', analysisDataStr);
+                }
+            }
+
             if (!analysisDataStr) {
                 window.location.href = 'index.html';
                 return;
@@ -1782,9 +1792,9 @@ COVER LETTER
                 return;
             }
 
-            // Get job context
-            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
-            const jobId = analysisData._job_id;
+            // Get job context (use sessionStorage which was restored from localStorage if needed)
+            const currentAnalysisData = JSON.parse(sessionStorage.getItem('analysisData') || localStorage.getItem('analysisData_backup') || '{}');
+            const jobId = currentAnalysisData._job_id;
 
             if (!jobId) {
                 showSuccessMessage('Job context not found');
@@ -1889,8 +1899,8 @@ COVER LETTER
         document.addEventListener('DOMContentLoaded', () => {
             // Render LinkedIn optimized sections (or upload prompt)
             if (window.linkedInUpload) {
-                // Get job context from session storage
-                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                // Get job context from session storage (with localStorage fallback for Safari)
+                const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || localStorage.getItem('analysisData_backup') || '{}');
                 const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
                 const linkedinScoringResults = JSON.parse(sessionStorage.getItem('linkedinScoringResults') || '{}');
 

@@ -5459,13 +5459,38 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             enforce_messaging_contract,
         )
 
+        # Import enhanced function mismatch detection
+        function_mismatch_result = None
+        try:
+            from function_mismatch import detect_function_mismatch, format_mismatch_for_response
+            # Run enhanced function mismatch detection
+            jd_data_for_mismatch = {
+                "role_title": body.role_title or response_data.get("role_title", ""),
+                "job_description": body.job_description or "",
+                "responsibilities": response_data.get("responsibilities", [])
+            }
+            function_mismatch_result = detect_function_mismatch(
+                resume_data=resume_data or {},
+                jd_data=jd_data_for_mismatch
+            )
+            print(f"🔍 Function Mismatch Detection: is_mismatch={function_mismatch_result.is_mismatch}, "
+                  f"severity={function_mismatch_result.severity.value if function_mismatch_result.is_mismatch else 'none'}, "
+                  f"candidate={function_mismatch_result.candidate_function}, role={function_mismatch_result.role_function}")
+        except ImportError:
+            print("⚠️ function_mismatch module not available")
+        except Exception as fm_err:
+            print(f"⚠️ Function mismatch detection error: {fm_err}")
+
         # Get detected level and target level for gap analysis
         detected_level = experience_analysis.get("candidate_level", "Mid-level")
         target_level = response_data.get("inferred_seniority", "Senior")
 
         # Use canonical profile for function match if available
+        # Enhanced: Use function_mismatch_result if available for more accurate detection
         function_match = True
-        if canonical_profile:
+        if function_mismatch_result and function_mismatch_result.is_mismatch:
+            function_match = False
+        elif canonical_profile:
             function_match = canonical_profile.function_match
         elif transition_info and transition_info.get("is_transition"):
             # Fallback: Career transition detected - check adjacency
@@ -5473,7 +5498,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             if adjacency < 0.5:
                 function_match = False
 
-        # Run terminal state detection
+        # Run terminal state detection (with enhanced function mismatch data)
         terminal_state_contract = detect_terminal_state(
             resume=resume_data or {},
             fit_score=capped_score,
@@ -5481,7 +5506,8 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             target_level=target_level,
             function_match=function_match,
             eligibility_passed=not recommendation_locked,
-            eligibility_reason=locked_reason or ""
+            eligibility_reason=locked_reason or "",
+            function_mismatch_result=function_mismatch_result  # Pass enhanced result
         )
 
         # LOG DECISION AUTHORITY CHAIN - Full audit trail for Railway
@@ -5521,6 +5547,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             response_data["terminal_state"] = terminal_state_contract.to_dict()
             response_data["apply_button_state"] = terminal_state_contract.apply_button.value
             response_data["coaching_mode"] = terminal_state_contract.coaching_mode.value
+
+            # Add function mismatch data to response for UI banner
+            if function_mismatch_result:
+                response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
 
     except ImportError as e:
         print(f"⚠️ Terminal state contract not available: {e}")

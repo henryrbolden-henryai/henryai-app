@@ -21,6 +21,20 @@ from typing import List, Dict, Any, Optional, Tuple
 from enum import Enum
 import re
 
+# Import function mismatch module for enhanced detection
+try:
+    from function_mismatch import (
+        detect_function_mismatch,
+        FunctionMismatchResult,
+        MismatchSeverity,
+        apply_function_mismatch_cap,
+        format_mismatch_for_response
+    )
+    FUNCTION_MISMATCH_MODULE_AVAILABLE = True
+except ImportError:
+    FUNCTION_MISMATCH_MODULE_AVAILABLE = False
+    print("⚠️ function_mismatch module not available, using legacy detection")
+
 
 # =============================================================================
 # CANONICAL CANDIDATE PROFILE (Round 3 Fix)
@@ -1462,7 +1476,8 @@ def detect_terminal_state(
     target_level: str,
     function_match: bool,
     eligibility_passed: bool,
-    eligibility_reason: str = ""
+    eligibility_reason: str = "",
+    function_mismatch_result: Optional[Any] = None  # FunctionMismatchResult from function_mismatch module
 ) -> TerminalStateContract:
     """
     Detect the highest-authority terminal state that applies.
@@ -1516,10 +1531,50 @@ def detect_terminal_state(
         contract.reason = eligibility_reason or "Does not meet eligibility requirements"
         return contract
 
-    # 3. Check function mismatch
+    # 3. Check function mismatch (with enhanced severity support)
     if not function_match:
-        contract = TERMINAL_STATES[TerminalStateType.FUNCTION_MISMATCH]
-        return contract
+        # Use enhanced function mismatch result if available
+        if function_mismatch_result and FUNCTION_MISMATCH_MODULE_AVAILABLE:
+            # Create contract based on mismatch severity
+            severity = getattr(function_mismatch_result, 'severity', None)
+            score_cap = getattr(function_mismatch_result, 'score_cap', 25)
+            coaching = getattr(function_mismatch_result, 'coaching_message', None)
+
+            # Map severity to recommendation
+            if severity == MismatchSeverity.ADJACENT:
+                recommendation = "Conditional Apply"
+                recommendation_cap = "Apply with Caution"
+                apply_button = ApplyButtonState.ENABLED_WITH_WARNING
+                coaching_mode = CoachingMode.COACHING
+            elif severity == MismatchSeverity.SIGNIFICANT:
+                recommendation = "Long Shot"
+                recommendation_cap = "Long Shot"
+                apply_button = ApplyButtonState.DEMOTED
+                coaching_mode = CoachingMode.REDIRECTION
+            else:  # COMPLETE
+                recommendation = "Do Not Apply"
+                recommendation_cap = "Long Shot"
+                apply_button = ApplyButtonState.DEMOTED
+                coaching_mode = CoachingMode.REDIRECTION
+
+            contract = TerminalStateContract(
+                state_type=TerminalStateType.FUNCTION_MISMATCH,
+                fit_score_cap=score_cap,
+                recommendation=recommendation,
+                recommendation_cap=recommendation_cap,
+                apply_button=apply_button,
+                coaching_mode=coaching_mode,
+                forbidden_messaging=["strong match", "well-suited", "ideal candidate"],
+                required_messaging=["function mismatch", "different function"],
+                reason=coaching or "This role requires experience in a different function than your background"
+            )
+            # Store enhanced data for downstream use
+            contract.function_mismatch_data = function_mismatch_result
+            return contract
+        else:
+            # Fallback to default contract
+            contract = TERMINAL_STATES[TerminalStateType.FUNCTION_MISMATCH]
+            return contract
 
     # 4. Check missing core signals (scope, impact, ownership)
     scope_present = any(has_scope_signal(b) for b in bullets)

@@ -874,6 +874,186 @@
             }
         }
 
+        /* FUNCTION MISMATCH BANNER - Prominent alert for function mismatches */
+        .function-mismatch-banner {
+            display: none;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .function-mismatch-banner.visible {
+            display: block;
+        }
+
+        .function-mismatch-banner.adjacent {
+            background: linear-gradient(135deg, #422006 0%, #1f2937 100%);
+            border: 1px solid #f59e0b;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .function-mismatch-banner.significant {
+            background: linear-gradient(135deg, #7c2d12 0%, #1f2937 100%);
+            border: 1px solid #ea580c;
+            border-left: 4px solid #ea580c;
+        }
+
+        .function-mismatch-banner.complete {
+            background: linear-gradient(135deg, #450a0a 0%, #1f2937 100%);
+            border: 1px solid #dc2626;
+            border-left: 4px solid #dc2626;
+        }
+
+        .function-mismatch-header {
+            padding: 20px;
+        }
+
+        .function-mismatch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+
+        .function-mismatch-banner.adjacent .function-mismatch-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+
+        .function-mismatch-banner.significant .function-mismatch-badge {
+            background: rgba(234, 88, 12, 0.2);
+            color: #fdba74;
+        }
+
+        .function-mismatch-banner.complete .function-mismatch-badge {
+            background: rgba(220, 38, 38, 0.2);
+            color: #fca5a5;
+        }
+
+        .function-mismatch-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .function-mismatch-functions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .function-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .function-tag.candidate {
+            background: rgba(34, 211, 238, 0.15);
+            color: var(--color-accent);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .function-tag.role {
+            background: rgba(167, 139, 250, 0.15);
+            color: #c4b5fd;
+            border: 1px solid rgba(167, 139, 250, 0.3);
+        }
+
+        .function-arrow {
+            color: var(--color-text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .function-mismatch-message {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 16px;
+        }
+
+        .function-mismatch-score-cap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .function-mismatch-score-cap strong {
+            color: var(--color-text);
+        }
+
+        .function-mismatch-transferable {
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .function-mismatch-transferable-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .function-mismatch-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .transferable-skill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #86efac;
+        }
+
+        .transferable-skill::before {
+            content: "✓";
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 640px) {
+            .function-mismatch-functions {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .function-arrow {
+                transform: rotate(90deg);
+                margin: 4px 0;
+            }
+        }
+
         /* MARKET CONTEXT - HORIZONTAL BAR */
         .market-grid {
             display: grid;
@@ -1551,7 +1731,49 @@
                         </div>
                     </div>
 
-                    <!-- 4.5. MARKET SIGNALS (Reality Check System) -->
+                    <!-- 4.5. FUNCTION MISMATCH BANNER (New prominent alert) -->
+                    <div class="function-mismatch-banner" id="functionMismatchBanner">
+                        <div class="function-mismatch-header">
+                            <div class="function-mismatch-badge" id="functionMismatchBadge">
+                                <span>⚠</span>
+                                <span id="functionMismatchSeverityLabel">Function Mismatch</span>
+                            </div>
+
+                            <div class="function-mismatch-title" id="functionMismatchTitle">
+                                Different functional background detected
+                            </div>
+
+                            <div class="function-mismatch-functions">
+                                <div class="function-tag candidate">
+                                    <span>Your background:</span>
+                                    <strong id="functionMismatchCandidate">—</strong>
+                                </div>
+                                <span class="function-arrow">→</span>
+                                <div class="function-tag role">
+                                    <span>Role requires:</span>
+                                    <strong id="functionMismatchRole">—</strong>
+                                </div>
+                            </div>
+
+                            <div class="function-mismatch-message" id="functionMismatchMessage">
+                                <!-- Coaching message populated dynamically -->
+                            </div>
+
+                            <div class="function-mismatch-score-cap" id="functionMismatchScoreCap">
+                                <span>Maximum fit score capped at</span>
+                                <strong id="functionMismatchCapValue">—</strong>
+                            </div>
+
+                            <div class="function-mismatch-transferable" id="functionMismatchTransferable" style="display: none;">
+                                <div class="function-mismatch-transferable-label">Transferable skills that may help</div>
+                                <div class="function-mismatch-skills" id="functionMismatchSkills">
+                                    <!-- Skills populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4.6. MARKET SIGNALS (Reality Check System) -->
                     <div class="section reality-check-section" id="marketSignalsSection" style="display: none;">
                         <div class="section-title">Market Signals</div>
                         <div id="marketSignalsContent">
@@ -2206,6 +2428,86 @@
                 // Generate default based on fit score and competition
                 brutalTruthEl.textContent = generateDefaultRealityCheck(fitScore, competitiveness, candidateFirstName);
             }
+        }
+
+        // =====================================================================
+        // POPULATE: Function Mismatch Banner (New prominent alert)
+        // =====================================================================
+        const functionMismatch = data.function_mismatch || null;
+        const functionMismatchBanner = document.getElementById('functionMismatchBanner');
+
+        // Support both API format (detected) and legacy format (is_mismatch)
+        const isMismatch = functionMismatch?.detected || functionMismatch?.is_mismatch;
+        if (functionMismatch && isMismatch && functionMismatch.severity !== 'none') {
+            // Show the banner
+            functionMismatchBanner.classList.add('visible');
+            functionMismatchBanner.classList.add(functionMismatch.severity); // adjacent, significant, or complete
+
+            // Set severity label
+            const severityLabel = document.getElementById('functionMismatchSeverityLabel');
+            const severityLabels = {
+                'adjacent': 'Adjacent Function',
+                'significant': 'Significant Mismatch',
+                'complete': 'Complete Mismatch'
+            };
+            severityLabel.textContent = severityLabels[functionMismatch.severity] || 'Function Mismatch';
+
+            // Set title based on severity
+            const titleEl = document.getElementById('functionMismatchTitle');
+            const severityTitles = {
+                'adjacent': 'Your background is in a related but distinct function',
+                'significant': 'Your experience is in a different functional area',
+                'complete': 'This role requires a fundamentally different background'
+            };
+            titleEl.textContent = severityTitles[functionMismatch.severity] || 'Different functional background detected';
+
+            // Format function names for display
+            function formatFunctionName(name) {
+                if (!name) return '—';
+                return name.split('_').map(word =>
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+            }
+
+            // Populate candidate and role functions
+            document.getElementById('functionMismatchCandidate').textContent =
+                formatFunctionName(functionMismatch.candidate_function);
+            document.getElementById('functionMismatchRole').textContent =
+                formatFunctionName(functionMismatch.role_function);
+
+            // Populate coaching message (API uses 'message', fallback to 'coaching_message')
+            const messageEl = document.getElementById('functionMismatchMessage');
+            const coachingMsg = functionMismatch.message || functionMismatch.coaching_message;
+            if (coachingMsg) {
+                messageEl.textContent = coachingMsg;
+            } else {
+                messageEl.style.display = 'none';
+            }
+
+            // Populate score cap
+            const scoreCapEl = document.getElementById('functionMismatchScoreCap');
+            if (functionMismatch.score_cap) {
+                document.getElementById('functionMismatchCapValue').textContent =
+                    functionMismatch.score_cap + '%';
+            } else {
+                scoreCapEl.style.display = 'none';
+            }
+
+            // Populate transferable skills
+            const transferableSection = document.getElementById('functionMismatchTransferable');
+            const skillsContainer = document.getElementById('functionMismatchSkills');
+            const transferableSkills = functionMismatch.transferable_skills || [];
+
+            if (transferableSkills.length > 0) {
+                transferableSection.style.display = 'block';
+                skillsContainer.innerHTML = transferableSkills.map(skill =>
+                    `<span class="transferable-skill">${skill}</span>`
+                ).join('');
+            }
+
+            console.log('[Function Mismatch Banner] Displayed:', functionMismatch);
+        } else {
+            console.log('[Function Mismatch Banner] Not displayed - no mismatch or severity is none');
         }
 
         // =====================================================================

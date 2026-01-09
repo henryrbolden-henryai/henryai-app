@@ -322,8 +322,18 @@
         }
 
         async function generateDocuments() {
-            // Get analysis data
-            const analysisDataStr = sessionStorage.getItem('analysisData');
+            // Get analysis data with localStorage fallback (Safari compatibility)
+            let analysisDataStr = sessionStorage.getItem('analysisData');
+
+            // Safari fallback: check localStorage if sessionStorage is empty
+            if (!analysisDataStr) {
+                analysisDataStr = localStorage.getItem('analysisData_backup');
+                if (analysisDataStr) {
+                    console.log('Safari fallback: loaded analysisData from localStorage');
+                    sessionStorage.setItem('analysisData', analysisDataStr);
+                }
+            }
+
             if (!analysisDataStr) {
                 showError('No analysis data found. Please go back to the results page and try again.');
                 console.error('Missing analysisData in sessionStorage');
