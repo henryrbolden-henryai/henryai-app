@@ -569,10 +569,40 @@
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
-            const linkedinDataStr = sessionStorage.getItem('linkedinData');
+            let linkedinDataStr = sessionStorage.getItem('linkedinData');
+
+            // If no sessionStorage data, check if user has uploaded profile in localStorage
+            // This prevents redirect loop when localStorage has profile but sessionStorage is empty
+            if (!linkedinDataStr) {
+                const userProfileStr = localStorage.getItem('userProfile');
+                if (userProfileStr) {
+                    const userProfile = JSON.parse(userProfileStr);
+                    if (userProfile.linkedin_profile_uploaded && userProfile.linkedin_parsed) {
+                        // User has LinkedIn data in localStorage - use it
+                        linkedinDataStr = JSON.stringify({
+                            uploaded: true,
+                            parsed: userProfile.linkedin_parsed,
+                            filename: 'Previously uploaded profile'
+                        });
+                        sessionStorage.setItem('linkedinData', linkedinDataStr);
+                        console.log('Restored linkedinData from localStorage userProfile');
+                    }
+                }
+            }
 
             if (!linkedinDataStr) {
-                // No data - redirect to upload
+                // Still no data - clear the linkedin_profile_uploaded flag to break the loop
+                // and redirect to upload
+                const userProfileStr = localStorage.getItem('userProfile');
+                if (userProfileStr) {
+                    const userProfile = JSON.parse(userProfileStr);
+                    if (userProfile.linkedin_profile_uploaded) {
+                        // Flag is set but no data - clear it to prevent loop
+                        userProfile.linkedin_profile_uploaded = false;
+                        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                        console.log('Cleared stale linkedin_profile_uploaded flag');
+                    }
+                }
                 window.location.href = 'linkedin-upload.html';
                 return;
             }
