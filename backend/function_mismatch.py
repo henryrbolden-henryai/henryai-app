@@ -546,12 +546,20 @@ def classify_role_function(jd_data: Dict[str, Any]) -> FunctionClassification:
     for function_name, function_def in FUNCTION_TAXONOMY.items():
         score = 0.0
         signals_found = []
+        title_matched = False
 
-        # Check job title (highest weight = 5 points)
+        # Check job title (highest weight = 15 points for exact match, 10 for partial)
+        # Job title is THE primary signal - should dominate over body text signals
         for pattern in function_def["titles"]:
             if pattern in job_title_lower:
-                score += 5.0
-                signals_found.append(f"Job title contains: {pattern}")
+                # Higher weight for more specific matches
+                if job_title_lower.startswith(pattern) or f" {pattern}" in job_title_lower:
+                    score += 15.0  # Strong title match
+                    signals_found.append(f"Job title match: {pattern}")
+                else:
+                    score += 10.0  # Partial title match
+                    signals_found.append(f"Job title contains: {pattern}")
+                title_matched = True
                 break
 
         # Check for explicit function declaration (4 points)
@@ -570,12 +578,16 @@ def classify_role_function(jd_data: Dict[str, Any]) -> FunctionClassification:
                     signals_found.append(f"Explicit declaration: {decl}")
                     break
 
-        # Check for function signals in text (1 point per match)
+        # Check for function signals in text (1 point per match, capped at 8)
+        # Cap signal points so they can't overwhelm a clear title match
+        signal_points = 0.0
         for signal in function_def["signals"]:
             if re.search(rf'\b{re.escape(signal)}\b', jd_text):
-                score += 1.0
-                if len(signals_found) < 10:
-                    signals_found.append(f"Signal: {signal}")
+                if signal_points < 8.0:  # Cap at 8 points from signals
+                    signal_points += 1.0
+                    if len(signals_found) < 10:
+                        signals_found.append(f"Signal: {signal}")
+        score += signal_points
 
         function_scores[function_name] = {
             "score": score,
