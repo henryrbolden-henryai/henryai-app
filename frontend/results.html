@@ -1808,8 +1808,19 @@
         // Configuration
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
 
-        // Load analysis data from sessionStorage
-        const data = JSON.parse(sessionStorage.getItem('analysisData'));
+        // Load analysis data from sessionStorage with localStorage fallback (Safari compatibility)
+        let analysisDataStr = sessionStorage.getItem('analysisData');
+
+        // Safari fallback: check localStorage if sessionStorage is empty
+        if (!analysisDataStr) {
+            analysisDataStr = localStorage.getItem('analysisData_backup');
+            if (analysisDataStr) {
+                console.log('Safari fallback: loaded analysisData from localStorage');
+                sessionStorage.setItem('analysisData', analysisDataStr);
+            }
+        }
+
+        const data = analysisDataStr ? JSON.parse(analysisDataStr) : null;
 
         // Redirect if no data
         if (!data) {

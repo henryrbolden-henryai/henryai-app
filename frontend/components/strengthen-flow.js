@@ -30,9 +30,25 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // Load data from sessionStorage
-        const levelingDataStr = sessionStorage.getItem('levelingData');
-        const analysisDataStr = sessionStorage.getItem('analysisData');
+        // Load data from sessionStorage with localStorage fallback (Safari compatibility)
+        let levelingDataStr = sessionStorage.getItem('levelingData');
+        let analysisDataStr = sessionStorage.getItem('analysisData');
+
+        // Safari fallback: check localStorage if sessionStorage is empty
+        if (!levelingDataStr) {
+            levelingDataStr = localStorage.getItem('levelingData_backup');
+            if (levelingDataStr) {
+                console.log('Safari fallback: loaded levelingData from localStorage');
+                sessionStorage.setItem('levelingData', levelingDataStr);
+            }
+        }
+        if (!analysisDataStr) {
+            analysisDataStr = localStorage.getItem('analysisData_backup');
+            if (analysisDataStr) {
+                console.log('Safari fallback: loaded analysisData from localStorage');
+                sessionStorage.setItem('analysisData', analysisDataStr);
+            }
+        }
 
         if (!levelingDataStr && !analysisDataStr) {
             showError('No analysis data found. Please start from the beginning.');

@@ -1987,8 +1987,10 @@
                 levelingData = await response.json();
                 console.log('Leveling data:', levelingData);
 
-                // Store for use by strengthen page
-                sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+                // Store for use by strengthen page (with localStorage backup for Safari)
+                const levelingDataStr = JSON.stringify(levelingData);
+                sessionStorage.setItem('levelingData', levelingDataStr);
+                localStorage.setItem('levelingData_backup', levelingDataStr);
 
                 // Render results
                 renderResults();
@@ -2022,9 +2024,23 @@
             // Skip leveling analysis and proceed based on recommendation
             console.log('User skipped leveling analysis');
 
-            // Get analysisData to check recommendation
-            const analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+            // Get analysisData to check recommendation - try sessionStorage first, then localStorage
+            let analysisDataStr = sessionStorage.getItem('analysisData');
+
+            // Safari fallback: also check localStorage
+            if (!analysisDataStr) {
+                analysisDataStr = localStorage.getItem('analysisData_backup');
+                console.log('Safari fallback: loaded analysisData from localStorage');
+            }
+
+            const analysisData = JSON.parse(analysisDataStr || '{}');
             const recommendation = (analysisData.recommendation || '').toLowerCase();
+
+            // Ensure data is in both storages for Safari compatibility
+            if (analysisDataStr) {
+                sessionStorage.setItem('analysisData', analysisDataStr);
+                localStorage.setItem('analysisData_backup', analysisDataStr);
+            }
 
             // Check if we should proceed to strengthen or skip to results
             const applyRecommendations = ['apply', 'strong apply', 'strongly apply', 'conditional apply'];

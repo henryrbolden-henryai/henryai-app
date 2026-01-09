@@ -347,8 +347,10 @@
                     has_strengths: 'strengths' in fullData,
                     strengths_length: Array.isArray(fullData.strengths) ? fullData.strengths.length : 'NOT_ARRAY'
                 });
-                // Store analysis data
-                sessionStorage.setItem('analysisData', JSON.stringify(fullData));
+                // Store analysis data (with localStorage backup for Safari)
+                const analysisDataStr = JSON.stringify(fullData);
+                sessionStorage.setItem('analysisData', analysisDataStr);
+                localStorage.setItem('analysisData_backup', analysisDataStr);
 
                 // Clear pending data
                 sessionStorage.removeItem('pendingAnalysis');

@@ -474,8 +474,10 @@
                     has_strengths: 'strengths' in data.data,
                     strengths_length: Array.isArray(data.data.strengths) ? data.data.strengths.length : 'NOT_ARRAY'
                 });
-                // Store complete data and redirect
-                sessionStorage.setItem('analysisData', JSON.stringify(data.data));
+                // Store complete data and redirect (with localStorage backup for Safari)
+                const analysisDataStr = JSON.stringify(data.data);
+                sessionStorage.setItem('analysisData', analysisDataStr);
+                localStorage.setItem('analysisData_backup', analysisDataStr);
                 streamingData.complete = data.data;
                 updateStatus('Analysis complete!');
                 
