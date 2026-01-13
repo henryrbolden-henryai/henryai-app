@@ -3255,6 +3255,18 @@
             line-height: 1.4;
         }
 
+        .next-action-reason a.next-action-link {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .next-action-reason a.next-action-link:hover {
+            text-decoration: underline;
+            opacity: 0.9;
+        }
+
         /* One-Click Action Button */
         .one-click-btn {
             background: var(--color-accent);
@@ -9689,57 +9701,59 @@ Thanks so much!
 
         /**
          * Get actionable next step based on application status
+         * Links directly to HenryHQ modules for each stage
          */
         function getNextActionForStatus(app) {
             const status = (app.status || '').toLowerCase();
+            const company = app.company || 'this company';
 
-            // Stage-specific actionable next steps
+            // Stage-specific actionable next steps with module links
             if (status.includes('applied') || status === 'networking') {
                 return {
-                    action: 'Review Networking & Outreach Strategy',
-                    reason: 'Find connections at this company to increase visibility'
+                    action: `Know anyone at ${company}?`,
+                    reason: `<a href="outreach.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Network & Outreach →</a>`
                 };
             } else if (status.includes('recruiter') || status.includes('screen')) {
                 return {
-                    action: 'Prepare for Recruiter Screen',
-                    reason: 'Review your intro sell and company research'
+                    action: 'Nail your intro sell',
+                    reason: `<a href="practice-intro.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Practice 60-sec opener →</a>`
                 };
             } else if (status.includes('hiring manager')) {
                 return {
-                    action: 'Prepare Hiring Manager Talking Points',
-                    reason: 'Focus on leadership style and team fit'
+                    action: 'Prep for Hiring Manager',
+                    reason: `<a href="prep-guide.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Prep Guide →</a>`
                 };
             } else if (status.includes('technical')) {
                 return {
-                    action: 'Review Technical Prep Materials',
-                    reason: 'Practice relevant technical scenarios'
+                    action: 'Technical prep time',
+                    reason: `<a href="practice-drills.html?type=strategy&appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Run Strategy Drills →</a>`
                 };
             } else if (status.includes('panel')) {
                 return {
-                    action: 'Research Panel Interviewers',
-                    reason: 'Prepare for multiple stakeholder perspectives'
+                    action: 'Panel interview prep',
+                    reason: `<a href="interview-intelligence.html" class="next-action-link" onclick="event.stopPropagation()">Add interviewers for intel →</a>`
                 };
             } else if (status.includes('final') || status.includes('executive')) {
                 return {
-                    action: 'Prepare Executive Presentation',
-                    reason: 'Focus on strategic vision and business impact'
+                    action: 'Final round prep',
+                    reason: `<a href="story-bank.html" class="next-action-link" onclick="event.stopPropagation()">Review your best stories →</a>`
                 };
             } else if (status.includes('offer') || status.includes('negotiat')) {
                 return {
-                    action: 'Review Negotiation Strategy',
-                    reason: 'Prepare your compensation ask and leverage'
+                    action: 'Negotiation time',
+                    reason: `<a href="positioning.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review your leverage →</a>`
                 };
             } else if (status.includes('awaiting')) {
                 return {
-                    action: 'Send Follow-up Message',
-                    reason: 'Stay top of mind without being pushy'
+                    action: 'Time to follow up',
+                    reason: `<a href="outreach.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Draft follow-up message →</a>`
                 };
             }
 
             // Default fallback
             return {
-                action: 'Review Application Strategy',
-                reason: 'Check positioning and next steps'
+                action: 'Review your strategy',
+                reason: `<a href="overview.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">View full analysis →</a>`
             };
         }
 
