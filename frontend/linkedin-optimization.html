@@ -1763,7 +1763,7 @@
 
             // ============ SENIORITY CLASSIFICATION (Mandatory) ============
             // Leadership profiles must NOT be evaluated using IC defaults
-            const leadershipTitles = /\b(director|head of|vp|vice president|global lead|partner|founder|principal|advisor|chief|ceo|cto|cfo|cmo|coo|cpo|svp|evp|managing director|president)\b/i;
+            const leadershipTitles = /\b(director|head of|vp|vice president|global lead|leader|partner|founder|principal|advisor|chief|ceo|cto|cfo|cmo|coo|cpo|svp|evp|managing director|president|senior manager|manager of)\b/i;
             const allTitles = [
                 linkedin.headline || '',
                 ...(experience.map(e => e.title || ''))
