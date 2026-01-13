@@ -1297,6 +1297,16 @@
                         View Optimization Recommendations &rarr;
                     </button>
                 </div>
+
+                <!-- Upload Updated Profile -->
+                <div class="update-profile-section" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); text-align: center;">
+                    <p style="color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 12px;">
+                        Made changes to your LinkedIn? Upload your updated profile to see your new score.
+                    </p>
+                    <button class="btn-secondary" onclick="showUploadSection()" style="background: transparent; border: 1px solid var(--color-accent); color: var(--color-accent); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;">
+                        Upload Updated Profile
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1442,13 +1452,29 @@
             // Check Job Fit Warning
             checkAndDisplayJobFitWarning(analysisData);
 
-            // Check if we have existing LinkedIn data
+            // Check if we have existing LinkedIn data - check localStorage first (persistent), then sessionStorage
+            const persistedLinkedinData = localStorage.getItem('linkedinProfileData');
             const storedLinkedinData = sessionStorage.getItem('linkedinData');
             const storedScoringResults = sessionStorage.getItem('linkedinScoringResults');
 
+            // Also check user profile for LinkedIn data
+            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+            const profileLinkedinData = userProfile.linkedin_parsed;
+
+            // Priority: sessionStorage > localStorage > userProfile
             if (storedLinkedinData) {
                 linkedinData = JSON.parse(storedLinkedinData);
+            } else if (persistedLinkedinData) {
+                linkedinData = JSON.parse(persistedLinkedinData);
+                // Sync to sessionStorage for consistency
+                sessionStorage.setItem('linkedinData', persistedLinkedinData);
+            } else if (profileLinkedinData) {
+                linkedinData = profileLinkedinData;
+                // Sync to storage
+                sessionStorage.setItem('linkedinData', JSON.stringify(profileLinkedinData));
+                localStorage.setItem('linkedinProfileData', JSON.stringify(profileLinkedinData));
             }
+
             if (storedScoringResults) {
                 scoringResults = JSON.parse(storedScoringResults);
             }
@@ -1588,7 +1614,13 @@
                 }
 
                 linkedinData = await parseResponse.json();
+
+                // Persist to sessionStorage and localStorage
                 sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+                localStorage.setItem('linkedinProfileData', JSON.stringify(linkedinData));
+
+                // Save to user profile
+                saveLinkedInToProfile(linkedinData);
 
                 // Calculate detailed score locally
                 const result = calculateDetailedScore(linkedinData, analysisData);
@@ -1616,6 +1648,62 @@
             const optimizationEmpty = document.getElementById('optimizationEmpty');
             if (optimizationEmpty) {
                 optimizationEmpty.style.display = 'none';
+            }
+        }
+
+        function showUploadSection() {
+            // Reset the upload section HTML
+            document.getElementById('uploadSection').innerHTML = `
+                <div class="upload-icon">💼</div>
+                <h2 class="upload-title">Upload Updated LinkedIn Profile</h2>
+                <p class="upload-description">
+                    Upload your updated profile to see your new score and track your improvement.
+                </p>
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" id="linkedinFile" accept=".pdf">
+                    <button class="upload-btn" onclick="document.getElementById('linkedinFile').click()">
+                        <span>+</span> Upload LinkedIn PDF
+                    </button>
+                </div>
+                <p class="upload-hint">
+                    To export: Go to your LinkedIn profile &rarr; More &rarr; Save to PDF
+                </p>
+            `;
+            document.getElementById('uploadSection').style.display = 'block';
+            document.getElementById('scoreSection').style.display = 'none';
+
+            // Re-setup upload handlers for the new elements
+            setupUploadHandlers();
+        }
+
+        async function saveLinkedInToProfile(linkedinData) {
+            try {
+                // Update local userProfile
+                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                userProfile.linkedin_parsed = linkedinData;
+                userProfile.linkedin_profile_uploaded = true;
+                userProfile.linkedin_last_updated = new Date().toISOString();
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+                // Sync to Supabase if available
+                if (typeof supabase !== 'undefined' && userProfile.id) {
+                    const { error } = await supabase
+                        .from('user_profiles')
+                        .update({
+                            linkedin_parsed: linkedinData,
+                            linkedin_profile_uploaded: true,
+                            linkedin_last_updated: new Date().toISOString()
+                        })
+                        .eq('id', userProfile.id);
+
+                    if (error) {
+                        console.error('Error saving LinkedIn to Supabase:', error);
+                    } else {
+                        console.log('LinkedIn profile saved to Supabase');
+                    }
+                }
+            } catch (e) {
+                console.error('Error saving LinkedIn profile:', e);
             }
         }
 
