@@ -1505,17 +1505,27 @@
             const profileLinkedinData = userProfile.linkedin_parsed;
 
             // Priority: sessionStorage > localStorage > userProfile
+            // Also handle legacy data that may have been stored with API wrapper structure
+            const extractParsedData = (data) => {
+                // If data has parsed_data property, it's the API response wrapper
+                if (data && data.parsed_data) {
+                    console.log('Migrating legacy LinkedIn data structure');
+                    return data.parsed_data;
+                }
+                return data;
+            };
+
             if (storedLinkedinData) {
-                linkedinData = JSON.parse(storedLinkedinData);
+                linkedinData = extractParsedData(JSON.parse(storedLinkedinData));
             } else if (persistedLinkedinData) {
-                linkedinData = JSON.parse(persistedLinkedinData);
+                linkedinData = extractParsedData(JSON.parse(persistedLinkedinData));
                 // Sync to sessionStorage for consistency
-                sessionStorage.setItem('linkedinData', persistedLinkedinData);
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
             } else if (profileLinkedinData) {
-                linkedinData = profileLinkedinData;
+                linkedinData = extractParsedData(profileLinkedinData);
                 // Sync to storage
-                sessionStorage.setItem('linkedinData', JSON.stringify(profileLinkedinData));
-                localStorage.setItem('linkedinProfileData', JSON.stringify(profileLinkedinData));
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+                localStorage.setItem('linkedinProfileData', JSON.stringify(linkedinData));
             }
 
             if (storedScoringResults) {
@@ -1656,7 +1666,13 @@
                     throw new Error('Failed to parse LinkedIn PDF');
                 }
 
-                linkedinData = await parseResponse.json();
+                const uploadResponse = await parseResponse.json();
+
+                // Extract parsed_data from the API response wrapper
+                linkedinData = uploadResponse.parsed_data || uploadResponse;
+                console.log('LinkedIn data received:', linkedinData);
+                console.log('Headline:', linkedinData.headline);
+                console.log('Experience count:', linkedinData.experience?.length);
 
                 // Persist to sessionStorage and localStorage
                 sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
@@ -1755,6 +1771,15 @@
         // This score predicts visibility + confidence, not hiring outcomes.
         // Leadership profiles are judged on signal density and credibility, not formatting compliance.
         function calculateDetailedScore(linkedin, analysis) {
+            // Debug logging to diagnose scoring issues
+            console.log('=== LinkedIn Scoring Debug ===');
+            console.log('Input linkedin object keys:', linkedin ? Object.keys(linkedin) : 'null');
+            console.log('Headline:', linkedin?.headline);
+            console.log('Experience array length:', linkedin?.experience?.length);
+            if (linkedin?.experience?.length > 0) {
+                console.log('First experience title:', linkedin.experience[0]?.title);
+            }
+
             const sectionScores = {};
             const sectionDetails = {};
             const fixes = [];
@@ -1769,6 +1794,10 @@
                 ...(experience.map(e => e.title || ''))
             ].join(' ');
             const isLeadershipProfile = leadershipTitles.test(allTitles);
+
+            // Debug: Log classification result
+            console.log('All titles combined:', allTitles);
+            console.log('Is Leadership Profile:', isLeadershipProfile);
 
             // ============ IMPLICIT SENIOR SIGNAL DETECTION ============
             // For leadership profiles, recognize implicit scope and evidence
