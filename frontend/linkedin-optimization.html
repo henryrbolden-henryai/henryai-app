@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Optimization | HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-linkedin: #0077b5;
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            transition: color 0.2s ease;
+        }
+
+        .back-link:hover { color: var(--color-accent); }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            margin-bottom: 32px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--color-border);
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover {
+            color: var(--color-text);
+        }
+
+        .tab.active {
+            color: var(--color-linkedin);
+            border-bottom-color: var(--color-linkedin);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .upload-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .upload-description {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .upload-dropzone {
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 40px 20px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .upload-dropzone:hover,
+        .upload-dropzone.dragover {
+            border-color: var(--color-linkedin);
+            background: rgba(0, 119, 181, 0.05);
+        }
+
+        .upload-dropzone input {
+            display: none;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--color-linkedin);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-btn:hover {
+            background: #006097;
+            transform: translateY(-1px);
+        }
+
+        .upload-hint {
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            margin-top: 16px;
+        }
+
+        /* Score Section */
+        .score-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .score-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: conic-gradient(var(--color-linkedin) calc(var(--score) * 3.6deg), var(--color-surface-elevated) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--color-surface);
+        }
+
+        .score-value {
+            position: relative;
+            z-index: 1;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-linkedin);
+        }
+
+        .score-info h2 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 400;
+            margin-bottom: 6px;
+        }
+
+        .score-summary {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Fix Sections */
+        .fix-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .fix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .fix-header:hover {
+            background: var(--color-surface-elevated);
+        }
+
+        .fix-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fix-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .fix-count {
+            background: var(--color-error);
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .fix-count.success {
+            background: var(--color-success);
+        }
+
+        .fix-count.warning {
+            background: var(--color-warning);
+        }
+
+        .fix-chevron {
+            transition: transform 0.2s;
+            color: var(--color-text-secondary);
+        }
+
+        .fix-section.expanded .fix-chevron {
+            transform: rotate(180deg);
+        }
+
+        .fix-content {
+            display: none;
+            padding: 0 24px 24px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .fix-section.expanded .fix-content {
+            display: block;
+        }
+
+        .fix-item {
+            background: var(--color-surface-elevated);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .fix-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .fix-item-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .fix-item-severity {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .fix-item-severity.critical {
+            background: rgba(248, 113, 113, 0.2);
+            color: var(--color-error);
+        }
+
+        .fix-item-severity.high {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--color-warning);
+        }
+
+        .fix-item-description {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Optimization Sections */
+        .optimization-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .optimization-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .optimization-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: var(--color-accent-muted);
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .copy-btn.copied {
+            background: rgba(74, 222, 128, 0.15);
+            border-color: var(--color-success);
+            color: var(--color-success);
+        }
+
+        .optimization-content {
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        .optimization-why {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .optimization-why strong {
+            color: var(--color-accent);
+        }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--color-surface-elevated);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .skill-tag.add {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .skill-tag.remove {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--color-error);
+            text-decoration: line-through;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-top: 32px;
+        }
+
+        .cta-section h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+        }
+
+        .cta-section p {
+            color: var(--color-text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 211, 238, 0.25);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Loading */
+        .loading-spinner {
+            border: 3px solid var(--color-surface-elevated);
+            border-top: 3px solid var(--color-linkedin);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .score-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+</head>
+<body>
+    <div class="container">
+        <a href="overview.html" class="back-link">
+            <span>&larr;</span> Back to Strategy Overview
+        </a>
+
+        <h1>LinkedIn Optimization</h1>
+        <p class="subtitle">Optimize your LinkedIn profile to match this role and increase recruiter visibility.</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('scoring')">Profile Score</button>
+            <button class="tab" onclick="switchTab('optimization')">Optimization</button>
+        </div>
+
+        <!-- Scoring Tab -->
+        <div id="scoringTab" class="tab-content active">
+            <!-- Upload Section (shown when no LinkedIn data) -->
+            <div id="uploadSection" class="upload-section">
+                <div class="upload-icon">💼</div>
+                <h2 class="upload-title">Upload Your LinkedIn Profile</h2>
+                <p class="upload-description">
+                    Export your LinkedIn profile as a PDF and upload it here to get a recruiter-visibility score and personalized optimization recommendations.
+                </p>
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" id="linkedinFile" accept=".pdf">
+                    <button class="upload-btn" onclick="document.getElementById('linkedinFile').click()">
+                        <span>+</span> Upload LinkedIn PDF
+                    </button>
+                </div>
+                <p class="upload-hint">
+                    To export: Go to your LinkedIn profile &rarr; More &rarr; Save to PDF
+                </p>
+            </div>
+
+            <!-- Score Section (shown after upload) -->
+            <div id="scoreSection" style="display: none;">
+                <div class="score-header">
+                    <div class="score-circle" id="scoreCircle" style="--score: 0">
+                        <span class="score-value" id="scoreValue">--</span>
+                    </div>
+                    <div class="score-info">
+                        <h2 id="scoreTitle">Analyzing...</h2>
+                        <p class="score-summary" id="scoreSummary">Evaluating your LinkedIn profile against recruiter search patterns.</p>
+                    </div>
+                </div>
+
+                <!-- Fix Sections -->
+                <div id="fixSections"></div>
+
+                <!-- CTA -->
+                <div class="cta-section">
+                    <h3>Ready to optimize?</h3>
+                    <p>See specific recommendations for your headline, summary, and skills.</p>
+                    <button class="btn-primary" onclick="switchTab('optimization')">
+                        View Optimization Recommendations &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optimization Tab -->
+        <div id="optimizationTab" class="tab-content">
+            <div id="optimizationContent">
+                <div class="empty-state" id="optimizationEmpty">
+                    <div class="empty-state-icon">💼</div>
+                    <p>Upload your LinkedIn profile in the Profile Score tab to get personalized optimization recommendations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        let linkedinData = null;
+        let scoringResults = null;
+        let analysisData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get analysis data for job context
+            analysisData = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+
+            // Check if we have existing LinkedIn data
+            const storedLinkedinData = sessionStorage.getItem('linkedinData');
+            const storedScoringResults = sessionStorage.getItem('linkedinScoringResults');
+
+            if (storedLinkedinData) {
+                linkedinData = JSON.parse(storedLinkedinData);
+            }
+            if (storedScoringResults) {
+                scoringResults = JSON.parse(storedScoringResults);
+            }
+
+            // If we have data, show scores
+            if (linkedinData && scoringResults) {
+                showScoreSection();
+                renderScoringResults();
+                renderOptimizations();
+            }
+
+            // Setup file upload handlers
+            setupUploadHandlers();
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            if (tabName === 'scoring') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('scoringTab').classList.add('active');
+            } else if (tabName === 'optimization') {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('optimizationTab').classList.add('active');
+            }
+        }
+
+        function setupUploadHandlers() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('linkedinFile');
+
+            // Drag and drop
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'application/pdf') {
+                    handleFileUpload(file);
+                }
+            });
+
+            // File input
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+        }
+
+        async function handleFileUpload(file) {
+            // Show loading state
+            document.getElementById('uploadSection').innerHTML = `
+                <div class="loading-spinner"></div>
+                <p style="color: var(--color-text-secondary);">Analyzing your LinkedIn profile...</p>
+            `;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Parse LinkedIn PDF
+                const parseResponse = await fetch(`${API_BASE}/api/linkedin/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!parseResponse.ok) {
+                    throw new Error('Failed to parse LinkedIn PDF');
+                }
+
+                linkedinData = await parseResponse.json();
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+
+                // Get scoring
+                const scoreResponse = await fetch(`${API_BASE}/api/linkedin/score`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        linkedin_data: linkedinData,
+                        job_description: analysisData?.jd_text || '',
+                        target_role: analysisData?._role || analysisData?.role_title || ''
+                    })
+                });
+
+                if (scoreResponse.ok) {
+                    scoringResults = await scoreResponse.json();
+                    sessionStorage.setItem('linkedinScoringResults', JSON.stringify(scoringResults));
+                }
+
+                showScoreSection();
+                renderScoringResults();
+                renderOptimizations();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('uploadSection').innerHTML = `
+                    <div class="upload-icon">⚠️</div>
+                    <h2 class="upload-title">Upload Failed</h2>
+                    <p class="upload-description">${error.message}</p>
+                    <button class="upload-btn" onclick="location.reload()">Try Again</button>
+                `;
+            }
+        }
+
+        function showScoreSection() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('scoreSection').style.display = 'block';
+            document.getElementById('optimizationEmpty').style.display = 'none';
+        }
+
+        function renderScoringResults() {
+            if (!scoringResults) return;
+
+            const score = scoringResults.overall_score || scoringResults.score || 65;
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreValue = document.getElementById('scoreValue');
+            const scoreTitle = document.getElementById('scoreTitle');
+            const scoreSummary = document.getElementById('scoreSummary');
+
+            // Animate score
+            scoreCircle.style.setProperty('--score', score);
+            scoreValue.textContent = score;
+
+            // Set title and summary based on score
+            if (score >= 80) {
+                scoreTitle.textContent = 'Strong Profile';
+                scoreSummary.textContent = 'Your profile is well-optimized for recruiter searches. Minor tweaks could help you stand out even more.';
+            } else if (score >= 60) {
+                scoreTitle.textContent = 'Good Foundation';
+                scoreSummary.textContent = 'Your profile has solid basics but there are key improvements that could significantly increase your visibility.';
+            } else {
+                scoreTitle.textContent = 'Needs Attention';
+                scoreSummary.textContent = 'Your profile is missing critical elements that recruiters search for. Follow the recommendations below.';
+            }
+
+            // Render fix sections
+            renderFixSections();
+        }
+
+        function renderFixSections() {
+            const container = document.getElementById('fixSections');
+            const painPoints = scoringResults?.painPoints || scoringResults?.pain_points || [];
+
+            if (painPoints.length === 0) {
+                container.innerHTML = `
+                    <div class="fix-section">
+                        <div class="fix-header">
+                            <div class="fix-header-left">
+                                <span class="fix-title">No Critical Issues Found</span>
+                                <span class="fix-count success">All Good</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group by severity
+            const critical = painPoints.filter(p => p.severity === 'critical' || p.severity === 'CRITICAL');
+            const high = painPoints.filter(p => p.severity === 'high' || p.severity === 'HIGH');
+            const medium = painPoints.filter(p => p.severity === 'medium' || p.severity === 'MEDIUM');
+
+            let html = '';
+
+            if (critical.length > 0) {
+                html += renderFixGroup('Critical Issues', critical, 'critical');
+            }
+            if (high.length > 0) {
+                html += renderFixGroup('High Priority', high, 'warning');
+            }
+            if (medium.length > 0) {
+                html += renderFixGroup('Recommendations', medium, 'success');
+            }
+
+            container.innerHTML = html;
+
+            // Add click handlers
+            container.querySelectorAll('.fix-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    header.closest('.fix-section').classList.toggle('expanded');
+                });
+            });
+        }
+
+        function renderFixGroup(title, items, countClass) {
+            const itemsHtml = items.map(item => `
+                <div class="fix-item">
+                    <div class="fix-item-header">
+                        <span class="fix-item-title">${item.issue || item.title || 'Issue'}</span>
+                        <span class="fix-item-severity ${item.severity?.toLowerCase() || 'high'}">${item.severity || 'HIGH'}</span>
+                    </div>
+                    <p class="fix-item-description">${item.recommendation || item.description || ''}</p>
+                </div>
+            `).join('');
+
+            return `
+                <div class="fix-section expanded">
+                    <div class="fix-header">
+                        <div class="fix-header-left">
+                            <span class="fix-title">${title}</span>
+                            <span class="fix-count ${countClass}">${items.length}</span>
+                        </div>
+                        <span class="fix-chevron">&#9660;</span>
+                    </div>
+                    <div class="fix-content">
+                        ${itemsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderOptimizations() {
+            const container = document.getElementById('optimizationContent');
+
+            if (!linkedinData) {
+                return;
+            }
+
+            const role = analysisData?._role || analysisData?.role_title || 'your target role';
+            const currentHeadline = linkedinData.headline || '';
+            const currentSummary = linkedinData.summary || linkedinData.about || '';
+
+            // Generate optimized content
+            const optimizedHeadline = generateOptimizedHeadline();
+            const optimizedSummary = generateOptimizedSummary();
+            const skillsRecommendations = generateSkillsRecommendations();
+
+            container.innerHTML = `
+                <!-- Headline Section -->
+                <div class="optimization-section">
+                    <div class="optimization-header">
+                        <h3 class="optimization-title"><span>📝</span> Headline</h3>
+                        <button class="copy-btn" onclick="copyToClipboard(this, 'headline')">
+                            <span>📋</span> Copy
+                        </button>
+                    </div>
+                    ${currentHeadline ? `<p style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 12px;"><strong>Current:</strong> ${currentHeadline}</p>` : ''}
+                    <div class="optimization-content" id="headline">${optimizedHeadline}</div>
+                    <div class="optimization-why">
+                        <strong>Why this works:</strong> This headline includes searchable keywords that recruiters use, your level, and your primary value proposition.
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="optimization-section">
+                    <div class="optimization-header">
+                        <h3 class="optimization-title"><span>📄</span> About / Summary</h3>
+                        <button class="copy-btn" onclick="copyToClipboard(this, 'summary')">
+                            <span>📋</span> Copy
+                        </button>
+                    </div>
+                    <div class="optimization-content" id="summary">${optimizedSummary}</div>
+                    <div class="optimization-why">
+                        <strong>Why this works:</strong> The first 3 lines are visible before "see more" - they contain your hook. The full summary builds credibility with specifics.
+                    </div>
+                </div>
+
+                <!-- Skills Section -->
+                <div class="optimization-section">
+                    <div class="optimization-header">
+                        <h3 class="optimization-title"><span>🎯</span> Skills Recommendations</h3>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <p style="color: var(--color-success); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Add these skills:</p>
+                        <div class="skills-grid">
+                            ${skillsRecommendations.add.map(s => `<span class="skill-tag add">+ ${s}</span>`).join('')}
+                        </div>
+                    </div>
+                    ${skillsRecommendations.remove.length > 0 ? `
+                    <div>
+                        <p style="color: var(--color-error); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Consider removing:</p>
+                        <div class="skills-grid">
+                            ${skillsRecommendations.remove.map(s => `<span class="skill-tag remove">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="optimization-why">
+                        <strong>Why this matters:</strong> LinkedIn allows up to 50 skills. Prioritize skills that appear in job descriptions for ${role}.
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="cta-section">
+                    <h3>Profile optimized!</h3>
+                    <p>Copy these recommendations to your LinkedIn profile, then continue with your application strategy.</p>
+                    <a href="overview.html" class="btn-primary">
+                        Back to Strategy Overview &rarr;
+                    </a>
+                </div>
+            `;
+        }
+
+        function generateOptimizedHeadline() {
+            const role = analysisData?._role || analysisData?.role_title || '';
+            const level = analysisData?._level || 'Senior';
+            const keywords = analysisData?.ats_keywords || analysisData?.required_skills || [];
+
+            // Build headline components
+            let headline = `${level} ${role}`;
+
+            if (keywords.length > 0) {
+                const topKeywords = keywords.slice(0, 2).join(' | ');
+                headline += ` | ${topKeywords}`;
+            }
+
+            // Add value prop if we have experience data
+            if (linkedinData?.experience?.length > 0) {
+                const companies = linkedinData.experience
+                    .map(e => e.company)
+                    .filter(c => c && !c.toLowerCase().includes('freelance'))
+                    .slice(0, 2);
+                if (companies.length > 0) {
+                    headline += ` | Ex-${companies.join(', ')}`;
+                }
+            }
+
+            // Ensure under 220 chars
+            if (headline.length > 220) {
+                headline = headline.substring(0, 217) + '...';
+            }
+
+            return headline;
+        }
+
+        function generateOptimizedSummary() {
+            const role = analysisData?._role || analysisData?.role_title || 'professional';
+            const level = analysisData?._level || 'experienced';
+            const keywords = analysisData?.ats_keywords || [];
+
+            // Get years of experience estimate
+            let years = 10;
+            if (linkedinData?.experience?.length > 0) {
+                const firstJob = linkedinData.experience[linkedinData.experience.length - 1];
+                if (firstJob?.start_date) {
+                    const startYear = parseInt(firstJob.start_date.match(/\d{4}/)?.[0] || '2014');
+                    years = new Date().getFullYear() - startYear;
+                }
+            }
+
+            // Build summary
+            const keywordStr = keywords.slice(0, 3).join(', ');
+
+            return `${level.charAt(0).toUpperCase() + level.slice(1)} ${role} with ${years}+ years driving results in ${keywordStr || 'the industry'}.
+
+I specialize in translating complex challenges into actionable solutions that deliver measurable impact. My approach combines strategic thinking with hands-on execution.
+
+What I bring:
+- Deep expertise in ${keywords[0] || 'core competencies'}
+- Track record of ${keywords[1] || 'delivering results'}
+- Collaborative leadership style focused on team growth
+
+Currently exploring new opportunities where I can leverage my experience to drive meaningful outcomes.
+
+Let's connect: [Your email]`;
+        }
+
+        function generateSkillsRecommendations() {
+            const targetKeywords = analysisData?.ats_keywords || analysisData?.required_skills || [];
+            const currentSkills = linkedinData?.skills || [];
+
+            // Skills to add (from job requirements not in current skills)
+            const skillsToAdd = targetKeywords
+                .filter(kw => !currentSkills.some(s => s.toLowerCase().includes(kw.toLowerCase())))
+                .slice(0, 8);
+
+            // Generic skills to potentially remove
+            const genericSkills = ['Microsoft Office', 'Microsoft Word', 'Microsoft Excel', 'PowerPoint', 'Communication', 'Teamwork', 'Problem Solving'];
+            const skillsToRemove = currentSkills
+                .filter(s => genericSkills.some(g => s.toLowerCase().includes(g.toLowerCase())))
+                .slice(0, 3);
+
+            return {
+                add: skillsToAdd.length > 0 ? skillsToAdd : ['Add skills from the job description'],
+                remove: skillsToRemove
+            };
+        }
+
+        function copyToClipboard(btn, elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.classList.add('copied');
+                btn.innerHTML = '<span>✓</span> Copied!';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = '<span>📋</span> Copy';
+                }, 2000);
+            });
+        }
+    </script>
+
+    <script src="components/analytics.js"></script>
+    <script src="components/hey-henry.js"></script>
+    <script src="components/admin-alerts.js"></script>
+    <script src="components/strategy-nav.js"></script>
+    <script src="components/status-banner.js"></script>
+    <script src="components/top-nav.js"></script>
+</body>
+</html>

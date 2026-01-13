@@ -1707,7 +1707,6 @@
                 </p>
                 <div class="action-buttons">
                     <button class="btn-primary" id="continueBtn">Strengthen Your Resume</button>
-                    <button class="btn-secondary" id="linkedinBtn">LinkedIn Scoring</button>
                     <button class="btn-secondary" id="skipBtn">Skip to Application Strategy</button>
                 </div>
             </div>
@@ -3053,20 +3052,8 @@
             window.location.href = 'strengthen.html';
         });
 
-        document.getElementById('linkedinBtn').addEventListener('click', () => {
-            // Store leveling data and go to LinkedIn scoring
-            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-            // Check if LinkedIn data exists - go to upload if not
-            const linkedinData = sessionStorage.getItem('linkedinData');
-            if (linkedinData) {
-                window.location.href = 'linkedin-scoring.html';
-            } else {
-                window.location.href = 'linkedin-upload.html';
-            }
-        });
-
         document.getElementById('skipBtn').addEventListener('click', () => {
-            // Skip strengthen, go through LinkedIn flow
+            // Skip strengthen, go directly to Application Strategy
             sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
             // Mark strengthen as skipped
             sessionStorage.setItem('strengthenedData', JSON.stringify({
@@ -3079,13 +3066,8 @@
                 questions_answered: 0,
                 timestamp: Date.now()
             }));
-            // Check if LinkedIn data exists
-            const linkedinData = sessionStorage.getItem('linkedinData');
-            if (linkedinData) {
-                window.location.href = 'linkedin-analysis.html';
-            } else {
-                window.location.href = 'linkedin-upload.html';
-            }
+            // Go directly to generating/application strategy
+            window.location.href = 'generating.html';
         });
     </script>
     <script src="components/analytics.js"></script>

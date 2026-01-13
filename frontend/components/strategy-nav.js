@@ -27,11 +27,6 @@
                 id: 'resume-leveling',
                 label: 'Resume Level Analysis',
                 href: 'resume-leveling.html'
-            },
-            {
-                id: 'linkedin-scoring',
-                label: 'LinkedIn Scoring',
-                href: 'linkedin-scoring.html'
             }
         ],
         parent: {
@@ -49,6 +44,11 @@
                 id: 'documents',
                 label: 'Tailored Documents',
                 href: 'documents.html'
+            },
+            {
+                id: 'linkedin-optimization',
+                label: 'LinkedIn Optimization',
+                href: 'linkedin-optimization.html'
             },
             {
                 id: 'outreach',
@@ -92,7 +92,10 @@
             'mock-debrief': 'interview-intelligence',
             'analyzing': 'analyze',
             'generating': 'overview',
-            'strengthen': 'resume-leveling'
+            'strengthen': 'resume-leveling',
+            'linkedin-scoring': 'linkedin-optimization',
+            'linkedin-analysis': 'linkedin-optimization',
+            'linkedin-upload': 'linkedin-optimization'
         };
 
         return pageMapping[page] || page;

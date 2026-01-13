@@ -25,15 +25,14 @@
   const appNavItems = [
     { label: 'Dashboard', href: '/dashboard.html' },
     { label: 'Job Fit Score', href: '/results.html' },
-    { label: 'Resume Level Analysis', href: '/resume-leveling.html' },
-    { label: 'LinkedIn Scoring', href: '/linkedin-scoring.html' }
+    { label: 'Resume Level Analysis', href: '/resume-leveling.html' }
   ];
 
   // Strategy Overview section
   const strategyItems = [
     { label: 'Positioning Strategy', href: '/positioning.html' },
     { label: 'Tailored Documents', href: '/documents.html' },
-    { label: 'Screening Questions', href: '/screening-questions.html' },
+    { label: 'LinkedIn Optimization', href: '/linkedin-optimization.html' },
     { label: 'Network & Outreach', href: '/outreach.html' },
     { label: 'Interview Intelligence', href: '/interview-prep.html' },
     { label: 'Command Center', href: '/tracker.html' }

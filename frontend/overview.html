@@ -348,7 +348,23 @@
                 </div>
             </a>
 
-            <!-- Card 3: Network Intelligence -->
+            <!-- Card 3: LinkedIn Optimization -->
+            <a href="linkedin-optimization.html" class="nav-card">
+                <span class="beta-badge">Beta</span>
+                <span class="card-icon">💼</span>
+                <h2 class="card-title">LinkedIn Optimization</h2>
+                <p class="card-subtitle">Profile scoring and optimization</p>
+                <p class="card-insight" id="linkedinInsight"></p>
+                <p class="card-description">
+                    See how recruiters view your LinkedIn profile. Get a searchability score,
+                    identify gaps, and receive optimized headline, summary, and skills recommendations.
+                </p>
+                <div class="card-cta">
+                    Optimize Profile <span>→</span>
+                </div>
+            </a>
+
+            <!-- Card 4: Network Intelligence -->
             <a href="outreach.html" class="nav-card">
                 <span class="beta-badge">Beta</span>
                 <span class="card-icon">🤝</span>
@@ -364,7 +380,7 @@
                 </div>
             </a>
 
-            <!-- Card 5: Interview Intelligence -->
+            <!-- Card 6: Interview Intelligence -->
             <a href="interview-intelligence.html" class="nav-card">
                 <span class="beta-badge">Beta</span>
                 <span class="card-icon">🎯</span>
@@ -380,7 +396,7 @@
                 </div>
             </a>
 
-            <!-- Card 6: Offer Negotiation (Coming Soon) -->
+            <!-- Card 7: Offer Negotiation (Coming Soon) -->
             <div class="nav-card coming-soon">
                 <span class="coming-soon-badge">Coming Soon</span>
                 <span class="card-icon">💰</span>
@@ -438,6 +454,25 @@
                 positioningEl.innerHTML = `<span class="insight-highlight">Key gap to address:</span> ${typeof data.gaps?.[0] === 'object' ? data.gaps[0].area || data.gaps[0].gap : data.gaps?.[0] || 'positioning'}. I have strategies to reframe this.`;
                 documentsEl.innerHTML = `<span class="insight-highlight">${keywordCount} ATS keywords</span> incorporated into your tailored resume.`;
                 documentsEl.classList.add('visible');
+            }
+
+            // LinkedIn Insight - profile optimization
+            const linkedinEl = document.getElementById('linkedinInsight');
+            const linkedinData = sessionStorage.getItem('linkedinData');
+            const linkedinScoringResults = sessionStorage.getItem('linkedinScoringResults');
+            if (linkedinScoringResults) {
+                try {
+                    const scoring = JSON.parse(linkedinScoringResults);
+                    const score = scoring.overall_score || scoring.score;
+                    if (score) {
+                        linkedinEl.innerHTML = `<span class="insight-highlight">Profile score: ${score}/100.</span> See what recruiters find when they search for you.`;
+                        linkedinEl.classList.add('visible');
+                    }
+                } catch (e) {}
+            }
+            if (!linkedinEl.classList.contains('visible')) {
+                linkedinEl.innerHTML = `<span class="insight-highlight">93% of recruiters</span> use LinkedIn to find candidates. Optimize your profile for this role.`;
+                linkedinEl.classList.add('visible');
             }
 
             // Network Insight - hiring manager title

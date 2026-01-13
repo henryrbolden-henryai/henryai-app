@@ -8045,7 +8045,9 @@
 
                 saveApplications(apps);
                 closeArchiveModal();
-                renderAll(apps);
+
+                // Force a full page refresh to ensure clean state
+                window.location.reload();
             }
         }
 
@@ -8120,7 +8122,9 @@
             }
 
             closeDeleteModal();
-            renderAll(filteredApps);
+
+            // Force a full page refresh to ensure clean state
+            window.location.reload();
         }
 
         // ========================================================================
@@ -8867,9 +8871,9 @@ Thanks so much!
 
             saveApplications(apps);
             exitBulkSelectMode();
-            renderAll(apps);
 
-            alert(`Archived ${count} application${count > 1 ? 's' : ''}.`);
+            // Force a full page refresh to ensure clean state
+            window.location.reload();
         }
 
         async function bulkDelete() {
@@ -8906,9 +8910,9 @@ Thanks so much!
             localStorage.setItem('trackedApplications', JSON.stringify(apps));
 
             exitBulkSelectMode();
-            renderAll(apps);
 
-            alert(`Deleted ${count} application${count > 1 ? 's' : ''}.`);
+            // Force a full page refresh to ensure clean state
+            window.location.reload();
         }
 
         // Add click handler for card selection in bulk mode
