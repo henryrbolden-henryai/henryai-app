@@ -2282,22 +2282,50 @@
                 (sectionScores.other / SECTION_CONFIG.other.maxPoints) * 5
             );
 
+            // Add fix_ids for diagnosis-optimization contract
+            let fixCounter = 1;
+            fixes.forEach(fix => {
+                fix.fix_id = `FIX_${fix.section.toUpperCase()}_${String(fixCounter++).padStart(2, '0')}`;
+            });
+
             // Sort fixes by severity
             fixes.sort((a, b) => SEVERITY[a.severity].order - SEVERITY[b.severity].order);
 
             // Detect profile gaps
             const profileGaps = detectProfileGaps(linkedin, sectionScores, experience);
 
+            // Build diagnosis object per contract spec
+            const diagnosis = {
+                overall_score: overall,
+                section_scores: {
+                    headline: { score: sectionScores.headline, max: SECTION_CONFIG.headline.maxPoints, threshold: 12 },
+                    about: { score: sectionScores.about, max: SECTION_CONFIG.about.maxPoints, threshold: 16 },
+                    experience: { score: sectionScores.experience, max: SECTION_CONFIG.experience.maxPoints, threshold: 16 },
+                    skills: { score: sectionScores.skills, max: SECTION_CONFIG.skills.maxPoints, threshold: 12 },
+                    freshness: { score: sectionScores.freshness, max: SECTION_CONFIG.freshness.maxPoints, threshold: 7 },
+                    resumeAlignment: { score: sectionScores.resumeAlignment, max: SECTION_CONFIG.resumeAlignment.maxPoints, threshold: 7 },
+                    credibility: { score: sectionScores.credibility, max: SECTION_CONFIG.credibility.maxPoints, threshold: 4 },
+                    other: { score: sectionScores.other, max: SECTION_CONFIG.other.maxPoints, threshold: 4 }
+                },
+                profile_gaps: profileGaps.slice(0, 5),
+                fixes: fixes.slice(0, 8)
+            };
+
+            // Store diagnosis for optimization validation
+            window.linkedinDiagnosis = diagnosis;
+
             return {
                 overall,
                 sectionScores,
                 sectionDetails,
                 fixes: fixes.slice(0, 8),
-                profileGaps: profileGaps.slice(0, 5)
+                profileGaps: profileGaps.slice(0, 5),
+                diagnosis // Include full diagnosis object
             };
         }
 
         // Detect strategic profile gaps
+        // Per diagnosis-optimization contract: gaps are read-only diagnosis, not advice
         function detectProfileGaps(linkedin, sectionScores, experience) {
             const gaps = [];
 
@@ -2312,10 +2340,13 @@
 
                 if (!hasScope) {
                     gaps.push({
+                        gap_id: 'GAP_SCOPE_01',
                         type: 'Scope',
+                        severity: 'CRITICAL',
+                        affected_sections: ['experience'],
                         icon: '!',
                         description: 'Your profile does not demonstrate senior-level ownership or decision-making authority.',
-                        why: 'Recruiters use LinkedIn to quickly assess scope. Without clear signals of scale and authority, senior roles are less likely to convert to outreach.',
+                        why: 'Hiring managers expect senior titles to show ownership, scale, and decision authority. Without these signals, they question whether the title reflects actual scope.',
                         fix: "Add bullets that quantify team size, budget, or geographic scope. Use ownership language: 'Led 12-person team', 'Owned $5M budget', 'Drove company-wide initiative'."
                     });
                 }
@@ -2327,10 +2358,13 @@
 
             if (!hasMetrics && experience.length > 0) {
                 gaps.push({
+                    gap_id: 'GAP_EVIDENCE_01',
                     type: 'Evidence',
+                    severity: 'HIGH',
+                    affected_sections: ['experience', 'about'],
                     icon: '?',
                     description: 'Your experience describes what you worked on, but not the outcomes you drove.',
-                    why: 'Recruiters rely on quantified results to validate impact. Without metrics, they assume your work had limited business effect.',
+                    why: 'Hiring managers rely on quantified results to validate impact. Without metrics, they assume your work had limited business effect.',
                     fix: "Rewrite bullets to follow PAR format (Problem, Action, Result). Add specific metrics: revenue impact, cost savings, efficiency gains, user growth."
                 });
             }
@@ -2343,10 +2377,13 @@
 
             if (smallCompanySignals >= experience.length && experience.length >= 2) {
                 gaps.push({
+                    gap_id: 'GAP_CREDIBILITY_01',
                     type: 'Credibility',
+                    severity: 'MEDIUM',
+                    affected_sections: ['experience'],
                     icon: '✗',
-                    description: 'Some roles on your profile are difficult to validate, which weakens recruiter confidence in scope and scale.',
-                    why: 'Recruiters verify company legitimacy to assess the quality of your experience. Unverifiable companies raise questions about title inflation.',
+                    description: 'Some roles on your profile are difficult to validate, which weakens hiring manager confidence in scope and scale.',
+                    why: 'Hiring managers verify company legitimacy to assess the quality of your experience. Unverifiable companies raise questions about title inflation.',
                     fix: "Add context in your bullets: 'Series A fintech startup, $3M funding, 15 employees' or 'Acquired by [Company] in 2022'."
                 });
             }
@@ -2379,17 +2416,23 @@
 
             if (hasMultipleLanes) {
                 gaps.push({
+                    gap_id: 'GAP_POSITIONING_01',
                     type: 'Positioning',
+                    severity: 'CRITICAL',
+                    affected_sections: ['headline', 'about', 'skills'],
                     icon: '◎',
-                    description: 'Your profile tries to claim multiple primary lanes, which confuses recruiters about what you actually do.',
-                    why: "A profile that tries to appeal to everyone appeals to no one. 'PM + Engineer' or 'Sales + Marketing' signals you haven't committed to a lane. Recruiters search for specialists, not generalists.",
+                    description: 'Your profile tries to claim multiple primary lanes, which confuses hiring teams about what you actually do.',
+                    why: "A profile that tries to appeal to everyone appeals to no one. 'PM + Engineer' or 'Sales + Marketing' signals you haven't committed to a lane. Both recruiters and hiring managers search for specialists.",
                     fix: "Pick ONE primary function. Adjacent skills are fine (PM who codes, Engineer who designs), but you need one clear lane. Your profile should pass this test: 'In one sentence, what does this person do?'"
                 });
             } else if (!hasFunction || (!hasSpecialization && headlineForGaps.length > 0)) {
                 gaps.push({
+                    gap_id: 'GAP_POSITIONING_02',
                     type: 'Positioning',
+                    severity: 'HIGH',
+                    affected_sections: ['headline', 'about', 'skills'],
                     icon: '◎',
-                    description: 'Your profile does not clearly position you for a specific role or niche, making it harder for recruiters to match you to open roles.',
+                    description: 'Your profile does not clearly position you for a specific role or niche, making it harder for hiring teams to match you to open roles.',
                     why: "Recruiters search for specific terms like 'product manager fintech' or 'backend engineer python'. Generic positioning makes you invisible in search. A profile that tries to appeal to everyone appeals to no one.",
                     fix: "Choose ONE primary function and specialize it (B2B SaaS, Healthcare Tech, Fintech). Update your headline, About, and skills to consistently reinforce this single positioning."
                 });
@@ -2401,10 +2444,13 @@
 
             if (!hasCurrentRole && experience.length > 0) {
                 gaps.push({
+                    gap_id: 'GAP_RECENCY_01',
                     type: 'Recency',
+                    severity: 'MEDIUM',
+                    affected_sections: ['experience', 'freshness'],
                     icon: '⏱',
                     description: 'Your profile appears inactive, which reduces how often it is surfaced in recruiter searches.',
-                    why: "LinkedIn's algorithm prioritizes active profiles in search results. Stale profiles rank lower and signal to recruiters that you may not be actively looking.",
+                    why: "LinkedIn's algorithm prioritizes active profiles in search results. Stale profiles rank lower and signal to hiring teams that you may not be actively engaged.",
                     fix: "Update your profile monthly. If between roles, add a 'current' entry like 'Open to Product Management Opportunities'."
                 });
             }
@@ -2646,6 +2692,11 @@
             `;
         }
 
+        // ============ DIAGNOSIS → OPTIMIZATION CONTRACT ============
+        // Profile Scoring diagnoses. Profile Optimization treats.
+        // Optimization must never introduce new ideas that weren't surfaced by scoring.
+        // If it doesn't show up in the score or gaps, it does not belong in optimization.
+
         function renderOptimizations() {
             const container = document.getElementById('optimizationContent');
 
@@ -2653,10 +2704,39 @@
                 return;
             }
 
-            const { fixes, profileGaps, sectionScores, sectionDetails, overall } = scoringResults;
+            const { fixes, profileGaps, sectionScores, sectionDetails, overall, diagnosis } = scoringResults;
             const role = analysisData?._role || analysisData?.role_title || 'your target role';
             const currentHeadline = linkedinData.headline || '';
             const currentSummary = linkedinData.summary || linkedinData.about || '';
+
+            // ============ OPTIMIZATION VALIDATION (Contract Enforcement) ============
+            // Build allowed optimization scope from diagnosis
+            const allowedGapIds = profileGaps.map(g => g.gap_id).filter(Boolean);
+            const allowedFixIds = fixes.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH').map(f => f.fix_id).filter(Boolean);
+            const sectionsNeeding = new Set();
+
+            // Add sections from gaps
+            profileGaps.forEach(gap => {
+                (gap.affected_sections || []).forEach(s => sectionsNeeding.add(s));
+            });
+
+            // Add sections from CRITICAL/HIGH fixes
+            fixes.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH').forEach(fix => {
+                sectionsNeeding.add(fix.section?.toLowerCase());
+            });
+
+            // Add sections below threshold
+            const thresholds = { headline: 12, about: 16, experience: 16, skills: 12 };
+            Object.entries(thresholds).forEach(([section, threshold]) => {
+                if ((sectionScores[section] || 0) < threshold) {
+                    sectionsNeeding.add(section);
+                }
+            });
+
+            // Helper: Check if optimization is valid per contract
+            const isOptimizationAllowed = (section) => {
+                return sectionsNeeding.has(section.toLowerCase());
+            };
 
             // Count issues by severity
             const criticalCount = fixes.filter(f => f.severity === 'CRITICAL').length;
@@ -2732,10 +2812,17 @@
             `;
 
             // ============ HEADLINE OPTIMIZATION ============
-            if (headlineIssues.length > 0 || positioningGap) {
+            // Contract rule: Only generate if headline score < 12/15 OR Positioning gap detected
+            const headlineAllowed = isOptimizationAllowed('headline') || positioningGap;
+            if (headlineAllowed && (headlineIssues.length > 0 || positioningGap)) {
                 const hasCritical = headlineIssues.some(i => i.severity === 'CRITICAL');
                 const priorityClass = hasCritical ? 'critical' : 'high';
                 const priorityText = hasCritical ? 'Critical - Fix immediately' : 'High priority - Significant impact';
+                // Track what this optimization fixes (per contract)
+                const fixesRefs = [
+                    ...headlineIssues.map(i => i.fix_id).filter(Boolean),
+                    positioningGap?.gap_id
+                ].filter(Boolean);
 
                 html += `
                     <div class="optimization-section">
@@ -2788,7 +2875,9 @@
             }
 
             // ============ ABOUT SECTION OPTIMIZATION ============
-            if (aboutIssues.length > 0 || evidenceGap) {
+            // Contract rule: Only generate if about score < 16/20 OR Evidence/Positioning gap detected
+            const aboutAllowed = isOptimizationAllowed('about') || evidenceGap || positioningGap;
+            if (aboutAllowed && (aboutIssues.length > 0 || evidenceGap)) {
                 const hasCritical = aboutIssues.some(i => i.severity === 'CRITICAL');
                 const priorityClass = hasCritical ? 'critical' : 'high';
                 const priorityText = hasCritical ? 'Critical - Your profile is incomplete' : 'High priority - Weak positioning';
@@ -2848,7 +2937,9 @@
             }
 
             // ============ EXPERIENCE BULLETS OPTIMIZATION ============
-            if (experienceIssues.length > 0 || scopeGap) {
+            // Contract rule: Only generate if experience score < 16/20 OR Scope/Evidence gap detected
+            const experienceAllowed = isOptimizationAllowed('experience') || scopeGap || evidenceGap;
+            if (experienceAllowed && (experienceIssues.length > 0 || scopeGap)) {
                 html += `
                     <div class="optimization-section">
                         <div class="optimization-header">
@@ -2859,7 +2950,7 @@
 
                         <div class="priority-indicator">
                             <span class="priority-dot high"></span>
-                            <span class="priority-text"><strong>High priority</strong> • Experience carries 25% of your score</span>
+                            <span class="priority-text"><strong>High priority</strong> • Experience carries 20% of your score</span>
                         </div>
 
                         <div class="optimization-content">
@@ -2899,7 +2990,9 @@
             }
 
             // ============ SKILLS OPTIMIZATION ============
-            if (skillsIssues.length > 0 || skillsRecommendations.add.length > 0) {
+            // Contract rule: Only generate if skills score < 12/15 OR Positioning gap detected
+            const skillsAllowed = isOptimizationAllowed('skills') || positioningGap;
+            if (skillsAllowed && (skillsIssues.length > 0 || skillsRecommendations.add.length > 0)) {
                 html += `
                     <div class="optimization-section">
                         <div class="optimization-header">
