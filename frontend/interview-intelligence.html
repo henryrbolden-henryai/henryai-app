@@ -2110,6 +2110,41 @@
             document.getElementById('interviewerTitle').value = interview.interviewerTitle || '';
             document.getElementById('interviewJD').value = interview.jobDescription || '';
 
+            // Restore LinkedIn profile data if present
+            linkedInFileData = null; // Reset file data
+            if (interview.linkedInProfile) {
+                // Store the existing LinkedIn data to preserve it on save
+                window.editModeLinkedInProfile = interview.linkedInProfile;
+
+                // Update UI to show LinkedIn profile is attached
+                const uploadZone = document.getElementById('linkedinUploadZone');
+                const fileNameEl = document.getElementById('linkedinFileName');
+                const pasteSection = document.getElementById('linkedinPasteSection');
+
+                if (interview.linkedInProfile.type === 'file') {
+                    // Show file indicator
+                    if (uploadZone) uploadZone.style.display = 'none';
+                    if (fileNameEl) {
+                        fileNameEl.textContent = `📄 ${interview.linkedInProfile.fileName || 'LinkedIn Profile attached'}`;
+                        fileNameEl.style.display = 'block';
+                    }
+                } else if (interview.linkedInProfile.type === 'text') {
+                    // Show text in paste area
+                    if (pasteSection) pasteSection.style.display = 'block';
+                    const linkedinText = document.getElementById('linkedinText');
+                    if (linkedinText) linkedinText.value = interview.linkedInProfile.data || '';
+                }
+            } else {
+                window.editModeLinkedInProfile = null;
+                // Reset LinkedIn UI to default state
+                const uploadZone = document.getElementById('linkedinUploadZone');
+                const fileNameEl = document.getElementById('linkedinFileName');
+                const pasteSection = document.getElementById('linkedinPasteSection');
+                if (uploadZone) uploadZone.style.display = 'flex';
+                if (fileNameEl) fileNameEl.style.display = 'none';
+                if (pasteSection) pasteSection.style.display = 'none';
+            }
+
             // Handle interview type change (show/hide additional interviewers)
             handleInterviewTypeChange();
 
@@ -2308,6 +2343,7 @@
             const linkedInText = document.getElementById('linkedinText').value.trim();
 
             if (linkedInFileData) {
+                // New file uploaded
                 try {
                     const base64 = await fileToBase64(linkedInFileData);
                     linkedInData = {
@@ -2320,10 +2356,14 @@
                     console.error('Error reading file:', e);
                 }
             } else if (linkedInText) {
+                // New text pasted
                 linkedInData = {
                     type: 'text',
                     data: linkedInText
                 };
+            } else if (isEditMode && window.editModeLinkedInProfile) {
+                // Preserve existing LinkedIn data in edit mode if no new data provided
+                linkedInData = window.editModeLinkedInProfile;
             }
 
             // Collect additional interviewers
@@ -2379,6 +2419,7 @@
 
             // Reset form state
             linkedInFileData = null;
+            window.editModeLinkedInProfile = null; // Clear preserved LinkedIn data
             document.getElementById('linkedinFile').value = '';
             document.getElementById('linkedinFileName').style.display = 'none';
             document.getElementById('linkedinUploadZone').style.display = 'flex';

@@ -224,15 +224,38 @@
         const trackedApps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
         const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
 
-        // Combine all interviews with dates
+        // Create a set of interview keys from upcomingInterviews to deduplicate
+        // When an interview is added via Interview Intelligence, it's synced to both
+        // upcomingInterviews and trackedApplications - we only want one notification
+        const upcomingInterviewKeys = new Set();
+        upcomingInterviews.forEach(interview => {
+            // Track by appId if present, or company+role combo
+            if (interview.appId) {
+                upcomingInterviewKeys.add(String(interview.appId));
+            }
+            // Also track by company+role for fallback matching
+            if (interview.company && interview.role) {
+                upcomingInterviewKeys.add(`${interview.company.toLowerCase()}-${interview.role.toLowerCase()}`);
+            }
+        });
+
+        // Combine all interviews with dates, but filter out duplicates from trackedApps
         const allInterviews = [
             ...upcomingInterviews,
-            ...trackedApps.filter(app => app.interviewDate).map(app => ({
+            ...trackedApps.filter(app => {
+                if (!app.interviewDate) return false;
+                // Skip if this app is already represented in upcomingInterviews
+                if (upcomingInterviewKeys.has(String(app.id))) return false;
+                if (app.company && app.role && upcomingInterviewKeys.has(`${app.company.toLowerCase()}-${app.role.toLowerCase()}`)) return false;
+                return true;
+            }).map(app => ({
                 id: `app-${app.id}`,
                 company: app.company,
                 role: app.role,
                 date: app.interviewDate,
-                type: app.interviewType || 'Interview'
+                type: app.interviewType || 'Interview',
+                interviewerName: app.interviewerName,
+                interviewerTitle: app.interviewerTitle
             }))
         ];
 
@@ -243,15 +266,23 @@
             const hoursUntil = (interviewDate - now) / (1000 * 60 * 60);
             const notifKey = `interview-${interview.id || interview.company + interview.role}`;
 
+            // Build interviewer info string for personalized messages
+            const interviewerInfo = interview.interviewerName
+                ? ` with ${interview.interviewerName}${interview.interviewerTitle ? ` (${interview.interviewerTitle})` : ''}`
+                : '';
+
             // 24 hours before notification
             if (hoursUntil > 20 && hoursUntil <= 24) {
                 const key = `${notifKey}-24hr`;
                 if (!isNotificationShown(key)) {
+                    const message = interview.interviewerName
+                        ? `Your interview${interviewerInfo} for ${interview.role} at ${interview.company} is tomorrow. Time to review your prep!`
+                        : `Your interview with ${interview.company} for ${interview.role} is tomorrow. Time to review your prep!`;
                     showToast({
                         type: '24hr',
                         icon: '📅',
                         title: 'Interview Tomorrow',
-                        message: `Your interview with ${interview.company} for ${interview.role} is tomorrow. Time to review your prep!`,
+                        message: message,
                         actions: [
                             {
                                 label: 'Review Prep',
@@ -274,11 +305,14 @@
                 const key = `${notifKey}-dayof`;
                 if (!isNotificationShown(key)) {
                     const timeStr = interviewDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    const message = interview.interviewerName
+                        ? `Your ${interview.type || 'interview'}${interviewerInfo} at ${interview.company} is today at ${timeStr}. You've got this!`
+                        : `Your ${interview.type || 'interview'} with ${interview.company} is today at ${timeStr}. You've got this!`;
                     showToast({
                         type: 'dayof',
                         icon: '🎯',
                         title: 'Interview Today!',
-                        message: `Your ${interview.type || 'interview'} with ${interview.company} is today at ${timeStr}. You've got this!`,
+                        message: message,
                         actions: [
                             {
                                 label: 'Quick Prep',
@@ -297,6 +331,9 @@
             }
         });
 
+        // Track which completed interviews we've already shown (to avoid duplicates)
+        const completedInterviewKeys = new Set();
+
         // Post-interview notifications (for interviews that happened 1-4 hours ago)
         completedInterviews.forEach(interview => {
             if (!interview.date) return;
@@ -306,12 +343,21 @@
             const hoursSince = (now - interviewDate) / (1000 * 60 * 60);
             const notifKey = `interview-${interview.id || interview.company + interview.role}-post`;
 
+            // Track this interview to prevent duplicates from trackedApps
+            if (interview.appId) completedInterviewKeys.add(String(interview.appId));
+            if (interview.company && interview.role) {
+                completedInterviewKeys.add(`${interview.company.toLowerCase()}-${interview.role.toLowerCase()}`);
+            }
+
             if (hoursSince >= 1 && hoursSince <= 4 && !isNotificationShown(notifKey)) {
+                const interviewerMsg = interview.interviewerName
+                    ? `Your interview with ${interview.interviewerName} at ${interview.company}`
+                    : `Your interview with ${interview.company}`;
                 showToast({
                     type: 'post',
                     icon: '💭',
                     title: 'How did it go?',
-                    message: `Your interview with ${interview.company} just wrapped up. Want to do a quick debrief while it's fresh?`,
+                    message: `${interviewerMsg} just wrapped up. Want to do a quick debrief while it's fresh?`,
                     actions: [
                         {
                             label: 'Start Debrief',
@@ -330,20 +376,28 @@
         });
 
         // Also check trackedApps for interviews that happened but aren't in completedInterviews
+        // Skip if already represented in completedInterviews
         trackedApps.forEach(app => {
             if (!app.interviewDate) return;
             if (app.debriefCompleted) return;
+
+            // Skip if already shown via completedInterviews
+            if (completedInterviewKeys.has(String(app.id))) return;
+            if (app.company && app.role && completedInterviewKeys.has(`${app.company.toLowerCase()}-${app.role.toLowerCase()}`)) return;
 
             const interviewDate = new Date(app.interviewDate);
             const hoursSince = (now - interviewDate) / (1000 * 60 * 60);
             const notifKey = `app-${app.id}-post`;
 
             if (hoursSince >= 1 && hoursSince <= 4 && !isNotificationShown(notifKey)) {
+                const interviewerMsg = app.interviewerName
+                    ? `Your interview with ${app.interviewerName} at ${app.company}`
+                    : `Your interview with ${app.company}`;
                 showToast({
                     type: 'post',
                     icon: '💭',
                     title: 'How did it go?',
-                    message: `Your interview with ${app.company} just wrapped up. Want to do a quick debrief?`,
+                    message: `${interviewerMsg} just wrapped up. Want to do a quick debrief?`,
                     actions: [
                         {
                             label: 'Start Debrief',

@@ -1258,6 +1258,10 @@
                  'Final Round', 'Executive Interview'].includes(a.status)
             );
             if (interviewApp) {
+                // Personalize with interviewer name if available
+                if (interviewApp.interviewerName) {
+                    return `Interview with ${interviewApp.interviewerName} at ${interviewApp.company} coming up. Prepped?`;
+                }
                 return `Interview at ${interviewApp.company} coming up. Prepped?`;
             }
             return 'Interview coming up. Want to prep?';
@@ -2510,7 +2514,10 @@ ${confidenceClosing}`,
                     role: a.role,
                     status: a.status,
                     fitScore: a.fitScore,
-                    daysSinceUpdate: getDaysSinceDate(a.lastUpdated || a.dateAdded)
+                    daysSinceUpdate: getDaysSinceDate(a.lastUpdated || a.dateAdded),
+                    interviewerName: a.interviewerName || null,
+                    interviewerTitle: a.interviewerTitle || null,
+                    interviewDate: a.interviewDate || null
                 })),
                 // Summary for the AI
                 summary: generatePipelineSummary(activeApps, interviewingApps, appliedApps, respondedApps, rejectedApps, ghostedApps, avgFit, interviewRate),
@@ -2958,7 +2965,9 @@ ${confidenceClosing}`,
                         date: interview.date,
                         daysSince: Math.floor((Date.now() - interviewDate) / (24 * 60 * 60 * 1000)),
                         priority: 'high',
-                        reason: 'Recent interview needs debrief while details are fresh'
+                        reason: 'Recent interview needs debrief while details are fresh',
+                        interviewerName: interview.interviewerName || null,
+                        interviewerTitle: interview.interviewerTitle || null
                     });
                 }
             });
@@ -2972,7 +2981,9 @@ ${confidenceClosing}`,
                     date: app.lastUpdated || app.dateApplied,
                     daysSince: 0,
                     priority: 'medium',
-                    reason: `At ${app.status} but earlier interviews not debriefed. Compounding insights missed.`
+                    reason: `At ${app.status} but earlier interviews not debriefed. Compounding insights missed.`,
+                    interviewerName: app.interviewerName || null,
+                    interviewerTitle: app.interviewerTitle || null
                 });
             });
 
@@ -3158,8 +3169,16 @@ ${confidenceClosing}`,
 
         // Context-aware greetings based on pipeline (second priority)
         if (pipeline) {
-            // Upcoming interviews
+            // Upcoming interviews - personalize with interviewer name if available
             if (pipeline.interviewingCount > 0) {
+                // Find an interview with interviewer info for personalized greeting
+                const interviewWithName = pipeline.topApps?.find(a =>
+                    a.interviewerName && ['Recruiter Screen', 'Hiring Manager', 'Technical Round', 'Panel Interview',
+                     'Final Round', 'Executive Interview'].includes(a.status)
+                );
+                if (interviewWithName) {
+                    return `Hey ${userName}! Are you prepared for your interview with ${interviewWithName.interviewerName} at ${interviewWithName.company}?`;
+                }
                 return `Hey ${userName}! I see you've got ${pipeline.interviewingCount} interview${pipeline.interviewingCount !== 1 ? 's' : ''} lined up. Want to prep?`;
             }
 
