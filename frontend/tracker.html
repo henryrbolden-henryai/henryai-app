@@ -6594,39 +6594,66 @@
                 else if (m === 'medium') momentumMed++;
             });
 
-            // Leverage score: (final-stage interviews * avg fit) / total active
-            const finalStageApps = activeApps.filter(a =>
-                ['Final Round', 'Executive Interview', 'Offer Received'].includes(a.status)
-            );
+            // Leverage score: measures negotiating power based on late-stage activity
+            // Higher score = more leverage (multiple offers/finals + high fit scores)
+            const leverageStatuses = ['Final Round', 'Executive Interview', 'Offer Received', 'Negotiating', 'Awaiting Decision'];
+            const lateStageApps = activeApps.filter(a => leverageStatuses.includes(a.status));
+
             let leverageScore = 0;
-            if (activeCount > 0 && finalStageApps.length > 0) {
-                const avgFit = finalStageApps.reduce((sum, a) => sum + (a.fitScore || 50), 0) / finalStageApps.length;
-                leverageScore = (finalStageApps.length * avgFit) / activeCount / 10;
+            if (activeCount > 0 && lateStageApps.length > 0) {
+                // Weight by fit score and stage (offers count more than finals)
+                const weightedScore = lateStageApps.reduce((sum, a) => {
+                    const fitWeight = (a.fitScore || 50) / 100;
+                    const stageWeight = a.status === 'Offer Received' ? 2.0 :
+                                       a.status === 'Negotiating' ? 2.0 :
+                                       a.status === 'Final Round' ? 1.5 :
+                                       a.status === 'Executive Interview' ? 1.5 : 1.0;
+                    return sum + (fitWeight * stageWeight);
+                }, 0);
+                // Normalize: leverage = weighted late-stage score relative to pipeline size
+                leverageScore = (weightedScore / Math.max(activeCount, 1)) * 5;
             }
 
-            // Average time to screen - use dateResponseReceived, dateInterviewed, or infer from status
+            // Average time to screen - calculate days from application to first response
             const screenStatuses = ['Recruiter Screen', 'Awaiting Screen Result', 'Hiring Manager', 'Technical Round',
                 'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision', 'Offer Received', 'Negotiating', 'Accepted'];
 
+            // Find apps that have both an application date and evidence of a response
             const withScreen = allApps.filter(a => {
-                const hasApplied = a.dateApplied;
-                // Has explicit response date OR is in a screen/interview status
-                const hasResponse = a.dateResponseReceived || a.dateInterviewed || screenStatuses.includes(a.status);
-                return hasApplied && hasResponse;
+                // Need a start date (dateApplied or dateAdded)
+                const startDate = a.dateApplied || a.dateAdded;
+                if (!startDate) return false;
+
+                // Need evidence of response: explicit date, interview date, or advanced status
+                const hasResponse = a.dateResponseReceived || a.dateInterviewed ||
+                                   (screenStatuses.includes(a.status) && a.lastUpdated);
+                return hasResponse;
             });
 
             let avgTimeToScreen = null;
             if (withScreen.length > 0) {
+                let validCount = 0;
                 const total = withScreen.reduce((sum, a) => {
-                    // Use explicit dates if available, otherwise use lastUpdated as proxy for when they got a response
+                    // Use best available dates
+                    const startDate = a.dateApplied || a.dateAdded;
                     const responseDate = a.dateResponseReceived || a.dateInterviewed || a.lastUpdated;
-                    if (!responseDate) return sum;
-                    const applied = new Date(a.dateApplied);
+
+                    if (!startDate || !responseDate) return sum;
+
+                    const applied = new Date(startDate);
                     const responded = new Date(responseDate);
+
+                    // Sanity check: response should be after or same as application
+                    if (responded < applied) return sum;
+
                     const daysDiff = Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
-                    return sum + Math.max(0, daysDiff); // Ensure non-negative
+                    validCount++;
+                    return sum + daysDiff;
                 }, 0);
-                avgTimeToScreen = Math.round(total / withScreen.length * 10) / 10;
+
+                if (validCount > 0) {
+                    avgTimeToScreen = Math.round(total / validCount * 10) / 10;
+                }
             }
 
             // Interview conversion rate
