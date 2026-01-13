@@ -85,7 +85,8 @@ class RedFlagMitigation(BaseModel):
 class QuestionToAsk(BaseModel):
     question: str
     why: Optional[str] = None
-    rationale: Optional[str] = None  # Alias for InterviewerIntelResponse compatibility
+    rationale: Optional[str] = None  # Alias for compatibility
+    why_this_works: Optional[str] = None  # New field for interviewer intel
 
 
 class STARExample(BaseModel):
@@ -338,25 +339,39 @@ class InterviewerIntelRequest(BaseModel):
     job_description: str = ""
 
 
+class RiskToAddress(BaseModel):
+    """Single risk the candidate should proactively address"""
+    concern: str
+    how_to_address: str
+
+
 class InterviewerIntelResponse(BaseModel):
-    """Complete interviewer intelligence report"""
-    # Interviewer Summary
+    """
+    Interviewer intelligence report per spec: Interviewer LinkedIn Analysis & Personalized Prep.
+    Goal: Help candidate answer "How do I earn trust with this interviewer?"
+    """
+    # Interviewer Info
     interviewer_name: str
     interviewer_title: str
     current_company: str
     tenure: str
-    summary: str  # Who they are and what they care about
 
-    # Analysis
-    likely_evaluation_focus: List[str]  # What they likely evaluate
-    predicted_question_themes: List[str]  # Question themes based on background
-    communication_style: str  # How to communicate with this person
+    # Core Analysis (new spec format)
+    how_they_screen: str  # What they optimize for, what makes them lean in vs tune out
+    what_to_emphasize: List[str]  # 3 themes to lean into
+    what_to_deemphasize: List[str]  # Things less relevant for this interviewer
+    risk_to_address: RiskToAddress  # One potential concern and how to address it
+    story_framing: str  # Specific framing guidance, not a script
+    questions_to_ask: List[QuestionToAsk]  # Interviewer-specific questions
+    summary: str  # 2-3 sentence coaching summary
 
-    # Strategy
-    risks: List[InterviewerRisk]  # Risk areas and defenses
-    strengths_to_highlight: List[InterviewerStrength]  # Strengths to emphasize
-    tailored_stories: List[TailoredStory]  # Story recommendations
-    questions_to_ask: List[QuestionToAsk]  # Customized questions
+    # Legacy fields for backwards compatibility (optional)
+    likely_evaluation_focus: Optional[List[str]] = None
+    predicted_question_themes: Optional[List[str]] = None
+    communication_style: Optional[str] = None
+    risks: Optional[List[InterviewerRisk]] = None
+    strengths_to_highlight: Optional[List[InterviewerStrength]] = None
+    tailored_stories: Optional[List[TailoredStory]] = None
 
     # Debrief insights (if available)
     debrief_insights: Optional[str] = None

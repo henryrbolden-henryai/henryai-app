@@ -895,8 +895,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="interviewJD">Job Description (optional)</label>
-                    <textarea id="interviewJD" placeholder="Paste the job description for more personalized prep..."></textarea>
+                    <label for="interviewJD">Job Description <span id="jdOptionalLabel">(auto-loaded from analysis)</span></label>
+                    <textarea id="interviewJD" placeholder="Job description will be loaded automatically if you analyzed this role. You can also paste or edit here."></textarea>
                 </div>
 
                 <div class="modal-actions">
@@ -1250,7 +1250,28 @@
             // Pre-fill hidden fields (used for saving)
             if (companyField) companyField.value = selectedApplication.company || '';
             if (roleField) roleField.value = selectedApplication.role || '';
-            if (jdField && selectedApplication.jobDescription) jdField.value = selectedApplication.jobDescription;
+
+            // Load job description from multiple sources: app data, analysis data, or localStorage
+            if (jdField) {
+                let jd = selectedApplication.jobDescription || '';
+                if (!jd && selectedApplication.analysisKey) {
+                    // Try to load from stored analysis
+                    try {
+                        const analysisStr = localStorage.getItem(selectedApplication.analysisKey);
+                        if (analysisStr) {
+                            const analysis = JSON.parse(analysisStr);
+                            jd = analysis._jd_text || analysis.jd_text || analysis.job_description || '';
+                        }
+                    } catch (e) {
+                        console.error('Error loading JD from analysis:', e);
+                    }
+                }
+                if (!jd && analysisData) {
+                    // Fall back to current session analysis data
+                    jd = analysisData._jd_text || '';
+                }
+                jdField.value = jd;
+            }
 
             console.log('Selected application:', selectedApplication.company, selectedApplication.role);
         }
@@ -1938,6 +1959,18 @@
             });
         }
 
+        // Clear LinkedIn upload (used when editing and removing existing file)
+        function clearLinkedInUpload() {
+            linkedInFileData = null;
+            editingLinkedInProfile = null;
+            document.getElementById('linkedinFile').value = '';
+            document.getElementById('linkedinFileName').style.display = 'none';
+            document.getElementById('linkedinUploadZone').style.display = 'flex';
+            document.getElementById('linkedinText').value = '';
+            const pasteSection = document.getElementById('linkedinPasteSection');
+            if (pasteSection) pasteSection.style.display = 'none';
+        }
+
         // Modified saveInterview to include LinkedIn data and application selection
         const originalSaveInterview = saveInterview;
         saveInterview = async function(event) {
@@ -2082,6 +2115,9 @@
         // INTERVIEW EDITING
         // ============================================================================
 
+        // Store existing LinkedIn data when editing (to preserve if not re-uploaded)
+        let editingLinkedInProfile = null;
+
         function editInterview(interviewId) {
             // Find the interview
             const interview = upcomingInterviews.find(i => String(i.id) === String(interviewId));
@@ -2090,12 +2126,42 @@
                 return;
             }
 
+            console.log('Editing interview:', interview);
+
+            // Update Hey Henry context to reflect this interview's company/role
+            // This prevents confusion when the user navigated from a different app's strategy
+            if (interview.company || interview.role) {
+                try {
+                    const currentAnalysis = JSON.parse(sessionStorage.getItem('analysisData') || '{}');
+                    // Only update if the interview is for a different company
+                    const currentCompany = currentAnalysis._company_name || currentAnalysis._company || '';
+                    if (currentCompany.toLowerCase() !== (interview.company || '').toLowerCase()) {
+                        // Update session context for Hey Henry
+                        const interviewContext = {
+                            ...currentAnalysis,
+                            _company_name: interview.company,
+                            _company: interview.company,
+                            role_title: interview.role,
+                            _role: interview.role,
+                            _editing_interview: true,
+                            _interviewer_name: interview.interviewerName,
+                            _interview_type: interview.type
+                        };
+                        sessionStorage.setItem('analysisData', JSON.stringify(interviewContext));
+                        console.log('Updated Hey Henry context for interview:', interview.company);
+                    }
+                } catch (e) {
+                    console.error('Error updating Hey Henry context:', e);
+                }
+            }
+
             // Set edit mode
             document.getElementById('editInterviewId').value = interviewId;
             document.getElementById('interviewModalTitle').textContent = 'Edit Interview';
 
-            // Reset form and populate with existing data
+            // Reset form first (but we'll repopulate everything)
             document.getElementById('addInterviewForm').reset();
+            linkedInFileData = null;
 
             // Hide application selector (can't change app for existing interview)
             document.getElementById('applicationSelectGroup').style.display = 'none';
@@ -2109,6 +2175,39 @@
             document.getElementById('interviewerName').value = interview.interviewerName || '';
             document.getElementById('interviewerTitle').value = interview.interviewerTitle || '';
             document.getElementById('interviewJD').value = interview.jobDescription || '';
+
+            // Restore LinkedIn profile if it exists
+            editingLinkedInProfile = interview.linkedInProfile || null;
+            const fileNameEl = document.getElementById('linkedinFileName');
+            const uploadZone = document.getElementById('linkedinUploadZone');
+            const pasteSection = document.getElementById('linkedinPasteSection');
+            const textArea = document.getElementById('linkedinText');
+
+            if (interview.linkedInProfile) {
+                if (interview.linkedInProfile.type === 'file') {
+                    // Show file name indicator
+                    fileNameEl.innerHTML = `
+                        <span class="file-icon">📄</span>
+                        <span class="file-name">LinkedIn Profile - ${interview.interviewerName || 'Uploaded'}.pdf</span>
+                        <button type="button" class="remove-file-btn" onclick="clearLinkedInUpload()">&times;</button>
+                    `;
+                    fileNameEl.style.display = 'flex';
+                    uploadZone.style.display = 'none';
+                    if (pasteSection) pasteSection.style.display = 'none';
+                } else if (interview.linkedInProfile.type === 'text') {
+                    // Show pasted text
+                    if (textArea) textArea.value = interview.linkedInProfile.data || '';
+                    if (pasteSection) pasteSection.style.display = 'block';
+                    fileNameEl.style.display = 'none';
+                    uploadZone.style.display = 'none';
+                }
+            } else {
+                // No LinkedIn profile - show upload zone
+                fileNameEl.style.display = 'none';
+                uploadZone.style.display = 'flex';
+                if (pasteSection) pasteSection.style.display = 'none';
+                if (textArea) textArea.value = '';
+            }
 
             // Handle interview type change (show/hide additional interviewers)
             handleInterviewTypeChange();
@@ -2324,6 +2423,9 @@
                     type: 'text',
                     data: linkedInText
                 };
+            } else if (isEditMode && editingLinkedInProfile) {
+                // Preserve existing LinkedIn data when editing (if no new data provided)
+                linkedInData = editingLinkedInProfile;
             }
 
             // Collect additional interviewers
