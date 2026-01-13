@@ -9785,10 +9785,13 @@ Thanks so much!
             const fitScore = app.fitScore || app.fit_score || '--';
             const daysSince = intel?.days_since_last_activity || getDaysSince(app.dateApplied || app.dateAdded);
 
-            // Get next action - prefer intel, fall back to status-based action
+            // Get next action - prefer real intel, fall back to status-based action
+            // If intel is generic fallback ("Review application" / "Intelligence unavailable"), use status-based instead
             const statusAction = getNextActionForStatus(app);
-            const nextAction = intel?.next_action || statusAction.action;
-            const nextReason = intel?.next_action_reason || statusAction.reason;
+            const isGenericFallback = intel?.next_action === 'Review application' ||
+                                      intel?.next_action_reason === 'Intelligence unavailable';
+            const nextAction = (intel?.next_action && !isGenericFallback) ? intel.next_action : statusAction.action;
+            const nextReason = (intel?.next_action_reason && !isGenericFallback) ? intel.next_action_reason : statusAction.reason;
 
             // Format date applied
             const dateApplied = app.dateApplied || app.dateAdded;
