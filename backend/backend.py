@@ -178,6 +178,15 @@ except ImportError:
     TIER_SERVICE_AVAILABLE = False
     print("⚠️ Tier service not available - tier features disabled")
 
+# API Usage Tracking Service for monitoring Claude API token usage and costs
+try:
+    from api_usage_service import ApiUsageService, FeatureType
+    from api_pricing import get_model_pricing_info
+    API_USAGE_SERVICE_AVAILABLE = True
+except ImportError:
+    API_USAGE_SERVICE_AVAILABLE = False
+    print("⚠️ API usage service not available - API credit tracking disabled")
+
 # Recruiter Calibration module for gap classification and red flag detection
 # Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
 # CRITICAL: Calibration explains gaps, does NOT override Job Fit recommendation
@@ -23427,6 +23436,145 @@ async def get_user_tier(user_id: str = None):
     except Exception as e:
         logger.error(f"Error getting user tier: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting user tier: {str(e)}")
+
+
+# ============================================================================
+# API CREDIT USAGE TRACKING
+# ============================================================================
+
+@app.get("/api/user/api-usage")
+async def get_user_api_usage(user_id: str = None):
+    """
+    Get current month's API token usage and costs for a user.
+
+    Returns total tokens, costs, and breakdown by feature.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not API_USAGE_SERVICE_AVAILABLE:
+        return {
+            "period": {"month": datetime.utcnow().strftime("%B %Y")},
+            "totals": {
+                "requests": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "cost_cents": 0,
+                "cost_formatted": "$0.00",
+            },
+            "by_feature": {},
+            "error": "API usage tracking not available"
+        }
+
+    try:
+        api_usage_service = ApiUsageService(supabase)
+        usage = await api_usage_service.get_current_month_usage(user_id)
+        return usage
+    except Exception as e:
+        logger.error(f"Error getting API usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting API usage: {str(e)}")
+
+
+@app.get("/api/user/api-usage/history")
+async def get_user_api_usage_history(
+    user_id: str = None,
+    limit: int = 50,
+    offset: int = 0
+):
+    """
+    Get paginated API usage history for a user.
+
+    Returns individual API call records with tokens and costs.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if limit > 100:
+        limit = 100  # Cap at 100 records per page
+
+    if not API_USAGE_SERVICE_AVAILABLE:
+        return {
+            "records": [],
+            "pagination": {"limit": limit, "offset": offset, "count": 0},
+            "error": "API usage tracking not available"
+        }
+
+    try:
+        api_usage_service = ApiUsageService(supabase)
+        history = await api_usage_service.get_usage_history(user_id, limit, offset)
+        return history
+    except Exception as e:
+        logger.error(f"Error getting API usage history: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting API usage history: {str(e)}")
+
+
+@app.get("/api/user/api-usage/lifetime")
+async def get_user_api_usage_lifetime(user_id: str = None):
+    """
+    Get lifetime API usage stats for a user.
+
+    Returns total tokens and costs across all time.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    if not API_USAGE_SERVICE_AVAILABLE:
+        return {
+            "lifetime": {
+                "requests": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "total_tokens": 0,
+                "cost_cents": 0,
+                "cost_formatted": "$0.00",
+            },
+            "error": "API usage tracking not available"
+        }
+
+    try:
+        api_usage_service = ApiUsageService(supabase)
+        lifetime = await api_usage_service.get_lifetime_usage(user_id)
+        return lifetime
+    except Exception as e:
+        logger.error(f"Error getting lifetime API usage: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting lifetime API usage: {str(e)}")
+
+
+@app.get("/api/pricing/models")
+async def get_model_pricing():
+    """
+    Get pricing information for available Claude models.
+
+    Returns cost per million tokens for input and output.
+    """
+    if not API_USAGE_SERVICE_AVAILABLE:
+        return {
+            "models": [],
+            "error": "Pricing information not available"
+        }
+
+    try:
+        from api_pricing import ANTHROPIC_PRICING, DEFAULT_MODEL
+        models = []
+        for model_id in ANTHROPIC_PRICING:
+            models.append(get_model_pricing_info(model_id))
+        return {
+            "models": models,
+            "default_model": DEFAULT_MODEL
+        }
+    except Exception as e:
+        logger.error(f"Error getting model pricing: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error getting model pricing: {str(e)}")
 
 
 # ============================================================================
