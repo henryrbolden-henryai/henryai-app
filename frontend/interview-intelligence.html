@@ -1075,11 +1075,17 @@
                 ]).then(apps => {
                     if (apps.length > 0) {
                         trackedApplications = apps;
+
+                        // CRITICAL: Re-run merge now that Supabase apps are loaded
+                        // This ensures interviews linked to Supabase-only apps appear
+                        mergeInterviewsFromTracker();
+                        renderInterviewList();
+
                         // Re-populate dropdown if modal is open
                         if (document.getElementById('addInterviewModal').classList.contains('active')) {
                             populateApplicationDropdown();
                         }
-                        console.log('Enhanced with Supabase applications:', apps.length);
+                        console.log('Enhanced with Supabase applications:', apps.length, '- re-merged interviews');
                     }
                 }).catch(e => {
                     console.log('Supabase apps not available (using localStorage):', e.message);
@@ -2216,9 +2222,12 @@
             // Populate additional interviewers if any
             const additionalList = document.getElementById('additionalInterviewersList');
             additionalList.innerHTML = '';
+            // Clear stored data from previous edit sessions
+            Object.keys(additionalInterviewerExistingData).forEach(k => delete additionalInterviewerExistingData[k]);
             if (interview.additionalInterviewers && interview.additionalInterviewers.length > 0) {
                 interview.additionalInterviewers.forEach((interviewer, index) => {
-                    addInterviewerField(interviewer.name, interviewer.title, interviewer.linkedInProfile);
+                    // Pass both linkedInProfile AND interviewerInsights to preserve on edit
+                    addInterviewerField(interviewer.name, interviewer.title, interviewer.linkedInProfile, interviewer.interviewerInsights);
                 });
             }
 
@@ -2239,8 +2248,10 @@
         }
 
         let additionalInterviewerCount = 0;
+        // Store existing LinkedIn data for additional interviewers during edit
+        const additionalInterviewerExistingData = {};
 
-        function addInterviewerField(name = '', title = '', linkedInData = null) {
+        function addInterviewerField(name = '', title = '', linkedInData = null, interviewerInsights = null) {
             const listEl = document.getElementById('additionalInterviewersList');
             const fieldId = `additional-interviewer-${additionalInterviewerCount++}`;
 
@@ -2265,6 +2276,14 @@
             `;
 
             listEl.insertAdjacentHTML('beforeend', fieldHTML);
+
+            // PRESERVE: Store existing LinkedIn data and insights for this interviewer
+            if (linkedInData || interviewerInsights) {
+                additionalInterviewerExistingData[fieldId] = {
+                    linkedInProfile: linkedInData || null,
+                    interviewerInsights: interviewerInsights || null
+                };
+            }
 
             // If we have existing LinkedIn data, show it
             if (linkedInData) {
@@ -2334,6 +2353,7 @@
             const interviewers = [];
 
             for (const row of rows) {
+                const fieldId = row.id;
                 const name = row.querySelector('.additional-name').value.trim();
                 const title = row.querySelector('.additional-title').value.trim();
                 const fileInput = row.querySelector('.additional-linkedin-file');
@@ -2342,6 +2362,7 @@
                     const interviewer = { name, title };
 
                     if (fileInput.files && fileInput.files[0]) {
+                        // New file uploaded - use it
                         try {
                             const base64 = await fileToBase64(fileInput.files[0]);
                             interviewer.linkedInProfile = {
@@ -2352,6 +2373,15 @@
                             };
                         } catch (e) {
                             console.error('Error reading file:', e);
+                        }
+                    } else if (additionalInterviewerExistingData[fieldId]) {
+                        // PRESERVE: No new file - use existing data from edit mode
+                        const existing = additionalInterviewerExistingData[fieldId];
+                        if (existing.linkedInProfile) {
+                            interviewer.linkedInProfile = existing.linkedInProfile;
+                        }
+                        if (existing.interviewerInsights) {
+                            interviewer.interviewerInsights = existing.interviewerInsights;
                         }
                     }
 
