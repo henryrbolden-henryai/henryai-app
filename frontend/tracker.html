@@ -6614,39 +6614,74 @@
                 leverageScore = (weightedScore / Math.max(activeCount, 1)) * 5;
             }
 
-            // Average time to screen - calculate days from application to first response
-            const screenStatuses = ['Recruiter Screen', 'Awaiting Screen Result', 'Hiring Manager', 'Technical Round',
-                'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision', 'Offer Received', 'Negotiating', 'Accepted'];
+            // Average time to screen - calculate days from application to FIRST recruiter screen
+            // This is a key metric for understanding how long it takes to get initial traction
 
-            // Find apps that have both an application date and evidence of a response
+            // Load interviews to find recruiter screen dates
+            let allInterviews = [];
+            try {
+                const upcoming = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+                const completed = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+                allInterviews = [...upcoming, ...completed];
+            } catch (e) {
+                console.error('Error loading interviews for time-to-screen:', e);
+            }
+
+            // Helper to find recruiter screen date for an app
+            function getRecruiterScreenDate(app) {
+                // Priority 1: Check interviews for a Recruiter Screen type
+                const appInterviews = allInterviews.filter(i =>
+                    (i.appId && String(i.appId) === String(app.id)) ||
+                    (i.company?.toLowerCase() === app.company?.toLowerCase())
+                );
+                const recruiterScreen = appInterviews.find(i => i.type === 'Recruiter Screen');
+                if (recruiterScreen?.date) {
+                    return recruiterScreen.date;
+                }
+
+                // Priority 2: If status is/was Recruiter Screen, use interviewDate or dateInterviewed
+                if (app.status === 'Recruiter Screen' || app.previousStatus === 'Recruiter Screen') {
+                    if (app.interviewDate) return app.interviewDate;
+                    if (app.dateInterviewed) return app.dateInterviewed;
+                }
+
+                // Priority 3: Use explicit response date or first interview date for apps past screening
+                const pastScreenStatuses = ['Awaiting Screen Result', 'Hiring Manager', 'Technical Round',
+                    'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision',
+                    'Offer Received', 'Negotiating', 'Accepted'];
+                if (pastScreenStatuses.includes(app.status)) {
+                    // They passed screening, use earliest interview date as proxy
+                    if (app.dateResponseReceived) return app.dateResponseReceived;
+                    if (app.dateInterviewed) return app.dateInterviewed;
+                }
+
+                return null;
+            }
+
+            // Find apps that have both an application date and a recruiter screen date
             const withScreen = allApps.filter(a => {
-                // Need a start date (dateApplied or dateAdded)
                 const startDate = a.dateApplied || a.dateAdded;
                 if (!startDate) return false;
-
-                // Need evidence of response: explicit date, interview date, or advanced status
-                const hasResponse = a.dateResponseReceived || a.dateInterviewed ||
-                                   (screenStatuses.includes(a.status) && a.lastUpdated);
-                return hasResponse;
+                const screenDate = getRecruiterScreenDate(a);
+                return !!screenDate;
             });
 
             let avgTimeToScreen = null;
             if (withScreen.length > 0) {
                 let validCount = 0;
                 const total = withScreen.reduce((sum, a) => {
-                    // Use best available dates
                     const startDate = a.dateApplied || a.dateAdded;
-                    const responseDate = a.dateResponseReceived || a.dateInterviewed || a.lastUpdated;
+                    const screenDate = getRecruiterScreenDate(a);
 
-                    if (!startDate || !responseDate) return sum;
+                    if (!startDate || !screenDate) return sum;
 
                     const applied = new Date(startDate);
-                    const responded = new Date(responseDate);
+                    const screened = new Date(screenDate);
 
-                    // Sanity check: response should be after or same as application
-                    if (responded < applied) return sum;
+                    // Sanity check: screen should be after or same as application
+                    if (screened < applied) return sum;
 
-                    const daysDiff = Math.floor((responded - applied) / (1000 * 60 * 60 * 24));
+                    const daysDiff = Math.floor((screened - applied) / (1000 * 60 * 60 * 24));
                     validCount++;
                     return sum + daysDiff;
                 }, 0);

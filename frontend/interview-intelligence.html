@@ -785,10 +785,10 @@
         </div>
     </div>
 
-    <!-- Add Interview Modal -->
+    <!-- Add/Edit Interview Modal -->
     <div class="modal-overlay" id="addInterviewModal">
         <div class="modal">
-            <h2>Add Upcoming Interview</h2>
+            <h2 id="interviewModalTitle">Add Upcoming Interview</h2>
             <form id="addInterviewForm" onsubmit="saveInterview(event)">
                 <!-- Application Selection Dropdown -->
                 <div class="form-group" id="applicationSelectGroup">
@@ -818,7 +818,7 @@
 
                 <div class="form-group">
                     <label for="interviewType">Interview Type *</label>
-                    <select id="interviewType" required>
+                    <select id="interviewType" required onchange="handleInterviewTypeChange()">
                         <option value="">Select type...</option>
                         <option value="Recruiter Screen">Recruiter Screen</option>
                         <option value="Hiring Manager">Hiring Manager Interview</option>
@@ -834,15 +834,32 @@
                     <input type="datetime-local" id="interviewDate" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="interviewerName">Interviewer Name (optional)</label>
-                    <input type="text" id="interviewerName" placeholder="e.g., Sarah Chen">
+                <!-- Primary Interviewer -->
+                <div id="primaryInterviewerSection">
+                    <div class="form-group">
+                        <label for="interviewerName">Interviewer Name (optional)</label>
+                        <input type="text" id="interviewerName" placeholder="e.g., Sarah Chen">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="interviewerTitle">Interviewer Title (optional)</label>
+                        <input type="text" id="interviewerTitle" placeholder="e.g., Director of Product">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="interviewerTitle">Interviewer Title (optional)</label>
-                    <input type="text" id="interviewerTitle" placeholder="e.g., Director of Product">
+                <!-- Additional Interviewers (for panel interviews) -->
+                <div id="additionalInterviewersSection" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Additional Interviewers</span>
+                            <button type="button" onclick="addInterviewerField()" style="background: transparent; border: 1px solid #22d3ee; color: #22d3ee; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">+ Add</button>
+                        </label>
+                    </div>
+                    <div id="additionalInterviewersList"></div>
                 </div>
+
+                <!-- Hidden field for edit mode -->
+                <input type="hidden" id="editInterviewId" value="">
 
                 <!-- Interviewer LinkedIn Upload -->
                 <div class="form-group interviewer-intel-section">
@@ -1712,16 +1729,23 @@
                 const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
                 const initial = interview.company.charAt(0).toUpperCase();
 
+                // Show additional interviewers count if any
+                const additionalCount = interview.additionalInterviewers?.length || 0;
+                const interviewerDisplay = interview.interviewerName
+                    ? `with ${interview.interviewerName}${additionalCount > 0 ? ` +${additionalCount} more` : ''}`
+                    : additionalCount > 0 ? `${additionalCount + 1} interviewers` : '';
+
                 return `
                     <div class="interview-card">
                         <div class="company-avatar">${initial}</div>
                         <div class="interview-info">
                             <div class="company-name">${interview.company}</div>
                             <div class="interview-details">${typeLabels[interview.type] || interview.type} on ${dateStr} @ ${timeStr}</div>
-                            ${interview.interviewerName ? `<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 4px;">with ${interview.interviewerName}</div>` : ''}
+                            ${interviewerDisplay ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 4px;">${interviewerDisplay}</div>` : ''}
                         </div>
                         <div class="interview-actions">
-                            <button class="calendar-btn" onclick="downloadCalendarInvite('${interview.id}')" title="Download calendar invite" style="background: transparent; border: 1px solid var(--color-border); padding: 8px 12px; font-size: 0.85rem;">📅</button>
+                            <button class="edit-btn" onclick="editInterview('${interview.id}')" title="Edit interview" style="background: transparent; border: 1px solid #6b7280; color: #9ca3af; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">✏️</button>
+                            <button class="calendar-btn" onclick="downloadCalendarInvite('${interview.id}')" title="Download calendar invite" style="background: transparent; border: 1px solid #374151; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">📅</button>
                             <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Prep Guide</button>
                             <button class="open-debrief-btn" onclick="openDebrief('${interview.id}')">Debrief</button>
                         </div>
@@ -2053,6 +2077,367 @@
                 });
             }
         });
+
+        // ============================================================================
+        // INTERVIEW EDITING
+        // ============================================================================
+
+        function editInterview(interviewId) {
+            // Find the interview
+            const interview = upcomingInterviews.find(i => String(i.id) === String(interviewId));
+            if (!interview) {
+                console.error('Interview not found:', interviewId);
+                return;
+            }
+
+            // Set edit mode
+            document.getElementById('editInterviewId').value = interviewId;
+            document.getElementById('interviewModalTitle').textContent = 'Edit Interview';
+
+            // Reset form and populate with existing data
+            document.getElementById('addInterviewForm').reset();
+
+            // Hide application selector (can't change app for existing interview)
+            document.getElementById('applicationSelectGroup').style.display = 'none';
+            document.getElementById('manualEntryFields').style.display = 'block';
+
+            // Populate fields
+            document.getElementById('interviewCompany').value = interview.company || '';
+            document.getElementById('interviewRole').value = interview.role || '';
+            document.getElementById('interviewType').value = interview.type || '';
+            document.getElementById('interviewDate').value = interview.date || '';
+            document.getElementById('interviewerName').value = interview.interviewerName || '';
+            document.getElementById('interviewerTitle').value = interview.interviewerTitle || '';
+            document.getElementById('interviewJD').value = interview.jobDescription || '';
+
+            // Handle interview type change (show/hide additional interviewers)
+            handleInterviewTypeChange();
+
+            // Populate additional interviewers if any
+            const additionalList = document.getElementById('additionalInterviewersList');
+            additionalList.innerHTML = '';
+            if (interview.additionalInterviewers && interview.additionalInterviewers.length > 0) {
+                interview.additionalInterviewers.forEach((interviewer, index) => {
+                    addInterviewerField(interviewer.name, interviewer.title, interviewer.linkedInProfile);
+                });
+            }
+
+            // Show modal
+            document.getElementById('addInterviewModal').classList.add('active');
+        }
+
+        function handleInterviewTypeChange() {
+            const interviewType = document.getElementById('interviewType').value;
+            const additionalSection = document.getElementById('additionalInterviewersSection');
+
+            // Show additional interviewers section for panel/group interviews
+            if (interviewType === 'Panel Interview' || interviewType === 'Final Round') {
+                additionalSection.style.display = 'block';
+            } else {
+                additionalSection.style.display = 'none';
+            }
+        }
+
+        let additionalInterviewerCount = 0;
+
+        function addInterviewerField(name = '', title = '', linkedInData = null) {
+            const listEl = document.getElementById('additionalInterviewersList');
+            const fieldId = `additional-interviewer-${additionalInterviewerCount++}`;
+
+            const fieldHTML = `
+                <div id="${fieldId}" class="additional-interviewer-row" style="background: rgba(255,255,255,0.02); border: 1px solid #374151; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.85rem; color: #9ca3af;">Interviewer ${document.querySelectorAll('.additional-interviewer-row').length + 1}</span>
+                        <button type="button" onclick="removeInterviewerField('${fieldId}')" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.9rem;">Remove</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" class="additional-name" placeholder="Name" value="${name}" style="background: #111827; border: 1px solid #374151; border-radius: 6px; padding: 8px; color: #fff; font-size: 0.9rem;">
+                        <input type="text" class="additional-title" placeholder="Title" value="${title}" style="background: #111827; border: 1px solid #374151; border-radius: 6px; padding: 8px; color: #fff; font-size: 0.9rem;">
+                    </div>
+                    <div class="linkedin-upload-mini" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="file" class="additional-linkedin-file" accept=".pdf,image/*" style="display: none;" onchange="handleAdditionalLinkedInUpload(event, '${fieldId}')">
+                        <button type="button" onclick="document.querySelector('#${fieldId} .additional-linkedin-file').click()" style="background: transparent; border: 1px dashed #374151; color: #6b7280; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">
+                            📄 LinkedIn PDF
+                        </button>
+                        <span class="additional-linkedin-status" style="font-size: 0.8rem; color: #22d3ee; display: none;"></span>
+                    </div>
+                </div>
+            `;
+
+            listEl.insertAdjacentHTML('beforeend', fieldHTML);
+
+            // If we have existing LinkedIn data, show it
+            if (linkedInData) {
+                const statusEl = document.querySelector(`#${fieldId} .additional-linkedin-status`);
+                if (statusEl) {
+                    statusEl.textContent = linkedInData.fileName || 'LinkedIn attached';
+                    statusEl.style.display = 'inline';
+                }
+            }
+        }
+
+        function removeInterviewerField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.remove();
+            }
+        }
+
+        function handleAdditionalLinkedInUpload(event, fieldId) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.querySelector(`#${fieldId} .additional-linkedin-status`);
+            if (statusEl) {
+                statusEl.textContent = `📄 ${file.name}`;
+                statusEl.style.display = 'inline';
+            }
+        }
+
+        function getAdditionalInterviewers() {
+            const rows = document.querySelectorAll('.additional-interviewer-row');
+            const interviewers = [];
+
+            rows.forEach(async (row, index) => {
+                const name = row.querySelector('.additional-name').value.trim();
+                const title = row.querySelector('.additional-title').value.trim();
+                const fileInput = row.querySelector('.additional-linkedin-file');
+
+                if (name) { // Only add if name is provided
+                    const interviewer = { name, title };
+
+                    // Check if file was uploaded
+                    if (fileInput.files && fileInput.files[0]) {
+                        try {
+                            const base64 = await fileToBase64(fileInput.files[0]);
+                            interviewer.linkedInProfile = {
+                                type: 'file',
+                                fileName: fileInput.files[0].name,
+                                fileType: fileInput.files[0].type,
+                                data: base64
+                            };
+                        } catch (e) {
+                            console.error('Error reading additional interviewer file:', e);
+                        }
+                    }
+
+                    interviewers.push(interviewer);
+                }
+            });
+
+            return interviewers;
+        }
+
+        // Collect additional interviewers synchronously (for files already processed)
+        async function collectAdditionalInterviewers() {
+            const rows = document.querySelectorAll('.additional-interviewer-row');
+            const interviewers = [];
+
+            for (const row of rows) {
+                const name = row.querySelector('.additional-name').value.trim();
+                const title = row.querySelector('.additional-title').value.trim();
+                const fileInput = row.querySelector('.additional-linkedin-file');
+
+                if (name) {
+                    const interviewer = { name, title };
+
+                    if (fileInput.files && fileInput.files[0]) {
+                        try {
+                            const base64 = await fileToBase64(fileInput.files[0]);
+                            interviewer.linkedInProfile = {
+                                type: 'file',
+                                fileName: fileInput.files[0].name,
+                                fileType: fileInput.files[0].type,
+                                data: base64
+                            };
+                        } catch (e) {
+                            console.error('Error reading file:', e);
+                        }
+                    }
+
+                    interviewers.push(interviewer);
+                }
+            }
+
+            return interviewers;
+        }
+
+        // Override saveInterview to handle edit mode and additional interviewers
+        const _originalSaveInterview = saveInterview;
+        saveInterview = async function(event) {
+            event.preventDefault();
+
+            const editId = document.getElementById('editInterviewId').value;
+            const isEditMode = !!editId;
+
+            // Validate: either dropdown selection or manual entry must be filled
+            const applicationSelect = document.getElementById('applicationSelect');
+            const companyField = document.getElementById('interviewCompany');
+            const roleField = document.getElementById('interviewRole');
+            const manualEntryVisible = document.getElementById('manualEntryFields').style.display !== 'none';
+
+            let company, role;
+
+            if (selectedApplication) {
+                company = selectedApplication.company;
+                role = selectedApplication.role;
+            } else if (manualEntryVisible) {
+                company = companyField.value.trim();
+                role = roleField.value.trim();
+                if (!company || !role) {
+                    alert('Please enter company and role.');
+                    return;
+                }
+            } else if (applicationSelect && applicationSelect.value) {
+                const app = trackedApplications.find(a => String(a.id) === String(applicationSelect.value));
+                if (app) {
+                    company = app.company;
+                    role = app.role;
+                    selectedApplication = app;
+                } else {
+                    alert('Please select an application or enter details manually.');
+                    return;
+                }
+            } else {
+                alert('Please select an application or enter details manually.');
+                return;
+            }
+
+            // Gather LinkedIn data
+            let linkedInData = null;
+            const linkedInText = document.getElementById('linkedinText').value.trim();
+
+            if (linkedInFileData) {
+                try {
+                    const base64 = await fileToBase64(linkedInFileData);
+                    linkedInData = {
+                        type: 'file',
+                        fileName: linkedInFileData.name,
+                        fileType: linkedInFileData.type,
+                        data: base64
+                    };
+                } catch (e) {
+                    console.error('Error reading file:', e);
+                }
+            } else if (linkedInText) {
+                linkedInData = {
+                    type: 'text',
+                    data: linkedInText
+                };
+            }
+
+            // Collect additional interviewers
+            const additionalInterviewers = await collectAdditionalInterviewers();
+
+            const interview = {
+                id: isEditMode ? editId : Date.now().toString(),
+                company: company,
+                role: role,
+                appId: selectedApplication ? selectedApplication.id : null,
+                type: document.getElementById('interviewType').value,
+                date: document.getElementById('interviewDate').value,
+                interviewerName: document.getElementById('interviewerName').value,
+                interviewerTitle: document.getElementById('interviewerTitle').value,
+                jobDescription: document.getElementById('interviewJD').value,
+                linkedInProfile: linkedInData,
+                additionalInterviewers: additionalInterviewers,
+                createdAt: isEditMode ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (isEditMode) {
+                // Update existing interview
+                const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
+                if (idx >= 0) {
+                    // Preserve createdAt from original
+                    interview.createdAt = upcomingInterviews[idx].createdAt;
+                    upcomingInterviews[idx] = interview;
+                }
+            } else {
+                // Add new interview
+                upcomingInterviews.push(interview);
+            }
+
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Sync to Supabase
+            if (typeof HenryData !== 'undefined') {
+                HenryData.saveInterview(interview).then(result => {
+                    if (result.data && !isEditMode) {
+                        const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
+                        if (idx >= 0) {
+                            upcomingInterviews[idx].id = result.data.id;
+                            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+                        }
+                        console.log('Interview synced to Supabase:', result.data.id);
+                    }
+                }).catch(e => console.error('Failed to sync interview to Supabase:', e));
+            }
+
+            // Sync to tracker
+            syncInterviewToTracker(interview);
+
+            // Reset form state
+            linkedInFileData = null;
+            document.getElementById('linkedinFile').value = '';
+            document.getElementById('linkedinFileName').style.display = 'none';
+            document.getElementById('linkedinUploadZone').style.display = 'flex';
+            document.getElementById('linkedinText').value = '';
+            document.getElementById('linkedinPasteSection').style.display = 'none';
+            document.getElementById('editInterviewId').value = '';
+            document.getElementById('interviewModalTitle').textContent = 'Add Upcoming Interview';
+            document.getElementById('additionalInterviewersList').innerHTML = '';
+            additionalInterviewerCount = 0;
+
+            closeAddInterviewModal();
+            renderInterviewList();
+
+            // Show confirmation
+            const action = isEditMode ? 'updated' : 'added';
+            showToast(`Interview ${action} successfully`);
+        };
+
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #10b981;
+                color: #ffffff;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-size: 0.95rem;
+                z-index: 2000;
+                animation: fadeInUp 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Add CSS animation for toast
+        const toastStyle = document.createElement('style');
+        toastStyle.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(toastStyle);
     </script>
 <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>
