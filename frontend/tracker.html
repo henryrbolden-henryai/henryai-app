@@ -7788,17 +7788,22 @@
                 return;
             }
 
-            // Try to load stored analysis data
+            // ALWAYS clear old analysis data first to prevent stale data from previous app
+            sessionStorage.removeItem('analysisData');
+
+            // Try to load stored analysis data from this app's analysis key
+            let analysisLoaded = false;
             if (app.analysisKey) {
                 const analysisData = localStorage.getItem(app.analysisKey);
                 if (analysisData) {
                     sessionStorage.setItem('analysisData', analysisData);
+                    analysisLoaded = true;
                     console.log('Loaded analysis data for:', app.company, app.role);
                 }
             }
 
-            // If no analysis data loaded, create minimal analysis data from app info
-            if (!sessionStorage.getItem('analysisData') || !app.analysisKey) {
+            // If no analysis data was loaded, create minimal analysis data from app info
+            if (!analysisLoaded) {
                 const minimalAnalysis = {
                     _company_name: app.company,
                     _company: app.company,
