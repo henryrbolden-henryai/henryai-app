@@ -2376,20 +2376,9 @@
                     return;
                 }
 
-                // D5: Beta gate - validate via Supabase user metadata (not just localStorage)
-                // Check server-side flag first, fall back to localStorage for legacy
-                let betaVerified = false;
-                try {
-                    const user = await HenryAuth.getUser();
-                    betaVerified = user?.user_metadata?.beta_verified === true ||
-                                   user?.app_metadata?.beta_verified === true ||
-                                   localStorage.getItem('beta_verified') === 'true';
-                } catch (e) {
-                    console.error('Error checking beta status:', e);
-                    betaVerified = localStorage.getItem('beta_verified') === 'true';
-                }
-
-                if (!betaVerified) {
+                // Beta gate - check localStorage (standard flow for private beta)
+                // Note: Server-side beta verification deferred to v1.1
+                if (localStorage.getItem('beta_verified') !== 'true') {
                     window.location.href = 'beta-access.html';
                     return;
                 }

@@ -144,8 +144,8 @@ const HenryAuth = {
             'interventionState',
             'henryai_current_user_id',
             'henryai_needs_onboarding',
-            'henryai_migrated_to_supabase',
-            'beta_verified'
+            'henryai_migrated_to_supabase'
+            // Note: beta_verified intentionally NOT cleared - it's an access gate, not user data
         ];
 
         userDataKeys.forEach(key => localStorage.removeItem(key));
