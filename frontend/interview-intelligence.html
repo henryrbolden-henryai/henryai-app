@@ -1119,10 +1119,15 @@
             document.getElementById('linkedinText').value = '';
             document.getElementById('linkedinPasteSection').style.display = 'none';
 
-            // Set default date/time
+            // Set default date/time to now in local timezone
+            // Format: YYYY-MM-DDTHH:MM for datetime-local input
             const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            document.getElementById('interviewDate').value = now.toISOString().slice(0, 16);
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('interviewDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
             // Populate application dropdown with active applications
             populateApplicationDropdown();

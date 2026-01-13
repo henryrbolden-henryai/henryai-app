@@ -4795,30 +4795,59 @@
     <div class="modal-overlay" id="scheduleInterviewModal">
         <div class="modal" style="max-width: 500px;">
             <h2><span>🎉</span> Add Interview</h2>
-            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Track an interview you've scheduled for an existing application, or add a new one.</p>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Schedule an interview for an existing application.</p>
 
             <div id="scheduleInterviewContent">
                 <!-- Application selector -->
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Select Application</label>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Select Application *</label>
                     <select id="interviewAppSelect" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
                         <option value="">-- Select an application --</option>
                         <!-- Dynamically populated -->
                     </select>
                 </div>
 
-                <div style="text-align: center; color: var(--color-text-muted); margin: 16px 0;">or</div>
+                <!-- Interview details (shown after app selection) -->
+                <div id="interviewDetailsSection" style="display: none;">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Interview Type *</label>
+                        <select id="trackerInterviewType" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                            <option value="">Select type...</option>
+                            <option value="Recruiter Screen">Recruiter Screen</option>
+                            <option value="Hiring Manager">Hiring Manager Interview</option>
+                            <option value="Technical Round">Technical Round</option>
+                            <option value="Panel Interview">Panel Interview</option>
+                            <option value="Final Round">Final Round</option>
+                            <option value="Executive Interview">Executive Interview</option>
+                        </select>
+                    </div>
 
-                <div style="text-align: center;">
-                    <button class="modal-btn" onclick="createNewInterview()" style="background: transparent; border: 1px solid var(--color-accent); color: var(--color-accent);">
-                        + Add New Interview Manually
-                    </button>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Date & Time *</label>
+                        <input type="datetime-local" id="trackerInterviewDateTime" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Interviewer Name (optional)</label>
+                        <input type="text" id="trackerInterviewerName" placeholder="e.g., Sarah Chen" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Interviewer Title (optional)</label>
+                        <input type="text" id="trackerInterviewerTitle" placeholder="e.g., Director of Product" style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem;">
+                    </div>
+                </div>
+
+                <div id="manualInterviewLink" style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+                    <span style="color: var(--color-text-muted); font-size: 0.85rem;">
+                        Don't see your application? <a href="interview-intelligence.html" style="color: var(--color-accent);">Add manually in Interview Intelligence</a>
+                    </span>
                 </div>
             </div>
 
             <div class="modal-actions" style="margin-top: 24px;">
                 <button class="modal-btn secondary" onclick="closeScheduleInterviewModal()">Cancel</button>
-                <button class="modal-btn primary" onclick="proceedToInterviewIntelligence()" id="proceedInterviewBtn" disabled>Continue to Schedule</button>
+                <button class="modal-btn primary" onclick="saveInterviewFromTracker()" id="proceedInterviewBtn" disabled>Save Interview</button>
             </div>
         </div>
     </div>
@@ -8578,25 +8607,43 @@ Thanks so much!
             const modal = document.getElementById('scheduleInterviewModal');
             const select = document.getElementById('interviewAppSelect');
             const proceedBtn = document.getElementById('proceedInterviewBtn');
+            const detailsSection = document.getElementById('interviewDetailsSection');
 
             // Populate the select with active applications
             const apps = getApplications().filter(a => STATUSES[a.status]?.active);
             select.innerHTML = '<option value="">-- Select an application --</option>' +
                 apps.map(app => `<option value="${app.id}">${app.company} - ${app.role}</option>`).join('');
 
-            // If a specific app was passed, pre-select it
+            // Reset form fields
+            document.getElementById('trackerInterviewType').value = '';
+            document.getElementById('trackerInterviewerName').value = '';
+            document.getElementById('trackerInterviewerTitle').value = '';
+
+            // Set default date/time to now in local timezone
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('trackerInterviewDateTime').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+            // If a specific app was passed, pre-select it and show details
             if (appId) {
                 select.value = appId;
                 selectedInterviewAppId = appId;
+                detailsSection.style.display = 'block';
                 proceedBtn.disabled = false;
             } else {
                 selectedInterviewAppId = null;
+                detailsSection.style.display = 'none';
                 proceedBtn.disabled = true;
             }
 
             // Listen for selection changes
             select.onchange = function() {
                 selectedInterviewAppId = this.value || null;
+                detailsSection.style.display = selectedInterviewAppId ? 'block' : 'none';
                 proceedBtn.disabled = !selectedInterviewAppId;
             };
 
@@ -8606,38 +8653,110 @@ Thanks so much!
         function closeScheduleInterviewModal() {
             selectedInterviewAppId = null;
             document.getElementById('scheduleInterviewModal').classList.remove('show');
+            document.getElementById('interviewDetailsSection').style.display = 'none';
         }
 
-        function createNewInterview() {
-            // Navigate to Interview Intelligence without any context (manual entry)
-            closeScheduleInterviewModal();
-            window.location.href = 'interview-intelligence.html';
-        }
-
-        function proceedToInterviewIntelligence() {
+        function saveInterviewFromTracker() {
             if (!selectedInterviewAppId) return;
 
             const apps = getApplications();
             const app = apps.find(a => String(a.id) === String(selectedInterviewAppId));
             if (!app) return;
 
-            // Store context for the interview form
-            const interviewContext = {
+            const interviewType = document.getElementById('trackerInterviewType').value;
+            const interviewDateTime = document.getElementById('trackerInterviewDateTime').value;
+            const interviewerName = document.getElementById('trackerInterviewerName').value;
+            const interviewerTitle = document.getElementById('trackerInterviewerTitle').value;
+
+            // Validate required fields
+            if (!interviewType) {
+                alert('Please select an interview type.');
+                return;
+            }
+            if (!interviewDateTime) {
+                alert('Please select a date and time.');
+                return;
+            }
+
+            // Create interview object for upcomingInterviews
+            const interview = {
+                id: Date.now().toString(),
                 company: app.company,
                 role: app.role,
-                jobDescription: app.notes || '',
-                appId: app.id
+                appId: app.id,
+                type: interviewType,
+                date: interviewDateTime,
+                interviewerName: interviewerName,
+                interviewerTitle: interviewerTitle,
+                jobDescription: app.notes || app._jd_text || '',
+                createdAt: new Date().toISOString(),
+                fromTracker: true
             };
-            sessionStorage.setItem('pendingInterviewContext', JSON.stringify(interviewContext));
 
-            // Also load analysis data if available
-            if (app.analysisKey) {
-                const analysisData = localStorage.getItem(app.analysisKey);
-                if (analysisData) {
-                    sessionStorage.setItem('analysisData', analysisData);
+            // Save to upcomingInterviews (for Interview Intelligence)
+            const upcomingInterviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            upcomingInterviews.push(interview);
+            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
+
+            // Update the application in trackedApplications
+            const idx = apps.findIndex(a => String(a.id) === String(selectedInterviewAppId));
+            if (idx !== -1) {
+                apps[idx].status = interviewType;
+                apps[idx].interviewDate = interviewDateTime;
+                apps[idx].interviewerName = interviewerName;
+                apps[idx].interviewerTitle = interviewerTitle;
+                apps[idx].lastUpdated = new Date().toISOString();
+
+                // Set dateInterviewed if not already set
+                if (!apps[idx].dateInterviewed) {
+                    apps[idx].dateInterviewed = interviewDateTime;
+                }
+
+                // Increment interview rounds
+                apps[idx].interviewRounds = (apps[idx].interviewRounds || 0) + 1;
+
+                saveApplications(apps);
+
+                // Sync to Supabase if available
+                if (typeof HenryData !== 'undefined') {
+                    HenryData.saveApplication(apps[idx]).catch(e =>
+                        console.error('Failed to sync app to Supabase:', e)
+                    );
+                    HenryData.saveInterview(interview).catch(e =>
+                        console.error('Failed to sync interview to Supabase:', e)
+                    );
                 }
             }
 
+            closeScheduleInterviewModal();
+            renderAll(apps);
+
+            // Show success message
+            showToast(`Interview scheduled for ${app.company}! View in Interview Intelligence for prep.`);
+        }
+
+        function showToast(message) {
+            // Create toast if it doesn't exist
+            let toast = document.getElementById('trackerToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'trackerToast';
+                toast.style.cssText = 'position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--color-accent); color: #000; padding: 12px 24px; border-radius: 8px; font-size: 0.95rem; z-index: 10000; opacity: 0; transition: opacity 0.3s;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+
+        // Legacy function - redirect to new inline form
+        function proceedToInterviewIntelligence() {
+            // Now handled inline - just save from the modal
+            saveInterviewFromTracker();
+        }
+
+        // Legacy function - redirect to Interview Intelligence for manual entry
+        function createNewInterview() {
             closeScheduleInterviewModal();
             window.location.href = 'interview-intelligence.html';
         }
