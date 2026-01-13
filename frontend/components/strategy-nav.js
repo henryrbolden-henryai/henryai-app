@@ -11,12 +11,24 @@
 
 (function() {
     // Navigation items configuration - hierarchical structure
+    // NOTE: Command Center and Interview Intelligence are top-level operational tools,
+    // NOT nested under Strategy. Strategy = planning. These = execution.
     const NAV_STRUCTURE = {
         topLevel: [
             {
                 id: 'dashboard',
                 label: 'Dashboard',
                 href: 'dashboard.html'
+            },
+            {
+                id: 'tracker',
+                label: 'Command Center',
+                href: 'tracker.html'
+            },
+            {
+                id: 'interview-intelligence',
+                label: 'Interview Intelligence',
+                href: 'interview-intelligence.html'
             },
             {
                 id: 'results',
@@ -54,16 +66,6 @@
                 id: 'outreach',
                 label: 'Network & Outreach',
                 href: 'outreach.html'
-            },
-            {
-                id: 'interview-intelligence',
-                label: 'Interview Intelligence',
-                href: 'interview-intelligence.html'
-            },
-            {
-                id: 'tracker',
-                label: 'Command Center',
-                href: 'tracker.html'
             }
         ],
         bottomLevel: [
@@ -104,9 +106,10 @@
     // Get company and role from session/local storage for context
     // Only show context on job-specific pages (strategy pages), not on dashboard/tracker
     function getJobContext() {
-        // Don't show context on general pages
+        // Don't show context on general/operational pages
+        // Interview Intelligence is accessible both with and without job context
         const currentPage = getCurrentPage();
-        const generalPages = ['dashboard', 'tracker', 'analyze', 'profile'];
+        const generalPages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'profile'];
         if (generalPages.includes(currentPage)) {
             return null;
         }
@@ -480,7 +483,9 @@
         const hasJobContext = hasActiveJobContext();
 
         // Pages that don't need active job context (always accessible)
-        const alwaysAccessiblePages = ['dashboard', 'tracker', 'analyze'];
+        // Command Center (tracker) and Interview Intelligence are operational tools
+        // that must be immediately reachable without requiring job selection
+        const alwaysAccessiblePages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze'];
 
         // Create nav container
         const nav = document.createElement('nav');
