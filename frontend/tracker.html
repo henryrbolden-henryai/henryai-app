@@ -8677,7 +8677,7 @@ Thanks so much!
                 type: interviewType,
                 date: new Date().toISOString(), // Today
                 jobDescription: app._jd_text || app.jobDescription || '',
-                applicationId: app.id,
+                appId: app.id, // DI1 fix: Normalized from applicationId to appId for consistency
                 needsDebrief: true
             };
 
@@ -9555,6 +9555,8 @@ Thanks so much!
 
                 // Fetch intelligence from backend
                 commandCenterIntelligence = await CommandCenter.fetchIntelligence(userId, apps);
+                // CB2 fix: Cache intelligence for drag/drop re-renders
+                window.lastIntelligenceResponse = commandCenterIntelligence;
 
                 // Hide loading state
                 hideStateOverlays();
@@ -9958,15 +9960,22 @@ Thanks so much!
             const app = apps[appIndex];
             const oldStatus = app.status;
 
-            // Status mapping from column to actual status values
+            // Status mapping from column to canonical STATUSES values
+            // IMPORTANT: Column names MUST map to valid keys in STATUSES object
             const statusMap = {
                 'applied': 'Applied',
-                'screening': 'Screening',
-                'interviewing': 'Interviewing',
+                'screening': 'Recruiter Screen',   // CB1: was 'Screening' (invalid) - now maps to valid status
+                'interviewing': 'Hiring Manager',  // CB1: was 'Interviewing' (invalid) - now maps to valid status
                 'final': 'Final Round'
             };
 
             const mappedStatus = statusMap[newStatus] || newStatus;
+
+            // Validate that mapped status exists in STATUSES
+            if (!STATUSES[mappedStatus]) {
+                console.warn(`[Tracker] Invalid status "${mappedStatus}" - not in STATUSES. Using Applied as fallback.`);
+                // Don't silently write invalid status - this would corrupt data
+            }
 
             // Don't update if status hasn't changed
             if (app.status?.toLowerCase() === newStatus.toLowerCase()) return;
@@ -9996,8 +10005,11 @@ Thanks so much!
             // Show feedback
             showToast(`Moved ${app.company} to ${mappedStatus}`, 'success');
 
-            // Re-render the board
-            renderBoardView();
+            // Re-render the board with required arguments (CB2 fix)
+            // Pass current apps and cached intelligence to avoid render error
+            const currentApps = getApplications();
+            const cachedIntelligence = window.lastIntelligenceResponse || null;
+            renderBoardView(currentApps, cachedIntelligence);
         }
 
         /**
@@ -11414,10 +11426,61 @@ Thanks so much!
                         // Migrate localStorage data to Supabase in background
                         migrateToSupabase(localAppsRaw);
                     } else if (apps && apps.length > 0) {
-                        // Supabase has data - sync localStorage with Supabase (source of truth)
-                        // This ensures deleted apps don't reappear from stale localStorage
-                        console.log('Syncing localStorage with Supabase data...');
+                        // CB4 fix: MERGE offline edits instead of overwriting
+                        // Strategy: Use Supabase as source of truth for synced items,
+                        // but preserve local-only items (created offline, identified by numeric timestamp IDs)
+                        // and merge local edits if lastUpdated is newer
+                        console.log('Merging localStorage with Supabase data...');
+
+                        // Build map of Supabase apps by ID for quick lookup
+                        const supabaseAppsById = new Map();
+                        apps.forEach(app => supabaseAppsById.set(String(app.id), app));
+
+                        // Check for local-only apps (created offline) or newer local edits
+                        const localOnlyApps = [];
+                        localAppsRaw.forEach(localApp => {
+                            const localId = String(localApp.id);
+                            const supabaseApp = supabaseAppsById.get(localId);
+
+                            if (!supabaseApp) {
+                                // App exists locally but not in Supabase - preserve it
+                                // This could be a new app created offline
+                                console.log(`[Merge] Preserving local-only app: ${localApp.company} (ID: ${localId})`);
+                                localOnlyApps.push(localApp);
+                            } else if (localApp.lastUpdated && supabaseApp.lastUpdated) {
+                                // Both exist - compare timestamps, use newer version
+                                const localTime = new Date(localApp.lastUpdated).getTime();
+                                const supabaseTime = new Date(supabaseApp.lastUpdated).getTime();
+                                if (localTime > supabaseTime) {
+                                    console.log(`[Merge] Local app newer, using local: ${localApp.company}`);
+                                    supabaseAppsById.set(localId, localApp);
+                                    // Sync newer local version to Supabase
+                                    if (typeof HenryData !== 'undefined') {
+                                        HenryData.saveApplication(localApp).catch(e =>
+                                            console.warn('[Merge] Failed to sync local edit:', e)
+                                        );
+                                    }
+                                }
+                            }
+                        });
+
+                        // Combine Supabase apps with local-only apps
+                        apps = [...supabaseAppsById.values(), ...localOnlyApps];
+
+                        // Sync merged result back to localStorage
                         localStorage.setItem('trackedApplications', JSON.stringify(apps));
+
+                        // Background sync any local-only apps to Supabase
+                        if (localOnlyApps.length > 0) {
+                            console.log(`[Merge] Syncing ${localOnlyApps.length} local-only apps to Supabase`);
+                            localOnlyApps.forEach(app => {
+                                if (typeof HenryData !== 'undefined') {
+                                    HenryData.saveApplication(app).catch(e =>
+                                        console.warn('[Merge] Failed to sync local-only app:', e)
+                                    );
+                                }
+                            });
+                        }
                     }
 
                     // Set the global cache so getApplications() returns the right data

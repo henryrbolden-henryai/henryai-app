@@ -14804,10 +14804,14 @@ Generate the complete JSON response with ALL required fields populated."""
                 print(f"      {delta.improvement_summary}")
 
         except Exception as cd_error:
-            print(f"  ⚠️ Canonical document error (non-blocking): {cd_error}")
+            print(f"  ⚠️ Canonical document assembly failed: {cd_error}")
             import traceback
             traceback.print_exc()
-            # Non-blocking - continue without canonical document
+            # CANONICAL ENFORCEMENT: Signal failure to client instead of silent fallback
+            # This allows frontend to gate preview/download appropriately
+            parsed_data["canonical_assembly_failed"] = True
+            parsed_data["canonical_assembly_error"] = str(cd_error)
+            print(f"  ❌ Canonical unavailable - frontend will block preview/download")
 
         return parsed_data
 
