@@ -1577,8 +1577,8 @@
                 const formData = new FormData();
                 formData.append('file', file);
 
-                // Parse LinkedIn PDF
-                const parseResponse = await fetch(`${API_BASE}/api/linkedin/parse`, {
+                // Parse LinkedIn PDF via upload endpoint
+                const parseResponse = await fetch(`${API_BASE}/api/linkedin/upload`, {
                     method: 'POST',
                     body: formData
                 });
