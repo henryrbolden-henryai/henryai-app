@@ -1009,7 +1009,7 @@
     </script>
 </head>
 
-<body>
+<body style="opacity: 0; transition: opacity 0.2s ease;">
   <!-- Top Navigation -->
   <nav class="top-nav" id="topNav">
     <div class="top-nav-container">
@@ -1695,6 +1695,11 @@
   const urlParams = new URLSearchParams(window.location.search);
   const isPreviewMode = urlParams.has('preview');
 
+  // Helper to show the page (fade in)
+  function showPage() {
+    document.body.style.opacity = '1';
+  }
+
   if (isPreviewMode) {
     // Show preview banner
     const banner = document.createElement('div');
@@ -1709,6 +1714,9 @@
       loginLink.textContent = 'Dashboard';
       loginLink.href = 'dashboard.html';
     }
+
+    // Show page in preview mode
+    showPage();
   } else {
     // Normal auth check - redirect logged-in users
     (async function() {
@@ -1742,6 +1750,7 @@
               // Profile incomplete - redirect to profile setup
               window.location.href = 'profile-edit.html';
             }
+            // Don't show page - we're redirecting
             return;
           }
         }
@@ -1756,16 +1765,21 @@
             } else {
               window.location.href = 'profile-edit.html';
             }
+            // Don't show page - we're redirecting
             return;
           } catch (e) {
             // Malformed profile - clear it and stay on landing
             localStorage.removeItem('userProfile');
           }
         }
+
+        // New user - show the landing page
+        showPage();
       } catch (error) {
         console.log('Auth check failed, showing landing page:', error);
+        // On error, show the page anyway
+        showPage();
       }
-      // New user stays on landing page - buttons already set up
     })();
   }
 </script>

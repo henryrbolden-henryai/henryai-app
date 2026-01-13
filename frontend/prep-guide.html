@@ -432,28 +432,154 @@
             box-shadow: 0 4px 20px rgba(34, 211, 238, 0.4);
         }
 
-        /* Loading */
+        /* Loading / Generating State */
         .loading {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 80px;
+            padding: 60px 20px;
             color: #9ca3af;
+            min-height: 60vh;
         }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #374151;
-            border-top-color: #22d3ee;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .generating-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.3));
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.6));
+            }
+        }
+
+        .generating-title {
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .generating-subtitle {
+            color: #9ca3af;
+            font-size: 1rem;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+
+        .generating-progress {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 32px;
+        }
+
+        .progress-bar-container {
+            height: 4px;
+            background: #374151;
+            border-radius: 2px;
+            overflow: hidden;
             margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #22d3ee, #06b6d4, #22d3ee);
+            background-size: 200% 100%;
+            border-radius: 2px;
+            animation: progress-shimmer 2s ease-in-out infinite, progress-grow 12s ease-out forwards;
+        }
+
+        @keyframes progress-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @keyframes progress-grow {
+            0% { width: 5%; }
+            20% { width: 25%; }
+            40% { width: 45%; }
+            60% { width: 65%; }
+            80% { width: 80%; }
+            100% { width: 92%; }
+        }
+
+        .generating-steps {
+            text-align: left;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .gen-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .gen-step.pending {
+            color: #4b5563;
+        }
+
+        .gen-step.active {
+            color: #22d3ee;
+        }
+
+        .gen-step.done {
+            color: #10b981;
+        }
+
+        .gen-step-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .gen-step.active .gen-step-icon {
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        .generating-tip {
+            margin-top: 32px;
+            padding: 16px 24px;
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .generating-tip .tip-label {
+            color: #22d3ee;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .generating-tip .tip-text {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            transition: opacity 0.3s ease;
         }
 
         /* Error State */
@@ -882,10 +1008,41 @@
     </header>
 
     <div class="container">
-        <!-- Loading State -->
+        <!-- Loading / Generating State -->
         <div id="loadingState" class="loading">
-            <div class="loading-spinner"></div>
-            <div>Generating your personalized prep guide...</div>
+            <div class="generating-icon">✨</div>
+            <h2 class="generating-title">Generating Your Prep Guide</h2>
+            <p class="generating-subtitle">Tailoring insights for your interview</p>
+
+            <div class="generating-progress">
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="generating-steps">
+                <div class="gen-step active" id="step-analyze">
+                    <span class="gen-step-icon">◐</span>
+                    <span>Analyzing interview context...</span>
+                </div>
+                <div class="gen-step pending" id="step-questions">
+                    <span class="gen-step-icon">○</span>
+                    <span>Crafting likely questions...</span>
+                </div>
+                <div class="gen-step pending" id="step-stories">
+                    <span class="gen-step-icon">○</span>
+                    <span>Preparing your stories...</span>
+                </div>
+                <div class="gen-step pending" id="step-intro">
+                    <span class="gen-step-icon">○</span>
+                    <span>Writing your intro pitch...</span>
+                </div>
+            </div>
+
+            <div class="generating-tip">
+                <div class="tip-label">💡 Did you know?</div>
+                <div class="tip-text" id="generatingTip">Candidates who practice their intro 3+ times are 40% more likely to feel confident.</div>
+            </div>
         </div>
 
         <!-- Error State -->
@@ -1091,6 +1248,51 @@
         let resumeData = null;
         let interviewerIntelData = null;
 
+        // Generating tips to rotate through
+        const generatingTips = [
+            "Candidates who practice their intro 3+ times are 40% more likely to feel confident.",
+            "The best stories use specific numbers and results to demonstrate impact.",
+            "Most interviewers form an impression in the first 90 seconds.",
+            "Asking thoughtful questions shows genuine interest in the role.",
+            "Review the job description before your interview to align your stories.",
+            "Practice out loud — it's different from practicing in your head.",
+            "Arriving 5-10 minutes early shows professionalism and reduces stress."
+        ];
+
+        // Update generating step status
+        function updateGeneratingStep(stepId, status) {
+            const step = document.getElementById(stepId);
+            if (!step) return;
+
+            // Remove all status classes
+            step.classList.remove('pending', 'active', 'done');
+            step.classList.add(status);
+
+            // Update icon
+            const icon = step.querySelector('.gen-step-icon');
+            if (icon) {
+                if (status === 'active') icon.textContent = '◐';
+                else if (status === 'done') icon.textContent = '✓';
+                else icon.textContent = '○';
+            }
+        }
+
+        // Rotate tips during generation
+        function startTipRotation() {
+            let tipIndex = 0;
+            const tipEl = document.getElementById('generatingTip');
+            if (!tipEl) return;
+
+            return setInterval(() => {
+                tipIndex = (tipIndex + 1) % generatingTips.length;
+                tipEl.style.opacity = '0';
+                setTimeout(() => {
+                    tipEl.textContent = generatingTips[tipIndex];
+                    tipEl.style.opacity = '1';
+                }, 300);
+            }, 5000);
+        }
+
         // Interview type labels
         const typeLabels = {
             'recruiter_screen': 'Recruiter Screen',
@@ -1197,6 +1399,24 @@
                 // Show loading
                 document.getElementById('loadingState').style.display = 'flex';
 
+                // Start tip rotation
+                const tipInterval = startTipRotation();
+
+                // Simulate step progression for better UX
+                const stepTimers = [];
+                stepTimers.push(setTimeout(() => {
+                    updateGeneratingStep('step-analyze', 'done');
+                    updateGeneratingStep('step-questions', 'active');
+                }, 2000));
+                stepTimers.push(setTimeout(() => {
+                    updateGeneratingStep('step-questions', 'done');
+                    updateGeneratingStep('step-stories', 'active');
+                }, 4500));
+                stepTimers.push(setTimeout(() => {
+                    updateGeneratingStep('step-stories', 'done');
+                    updateGeneratingStep('step-intro', 'active');
+                }, 7000));
+
                 // CHECK FOR CACHED INTERVIEWER INSIGHTS FIRST
                 // If we have cached insights and they're recent (< 7 days), use them
                 if (currentInterview.interviewerInsights) {
@@ -1272,10 +1492,26 @@
                     await cacheInterviewerInsights(interviewerIntelData);
                 }
 
+                // Clear step timers and tip rotation
+                stepTimers.forEach(t => clearTimeout(t));
+                if (tipInterval) clearInterval(tipInterval);
+
+                // Mark all steps as done before showing content
+                updateGeneratingStep('step-analyze', 'done');
+                updateGeneratingStep('step-questions', 'done');
+                updateGeneratingStep('step-stories', 'done');
+                updateGeneratingStep('step-intro', 'done');
+
+                // Small delay to show completed state
+                await new Promise(resolve => setTimeout(resolve, 300));
+
                 renderPrepGuide();
 
             } catch (error) {
                 console.error('Error generating prep guide:', error);
+                // Clear timers on error too
+                stepTimers.forEach(t => clearTimeout(t));
+                if (tipInterval) clearInterval(tipInterval);
                 // Show error or fallback content
                 showFallbackContent();
             }

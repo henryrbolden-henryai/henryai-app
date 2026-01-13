@@ -1527,6 +1527,12 @@
             const welcomeHeading = document.getElementById('welcomeHeading');
             const welcomeSubtext = document.getElementById('welcomeSubtext');
 
+            // Guard against missing DOM elements
+            if (!welcomeHeading || !welcomeSubtext) {
+                console.warn('Welcome elements not found in DOM');
+                return;
+            }
+
             // Get user's first name - check multiple possible locations
             let firstName = '';
             // First try Supabase user name (set during auth)
@@ -2462,17 +2468,24 @@
                     console.log('=== HEY HENRY DATA CORRECTED (dashboard) ===', event.detail);
                     // Re-fetch from Supabase to get fresh data
                     if (typeof HenryData !== 'undefined') {
-                        const apps = await HenryData.getApplications(true); // Force refresh
-                        if (apps) {
-                            dashboardAppsCache = apps;
-                            localStorage.setItem('trackedApplications', JSON.stringify(apps));
-                            renderDashboard();
+                        try {
+                            const apps = await HenryData.getApplications(true); // Force refresh
+                            if (apps) {
+                                dashboardAppsCache = apps;
+                                localStorage.setItem('trackedApplications', JSON.stringify(apps));
+                                renderDashboard();
+                            }
+                        } catch (e) {
+                            console.error('Error refreshing dashboard after data correction:', e);
                         }
                     }
                 });
             } catch (authErr) {
                 console.error('Auth check failed:', authErr);
-                window.location.href = 'login.html';
+                // Only redirect if not already redirecting (prevent loops)
+                if (!window.location.href.includes('login.html')) {
+                    window.location.href = 'login.html';
+                }
             }
         })();
     </script>
