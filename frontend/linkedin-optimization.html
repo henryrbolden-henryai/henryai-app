@@ -847,6 +847,265 @@
             text-decoration: line-through;
         }
 
+        /* Issue-Driven Optimization Styles */
+        .optimization-intro {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-accent);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .optimization-intro h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .optimization-intro p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .issue-count-badge {
+            background: var(--color-error);
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+        }
+
+        .issue-count-badge.warning {
+            background: var(--color-warning);
+        }
+
+        .issue-count-badge.success {
+            background: var(--color-success);
+        }
+
+        /* Fixes These Issues Badge */
+        .fixes-issues {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .fixes-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: rgba(248, 113, 113, 0.15);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-error);
+        }
+
+        .fixes-badge.high {
+            background: rgba(251, 191, 36, 0.15);
+            border-color: rgba(251, 191, 36, 0.3);
+            color: var(--color-warning);
+        }
+
+        .fixes-badge.medium {
+            background: rgba(34, 211, 238, 0.15);
+            border-color: rgba(34, 211, 238, 0.3);
+            color: var(--color-accent);
+        }
+
+        .fixes-badge.gap {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: rgba(251, 191, 36, 0.4);
+            color: var(--color-warning);
+        }
+
+        /* Current vs Optimized Comparison */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 700px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-box {
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .comparison-box.current {
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        .comparison-box.optimized {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+
+        .comparison-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .comparison-box.current .comparison-label {
+            color: var(--color-error);
+        }
+
+        .comparison-box.optimized .comparison-label {
+            color: var(--color-success);
+        }
+
+        .comparison-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* Optimization Priority Indicator */
+        .priority-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .priority-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .priority-dot.critical { background: var(--color-error); }
+        .priority-dot.high { background: var(--color-warning); }
+        .priority-dot.medium { background: var(--color-accent); }
+
+        .priority-text {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .priority-text strong {
+            color: var(--color-text);
+        }
+
+        /* Improvement Checklist */
+        .improvement-checklist {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .improvement-checklist h4 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 0.9rem;
+            color: var(--color-text);
+        }
+
+        .checklist-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        .checklist-icon.pending {
+            background: rgba(251, 191, 36, 0.2);
+            color: var(--color-warning);
+        }
+
+        .checklist-icon.included {
+            background: rgba(74, 222, 128, 0.2);
+            color: var(--color-success);
+        }
+
+        /* Score Impact Preview */
+        .score-impact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .score-impact-icon {
+            font-size: 1.2rem;
+        }
+
+        .score-impact-text {
+            font-size: 0.9rem;
+            color: var(--color-success);
+        }
+
+        .score-impact-text strong {
+            color: var(--color-success);
+        }
+
+        /* No Issues State */
+        .no-issues-state {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 16px;
+        }
+
+        .no-issues-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .no-issues-state h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--color-success);
+            margin-bottom: 8px;
+        }
+
+        .no-issues-state p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
         /* CTA Section */
         .cta-section {
             background: var(--color-surface);
@@ -2059,97 +2318,380 @@
         function renderOptimizations() {
             const container = document.getElementById('optimizationContent');
 
-            if (!linkedinData) {
+            if (!linkedinData || !scoringResults) {
                 return;
             }
 
+            const { fixes, profileGaps, sectionScores, sectionDetails, overall } = scoringResults;
             const role = analysisData?._role || analysisData?.role_title || 'your target role';
             const currentHeadline = linkedinData.headline || '';
             const currentSummary = linkedinData.summary || linkedinData.about || '';
 
-            // Generate optimized content
+            // Count issues by severity
+            const criticalCount = fixes.filter(f => f.severity === 'CRITICAL').length;
+            const highCount = fixes.filter(f => f.severity === 'HIGH').length;
+            const totalIssues = fixes.length + profileGaps.length;
+
+            // If no issues, show success state
+            if (totalIssues === 0 && overall >= 80) {
+                container.innerHTML = `
+                    <div class="no-issues-state">
+                        <div class="icon">🎉</div>
+                        <h3>Your Profile is Well-Optimized</h3>
+                        <p>No critical issues found. Your LinkedIn profile is already recruiter-ready for ${role}.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Get issues by section for targeting
+            const headlineIssues = fixes.filter(f => f.section === 'Headline');
+            const aboutIssues = fixes.filter(f => f.section === 'About');
+            const experienceIssues = fixes.filter(f => f.section === 'Experience');
+            const skillsIssues = fixes.filter(f => f.section === 'Skills');
+
+            // Get relevant gaps
+            const positioningGap = profileGaps.find(g => g.type === 'Positioning');
+            const evidenceGap = profileGaps.find(g => g.type === 'Evidence');
+            const scopeGap = profileGaps.find(g => g.type === 'Scope');
+
+            // Build issue-driven badge HTML helper
+            const buildFixesBadges = (issues, gaps = []) => {
+                const badges = [];
+                issues.forEach(issue => {
+                    const badgeClass = issue.severity === 'CRITICAL' ? '' : (issue.severity === 'HIGH' ? 'high' : 'medium');
+                    badges.push(`<span class="fixes-badge ${badgeClass}">⚡ ${issue.problem.substring(0, 40)}${issue.problem.length > 40 ? '...' : ''}</span>`);
+                });
+                gaps.forEach(gap => {
+                    badges.push(`<span class="fixes-badge gap">🎯 ${gap.type} Gap</span>`);
+                });
+                return badges.length > 0 ? `<div class="fixes-issues">${badges.join('')}</div>` : '';
+            };
+
+            // Calculate potential score impact
+            const headlineMaxGain = SECTION_CONFIG.headline.maxPoints - (sectionScores.headline || 0);
+            const aboutMaxGain = SECTION_CONFIG.about.maxPoints - (sectionScores.about || 0);
+            const skillsMaxGain = SECTION_CONFIG.skills.maxPoints - (sectionScores.skills || 0);
+
+            // Generate optimized content based on issues
             const optimizedHeadline = generateOptimizedHeadline();
             const optimizedSummary = generateOptimizedSummary();
             const skillsRecommendations = generateSkillsRecommendations();
 
-            container.innerHTML = `
-                <!-- Headline Section -->
-                <div class="optimization-section">
-                    <div class="optimization-header">
-                        <h3 class="optimization-title"><span>📝</span> Headline</h3>
-                        <button class="copy-btn" onclick="copyToClipboard(this, 'headline')">
-                            <span>📋</span> Copy
-                        </button>
-                    </div>
-                    ${currentHeadline ? `<p style="color: var(--color-text-secondary); font-size: 0.85rem; margin-bottom: 12px;"><strong>Current:</strong> ${currentHeadline}</p>` : ''}
-                    <div class="optimization-content" id="headline">${optimizedHeadline}</div>
-                    <div class="optimization-why">
-                        <strong>Why this works:</strong> This headline includes searchable keywords that recruiters use, your level, and your primary value proposition.
-                    </div>
-                </div>
+            // Build intro section
+            let badgeClass = criticalCount > 0 ? '' : (highCount > 0 ? 'warning' : 'success');
+            let introText = '';
+            if (criticalCount > 0) {
+                introText = `Your profile has ${criticalCount} critical issue${criticalCount > 1 ? 's' : ''} preventing recruiter visibility. The optimizations below directly address each problem identified in your Profile Score.`;
+            } else if (highCount > 0) {
+                introText = `Your profile is findable but not compelling. These ${highCount} high-priority optimizations will significantly improve your recruiter click-through rate.`;
+            } else {
+                introText = `Minor polish items to maximize your profile's effectiveness for ${role}. These improvements will help you stand out from other candidates.`;
+            }
 
-                <!-- Summary Section -->
-                <div class="optimization-section">
-                    <div class="optimization-header">
-                        <h3 class="optimization-title"><span>📄</span> About / Summary</h3>
-                        <button class="copy-btn" onclick="copyToClipboard(this, 'summary')">
-                            <span>📋</span> Copy
-                        </button>
-                    </div>
-                    <div class="optimization-content" id="summary">${optimizedSummary}</div>
-                    <div class="optimization-why">
-                        <strong>Why this works:</strong> The first 3 lines are visible before "see more" - they contain your hook. The full summary builds credibility with specifics.
-                    </div>
+            let html = `
+                <!-- Issue-Driven Intro -->
+                <div class="optimization-intro">
+                    <h3>
+                        Your Optimization Plan
+                        <span class="issue-count-badge ${badgeClass}">${totalIssues} issue${totalIssues !== 1 ? 's' : ''} to fix</span>
+                    </h3>
+                    <p>${introText}</p>
                 </div>
-
-                <!-- Skills Section -->
-                <div class="optimization-section">
-                    <div class="optimization-header">
-                        <h3 class="optimization-title"><span>🎯</span> Skills Recommendations</h3>
-                    </div>
-                    <div style="margin-bottom: 16px;">
-                        <p style="color: var(--color-success); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Add these skills:</p>
-                        <div class="skills-grid">
-                            ${skillsRecommendations.add.map(s => `<span class="skill-tag add">+ ${s}</span>`).join('')}
-                        </div>
-                    </div>
-                    ${skillsRecommendations.remove.length > 0 ? `
-                    <div>
-                        <p style="color: var(--color-error); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Consider removing:</p>
-                        <div class="skills-grid">
-                            ${skillsRecommendations.remove.map(s => `<span class="skill-tag remove">${s}</span>`).join('')}
-                        </div>
-                    </div>
-                    ` : ''}
-                    <div class="optimization-why">
-                        <strong>Why this matters:</strong> LinkedIn allows up to 50 skills. Prioritize skills that appear in job descriptions for ${role}.
-                    </div>
-                </div>
-
             `;
+
+            // ============ HEADLINE OPTIMIZATION ============
+            if (headlineIssues.length > 0 || positioningGap) {
+                const hasCritical = headlineIssues.some(i => i.severity === 'CRITICAL');
+                const priorityClass = hasCritical ? 'critical' : 'high';
+                const priorityText = hasCritical ? 'Critical - Fix immediately' : 'High priority - Significant impact';
+
+                html += `
+                    <div class="optimization-section">
+                        <div class="optimization-header">
+                            <h3 class="optimization-title"><span>📌</span> Headline Optimization</h3>
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'headline')">
+                                <span>📋</span> Copy Optimized
+                            </button>
+                        </div>
+
+                        ${buildFixesBadges(headlineIssues, positioningGap ? [positioningGap] : [])}
+
+                        <div class="priority-indicator">
+                            <span class="priority-dot ${priorityClass}"></span>
+                            <span class="priority-text"><strong>${priorityText}</strong> • Estimated +${headlineMaxGain} points</span>
+                        </div>
+
+                        <div class="comparison-container">
+                            <div class="comparison-box current">
+                                <div class="comparison-label">❌ Current</div>
+                                <div class="comparison-text">${currentHeadline || '(No headline set)'}</div>
+                            </div>
+                            <div class="comparison-box optimized">
+                                <div class="comparison-label">✓ Optimized</div>
+                                <div class="comparison-text" id="headline">${optimizedHeadline}</div>
+                            </div>
+                        </div>
+
+                        <div class="improvement-checklist">
+                            <h4>This optimization addresses:</h4>
+                            ${headlineIssues.map(issue => `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon included">✓</span>
+                                    <span>${issue.problem}</span>
+                                </div>
+                            `).join('')}
+                            ${positioningGap ? `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon included">✓</span>
+                                    <span>${positioningGap.description}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="optimization-why">
+                            <strong>Why this works:</strong> Includes target role title for search visibility, removes buzzwords, adds quantified differentiator, and positions you for ${role}.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ============ ABOUT SECTION OPTIMIZATION ============
+            if (aboutIssues.length > 0 || evidenceGap) {
+                const hasCritical = aboutIssues.some(i => i.severity === 'CRITICAL');
+                const priorityClass = hasCritical ? 'critical' : 'high';
+                const priorityText = hasCritical ? 'Critical - Your profile is incomplete' : 'High priority - Weak positioning';
+
+                html += `
+                    <div class="optimization-section">
+                        <div class="optimization-header">
+                            <h3 class="optimization-title"><span>📝</span> About Section Optimization</h3>
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'summary')">
+                                <span>📋</span> Copy Optimized
+                            </button>
+                        </div>
+
+                        ${buildFixesBadges(aboutIssues, evidenceGap ? [evidenceGap] : [])}
+
+                        <div class="priority-indicator">
+                            <span class="priority-dot ${priorityClass}"></span>
+                            <span class="priority-text"><strong>${priorityText}</strong> • Estimated +${aboutMaxGain} points</span>
+                        </div>
+
+                        ${currentSummary ? `
+                        <div class="comparison-container">
+                            <div class="comparison-box current">
+                                <div class="comparison-label">❌ Current (${currentSummary.split(/\s+/).length} words)</div>
+                                <div class="comparison-text">${currentSummary.substring(0, 200)}${currentSummary.length > 200 ? '...' : ''}</div>
+                            </div>
+                            <div class="comparison-box optimized">
+                                <div class="comparison-label">✓ Optimized Framework</div>
+                                <div class="comparison-text">Hook → Expertise → Achievements → CTA</div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="optimization-content" id="summary">${optimizedSummary}</div>
+
+                        <div class="improvement-checklist">
+                            <h4>This optimization addresses:</h4>
+                            ${aboutIssues.map(issue => `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon included">✓</span>
+                                    <span>${issue.problem}</span>
+                                </div>
+                            `).join('')}
+                            ${evidenceGap ? `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon included">✓</span>
+                                    <span>Adds quantified outcomes to demonstrate impact</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="optimization-why">
+                            <strong>Why this works:</strong> First 3 lines are visible before "see more" and contain your hook. Includes searchable keywords for ${role}. Ends with clear CTA.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ============ EXPERIENCE BULLETS OPTIMIZATION ============
+            if (experienceIssues.length > 0 || scopeGap) {
+                html += `
+                    <div class="optimization-section">
+                        <div class="optimization-header">
+                            <h3 class="optimization-title"><span>💼</span> Experience Optimization</h3>
+                        </div>
+
+                        ${buildFixesBadges(experienceIssues, scopeGap ? [scopeGap] : [])}
+
+                        <div class="priority-indicator">
+                            <span class="priority-dot high"></span>
+                            <span class="priority-text"><strong>High priority</strong> • Experience carries 25% of your score</span>
+                        </div>
+
+                        <div class="optimization-content">
+                            <strong>Transform your bullets using PAR format:</strong>
+
+<strong>Before:</strong> "Managed a team and improved processes"
+
+<strong>After:</strong> "Led 12-person cross-functional team to redesign onboarding workflow, reducing time-to-productivity by 40% ($500K annual savings)"
+
+<strong>The PAR Formula:</strong>
+• <strong>P</strong>roblem/Context: What challenge did you face?
+• <strong>A</strong>ction: What specifically did you do?
+• <strong>R</strong>esult: What measurable outcome did you achieve?
+                        </div>
+
+                        <div class="improvement-checklist">
+                            <h4>Apply to your current role:</h4>
+                            ${experienceIssues.map(issue => `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon pending">!</span>
+                                    <span>${issue.fix}</span>
+                                </div>
+                            `).join('')}
+                            ${scopeGap ? `
+                                <div class="checklist-item">
+                                    <span class="checklist-icon pending">!</span>
+                                    <span>${scopeGap.fix}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="optimization-why">
+                            <strong>Key insight:</strong> Recruiters spend 80% of their time on your current role. Make every bullet count with specific metrics.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ============ SKILLS OPTIMIZATION ============
+            if (skillsIssues.length > 0 || skillsRecommendations.add.length > 0) {
+                html += `
+                    <div class="optimization-section">
+                        <div class="optimization-header">
+                            <h3 class="optimization-title"><span>🎯</span> Skills Optimization</h3>
+                        </div>
+
+                        ${buildFixesBadges(skillsIssues)}
+
+                        <div class="priority-indicator">
+                            <span class="priority-dot ${skillsIssues.some(i => i.severity === 'HIGH') ? 'high' : 'medium'}"></span>
+                            <span class="priority-text"><strong>Skills matching</strong> • Estimated +${skillsMaxGain} points</span>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <p style="color: var(--color-success); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Add these skills (from ${role} job requirements):</p>
+                            <div class="skills-grid">
+                                ${skillsRecommendations.add.map(s => `<span class="skill-tag add">+ ${s}</span>`).join('')}
+                            </div>
+                        </div>
+                        ${skillsRecommendations.remove.length > 0 ? `
+                        <div style="margin-bottom: 16px;">
+                            <p style="color: var(--color-error); font-size: 0.9rem; margin-bottom: 8px; font-weight: 600;">Remove generic skills:</p>
+                            <div class="skills-grid">
+                                ${skillsRecommendations.remove.map(s => `<span class="skill-tag remove">${s}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="improvement-checklist">
+                            <h4>Skills strategy:</h4>
+                            <div class="checklist-item">
+                                <span class="checklist-icon pending">!</span>
+                                <span>Pin your 3 most relevant skills to the top (these appear in search)</span>
+                            </div>
+                            <div class="checklist-item">
+                                <span class="checklist-icon pending">!</span>
+                                <span>Add skills from ${role} job descriptions until you reach 50</span>
+                            </div>
+                            <div class="checklist-item">
+                                <span class="checklist-icon pending">!</span>
+                                <span>Request endorsements from colleagues for your top skills</span>
+                            </div>
+                        </div>
+
+                        <div class="optimization-why">
+                            <strong>Why this matters:</strong> LinkedIn's search algorithm weights skills heavily. More relevant skills = more search matches.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ============ SCORE IMPACT SUMMARY ============
+            const potentialScore = Math.min(100, overall + headlineMaxGain + aboutMaxGain + skillsMaxGain);
+            html += `
+                <div class="score-impact">
+                    <span class="score-impact-icon">📈</span>
+                    <span class="score-impact-text">
+                        Implementing these optimizations could improve your Profile Score from <strong>${overall}</strong> to approximately <strong>${potentialScore}</strong> points.
+                    </span>
+                </div>
+            `;
+
+            container.innerHTML = html;
         }
 
         function generateOptimizedHeadline() {
             const role = analysisData?._role || analysisData?.role_title || '';
             const level = analysisData?._level || 'Senior';
             const keywords = analysisData?.ats_keywords || analysisData?.required_skills || [];
+            const currentHeadline = linkedinData?.headline || '';
 
-            // Build headline components
-            let headline = `${level} ${role}`;
+            // Identify issues to fix
+            const headlineIssues = scoringResults?.fixes?.filter(f => f.section === 'Headline') || [];
+            const needsQuantification = headlineIssues.some(i => i.problem.includes('No numbers'));
+            const needsRole = headlineIssues.some(i => i.problem.includes('No clear job title'));
+            const hasBuzzwords = headlineIssues.some(i => i.problem.includes('buzzwords'));
 
-            if (keywords.length > 0) {
-                const topKeywords = keywords.slice(0, 2).join(' | ');
-                headline += ` | ${topKeywords}`;
+            // Build headline that specifically addresses detected issues
+            let headline = '';
+
+            // Start with clear role title (addresses "No clear job title" issue)
+            if (needsRole || !currentHeadline) {
+                headline = `${level} ${role}`;
+            } else {
+                // Try to extract and improve existing role
+                const roleMatch = currentHeadline.match(/\b(Senior|Lead|Staff|Principal|Director|VP|Head|Chief|Manager)?\s*([A-Za-z]+\s*(Manager|Engineer|Developer|Designer|Analyst|Specialist|Consultant|Director|Lead)?)/i);
+                headline = roleMatch ? roleMatch[0].trim() : `${level} ${role}`;
             }
 
-            // Add value prop if we have experience data
-            if (linkedinData?.experience?.length > 0) {
-                const companies = linkedinData.experience
+            // Add specialization from job keywords (addresses "Positioning Gap")
+            if (keywords.length > 0) {
+                const specialization = keywords.slice(0, 2).join(' | ');
+                headline += ` | ${specialization}`;
+            }
+
+            // Add quantification (addresses "No numbers in headline" issue)
+            if (needsQuantification || !currentHeadline.match(/\d+/)) {
+                // Try to find metrics from experience
+                let metric = '';
+                if (linkedinData?.experience?.length > 0) {
+                    // Calculate years of experience
+                    const firstJob = linkedinData.experience[linkedinData.experience.length - 1];
+                    const dateMatch = firstJob?.dates?.match(/\d{4}/) || firstJob?.date_range?.match(/\d{4}/);
+                    if (dateMatch) {
+                        const years = new Date().getFullYear() - parseInt(dateMatch[0]);
+                        if (years > 0) {
+                            metric = `${years}+ Years`;
+                        }
+                    }
+                }
+                if (metric) {
+                    headline += ` | ${metric}`;
+                }
+            }
+
+            // Add company credibility if space allows
+            if (headline.length < 160 && linkedinData?.experience?.length > 0) {
+                const notableCompanies = linkedinData.experience
                     .map(e => e.company)
-                    .filter(c => c && !c.toLowerCase().includes('freelance'))
-                    .slice(0, 2);
-                if (companies.length > 0) {
-                    headline += ` | Ex-${companies.join(', ')}`;
+                    .filter(c => c && c.length > 2 && !c.toLowerCase().includes('freelance') && !c.toLowerCase().includes('self-employed'))
+                    .slice(0, 1);
+                if (notableCompanies.length > 0 && notableCompanies[0].length < 30) {
+                    headline += ` | Ex-${notableCompanies[0]}`;
                 }
             }
 
@@ -2165,32 +2707,74 @@
             const role = analysisData?._role || analysisData?.role_title || 'professional';
             const level = analysisData?._level || 'experienced';
             const keywords = analysisData?.ats_keywords || [];
+            const currentSummary = linkedinData?.summary || linkedinData?.about || '';
+
+            // Identify issues to fix
+            const aboutIssues = scoringResults?.fixes?.filter(f => f.section === 'About') || [];
+            const needsMetrics = aboutIssues.some(i => i.problem.includes('No quantified'));
+            const needsCTA = !currentSummary.toLowerCase().match(/\b(reach out|contact|connect|email|let's talk|open to|looking for)\b/);
+            const isTooShort = currentSummary.split(/\s+/).length < 150;
 
             // Get years of experience estimate
             let years = 10;
             if (linkedinData?.experience?.length > 0) {
                 const firstJob = linkedinData.experience[linkedinData.experience.length - 1];
-                if (firstJob?.start_date) {
-                    const startYear = parseInt(firstJob.start_date.match(/\d{4}/)?.[0] || '2014');
-                    years = new Date().getFullYear() - startYear;
+                const dateMatch = firstJob?.dates?.match(/\d{4}/) || firstJob?.date_range?.match(/\d{4}/);
+                if (dateMatch) {
+                    years = new Date().getFullYear() - parseInt(dateMatch[0]);
                 }
             }
 
-            // Build summary
+            // Extract metrics from experience if possible
+            let achievementBullet = 'Delivered measurable results through strategic execution';
+            if (linkedinData?.experience?.length > 0) {
+                const allText = linkedinData.experience
+                    .map(e => e.description || (e.bullets ? e.bullets.join(' ') : ''))
+                    .join(' ');
+                const metricMatch = allText.match(/(\d+[%+x]|\$\d+[MBK]?|\d+\s*(people|team|users|customers|projects|clients))/i);
+                if (metricMatch) {
+                    achievementBullet = `Track record of results: ${metricMatch[0]} and growing`;
+                }
+            }
+
+            // Build keyword-rich summary
             const keywordStr = keywords.slice(0, 3).join(', ');
+            const additionalKeywords = keywords.slice(3, 6).join(', ');
 
-            return `${level.charAt(0).toUpperCase() + level.slice(1)} ${role} with ${years}+ years driving results in ${keywordStr || 'the industry'}.
+            // Generate summary that addresses specific issues
+            let summary = `${level.charAt(0).toUpperCase() + level.slice(1)} ${role} with ${years}+ years of experience in ${keywordStr || 'driving business results'}.`;
 
-I specialize in translating complex challenges into actionable solutions that deliver measurable impact. My approach combines strategic thinking with hands-on execution.
+            // Add hook (first 3 lines are visible before "see more")
+            summary += `
 
-What I bring:
-- Deep expertise in ${keywords[0] || 'core competencies'}
-- Track record of ${keywords[1] || 'delivering results'}
-- Collaborative leadership style focused on team growth
+I help organizations ${keywords[0] ? `leverage ${keywords[0]}` : 'solve complex challenges'} to achieve measurable outcomes. My approach combines strategic thinking with hands-on execution.`;
 
-Currently exploring new opportunities where I can leverage my experience to drive meaningful outcomes.
+            // Add structured expertise section (addresses "Clear structure/paragraphs")
+            summary += `
 
-Let's connect: [Your email]`;
+WHAT I BRING:
+• ${achievementBullet}
+• Deep expertise in ${keywords[0] || 'core competencies'} and ${keywords[1] || 'cross-functional collaboration'}
+• ${additionalKeywords ? `Experience with ${additionalKeywords}` : 'Collaborative leadership focused on team growth'}`;
+
+            // Add metrics section if needed (addresses "No quantified achievements")
+            if (needsMetrics) {
+                summary += `
+
+RECENT IMPACT:
+• [Add: Specific metric from your most impressive project]
+• [Add: Team size or budget you've managed]
+• [Add: Efficiency gain or revenue impact]`;
+            }
+
+            // Add CTA (addresses "Has call-to-action" criterion)
+            summary += `
+
+Currently exploring ${role} opportunities where I can leverage my experience in ${keywords[0] || 'the field'} to drive meaningful outcomes.
+
+➜ Let's connect: [Your email] | Open to conversations about ${role} roles`;
+
+            return summary;
         }
 
         function generateSkillsRecommendations() {
