@@ -443,19 +443,13 @@ function skipAll() {
 }
 
 /**
- * Proceed to LinkedIn analysis
+ * Proceed to Strategy Overview (LinkedIn removed from intake flow)
+ * LinkedIn profile upload is now only available in the LinkedIn Optimization section
  */
 function proceedToLinkedIn() {
-    // Check if LinkedIn data exists
-    const linkedinData = sessionStorage.getItem('linkedinData');
-
-    if (linkedinData) {
-        // Profile already uploaded - go to analysis
-        window.location.href = 'linkedin-analysis.html';
-    } else {
-        // No profile - prompt upload
-        window.location.href = 'linkedin-upload.html';
-    }
+    // Skip LinkedIn during intake - go directly to Strategy Overview
+    // Users can upload LinkedIn profile in the LinkedIn Optimization module when needed
+    window.location.href = 'overview.html';
 }
 
 /**
