@@ -2341,17 +2341,21 @@
         // D1: Hide body until auth verified (prevent flash of stale content)
         document.body.style.visibility = 'hidden';
 
-        // Show loading state
+        // Show loading state - use overlay instead of wiping DOM
         function showLoadingState() {
-            const container = document.querySelector('.container');
-            if (container) {
-                container.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; color: var(--color-text-secondary);">
-                        <div style="font-size: 1.2rem; margin-bottom: 8px;">Loading dashboard...</div>
-                    </div>
-                `;
-            }
+            // Create loading overlay instead of replacing container content
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--color-bg, #0a0a0b); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; color: var(--color-text-secondary, #71717a);';
+            overlay.innerHTML = '<div style="font-size: 1.2rem;">Loading dashboard...</div>';
+            document.body.appendChild(overlay);
             document.body.style.visibility = 'visible';
+        }
+
+        // Hide loading overlay
+        function hideLoadingState() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.remove();
         }
 
         function showAuthError(message) {
@@ -2475,6 +2479,7 @@
 
                 // Auth verified, data loaded - NOW render dashboard
                 dashboardInitialized = true;
+                hideLoadingState();
                 document.body.style.visibility = 'visible';
                 renderDashboard();
 
