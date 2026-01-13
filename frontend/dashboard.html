@@ -2296,8 +2296,9 @@
             for (const milestoneId of priorityOrder) {
                 const milestone = MILESTONES[milestoneId];
                 if (!celebrated.includes(milestoneId) && milestone.check(activeApps, interviews)) {
-                    showMilestone(milestoneId, milestone);
+                    // Mark as celebrated first to prevent repeated attempts
                     markMilestoneCelebrated(milestoneId);
+                    showMilestone(milestoneId, milestone);
                     return; // Only show one milestone at a time
                 }
             }
@@ -2309,6 +2310,12 @@
             const icon = document.getElementById('milestoneIcon');
             const title = document.getElementById('milestoneTitle');
             const message = document.getElementById('milestoneMessage');
+
+            // Guard against missing DOM elements
+            if (!toast || !icon || !title || !message) {
+                console.warn('Milestone toast elements not found');
+                return;
+            }
 
             icon.textContent = milestone.icon;
             title.textContent = milestone.title;
