@@ -1649,7 +1649,8 @@
             }
         }
 
-        // Auto-migrate localStorage resume to Supabase (one-time migration for existing users)
+        // Migrate localStorage resume to Supabase (one-time migration for existing users)
+        // Requires explicit user consent before writing to Supabase
         async function migrateLocalStorageResume() {
             const stored = localStorage.getItem('userProfile');
             if (!stored) return false;
@@ -1665,12 +1666,31 @@
                     return false;
                 }
 
-                console.log('Migrating localStorage resume to Supabase...');
+                // Check if user declined migration previously
+                const migrationDeclined = 'henryai_resume_migration_declined';
+                if (localStorage.getItem(migrationDeclined) === 'true') {
+                    console.log('User previously declined migration');
+                    return false;
+                }
 
-                // Extract name from resume
+                // Extract name from resume for display
                 const resumeName = profile.resume.contact?.full_name ||
                                    profile.resume.full_name ||
-                                   'My Resume';
+                                   'your resume';
+
+                // Require explicit user consent before migrating
+                const userConsent = confirm(
+                    `We found "${resumeName}" saved locally. Would you like to sync it to your account for backup and multi-device access?\n\n` +
+                    `Click OK to sync, or Cancel to skip.`
+                );
+
+                if (!userConsent) {
+                    console.log('User declined resume migration');
+                    localStorage.setItem(migrationDeclined, 'true');
+                    return false;
+                }
+
+                console.log('User consented - migrating localStorage resume to Supabase...');
 
                 // Save to Supabase with accuracy_confirmed = true (they were already using it)
                 const result = await HenryData.saveResume(
@@ -2233,7 +2253,9 @@
             document.getElementById('pageTitle').textContent = 'Set Up Your Profile';
             document.getElementById('pageSubtitle').textContent = 'I need a few details to give you honest fit assessments and strategic positioning.';
             document.getElementById('backLink').style.display = 'none';
-            document.getElementById('deleteBtn').style.display = 'none';
+            // deleteBtn element doesn't exist - use dangerZone instead (which is already hidden by default)
+            const dangerZone = document.getElementById('dangerZone');
+            if (dangerZone) dangerZone.style.display = 'none';
             document.getElementById('saveBtn').textContent = 'Save and Start My Job Search';
             // Show file upload, hide resume info
             document.getElementById('fileUpload').style.display = 'block';
@@ -2819,6 +2841,16 @@
             }
 
             try {
+                // Helper: only update field if new value is provided (not empty)
+                // This prevents empty inputs from overwriting existing data
+                function preserveOrUpdate(existingValue, newValue) {
+                    // If newValue is null, undefined, or empty string, keep existing
+                    if (newValue === null || newValue === undefined || newValue === '') {
+                        return existingValue;
+                    }
+                    return newValue;
+                }
+
                 if (!profile) profile = {};
 
                 // Merge any LinkedIn data that may have been saved during this session
@@ -2837,15 +2869,24 @@
                     }
                 }
 
-                // About You section - new fields
+                // About You section - required fields always update
                 profile.first_name = firstName;
                 profile.last_name = lastName;
-                profile.middle_initial = document.getElementById('middleInitial').value.trim().toUpperCase() || null;
-                profile.name_suffix = document.getElementById('nameSuffix').value || null;
-                profile.nickname = document.getElementById('nickname').value.trim() || null;
-                profile.pronouns = document.getElementById('pronouns').value.trim() || null;
                 profile.function_area = functionArea;
                 profile.current_industry = currentIndustry;
+
+                // Optional fields - preserve existing if new value is empty
+                const middleInitialVal = document.getElementById('middleInitial').value.trim().toUpperCase();
+                profile.middle_initial = preserveOrUpdate(profile.middle_initial, middleInitialVal || null);
+
+                const nameSuffixVal = document.getElementById('nameSuffix').value;
+                profile.name_suffix = preserveOrUpdate(profile.name_suffix, nameSuffixVal || null);
+
+                const nicknameVal = document.getElementById('nickname').value.trim();
+                profile.nickname = preserveOrUpdate(profile.nickname, nicknameVal || null);
+
+                const pronounsVal = document.getElementById('pronouns').value.trim();
+                profile.pronouns = preserveOrUpdate(profile.pronouns, pronounsVal || null);
 
                 // Secondary industry (if multi-industry selected)
                 if (document.getElementById('multiIndustry').checked) {
@@ -2854,7 +2895,7 @@
                     profile.secondary_industry = null;
                 }
 
-                // Work authorization
+                // Work authorization - required field
                 profile.work_authorization = workAuthorization;
 
                 // Sponsorship required (for visa types)
@@ -2868,19 +2909,31 @@
                 // Veteran status
                 profile.is_veteran = document.getElementById('isVeteran').checked;
 
-                // Compensation
+                // Compensation - preserve existing values if input is empty
+                const existingComp = profile.compensation || {};
+                const newCompMin = parseCurrency(document.getElementById('compMin').value);
+                const newCompTarget = parseCurrency(document.getElementById('compTarget').value);
+                const newCompStretch = parseCurrency(document.getElementById('compStretch').value);
+
                 profile.compensation = {
-                    min: parseCurrency(document.getElementById('compMin').value),
-                    target: parseCurrency(document.getElementById('compTarget').value),
-                    stretch: parseCurrency(document.getElementById('compStretch').value)
+                    min: preserveOrUpdate(existingComp.min, newCompMin),
+                    target: preserveOrUpdate(existingComp.target, newCompTarget),
+                    stretch: preserveOrUpdate(existingComp.stretch, newCompStretch)
                 };
 
-                profile.work_arrangement = workArrangements;
+                // Work arrangement - only update if user made selections
+                if (workArrangements.length > 0) {
+                    profile.work_arrangement = workArrangements;
+                } else if (!profile.work_arrangement) {
+                    profile.work_arrangement = [];
+                }
+                // If workArrangements is empty but profile has existing, preserve existing
 
                 // Location - structured + backward compatible
                 const city = document.getElementById('city').value.trim();
                 const state = document.getElementById('state').value.trim();
                 const country = document.getElementById('country').value;
+                const existingLocation = profile.location || {};
 
                 // Build current location string for backward compatibility
                 let currentLocationStr = '';
@@ -2891,22 +2944,30 @@
                 }
 
                 profile.location = {
-                    current: currentLocationStr,
-                    city: city || null,
-                    state: state || null,
-                    country: country || null,
-                    open_to_relocate: document.getElementById('openToRelocate').value || null,
-                    relocate_to: relocateLocations
+                    current: preserveOrUpdate(existingLocation.current, currentLocationStr || null),
+                    city: preserveOrUpdate(existingLocation.city, city || null),
+                    state: preserveOrUpdate(existingLocation.state, state || null),
+                    country: preserveOrUpdate(existingLocation.country, country || null),
+                    open_to_relocate: preserveOrUpdate(existingLocation.open_to_relocate, document.getElementById('openToRelocate').value || null),
+                    relocate_to: relocateLocations.length > 0 ? relocateLocations : (existingLocation.relocate_to || [])
                 };
 
-                // Target industries (What You're Looking For)
-                profile.target_industry_primary = document.getElementById('targetIndustryPrimary').value || null;
-                profile.target_industry_secondary = document.getElementById('targetIndustrySecondary').value || null;
+                // Target industries (What You're Looking For) - preserve if empty
+                const targetPrimaryVal = document.getElementById('targetIndustryPrimary').value;
+                const targetSecondaryVal = document.getElementById('targetIndustrySecondary').value;
+                profile.target_industry_primary = preserveOrUpdate(profile.target_industry_primary, targetPrimaryVal || null);
+                profile.target_industry_secondary = preserveOrUpdate(profile.target_industry_secondary, targetSecondaryVal || null);
+
+                // Situation - preserve existing if not selected
+                const existingSituation = profile.situation || {};
+                const holdingUpVal = document.getElementById('holdingUp').value;
+                const timelineVal = document.getElementById('timeline').value;
+                const confidenceVal = document.getElementById('confidence').value;
 
                 profile.situation = {
-                    holding_up: document.getElementById('holdingUp').value || null,
-                    timeline: document.getElementById('timeline').value || null,
-                    confidence: document.getElementById('confidence').value || null
+                    holding_up: preserveOrUpdate(existingSituation.holding_up, holdingUpVal || null),
+                    timeline: preserveOrUpdate(existingSituation.timeline, timelineVal || null),
+                    confidence: preserveOrUpdate(existingSituation.confidence, confidenceVal || null)
                 };
 
                 if (isNewProfile) {
@@ -2914,18 +2975,21 @@
                 }
                 profile.updated_at = new Date().toISOString();
 
-                // Save to localStorage as fallback
-                localStorage.setItem('userProfile', JSON.stringify(profile));
-
-                // Save to Supabase if available
+                // Save to Supabase first (primary storage) - block on failure
                 if (typeof HenryData !== 'undefined') {
                     const { error } = await HenryData.saveCandidateProfile(profile);
                     if (error) {
                         console.error('Error saving to Supabase:', error);
-                    } else {
-                        console.log('Profile saved to Supabase');
+                        errorMessage.textContent = 'Failed to save your profile. Please try again.';
+                        errorMessage.classList.add('show');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return; // Do NOT redirect - keep user on page
                     }
+                    console.log('Profile saved to Supabase');
                 }
+
+                // Only save to localStorage after Supabase succeeds (or if Supabase unavailable)
+                localStorage.setItem('userProfile', JSON.stringify(profile));
 
                 // Initialize tracker if new
                 if (!localStorage.getItem('trackedApplications')) {
@@ -3110,14 +3174,29 @@
     <script>
         // Initialize after Supabase is available
         (async function() {
-            // Check authentication
-            if (typeof HenryAuth !== 'undefined') {
+            // Fail closed: auth library must be available
+            if (typeof HenryAuth === 'undefined') {
+                console.error('Auth library failed to load - blocking profile access');
+                document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: #f87171;">' +
+                    '<h2>Unable to verify authentication</h2>' +
+                    '<p>Please refresh the page or <a href="login.html" style="color: #22d3ee;">return to login</a>.</p>' +
+                    '</div>';
+                return;
+            }
+
+            // Check authentication - fail closed on error
+            try {
                 const session = await HenryAuth.getSession();
                 if (!session) {
                     // Not logged in, redirect to login
                     window.location.href = 'login.html';
                     return;
                 }
+            } catch (authError) {
+                console.error('Auth verification failed:', authError);
+                // Fail closed - redirect to login on auth error
+                window.location.href = 'login.html';
+                return;
             }
 
             // Now load the profile

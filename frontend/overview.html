@@ -418,13 +418,35 @@
     <script>
         // Verify we have analysis data and generate insights
         window.addEventListener('DOMContentLoaded', () => {
-            const dataStr = sessionStorage.getItem('analysisData');
-            if (!dataStr) {
+            // Use FlowState if available for consistent storage access
+            let data = null;
+
+            if (typeof FlowState !== 'undefined') {
+                data = FlowState.get('analysisData');
+            } else {
+                // Fallback: try sessionStorage then localStorage
+                let dataStr = sessionStorage.getItem('analysisData');
+                if (!dataStr) {
+                    dataStr = localStorage.getItem('analysisData_backup');
+                    if (dataStr) {
+                        console.log('Safari fallback: loaded analysisData from localStorage');
+                        sessionStorage.setItem('analysisData', dataStr);
+                    }
+                }
+                if (dataStr) {
+                    try {
+                        data = JSON.parse(dataStr);
+                    } catch (e) {
+                        console.error('Error parsing analysisData:', e);
+                    }
+                }
+            }
+
+            if (!data) {
                 window.location.href = 'index.html';
                 return;
             }
 
-            const data = JSON.parse(dataStr);
             generateTeaserInsights(data);
         });
 
@@ -496,6 +518,7 @@
 
         }
     </script>
+<script src="components/flow-state.js"></script>
 <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>
 <script src="components/admin-alerts.js"></script>

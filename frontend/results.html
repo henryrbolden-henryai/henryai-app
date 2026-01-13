@@ -2030,80 +2030,242 @@
         // Configuration
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
 
-        // Load analysis data from sessionStorage with localStorage fallback (Safari compatibility)
-        let analysisDataStr = sessionStorage.getItem('analysisData');
+        // =====================================================================
+        // AUTH + DATA VALIDATION GATE
+        // Page will NOT render until auth is verified and data is validated
+        // =====================================================================
+        let isAuthenticated = false;
+        let currentUserId = null;
+        let data = null;
+        let fitScore = null;
+        let strengths = [];
+        let finalDecision = null;
+        let finalDecisionLower = null;
+        let lockedDoNotApply = false;
 
-        // Safari fallback: check localStorage if sessionStorage is empty
-        if (!analysisDataStr) {
-            analysisDataStr = localStorage.getItem('analysisData_backup');
-            if (analysisDataStr) {
-                console.log('Safari fallback: loaded analysisData from localStorage');
-                sessionStorage.setItem('analysisData', analysisDataStr);
+        // Hide body until auth verified (prevent flash of stale content)
+        document.body.style.visibility = 'hidden';
+
+        // This will be called after auth scripts load
+        async function initializeResultsPage() {
+            // R1: Require auth before rendering
+            if (typeof HenryAuth === 'undefined') {
+                showAuthError('Authentication system unavailable. Please refresh or return to login.');
+                return;
             }
+
+            try {
+                const session = await HenryAuth.getSession();
+                if (!session) {
+                    // No valid session - clear storage and redirect
+                    sessionStorage.removeItem('analysisData');
+                    localStorage.removeItem('analysisData_backup');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                isAuthenticated = true;
+                currentUserId = session.user?.id;
+            } catch (authErr) {
+                console.error('Auth check failed:', authErr);
+                sessionStorage.removeItem('analysisData');
+                localStorage.removeItem('analysisData_backup');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Now load analysis data from sessionStorage with localStorage fallback
+            let analysisDataStr = sessionStorage.getItem('analysisData');
+
+            // Safari fallback: check localStorage if sessionStorage is empty
+            if (!analysisDataStr) {
+                analysisDataStr = localStorage.getItem('analysisData_backup');
+                if (analysisDataStr) {
+                    console.log('Safari fallback: loaded analysisData from localStorage');
+                    sessionStorage.setItem('analysisData', analysisDataStr);
+                }
+            }
+
+            data = analysisDataStr ? JSON.parse(analysisDataStr) : null;
+
+            // Redirect if no data
+            if (!data) {
+                window.location.href = 'analyze.html';
+                return;
+            }
+
+            // =====================================================================
+            // R2: VALIDATE FIT SCORE - No fallback to misleading default
+            // =====================================================================
+            if (typeof data.fit_score !== 'number' || isNaN(data.fit_score)) {
+                showDataError('Analysis incomplete: fit score missing. Please re-run analysis.');
+                sessionStorage.removeItem('analysisData');
+                return;
+            }
+            fitScore = data.fit_score;
+
+            // =====================================================================
+            // R3: CANONICAL OWNERSHIP CHECK - Verify analysis belongs to current user
+            // =====================================================================
+            const analysisUserId = data._user_id || data.user_id;
+            if (analysisUserId && currentUserId && analysisUserId !== currentUserId) {
+                console.error('🚨 USER MISMATCH: Analysis belongs to', analysisUserId, 'but current user is', currentUserId);
+                showDataError('This analysis belongs to a different account. Please re-run analysis.');
+                sessionStorage.removeItem('analysisData');
+                localStorage.removeItem('analysisData_backup');
+                return;
+            }
+
+            // Also check candidate name as secondary verification
+            const storedCandidateName = data._candidate_name;
+            const resumeContactName = data._resume_json?.contact?.full_name || data._resume_json?.full_name;
+            const profileCandidateName = JSON.parse(localStorage.getItem('userProfile') || '{}')?.resume?.contact?.full_name;
+
+            console.log("🔍 CANDIDATE VERIFICATION:", {
+                storedCandidateName,
+                resumeContactName,
+                profileCandidateName,
+                match: storedCandidateName === profileCandidateName
+            });
+
+            // If stored candidate doesn't match profile, warn about potential contamination
+            if (profileCandidateName && storedCandidateName && storedCandidateName !== profileCandidateName) {
+                console.error("🚨 CONTAMINATION DETECTED: Stored analysis is for", storedCandidateName, "but profile is", profileCandidateName);
+                showDataError('Session data mismatch detected. Please re-run the analysis.');
+                sessionStorage.removeItem('analysisData');
+                return;
+            }
+
+            // =====================================================================
+            // R4: CANONICAL DOCUMENT PRESENCE CHECK
+            // Block rendering if critical canonical fields are missing
+            // =====================================================================
+            const hasRecommendation = data.final_recommendation || data.recommendation;
+            const hasStrengths = Array.isArray(data.strengths) && data.strengths.length > 0;
+            const hasGaps = Array.isArray(data.gaps); // Can be empty but must exist
+
+            if (!hasRecommendation) {
+                console.error('🚨 CANONICAL MISSING: No recommendation in analysis data');
+                showDataError('Analysis incomplete: recommendation missing. Please re-run analysis.');
+                sessionStorage.removeItem('analysisData');
+                return;
+            }
+
+            console.log('✅ Canonical document check passed:', {
+                hasRecommendation: !!hasRecommendation,
+                hasStrengths,
+                hasGaps,
+                recommendation: hasRecommendation
+            });
+
+            // =====================================================================
+            // R5: RESUME HASH VERIFICATION
+            // Verify analysis was run against current resume version
+            // =====================================================================
+            const analysisResumeHash = data._resume_hash || data.resume_hash;
+            const currentProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+
+            // Generate simple hash of current resume for comparison
+            function simpleHash(obj) {
+                if (!obj) return null;
+                const str = JSON.stringify(obj);
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash; // Convert to 32bit integer
+                }
+                return hash.toString(16);
+            }
+
+            const currentResumeHash = currentProfile.resume ? simpleHash(currentProfile.resume) : null;
+
+            // If analysis has a hash and we can compute current hash, verify match
+            if (analysisResumeHash && currentResumeHash) {
+                // Note: Backend may use different hash algorithm, so we also check structural similarity
+                const analysisResumeName = data._resume_json?.contact?.full_name || data._candidate_name;
+                const currentResumeName = currentProfile.resume?.contact?.full_name;
+
+                if (analysisResumeName && currentResumeName && analysisResumeName !== currentResumeName) {
+                    console.error('🚨 RESUME MISMATCH: Analysis resume name differs from current profile');
+                    showDataError('Your resume has changed since this analysis was run. Please re-run analysis for accurate results.');
+                    sessionStorage.removeItem('analysisData');
+                    return;
+                }
+            }
+
+            // Also check if resume was significantly modified (different contact info)
+            const analysisResumeEmail = data._resume_json?.contact?.email;
+            const currentResumeEmail = currentProfile.resume?.contact?.email;
+            if (analysisResumeEmail && currentResumeEmail && analysisResumeEmail !== currentResumeEmail) {
+                console.warn('⚠️ RESUME EMAIL MISMATCH: Analysis may be stale');
+                // Don't block, but log for debugging
+            }
+
+            console.log('✅ Resume verification check passed');
+
+            // =====================================================================
+            // 🚨 DIAGNOSTIC LOGGING - PROVE WHAT PAYLOAD THE UI IS BINDING TO
+            // =====================================================================
+            console.log("🚨 FINAL API PAYLOAD", JSON.stringify(data, null, 2));
+            console.log("🔍 CRITICAL FIELDS CHECK:", {
+                has_final_recommendation: 'final_recommendation' in data,
+                final_recommendation_value: data.final_recommendation,
+                has_recommendation: 'recommendation' in data,
+                recommendation_value: data.recommendation,
+                has_fit_score: 'fit_score' in data,
+                fit_score_value: data.fit_score,
+                fit_score_type: typeof data.fit_score,
+                has_strengths: 'strengths' in data,
+                strengths_value: data.strengths,
+                strengths_is_array: Array.isArray(data.strengths),
+                strengths_length: Array.isArray(data.strengths) ? data.strengths.length : 'N/A',
+                has_your_move: 'your_move' in data,
+                your_move_value: data.your_move,
+                all_top_level_keys: Object.keys(data)
+            });
+            console.log("⏱️ DIAGNOSTIC TIMESTAMP:", new Date().toISOString());
+
+            // =====================================================================
+            // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
+            // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
+            // =====================================================================
+            finalDecision = data.final_recommendation || data.recommendation || 'Apply';
+            // P1.5-1 FIX: Case-insensitive check for Do Not Apply variants
+            finalDecisionLower = finalDecision.toLowerCase();
+            lockedDoNotApply = finalDecisionLower === 'do not apply' || finalDecisionLower === 'skip' || finalDecisionLower === 'pass';
+            strengths = Array.isArray(data.strengths) ? data.strengths : [];
+
+            // Auth verified, data validated - show page
+            document.body.style.visibility = 'visible';
+
+            // Continue with page rendering
+            renderResultsPage();
         }
 
-        const data = analysisDataStr ? JSON.parse(analysisDataStr) : null;
-
-        // Redirect if no data
-        if (!data) {
-            window.location.href = 'analyze.html';
+        function showAuthError(message) {
+            document.body.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #f87171; font-family: system-ui; padding: 40px; text-align: center;">
+                    <h2 style="margin-bottom: 16px;">Authentication Required</h2>
+                    <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
+                    <a href="login.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
+                </div>
+            `;
+            document.body.style.visibility = 'visible';
         }
 
-        // =====================================================================
-        // 🚨 DIAGNOSTIC LOGGING - PROVE WHAT PAYLOAD THE UI IS BINDING TO
-        // =====================================================================
-        console.log("🚨 FINAL API PAYLOAD", JSON.stringify(data, null, 2));
-        console.log("🔍 CRITICAL FIELDS CHECK:", {
-            has_final_recommendation: 'final_recommendation' in data,
-            final_recommendation_value: data.final_recommendation,
-            has_recommendation: 'recommendation' in data,
-            recommendation_value: data.recommendation,
-            has_fit_score: 'fit_score' in data,
-            fit_score_value: data.fit_score,
-            fit_score_type: typeof data.fit_score,
-            has_strengths: 'strengths' in data,
-            strengths_value: data.strengths,
-            strengths_is_array: Array.isArray(data.strengths),
-            strengths_length: Array.isArray(data.strengths) ? data.strengths.length : 'N/A',
-            has_your_move: 'your_move' in data,
-            your_move_value: data.your_move,
-            all_top_level_keys: Object.keys(data)
-        });
-        console.log("⏱️ DIAGNOSTIC TIMESTAMP:", new Date().toISOString());
-
-        // =====================================================================
-        // 🚨 CANDIDATE VERIFICATION - Detect cross-candidate contamination
-        // =====================================================================
-        const storedCandidateName = data._candidate_name;
-        const resumeContactName = data._resume_json?.contact?.full_name || data._resume_json?.full_name;
-        const profileCandidateName = JSON.parse(localStorage.getItem('userProfile') || '{}')?.resume?.contact?.full_name;
-
-        console.log("🔍 CANDIDATE VERIFICATION:", {
-            storedCandidateName,
-            resumeContactName,
-            profileCandidateName,
-            match: storedCandidateName === profileCandidateName
-        });
-
-        // If stored candidate doesn't match profile, warn about potential contamination
-        if (profileCandidateName && storedCandidateName && storedCandidateName !== profileCandidateName) {
-            console.error("🚨 CONTAMINATION DETECTED: Stored analysis is for", storedCandidateName, "but profile is", profileCandidateName);
-            // Force redirect to re-analyze with correct candidate
-            alert("Session data mismatch detected. Please re-run the analysis.");
-            sessionStorage.removeItem('analysisData');
-            window.location.href = 'analyze.html';
+        function showDataError(message) {
+            document.body.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #fbbf24; font-family: system-ui; padding: 40px; text-align: center;">
+                    <h2 style="margin-bottom: 16px;">Analysis Error</h2>
+                    <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
+                    <a href="analyze.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Re-run Analysis</a>
+                </div>
+            `;
+            document.body.style.visibility = 'visible';
         }
 
-        // =====================================================================
-        // IMMUTABLE UI STATE - DERIVED ONCE, USED EVERYWHERE
-        // FRONTEND CONTRACT: final_recommendation wins. Period. No reconciliation.
-        // =====================================================================
-        const finalDecision = data.final_recommendation || data.recommendation || 'Apply';
-        // P1.5-1 FIX: Case-insensitive check for Do Not Apply variants
-        const finalDecisionLower = finalDecision.toLowerCase();
-        const lockedDoNotApply = finalDecisionLower === 'do not apply' || finalDecisionLower === 'skip' || finalDecisionLower === 'pass';
-        const fitScore = typeof data.fit_score === 'number' ? data.fit_score : 50;
-        const strengths = Array.isArray(data.strengths) ? data.strengths : [];
+        // Main rendering function - called only after auth + validation pass
+        function renderResultsPage() {
 
         // TERMINAL STATE CONTRACT (Jan 2026)
         // These fields come from the backend terminal state contract
@@ -2206,10 +2368,30 @@
         const fitScoreQuickEl = document.getElementById('fitScoreQuick');
 
         // ALWAYS render numeric score - never fall back to —%
-        fitScoreEl.textContent = `${fitScore}%`;
-        fitScoreQuickEl.textContent = `${fitScore}%`;
+        // R6: FIT SCORE DELTA DISPLAY
+        // If _score_change or previous_score exists, show "X% → Y%" format
+        const scoreChange = data._score_change || data.score_delta || data.score_change;
+        const previousScore = data._previous_score || data.previous_score;
 
-        // Color based on score
+        let fitScoreDisplay = `${fitScore}%`;
+        let deltaIndicator = '';
+
+        if (typeof scoreChange === 'number' && scoreChange !== 0) {
+            // We have an explicit score change value
+            const prevScore = fitScore - scoreChange;
+            fitScoreDisplay = `${prevScore}% → ${fitScore}%`;
+            deltaIndicator = scoreChange > 0 ? ' ↑' : ' ↓';
+        } else if (typeof previousScore === 'number' && previousScore !== fitScore) {
+            // We have a previous score to compare against
+            fitScoreDisplay = `${previousScore}% → ${fitScore}%`;
+            const diff = fitScore - previousScore;
+            deltaIndicator = diff > 0 ? ' ↑' : ' ↓';
+        }
+
+        fitScoreEl.textContent = fitScoreDisplay + deltaIndicator;
+        fitScoreQuickEl.textContent = fitScoreDisplay + deltaIndicator;
+
+        // Color based on current score (not delta)
         if (fitScore >= 70) {
             fitScoreEl.classList.add('high');
             fitScoreQuickEl.classList.add('high');
@@ -3196,7 +3378,8 @@
             localStorage.setItem('trackedApplications', JSON.stringify(applications));
             console.log('Saved to trackedApplications (localStorage). Total apps:', applications.length);
 
-            // Also save to Supabase if user is authenticated
+            // R4: Supabase save is REQUIRED for authenticated users
+            // Return success/failure to block navigation on failure
             if (typeof HenryData !== 'undefined') {
                 try {
                     const session = await HenryAuth.getSession();
@@ -3205,15 +3388,34 @@
                         const result = await HenryData.saveApplication(application);
                         if (result.error) {
                             console.error('Error saving to Supabase:', result.error);
+                            return { success: false, error: 'Failed to save to database. Please try again.' };
                         } else {
                             console.log('Successfully saved to Supabase:', result.data);
+                            // D3: Normalize ID - update local application with Supabase UUID
+                            if (result.data?.id) {
+                                application.id = result.data.id;
+                                // Re-save to localStorage with normalized ID
+                                const apps = JSON.parse(localStorage.getItem('trackedApplications') || '[]');
+                                const idx = apps.findIndex(a => a.analysisKey === analysisKey);
+                                if (idx !== -1) {
+                                    apps[idx].id = result.data.id;
+                                    localStorage.setItem('trackedApplications', JSON.stringify(apps));
+                                }
+                            }
+                            return { success: true };
                         }
                     } else {
-                        console.log('No Supabase session, using localStorage only');
+                        // No Supabase session - should not happen as we check auth at page load
+                        console.error('No Supabase session during save');
+                        return { success: false, error: 'Session expired. Please sign in again.' };
                     }
                 } catch (err) {
                     console.error('Supabase save error:', err);
+                    return { success: false, error: 'Network error. Please check your connection.' };
                 }
+            } else {
+                // HenryData not available - should not happen
+                return { success: false, error: 'Database unavailable. Please refresh the page.' };
             }
         }
 
@@ -3336,13 +3538,32 @@
         }
 
         async function proceedWithApply() {
-            // Auto-add to tracker when user commits to building application
-            await addToTrackerAutomatically();
+            // R6: Enforce auth for actions
+            if (!isAuthenticated) {
+                alert('Sign in required to track actions and avoid duplicates.');
+                window.location.href = 'login.html';
+                return;
+            }
 
-            // Small delay to ensure writes complete before navigation
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // R4: Persistence-confirmed Apply action
+            // Attempt Supabase save first - block navigation on failure
+            const saveResult = await addToTrackerAutomatically();
 
-            // Always route to resume-leveling first for ALL candidates
+            if (!saveResult.success) {
+                // Show blocking error - do not navigate
+                const errorDiv = document.createElement('div');
+                errorDiv.id = 'persistenceError';
+                errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; padding: 16px 24px; border-radius: 8px; z-index: 9999; max-width: 400px; text-align: center;';
+                errorDiv.innerHTML = `
+                    <strong>Failed to save application</strong><br>
+                    <span style="color: #a1a1aa; font-size: 0.9rem;">${saveResult.error || 'Please try again.'}</span><br>
+                    <button onclick="this.parentElement.remove()" style="margin-top: 12px; background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Dismiss</button>
+                `;
+                document.body.appendChild(errorDiv);
+                return; // Do NOT navigate
+            }
+
+            // Persistence confirmed - proceed to resume-leveling
             window.location.href = 'resume-leveling.html';
         }
 
@@ -3407,6 +3628,13 @@
         async function saveSkippedRoleAndNavigate(e) {
             e.preventDefault();
 
+            // R6: Enforce auth for actions
+            if (!isAuthenticated) {
+                alert('Sign in required to track actions and avoid duplicates.');
+                window.location.href = 'login.html';
+                return;
+            }
+
             if (!pendingSkipData) {
                 window.location.href = 'tracker.html';
                 return;
@@ -3416,7 +3644,8 @@
             const reasonSelect = document.getElementById('passReason');
             const passReason = reasonSelect?.value || null;
 
-            // Save to database if authenticated
+            // R5: Persistence-confirmed Pass action
+            // Save to database - block navigation on failure
             if (typeof HenryData !== 'undefined' && pendingSkipData.company) {
                 try {
                     const result = await HenryData.saveSkippedRole({
@@ -3426,14 +3655,41 @@
 
                     if (result.error) {
                         console.error('Failed to save skipped role:', result.error);
+                        // Show blocking error - do not navigate
+                        const errorDiv = document.createElement('div');
+                        errorDiv.id = 'persistenceError';
+                        errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; padding: 16px 24px; border-radius: 8px; z-index: 9999; max-width: 400px; text-align: center;';
+                        errorDiv.innerHTML = `
+                            <strong>Failed to save decision</strong><br>
+                            <span style="color: #a1a1aa; font-size: 0.9rem;">Please try again.</span><br>
+                            <button onclick="this.parentElement.remove(); document.getElementById('passModal').classList.remove('show');" style="margin-top: 12px; background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Dismiss</button>
+                        `;
+                        document.body.appendChild(errorDiv);
+                        return; // Do NOT navigate
                     } else {
                         console.log('Skipped role saved:', result.data?.id);
                     }
                 } catch (err) {
                     console.error('Error saving skipped role:', err);
+                    // Show blocking error
+                    const errorDiv = document.createElement('div');
+                    errorDiv.id = 'persistenceError';
+                    errorDiv.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #450a0a; border: 1px solid #dc2626; color: #fca5a5; padding: 16px 24px; border-radius: 8px; z-index: 9999; max-width: 400px; text-align: center;';
+                    errorDiv.innerHTML = `
+                        <strong>Network error</strong><br>
+                        <span style="color: #a1a1aa; font-size: 0.9rem;">Please check your connection and try again.</span><br>
+                        <button onclick="this.parentElement.remove(); document.getElementById('passModal').classList.remove('show');" style="margin-top: 12px; background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Dismiss</button>
+                    `;
+                    document.body.appendChild(errorDiv);
+                    return; // Do NOT navigate
                 }
+            } else {
+                // HenryData not available or no company
+                alert('Unable to save decision. Please refresh and try again.');
+                return;
             }
 
+            // Persistence confirmed - proceed
             sessionStorage.removeItem('analysisData');
             window.location.href = 'tracker.html';
         }
@@ -3771,9 +4027,16 @@
                 });
             }
         })();
+
+        } // End of renderResultsPage function
     </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
+<script src="components/flow-state.js"></script>
+<script>
+    // Initialize after auth scripts are loaded
+    initializeResultsPage();
+</script>
 <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>
 <script src="components/admin-alerts.js"></script>

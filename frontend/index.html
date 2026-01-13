@@ -1626,11 +1626,70 @@
 
 <script src="js/supabase-client.js"></script>
 <script>
-  // Set up CTA buttons immediately (don't wait for auth check)
+  // Profile completeness check helper
+  function isProfileComplete(profileData) {
+    if (!profileData) return false;
+    // Minimal required fields that downstream pages expect
+    const hasName = profileData.first_name && profileData.last_name;
+    const hasResume = profileData.resume && (profileData.resume.contact || profileData.resume.full_name);
+    return hasName && hasResume;
+  }
+
+  // CTA click handler with auth + profile gating
+  async function handleCtaClick() {
+    try {
+      // Check auth first
+      let isAuthenticated = false;
+      if (typeof HenryAuth !== 'undefined') {
+        const session = await HenryAuth.getSession();
+        isAuthenticated = !!session;
+      }
+
+      if (!isAuthenticated) {
+        // Not authenticated - redirect to login
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Check profile completeness
+      let profileData = null;
+      if (typeof HenryData !== 'undefined') {
+        try {
+          profileData = await HenryData.getCandidateProfile();
+        } catch (e) {
+          console.error('Error fetching profile from Supabase:', e);
+        }
+      }
+      // Fallback to localStorage
+      if (!profileData) {
+        const stored = localStorage.getItem('userProfile');
+        if (stored) {
+          try {
+            profileData = JSON.parse(stored);
+          } catch (e) {}
+        }
+      }
+
+      if (!isProfileComplete(profileData)) {
+        // Profile incomplete - redirect to profile setup
+        window.location.href = 'profile-edit.html';
+        return;
+      }
+
+      // Auth valid and profile complete - proceed to analyze
+      window.location.href = 'analyze.html';
+    } catch (error) {
+      console.error('CTA handler error:', error);
+      // On error, redirect to login as safe fallback
+      window.location.href = 'login.html';
+    }
+  }
+
+  // Set up CTA buttons with gated handler
   const ctaButton = document.getElementById('ctaButton');
   const getStartedBtn = document.getElementById('getStartedBtn');
-  if (ctaButton) ctaButton.onclick = () => window.location.href = 'analyze.html';
-  if (getStartedBtn) getStartedBtn.onclick = () => window.location.href = 'analyze.html';
+  if (ctaButton) ctaButton.onclick = handleCtaClick;
+  if (getStartedBtn) getStartedBtn.onclick = handleCtaClick;
 
   // Preview mode bypass - add ?preview=true to URL to view landing page when logged in
   const urlParams = new URLSearchParams(window.location.search);
@@ -1658,16 +1717,50 @@
         if (typeof HenryAuth !== 'undefined') {
           const session = await HenryAuth.getSession();
           if (session) {
-            window.location.href = 'dashboard.html';
+            // Validate profile completeness before redirecting to dashboard
+            let profileData = null;
+            if (typeof HenryData !== 'undefined') {
+              try {
+                profileData = await HenryData.getCandidateProfile();
+              } catch (e) {
+                console.error('Error fetching profile:', e);
+              }
+            }
+            // Fallback to localStorage
+            if (!profileData) {
+              const stored = localStorage.getItem('userProfile');
+              if (stored) {
+                try {
+                  profileData = JSON.parse(stored);
+                } catch (e) {}
+              }
+            }
+
+            if (isProfileComplete(profileData)) {
+              window.location.href = 'dashboard.html';
+            } else {
+              // Profile incomplete - redirect to profile setup
+              window.location.href = 'profile-edit.html';
+            }
             return;
           }
         }
 
-        // Check localStorage profile as fallback
-        const profile = localStorage.getItem('userProfile');
-        if (profile) {
-          window.location.href = 'dashboard.html';
-          return;
+        // Check localStorage profile as fallback (for legacy sessions)
+        const storedProfile = localStorage.getItem('userProfile');
+        if (storedProfile) {
+          try {
+            const profileData = JSON.parse(storedProfile);
+            if (isProfileComplete(profileData)) {
+              window.location.href = 'dashboard.html';
+            } else {
+              window.location.href = 'profile-edit.html';
+            }
+            return;
+          } catch (e) {
+            // Malformed profile - clear it and stay on landing
+            localStorage.removeItem('userProfile');
+          }
         }
       } catch (error) {
         console.log('Auth check failed, showing landing page:', error);

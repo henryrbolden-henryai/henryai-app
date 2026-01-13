@@ -1790,7 +1790,47 @@
             const targetRole = analysisData.role_title || analysisData._role || 'your target role';
             document.getElementById('subtitle').textContent = `Understanding your career level relative to ${targetRole}`;
 
-            // Perform leveling analysis
+            // =========================================================================
+            // CHECK FOR EXISTING LEVELING DATA (user navigated back)
+            // If we have valid levelingData for this analysis, restore it instead of regenerating
+            // =========================================================================
+            let existingLevelingData = null;
+
+            // Try FlowState first, then direct storage access
+            if (typeof FlowState !== 'undefined') {
+                existingLevelingData = FlowState.get('levelingData');
+            } else {
+                const storedLevelingStr = sessionStorage.getItem('levelingData') ||
+                                          localStorage.getItem('levelingData_backup');
+                if (storedLevelingStr) {
+                    try {
+                        existingLevelingData = JSON.parse(storedLevelingStr);
+                    } catch (e) {
+                        console.error('Error parsing stored levelingData:', e);
+                    }
+                }
+            }
+
+            // Validate that existing leveling data matches current analysis (same job)
+            if (existingLevelingData && existingLevelingData.target_role) {
+                const currentRole = analysisData.role_title || analysisData._role || '';
+                const storedRole = existingLevelingData.target_role || existingLevelingData.target_title || '';
+
+                // If roles match (or close enough), restore the data
+                if (currentRole && storedRole &&
+                    (currentRole === storedRole || currentRole.toLowerCase().includes(storedRole.toLowerCase().split(' ')[0]))) {
+                    console.log('[FlowState] Restoring existing levelingData for:', storedRole);
+                    levelingData = existingLevelingData;
+                    // Hide loading, show results
+                    document.getElementById('loadingState').style.display = 'none';
+                    renderResults();
+                    return; // Don't regenerate
+                } else {
+                    console.log('[FlowState] Stored levelingData is for different role, regenerating');
+                }
+            }
+
+            // No valid existing data - perform leveling analysis
             await performLevelingAnalysis();
         });
 
@@ -3045,18 +3085,21 @@
             }).join('');
         }
 
-        // Navigation
+        // Navigation - use FlowState for consistent storage with backup
         document.getElementById('continueBtn').addEventListener('click', () => {
-            // Store leveling data for strengthen page
-            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+            // Store leveling data for strengthen page using FlowState (persists to both storages)
+            if (typeof FlowState !== 'undefined') {
+                FlowState.set('levelingData', levelingData);
+            } else {
+                sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+                localStorage.setItem('levelingData_backup', JSON.stringify(levelingData));
+            }
             window.location.href = 'strengthen.html';
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
             // Skip strengthen, go directly to Application Strategy
-            sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
-            // Mark strengthen as skipped
-            sessionStorage.setItem('strengthenedData', JSON.stringify({
+            const skipData = {
                 status: 'skipped',
                 verified_enhancements: [],
                 declined_items: [],
@@ -3065,11 +3108,22 @@
                 questions_asked: 0,
                 questions_answered: 0,
                 timestamp: Date.now()
-            }));
+            };
+
+            if (typeof FlowState !== 'undefined') {
+                FlowState.set('levelingData', levelingData);
+                FlowState.set('strengthenedData', skipData);
+            } else {
+                sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
+                localStorage.setItem('levelingData_backup', JSON.stringify(levelingData));
+                sessionStorage.setItem('strengthenedData', JSON.stringify(skipData));
+                localStorage.setItem('strengthenedData_backup', JSON.stringify(skipData));
+            }
             // Go directly to generating/application strategy
             window.location.href = 'generating.html';
         });
     </script>
+    <script src="components/flow-state.js"></script>
     <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>
 <script src="components/admin-alerts.js"></script>

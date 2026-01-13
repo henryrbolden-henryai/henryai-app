@@ -365,7 +365,7 @@ async function submitAnswers() {
 }
 
 /**
- * Save strengthened data to sessionStorage
+ * Save strengthened data to sessionStorage and localStorage backup
  */
 function saveStrengthendData(enhancements, declined, unresolved, skipped, skipReason) {
     const answeredCount = Object.values(answers).filter(a => a.answer && !a.skipped).length;
@@ -387,7 +387,14 @@ function saveStrengthendData(enhancements, declined, unresolved, skipped, skipRe
         timestamp: Date.now()
     };
 
-    sessionStorage.setItem('strengthenedData', JSON.stringify(strengthenedData));
+    // Use FlowState if available, otherwise save to both storages manually
+    if (typeof FlowState !== 'undefined') {
+        FlowState.set('strengthenedData', strengthenedData);
+    } else {
+        const dataStr = JSON.stringify(strengthenedData);
+        sessionStorage.setItem('strengthenedData', dataStr);
+        localStorage.setItem('strengthenedData_backup', dataStr);
+    }
 }
 
 /**

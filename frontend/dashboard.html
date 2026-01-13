@@ -1018,12 +1018,7 @@
         }
 
     </style>
-    <!-- Beta Access Gate -->
-    <script>
-        if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
-        }
-    </script>
+    <!-- D5: Beta Access Gate moved to auth initialization for server-side validation -->
 </head>
 <body>
     <!-- LinkedIn Modal Container -->
@@ -2122,6 +2117,7 @@
         }
 
         // Navigate to Strategy Overview for a specific application
+        // D4: Prefer app.analysisData from Supabase over localStorage
         function viewApplicationStrategy(appId) {
             const apps = getApplications();
             const app = apps.find(a => String(a.id) === String(appId));
@@ -2130,15 +2126,28 @@
                 return;
             }
 
-            // Try to load analysis data from the app's analysisKey
+            // D4: Prefer Supabase analysisData first
             let analysisData = null;
-            if (app.analysisKey) {
+
+            // Check if app has analysisData embedded (from Supabase)
+            if (app.analysisData && typeof app.analysisData === 'object') {
+                analysisData = app.analysisData;
+                console.log('Using analysisData from Supabase app object');
+            }
+            // Also check analysis_data (snake_case from DB)
+            else if (app.analysis_data && typeof app.analysis_data === 'object') {
+                analysisData = app.analysis_data;
+                console.log('Using analysis_data from Supabase app object');
+            }
+            // Fall back to localStorage only if Supabase data unavailable
+            else if (app.analysisKey) {
                 const stored = localStorage.getItem(app.analysisKey);
                 if (stored) {
                     try {
                         analysisData = JSON.parse(stored);
+                        console.log('Fallback: Using analysisData from localStorage');
                     } catch (e) {
-                        console.error('Error parsing analysis data:', e);
+                        console.error('Error parsing analysis data from localStorage:', e);
                     }
                 }
             }
@@ -2148,8 +2157,15 @@
                 sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
                 window.location.href = 'overview.html';
             } else {
-                // No analysis data - fall back to tracker view
-                window.location.href = `tracker.html?highlight=${appId}`;
+                // D4: Show explicit message instead of silent fallback
+                const goToTracker = confirm(
+                    'Analysis data not found for this application.\n\n' +
+                    'This may happen if the analysis was run on a different device.\n\n' +
+                    'Would you like to view this application in the tracker instead?'
+                );
+                if (goToTracker) {
+                    window.location.href = `tracker.html?highlight=${appId}`;
+                }
             }
         }
 
@@ -2290,16 +2306,53 @@
         }
 
         // ========================================================================
-        // INITIALIZATION
+        // INITIALIZATION - D1: Block render until auth verified
         // ========================================================================
-        // Initial render with localStorage data (will be updated when Supabase loads)
-        document.addEventListener('DOMContentLoaded', () => {
-            renderDashboard();
+        // Flag to track if dashboard has been initialized
+        let dashboardInitialized = false;
+        let supabaseDataLoaded = false;
 
-            // Check for milestones after initial render
-            const apps = getApplications();
-            const interviews = getUpcomingInterviewsFromStorage();
-            checkMilestones(apps, interviews);
+        // D1: Hide body until auth verified (prevent flash of stale content)
+        document.body.style.visibility = 'hidden';
+
+        // Show loading state
+        function showLoadingState() {
+            const container = document.querySelector('.container');
+            if (container) {
+                container.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50vh; color: var(--color-text-secondary);">
+                        <div style="font-size: 1.2rem; margin-bottom: 8px;">Loading dashboard...</div>
+                    </div>
+                `;
+            }
+            document.body.style.visibility = 'visible';
+        }
+
+        function showAuthError(message) {
+            document.body.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #f87171; font-family: system-ui; padding: 40px; text-align: center;">
+                    <h2 style="margin-bottom: 16px;">Authentication Required</h2>
+                    <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
+                    <a href="login.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
+                </div>
+            `;
+            document.body.style.visibility = 'visible';
+        }
+
+        function showDataError(message) {
+            document.body.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #fbbf24; font-family: system-ui; padding: 40px; text-align: center;">
+                    <h2 style="margin-bottom: 16px;">Data Error</h2>
+                    <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
+                    <a href="dashboard.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Refresh</a>
+                </div>
+            `;
+            document.body.style.visibility = 'visible';
+        }
+
+        // D1: Do NOT render on DOMContentLoaded - wait for auth
+        document.addEventListener('DOMContentLoaded', () => {
+            showLoadingState();
         });
     </script>
 
@@ -2307,13 +2360,37 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
     <script>
-        // Auth check, load Supabase data, and re-render
+        // D1: Auth check MUST complete before any rendering
         (async function() {
-            if (typeof HenryAuth !== 'undefined') {
+            // D1: Fail closed if auth library unavailable
+            if (typeof HenryAuth === 'undefined') {
+                showAuthError('Authentication system unavailable. Please refresh or return to login.');
+                return;
+            }
+
+            try {
                 const session = await HenryAuth.getSession();
                 if (!session) {
                     // Not logged in, redirect to login
                     window.location.href = 'login.html';
+                    return;
+                }
+
+                // D5: Beta gate - validate via Supabase user metadata (not just localStorage)
+                // Check server-side flag first, fall back to localStorage for legacy
+                let betaVerified = false;
+                try {
+                    const user = await HenryAuth.getUser();
+                    betaVerified = user?.user_metadata?.beta_verified === true ||
+                                   user?.app_metadata?.beta_verified === true ||
+                                   localStorage.getItem('beta_verified') === 'true';
+                } catch (e) {
+                    console.error('Error checking beta status:', e);
+                    betaVerified = localStorage.getItem('beta_verified') === 'true';
+                }
+
+                if (!betaVerified) {
+                    window.location.href = 'beta-access.html';
                     return;
                 }
 
@@ -2353,10 +2430,8 @@
                 // Get user's name from Supabase for personalized greeting
                 supabaseUserName = await HenryAuth.getUserName();
 
-                // Re-render with user name now available
-                renderDashboard();
-
-                // Load applications from Supabase and re-render dashboard
+                // D2: Load applications from Supabase BEFORE first render
+                // Supabase is the authoritative source
                 if (typeof HenryData !== 'undefined') {
                     try {
                         const apps = await HenryData.getApplications();
@@ -2365,15 +2440,33 @@
                             // Update cache and localStorage
                             dashboardAppsCache = apps;
                             localStorage.setItem('trackedApplications', JSON.stringify(apps));
-                            // Re-render with fresh data
-                            renderDashboard();
+                            supabaseDataLoaded = true;
                         } else {
-                            console.log('No applications in Supabase, using localStorage');
+                            console.log('No applications in Supabase');
+                            // D2: Clear cache - Supabase returned empty, don't use stale localStorage
+                            dashboardAppsCache = [];
+                            supabaseDataLoaded = true;
                         }
                     } catch (err) {
                         console.error('Error loading from Supabase:', err);
+                        // D2: Show error instead of silent fallback to localStorage
+                        showDataError('Unable to load your applications. Please check your connection and refresh.');
+                        return;
                     }
+                } else {
+                    showDataError('Database unavailable. Please refresh the page.');
+                    return;
                 }
+
+                // Auth verified, data loaded - NOW render dashboard
+                dashboardInitialized = true;
+                document.body.style.visibility = 'visible';
+                renderDashboard();
+
+                // Check for milestones after render
+                const apps = getApplications();
+                const interviews = getUpcomingInterviewsFromStorage();
+                checkMilestones(apps, interviews);
 
                 // Listen for Hey Henry data corrections to auto-refresh the dashboard
                 window.addEventListener('henryDataCorrected', async (event) => {
@@ -2388,6 +2481,9 @@
                         }
                     }
                 });
+            } catch (authErr) {
+                console.error('Auth check failed:', authErr);
+                window.location.href = 'login.html';
             }
         })();
     </script>
