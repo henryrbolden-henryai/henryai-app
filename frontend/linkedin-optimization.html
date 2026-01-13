@@ -1788,6 +1788,55 @@
             const hasPriorLeadership = experience.slice(1).some(e => leadershipTitles.test(e.title || ''));
             const isValidFounderPosition = isFounderAdvisor && (hasPriorLeadership || experience.length >= 3);
 
+            // ============ MID-LEVEL IC CLASSIFICATION ============
+            // Mid-level ICs must not be penalized for lacking leadership signals
+            const midLevelTitles = /\b(software engineer|engineer ii|engineer iii|senior engineer|product manager|data scientist|ux designer|designer|analyst|developer)\b/i;
+            const staffLeadTitles = /\b(lead|staff|principal|manager|director|head|vp|chief)\b/i;
+            const currentTitle = experience[0]?.title || linkedin.headline || '';
+            const isMidLevelIC = midLevelTitles.test(currentTitle) && !staffLeadTitles.test(currentTitle) && !isLeadershipProfile;
+
+            // Mid-level scope signals (feature/component ownership, not org-level)
+            const midLevelScopeSignals = {
+                featureOwnership: /\b(owned|built|shipped|launched|developed|designed|implemented)\s+(feature|component|system|module|service|api|page|flow)/i.test(allBulletsForSignals),
+                systemOwnership: /\b(responsible for|maintained|optimized|scaled)\s+\w+\s*(system|service|platform|infrastructure)/i.test(allBulletsForSignals),
+                endToEndDelivery: /\b(end-to-end|e2e|full-stack|full stack|from design to|from concept to|from ideation to)/i.test(allBulletsForSignals),
+                xfnCollaboration: /\b(collaborated with|worked with|partnered with)\s+(product|design|engineering|data|ops|stakeholders)/i.test(allBulletsForSignals),
+                technicalMetrics: /\b(latency|error rate|throughput|performance|uptime|response time|load time|availability)\s*(reduced|improved|increased|decreased|optimized)/i.test(allBulletsForSignals)
+            };
+            const midLevelScopeCount = Object.values(midLevelScopeSignals).filter(Boolean).length;
+
+            // ============ PROGRAM MANAGER / TPM CLASSIFICATION ============
+            // Program roles are evaluated on delivery ownership, not product ownership or people management
+            const isTPM = /\b(technical program manager|tpm|technical program lead)\b/i.test(currentTitle);
+            const isProgramManager = /\b(program manager|program lead)\b/i.test(currentTitle) && !isTPM;
+            const isProgramRole = isTPM || isProgramManager;
+
+            // Detect technical vs non-technical company context
+            const techCompanySignals = /\b(api|apis|systems|architecture|sdlc|engineers|engineering|platform|infrastructure|software|saas|fintech|tech|devops|microservices|cloud)\b/i;
+            const isTechnicalEnvironment = techCompanySignals.test(allBulletsForSignals) ||
+                experience.some(e => techCompanySignals.test(e.company || ''));
+
+            // Program-specific scope signals
+            const programScopeSignals = {
+                deliveryOwnership: /\b(delivered|shipped|launched|rolled out|deployed)\s+(program|project|initiative|release|migration)/i.test(allBulletsForSignals),
+                dependencyManagement: /\b(dependency|dependencies|blocked|unblocked|sequencing|coordination|cross-team)/i.test(allBulletsForSignals),
+                riskManagement: /\b(risk|risks|mitigation|escalation|contingency|blockers)/i.test(allBulletsForSignals),
+                timelineOwnership: /\b(timeline|milestones|roadmap|schedule|deadline|on-time|ahead of schedule)/i.test(allBulletsForSignals),
+                stakeholderCoordination: /\b(stakeholders|cross-functional|xfn|partnered with|aligned with|coordinated with)\s*(eng|product|design|ops|legal|finance|leadership)/i.test(allBulletsForSignals),
+                platformDelivery: /\b(platform|infrastructure|systems|architecture|migration|rollout|integration)/i.test(allBulletsForSignals)
+            };
+            const programScopeCount = Object.values(programScopeSignals).filter(Boolean).length;
+
+            // Determine role classification for scoring
+            let roleClassification = 'Standard';
+            if (isLeadershipProfile) {
+                roleClassification = 'Leadership';
+            } else if (isProgramRole) {
+                roleClassification = isTPM ? 'TPM' : (isTechnicalEnvironment ? 'ProgramManager_Tech' : 'ProgramManager_NonTech');
+            } else if (isMidLevelIC) {
+                roleClassification = 'MidLevelIC';
+            }
+
             // ============ HEADLINE SCORING (15 pts) ============
             const headline = linkedin.headline || '';
             const headlineCriteria = {};
@@ -1976,7 +2025,7 @@
             sectionDetails.about = aboutCriteria;
 
             // ============ EXPERIENCE SCORING (20 pts) ============
-            const experience = linkedin.experience || [];
+            // Note: experience variable already declared at top of function for role classification
             const expCriteria = {};
 
             // All roles have 3+ bullets (5 pts)
@@ -2324,12 +2373,28 @@
                 (sectionScores.other / SECTION_CONFIG.other.maxPoints) * 5
             );
 
-            // ============ SCORE FLOOR PROTECTION (Leadership Profiles) ============
-            // Per spec: For Leadership profiles, overall score must NOT fall below 55
-            // regardless of optimization gaps. Leadership profiles are judged on signal density
-            // and credibility, not formatting compliance.
+            // ============ SCORE FLOOR PROTECTION (Role-Specific) ============
+            // Per spec: Different role types have different score floors
+            // Leadership profiles: 55 (judged on signal density and credibility)
+            // Program/TPM roles: 50 (judged on delivery ownership and execution clarity)
+            // Mid-Level ICs: 45 (judged on feature ownership and technical skills)
+            let scoreFloorApplied = false;
+            let scoreFloor = 0;
+
             if (isLeadershipProfile && overall < 55) {
+                scoreFloor = 55;
                 overall = 55;
+                scoreFloorApplied = true;
+            } else if (isProgramRole && programScopeCount >= 2 && overall < 50) {
+                // Program/TPM with delivery ownership signals: floor at 50
+                scoreFloor = 50;
+                overall = 50;
+                scoreFloorApplied = true;
+            } else if (isMidLevelIC && midLevelScopeCount >= 2 && overall < 45) {
+                // Mid-level IC with feature/component ownership: floor at 45
+                scoreFloor = 45;
+                overall = 45;
+                scoreFloorApplied = true;
             }
 
             // Add fix_ids for diagnosis-optimization contract
@@ -2341,15 +2406,29 @@
             // Sort fixes by severity
             fixes.sort((a, b) => SEVERITY[a.severity].order - SEVERITY[b.severity].order);
 
-            // Detect profile gaps (pass seniority info per spec)
-            const seniorityInfo = {
+            // Detect profile gaps (pass role classification info per spec)
+            const roleInfo = {
+                // Leadership classification
                 isLeadershipProfile,
                 seniorSignalCount,
                 isFounderAdvisor,
                 isValidFounderPosition,
-                seniorSignals
+                seniorSignals,
+                // Mid-level IC classification
+                isMidLevelIC,
+                midLevelScopeCount,
+                midLevelScopeSignals,
+                // Program/TPM classification
+                isProgramRole,
+                isTPM,
+                isProgramManager,
+                isTechnicalEnvironment,
+                programScopeCount,
+                programScopeSignals,
+                // Overall classification
+                roleClassification
             };
-            const profileGaps = detectProfileGaps(linkedin, sectionScores, experience, seniorityInfo);
+            const profileGaps = detectProfileGaps(linkedin, sectionScores, experience, roleInfo);
 
             // Build diagnosis object per contract spec
             const diagnosis = {
@@ -2366,14 +2445,30 @@
                 },
                 profile_gaps: profileGaps.slice(0, 5),
                 fixes: fixes.slice(0, 8),
-                // Seniority classification for optimization context
-                seniority: {
-                    profile_type: isLeadershipProfile ? 'Leadership' : 'IC/Mid',
+                // Role classification for optimization context
+                role_classification: {
+                    type: roleClassification,
+                    is_leadership: isLeadershipProfile,
+                    is_mid_level_ic: isMidLevelIC,
+                    is_program_role: isProgramRole,
+                    is_tpm: isTPM,
+                    is_technical_environment: isTechnicalEnvironment,
+                    // Signal counts
                     senior_signal_count: seniorSignalCount,
+                    mid_level_scope_count: midLevelScopeCount,
+                    program_scope_count: programScopeCount,
+                    // Founder/Advisor
                     is_founder_advisor: isFounderAdvisor,
                     is_valid_founder_position: isValidFounderPosition,
-                    detected_signals: seniorSignals,
-                    score_floor_applied: isLeadershipProfile && overall === 55
+                    // Score floor info
+                    score_floor_applied: scoreFloorApplied,
+                    score_floor_value: scoreFloor,
+                    // Detected signals (for debugging)
+                    detected_signals: {
+                        senior: seniorSignals,
+                        mid_level: midLevelScopeSignals,
+                        program: programScopeSignals
+                    }
                 }
             };
 
@@ -2392,49 +2487,123 @@
 
         // Detect strategic profile gaps
         // Per diagnosis-optimization contract: gaps are read-only diagnosis, not advice
-        // Per seniority-aware scoring spec: Leadership profiles should not be penalized by IC-level heuristics
-        function detectProfileGaps(linkedin, sectionScores, experience, seniorityInfo = {}) {
+        // Per role-aware scoring spec: Different roles have different expectations
+        function detectProfileGaps(linkedin, sectionScores, experience, roleInfo = {}) {
             const gaps = [];
-            const { isLeadershipProfile, seniorSignalCount, isFounderAdvisor, isValidFounderPosition } = seniorityInfo;
+            const {
+                // Leadership classification
+                isLeadershipProfile, seniorSignalCount, isFounderAdvisor, isValidFounderPosition,
+                // Mid-level IC classification
+                isMidLevelIC, midLevelScopeCount,
+                // Program/TPM classification
+                isProgramRole, isTPM, isProgramManager, programScopeCount,
+                // Overall classification
+                roleClassification
+            } = roleInfo;
 
-            // 1. SCOPE GAP - Senior titles without evidence of scale
-            // SENIORITY RULE: If 2+ senior signals are present, do NOT flag Scope Gap
+            // 1. SCOPE GAP - Role-appropriate scope expectations
+            // LEADERSHIP RULE: If 2+ senior signals are present, do NOT flag Scope Gap
+            // MID-LEVEL IC RULE: If 2+ feature/component ownership signals, do NOT flag Scope Gap
+            // PROGRAM/TPM RULE: If 2+ delivery ownership signals, do NOT flag Scope Gap
             const seniorTitles = /\b(senior|lead|staff|principal|director|vp|head|chief|manager)\b/i;
             const currentTitle = experience[0]?.title || linkedin.headline || '';
             const hasSeniorTitle = seniorTitles.test(currentTitle);
+            const allBullets = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
 
-            if (hasSeniorTitle && (seniorSignalCount || 0) < 2) {
-                const allBullets = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
-                const hasScope = /\b(\d+[-\s]person|\d+\s*team|led\s+\d+|managed\s+\d+|\$\d+[MBK]?\s*(budget|revenue)|cross-functional|org-wide|company-wide)/i.test(allBullets);
+            // Determine if scope gap should be flagged based on role type
+            let shouldFlagScopeGap = false;
 
-                if (!hasScope) {
-                    gaps.push({
-                        gap_id: 'GAP_SCOPE_01',
-                        type: 'Scope',
-                        severity: 'CRITICAL',
-                        affected_sections: ['experience'],
-                        icon: '!',
-                        description: 'Your profile does not demonstrate senior-level ownership or decision-making authority.',
-                        why: 'Hiring managers expect senior titles to show ownership, scale, and decision authority. Without these signals, they question whether the title reflects actual scope.',
-                        fix: "Add bullets that quantify team size, budget, or geographic scope. Use ownership language: 'Led 12-person team', 'Owned $5M budget', 'Drove company-wide initiative'."
-                    });
-                }
+            if (isLeadershipProfile) {
+                // Leadership: need senior signals OR explicit scope
+                const hasExplicitScope = /\b(\d+[-\s]person|\d+\s*team|led\s+\d+|managed\s+\d+|\$\d+[MBK]?\s*(budget|revenue)|cross-functional|org-wide|company-wide)/i.test(allBullets);
+                shouldFlagScopeGap = hasSeniorTitle && (seniorSignalCount || 0) < 2 && !hasExplicitScope;
+            } else if (isProgramRole) {
+                // Program/TPM: need delivery ownership signals, NOT team size or budget
+                shouldFlagScopeGap = (programScopeCount || 0) < 2 && experience.length > 0;
+            } else if (isMidLevelIC) {
+                // Mid-level IC: need feature/component ownership, NOT org-level scope
+                shouldFlagScopeGap = (midLevelScopeCount || 0) < 2 && experience.length > 0;
+            } else if (hasSeniorTitle) {
+                // Standard senior title check
+                const hasExplicitScope = /\b(\d+[-\s]person|\d+\s*team|led\s+\d+|managed\s+\d+|\$\d+[MBK]?\s*(budget|revenue)|cross-functional|org-wide|company-wide)/i.test(allBullets);
+                shouldFlagScopeGap = !hasExplicitScope;
             }
 
-            // 2. EVIDENCE GAP - Lack of quantified outcomes
-            const allBullets = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
-            const hasMetrics = /\d+[%+]?|\$\d+[MBK]?|\d+x|\d+\s*(people|hires|team|revenue|growth|million|billion|users|customers)/i.test(allBullets);
+            if (shouldFlagScopeGap) {
+                // Customize message based on role type
+                let scopeDescription, scopeWhy, scopeFix;
 
-            if (!hasMetrics && experience.length > 0) {
+                if (isProgramRole) {
+                    scopeDescription = 'Your profile does not clearly demonstrate program delivery ownership or execution scope.';
+                    scopeWhy = 'Hiring managers for Program/TPM roles look for delivery ownership signals: timelines met, dependencies managed, cross-team coordination. Without these, they question execution credibility.';
+                    scopeFix = "Add bullets showing delivery ownership: 'Delivered 3-phase migration on schedule', 'Coordinated 5 engineering teams across 2 quarters', 'Managed dependencies for platform rollout'.";
+                } else if (isMidLevelIC) {
+                    scopeDescription = 'Your profile does not clearly demonstrate feature or component ownership.';
+                    scopeWhy = 'Hiring managers for mid-level IC roles look for ownership signals: features shipped, systems built, end-to-end delivery. Without these, they question your hands-on impact.';
+                    scopeFix = "Add bullets showing ownership: 'Owned and shipped [feature]', 'Built [system/component] end-to-end', 'Designed and implemented [module]'.";
+                } else {
+                    scopeDescription = 'Your profile does not demonstrate senior-level ownership or decision-making authority.';
+                    scopeWhy = 'Hiring managers expect senior titles to show ownership, scale, and decision authority. Without these signals, they question whether the title reflects actual scope.';
+                    scopeFix = "Add bullets that quantify team size, budget, or geographic scope. Use ownership language: 'Led 12-person team', 'Owned $5M budget', 'Drove company-wide initiative'.";
+                }
+
+                gaps.push({
+                    gap_id: 'GAP_SCOPE_01',
+                    type: 'Scope',
+                    severity: isProgramRole || isMidLevelIC ? 'HIGH' : 'CRITICAL',
+                    affected_sections: ['experience'],
+                    icon: '!',
+                    description: scopeDescription,
+                    why: scopeWhy,
+                    fix: scopeFix
+                });
+            }
+
+            // 2. EVIDENCE GAP - Role-appropriate evidence expectations
+            // Leadership/Standard: business metrics (revenue, growth, users)
+            // Mid-level IC: technical metrics are valid (latency, error rate, throughput)
+            // Program/TPM: delivery metrics are valid (timelines, dependencies, launches)
+            let hasValidEvidence = false;
+
+            if (isProgramRole) {
+                // Program/TPM: delivery evidence is valid
+                hasValidEvidence = /\b(on(-|\s)?time|ahead of schedule|delivered|launched|shipped|completed|milestone|deadline|dependency|dependencies|resolved|unblocked)/i.test(allBullets) ||
+                    /\d+[%+]?|\d+\s*(teams?|projects?|programs?|releases?|launches?)/i.test(allBullets);
+            } else if (isMidLevelIC) {
+                // Mid-level IC: technical metrics are valid evidence
+                hasValidEvidence = /\b(latency|error rate|throughput|performance|uptime|response time|load time|availability|reduced|improved|increased|decreased|optimized)\b/i.test(allBullets) ||
+                    /\d+[%+]?|\d+x|\d+ms|\d+\s*(users|customers|requests|queries)/i.test(allBullets);
+            } else {
+                // Leadership/Standard: business metrics
+                hasValidEvidence = /\d+[%+]?|\$\d+[MBK]?|\d+x|\d+\s*(people|hires|team|revenue|growth|million|billion|users|customers)/i.test(allBullets);
+            }
+
+            if (!hasValidEvidence && experience.length > 0) {
+                let evidenceDescription, evidenceWhy, evidenceFix;
+
+                if (isProgramRole) {
+                    evidenceDescription = 'Your experience describes programs managed, but not delivery outcomes achieved.';
+                    evidenceWhy = 'Hiring managers for Program/TPM roles want to see delivery results: timelines met, launches completed, risks mitigated. Process without outcomes is insufficient.';
+                    evidenceFix = "Add delivery outcomes: 'Delivered platform migration 2 weeks ahead of schedule', 'Reduced launch blockers by 40%', 'Coordinated successful launch across 3 regions'.";
+                } else if (isMidLevelIC) {
+                    evidenceDescription = 'Your experience describes what you built, but not the technical or user impact.';
+                    evidenceWhy = 'Hiring managers want to see measurable impact: performance improvements, error reductions, user adoption. What you built matters less than what it achieved.';
+                    evidenceFix = "Add technical metrics: 'Reduced API latency by 40%', 'Improved error rate from 2% to 0.1%', 'Feature adopted by 10K users in first month'.";
+                } else {
+                    evidenceDescription = 'Your experience describes what you worked on, but not the outcomes you drove.';
+                    evidenceWhy = 'Hiring managers rely on quantified results to validate impact. Without metrics, they assume your work had limited business effect.';
+                    evidenceFix = "Rewrite bullets to follow PAR format (Problem, Action, Result). Add specific metrics: revenue impact, cost savings, efficiency gains, user growth.";
+                }
+
                 gaps.push({
                     gap_id: 'GAP_EVIDENCE_01',
                     type: 'Evidence',
                     severity: 'HIGH',
                     affected_sections: ['experience', 'about'],
                     icon: '?',
-                    description: 'Your experience describes what you worked on, but not the outcomes you drove.',
-                    why: 'Hiring managers rely on quantified results to validate impact. Without metrics, they assume your work had limited business effect.',
-                    fix: "Rewrite bullets to follow PAR format (Problem, Action, Result). Add specific metrics: revenue impact, cost savings, efficiency gains, user growth."
+                    description: evidenceDescription,
+                    why: evidenceWhy,
+                    fix: evidenceFix
                 });
             }
 
