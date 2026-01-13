@@ -206,14 +206,24 @@
             border-radius: 4px;
         }
 
+        /*
+         * DOCUMENT PREVIEW STYLING
+         * Must match RESUME_COVERLETTER_FORMATTING_SPEC.md:
+         * - Font: Calibri, Arial, or Helvetica only
+         * - Resume body: 10.5pt (scaled for screen: ~12px)
+         * - Line spacing: 1.0-1.15
+         */
         .document-text {
             width: 100%;
             background: transparent;
             border: none;
             color: #1f2937;
-            font-family: 'Calibri', 'Segoe UI', sans-serif;
+            /* Spec: Calibri, Arial, Helvetica only */
+            font-family: 'Calibri', 'Arial', 'Helvetica', sans-serif;
+            /* Spec: 10.5pt body text, scaled for screen readability */
             font-size: 12px;
-            line-height: 1.5;
+            /* Spec: 1.0-1.15 line spacing */
+            line-height: 1.15;
             resize: none;
             min-height: 600px;
             overflow-y: auto;
