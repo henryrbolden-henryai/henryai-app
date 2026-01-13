@@ -1027,24 +1027,42 @@
                 );
 
                 // Load interviews from Supabase (with 5s timeout)
+                // MERGE strategy: Supabase is source of truth, but preserve local-only items
                 Promise.race([
                     HenryData.getInterviews(),
                     timeout(5000)
                 ]).then(({ upcoming, completed }) => {
                     if (upcoming.length > 0 || completed.length > 0) {
-                        upcomingInterviews = upcoming;
-                        completedInterviews = completed;
+                        // Create lookup of Supabase IDs for deduplication
+                        const supabaseUpcomingIds = new Set(upcoming.map(i => String(i.id)));
+                        const supabaseCompletedIds = new Set(completed.map(i => String(i.id)));
 
-                        // IMPORTANT: Re-run past interview migration on Supabase data
+                        // Find local-only interviews (added while offline, not yet synced)
+                        // These have numeric timestamp IDs, not UUIDs
+                        const localOnlyUpcoming = upcomingInterviews.filter(local => {
+                            const localId = String(local.id);
+                            // Keep if: not in Supabase AND looks like a local timestamp ID (numeric, no dashes)
+                            return !supabaseUpcomingIds.has(localId) && !localId.includes('-');
+                        });
+                        const localOnlyCompleted = completedInterviews.filter(local => {
+                            const localId = String(local.id);
+                            return !supabaseCompletedIds.has(localId) && !localId.includes('-');
+                        });
+
+                        // Merge: Supabase data + local-only items
+                        upcomingInterviews = [...upcoming, ...localOnlyUpcoming];
+                        completedInterviews = [...completed, ...localOnlyCompleted];
+
+                        // IMPORTANT: Re-run past interview migration on merged data
                         movePastInterviewsToCompleted();
 
-                        // Persist to localStorage so other pages can find them
+                        // Persist merged state to localStorage
                         localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
                         localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
 
                         renderInterviewList();
                         renderCompletedInterviews();
-                        console.log('Enhanced with Supabase interviews:', upcoming.length, 'upcoming,', completed.length, 'completed');
+                        console.log('Merged Supabase interviews:', upcoming.length, 'upcoming,', completed.length, 'completed,', localOnlyUpcoming.length, 'local-only');
                     }
                 }).catch(e => {
                     console.log('Supabase interviews not available (using localStorage):', e.message);
@@ -1273,30 +1291,158 @@
         function closeAddInterviewModal() {
             document.getElementById('addInterviewModal').classList.remove('active');
             document.getElementById('addInterviewForm').reset();
+
+            // CRITICAL: Clear edit state to prevent accidental overwrites
+            document.getElementById('editInterviewId').value = '';
+            document.getElementById('interviewModalTitle').textContent = 'Add Upcoming Interview';
+            window.editModeLinkedInProfile = null;
+            window.editModeAppId = null;
+            window.editModeAdditionalInterviewers = null;
+            selectedApplication = null;
+            linkedInFileData = null;
+
+            // Reset LinkedIn UI
+            const uploadZone = document.getElementById('linkedinUploadZone');
+            const fileNameEl = document.getElementById('linkedinFileName');
+            const pasteSection = document.getElementById('linkedinPasteSection');
+            if (uploadZone) uploadZone.style.display = 'flex';
+            if (fileNameEl) fileNameEl.style.display = 'none';
+            if (pasteSection) pasteSection.style.display = 'none';
+
+            // Reset additional interviewers
+            const additionalList = document.getElementById('additionalInterviewersList');
+            if (additionalList) additionalList.innerHTML = '';
+            additionalInterviewerCount = 0;
         }
 
-        function saveInterview(event) {
+        // CONSOLIDATED saveInterview function - handles both create and edit modes
+        // Includes LinkedIn data, application selection, and additional interviewers
+        async function saveInterview(event) {
             event.preventDefault();
 
+            const editId = document.getElementById('editInterviewId').value;
+            const isEditMode = !!editId;
+
+            // ========================================
+            // STEP 1: Validate and get company/role
+            // ========================================
+            const applicationSelect = document.getElementById('applicationSelect');
+            const companyField = document.getElementById('interviewCompany');
+            const roleField = document.getElementById('interviewRole');
+            const manualEntryVisible = document.getElementById('manualEntryFields').style.display !== 'none';
+
+            let company, role, appId;
+
+            // In edit mode, preserve the original appId if not changed
+            if (isEditMode && window.editModeAppId) {
+                appId = window.editModeAppId;
+            }
+
+            if (selectedApplication) {
+                company = selectedApplication.company;
+                role = selectedApplication.role;
+                appId = selectedApplication.id;
+            } else if (manualEntryVisible) {
+                company = companyField.value.trim();
+                role = roleField.value.trim();
+                if (!company || !role) {
+                    alert('Please enter company and role.');
+                    return;
+                }
+            } else if (applicationSelect && applicationSelect.value) {
+                const app = trackedApplications.find(a => String(a.id) === String(applicationSelect.value));
+                if (app) {
+                    company = app.company;
+                    role = app.role;
+                    appId = app.id;
+                    selectedApplication = app;
+                } else {
+                    alert('Please select an application or enter details manually.');
+                    return;
+                }
+            } else {
+                alert('Please select an application or enter details manually.');
+                return;
+            }
+
+            // ========================================
+            // STEP 2: Gather LinkedIn data
+            // ========================================
+            let linkedInData = null;
+            const linkedInText = document.getElementById('linkedinText').value.trim();
+
+            if (linkedInFileData) {
+                // New file uploaded
+                try {
+                    const base64 = await fileToBase64(linkedInFileData);
+                    linkedInData = {
+                        type: 'file',
+                        fileName: linkedInFileData.name,
+                        fileType: linkedInFileData.type,
+                        data: base64
+                    };
+                } catch (e) {
+                    console.error('Error reading file:', e);
+                }
+            } else if (linkedInText) {
+                // New text pasted
+                linkedInData = {
+                    type: 'text',
+                    data: linkedInText
+                };
+            } else if (isEditMode && window.editModeLinkedInProfile) {
+                // Preserve existing LinkedIn data in edit mode if no new data provided
+                linkedInData = window.editModeLinkedInProfile;
+            }
+
+            // ========================================
+            // STEP 3: Collect additional interviewers
+            // ========================================
+            const additionalInterviewers = await collectAdditionalInterviewers();
+
+            // ========================================
+            // STEP 4: Build interview object
+            // ========================================
             const interview = {
-                id: Date.now().toString(),
-                company: document.getElementById('interviewCompany').value,
-                role: document.getElementById('interviewRole').value,
+                id: isEditMode ? editId : Date.now().toString(),
+                company: company,
+                role: role,
+                appId: appId || null,
                 type: document.getElementById('interviewType').value,
                 date: document.getElementById('interviewDate').value,
                 interviewerName: document.getElementById('interviewerName').value,
                 interviewerTitle: document.getElementById('interviewerTitle').value,
                 jobDescription: document.getElementById('interviewJD').value,
-                createdAt: new Date().toISOString()
+                linkedInProfile: linkedInData,
+                additionalInterviewers: additionalInterviewers.length > 0 ? additionalInterviewers : undefined,
+                createdAt: isEditMode ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             };
 
-            upcomingInterviews.push(interview);
+            // ========================================
+            // STEP 5: Save to local state
+            // ========================================
+            if (isEditMode) {
+                // Update existing interview
+                const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
+                if (idx >= 0) {
+                    // Preserve createdAt from original
+                    interview.createdAt = upcomingInterviews[idx].createdAt;
+                    upcomingInterviews[idx] = interview;
+                }
+            } else {
+                // Add new interview
+                upcomingInterviews.push(interview);
+            }
+
             localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
 
-            // Sync to Supabase
+            // ========================================
+            // STEP 6: Sync to Supabase (non-blocking)
+            // ========================================
             if (typeof HenryData !== 'undefined') {
                 HenryData.saveInterview(interview).then(result => {
-                    if (result.data) {
+                    if (result.data && !isEditMode) {
                         // Update the interview with the Supabase UUID
                         const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
                         if (idx >= 0) {
@@ -1308,11 +1454,20 @@
                 }).catch(e => console.error('Failed to sync interview to Supabase:', e));
             }
 
-            // Sync to tracker - update or create application
+            // ========================================
+            // STEP 7: Sync to tracker
+            // ========================================
             syncInterviewToTracker(interview);
 
+            // ========================================
+            // STEP 8: Close modal and refresh UI
+            // ========================================
             closeAddInterviewModal();
             renderInterviewList();
+
+            // Show confirmation
+            const action = isEditMode ? 'updated' : 'added';
+            showToast(`Interview ${action} successfully`);
         }
 
         function syncInterviewToTracker(interview) {
@@ -1576,7 +1731,7 @@
 
             // Link to full prep
             lines.push('FULL PREP GUIDE:');
-            lines.push(`${window.location.origin}/interview-prep.html`);
+            lines.push(`${window.location.origin}/prep-guide.html`);
             lines.push('');
             lines.push("You've got this. Trust your prep.");
             lines.push('');
@@ -1745,6 +1900,7 @@
                         </div>
                         <div class="interview-actions">
                             <button class="edit-btn" onclick="editInterview('${interview.id}')" title="Edit interview" style="background: transparent; border: 1px solid #6b7280; color: #9ca3af; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">✏️</button>
+                            <button class="delete-btn" onclick="deleteInterview('${interview.id}')" title="Delete interview" style="background: transparent; border: 1px solid #6b7280; color: #ef4444; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">🗑️</button>
                             <button class="calendar-btn" onclick="downloadCalendarInvite('${interview.id}')" title="Download calendar invite" style="background: transparent; border: 1px solid #374151; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">📅</button>
                             <button class="open-prep-btn" onclick="openPrepGuide('${interview.id}')">Prep Guide</button>
                             <button class="open-debrief-btn" onclick="openDebrief('${interview.id}')">Debrief</button>
@@ -1938,117 +2094,6 @@
             });
         }
 
-        // Modified saveInterview to include LinkedIn data and application selection
-        const originalSaveInterview = saveInterview;
-        saveInterview = async function(event) {
-            event.preventDefault();
-
-            // Validate: either dropdown selection or manual entry must be filled
-            const applicationSelect = document.getElementById('applicationSelect');
-            const companyField = document.getElementById('interviewCompany');
-            const roleField = document.getElementById('interviewRole');
-            const manualEntryVisible = document.getElementById('manualEntryFields').style.display !== 'none';
-
-            let company, role;
-
-            if (selectedApplication) {
-                // Using dropdown selection
-                company = selectedApplication.company;
-                role = selectedApplication.role;
-            } else if (manualEntryVisible) {
-                // Using manual entry
-                company = companyField.value.trim();
-                role = roleField.value.trim();
-                if (!company || !role) {
-                    alert('Please enter company and role.');
-                    return;
-                }
-            } else if (applicationSelect && applicationSelect.value) {
-                // Dropdown was selected but selectedApplication wasn't set (edge case)
-                const app = trackedApplications.find(a => String(a.id) === String(applicationSelect.value));
-                if (app) {
-                    company = app.company;
-                    role = app.role;
-                    selectedApplication = app;
-                } else {
-                    alert('Please select an application or enter details manually.');
-                    return;
-                }
-            } else {
-                alert('Please select an application or enter details manually.');
-                return;
-            }
-
-            // Gather LinkedIn data
-            let linkedInData = null;
-            const linkedInText = document.getElementById('linkedinText').value.trim();
-
-            if (linkedInFileData) {
-                try {
-                    const base64 = await fileToBase64(linkedInFileData);
-                    linkedInData = {
-                        type: 'file',
-                        fileName: linkedInFileData.name,
-                        fileType: linkedInFileData.type,
-                        data: base64
-                    };
-                } catch (e) {
-                    console.error('Error reading file:', e);
-                }
-            } else if (linkedInText) {
-                linkedInData = {
-                    type: 'text',
-                    data: linkedInText
-                };
-            }
-
-            const interview = {
-                id: Date.now().toString(),
-                company: company,
-                role: role,
-                appId: selectedApplication ? selectedApplication.id : null,
-                type: document.getElementById('interviewType').value,
-                date: document.getElementById('interviewDate').value,
-                interviewerName: document.getElementById('interviewerName').value,
-                interviewerTitle: document.getElementById('interviewerTitle').value,
-                jobDescription: document.getElementById('interviewJD').value,
-                linkedInProfile: linkedInData,
-                createdAt: new Date().toISOString()
-            };
-
-            upcomingInterviews.push(interview);
-            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
-
-            // Sync to Supabase
-            if (typeof HenryData !== 'undefined') {
-                HenryData.saveInterview(interview).then(result => {
-                    if (result.data) {
-                        // Update the interview with the Supabase UUID
-                        const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
-                        if (idx >= 0) {
-                            upcomingInterviews[idx].id = result.data.id;
-                            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
-                        }
-                        console.log('Interview synced to Supabase:', result.data.id);
-                    }
-                }).catch(e => console.error('Failed to sync interview to Supabase:', e));
-            }
-
-            // Sync to tracker (uses selectedApplication.id if available for direct update)
-            syncInterviewToTracker(interview);
-
-            // Reset LinkedIn upload state
-            linkedInFileData = null;
-            document.getElementById('linkedinFile').value = '';
-            document.getElementById('linkedinFileName').style.display = 'none';
-            document.getElementById('linkedinUploadZone').style.display = 'flex';
-            document.getElementById('linkedinText').value = '';
-            document.getElementById('linkedinPasteSection').style.display = 'none';
-
-            closeAddInterviewModal();
-            renderInterviewList();
-        };
-
         // Setup drag and drop for LinkedIn upload
         document.addEventListener('DOMContentLoaded', function() {
             const uploadZone = document.getElementById('linkedinUploadZone');
@@ -2093,6 +2138,9 @@
             // Set edit mode
             document.getElementById('editInterviewId').value = interviewId;
             document.getElementById('interviewModalTitle').textContent = 'Edit Interview';
+
+            // CRITICAL: Preserve appId so it's not lost on save
+            window.editModeAppId = interview.appId || null;
 
             // Reset form and populate with existing data
             document.getElementById('addInterviewForm').reset();
@@ -2296,147 +2344,6 @@
 
             return interviewers;
         }
-
-        // Override saveInterview to handle edit mode and additional interviewers
-        const _originalSaveInterview = saveInterview;
-        saveInterview = async function(event) {
-            event.preventDefault();
-
-            const editId = document.getElementById('editInterviewId').value;
-            const isEditMode = !!editId;
-
-            // Validate: either dropdown selection or manual entry must be filled
-            const applicationSelect = document.getElementById('applicationSelect');
-            const companyField = document.getElementById('interviewCompany');
-            const roleField = document.getElementById('interviewRole');
-            const manualEntryVisible = document.getElementById('manualEntryFields').style.display !== 'none';
-
-            let company, role;
-
-            if (selectedApplication) {
-                company = selectedApplication.company;
-                role = selectedApplication.role;
-            } else if (manualEntryVisible) {
-                company = companyField.value.trim();
-                role = roleField.value.trim();
-                if (!company || !role) {
-                    alert('Please enter company and role.');
-                    return;
-                }
-            } else if (applicationSelect && applicationSelect.value) {
-                const app = trackedApplications.find(a => String(a.id) === String(applicationSelect.value));
-                if (app) {
-                    company = app.company;
-                    role = app.role;
-                    selectedApplication = app;
-                } else {
-                    alert('Please select an application or enter details manually.');
-                    return;
-                }
-            } else {
-                alert('Please select an application or enter details manually.');
-                return;
-            }
-
-            // Gather LinkedIn data
-            let linkedInData = null;
-            const linkedInText = document.getElementById('linkedinText').value.trim();
-
-            if (linkedInFileData) {
-                // New file uploaded
-                try {
-                    const base64 = await fileToBase64(linkedInFileData);
-                    linkedInData = {
-                        type: 'file',
-                        fileName: linkedInFileData.name,
-                        fileType: linkedInFileData.type,
-                        data: base64
-                    };
-                } catch (e) {
-                    console.error('Error reading file:', e);
-                }
-            } else if (linkedInText) {
-                // New text pasted
-                linkedInData = {
-                    type: 'text',
-                    data: linkedInText
-                };
-            } else if (isEditMode && window.editModeLinkedInProfile) {
-                // Preserve existing LinkedIn data in edit mode if no new data provided
-                linkedInData = window.editModeLinkedInProfile;
-            }
-
-            // Collect additional interviewers
-            const additionalInterviewers = await collectAdditionalInterviewers();
-
-            const interview = {
-                id: isEditMode ? editId : Date.now().toString(),
-                company: company,
-                role: role,
-                appId: selectedApplication ? selectedApplication.id : null,
-                type: document.getElementById('interviewType').value,
-                date: document.getElementById('interviewDate').value,
-                interviewerName: document.getElementById('interviewerName').value,
-                interviewerTitle: document.getElementById('interviewerTitle').value,
-                jobDescription: document.getElementById('interviewJD').value,
-                linkedInProfile: linkedInData,
-                additionalInterviewers: additionalInterviewers,
-                createdAt: isEditMode ? undefined : new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-
-            if (isEditMode) {
-                // Update existing interview
-                const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
-                if (idx >= 0) {
-                    // Preserve createdAt from original
-                    interview.createdAt = upcomingInterviews[idx].createdAt;
-                    upcomingInterviews[idx] = interview;
-                }
-            } else {
-                // Add new interview
-                upcomingInterviews.push(interview);
-            }
-
-            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
-
-            // Sync to Supabase
-            if (typeof HenryData !== 'undefined') {
-                HenryData.saveInterview(interview).then(result => {
-                    if (result.data && !isEditMode) {
-                        const idx = upcomingInterviews.findIndex(i => i.id === interview.id);
-                        if (idx >= 0) {
-                            upcomingInterviews[idx].id = result.data.id;
-                            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
-                        }
-                        console.log('Interview synced to Supabase:', result.data.id);
-                    }
-                }).catch(e => console.error('Failed to sync interview to Supabase:', e));
-            }
-
-            // Sync to tracker
-            syncInterviewToTracker(interview);
-
-            // Reset form state
-            linkedInFileData = null;
-            window.editModeLinkedInProfile = null; // Clear preserved LinkedIn data
-            document.getElementById('linkedinFile').value = '';
-            document.getElementById('linkedinFileName').style.display = 'none';
-            document.getElementById('linkedinUploadZone').style.display = 'flex';
-            document.getElementById('linkedinText').value = '';
-            document.getElementById('linkedinPasteSection').style.display = 'none';
-            document.getElementById('editInterviewId').value = '';
-            document.getElementById('interviewModalTitle').textContent = 'Add Upcoming Interview';
-            document.getElementById('additionalInterviewersList').innerHTML = '';
-            additionalInterviewerCount = 0;
-
-            closeAddInterviewModal();
-            renderInterviewList();
-
-            // Show confirmation
-            const action = isEditMode ? 'updated' : 'added';
-            showToast(`Interview ${action} successfully`);
-        };
 
         function showToast(message) {
             // Simple toast notification
