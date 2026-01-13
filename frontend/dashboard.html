@@ -1507,17 +1507,22 @@
         // RENDER FUNCTIONS
         // ========================================================================
         function renderDashboard() {
-            const profile = getUserProfile();
-            const apps = getApplications();
-            const activeApps = getActiveApplications(apps);
+            try {
+                const profile = getUserProfile();
+                const apps = getApplications();
+                const activeApps = getActiveApplications(apps);
 
-            renderWelcome(profile);
-            renderDailyPulse(profile, apps);
-            renderQuickStats(apps, activeApps);
-            renderRealityCheck(profile, apps, activeApps);
-            renderTodaysFocus(profile, apps, activeApps);
-            renderStrategicOptions(profile);
-            renderRecentActivity(apps);
+                renderWelcome(profile);
+                renderDailyPulse(profile, apps);
+                renderQuickStats(apps, activeApps);
+                renderRealityCheck(profile, apps, activeApps);
+                renderTodaysFocus(profile, apps, activeApps);
+                renderStrategicOptions(profile);
+                renderRecentActivity(apps);
+            } catch (e) {
+                console.error('Error rendering dashboard:', e);
+                // Don't throw - this would trigger auth redirect
+            }
         }
 
         // Cache for Supabase user name (set during auth check)
@@ -1572,27 +1577,42 @@
         }
 
         function renderDailyPulse(profile, apps) {
+            const pulseGreeting = document.getElementById('pulseGreeting');
+            if (!pulseGreeting) return;
             const greeting = getPulseGreeting(profile, apps);
-            document.getElementById('pulseGreeting').textContent = greeting;
+            pulseGreeting.textContent = greeting;
         }
 
         function renderQuickStats(apps, activeApps) {
-            document.getElementById('statActive').textContent = activeApps.length;
+            const statActive = document.getElementById('statActive');
+            const statInterviews = document.getElementById('statInterviews');
+            const statFollowUps = document.getElementById('statFollowUps');
+            const statResponseTime = document.getElementById('statResponseTime');
+
+            // Guard against missing elements
+            if (!statActive || !statInterviews || !statFollowUps || !statResponseTime) {
+                console.warn('Quick stats elements not found in DOM');
+                return;
+            }
+
+            statActive.textContent = activeApps.length;
 
             const interviewsThisWeek = getInterviewsThisWeek(apps);
-            document.getElementById('statInterviews').textContent = interviewsThisWeek;
+            statInterviews.textContent = interviewsThisWeek;
             if (interviewsThisWeek > 0) {
-                document.getElementById('cardInterviews').classList.add('highlight');
+                const cardInterviews = document.getElementById('cardInterviews');
+                if (cardInterviews) cardInterviews.classList.add('highlight');
             }
 
             const followUpsDue = getFollowUpsDue(apps);
-            document.getElementById('statFollowUps').textContent = followUpsDue.length;
+            statFollowUps.textContent = followUpsDue.length;
             if (followUpsDue.length > 0) {
-                document.getElementById('cardFollowUps').classList.add('urgent');
+                const cardFollowUps = document.getElementById('cardFollowUps');
+                if (cardFollowUps) cardFollowUps.classList.add('urgent');
             }
 
             const avgResponseTime = getAvgResponseTime(apps);
-            document.getElementById('statResponseTime').textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
+            statResponseTime.textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
         }
 
         function renderRealityCheck(profile, apps, activeApps) {
