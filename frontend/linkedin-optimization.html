@@ -1751,13 +1751,42 @@
         }
 
         // ============ COMPREHENSIVE SCORING LOGIC ============
-        // Aligned with linkedin_scoring_spec.md v1.1
-        // This score predicts recruiter click and message likelihood, not hiring outcomes.
+        // Aligned with linkedin_scoring_spec.md v1.3
+        // This score predicts visibility + confidence, not hiring outcomes.
+        // Leadership profiles are judged on signal density and credibility, not formatting compliance.
         function calculateDetailedScore(linkedin, analysis) {
             const sectionScores = {};
             const sectionDetails = {};
             const fixes = [];
             const resume = JSON.parse(localStorage.getItem('lastResumeAnalysis') || '{}');
+            const experience = linkedin.experience || [];
+
+            // ============ SENIORITY CLASSIFICATION (Mandatory) ============
+            // Leadership profiles must NOT be evaluated using IC defaults
+            const leadershipTitles = /\b(director|head of|vp|vice president|global lead|partner|founder|principal|advisor|chief|ceo|cto|cfo|cmo|coo|cpo|svp|evp|managing director|president)\b/i;
+            const allTitles = [
+                linkedin.headline || '',
+                ...(experience.map(e => e.title || ''))
+            ].join(' ');
+            const isLeadershipProfile = leadershipTitles.test(allTitles);
+
+            // ============ IMPLICIT SENIOR SIGNAL DETECTION ============
+            // For leadership profiles, recognize implicit scope and evidence
+            const allBulletsForSignals = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
+            const seniorSignals = {
+                globalOwnership: /\b(global|multi-region|international|worldwide|cross-geo|emea|apac|latam|americas)\b/i.test(allBulletsForSignals),
+                executivePartnership: /\b(c-suite|executive|board|investor|stakeholder|leadership team|exec team|senior leadership)\b/i.test(allBulletsForSignals),
+                managingManagers: /\b(managed\s+\d+\s*managers?|team of\s+\d{2,}|org of\s+\d+|\d{2,}\s*person\s+team|\d{2,}\s*people)\b/i.test(allBulletsForSignals),
+                budgetOwnership: /\b(\$\d+[MBK]|\d+\s*million|\d+M\s*budget|p&l|budget owner|vendor management|agency)\b/i.test(allBulletsForSignals),
+                orgLevelOutcomes: /\b(company-wide|org-wide|enterprise-wide|reduced cost|improved efficiency|time-to-hire|attrition|retention rate|representation|headcount)\b/i.test(allBulletsForSignals),
+                crossFunctionalLeadership: /\b(partnered with|influenced|drove alignment|cross-functional|x-functional|aligned stakeholders)\b/i.test(allBulletsForSignals)
+            };
+            const seniorSignalCount = Object.values(seniorSignals).filter(Boolean).length;
+
+            // ============ FOUNDER/ADVISOR DETECTION ============
+            const isFounderAdvisor = /\b(founder|co-founder|principal|advisor|independent consultant|fractional|interim)\b/i.test(allTitles);
+            const hasPriorLeadership = experience.slice(1).some(e => leadershipTitles.test(e.title || ''));
+            const isValidFounderPosition = isFounderAdvisor && (hasPriorLeadership || experience.length >= 3);
 
             // ============ HEADLINE SCORING (15 pts) ============
             const headline = linkedin.headline || '';
@@ -2271,16 +2300,37 @@
 
             // ============ CALCULATE OVERALL SCORE ============
             // Weights from spec: Headline 15, About 20, Experience 20, Skills 15, Freshness 10, Alignment 10, Credibility 5, Other 5 = 100
-            const overall = Math.round(
-                (sectionScores.headline / SECTION_CONFIG.headline.maxPoints) * 15 +
+            // For Leadership profiles: Experience + Evidence must outweigh Freshness and Mechanics
+            let freshnessWeight = 10;
+            let headlineWeight = 15;
+            let experienceWeight = 20;
+
+            // Weighting guardrails for leadership profiles
+            if (isLeadershipProfile && seniorSignalCount >= 2) {
+                // Reduce freshness penalty impact for leadership (they may have legacy formatting)
+                freshnessWeight = 6;
+                // Increase experience weight to compensate
+                experienceWeight = 24;
+            }
+
+            let overall = Math.round(
+                (sectionScores.headline / SECTION_CONFIG.headline.maxPoints) * headlineWeight +
                 (sectionScores.about / SECTION_CONFIG.about.maxPoints) * 20 +
-                (sectionScores.experience / SECTION_CONFIG.experience.maxPoints) * 20 +
+                (sectionScores.experience / SECTION_CONFIG.experience.maxPoints) * experienceWeight +
                 (sectionScores.skills / SECTION_CONFIG.skills.maxPoints) * 15 +
-                (sectionScores.freshness / SECTION_CONFIG.freshness.maxPoints) * 10 +
+                (sectionScores.freshness / SECTION_CONFIG.freshness.maxPoints) * freshnessWeight +
                 (sectionScores.resumeAlignment / SECTION_CONFIG.resumeAlignment.maxPoints) * 10 +
                 (sectionScores.credibility / SECTION_CONFIG.credibility.maxPoints) * 5 +
                 (sectionScores.other / SECTION_CONFIG.other.maxPoints) * 5
             );
+
+            // ============ SCORE FLOOR PROTECTION (Leadership Profiles) ============
+            // Per spec: For Leadership profiles, overall score must NOT fall below 55
+            // regardless of optimization gaps. Leadership profiles are judged on signal density
+            // and credibility, not formatting compliance.
+            if (isLeadershipProfile && overall < 55) {
+                overall = 55;
+            }
 
             // Add fix_ids for diagnosis-optimization contract
             let fixCounter = 1;
@@ -2291,8 +2341,15 @@
             // Sort fixes by severity
             fixes.sort((a, b) => SEVERITY[a.severity].order - SEVERITY[b.severity].order);
 
-            // Detect profile gaps
-            const profileGaps = detectProfileGaps(linkedin, sectionScores, experience);
+            // Detect profile gaps (pass seniority info per spec)
+            const seniorityInfo = {
+                isLeadershipProfile,
+                seniorSignalCount,
+                isFounderAdvisor,
+                isValidFounderPosition,
+                seniorSignals
+            };
+            const profileGaps = detectProfileGaps(linkedin, sectionScores, experience, seniorityInfo);
 
             // Build diagnosis object per contract spec
             const diagnosis = {
@@ -2308,7 +2365,16 @@
                     other: { score: sectionScores.other, max: SECTION_CONFIG.other.maxPoints, threshold: 4 }
                 },
                 profile_gaps: profileGaps.slice(0, 5),
-                fixes: fixes.slice(0, 8)
+                fixes: fixes.slice(0, 8),
+                // Seniority classification for optimization context
+                seniority: {
+                    profile_type: isLeadershipProfile ? 'Leadership' : 'IC/Mid',
+                    senior_signal_count: seniorSignalCount,
+                    is_founder_advisor: isFounderAdvisor,
+                    is_valid_founder_position: isValidFounderPosition,
+                    detected_signals: seniorSignals,
+                    score_floor_applied: isLeadershipProfile && overall === 55
+                }
             };
 
             // Store diagnosis for optimization validation
@@ -2326,15 +2392,18 @@
 
         // Detect strategic profile gaps
         // Per diagnosis-optimization contract: gaps are read-only diagnosis, not advice
-        function detectProfileGaps(linkedin, sectionScores, experience) {
+        // Per seniority-aware scoring spec: Leadership profiles should not be penalized by IC-level heuristics
+        function detectProfileGaps(linkedin, sectionScores, experience, seniorityInfo = {}) {
             const gaps = [];
+            const { isLeadershipProfile, seniorSignalCount, isFounderAdvisor, isValidFounderPosition } = seniorityInfo;
 
             // 1. SCOPE GAP - Senior titles without evidence of scale
+            // SENIORITY RULE: If 2+ senior signals are present, do NOT flag Scope Gap
             const seniorTitles = /\b(senior|lead|staff|principal|director|vp|head|chief|manager)\b/i;
             const currentTitle = experience[0]?.title || linkedin.headline || '';
             const hasSeniorTitle = seniorTitles.test(currentTitle);
 
-            if (hasSeniorTitle) {
+            if (hasSeniorTitle && (seniorSignalCount || 0) < 2) {
                 const allBullets = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
                 const hasScope = /\b(\d+[-\s]person|\d+\s*team|led\s+\d+|managed\s+\d+|\$\d+[MBK]?\s*(budget|revenue)|cross-functional|org-wide|company-wide)/i.test(allBullets);
 
@@ -2390,6 +2459,7 @@
 
             // 4. POSITIONING GAP - Clear primary lane + optional adjacency. Never multiple lanes.
             // PM + B2B SaaS Growth = good. PM + Engineer = bad.
+            // FOUNDER/ADVISOR RULE: If current title = Founder/Advisor AND prior leadership exists, do NOT flag Positioning
             const headlineForGaps = linkedin.headline || '';
             const aboutForGaps = linkedin.summary || linkedin.about || '';
 
@@ -2414,7 +2484,11 @@
             const matchedLanes = primaryLanes.filter(pattern => pattern.test(headlineForGaps));
             const hasMultipleLanes = matchedLanes.length >= 2;
 
-            if (hasMultipleLanes) {
+            // Skip positioning gaps for valid Founder/Advisor profiles
+            // Per spec: "If current title = Founder/Advisor AND prior leadership exists, do NOT flag Positioning"
+            const skipPositioningGap = isValidFounderPosition;
+
+            if (hasMultipleLanes && !skipPositioningGap) {
                 gaps.push({
                     gap_id: 'GAP_POSITIONING_01',
                     type: 'Positioning',
@@ -2425,7 +2499,7 @@
                     why: "A profile that tries to appeal to everyone appeals to no one. 'PM + Engineer' or 'Sales + Marketing' signals you haven't committed to a lane. Both recruiters and hiring managers search for specialists.",
                     fix: "Pick ONE primary function. Adjacent skills are fine (PM who codes, Engineer who designs), but you need one clear lane. Your profile should pass this test: 'In one sentence, what does this person do?'"
                 });
-            } else if (!hasFunction || (!hasSpecialization && headlineForGaps.length > 0)) {
+            } else if ((!hasFunction || (!hasSpecialization && headlineForGaps.length > 0)) && !skipPositioningGap) {
                 gaps.push({
                     gap_id: 'GAP_POSITIONING_02',
                     type: 'Positioning',
