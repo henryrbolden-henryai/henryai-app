@@ -3214,6 +3214,25 @@
             gap: var(--space-xs);
         }
 
+        /* Activity Info Section */
+        .card-activity-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: var(--space-md);
+            font-size: 0.8rem;
+        }
+
+        .card-activity-info .activity-stat {
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+
+        .card-activity-info .date-applied {
+            color: var(--color-text-muted);
+            font-size: 0.75rem;
+        }
+
         /* Next Action Section */
         .next-action-section {
             background: rgba(34, 211, 238, 0.08);
@@ -9669,6 +9688,62 @@ Thanks so much!
         }
 
         /**
+         * Get actionable next step based on application status
+         */
+        function getNextActionForStatus(app) {
+            const status = (app.status || '').toLowerCase();
+
+            // Stage-specific actionable next steps
+            if (status.includes('applied') || status === 'networking') {
+                return {
+                    action: 'Review Networking & Outreach Strategy',
+                    reason: 'Find connections at this company to increase visibility'
+                };
+            } else if (status.includes('recruiter') || status.includes('screen')) {
+                return {
+                    action: 'Prepare for Recruiter Screen',
+                    reason: 'Review your intro sell and company research'
+                };
+            } else if (status.includes('hiring manager')) {
+                return {
+                    action: 'Prepare Hiring Manager Talking Points',
+                    reason: 'Focus on leadership style and team fit'
+                };
+            } else if (status.includes('technical')) {
+                return {
+                    action: 'Review Technical Prep Materials',
+                    reason: 'Practice relevant technical scenarios'
+                };
+            } else if (status.includes('panel')) {
+                return {
+                    action: 'Research Panel Interviewers',
+                    reason: 'Prepare for multiple stakeholder perspectives'
+                };
+            } else if (status.includes('final') || status.includes('executive')) {
+                return {
+                    action: 'Prepare Executive Presentation',
+                    reason: 'Focus on strategic vision and business impact'
+                };
+            } else if (status.includes('offer') || status.includes('negotiat')) {
+                return {
+                    action: 'Review Negotiation Strategy',
+                    reason: 'Prepare your compensation ask and leverage'
+                };
+            } else if (status.includes('awaiting')) {
+                return {
+                    action: 'Send Follow-up Message',
+                    reason: 'Stay top of mind without being pushy'
+                };
+            }
+
+            // Default fallback
+            return {
+                action: 'Review Application Strategy',
+                reason: 'Check positioning and next steps'
+            };
+        }
+
+        /**
          * Render a single application card with UI signals
          */
         function renderAppCardV2(app, intel) {
@@ -9691,8 +9766,14 @@ Thanks so much!
             const fitScore = app.fitScore || app.fit_score || '--';
             const daysSince = intel?.days_since_last_activity || getDaysSince(app.dateApplied || app.dateAdded);
 
-            const nextAction = intel?.next_action || 'Review application';
-            const nextReason = intel?.next_action_reason || '';
+            // Get next action - prefer intel, fall back to status-based action
+            const statusAction = getNextActionForStatus(app);
+            const nextAction = intel?.next_action || statusAction.action;
+            const nextReason = intel?.next_action_reason || statusAction.reason;
+
+            // Format date applied
+            const dateApplied = app.dateApplied || app.dateAdded;
+            const formattedDateApplied = dateApplied ? formatDate(dateApplied) : null;
 
             const btnConfig = intel?.one_click_action ? CommandCenter.getOneClickButtonConfig(intel.one_click_action) : null;
 
@@ -9727,12 +9808,16 @@ Thanks so much!
                         <span class="card-stat-v2">
                             <span class="confidence-pill ${ui.confidence}">${ui.confidence}</span>
                         </span>
-                        <span class="card-stat-v2">${daysSince}d since activity</span>
+                    </div>
+
+                    <div class="card-activity-info">
+                        <span class="activity-stat">${daysSince}d since activity</span>
+                        ${formattedDateApplied ? `<span class="date-applied">Applied: ${formattedDateApplied}</span>` : ''}
                     </div>
 
                     <div class="next-action-section">
                         <div class="next-action-text">Next: ${nextAction}</div>
-                        ${nextReason ? `<div class="next-action-reason">${nextReason}</div>` : ''}
+                        <div class="next-action-reason">${nextReason}</div>
                     </div>
 
                     ${btnConfig && ui.action_available ? `
