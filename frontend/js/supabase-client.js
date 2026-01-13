@@ -730,6 +730,7 @@ const HenryData = {
         const completed = [];
 
         data.forEach(interview => {
+            const metadata = interview.metadata || {};
             const formatted = {
                 id: interview.id,
                 company: interview.company,
@@ -746,7 +747,15 @@ const HenryData = {
                 debriefNotes: interview.debrief_notes,
                 applicationId: interview.application_id,
                 status: interview.status,
-                ...interview.metadata
+                // Important fields stored in metadata
+                jobDescription: metadata.jobDescription,
+                linkedInProfile: metadata.linkedInProfile,
+                additionalInterviewers: metadata.additionalInterviewers,
+                interviewerInsights: metadata.interviewerInsights,
+                appId: metadata.appId,
+                createdAt: metadata.createdAt,
+                updatedAt: metadata.updatedAt,
+                ...metadata
             };
 
             if (interview.status === 'completed') {
@@ -784,7 +793,15 @@ const HenryData = {
             status: interview.status || 'scheduled',
             metadata: {
                 source: interview.source,
-                linkedFromTracker: interview.linkedFromTracker
+                linkedFromTracker: interview.linkedFromTracker,
+                // Important fields for prep guide and editing
+                jobDescription: interview.jobDescription,
+                linkedInProfile: interview.linkedInProfile,
+                additionalInterviewers: interview.additionalInterviewers,
+                interviewerInsights: interview.interviewerInsights,
+                appId: interview.appId,
+                createdAt: interview.createdAt,
+                updatedAt: interview.updatedAt
             },
             updated_at: new Date().toISOString()
         };
