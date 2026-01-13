@@ -7788,17 +7788,22 @@
                 return;
             }
 
-            // Try to load stored analysis data
+            // ALWAYS clear old analysis data first to prevent stale data from previous app
+            sessionStorage.removeItem('analysisData');
+
+            // Try to load stored analysis data from this app's analysis key
+            let analysisLoaded = false;
             if (app.analysisKey) {
                 const analysisData = localStorage.getItem(app.analysisKey);
                 if (analysisData) {
                     sessionStorage.setItem('analysisData', analysisData);
+                    analysisLoaded = true;
                     console.log('Loaded analysis data for:', app.company, app.role);
                 }
             }
 
-            // If no analysis data loaded, create minimal analysis data from app info
-            if (!sessionStorage.getItem('analysisData') || !app.analysisKey) {
+            // If no analysis data was loaded, create minimal analysis data from app info
+            if (!analysisLoaded) {
                 const minimalAnalysis = {
                     _company_name: app.company,
                     _company: app.company,
@@ -9782,10 +9787,13 @@ Thanks so much!
             const fitScore = app.fitScore || app.fit_score || '--';
             const daysSince = intel?.days_since_last_activity || getDaysSince(app.dateApplied || app.dateAdded);
 
-            // Get next action - prefer intel, fall back to status-based action
+            // Get next action - prefer real intel, fall back to status-based action
+            // If intel is generic fallback ("Review application" / "Intelligence unavailable"), use status-based instead
             const statusAction = getNextActionForStatus(app);
-            const nextAction = intel?.next_action || statusAction.action;
-            const nextReason = intel?.next_action_reason || statusAction.reason;
+            const isGenericFallback = intel?.next_action === 'Review application' ||
+                                      intel?.next_action_reason === 'Intelligence unavailable';
+            const nextAction = (intel?.next_action && !isGenericFallback) ? intel.next_action : statusAction.action;
+            const nextReason = (intel?.next_action_reason && !isGenericFallback) ? intel.next_action_reason : statusAction.reason;
 
             // Format date applied
             const dateApplied = app.dateApplied || app.dateAdded;

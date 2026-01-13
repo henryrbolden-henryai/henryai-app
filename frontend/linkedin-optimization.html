@@ -1505,17 +1505,27 @@
             const profileLinkedinData = userProfile.linkedin_parsed;
 
             // Priority: sessionStorage > localStorage > userProfile
+            // Also handle legacy data that may have been stored with API wrapper structure
+            const extractParsedData = (data) => {
+                // If data has parsed_data property, it's the API response wrapper
+                if (data && data.parsed_data) {
+                    console.log('Migrating legacy LinkedIn data structure');
+                    return data.parsed_data;
+                }
+                return data;
+            };
+
             if (storedLinkedinData) {
-                linkedinData = JSON.parse(storedLinkedinData);
+                linkedinData = extractParsedData(JSON.parse(storedLinkedinData));
             } else if (persistedLinkedinData) {
-                linkedinData = JSON.parse(persistedLinkedinData);
+                linkedinData = extractParsedData(JSON.parse(persistedLinkedinData));
                 // Sync to sessionStorage for consistency
-                sessionStorage.setItem('linkedinData', persistedLinkedinData);
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
             } else if (profileLinkedinData) {
-                linkedinData = profileLinkedinData;
+                linkedinData = extractParsedData(profileLinkedinData);
                 // Sync to storage
-                sessionStorage.setItem('linkedinData', JSON.stringify(profileLinkedinData));
-                localStorage.setItem('linkedinProfileData', JSON.stringify(profileLinkedinData));
+                sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
+                localStorage.setItem('linkedinProfileData', JSON.stringify(linkedinData));
             }
 
             if (storedScoringResults) {
@@ -1656,7 +1666,13 @@
                     throw new Error('Failed to parse LinkedIn PDF');
                 }
 
-                linkedinData = await parseResponse.json();
+                const uploadResponse = await parseResponse.json();
+
+                // Extract parsed_data from the API response wrapper
+                linkedinData = uploadResponse.parsed_data || uploadResponse;
+                console.log('LinkedIn data received:', linkedinData);
+                console.log('Headline:', linkedinData.headline);
+                console.log('Experience count:', linkedinData.experience?.length);
 
                 // Persist to sessionStorage and localStorage
                 sessionStorage.setItem('linkedinData', JSON.stringify(linkedinData));
@@ -1664,6 +1680,11 @@
 
                 // Save to user profile
                 saveLinkedInToProfile(linkedinData);
+
+                // Record upload time for freshness calculations
+                const uploadTimestamp = new Date().toISOString();
+                sessionStorage.setItem('linkedinUploadTime', uploadTimestamp);
+                localStorage.setItem('linkedinUploadTime', uploadTimestamp);
 
                 // Calculate detailed score locally
                 const result = calculateDetailedScore(linkedinData, analysisData);
@@ -1755,6 +1776,15 @@
         // This score predicts visibility + confidence, not hiring outcomes.
         // Leadership profiles are judged on signal density and credibility, not formatting compliance.
         function calculateDetailedScore(linkedin, analysis) {
+            // Debug logging to diagnose scoring issues
+            console.log('=== LinkedIn Scoring Debug ===');
+            console.log('Input linkedin object keys:', linkedin ? Object.keys(linkedin) : 'null');
+            console.log('Headline:', linkedin?.headline);
+            console.log('Experience array length:', linkedin?.experience?.length);
+            if (linkedin?.experience?.length > 0) {
+                console.log('First experience title:', linkedin.experience[0]?.title);
+            }
+
             const sectionScores = {};
             const sectionDetails = {};
             const fixes = [];
@@ -1769,6 +1799,10 @@
                 ...(experience.map(e => e.title || ''))
             ].join(' ');
             const isLeadershipProfile = leadershipTitles.test(allTitles);
+
+            // Debug: Log classification result
+            console.log('All titles combined:', allTitles);
+            console.log('Is Leadership Profile:', isLeadershipProfile);
 
             // ============ IMPLICIT SENIOR SIGNAL DETECTION ============
             // For leadership profiles, recognize implicit scope and evidence
@@ -2026,74 +2060,86 @@
 
             // ============ EXPERIENCE SCORING (20 pts) ============
             // Note: experience variable already declared at top of function for role classification
+            // CRITICAL: Leadership/TPM/Program roles are judged on signal density, not formatting compliance
             const expCriteria = {};
 
-            // All roles have 3+ bullets (5 pts)
-            const rolesWithBullets = experience.filter(e => {
-                const bullets = e.bullets || [];
-                const descBullets = (e.description || '').split(/[•\-\*]|\n/).filter(b => b.trim().length > 10);
-                return bullets.length >= 3 || descBullets.length >= 3;
-            });
+            // Determine if we should use IC-style scoring or leadership/program-style scoring
+            const useICScoring = !isLeadershipProfile && !isProgramRole;
+
             if (experience.length === 0) {
+                // No experience is critical for ALL role types
                 expCriteria.hasBullets = 0;
+                expCriteria.parFormat = 0;
+                expCriteria.metrics = 0;
+                expCriteria.currentDetailed = 0;
+                expCriteria.companyUrls = 0;
                 fixes.push({
                     severity: 'CRITICAL',
                     section: 'Experience',
                     problem: 'No work experience listed',
                     why: 'Without experience, recruiters have nothing to evaluate. This is the most important section.',
-                    fix: 'Add all relevant positions with 3-5 bullet points each'
+                    fix: 'Add all relevant positions with descriptions of your scope and impact'
                 });
-            } else if (rolesWithBullets.length === experience.length) {
-                expCriteria.hasBullets = 5;
-            } else if (rolesWithBullets.length >= experience.length / 2) {
-                expCriteria.hasBullets = 3;
-            } else {
-                expCriteria.hasBullets = 0;
-                fixes.push({
-                    severity: 'HIGH',
-                    section: 'Experience',
-                    problem: 'Most roles lack detailed bullet points',
-                    why: 'Recruiters need substance, not just titles. Each role should tell a story of impact.',
-                    fix: 'Add 3-5 bullets per role. Each bullet: Action verb → What you did → Result/Impact'
-                });
-            }
+            } else if (useICScoring) {
+                // ============ IC-STYLE SCORING (Standard/Mid-Level) ============
+                // IC roles benefit from structured bullet formatting
 
-            // Bullets use PAR format - Problem/Action/Result (5 pts)
-            const parPatterns = /\b(led|drove|built|launched|increased|decreased|reduced|grew|saved|generated|achieved|delivered|managed|owned|created|designed|implemented|developed|established|transformed)\b/i;
-            const resultPatterns = /\d+[%+]?|\$\d+|resulting in|leading to|which|saving|generating|achieving/i;
-            const allBulletText = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
-            const hasPARFormat = parPatterns.test(allBulletText) && resultPatterns.test(allBulletText);
-            expCriteria.parFormat = hasPARFormat ? 5 : (parPatterns.test(allBulletText) ? 2 : 0);
-            if (!hasPARFormat && experience.length > 0) {
-                fixes.push({
-                    severity: 'HIGH',
-                    section: 'Experience',
-                    problem: 'Experience bullets don\'t follow PAR format',
-                    why: 'PAR (Problem/Action/Result) shows strategic thinking. "Managed team" vs "Led 12-person team to deliver $5M project on time."',
-                    fix: 'Rewrite bullets: Start with action verb → Describe what you did → End with quantified result'
+                // All roles have 3+ bullets (5 pts)
+                const rolesWithBullets = experience.filter(e => {
+                    const bullets = e.bullets || [];
+                    const descBullets = (e.description || '').split(/[•\-\*]|\n/).filter(b => b.trim().length > 10);
+                    return bullets.length >= 3 || descBullets.length >= 3;
                 });
-            }
+                if (rolesWithBullets.length === experience.length) {
+                    expCriteria.hasBullets = 5;
+                } else if (rolesWithBullets.length >= experience.length / 2) {
+                    expCriteria.hasBullets = 3;
+                } else {
+                    expCriteria.hasBullets = 0;
+                    fixes.push({
+                        severity: 'HIGH',
+                        section: 'Experience',
+                        problem: 'Most roles lack detailed bullet points',
+                        why: 'Recruiters need substance, not just titles. Each role should tell a story of impact.',
+                        fix: 'Add 3-5 bullets per role. Each bullet: Action verb → What you did → Result/Impact'
+                    });
+                }
 
-            // Quantified outcomes in 50%+ of bullets (5 pts)
-            let totalBullets = 0;
-            let quantifiedBullets = 0;
-            experience.forEach(e => {
-                const bullets = e.bullets || (e.description || '').split(/[•\-\*\n]/).filter(b => b.trim().length > 10);
-                bullets.forEach(b => {
-                    totalBullets++;
-                    if (/\d+[%+]?|\$\d+[MBK]?|\d+x|\d+\s*(people|hires|team|revenue|growth|million|billion|users|customers)/i.test(b)) {
-                        quantifiedBullets++;
-                    }
+                // Bullets use PAR format - Problem/Action/Result (5 pts)
+                const parPatterns = /\b(led|drove|built|launched|increased|decreased|reduced|grew|saved|generated|achieved|delivered|managed|owned|created|designed|implemented|developed|established|transformed)\b/i;
+                const resultPatterns = /\d+[%+]?|\$\d+|resulting in|leading to|which|saving|generating|achieving/i;
+                const allBulletText = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
+                const hasPARFormat = parPatterns.test(allBulletText) && resultPatterns.test(allBulletText);
+                expCriteria.parFormat = hasPARFormat ? 5 : (parPatterns.test(allBulletText) ? 2 : 0);
+                if (!hasPARFormat) {
+                    fixes.push({
+                        severity: 'HIGH',
+                        section: 'Experience',
+                        problem: 'Experience bullets don\'t follow PAR format',
+                        why: 'PAR (Problem/Action/Result) shows strategic thinking. "Managed team" vs "Led 12-person team to deliver $5M project on time."',
+                        fix: 'Rewrite bullets: Start with action verb → Describe what you did → End with quantified result'
+                    });
+                }
+
+                // Quantified outcomes in 50%+ of bullets (5 pts)
+                let totalBullets = 0;
+                let quantifiedBullets = 0;
+                experience.forEach(e => {
+                    const bullets = e.bullets || (e.description || '').split(/[•\-\*\n]/).filter(b => b.trim().length > 10);
+                    bullets.forEach(b => {
+                        totalBullets++;
+                        if (/\d+[%+]?|\$\d+[MBK]?|\d+x|\d+\s*(people|hires|team|revenue|growth|million|billion|users|customers)/i.test(b)) {
+                            quantifiedBullets++;
+                        }
+                    });
                 });
-            });
-            const quantifiedRatio = totalBullets > 0 ? quantifiedBullets / totalBullets : 0;
-            if (quantifiedRatio >= 0.5) {
-                expCriteria.metrics = 5;
-            } else if (quantifiedRatio >= 0.25) {
-                expCriteria.metrics = 3;
-            } else {
-                expCriteria.metrics = 0;
-                if (experience.length > 0) {
+                const quantifiedRatio = totalBullets > 0 ? quantifiedBullets / totalBullets : 0;
+                if (quantifiedRatio >= 0.5) {
+                    expCriteria.metrics = 5;
+                } else if (quantifiedRatio >= 0.25) {
+                    expCriteria.metrics = 3;
+                } else {
+                    expCriteria.metrics = 0;
                     fixes.push({
                         severity: 'HIGH',
                         section: 'Experience',
@@ -2102,20 +2148,18 @@
                         fix: 'Add metrics to at least 50% of bullets: %, $, team size, time saved, revenue generated'
                     });
                 }
-            }
 
-            // Most recent role is detailed (3 pts)
-            const currentRole = experience[0];
-            const currentBullets = currentRole?.bullets || [];
-            const currentDesc = currentRole?.description || '';
-            const currentDetailLevel = currentBullets.length + (currentDesc.split(/[•\-\*\n]/).filter(b => b.trim().length > 20).length);
-            if (currentDetailLevel >= 4) {
-                expCriteria.currentDetailed = 3;
-            } else if (currentDetailLevel >= 2) {
-                expCriteria.currentDetailed = 1;
-            } else {
-                expCriteria.currentDetailed = 0;
-                if (experience.length > 0) {
+                // Most recent role is detailed (3 pts)
+                const currentRole = experience[0];
+                const currentBullets = currentRole?.bullets || [];
+                const currentDesc = currentRole?.description || '';
+                const currentDetailLevel = currentBullets.length + (currentDesc.split(/[•\-\*\n]/).filter(b => b.trim().length > 20).length);
+                if (currentDetailLevel >= 4) {
+                    expCriteria.currentDetailed = 3;
+                } else if (currentDetailLevel >= 2) {
+                    expCriteria.currentDetailed = 1;
+                } else {
+                    expCriteria.currentDetailed = 0;
                     fixes.push({
                         severity: 'HIGH',
                         section: 'Experience',
@@ -2124,11 +2168,75 @@
                         fix: 'Expand to 4-6 bullet points. Each bullet should demonstrate scope, action, and measurable result.'
                     });
                 }
-            }
 
-            // Company URLs included (2 pts) - We can't fully verify this from parsed data
-            // Giving partial credit by default since LinkedIn usually includes company URLs
-            expCriteria.companyUrls = experience.length > 0 ? 2 : 0;
+                // Company URLs included (2 pts)
+                expCriteria.companyUrls = 2;
+
+            } else {
+                // ============ LEADERSHIP/PROGRAM-STYLE SCORING ============
+                // Judge on signal density and credibility, NOT formatting compliance
+                // Per spec: "Do not downgrade senior operators for not looking like IC keyword farms"
+
+                // Signal density check (5 pts) - Do they have scope signals in their experience?
+                const scopeSignalCount = seniorSignalCount + (isProgramRole ? programScopeCount : 0);
+                if (scopeSignalCount >= 3) {
+                    expCriteria.hasBullets = 5;  // Strong signal density
+                } else if (scopeSignalCount >= 1) {
+                    expCriteria.hasBullets = 3;  // Some signals present
+                } else {
+                    expCriteria.hasBullets = 1;  // Has experience but weak signals
+                    fixes.push({
+                        severity: 'MEDIUM',
+                        section: 'Experience',
+                        problem: 'Experience lacks clear scope signals',
+                        why: 'Hiring managers look for evidence of ownership scale: team size, budget, cross-functional influence.',
+                        fix: 'Add context about your scope: global vs regional, team size, budget ownership, stakeholder level'
+                    });
+                }
+
+                // Leadership/delivery language check (5 pts) - replaces PAR format for leadership
+                const leadershipLanguage = /\b(led|directed|oversaw|transformed|scaled|built|established|partnered with|influenced|drove alignment|owned|accountable for)\b/i;
+                const deliveryLanguage = /\b(delivered|shipped|launched|rolled out|migrated|coordinated|executed|unblocked)\b/i;
+                const allExpText = experience.map(e => e.description || (e.bullets ? e.bullets.join(' ') : '')).join(' ');
+                const hasLeadershipLanguage = leadershipLanguage.test(allExpText);
+                const hasDeliveryLanguage = deliveryLanguage.test(allExpText);
+                if (hasLeadershipLanguage || (isProgramRole && hasDeliveryLanguage)) {
+                    expCriteria.parFormat = 5;
+                } else {
+                    expCriteria.parFormat = 2;  // Partial credit - they have experience
+                }
+
+                // Org-level outcomes check (5 pts) - replaces quantified % threshold for leadership
+                const orgOutcomes = /\b(company-wide|org-wide|enterprise|global|reduced cost|time-to-hire|attrition|retention|headcount|revenue|growth|efficiency|launched|deployed|migrated)\b/i;
+                const hasOrgOutcomes = orgOutcomes.test(allExpText) || seniorSignals.orgLevelOutcomes;
+                if (hasOrgOutcomes) {
+                    expCriteria.metrics = 5;
+                } else if (scopeSignalCount >= 2) {
+                    expCriteria.metrics = 3;  // Strong scope signals can substitute for explicit outcomes
+                } else {
+                    expCriteria.metrics = 1;
+                    fixes.push({
+                        severity: 'MEDIUM',
+                        section: 'Experience',
+                        problem: 'Experience lacks org-level outcomes',
+                        why: 'Hiring managers expect senior roles to show measurable business impact.',
+                        fix: 'Add outcomes: cost reduction, efficiency gains, successful launches, team growth'
+                    });
+                }
+
+                // Current role presence (3 pts) - just needs to exist and have content
+                const currentRole = experience[0];
+                if (currentRole && (currentRole.description || (currentRole.bullets && currentRole.bullets.length > 0))) {
+                    expCriteria.currentDetailed = 3;
+                } else if (currentRole) {
+                    expCriteria.currentDetailed = 2;
+                } else {
+                    expCriteria.currentDetailed = 0;
+                }
+
+                // Company presence (2 pts)
+                expCriteria.companyUrls = 2;
+            }
 
             sectionScores.experience = Object.values(expCriteria).reduce((a, b) => a + b, 0);
             sectionDetails.experience = expCriteria;
@@ -2215,7 +2323,25 @@
 
             // ============ FRESHNESS SCORING (10 pts) ============
             const freshCriteria = {};
-            const linkedinLastUpdated = sessionStorage.getItem('linkedinUploadTime') || new Date().toISOString();
+            // Use stored upload time, or localStorage backup, or derive from profile data
+            // CRITICAL: Do NOT default to now - that defeats freshness scoring
+            let linkedinLastUpdated = sessionStorage.getItem('linkedinUploadTime') ||
+                                      localStorage.getItem('linkedinUploadTime') ||
+                                      linkedin.last_updated;
+
+            // If we still don't have a timestamp, use current role end date as proxy
+            // If no current role ends with "Present", assume profile might be stale (90 days)
+            if (!linkedinLastUpdated) {
+                const currentRoleDate = experience[0]?.dates || '';
+                const isCurrentRoleActive = /present|current|now|2024|2025|2026/i.test(currentRoleDate);
+                if (isCurrentRoleActive) {
+                    // Profile appears maintained, assume moderately fresh
+                    linkedinLastUpdated = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
+                } else {
+                    // Profile may be stale
+                    linkedinLastUpdated = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
+                }
+            }
             const daysSinceUpdate = (Date.now() - new Date(linkedinLastUpdated)) / (1000 * 60 * 60 * 24);
 
             // Updated in last 30 days (3 pts)
@@ -2375,26 +2501,38 @@
 
             // ============ SCORE FLOOR PROTECTION (Role-Specific) ============
             // Per spec: Different role types have different score floors
+            // CRITICAL: Floors are UNCONDITIONAL based on role classification
+            // They do NOT depend on signal counts - those are for gap detection, not floor gating
             // Leadership profiles: 55 (judged on signal density and credibility)
             // Program/TPM roles: 50 (judged on delivery ownership and execution clarity)
             // Mid-Level ICs: 45 (judged on feature ownership and technical skills)
             let scoreFloorApplied = false;
             let scoreFloor = 0;
 
-            if (isLeadershipProfile && overall < 55) {
+            // Apply floors based on role classification ONLY, not signal counts
+            if (isLeadershipProfile) {
                 scoreFloor = 55;
-                overall = 55;
-                scoreFloorApplied = true;
-            } else if (isProgramRole && programScopeCount >= 2 && overall < 50) {
-                // Program/TPM with delivery ownership signals: floor at 50
+                if (overall < scoreFloor) {
+                    overall = scoreFloor;
+                    scoreFloorApplied = true;
+                    console.log('Score floor applied: Leadership profile → minimum 55');
+                }
+            } else if (isProgramRole) {
+                // Program/TPM floor at 50 - unconditional
                 scoreFloor = 50;
-                overall = 50;
-                scoreFloorApplied = true;
-            } else if (isMidLevelIC && midLevelScopeCount >= 2 && overall < 45) {
-                // Mid-level IC with feature/component ownership: floor at 45
+                if (overall < scoreFloor) {
+                    overall = scoreFloor;
+                    scoreFloorApplied = true;
+                    console.log('Score floor applied: Program/TPM profile → minimum 50');
+                }
+            } else if (isMidLevelIC) {
+                // Mid-level IC floor at 45 - unconditional
                 scoreFloor = 45;
-                overall = 45;
-                scoreFloorApplied = true;
+                if (overall < scoreFloor) {
+                    overall = scoreFloor;
+                    scoreFloorApplied = true;
+                    console.log('Score floor applied: Mid-Level IC profile → minimum 45');
+                }
             }
 
             // Add fix_ids for diagnosis-optimization contract
@@ -2607,22 +2745,52 @@
                 });
             }
 
-            // 3. CREDIBILITY GAP - Unverifiable companies or mismatches
-            const smallCompanySignals = experience.filter(e => {
-                const company = (e.company || '').toLowerCase();
-                return !company.includes('google') && !company.includes('meta') && !company.includes('amazon') && !company.includes('microsoft');
+            // 3. CREDIBILITY GAP - Based on verifiability signals, NOT company prestige
+            // Per spec: "Credibility ≠ big tech. Base on verifiability (company pages, URLs, continuity)."
+            // Credibility issues are detected by:
+            //   - Missing company context (no description of what the company does)
+            //   - Very short tenure patterns that might indicate misrepresentation
+            //   - Title inflation signals (comparing to description content)
+            // We do NOT flag based on whether companies are "big tech" vs "startup"
+
+            let credibilityIssues = 0;
+            const hasCompanyContext = experience.some(e => {
+                const desc = (e.description || (e.bullets ? e.bullets.join(' ') : ''));
+                // Check if any role has company context signals
+                return /\b(startup|series [a-c]|funded|acquired|employees|fortune|enterprise|global|inc\.|llc|corp)\b/i.test(desc);
+            });
+
+            // Check for very short tenures across ALL roles (potential red flag)
+            const shortTenureRoles = experience.filter(e => {
+                const dates = e.dates || '';
+                // If dates show less than 6 months, flag as potential issue
+                return /\d\s*(month|mo)\b/i.test(dates) && !/\d{2,}\s*(month|mo)/i.test(dates);
             }).length;
 
-            if (smallCompanySignals >= experience.length && experience.length >= 2) {
+            // Only flag credibility gap if there are genuine verifiability concerns
+            if (shortTenureRoles >= 3 && experience.length >= 3) {
                 gaps.push({
                     gap_id: 'GAP_CREDIBILITY_01',
                     type: 'Credibility',
                     severity: 'MEDIUM',
                     affected_sections: ['experience'],
                     icon: '✗',
-                    description: 'Some roles on your profile are difficult to validate, which weakens hiring manager confidence in scope and scale.',
-                    why: 'Hiring managers verify company legitimacy to assess the quality of your experience. Unverifiable companies raise questions about title inflation.',
-                    fix: "Add context in your bullets: 'Series A fintech startup, $3M funding, 15 employees' or 'Acquired by [Company] in 2022'."
+                    description: 'Multiple short-tenure roles may raise questions about your experience continuity.',
+                    why: 'Hiring managers look for sustained impact. Multiple very short stints can signal job-hopping or misrepresentation.',
+                    fix: 'Add context to short roles: consulting engagement, acquisition, or explicit contract period.'
+                });
+            } else if (!hasCompanyContext && experience.length >= 2 && !isLeadershipProfile) {
+                // Only flag missing company context for non-leadership profiles
+                // Leadership profiles at known companies don't need to explain the company
+                gaps.push({
+                    gap_id: 'GAP_CREDIBILITY_01',
+                    type: 'Credibility',
+                    severity: 'LOW',
+                    affected_sections: ['experience'],
+                    icon: '!',
+                    description: 'Adding company context can strengthen your profile credibility.',
+                    why: 'Hiring managers unfamiliar with your employers benefit from context: industry, funding stage, company size.',
+                    fix: "Add brief context: 'Series B fintech startup' or 'Fortune 500 retailer' helps hiring managers contextualize your experience."
                 });
             }
 
@@ -2968,18 +3136,28 @@
                 sectionsNeeding.add(fix.section?.toLowerCase());
             });
 
-            // Add sections below threshold
-            const thresholds = { headline: 12, about: 16, experience: 16, skills: 12 };
-            Object.entries(thresholds).forEach(([section, threshold]) => {
-                if ((sectionScores[section] || 0) < threshold) {
-                    sectionsNeeding.add(section);
-                }
-            });
+            // REMOVED: Threshold-only triggers
+            // Per spec: "Optimization must require a gap_id or fix_id. Remove section-score-only triggers."
+            // The following code was removed because it allowed optimization without diagnosis:
+            // const thresholds = { headline: 12, about: 16, experience: 16, skills: 12 };
+            // Object.entries(thresholds).forEach(([section, threshold]) => {
+            //     if ((sectionScores[section] || 0) < threshold) {
+            //         sectionsNeeding.add(section);
+            //     }
+            // });
+            // Now optimization ONLY fires when there's a gap or fix diagnosed.
 
             // Helper: Check if optimization is valid per contract
+            // A section can only be optimized if it has a diagnosed gap or fix
             const isOptimizationAllowed = (section) => {
                 return sectionsNeeding.has(section.toLowerCase());
             };
+
+            // Log what optimizations are allowed (debug)
+            console.log('Optimization contract enforcement:');
+            console.log('  Allowed gap IDs:', allowedGapIds);
+            console.log('  Allowed fix IDs:', allowedFixIds);
+            console.log('  Sections needing optimization:', Array.from(sectionsNeeding));
 
             // Count issues by severity
             const criticalCount = fixes.filter(f => f.severity === 'CRITICAL').length;
@@ -3307,11 +3485,11 @@
             const keywords = analysisData?.ats_keywords || analysisData?.required_skills || [];
             const currentHeadline = linkedinData?.headline || '';
 
-            // Identify issues to fix
+            // Identify issues to fix - based on diagnosed issues only
             const headlineIssues = scoringResults?.fixes?.filter(f => f.section === 'Headline') || [];
             const needsQuantification = headlineIssues.some(i => i.problem.includes('No numbers'));
             const needsRole = headlineIssues.some(i => i.problem.includes('No clear job title'));
-            const hasBuzzwords = headlineIssues.some(i => i.problem.includes('buzzwords'));
+            // REMOVED dead code: hasBuzzwords was computed but never used
 
             // Build headline that specifically addresses detected issues
             let headline = '';
@@ -3376,11 +3554,11 @@
             const keywords = analysisData?.ats_keywords || [];
             const currentSummary = linkedinData?.summary || linkedinData?.about || '';
 
-            // Identify issues to fix
+            // Identify issues to fix - only based on diagnosed issues, per optimization contract
             const aboutIssues = scoringResults?.fixes?.filter(f => f.section === 'About') || [];
             const needsMetrics = aboutIssues.some(i => i.problem.includes('No quantified'));
-            const needsCTA = !currentSummary.toLowerCase().match(/\b(reach out|contact|connect|email|let's talk|open to|looking for)\b/);
-            const isTooShort = currentSummary.split(/\s+/).length < 150;
+            // REMOVED dead code: needsCTA and isTooShort were computed but never used
+            // Per spec: optimizations must map to diagnosed issues only
 
             // Get years of experience estimate
             let years = 10;
