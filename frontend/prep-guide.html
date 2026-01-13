@@ -910,7 +910,11 @@
             <div class="intel-section" id="interviewerIntelSection" style="display: none;">
                 <div class="section-header" onclick="toggleSection(this)">
                     <h3 class="section-title"><span>🎯</span> Interviewer Intelligence</h3>
-                    <span class="section-toggle">▼</span>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span id="intelCacheStatus" style="font-size: 0.75rem; color: #9ca3af;"></span>
+                        <button onclick="event.stopPropagation(); reanalyzeLinkedIn();" style="background: transparent; border: 1px solid #374151; color: #9ca3af; padding: 4px 10px; font-size: 0.75rem; border-radius: 4px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#22d3ee'; this.style.color='#22d3ee';" onmouseout="this.style.borderColor='#374151'; this.style.color='#9ca3af';">Re-analyze</button>
+                        <span class="section-toggle">▼</span>
+                    </div>
                 </div>
                 <div class="section-body">
                     <!-- Interviewer Summary -->
@@ -1193,6 +1197,17 @@
                 // Show loading
                 document.getElementById('loadingState').style.display = 'flex';
 
+                // CHECK FOR CACHED INTERVIEWER INSIGHTS FIRST
+                // If we have cached insights and they're recent (< 7 days), use them
+                if (currentInterview.interviewerInsights) {
+                    const cachedAt = new Date(currentInterview.interviewerInsights.extractedAt);
+                    const daysSinceCached = (Date.now() - cachedAt.getTime()) / (1000 * 60 * 60 * 24);
+                    if (daysSinceCached < 7) {
+                        interviewerIntelData = currentInterview.interviewerInsights.data;
+                        console.log('Using cached interviewer insights (cached ' + Math.round(daysSinceCached) + ' days ago)');
+                    }
+                }
+
                 // Check if we have LinkedIn profile data to analyze
                 const hasLinkedInProfile = currentInterview.linkedInProfile &&
                     (currentInterview.linkedInProfile.type === 'text' ||
@@ -1213,11 +1228,12 @@
                     })
                 });
 
-                // Generate interviewer intelligence if LinkedIn profile available
+                // Generate interviewer intelligence if LinkedIn profile available AND not cached
                 let intelPromise = null;
-                if (hasLinkedInProfile) {
+                if (hasLinkedInProfile && !interviewerIntelData) {
                     const linkedInText = await getLinkedInText();
                     if (linkedInText) {
+                        console.log('Generating new interviewer intelligence...');
                         intelPromise = fetch(`${API_BASE}/api/interviewer-intelligence/analyze`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1251,6 +1267,9 @@
                 if (intelResponse && intelResponse.ok) {
                     interviewerIntelData = await intelResponse.json();
                     console.log('Interviewer intelligence generated:', interviewerIntelData.interviewer_name);
+
+                    // PERSIST: Cache the generated insights to the interview object
+                    await cacheInterviewerInsights(interviewerIntelData);
                 }
 
                 renderPrepGuide();
@@ -1536,6 +1555,16 @@
             // Show the section
             document.getElementById('interviewerIntelSection').style.display = 'block';
 
+            // Show cache status if insights are cached
+            const cacheStatusEl = document.getElementById('intelCacheStatus');
+            if (currentInterview.interviewerInsights) {
+                const cachedAt = new Date(currentInterview.interviewerInsights.extractedAt);
+                const daysSince = Math.round((Date.now() - cachedAt.getTime()) / (1000 * 60 * 60 * 24));
+                const confidence = currentInterview.interviewerInsights.confidence || 'medium';
+                const confColor = confidence === 'high' ? '#10b981' : confidence === 'medium' ? '#f59e0b' : '#ef4444';
+                cacheStatusEl.innerHTML = `<span style="color: ${confColor};">●</span> ${confidence} confidence · Analyzed ${daysSince === 0 ? 'today' : daysSince + 'd ago'}`;
+            }
+
             // Avatar initials
             const initials = intel.interviewer_name
                 .split(' ')
@@ -1602,6 +1631,117 @@
                     </div>
                 `)
                 .join('');
+        }
+
+        // ============================================================================
+        // INTERVIEWER INSIGHTS CACHING
+        // ============================================================================
+        async function cacheInterviewerInsights(intelData) {
+            if (!currentInterview || !intelData) return;
+
+            try {
+                // Build the cached insights object per Option B spec
+                const insightsCache = {
+                    source: 'linkedin',
+                    extractedAt: new Date().toISOString(),
+                    data: intelData,
+                    // Quick summary fields for display in Interview Intelligence
+                    summary: {
+                        currentRole: intelData.interviewer_title || '',
+                        currentCompany: intelData.current_company || '',
+                        function: inferFunction(intelData),
+                        seniority: inferSeniority(intelData.interviewer_title || ''),
+                        tenureEstimate: intelData.tenure || ''
+                    },
+                    likelyFocus: intelData.likely_evaluation_focus || [],
+                    confidence: calculateConfidence(intelData)
+                };
+
+                // Update current interview with insights
+                currentInterview.interviewerInsights = insightsCache;
+
+                // Persist to localStorage
+                const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+                const idx = interviews.findIndex(i => String(i.id) === String(currentInterview.id));
+                if (idx >= 0) {
+                    interviews[idx].interviewerInsights = insightsCache;
+                    localStorage.setItem('upcomingInterviews', JSON.stringify(interviews));
+                    console.log('Interviewer insights cached to localStorage');
+                }
+
+                // Sync to Supabase if available
+                if (typeof HenryData !== 'undefined') {
+                    HenryData.saveInterview(currentInterview).catch(e =>
+                        console.error('Failed to sync insights to Supabase:', e)
+                    );
+                }
+            } catch (e) {
+                console.error('Error caching interviewer insights:', e);
+            }
+        }
+
+        // Infer function category from title/profile
+        function inferFunction(intelData) {
+            const title = (intelData.interviewer_title || '').toLowerCase();
+            const summary = (intelData.summary || '').toLowerCase();
+            const combined = title + ' ' + summary;
+
+            if (combined.match(/product|pm\b|pmo/)) return 'Product';
+            if (combined.match(/engineer|developer|software|swe|tech lead|cto|architect/)) return 'Engineering';
+            if (combined.match(/design|ux|ui|creative/)) return 'Design';
+            if (combined.match(/data|analytics|ml|ai|machine learning|scientist/)) return 'Data';
+            if (combined.match(/sales|revenue|gtm|growth|marketing|bd|business development/)) return 'GTM';
+            if (combined.match(/recruit|talent|hr|people|human resources/)) return 'Talent/People';
+            if (combined.match(/ceo|coo|founder|president|vp|director|head of|chief/)) return 'Leadership';
+            return 'General';
+        }
+
+        // Infer seniority from title
+        function inferSeniority(title) {
+            const t = title.toLowerCase();
+            if (t.match(/ceo|coo|cfo|cto|chief|founder|president|partner/)) return 'Executive';
+            if (t.match(/vp|vice president|svp|evp|head of|director/)) return 'Director+';
+            if (t.match(/senior manager|group manager|principal|staff|lead|manager/)) return 'Manager';
+            return 'IC';
+        }
+
+        // Calculate confidence based on data completeness
+        function calculateConfidence(intelData) {
+            let score = 0;
+            if (intelData.interviewer_name) score += 1;
+            if (intelData.interviewer_title) score += 1;
+            if (intelData.current_company) score += 1;
+            if (intelData.tenure) score += 1;
+            if (intelData.summary && intelData.summary.length > 50) score += 1;
+            if (intelData.likely_evaluation_focus && intelData.likely_evaluation_focus.length >= 2) score += 1;
+            if (intelData.communication_style) score += 1;
+
+            if (score >= 6) return 'high';
+            if (score >= 4) return 'medium';
+            return 'low';
+        }
+
+        // Re-analyze function (clears cache and regenerates)
+        async function reanalyzeLinkedIn() {
+            if (!currentInterview.linkedInProfile) {
+                alert('No LinkedIn profile uploaded. Edit the interview to add one.');
+                return;
+            }
+
+            // Clear cached insights
+            currentInterview.interviewerInsights = null;
+            interviewerIntelData = null;
+
+            // Update localStorage
+            const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
+            const idx = interviews.findIndex(i => String(i.id) === String(currentInterview.id));
+            if (idx >= 0) {
+                interviews[idx].interviewerInsights = null;
+                localStorage.setItem('upcomingInterviews', JSON.stringify(interviews));
+            }
+
+            // Regenerate
+            await generatePrepGuide();
         }
     </script>
 <script src="components/analytics.js"></script>

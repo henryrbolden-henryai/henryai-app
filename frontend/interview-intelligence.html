@@ -1890,11 +1890,28 @@
                     ? `with ${interview.interviewerName}${additionalCount > 0 ? ` +${additionalCount} more` : ''}`
                     : additionalCount > 0 ? `${additionalCount + 1} interviewers` : '';
 
+                // Show interviewer intelligence status
+                let intelStatus = '';
+                if (interview.interviewerInsights) {
+                    const confidence = interview.interviewerInsights.confidence || 'medium';
+                    const func = interview.interviewerInsights.summary?.function || '';
+                    const seniority = interview.interviewerInsights.summary?.seniority || '';
+                    intelStatus = `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 2px 8px; border-radius: 4px; margin-left: 8px;">
+                        <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></span>
+                        Intel ready${func ? ` · ${func}` : ''}${seniority ? ` · ${seniority}` : ''}
+                    </span>`;
+                } else if (interview.linkedInProfile) {
+                    intelStatus = `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; color: #f59e0b; background: rgba(245, 158, 11, 0.1); padding: 2px 8px; border-radius: 4px; margin-left: 8px;">
+                        <span style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%;"></span>
+                        Profile uploaded · Open Prep to analyze
+                    </span>`;
+                }
+
                 return `
                     <div class="interview-card">
                         <div class="company-avatar">${initial}</div>
                         <div class="interview-info">
-                            <div class="company-name">${interview.company}</div>
+                            <div class="company-name">${interview.company}${intelStatus}</div>
                             <div class="interview-details">${typeLabels[interview.type] || interview.type} on ${dateStr} @ ${timeStr}</div>
                             ${interviewerDisplay ? `<div style="font-size: 0.8rem; color: #9ca3af; margin-top: 4px;">${interviewerDisplay}</div>` : ''}
                         </div>
