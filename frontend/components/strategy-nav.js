@@ -13,6 +13,7 @@
     // Navigation items configuration - hierarchical structure
     // NOTE: Command Center and Interview Intelligence are top-level operational tools,
     // NOT nested under Strategy. Strategy = planning. These = execution.
+    // Analysis = job-specific insights. Strategy = job-specific planning.
     const NAV_STRUCTURE = {
         topLevel: [
             {
@@ -29,7 +30,15 @@
                 id: 'interview-intelligence',
                 label: 'Interview Intelligence',
                 href: 'interview-intelligence.html'
-            },
+            }
+        ],
+        // Analysis section - job-specific insights (above Strategy)
+        analysisParent: {
+            id: 'results',
+            label: 'Analysis',
+            href: 'results.html'
+        },
+        analysisChildren: [
             {
                 id: 'results',
                 label: 'Job Fit Score',
@@ -41,6 +50,7 @@
                 href: 'resume-leveling.html'
             }
         ],
+        // Strategy section - job-specific planning
         parent: {
             id: 'overview',
             label: 'Strategy Overview',
@@ -493,7 +503,14 @@
         nav.setAttribute('aria-label', 'Strategy Navigation');
 
         // Create dots indicator (for collapsed state) - all items
-        const allItems = [...NAV_STRUCTURE.topLevel, NAV_STRUCTURE.parent, ...NAV_STRUCTURE.children, ...(NAV_STRUCTURE.bottomLevel || [])];
+        const allItems = [
+            ...NAV_STRUCTURE.topLevel,
+            NAV_STRUCTURE.analysisParent,
+            ...NAV_STRUCTURE.analysisChildren,
+            NAV_STRUCTURE.parent,
+            ...NAV_STRUCTURE.children,
+            ...(NAV_STRUCTURE.bottomLevel || [])
+        ];
         const dotsHtml = allItems.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
@@ -504,7 +521,7 @@
             return `<a href="${item.href}" class="strategy-nav-dot ${isActive ? 'active' : ''}" title="${item.label}"></a>`;
         }).join('');
 
-        // Create top-level items (Dashboard, Job Fit Score, Resume Level Analysis)
+        // Create top-level items (Dashboard, Command Center, Interview Intelligence)
         const topLevelHtml = NAV_STRUCTURE.topLevel.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
@@ -515,14 +532,45 @@
             return `<a href="${item.href}" class="strategy-nav-top-link ${isActive ? 'active' : ''}">${item.label}</a>`;
         }).join('');
 
-        // Check if parent is active
+        // Check if Analysis parent is active (any analysis child page)
+        const isAnalysisParentActive = NAV_STRUCTURE.analysisChildren.some(item => currentPage === item.id);
+
+        // Analysis parent needs context
+        const analysisParentNeedsContext = !alwaysAccessiblePages.includes(NAV_STRUCTURE.analysisParent.id);
+        const analysisParentDisabled = analysisParentNeedsContext && !hasJobContext;
+
+        // Create Analysis children list items
+        const analysisChildrenHtml = NAV_STRUCTURE.analysisChildren.map(item => {
+            const isActive = currentPage === item.id;
+            const needsContext = !alwaysAccessiblePages.includes(item.id);
+            const isDisabled = needsContext && !hasJobContext;
+            if (isDisabled) {
+                return `
+                <li class="strategy-nav-child">
+                    <span class="strategy-nav-child-link disabled" title="Select an application first">${item.label}</span>
+                </li>
+            `;
+            }
+            return `
+                <li class="strategy-nav-child">
+                    <a href="${item.href}" class="strategy-nav-child-link ${isActive ? 'active' : ''}">${item.label}</a>
+                </li>
+            `;
+        }).join('');
+
+        // Analysis parent link HTML (may be disabled)
+        const analysisParentLinkHtml = analysisParentDisabled
+            ? `<span class="strategy-nav-parent disabled" title="Select an application first">${NAV_STRUCTURE.analysisParent.label}</span>`
+            : `<span class="strategy-nav-parent ${isAnalysisParentActive ? 'active' : ''}">${NAV_STRUCTURE.analysisParent.label}</span>`;
+
+        // Check if Strategy parent is active
         const isParentActive = currentPage === NAV_STRUCTURE.parent.id;
 
-        // Parent (Strategy Overview) needs context
+        // Strategy parent needs context
         const parentNeedsContext = !alwaysAccessiblePages.includes(NAV_STRUCTURE.parent.id);
         const parentDisabled = parentNeedsContext && !hasJobContext;
 
-        // Create children list items
+        // Create Strategy children list items
         const childrenHtml = NAV_STRUCTURE.children.map(item => {
             const isActive = currentPage === item.id;
             const needsContext = !alwaysAccessiblePages.includes(item.id);
@@ -577,6 +625,12 @@
                 ${topLevelHtml}
                 <div class="strategy-nav-divider"></div>
                 <ul class="strategy-nav-list">
+                    <li class="strategy-nav-item">
+                        ${analysisParentLinkHtml}
+                        <ul class="strategy-nav-children">
+                            ${analysisChildrenHtml}
+                        </ul>
+                    </li>
                     <li class="strategy-nav-item">
                         ${parentLinkHtml}
                         <ul class="strategy-nav-children">
