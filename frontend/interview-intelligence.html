@@ -1833,6 +1833,7 @@
                                 <div style="font-size: 0.8rem; color: #f59e0b; margin-top: 4px;">⏳ Debrief while it's fresh</div>
                             </div>
                             <div class="interview-actions">
+                                <button class="edit-btn" onclick="editInterview('${interview.id}')" title="Edit interview" style="background: transparent; border: 1px solid #6b7280; color: #9ca3af; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">✏️</button>
                                 <button class="open-debrief-btn" onclick="openDebrief('${interview.id}')">Debrief Now</button>
                             </div>
                         </div>
@@ -1849,6 +1850,7 @@
                                 <div style="font-size: 0.8rem; color: #10b981; margin-top: 4px;">✓ ${feelingText}</div>
                             </div>
                             <div class="interview-actions">
+                                <button class="edit-btn" onclick="editInterview('${interview.id}')" title="Edit interview" style="background: transparent; border: 1px solid #6b7280; color: #9ca3af; padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; cursor: pointer;">✏️</button>
                                 <button class="open-debrief-btn" onclick="viewDebrief('${interview.id}')" style="background: #10b981; color: #ffffff;">View Debrief</button>
                             </div>
                         </div>
@@ -2118,13 +2120,23 @@
         // Store existing LinkedIn data when editing (to preserve if not re-uploaded)
         let editingLinkedInProfile = null;
 
-        function editInterview(interviewId) {
-            // Find the interview
-            const interview = upcomingInterviews.find(i => String(i.id) === String(interviewId));
+        function editInterview(interviewId, fromCompleted = false) {
+            // Find the interview in upcoming or completed lists
+            let interview = upcomingInterviews.find(i => String(i.id) === String(interviewId));
+            let isFromCompleted = false;
+
+            if (!interview) {
+                interview = completedInterviews.find(i => String(i.id) === String(interviewId));
+                isFromCompleted = true;
+            }
+
             if (!interview) {
                 console.error('Interview not found:', interviewId);
                 return;
             }
+
+            // Store whether we're editing from completed list
+            sessionStorage.setItem('editingFromCompleted', isFromCompleted ? 'true' : 'false');
 
             console.log('Editing interview:', interview);
 
@@ -2171,7 +2183,26 @@
             document.getElementById('interviewCompany').value = interview.company || '';
             document.getElementById('interviewRole').value = interview.role || '';
             document.getElementById('interviewType').value = interview.type || '';
-            document.getElementById('interviewDate').value = interview.date || '';
+
+            // Format date for datetime-local input (requires YYYY-MM-DDTHH:MM format)
+            let dateValue = '';
+            if (interview.date) {
+                try {
+                    const d = new Date(interview.date);
+                    if (!isNaN(d.getTime())) {
+                        // Format as local datetime string for the input
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const hours = String(d.getHours()).padStart(2, '0');
+                        const minutes = String(d.getMinutes()).padStart(2, '0');
+                        dateValue = `${year}-${month}-${day}T${hours}:${minutes}`;
+                    }
+                } catch (e) {
+                    console.error('Error parsing interview date:', e);
+                }
+            }
+            document.getElementById('interviewDate').value = dateValue;
             document.getElementById('interviewerName').value = interview.interviewerName || '';
             document.getElementById('interviewerTitle').value = interview.interviewerTitle || '';
             document.getElementById('interviewJD').value = interview.jobDescription || '';
@@ -2448,19 +2479,39 @@
             };
 
             if (isEditMode) {
-                // Update existing interview
-                const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
-                if (idx >= 0) {
-                    // Preserve createdAt from original
-                    interview.createdAt = upcomingInterviews[idx].createdAt;
-                    upcomingInterviews[idx] = interview;
+                // Check if editing from completed list
+                const editingFromCompleted = sessionStorage.getItem('editingFromCompleted') === 'true';
+
+                if (editingFromCompleted) {
+                    // Update in completed interviews
+                    const idx = completedInterviews.findIndex(i => String(i.id) === String(editId));
+                    if (idx >= 0) {
+                        interview.createdAt = completedInterviews[idx].createdAt;
+                        // Preserve debrief data
+                        interview.needsDebrief = completedInterviews[idx].needsDebrief;
+                        interview.debriefCompletedAt = completedInterviews[idx].debriefCompletedAt;
+                        interview.feeling = completedInterviews[idx].feeling;
+                        interview.movedToCompleted = completedInterviews[idx].movedToCompleted;
+                        completedInterviews[idx] = interview;
+                    }
+                    localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+                } else {
+                    // Update existing interview in upcoming
+                    const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
+                    if (idx >= 0) {
+                        interview.createdAt = upcomingInterviews[idx].createdAt;
+                        upcomingInterviews[idx] = interview;
+                    }
+                    localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
                 }
+
+                // Clear the flag
+                sessionStorage.removeItem('editingFromCompleted');
             } else {
                 // Add new interview
                 upcomingInterviews.push(interview);
+                localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
             }
-
-            localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
 
             // Sync to Supabase
             if (typeof HenryData !== 'undefined') {

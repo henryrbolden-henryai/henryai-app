@@ -1365,6 +1365,15 @@
             // Get interviews from localStorage
             const interviews = JSON.parse(localStorage.getItem('upcomingInterviews') || '[]');
             currentInterview = interviews.find(i => String(i.id) === String(interviewId));
+            console.log('Looking for interview ID:', interviewId, 'Found:', currentInterview ? 'yes' : 'no');
+            if (currentInterview) {
+                console.log('Interview data:', {
+                    company: currentInterview.company,
+                    hasLinkedInProfile: !!currentInterview.linkedInProfile,
+                    hasInterviewerInsights: !!currentInterview.interviewerInsights,
+                    linkedInProfileType: currentInterview.linkedInProfile?.type
+                });
+            }
 
             // Also check tracker apps if not found in interviews list
             // This handles the case where interview came from Command Center
@@ -1431,14 +1440,46 @@
                 return;
             }
 
-            // Load resume data
-            const storedResume = sessionStorage.getItem('resumeData');
+            // Load resume data from multiple sources (fallback chain)
+            // 1. Try sessionStorage first (set by resume-leveling.html)
+            let storedResume = sessionStorage.getItem('resumeData');
             if (storedResume) {
                 try {
                     resumeData = JSON.parse(storedResume);
+                    console.log('Loaded resume from sessionStorage');
                 } catch (e) {
-                    console.error('Error parsing resume:', e);
+                    console.error('Error parsing resume from sessionStorage:', e);
                 }
+            }
+
+            // 2. Fallback to userProfile in localStorage
+            if (!resumeData) {
+                try {
+                    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                    if (userProfile.resume_json || userProfile.resume) {
+                        resumeData = userProfile.resume_json || userProfile.resume;
+                        console.log('Loaded resume from userProfile localStorage');
+                    }
+                } catch (e) {
+                    console.error('Error loading resume from userProfile:', e);
+                }
+            }
+
+            // 3. Try to load from Supabase if HenryData is available
+            if (!resumeData && typeof HenryData !== 'undefined') {
+                try {
+                    const profile = await HenryData.getProfile();
+                    if (profile && (profile.resume_json || profile.resume)) {
+                        resumeData = profile.resume_json || profile.resume;
+                        console.log('Loaded resume from Supabase profile');
+                    }
+                } catch (e) {
+                    console.error('Error loading resume from Supabase:', e);
+                }
+            }
+
+            if (!resumeData) {
+                console.warn('No resume data found - prep guide will use generic content');
             }
 
             // Generate prep guide
@@ -1488,6 +1529,11 @@
                 const hasLinkedInProfile = currentInterview.linkedInProfile &&
                     (currentInterview.linkedInProfile.type === 'text' ||
                      currentInterview.linkedInProfile.type === 'file');
+                console.log('LinkedIn profile check:', {
+                    hasLinkedInProfile,
+                    linkedInProfile: currentInterview.linkedInProfile,
+                    alreadyHasIntel: !!interviewerIntelData
+                });
 
                 // Generate prep guide and interviewer intelligence in parallel if profile exists
                 const prepPromise = fetch(`${API_BASE}/api/prep-guide/generate`, {
