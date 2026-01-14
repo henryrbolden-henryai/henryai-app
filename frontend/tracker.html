@@ -8643,7 +8643,7 @@ Thanks so much!
             // Populate with all active applications
             const apps = getApplications().filter(a => STATUSES[a.status]?.active);
             select.innerHTML = '<option value="">-- Select an application --</option>' +
-                apps.map(app => `<option value="${app.id}">${app.company} - ${getCleanRole(app)}</option>`).join('');
+                apps.map(app => `<option value="${app.id}">${getCleanCompany(app)} - ${getCleanRole(app)}</option>`).join('');
 
             // Reset state
             selectedDebriefAppId = null;
@@ -8710,7 +8710,7 @@ Thanks so much!
             // Populate the select with active applications
             const apps = getApplications().filter(a => STATUSES[a.status]?.active);
             select.innerHTML = '<option value="">-- Select an application --</option>' +
-                apps.map(app => `<option value="${app.id}">${app.company} - ${getCleanRole(app)}</option>`).join('');
+                apps.map(app => `<option value="${app.id}">${getCleanCompany(app)} - ${getCleanRole(app)}</option>`).join('');
 
             // Reset form fields
             document.getElementById('trackerInterviewType').value = '';
@@ -9763,12 +9763,39 @@ Thanks so much!
         }
 
         /**
+         * Get clean company name, removing duplicate words
+         * Fixes duplication like "Coast Coast" -> "Coast"
+         */
+        function getCleanCompany(app) {
+            const company = app.company || '';
+            if (!company) return company;
+
+            // Check for duplicate word pattern: "Word Word" -> "Word"
+            const words = company.split(' ');
+            if (words.length === 2 && words[0].toLowerCase() === words[1].toLowerCase()) {
+                return words[0];
+            }
+
+            // Check for duplicate phrase pattern: "Phrase Phrase" -> "Phrase"
+            if (words.length >= 2 && words.length % 2 === 0) {
+                const half = words.length / 2;
+                const firstHalf = words.slice(0, half).join(' ');
+                const secondHalf = words.slice(half).join(' ');
+                if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+                    return firstHalf;
+                }
+            }
+
+            return company;
+        }
+
+        /**
          * Get clean role name, removing company prefix if present
          * Fixes duplication like "Coast Coast - Director of Talent" -> "Coast - Director of Talent"
          */
         function getCleanRole(app) {
             const role = app.role || app.roleTitle || 'Role';
-            const company = app.company || '';
+            const company = getCleanCompany(app);
 
             // Check if role starts with "Company - " or "Company- " pattern
             if (company && role.toLowerCase().startsWith(company.toLowerCase() + ' - ')) {
@@ -9821,20 +9848,23 @@ Thanks so much!
 
             const btnConfig = intel?.one_click_action ? CommandCenter.getOneClickButtonConfig(intel.one_click_action) : null;
 
+            const cleanCompany = getCleanCompany(app);
+            const cleanRole = getCleanRole(app);
+
             return `
                 <div class="app-card-v2 ${confidenceClass} ${priorityClass} ${dimmedClass}"
                      data-id="${app.id}"
                      draggable="true"
                      tabindex="0"
                      role="button"
-                     aria-label="${app.company} - ${getCleanRole(app)}"
+                     aria-label="${cleanCompany} - ${cleanRole}"
                      onclick="navigateWithAnalysis('${app.id}', 'overview.html')">
                     ${app.user_override ? '<span class="override-badge" title="You have overridden the system recommendation">Manual Override</span>' : ''}
 
                     <div class="card-header-v2">
                         <div class="card-title-row">
                             <span class="card-icon ${urgentClass}">${ui.icon}</span>
-                            <span class="card-title-v2">${app.company} - ${getCleanRole(app)}</span>
+                            <span class="card-title-v2">${cleanCompany} - ${cleanRole}</span>
                         </div>
                         <div class="card-header-actions">
                             ${ui.badge ? `<span class="card-badge">${ui.badge}</span>` : ''}

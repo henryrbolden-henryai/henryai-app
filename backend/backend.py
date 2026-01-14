@@ -21025,6 +21025,7 @@ Important:
 - Extract ALL jobs visible, even if some details are missing
 - If company or title is unclear, make your best guess based on context
 - For status, normalize to: "Applied", "Screening", "Interview", "Offer", "Rejected", or null if unknown
+- NEVER duplicate the company name in the title field. Title should ONLY contain the job role (e.g., "Director of Talent"), not "Company - Director of Talent"
 - Return ONLY valid JSON, no markdown code blocks or extra text"""
 
         # Call Claude Vision API
