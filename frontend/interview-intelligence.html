@@ -917,6 +917,8 @@
         let selectedApplication = null;
         let analysisData = null;
         let resumeData = null;
+        // Track when local edits occur to prevent Supabase overwrites
+        let lastLocalEditTimestamp = 0;
 
         // Load data from sessionStorage and Supabase
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1027,10 +1029,17 @@
                 );
 
                 // Load interviews from Supabase (with 5s timeout)
+                // Track when this request started to prevent overwriting newer local edits
+                const supabaseRequestStart = Date.now();
                 Promise.race([
                     HenryData.getInterviews(),
                     timeout(5000)
                 ]).then(({ upcoming, completed }) => {
+                    // CRITICAL: Do NOT overwrite if user made local edits after this request started
+                    if (lastLocalEditTimestamp > supabaseRequestStart) {
+                        console.log('Skipping Supabase data - local edit occurred after request started');
+                        return;
+                    }
                     if (upcoming.length > 0 || completed.length > 0) {
                         upcomingInterviews = upcoming;
                         completedInterviews = completed;
@@ -2512,6 +2521,9 @@
                 upcomingInterviews.push(interview);
                 localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
             }
+
+            // Mark that a local edit just occurred - prevents stale Supabase data from overwriting
+            lastLocalEditTimestamp = Date.now();
 
             // Sync to Supabase
             if (typeof HenryData !== 'undefined') {
