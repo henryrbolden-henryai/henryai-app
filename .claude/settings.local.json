@@ -62,7 +62,9 @@
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Update PWA icons to use HenryHQ minimal ring logo\n\nUpdated the PWA icons in /assets/icons/ to use the proper HenryHQ\nminimal ring design (stylized H inside gradient ring) instead of\nthe placeholder text-based icons.\n\nIcons include:\n- Dark background circle for visibility\n- Purple gradient ring (#667eea to #764ba2)\n- Stylized H-mark with ascending right stroke\n- Peak dot for brand recognition\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(npx netlify deploy:*)",
       "Bash(netlify deploy:*)",
-      "Bash(npx netlify-cli:*)"
+      "Bash(npx netlify-cli:*)",
+      "Bash(fly deploy:*)",
+      "Bash(/opt/homebrew/bin/fly deploy)"
     ],
     "deny": [],
     "ask": []
