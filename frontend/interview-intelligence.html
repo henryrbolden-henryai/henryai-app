@@ -1369,11 +1369,13 @@
                 const interviewDateTime = interview.date ? new Date(interview.date).toISOString() : new Date().toISOString();
 
                 if (existingAppIndex !== -1) {
-                    // Update existing application status to the interview stage
+                    // Update existing application - Interview Intelligence is source of truth
+                    // Sync updatedAt for merge protection across stores
                     trackedApps[existingAppIndex].status = interview.type;
                     trackedApps[existingAppIndex].interviewType = interview.type;
                     trackedApps[existingAppIndex].lastUpdated = new Date().toISOString();
                     trackedApps[existingAppIndex].interviewDate = interview.date;
+                    trackedApps[existingAppIndex].interviewDateUpdatedAt = interview.updatedAt; // Track when date was last edited
                     trackedApps[existingAppIndex].interviewerName = interview.interviewerName;
                     trackedApps[existingAppIndex].interviewerTitle = interview.interviewerTitle;
 
@@ -1382,9 +1384,11 @@
                         trackedApps[existingAppIndex].dateInterviewed = interviewDateTime;
                     }
 
-                    // Increment interview rounds counter
-                    trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
-                    console.log('Updated existing tracked app:', trackedApps[existingAppIndex].company);
+                    // Only increment interview rounds on new interviews, not edits
+                    if (!interview.updatedAt || interview.createdAt === interview.updatedAt) {
+                        trackedApps[existingAppIndex].interviewRounds = (trackedApps[existingAppIndex].interviewRounds || 0) + 1;
+                    }
+                    console.log('Updated existing tracked app:', trackedApps[existingAppIndex].company, 'date:', interview.date);
 
                     // Also sync to Supabase if available
                     if (typeof HenryData !== 'undefined') {
@@ -1495,15 +1499,16 @@
                 const isPast = interviewDate < now;
 
                 // Check if this interview already exists in our lists
+                // Priority: appId match > company match (regardless of date - Interview Intelligence owns the date)
                 const existsInUpcoming = upcomingInterviews.some(i =>
                     (String(i.appId) === String(app.id)) ||
                     (i.company.toLowerCase() === app.company.toLowerCase() &&
-                     Math.abs(new Date(i.date) - interviewDate) < 1000 * 60 * 60) // Within 1 hour
+                     i.role.toLowerCase() === app.role.toLowerCase())
                 );
                 const existsInCompleted = completedInterviews.some(i =>
                     (String(i.appId) === String(app.id)) ||
                     (i.company.toLowerCase() === app.company.toLowerCase() &&
-                     Math.abs(new Date(i.date) - interviewDate) < 1000 * 60 * 60)
+                     i.role.toLowerCase() === app.role.toLowerCase())
                 );
 
                 if (existsInUpcoming || existsInCompleted) return;
@@ -2490,22 +2495,38 @@
             if (isEditMode) {
                 // Check if editing from completed list
                 const editingFromCompleted = sessionStorage.getItem('editingFromCompleted') === 'true';
+                // Check if the new date is in the future (should move to upcoming)
+                const interviewDate = new Date(interview.date);
+                const isNowFuture = interviewDate > new Date();
 
                 if (editingFromCompleted) {
-                    // Update in completed interviews
                     const idx = completedInterviews.findIndex(i => String(i.id) === String(editId));
                     if (idx >= 0) {
                         interview.createdAt = completedInterviews[idx].createdAt;
-                        // Preserve debrief data
-                        interview.needsDebrief = completedInterviews[idx].needsDebrief;
-                        interview.debriefCompletedAt = completedInterviews[idx].debriefCompletedAt;
-                        interview.feeling = completedInterviews[idx].feeling;
-                        interview.movedToCompleted = completedInterviews[idx].movedToCompleted;
-                        completedInterviews[idx] = interview;
+
+                        if (isNowFuture) {
+                            // Date changed to future - move back to upcoming
+                            completedInterviews.splice(idx, 1);
+                            // Clear past-interview flags
+                            delete interview.movedToCompleted;
+                            delete interview.needsDebrief;
+                            delete interview.debriefCompletedAt;
+                            delete interview.feeling;
+                            upcomingInterviews.push(interview);
+                            console.log('Interview moved from completed to upcoming (date now future)');
+                        } else {
+                            // Date still in past - update in completed, preserve debrief data
+                            interview.needsDebrief = completedInterviews[idx].needsDebrief;
+                            interview.debriefCompletedAt = completedInterviews[idx].debriefCompletedAt;
+                            interview.feeling = completedInterviews[idx].feeling;
+                            interview.movedToCompleted = completedInterviews[idx].movedToCompleted;
+                            completedInterviews[idx] = interview;
+                        }
                     }
                     localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+                    localStorage.setItem('upcomingInterviews', JSON.stringify(upcomingInterviews));
                 } else {
-                    // Update existing interview in upcoming
+                    // Editing from upcoming list
                     const idx = upcomingInterviews.findIndex(i => String(i.id) === String(editId));
                     if (idx >= 0) {
                         interview.createdAt = upcomingInterviews[idx].createdAt;
@@ -2556,6 +2577,7 @@
 
             closeAddInterviewModal();
             renderInterviewList();
+            renderCompletedInterviews();
 
             // Show confirmation
             const action = isEditMode ? 'updated' : 'added';
