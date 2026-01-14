@@ -376,6 +376,55 @@
             border-left: 2px solid #374151;
         }
 
+        /* Intel badges and sourced items */
+        .intel-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+            color: #0f172a;
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .intel-sourced {
+            border-left: 3px solid #22d3ee;
+            padding-left: 12px;
+            margin-left: -12px;
+        }
+
+        li.intel-sourced {
+            list-style-position: inside;
+            padding-left: 15px;
+            margin-left: 0;
+        }
+
+        .red-flag-content {
+            flex: 1;
+        }
+
+        .red-flag-defense {
+            color: #10b981;
+            font-size: 0.85rem;
+            margin-top: 6px;
+            padding-left: 8px;
+        }
+
+        #introFramingNote {
+            display: none;
+            color: #22d3ee;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: rgba(34, 211, 238, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #22d3ee;
+        }
+
         /* Drill Cards */
         .drill-grid {
             display: grid;
@@ -1148,10 +1197,11 @@
             <!-- Section 2: Your 60-90 Second Intro -->
             <div class="section" id="introSection">
                 <div class="section-header" onclick="toggleSection(this)">
-                    <h3 class="section-title"><span>🗣️</span> Your 60–90 Second Intro</h3>
+                    <h3 class="section-title"><span>🗣️</span> Your 60-90 Second Intro</h3>
                     <span class="section-toggle">▼</span>
                 </div>
                 <div class="section-body">
+                    <div id="introFramingNote"></div>
                     <div class="intro-card">
                         <p id="introText"></p>
                         <div class="intro-meta">
@@ -1255,7 +1305,7 @@
             "Most interviewers form an impression in the first 90 seconds.",
             "Asking thoughtful questions shows genuine interest in the role.",
             "Review the job description before your interview to align your stories.",
-            "Practice out loud — it's different from practicing in your head.",
+            "Practice out loud. It's different from practicing in your head.",
             "Arriving 5-10 minutes early shows professionalism and reduces stress."
         ];
 
@@ -1332,7 +1382,10 @@
                         date: app.interviewDate,
                         interviewerName: app.interviewerName || '',
                         interviewerTitle: app.interviewerTitle || '',
-                        jobDescription: app.jobDescription || app.notes || ''
+                        jobDescription: app.jobDescription || app.notes || '',
+                        // Hydrate intel fields from tracker app
+                        linkedInProfile: app.linkedInProfile || null,
+                        interviewerInsights: app.interviewerInsights || null
                     };
                 }
             }
@@ -1365,7 +1418,10 @@
                         date: app.interviewDate,
                         interviewerName: app.interviewerName || '',
                         interviewerTitle: app.interviewerTitle || '',
-                        jobDescription: app.jobDescription || app.notes || ''
+                        jobDescription: app.jobDescription || app.notes || '',
+                        // Hydrate intel fields from tracker app
+                        linkedInProfile: app.linkedInProfile || null,
+                        interviewerInsights: app.interviewerInsights || null
                     };
                 }
             }
@@ -1418,14 +1474,14 @@
                 }, 7000));
 
                 // CHECK FOR CACHED INTERVIEWER INSIGHTS FIRST
-                // If we have cached insights and they're recent (< 7 days), use them
+                // Always use cached insights if available (mark as stale if >7 days)
+                let intelIsStale = false;
                 if (currentInterview.interviewerInsights) {
                     const cachedAt = new Date(currentInterview.interviewerInsights.extractedAt);
                     const daysSinceCached = (Date.now() - cachedAt.getTime()) / (1000 * 60 * 60 * 24);
-                    if (daysSinceCached < 7) {
-                        interviewerIntelData = currentInterview.interviewerInsights.data;
-                        console.log('Using cached interviewer insights (cached ' + Math.round(daysSinceCached) + ' days ago)');
-                    }
+                    interviewerIntelData = currentInterview.interviewerInsights.data;
+                    intelIsStale = daysSinceCached >= 7;
+                    console.log('Using cached interviewer insights (cached ' + Math.round(daysSinceCached) + ' days ago' + (intelIsStale ? ', marked as stale' : '') + ')');
                 }
 
                 // Check if we have LinkedIn profile data to analyze
@@ -1588,6 +1644,11 @@
             document.getElementById('loadingState').style.display = 'none';
             document.getElementById('prepContent').style.display = 'block';
 
+            // Determine prep mode based on interviewer intelligence availability
+            const hasInterviewerIntel = Boolean(interviewerIntelData);
+            const prepMode = hasInterviewerIntel ? 'interviewer-driven' : 'generic';
+            console.log('Prep mode:', prepMode);
+
             // Set header
             document.getElementById('companyName').textContent = currentInterview.company;
             document.getElementById('interviewTypeBreadcrumb').textContent = typeLabels[currentInterview.type] || currentInterview.type;
@@ -1601,84 +1662,284 @@
             // Set mock interview button
             document.getElementById('stageSpecificMock').textContent = `${typeLabels[currentInterview.type] || ''} Mock Interview`;
 
-            // Render Interviewer Intelligence if available
-            if (interviewerIntelData) {
+            // Render Interviewer Intelligence summary if available (collapsed by default in interviewer-driven mode)
+            if (hasInterviewerIntel) {
                 renderInterviewerIntelligence();
             }
 
-            // Section 1: What They Evaluate
+            // ============================================================================
+            // MERGED SECTION 1: What They Evaluate (intel.likely_evaluation_focus + prepData.what_they_evaluate)
+            // ============================================================================
             const evaluateList = document.getElementById('evaluateList');
-            evaluateList.innerHTML = (prepData.what_they_evaluate || []).map(item => `<li>${item}</li>`).join('');
+            let mergedEvalFocus = [];
+            if (hasInterviewerIntel && interviewerIntelData.likely_evaluation_focus) {
+                // Intel first (tagged as personalized)
+                mergedEvalFocus = interviewerIntelData.likely_evaluation_focus.map(item => ({
+                    text: item,
+                    source: 'intel'
+                }));
+            }
+            // Add generic items that don't overlap
+            const genericEval = prepData.what_they_evaluate || [];
+            const intelEvalLower = mergedEvalFocus.map(e => e.text.toLowerCase());
+            genericEval.forEach(item => {
+                const itemLower = item.toLowerCase();
+                // Check for substantial overlap (more than just common words)
+                const hasOverlap = intelEvalLower.some(intelItem =>
+                    intelItem.includes(itemLower.slice(0, 20)) || itemLower.includes(intelItem.slice(0, 20))
+                );
+                if (!hasOverlap) {
+                    mergedEvalFocus.push({ text: item, source: 'generic' });
+                }
+            });
+            evaluateList.innerHTML = mergedEvalFocus.map(item =>
+                `<li${item.source === 'intel' ? ' class="intel-sourced"' : ''}>${item.text}${item.source === 'intel' ? ' <span class="intel-badge">personalized</span>' : ''}</li>`
+            ).join('');
 
-            // Section 2: Intro
+            // ============================================================================
+            // SECTION 2: Intro Pitch (with framing when intel exists)
+            // ============================================================================
             const introText = document.getElementById('introText');
-            introText.textContent = prepData.intro_pitch || 'Loading...';
-            const wordCount = (prepData.intro_pitch || '').split(/\s+/).length;
+            let introPitch = prepData.intro_pitch || 'Loading...';
+
+            // Add framing text when interviewer intel exists
+            if (hasInterviewerIntel) {
+                const interviewerName = interviewerIntelData.interviewer_name?.split(' ')[0] || currentInterview.interviewerName?.split(' ')[0] || 'the interviewer';
+                const interviewerFocus = interviewerIntelData.likely_evaluation_focus?.[0] || 'key competencies';
+                const framingNote = document.getElementById('introFramingNote');
+                if (framingNote) {
+                    framingNote.innerHTML = `<em>Tailored for ${interviewerName}, who values: ${interviewerFocus}</em>`;
+                    framingNote.style.display = 'block';
+                }
+            }
+
+            introText.textContent = introPitch;
+            const wordCount = (introPitch || '').split(/\s+/).length;
             document.getElementById('introWordCount').textContent = `${wordCount} words`;
 
-            // Section 3: Likely Questions
+            // ============================================================================
+            // MERGED SECTION 3: Likely Questions (intel themes first, generic deprioritized)
+            // ============================================================================
             const questionsList = document.getElementById('questionsList');
-            questionsList.innerHTML = (prepData.likely_questions || []).map((q, i) => `
-                <div class="question-item collapsed">
+            let mergedQuestions = [];
+
+            if (hasInterviewerIntel && interviewerIntelData.predicted_question_themes) {
+                // Convert intel themes to question format (they're themes, not full questions)
+                interviewerIntelData.predicted_question_themes.forEach(theme => {
+                    mergedQuestions.push({
+                        question: theme,
+                        guidance: `Based on ${interviewerIntelData.interviewer_name || 'interviewer'}'s background, expect probing questions in this area.`,
+                        source: 'intel'
+                    });
+                });
+            }
+
+            // Add generic questions that don't substantially overlap
+            const genericQuestions = prepData.likely_questions || [];
+            const intelQuestionsLower = mergedQuestions.map(q => q.question.toLowerCase());
+            genericQuestions.forEach(q => {
+                const qLower = q.question.toLowerCase();
+                const hasOverlap = intelQuestionsLower.some(intelQ =>
+                    intelQ.includes(qLower.slice(0, 25)) || qLower.includes(intelQ.slice(0, 25))
+                );
+                if (!hasOverlap) {
+                    mergedQuestions.push({ ...q, source: 'generic' });
+                }
+            });
+
+            questionsList.innerHTML = mergedQuestions.map((q, i) => `
+                <div class="question-item collapsed${q.source === 'intel' ? ' intel-sourced' : ''}">
                     <div class="question-header" onclick="toggleQuestion(this)">
-                        <span class="question-text">${q.question}</span>
+                        <span class="question-text">${q.question}${q.source === 'intel' ? ' <span class="intel-badge">likely theme</span>' : ''}</span>
                         <span class="question-toggle">▼</span>
                     </div>
                     <div class="question-answer">${q.guidance || 'Focus on specific examples from your experience.'}</div>
                 </div>
             `).join('');
 
-            // Section 4: Stories
+            // ============================================================================
+            // MERGED SECTION 4: Stories (intel tailored_stories first, then generic)
+            // ============================================================================
             const storiesList = document.getElementById('storiesList');
-            storiesList.innerHTML = (prepData.stories || []).map(story => `
-                <div class="story-card collapsed">
-                    <div class="story-header" onclick="toggleStory(this)">
-                        <span class="story-title">${story.title}</span>
-                        <span class="story-tag">${story.competency || 'General'}</span>
-                    </div>
-                    <div class="story-body">
-                        <div class="story-section">
-                            <div class="story-section-label">SITUATION</div>
-                            <p>${story.situation || ''}</p>
-                        </div>
-                        <div class="story-section">
-                            <div class="story-section-label">TASK</div>
-                            <p>${story.task || ''}</p>
-                        </div>
-                        <div class="story-section">
-                            <div class="story-section-label">ACTION</div>
-                            <p>${story.action || ''}</p>
-                        </div>
-                        <div class="story-section">
-                            <div class="story-section-label">RESULT</div>
-                            <p>${story.result || ''}</p>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            let mergedStories = [];
 
-            // Section 5: Red Flags
+            // Intel tailored stories first (these are story recommendations, not full STAR stories)
+            if (hasInterviewerIntel && interviewerIntelData.tailored_stories) {
+                interviewerIntelData.tailored_stories.forEach(s => {
+                    mergedStories.push({
+                        title: s.story_title,
+                        competency: s.competency,
+                        // These are recommendations - provide guidance rather than full STAR
+                        situation: s.why_this_story || 'Tailored recommendation based on interviewer background.',
+                        task: '',
+                        action: '',
+                        result: '',
+                        source: 'intel',
+                        isRecommendation: true
+                    });
+                });
+            }
+
+            // Add generic stories
+            const genericStories = prepData.stories || [];
+            const intelStoryTitles = mergedStories.map(s => s.title.toLowerCase());
+            genericStories.forEach(story => {
+                const titleLower = story.title.toLowerCase();
+                const hasOverlap = intelStoryTitles.some(intelTitle =>
+                    intelTitle.includes(titleLower.slice(0, 15)) || titleLower.includes(intelTitle.slice(0, 15))
+                );
+                if (!hasOverlap) {
+                    mergedStories.push({ ...story, source: 'generic' });
+                }
+            });
+
+            storiesList.innerHTML = mergedStories.map(story => {
+                if (story.isRecommendation) {
+                    // Render intel recommendations differently
+                    return `
+                        <div class="story-card collapsed intel-sourced">
+                            <div class="story-header" onclick="toggleStory(this)">
+                                <span class="story-title">${story.title} <span class="intel-badge">recommended</span></span>
+                                <span class="story-tag">${story.competency || 'General'}</span>
+                            </div>
+                            <div class="story-body">
+                                <div class="story-section">
+                                    <div class="story-section-label">WHY THIS STORY</div>
+                                    <p>${story.situation}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // Render full STAR stories
+                    return `
+                        <div class="story-card collapsed">
+                            <div class="story-header" onclick="toggleStory(this)">
+                                <span class="story-title">${story.title}</span>
+                                <span class="story-tag">${story.competency || 'General'}</span>
+                            </div>
+                            <div class="story-body">
+                                <div class="story-section">
+                                    <div class="story-section-label">SITUATION</div>
+                                    <p>${story.situation || ''}</p>
+                                </div>
+                                <div class="story-section">
+                                    <div class="story-section-label">TASK</div>
+                                    <p>${story.task || ''}</p>
+                                </div>
+                                <div class="story-section">
+                                    <div class="story-section-label">ACTION</div>
+                                    <p>${story.action || ''}</p>
+                                </div>
+                                <div class="story-section">
+                                    <div class="story-section-label">RESULT</div>
+                                    <p>${story.result || ''}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // ============================================================================
+            // MERGED SECTION 5: Red Flags / Risks (intel risks first, then generic)
+            // ============================================================================
             const redFlagsList = document.getElementById('redFlagsList');
-            redFlagsList.innerHTML = (prepData.red_flags || []).map(flag => `
-                <div class="red-flag-item">
-                    <span class="red-flag-icon">⚠️</span>
-                    <span class="red-flag-text">${flag}</span>
-                </div>
-            `).join('');
+            let mergedRisks = [];
 
-            // Section 5.5: Questions to Ask Them
+            // Intel risks (with defenses)
+            if (hasInterviewerIntel && interviewerIntelData.risks) {
+                interviewerIntelData.risks.forEach(r => {
+                    mergedRisks.push({
+                        text: r.risk,
+                        defense: r.defense,
+                        source: 'intel'
+                    });
+                });
+            }
+
+            // Generic red flags
+            const genericFlags = prepData.red_flags || [];
+            const intelRisksLower = mergedRisks.map(r => r.text.toLowerCase());
+            genericFlags.forEach(flag => {
+                const flagLower = flag.toLowerCase();
+                const hasOverlap = intelRisksLower.some(intelRisk =>
+                    intelRisk.includes(flagLower.slice(0, 20)) || flagLower.includes(intelRisk.slice(0, 20))
+                );
+                if (!hasOverlap) {
+                    mergedRisks.push({ text: flag, source: 'generic' });
+                }
+            });
+
+            redFlagsList.innerHTML = mergedRisks.map(item => {
+                if (item.source === 'intel' && item.defense) {
+                    return `
+                        <div class="red-flag-item intel-sourced">
+                            <span class="red-flag-icon">⚠️</span>
+                            <div class="red-flag-content">
+                                <span class="red-flag-text">${item.text} <span class="intel-badge">personalized</span></span>
+                                <div class="red-flag-defense">→ ${item.defense}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="red-flag-item">
+                            <span class="red-flag-icon">⚠️</span>
+                            <span class="red-flag-text">${item.text}</span>
+                        </div>
+                    `;
+                }
+            }).join('');
+
+            // ============================================================================
+            // MERGED SECTION 5.5: Questions to Ask Them (intel first, deduplicate)
+            // ============================================================================
             const questionsToAskList = document.getElementById('questionsToAskList');
-            if (questionsToAskList && prepData.questions_to_ask && prepData.questions_to_ask.length > 0) {
+            let mergedQuestionsToAsk = [];
+
+            // Intel questions to ask first
+            if (hasInterviewerIntel && interviewerIntelData.questions_to_ask) {
+                interviewerIntelData.questions_to_ask.forEach(q => {
+                    mergedQuestionsToAsk.push({
+                        question: q.question,
+                        rationale: q.rationale,
+                        source: 'intel'
+                    });
+                });
+            }
+
+            // Generic questions to ask
+            const genericQuestionsToAsk = prepData.questions_to_ask || [];
+            const intelQToAskLower = mergedQuestionsToAsk.map(q => q.question.toLowerCase());
+            genericQuestionsToAsk.forEach(q => {
+                const qText = typeof q === 'string' ? q : q.question;
+                const qLower = qText.toLowerCase();
+                const hasOverlap = intelQToAskLower.some(intelQ =>
+                    intelQ.includes(qLower.slice(0, 25)) || qLower.includes(intelQ.slice(0, 25))
+                );
+                if (!hasOverlap) {
+                    mergedQuestionsToAsk.push({
+                        question: qText,
+                        rationale: typeof q !== 'string' ? (q.why || q.rationale) : null,
+                        source: 'generic'
+                    });
+                }
+            });
+
+            if (mergedQuestionsToAsk.length > 0) {
                 document.getElementById('questionsToAskSection').style.display = 'block';
-                questionsToAskList.innerHTML = prepData.questions_to_ask.map(q => `
-                    <div class="question-to-ask-item">
-                        <div class="question-to-ask-text">"${typeof q === 'string' ? q : q.question}"</div>
-                        ${typeof q !== 'string' && (q.why || q.rationale) ? `<div class="question-to-ask-rationale">Why: ${q.why || q.rationale}</div>` : ''}
+                questionsToAskList.innerHTML = mergedQuestionsToAsk.map(q => `
+                    <div class="question-to-ask-item${q.source === 'intel' ? ' intel-sourced' : ''}">
+                        <div class="question-to-ask-text">"${q.question}"${q.source === 'intel' ? ' <span class="intel-badge">personalized</span>' : ''}</div>
+                        ${q.rationale ? `<div class="question-to-ask-rationale">Why: ${q.rationale}</div>` : ''}
                     </div>
                 `).join('');
             }
 
-            // Section 6: Strategy (only for HM/Technical)
+            // ============================================================================
+            // SECTION 6: Strategy (only for HM/Technical)
+            // ============================================================================
             if (currentInterview.type === 'hiring_manager' || currentInterview.type === 'technical') {
                 document.getElementById('strategySection').style.display = 'block';
                 const strategyList = document.getElementById('strategyList');
@@ -1693,7 +1954,9 @@
                 `).join('');
             }
 
-            // Section 7: Recommended Drills
+            // ============================================================================
+            // SECTION 7: Recommended Drills
+            // ============================================================================
             const drillsGrid = document.getElementById('drillsGrid');
             const drills = [
                 { icon: '🎯', name: 'Intro Practice', type: 'intro' },
