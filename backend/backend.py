@@ -72,6 +72,71 @@ dry_run_metrics = DryRunMetrics()
 
 
 # =============================================================================
+# DRY-RUN HELPER FUNCTION (P0 UX + SAFETY FIX)
+# Per spec: Centralize the logic so it cannot drift
+# Use this EVERYWHERE. No inline checks.
+# =============================================================================
+def is_dry_run(request) -> bool:
+    """
+    Canonical check for dry-run mode.
+
+    CRITICAL: Use this function for ALL dry-run checks.
+    Do NOT use inline checks like `if request.dry_run`.
+    This ensures consistent behavior across the entire codebase.
+
+    Returns:
+        True if dry_run is explicitly enabled, False otherwise
+    """
+    return bool(getattr(request, "dry_run", False))
+
+
+def log_execution_mode_banner(request, analysis_id: str):
+    """
+    Log high-visibility execution mode banner.
+
+    Per P0 spec: This MUST appear:
+    - Once per request
+    - Before any gating or analysis
+    - Before any possible Claude invocation
+    """
+    if is_dry_run(request):
+        logger.info("=" * 70)
+        logger.info("🧪 DRY RUN MODE ACTIVE — NO LLM CALLS WILL BE MADE")
+        logger.info(f"   Analysis ID: {analysis_id}")
+        logger.info("   Returns deterministic leadership evaluation only")
+        logger.info("   Claude API spend: $0.00")
+        logger.info("=" * 70)
+    else:
+        logger.info("=" * 70)
+        logger.info("⚠️  FULL ANALYSIS MODE — LLM CALLS ENABLED")
+        logger.info(f"   Analysis ID: {analysis_id}")
+        logger.info("   Claude will be invoked for full analysis")
+        logger.info("=" * 70)
+
+
+def assert_no_claude_in_dry_run(request, context: str = ""):
+    """
+    Guardrail assertion: Fail immediately if Claude is about to be called in dry-run.
+
+    Per P0 spec: Call this immediately before ANY Claude call.
+    Redundant by design - defense in depth.
+
+    Args:
+        request: The request object to check
+        context: Optional context for error message (e.g., "analyze_job", "extract_resume")
+
+    Raises:
+        AssertionError: If dry_run is True
+    """
+    if is_dry_run(request):
+        error_msg = f"CRITICAL: Claude call attempted during dry_run"
+        if context:
+            error_msg += f" (context: {context})"
+        logger.error(error_msg)
+        raise AssertionError(error_msg)
+
+
+# =============================================================================
 # CANONICAL LEADERSHIP CONTEXT
 # Per P0 fix: Single source of truth for leadership gating
 # This class stores the canonical leadership gate result set ONCE by the
@@ -11944,6 +12009,12 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
     print(f"🆕 NEW ANALYSIS REQUEST - ID: {analysis_id}")
     print(f"{'='*80}")
 
+    # ========================================================================
+    # P0 UX + SAFETY: Log execution mode banner FIRST
+    # Per spec: This MUST appear before any gating or analysis
+    # ========================================================================
+    log_execution_mode_banner(body, analysis_id)
+
     # Opportunistic cleanup of expired sessions to prevent memory leaks
     cleanup_expired_sessions()
 
@@ -12083,14 +12154,17 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
     # ========================================================================
     # DRY-RUN MODE: Return deterministic leadership evaluation WITHOUT Claude
     # Per P0 spec: When dry_run=True, do NOT call Claude, return gate result only
+    # Per P0 UX + SAFETY: Use is_dry_run() helper - no inline checks
     # ========================================================================
-    if body.dry_run:
-        print(f"\n🔍🔍🔍 DRY-RUN MODE ENABLED - NO CLAUDE CALLS 🔍🔍🔍")
+    if is_dry_run(body):
+        print(f"\n🔍🔍🔍 DRY-RUN MODE CONFIRMED - NO CLAUDE CALLS 🔍🔍🔍")
         print(f"   Returning deterministic leadership evaluation only")
 
         # Build dry-run response with deterministic values only
+        # Per P0 spec: Include dry_run_confirmed=True for explicit verification
         dry_run_response = {
             "dry_run": True,
+            "dry_run_confirmed": True,  # P0 UX: Explicit confirmation field
             "analysis_id": analysis_id,
             "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
             "company": body.company,
@@ -13959,6 +14033,13 @@ Role: {body.role_title}
 
     # GUARD CLAUSE: Reinforce JSON-only output at end of user message
     user_message += "\n\n=== REMINDER ===\nReturn ONLY the JSON object matching the schema. No natural language. No markdown. No commentary. Start with { and end with }."
+
+    # ========================================================================
+    # P0 SAFETY: GUARDRAIL ASSERTION BEFORE CLAUDE CALL
+    # Per spec: Immediately before ANY Claude call, assert not dry_run
+    # Redundant by design - defense in depth
+    # ========================================================================
+    assert_no_claude_in_dry_run(body, "analyze_jd")
 
     # Call Claude with higher token limit for comprehensive analysis
     response = call_claude(system_prompt, user_message, max_tokens=4096)
