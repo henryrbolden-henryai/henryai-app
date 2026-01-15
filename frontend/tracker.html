@@ -4959,7 +4959,7 @@
             '📞 Screening': ['Recruiter Screen', 'Awaiting Screen Result'],
             '🎯 Interview': ['Hiring Manager', 'Technical Round', 'Panel Interview', 'Final Round', 'Executive Interview', 'Awaiting Decision'],
             '✅ Outcome': ['Offer Received', 'Negotiating', 'Accepted'],
-            '❌ Closed': ['Rejected: No Fit', 'Rejected: Experience Gap', 'Rejected: Culture Fit', 'Rejected: Went Internal', 'Rejected: Other', 'Withdrawn', 'No Response', 'Ghosted']
+            '❌ Closed': ['Auto-Rejected', 'Rejected: No Fit', 'Rejected: Experience Gap', 'Rejected: Culture Fit', 'Rejected: Went Internal', 'Rejected: Other', 'Withdrawn', 'No Response', 'Ghosted']
         };
 
         const STATUSES = {
@@ -4986,6 +4986,7 @@
             'Accepted': { label: '🏆  Accepted', active: false, stage: 5, stageWeight: 80, awaiting: false, category: 'Outcome' },
 
             // Closed Stage - Rejection reasons for coaching insights
+            'Auto-Rejected': { label: '🤖  Auto-Rejected', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'targeting' },
             'Rejected: No Fit': { label: '❌  No Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'targeting' },
             'Rejected: Experience Gap': { label: '❌  Experience Gap', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'skills' },
             'Rejected: Culture Fit': { label: '❌  Culture Fit', active: false, stage: -1, stageWeight: 0, awaiting: false, category: 'Closed', coachingArea: 'interview' },
