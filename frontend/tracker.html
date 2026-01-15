@@ -8237,9 +8237,14 @@
                     }, 300);
                 }
 
-                // If transitioning to a Closed status, show the rejection debrief
+                // If transitioning to a Closed status, auto-archive and show the rejection debrief
                 const statusDef = STATUSES[newStatus];
                 if (statusDef && statusDef.category === 'Closed' && oldStatus !== newStatus) {
+                    // Auto-archive closed applications
+                    apps[idx].archivedAt = new Date().toISOString();
+                    saveApplications(apps);
+                    renderAll(apps);
+
                     setTimeout(() => {
                         showRejectionDebrief(appId);
                     }, needsDatePrompt ? 600 : 300);
@@ -9883,18 +9888,26 @@ Thanks so much!
             };
 
             apps.forEach(app => {
+                // Skip archived applications
+                if (app.archivedAt) return;
+
                 const status = app.status?.toLowerCase() || '';
                 const intel = intelligence?.applications?.find(a => String(a.id) === String(app.id));
 
-                if (status.includes('applied') || status.includes('networking')) {
+                // Skip closed statuses
+                if (status.includes('rejected') || status.includes('withdrawn') || status.includes('ghosted') || status === 'no response' || status === 'archived') {
+                    return;
+                }
+
+                if (status.includes('applied') || status.includes('networking') || status.includes('preparing')) {
                     statusGroups.applied.push({ app, intel });
                 } else if (status.includes('recruiter') || status.includes('screen')) {
                     statusGroups.screening.push({ app, intel });
                 } else if (status.includes('hiring') || status.includes('technical') || status.includes('panel') || status.includes('interview')) {
                     statusGroups.interviewing.push({ app, intel });
-                } else if (status.includes('final') || status.includes('executive') || status.includes('offer')) {
+                } else if (status.includes('final') || status.includes('executive') || status.includes('offer') || status.includes('negotiat') || status.includes('accepted')) {
                     statusGroups.final.push({ app, intel });
-                } else if (!['rejected', 'withdrawn', 'archived'].includes(status)) {
+                } else {
                     statusGroups.applied.push({ app, intel });
                 }
             });
