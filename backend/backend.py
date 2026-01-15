@@ -12559,18 +12559,33 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
 
         cached_analysis = get_cached_analysis(resume_hash)
         if cached_analysis:
-            print(f"💾 RESUME CACHE HIT — LLM skipped")
-            print(f"   Returning cached analysis for resume hash: {resume_hash[:12]}...")
+            # P0 FIX: Validate cached fit_score is a number, not an object
+            # Stale cache entries from buggy deployments may have fit_score as {"value": N, ...}
+            cached_fit_score = cached_analysis.get("fit_score")
+            if isinstance(cached_fit_score, dict):
+                # Extract value from object format, or invalidate cache
+                fit_value = cached_fit_score.get("value")
+                if fit_value is not None and isinstance(fit_value, (int, float)):
+                    print(f"💾 RESUME CACHE HIT — fixing stale fit_score object → {fit_value}")
+                    cached_analysis["fit_score"] = int(fit_value)
+                else:
+                    # Invalid cache entry - skip it and re-analyze
+                    print(f"💾 RESUME CACHE INVALID — fit_score is malformed object, re-analyzing")
+                    cached_analysis = None
 
-            # Add cache metadata to response
-            cached_analysis["cache"] = {
-                "hit": True,
-                "resume_hash": resume_hash,
-                "cached_at": cached_analysis.get("_cached_at", datetime.utcnow().isoformat())
-            }
-            cached_analysis["analysis_id"] = analysis_id  # Fresh analysis_id for this request
+            if cached_analysis:
+                print(f"💾 RESUME CACHE HIT — LLM skipped")
+                print(f"   Returning cached analysis for resume hash: {resume_hash[:12]}...")
 
-            return JSONResponse(content=cached_analysis)
+                # Add cache metadata to response
+                cached_analysis["cache"] = {
+                    "hit": True,
+                    "resume_hash": resume_hash,
+                    "cached_at": cached_analysis.get("_cached_at", datetime.utcnow().isoformat())
+                }
+                cached_analysis["analysis_id"] = analysis_id  # Fresh analysis_id for this request
+
+                return JSONResponse(content=cached_analysis)
         else:
             print(f"💾 RESUME CACHE MISS — proceeding to analysis")
 
