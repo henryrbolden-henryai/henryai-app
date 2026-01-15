@@ -8032,6 +8032,14 @@
                         showDateEditModal(appId);
                     }, 300);
                 }
+
+                // If transitioning to a Closed status, show the rejection debrief
+                const statusDef = STATUSES[newStatus];
+                if (statusDef && statusDef.category === 'Closed' && oldStatus !== newStatus) {
+                    setTimeout(() => {
+                        showRejectionDebrief(appId);
+                    }, needsDatePrompt ? 600 : 300);
+                }
             }
 
             document.querySelectorAll('.status-dropdown').forEach(d => d.classList.remove('show'));
