@@ -12,6 +12,7 @@ import random
 import logging
 import requests
 import logging
+import hashlib
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -345,6 +346,113 @@ def calculate_fit_score_llm(
     except Exception as e:
         print(f"⚠️ [{analysis_id}] Fit score LLM failed: {e}")
         return create_fit_score_not_calculated(f"Fit score unavailable")
+
+
+# =============================================================================
+# RESUME ANALYSIS CACHE
+# Per P0 spec: Prevent repeated LLM calls for the same resume
+# Cache lives for 7 days, refreshes last_used_at on hit
+# =============================================================================
+
+# Kill switch - when False, bypass cache entirely (no read, no write)
+ENABLE_RESUME_CACHE = os.getenv("ENABLE_RESUME_CACHE", "true").lower() == "true"
+
+# Cache TTL in days
+RESUME_CACHE_TTL_DAYS = 7
+
+
+def compute_resume_hash(resume_data: dict) -> str:
+    """
+    Compute deterministic hash for resume content.
+
+    Rules:
+    - Hash changes only when resume content changes
+    - Ignores whitespace and formatting noise
+    - Uses SHA-256 for collision resistance
+    """
+    # Convert resume dict to string, normalize whitespace
+    resume_text = json.dumps(resume_data, sort_keys=True)
+    normalized = " ".join(resume_text.lower().split())
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def get_cached_analysis(resume_hash: str) -> Optional[Dict[str, Any]]:
+    """
+    Lookup cached analysis by resume hash.
+
+    Returns cached payload if found and not expired, None otherwise.
+    Updates last_used_at on hit.
+    """
+    if not ENABLE_RESUME_CACHE:
+        return None
+
+    # Supabase client imported at module level
+    global supabase
+    if not supabase:
+        print("💾 RESUME CACHE MISS — Supabase not configured")
+        return None
+
+    try:
+        # Query cache table
+        result = supabase.table("resume_analysis_cache").select("*").eq("resume_hash", resume_hash).execute()
+
+        if not result.data or len(result.data) == 0:
+            return None
+
+        cached = result.data[0]
+
+        # Check TTL (7 days)
+        created_at = datetime.fromisoformat(cached["created_at"].replace("Z", "+00:00"))
+        age_days = (datetime.now(created_at.tzinfo) - created_at).days
+
+        if age_days > RESUME_CACHE_TTL_DAYS:
+            print(f"💾 RESUME CACHE EXPIRED — age: {age_days} days > {RESUME_CACHE_TTL_DAYS} TTL")
+            return None
+
+        # Update last_used_at (fire and forget)
+        try:
+            supabase.table("resume_analysis_cache").update({
+                "last_used_at": datetime.utcnow().isoformat()
+            }).eq("resume_hash", resume_hash).execute()
+        except Exception as e:
+            print(f"⚠️ Failed to update cache last_used_at: {e}")
+
+        return cached["analysis_payload"]
+
+    except Exception as e:
+        print(f"⚠️ Resume cache lookup failed: {e}")
+        return None
+
+
+def store_cached_analysis(resume_hash: str, analysis_payload: Dict[str, Any]) -> bool:
+    """
+    Store analysis result in cache.
+
+    Only stores successful analyses (fit_score has valid status).
+    Returns True on success, False on failure.
+    """
+    if not ENABLE_RESUME_CACHE:
+        return False
+
+    global supabase
+    if not supabase:
+        return False
+
+    try:
+        # Upsert to handle both insert and update cases
+        supabase.table("resume_analysis_cache").upsert({
+            "resume_hash": resume_hash,
+            "analysis_payload": analysis_payload,
+            "created_at": datetime.utcnow().isoformat(),
+            "last_used_at": datetime.utcnow().isoformat()
+        }).execute()
+
+        print(f"💾 RESUME CACHE WRITE — hash: {resume_hash[:12]}...")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ Resume cache write failed: {e}")
+        return False
 
 
 # =============================================================================
@@ -12246,6 +12354,32 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
     resume_data = body.resume if body.resume else {}
     jd_text = body.job_description or ""
 
+    # ========================================================================
+    # P0 RESUME CACHE: Check for cached analysis BEFORE any LLM calls
+    # If cache hit, return immediately - ZERO Claude calls
+    # ========================================================================
+    resume_hash = None
+    if ENABLE_RESUME_CACHE and resume_data:
+        resume_hash = compute_resume_hash(resume_data)
+        print(f"💾 [{analysis_id}] Resume hash: {resume_hash[:12]}...")
+
+        cached_analysis = get_cached_analysis(resume_hash)
+        if cached_analysis:
+            print(f"💾 RESUME CACHE HIT — LLM skipped")
+            print(f"   Returning cached analysis for resume hash: {resume_hash[:12]}...")
+
+            # Add cache metadata to response
+            cached_analysis["cache"] = {
+                "hit": True,
+                "resume_hash": resume_hash,
+                "cached_at": cached_analysis.get("_cached_at", datetime.utcnow().isoformat())
+            }
+            cached_analysis["analysis_id"] = analysis_id  # Fresh analysis_id for this request
+
+            return JSONResponse(content=cached_analysis)
+        else:
+            print(f"💾 RESUME CACHE MISS — proceeding to analysis")
+
     # Pre-compute isolated role detection for later use
     isolated_role_detection = None
     pre_llm_leadership_gate = None  # NEW: Pre-LLM leadership gate result
@@ -14877,7 +15011,29 @@ Role: {body.role_title}
             # Add canonical context to response for debugging
             parsed_data["_canonical_leadership_context"] = leadership_ctx.to_dict()
 
-        return parsed_data
+        # =====================================================================
+        # P0 RESUME CACHE: Store successful analysis in cache
+        # Only cache when analysis completes without errors
+        # =====================================================================
+        if ENABLE_RESUME_CACHE and resume_hash:
+            # Add timestamp for cache tracking
+            parsed_data["_cached_at"] = datetime.utcnow().isoformat()
+
+            # Store in cache (fire and forget - don't block response)
+            try:
+                store_cached_analysis(resume_hash, parsed_data)
+            except Exception as cache_err:
+                print(f"⚠️ Failed to cache analysis: {cache_err}")
+
+            # Add cache metadata to response
+            parsed_data["cache"] = {
+                "hit": False,
+                "resume_hash": resume_hash,
+                "cached_at": parsed_data["_cached_at"]
+            }
+
+        print(f"✅ Analysis complete, returning response")
+        return JSONResponse(content=parsed_data)
     except json.JSONDecodeError as e:
         # Log the problematic section of Claude's response for debugging
         error_pos = e.pos if hasattr(e, 'pos') else 0

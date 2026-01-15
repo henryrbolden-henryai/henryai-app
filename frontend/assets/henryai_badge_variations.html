@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HenryAI Badge Variations</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 48px;
+        }
+        
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 32px;
+            margin-bottom: 64px;
+        }
+        
+        .badge-card {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .badge-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+        }
+        
+        .badge-display {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        
+        .badge-display.light {
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .badge-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #667eea;
+        }
+        
+        .badge-description {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+        
+        .badge-use-case {
+            font-size: 12px;
+            color: #555;
+            font-style: italic;
+        }
+        
+        .recommended {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+        
+        .recommended .badge-title::after {
+            content: " ★ RECOMMENDED";
+            font-size: 10px;
+            color: #764ba2;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HenryAI Badge & Seal Variations</h1>
+        <p class="subtitle">Exploring the circular seal format with different approaches to text and geometry.</p>
+        
+        <div class="badge-grid">
+            <!-- Option 1: No text inside -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge1" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" fill="url(#badge1)"/>
+                        <path d="M65 115 L65 70" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+                        <path d="M135 115 L135 55" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+                        <path d="M65 92 L135 92" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none"/>
+                        <circle cx="135" cy="55" r="8" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 1: Clean Badge, No Text</div>
+                <div class="badge-description">Just the H-Mark in a gradient circle. Maximum impact. Text lives outside when needed, or the badge stands completely alone.</div>
+                <div class="badge-use-case">Best for: App icons, social avatars, quality seals.</div>
+            </div>
+            
+            <!-- Option 2: Perimeter text -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <path id="circlePath2" d="M 100, 100 m -70, 0 a 70,70 0 1,1 140,0 a 70,70 0 1,1 -140,0"/>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" fill="url(#badge2)"/>
+                        <text font-size="11" font-weight="600" fill="#fff" letter-spacing="3">
+                            <textPath href="#circlePath2" startOffset="50%" text-anchor="middle">
+                                HENRYAI
+                            </textPath>
+                        </text>
+                        <path d="M70 120 L70 75" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 120 L130 60" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 97 L130 97" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 2: Perimeter Text (Top Arc)</div>
+                <div class="badge-description">Subtle branding curved along the top edge. Luxury watch aesthetic. The mark is the hero, the text is contextual.</div>
+                <div class="badge-use-case">Best for: Premium positioning, certification badges, official seals.</div>
+            </div>
+            
+            <!-- Option 3: Mission statement perimeter -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <path id="topArc3" d="M 100, 100 m -70, 0 a 70,70 0 1,1 140,0"/>
+                            <path id="bottomArc3" d="M 100, 100 m 70, 0 a 70,70 0 1,1 -140,0"/>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" fill="url(#badge3)"/>
+                        <text font-size="9" font-weight="600" fill="#fff" letter-spacing="2">
+                            <textPath href="#topArc3" startOffset="50%" text-anchor="middle">
+                                STRATEGIC
+                            </textPath>
+                        </text>
+                        <text font-size="9" font-weight="600" fill="#fff" letter-spacing="2">
+                            <textPath href="#bottomArc3" startOffset="50%" text-anchor="middle">
+                                JOB SEARCH
+                            </textPath>
+                        </text>
+                        <path d="M70 115 L70 75" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 3: Mission Statement Perimeter</div>
+                <div class="badge-description">"STRATEGIC" above, "JOB SEARCH" below. Mission statement wrapped around the mark.</div>
+                <div class="badge-use-case">Best for: When you need to communicate what you do at a glance. Educational contexts, presentations.</div>
+            </div>
+            
+            <!-- Option 4: Hexagon -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge4" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 100,15 L 165,57.5 L 165,142.5 L 100,185 L 35,142.5 L 35,57.5 Z" fill="url(#badge4)"/>
+                        <path d="M70 115 L70 75" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 4: Hexagon Format</div>
+                <div class="badge-description">Tech geometry. More structure than a circle, still clean. Suggests precision and systematic thinking.</div>
+                <div class="badge-use-case">Best for: Tech/SaaS positioning, developer tools aesthetic, product badges.</div>
+            </div>
+            
+            <!-- Option 5: Shield -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge5" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 100,20 L 160,40 L 160,110 Q 160,150 100,180 Q 40,150 40,110 L 40,40 Z" fill="url(#badge5)"/>
+                        <path d="M70 115 L70 75" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 5: Shield Format</div>
+                <div class="badge-description">Protection. Guidance. Trust. Classic emblem shape that suggests you're defending candidates against a brutal market.</div>
+                <div class="badge-use-case">Best for: "Trusted advisor" positioning, security/protection messaging, premium service tier badges.</div>
+            </div>
+            
+            <!-- Option 6: Gradient ring, solid center -->
+            <div class="badge-card">
+                <div class="badge-display light">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge6" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="hmark6" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" fill="url(#badge6)"/>
+                        <circle cx="100" cy="100" r="70" fill="#fff"/>
+                        <path d="M70 115 L70 75" stroke="#667eea" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="url(#hmark6)" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#764ba2" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#764ba2"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 6: Gradient Ring, Clean Center</div>
+                <div class="badge-description">Reversed emphasis. The gradient frames the mark instead of containing it. Works beautifully on light backgrounds.</div>
+                <div class="badge-use-case">Best for: Light mode interfaces, print materials, email signatures.</div>
+            </div>
+            
+            <!-- Option 7: Minimal ring, oversized H - RECOMMENDED -->
+            <div class="badge-card recommended">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge7" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#badge7)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#badge7)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 7: Minimal Ring, Maximum Impact</div>
+                <div class="badge-description">Aggressive. The H-Mark dominates, the ring just contains it. More energy, less formal.</div>
+                <div class="badge-use-case">Best for: Bold brand personality, younger demographic, when you want the mark to feel powerful rather than refined.</div>
+            </div>
+            
+            <!-- Option 8: Double ring -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge8" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#badge8)" stroke-width="3" fill="none"/>
+                        <circle cx="100" cy="100" r="72" stroke="url(#badge8)" stroke-width="2" fill="none" opacity="0.5"/>
+                        <path d="M70 115 L70 75" stroke="#667eea" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="url(#badge8)" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#764ba2" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#764ba2"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 8: Double Ring Detail</div>
+                <div class="badge-description">Extra refinement. Two concentric rings add visual sophistication without bulk. Premium watch aesthetic.</div>
+                <div class="badge-use-case">Best for: High-end service tiers, executive positioning, when you want maximum polish.</div>
+            </div>
+            
+            <!-- Option 9: Octagon -->
+            <div class="badge-card">
+                <div class="badge-display">
+                    <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="badge9" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 71,30 L 129,30 L 170,71 L 170,129 L 129,170 L 71,170 L 30,129 L 30,71 Z" fill="url(#badge9)"/>
+                        <path d="M70 115 L70 75" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M130 115 L130 60" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <path d="M70 95 L130 95" stroke="#fff" stroke-width="7" stroke-linecap="round" fill="none"/>
+                        <circle cx="130" cy="60" r="7" fill="#fff"/>
+                    </svg>
+                </div>
+                <div class="badge-title">Option 9: Octagon Format</div>
+                <div class="badge-description">Distinctive geometry. More corners than a hexagon, still symmetrical. Stops the scroll.</div>
+                <div class="badge-use-case">Best for: Standing out in crowded feeds, app stores, when circles and squares feel too common.</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

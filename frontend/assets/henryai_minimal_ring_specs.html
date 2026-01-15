@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HenryAI Minimal Ring - Design Specs & Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 40px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 48px;
+        }
+        
+        .section {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+        }
+        
+        .section h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            color: #667eea;
+        }
+        
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .spec-item {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .spec-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .spec-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .spec-note {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .logo-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .svg-code {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            color: #888;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .color-swatch {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .swatch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .swatch-color {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        
+        .swatch-info {
+            font-size: 13px;
+        }
+        
+        .swatch-hex {
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .swatch-name {
+            color: #666;
+        }
+        
+        /* Animation Demo */
+        .animation-demo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #111 100%);
+            border-radius: 8px;
+        }
+        
+        .animation-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+        
+        .tab-button {
+            padding: 8px 16px;
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #888;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            border-color: #444;
+            color: #fff;
+        }
+        
+        .tab-button.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: #fff;
+        }
+        
+        /* Bouncing Dot Animation */
+        @keyframes bounceDot {
+            0%, 100% { 
+                transform: translateY(0);
+            }
+            50% { 
+                transform: translateY(-15px);
+            }
+        }
+        
+        .bounce-dot {
+            animation: bounceDot 1s ease-in-out infinite;
+            transform-origin: center center;
+        }
+        
+        /* Spinning Logo Animation */
+        @keyframes spinLogo {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spin-logo {
+            animation: spinLogo 2s linear infinite;
+            transform-origin: center center;
+        }
+        
+        /* Pulsing Ring Animation */
+        @keyframes pulseRing {
+            0%, 100% { 
+                opacity: 1;
+                stroke-width: 4;
+            }
+            50% { 
+                opacity: 0.6;
+                stroke-width: 6;
+            }
+        }
+        
+        .pulse-ring {
+            animation: pulseRing 1.5s ease-in-out infinite;
+        }
+        
+        /* Loading stages */
+        .loading-stages {
+            margin-top: 32px;
+            text-align: center;
+        }
+        
+        .stage {
+            font-size: 14px;
+            color: #444;
+            margin: 8px 0;
+            transition: all 0.3s;
+        }
+        
+        .stage.active {
+            color: #667eea;
+        }
+        
+        .stage.complete {
+            color: #22c55e;
+        }
+        
+        .stage.complete::before {
+            content: "✓ ";
+        }
+        
+        /* Size examples */
+        .size-examples {
+            display: flex;
+            align-items: flex-end;
+            gap: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .size-example {
+            text-align: center;
+        }
+        
+        .size-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HenryAI Minimal Ring - Design Specs</h1>
+        <p class="subtitle">Production-ready specifications and animated loading implementation</p>
+        
+        <!-- DESIGN SPECIFICATIONS -->
+        <div class="section">
+            <h2>Core Design Specifications</h2>
+            
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <div class="spec-label">Canvas Size</div>
+                    <div class="spec-value">200px × 200px</div>
+                    <div class="spec-note">Base artboard. Scale proportionally for all sizes.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Ring Radius</div>
+                    <div class="spec-value">85px (from center)</div>
+                    <div class="spec-note">42.5% of canvas width. Keeps consistent proportions at any size.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Ring Stroke Width</div>
+                    <div class="spec-value">4px</div>
+                    <div class="spec-note">2% of canvas width. Thin but visible at all sizes.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">H-Mark Stroke Width</div>
+                    <div class="spec-value">9px</div>
+                    <div class="spec-note">4.5% of canvas. Bold presence within the ring.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Peak Dot Radius</div>
+                    <div class="spec-value">9px</div>
+                    <div class="spec-note">Matches stroke width for visual harmony.</div>
+                </div>
+                
+                <div class="spec-item">
+                    <div class="spec-label">Height Difference</div>
+                    <div class="spec-value">40%</div>
+                    <div class="spec-note">Right stem 40% taller than left. Creates the "peak" energy.</div>
+                </div>
+            </div>
+            
+            <h3 style="color: #fff; margin-bottom: 16px;">Brand Colors</h3>
+            <div class="color-swatch">
+                <div class="swatch">
+                    <div class="swatch-color" style="background: #667eea;"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-hex">#667eea</div>
+                        <div class="swatch-name">Primary Blue</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: #764ba2;"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-hex">#764ba2</div>
+                        <div class="swatch-name">Primary Purple</div>
+                    </div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    <div class="swatch-info">
+                        <div class="swatch-hex">Gradient</div>
+                        <div class="swatch-name">45° diagonal</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CLEAN SVG CODE -->
+        <div class="section">
+            <h2>Production SVG Code</h2>
+            
+            <div class="logo-display">
+                <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Ring -->
+                    <circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/>
+                    <!-- Left stem -->
+                    <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <!-- Right stem (taller) -->
+                    <path d="M145 130 L145 50" stroke="url(#ringGradient)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <!-- Crossbar -->
+                    <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                    <!-- Peak dot -->
+                    <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                </svg>
+            </div>
+            
+            <div class="svg-code">&lt;svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+    &lt;defs&gt;
+        &lt;linearGradient id="ringGradient" x1="0%" y1="100%" x2="100%" y2="0%"&gt;
+            &lt;stop offset="0%" style="stop-color:#667eea;stop-opacity:1" /&gt;
+            &lt;stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" /&gt;
+        &lt;/linearGradient&gt;
+    &lt;/defs&gt;
+    &lt;!-- Ring --&gt;
+    &lt;circle cx="100" cy="100" r="85" stroke="url(#ringGradient)" stroke-width="4" fill="none"/&gt;
+    &lt;!-- Left stem --&gt;
+    &lt;path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/&gt;
+    &lt;!-- Right stem (taller) --&gt;
+    &lt;path d="M145 130 L145 50" stroke="url(#ringGradient)" stroke-width="9" stroke-linecap="round" fill="none"/&gt;
+    &lt;!-- Crossbar --&gt;
+    &lt;path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/&gt;
+    &lt;!-- Peak dot --&gt;
+    &lt;circle cx="145" cy="50" r="9" fill="#764ba2"/&gt;
+&lt;/svg&gt;</div>
+        </div>
+        
+        <!-- SIZE EXAMPLES -->
+        <div class="section">
+            <h2>Recommended Sizes</h2>
+            <div class="size-examples">
+                <div class="size-example">
+                    <svg width="16" height="16" viewBox="0 0 200 200" fill="none">
+                        <defs><linearGradient id="s1" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/></linearGradient></defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#s1)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#s1)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">16px<br>Favicon</div>
+                </div>
+                <div class="size-example">
+                    <svg width="32" height="32" viewBox="0 0 200 200" fill="none">
+                        <defs><linearGradient id="s2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/></linearGradient></defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#s2)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#s2)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">32px<br>Tab icon</div>
+                </div>
+                <div class="size-example">
+                    <svg width="48" height="48" viewBox="0 0 200 200" fill="none">
+                        <defs><linearGradient id="s3" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/></linearGradient></defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#s3)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#s3)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">48px<br>Chat widget</div>
+                </div>
+                <div class="size-example">
+                    <svg width="64" height="64" viewBox="0 0 200 200" fill="none">
+                        <defs><linearGradient id="s4" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/></linearGradient></defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#s4)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#s4)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">64px<br>App icon</div>
+                </div>
+                <div class="size-example">
+                    <svg width="128" height="128" viewBox="0 0 200 200" fill="none">
+                        <defs><linearGradient id="s5" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/></linearGradient></defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#s5)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#s5)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                    <div class="size-label">128px<br>Loading screen</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ANIMATION OPTIONS -->
+        <div class="section">
+            <h2>Animation Options</h2>
+            
+            <div class="animation-demo">
+                <div class="animation-tabs">
+                    <button class="tab-button active" onclick="setAnimation('bounce')">Bouncing Dot</button>
+                    <button class="tab-button" onclick="setAnimation('spin')">Spinning Logo</button>
+                    <button class="tab-button" onclick="setAnimation('pulse')">Pulsing Ring</button>
+                </div>
+                
+                <div id="animationContainer">
+                    <!-- Default: Bouncing Dot -->
+                    <svg width="128" height="128" viewBox="0 0 200 200" fill="none">
+                        <defs>
+                            <linearGradient id="demoGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoGradient)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoGradient)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2" class="bounce-dot"/>
+                    </svg>
+                </div>
+                
+                <div class="loading-stages">
+                    <div class="stage active">Analyzing job description...</div>
+                    <div class="stage">Evaluating fit score...</div>
+                    <div class="stage">Generating recommendations...</div>
+                    <div class="stage">Preparing your strategy...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- CSS ANIMATION CODE -->
+        <div class="section">
+            <h2>Animation CSS</h2>
+            <div class="svg-code">/* Bouncing Dot */
+@keyframes bounceDot {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+.bounce-dot {
+    animation: bounceDot 1s ease-in-out infinite;
+    transform-origin: center center;
+}
+
+/* Spinning Logo */
+@keyframes spinLogo {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.spin-logo {
+    animation: spinLogo 2s linear infinite;
+    transform-origin: center center;
+}
+
+/* Pulsing Ring */
+@keyframes pulseRing {
+    0%, 100% { opacity: 1; stroke-width: 4; }
+    50% { opacity: 0.6; stroke-width: 6; }
+}
+.pulse-ring {
+    animation: pulseRing 1.5s ease-in-out infinite;
+}</div>
+        </div>
+    </div>
+    
+    <script>
+        function setAnimation(type) {
+            const container = document.getElementById('animationContainer');
+            const buttons = document.querySelectorAll('.tab-button');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (type === 'bounce') {
+                container.innerHTML = `
+                    <svg width="128" height="128" viewBox="0 0 200 200" fill="none">
+                        <defs>
+                            <linearGradient id="demoStroke" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoStroke)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2" class="bounce-dot"/>
+                    </svg>
+                `;
+            } else if (type === 'spin') {
+                container.innerHTML = `
+                    <svg width="128" height="128" viewBox="0 0 200 200" fill="none" class="spin-logo">
+                        <defs>
+                            <linearGradient id="demoStroke2" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoStroke2)" stroke-width="4" fill="none"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke2)" stroke-width="9" stroke-linecap="round"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                `;
+            } else if (type === 'pulse') {
+                container.innerHTML = `
+                    <svg width="128" height="128" viewBox="0 0 200 200" fill="none">
+                        <defs>
+                            <linearGradient id="demoStroke3" x1="0%" y1="100%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#667eea"/>
+                                <stop offset="100%" stop-color="#764ba2"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" stroke="url(#demoStroke3)" stroke-width="4" fill="none" class="pulse-ring"/>
+                        <path d="M55 130 L55 70" stroke="#667eea" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M145 130 L145 50" stroke="url(#demoStroke3)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <path d="M55 100 L145 100" stroke="#764ba2" stroke-width="9" stroke-linecap="round" fill="none"/>
+                        <circle cx="145" cy="50" r="9" fill="#764ba2"/>
+                    </svg>
+                `;
+            }
+        }
+        
+        // Simulate stage progression
+        let stageIndex = 0;
+        const stages = document.querySelectorAll('.stage');
+        
+        function progressStage() {
+            if (stageIndex > 0) {
+                stages[stageIndex - 1].classList.remove('active');
+                stages[stageIndex - 1].classList.add('complete');
+            }
+            
+            if (stageIndex < stages.length) {
+                stages[stageIndex].classList.add('active');
+                stageIndex++;
+                setTimeout(progressStage, 2000);
+            }
+        }
+        
+        setTimeout(progressStage, 1000);
+    </script>
+</body>
+</html>

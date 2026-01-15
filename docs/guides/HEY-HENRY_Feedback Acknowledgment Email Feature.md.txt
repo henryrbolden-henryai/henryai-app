@@ -1,0 +1,95 @@
+Feedback Acknowledgment Email Feature
+Overview
+When a candidate submits feedback, bug report, or compliment via Hey Henry chat, automatically send a follow-up email acknowledging what was shared and providing relevant updates.
+Current State
+	•	Feedback submission: hey-henry.js → HenryData.saveFeedback() → Supabase beta_feedback table
+	•	Email infrastructure: Resend API already configured with RESEND_API_KEY
+	•	Existing email endpoint: POST /api/send-welcome-email in backend.py
+	•	Email templates: HTML email templates exist in send_welcome_email.py
+Implementation Plan
+Step 1: Create Backend Endpoint
+File: backend/backend.py
+Add new endpoint POST /api/send-feedback-acknowledgment:
+
+
+python
+class FeedbackAcknowledgmentRequest(BaseModel):
+    email: str
+    name: Optional[str] = None
+    feedback_type: str  # bug, feature_request, praise, ux_issue, general
+    feedback_summary: str  # First ~100 chars of feedback
+
+@app.post("/api/send-feedback-acknowledgment")
+async def send_feedback_acknowledgment(request: FeedbackAcknowledgmentRequest):
+    # Use Resend API to send acknowledgment email
+Step 2: Create Email Templates
+File: backend/backend.py (or new backend/email_templates.py)
+Create HTML templates for each feedback type:
+	•	Bug report: "Thanks for flagging this. We're on it."
+	•	Feature request: "Great idea. We've added it to our roadmap review."
+	•	Praise/compliment: "That means a lot. Thanks for sharing."
+	•	General: "Thanks for reaching out. We've got your message."
+Template structure:
+	•	HenryHQ logo header
+	•	Personalized acknowledgment based on feedback type
+	•	Brief quote of what they submitted
+	•	What happens next (for bugs: "We'll follow up if we need more details")
+	•	Reply prompt ("Questions? Just reply to this email.")
+Step 3: Integrate with Frontend
+File: frontend/components/hey-henry.js
+Modify submitFeedback() to call the email endpoint after successful Supabase save:
+
+
+javascript
+async function submitFeedback(feedbackText, feedbackType) {
+    // ... existing Supabase save ...
+
+    if (result.success && userEmail) {
+        // Send acknowledgment email
+        await fetch(`${API_BASE}/api/send-feedback-acknowledgment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: userEmail,
+                name: userName,
+                feedback_type: feedbackType,
+                feedback_summary: feedbackText.substring(0, 100)
+            })
+        });
+    }
+}
+Step 4: Get User Email
+File: frontend/components/hey-henry.js
+Add user email retrieval before sending:
+
+
+javascript
+const user = await HenryAuth.getUser();
+const userEmail = user?.email;
+const userName = await HenryAuth.getUserName();
+Files to Modify
+	1	backend/backend.py - Add endpoint + templates
+	2	frontend/components/hey-henry.js - Call email endpoint after feedback save
+Email Content by Type
+Type
+Subject
+Key Message
+bug
+"Got it. We're looking into this."
+Thanks for the heads up. We'll dig in and follow up if needed.
+feature_request
+"Idea received. We're reviewing."
+We've added this to our roadmap review. No promises, but we hear you.
+praise
+"That made our day."
+Seriously, thank you. It means a lot.
+ux_issue
+"UX feedback received."
+We're always tuning the experience. This helps.
+general
+"Message received."
+Thanks for reaching out. We've got your note.
+Questions Resolved
+	•	Email service: Resend API (already configured)
+	•	User email source: HenryAuth.getUser()?.email
+	•	Template style: Match existing welcome email (dark theme, gradient logo)
