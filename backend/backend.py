@@ -14852,9 +14852,9 @@ Role: {body.role_title}
 
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
-        # P0 FIX: Pass leadership_context to skip legacy eligibility gate
-        leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
-        parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
+        # P0 FIX: Use leadership_context directly (it's always a LeadershipContext object)
+        # NOTE: Do NOT use isolated_role_detection.get("leadership_context") - that's a serialized dict
+        parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_context)
 
         # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
         career_gap = detect_career_gap(body.resume)
