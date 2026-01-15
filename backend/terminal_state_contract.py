@@ -1532,7 +1532,15 @@ def detect_terminal_state(
         return contract
 
     # 3. Check function mismatch (with enhanced severity support)
-    if not function_match:
+    # P0 FIX: Skip function mismatch check if leadership role bypass is active
+    leadership_bypass = False
+    if function_mismatch_result:
+        leadership_bypass = getattr(function_mismatch_result, 'leadership_role_bypass', False)
+
+    if leadership_bypass:
+        print(f"🔒 Terminal State: Skipping function mismatch check - leadership role bypass active")
+
+    if not function_match and not leadership_bypass:
         # Use enhanced function mismatch result if available
         if function_mismatch_result and FUNCTION_MISMATCH_MODULE_AVAILABLE:
             # Create contract based on mismatch severity

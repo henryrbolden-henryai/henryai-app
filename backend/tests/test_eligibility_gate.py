@@ -2936,6 +2936,197 @@ class TestGrammarPunctuationStandards:
 
 
 # =============================================================================
+# P0 FIX: LEADERSHIP ROLE FUNCTION MISMATCH BYPASS TESTS
+# Per spec: Leadership roles bypass ALL function-mismatch logic for ALL users
+# =============================================================================
+
+class TestLeadershipFunctionMismatchBypass:
+    """
+    P0 FIX: Tests that leadership roles bypass function mismatch logic.
+
+    Leadership roles are function-agnostic by definition:
+    - Director
+    - Head
+    - VP / SVP / EVP
+    - Chief
+    - GM
+    - Managing Director
+    - Partner
+
+    These tests ensure NO user triggers function mismatch for leadership roles.
+    """
+
+    def test_is_leadership_role_director(self):
+        """Director roles should be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("Director of Recruiting") is True
+        assert is_leadership_role("director of engineering") is True
+        assert is_leadership_role("Engineering Director") is True
+        assert is_leadership_role("Senior Director, Product") is True
+
+    def test_is_leadership_role_vp(self):
+        """VP roles should be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("VP of Engineering") is True
+        assert is_leadership_role("VP, Product") is True
+        assert is_leadership_role("Vice President of Sales") is True
+        assert is_leadership_role("SVP Engineering") is True
+        assert is_leadership_role("EVP Operations") is True
+
+    def test_is_leadership_role_chief(self):
+        """C-suite roles should be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("CTO") is True
+        assert is_leadership_role("Chief Technology Officer") is True
+        assert is_leadership_role("CFO") is True
+        assert is_leadership_role("CEO") is True
+        assert is_leadership_role("Chief Product Officer") is True
+
+    def test_is_leadership_role_head(self):
+        """Head of X roles should be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("Head of Product") is True
+        assert is_leadership_role("Head of Engineering") is True
+        assert is_leadership_role("Head, Data Science") is True
+
+    def test_is_leadership_role_gm(self):
+        """GM and Managing Director roles should be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("General Manager") is True
+        assert is_leadership_role("GM, Consumer Products") is True
+        assert is_leadership_role("Managing Director") is True
+        assert is_leadership_role("Partner") is True
+
+    def test_ic_roles_not_leadership(self):
+        """IC roles should NOT be detected as leadership."""
+        from function_mismatch import is_leadership_role
+
+        assert is_leadership_role("Senior Product Manager") is False
+        assert is_leadership_role("Staff Engineer") is False
+        assert is_leadership_role("Principal Engineer") is False
+        assert is_leadership_role("Senior Software Engineer") is False
+        assert is_leadership_role("Product Manager") is False
+
+    def test_detect_function_mismatch_bypassed_for_director(self):
+        """Director role should bypass function mismatch detection."""
+        from function_mismatch import detect_function_mismatch
+
+        # Analytics-heavy resume
+        resume_data = {
+            "full_name": "Data Analyst",
+            "experience": [
+                {"title": "Senior Data Analyst", "company": "Analytics Corp", "description": "SQL, Python, data analysis"}
+            ]
+        }
+
+        # Director of Recruiting JD - different function
+        jd_data = {
+            "role_title": "Director of Recruiting",
+            "job_description": "Lead our recruiting team"
+        }
+
+        result = detect_function_mismatch(
+            resume_data=resume_data,
+            jd_data=jd_data,
+            role_title="Director of Recruiting"
+        )
+
+        # Should bypass - no mismatch for leadership role
+        assert result.is_mismatch is False
+        assert result.leadership_role_bypass is True
+        assert result.candidate_function == "leadership"
+        assert result.role_function == "leadership"
+
+    def test_detect_function_mismatch_bypassed_for_vp(self):
+        """VP role should bypass function mismatch detection."""
+        from function_mismatch import detect_function_mismatch
+
+        # Non-engineering resume
+        resume_data = {
+            "full_name": "Marketing Leader",
+            "experience": [
+                {"title": "Senior Marketing Manager", "company": "Brand Co", "description": "Marketing campaigns"}
+            ]
+        }
+
+        # VP Engineering JD - different function
+        jd_data = {
+            "role_title": "VP of Engineering",
+            "job_description": "Lead engineering organization"
+        }
+
+        result = detect_function_mismatch(
+            resume_data=resume_data,
+            jd_data=jd_data,
+            role_title="VP of Engineering"
+        )
+
+        # Should bypass - no mismatch for leadership role
+        assert result.is_mismatch is False
+        assert result.leadership_role_bypass is True
+
+    def test_detect_function_mismatch_bypassed_via_seniority(self):
+        """Leadership seniority flag should bypass function mismatch."""
+        from function_mismatch import detect_function_mismatch
+
+        resume_data = {
+            "full_name": "Career Switcher",
+            "experience": [
+                {"title": "Senior PM", "company": "Product Co", "description": "Product management"}
+            ]
+        }
+
+        # Engineering role JD
+        jd_data = {
+            "role_title": "Director of Engineering",
+            "job_description": "Engineering leadership"
+        }
+
+        result = detect_function_mismatch(
+            resume_data=resume_data,
+            jd_data=jd_data,
+            role_seniority="LEADERSHIP"  # Passed from canonical context
+        )
+
+        # Should bypass via seniority flag
+        assert result.is_mismatch is False
+        assert result.leadership_role_bypass is True
+
+    def test_function_mismatch_still_works_for_ic(self):
+        """IC roles should still trigger function mismatch when applicable."""
+        from function_mismatch import detect_function_mismatch
+
+        # Recruiting resume
+        resume_data = {
+            "full_name": "Senior Recruiter",
+            "experience": [
+                {"title": "Senior Technical Recruiter", "company": "Talent Co", "description": "Recruiting, sourcing"}
+            ]
+        }
+
+        # Engineering IC JD
+        jd_data = {
+            "role_title": "Senior Software Engineer",
+            "job_description": "Build and ship software products"
+        }
+
+        result = detect_function_mismatch(
+            resume_data=resume_data,
+            jd_data=jd_data,
+            role_title="Senior Software Engineer"
+        )
+
+        # Should NOT bypass - IC role
+        assert result.leadership_role_bypass is False
+        # May or may not be mismatch depending on detection, but bypass should be False
+
+
+# =============================================================================
 # Run tests if executed directly
 # =============================================================================
 
