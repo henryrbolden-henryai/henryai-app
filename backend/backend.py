@@ -456,6 +456,109 @@ def store_cached_analysis(resume_hash: str, analysis_payload: Dict[str, Any]) ->
 
 
 # =============================================================================
+# JD CACHE
+# Per P0 spec: Prevent repeated LLM calls for the same JD
+# Caches parsed JD context (role_title, role_type, leadership, etc.)
+# =============================================================================
+
+# Kill switch - when False, bypass JD cache entirely
+ENABLE_JD_CACHE = os.getenv("ENABLE_JD_CACHE", "true").lower() == "true"
+
+# Cache TTL in days
+JD_CACHE_TTL_DAYS = 7
+
+
+def generate_jd_cache_key(jd_text: str) -> str:
+    """
+    Canonical JD cache key.
+    Must be stable across retries.
+    """
+    import re
+    normalized = jd_text.strip().lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
+def get_cached_jd_context(jd_hash: str) -> Optional[Dict[str, Any]]:
+    """
+    Lookup cached JD parsing context by JD hash.
+
+    Returns cached JD context if found and not expired, None otherwise.
+    """
+    if not ENABLE_JD_CACHE:
+        return None
+
+    global supabase
+    if not supabase:
+        return None
+
+    try:
+        result = supabase.table("jd_cache").select("*").eq("jd_hash", jd_hash).execute()
+
+        if not result.data or len(result.data) == 0:
+            return None
+
+        cached = result.data[0]
+
+        # Check TTL (7 days)
+        expires_at = cached.get("expires_at")
+        if expires_at:
+            expires = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+            if datetime.now(expires.tzinfo) > expires:
+                print(f"🧠 JD CACHE EXPIRED — hash: {jd_hash[:12]}...")
+                return None
+
+        return cached
+
+    except Exception as e:
+        print(f"⚠️ JD cache lookup failed: {e}")
+        return None
+
+
+def store_jd_cache(
+    jd_hash: str,
+    parsed_role_title: str,
+    role_type: str,
+    role_level: str,
+    leadership_required: bool,
+    required_years: float,
+    domain_tags: list
+) -> bool:
+    """
+    Store parsed JD context in cache.
+    Returns True on success, False on failure.
+    """
+    if not ENABLE_JD_CACHE:
+        return False
+
+    global supabase
+    if not supabase:
+        return False
+
+    try:
+        from datetime import timedelta
+
+        supabase.table("jd_cache").upsert({
+            "jd_hash": jd_hash,
+            "parsed_role_title": parsed_role_title,
+            "role_type": role_type,
+            "role_level": role_level,
+            "leadership_required": leadership_required,
+            "required_years": required_years,
+            "domain_tags": domain_tags[:5] if domain_tags else [],
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": (datetime.utcnow() + timedelta(days=JD_CACHE_TTL_DAYS)).isoformat()
+        }).execute()
+
+        print(f"🧠 JD CACHE WRITE — hash: {jd_hash[:12]}...")
+        return True
+
+    except Exception as e:
+        print(f"⚠️ JD cache write failed: {e}")
+        return False
+
+
+# =============================================================================
 # CANONICAL LEADERSHIP CONTEXT
 # Per P0 fix: Single source of truth for leadership gating
 # This class stores the canonical leadership gate result set ONCE by the
@@ -12380,17 +12483,70 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         else:
             print(f"💾 RESUME CACHE MISS — proceeding to analysis")
 
+    # ========================================================================
+    # P0 JD CACHE: Check for cached JD parsing context BEFORE role detection
+    # If cache hit, skip JD parsing calls entirely
+    # ========================================================================
+    jd_hash = None
+    jd_cache_hit = False
+    cached_jd_context = None
+
+    if ENABLE_JD_CACHE and jd_text:
+        jd_hash = generate_jd_cache_key(jd_text)
+        print(f"🧠 [{analysis_id}] JD hash: {jd_hash[:12]}...")
+
+        cached_jd_context = get_cached_jd_context(jd_hash)
+        if cached_jd_context:
+            jd_cache_hit = True
+            print(f"🧠 JD CACHE HIT — skipping JD parsing & role detection")
+        else:
+            print(f"🧠 JD CACHE MISS — computing JD context")
+
+    # Log combined cache status
+    resume_cache_hit = False  # Will be set to True if we hit resume cache (but we already returned in that case)
+    print(f"📊 CACHE STATUS: JD={'HIT' if jd_cache_hit else 'MISS'} | RESUME={'HIT' if resume_cache_hit else 'MISS'}")
+
     # Pre-compute isolated role detection for later use
     isolated_role_detection = None
     pre_llm_leadership_gate = None  # NEW: Pre-LLM leadership gate result
-    if jd_text:
-        extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
-        isolated_role_type = detect_role_type_isolated(jd_text, extracted_title, analysis_id)
-        alignment = verify_role_type_alignment(isolated_role_type, extracted_title, jd_text, analysis_id)
 
-        # NEW: Detect leadership role level from title
-        # Per fix spec: If leadership keyword detected, hard-set role_level/role_type
-        role_level_info = detect_leadership_role_level(extracted_title, jd_text, analysis_id)
+    # Use cached JD context if available, otherwise compute
+    if jd_text:
+        if jd_cache_hit and cached_jd_context:
+            # Use cached JD parsing results
+            extracted_title = cached_jd_context.get("parsed_role_title", "")
+            isolated_role_type = cached_jd_context.get("role_type", "general")
+            alignment = {"confidence": 0.8, "source": "cache"}  # Cached = trusted
+            role_level_info = {
+                "role_level": cached_jd_context.get("role_level", "IC"),
+                "is_leadership_role": cached_jd_context.get("leadership_required", False),
+                "source": "cache"
+            }
+            print(f"🧠 Using cached JD context: {extracted_title} / {isolated_role_type} / {role_level_info['role_level']}")
+        else:
+            # Compute JD context fresh
+            extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
+            isolated_role_type = detect_role_type_isolated(jd_text, extracted_title, analysis_id)
+            alignment = verify_role_type_alignment(isolated_role_type, extracted_title, jd_text, analysis_id)
+
+            # Detect leadership role level from title (only when computing fresh)
+            # Per fix spec: If leadership keyword detected, hard-set role_level/role_type
+            role_level_info = detect_leadership_role_level(extracted_title, jd_text, analysis_id)
+
+            # Store JD context in cache for future requests
+            if ENABLE_JD_CACHE and jd_hash:
+                try:
+                    store_jd_cache(
+                        jd_hash=jd_hash,
+                        parsed_role_title=extracted_title,
+                        role_type=isolated_role_type,
+                        role_level=role_level_info.get("role_level", "IC"),
+                        leadership_required=role_level_info.get("is_leadership_role", False),
+                        required_years=0.0,  # Will be extracted later
+                        domain_tags=[]  # Will be populated later if available
+                    )
+                except Exception as cache_err:
+                    print(f"⚠️ Failed to cache JD context: {cache_err}")
 
         # Calculate role-specific experience using isolated function
         if resume_data:
