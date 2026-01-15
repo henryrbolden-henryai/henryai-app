@@ -288,6 +288,10 @@
 
             startProgressAnimation();
 
+            // Set up AbortController with 180-second timeout for long-running analysis
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 180000);
+
             try {
                 console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
 
@@ -299,8 +303,11 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestPayload)
+                    body: JSON.stringify(requestPayload),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);
 
@@ -360,10 +367,13 @@
                 window.location.href = 'results.html';
 
             } catch (error) {
+                clearTimeout(timeoutId);
                 console.error('Analysis error:', error);
 
                 let errorMsg = 'Something went wrong. Please try again.';
-                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                if (error.name === 'AbortError') {
+                    errorMsg = 'Analysis is taking longer than expected. Please try again.';
+                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
                 } else if (error.message && error.message.includes('temporarily busy')) {
                     // Friendly message for API overload
