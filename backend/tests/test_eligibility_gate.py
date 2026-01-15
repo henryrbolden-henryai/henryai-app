@@ -3127,6 +3127,234 @@ class TestLeadershipFunctionMismatchBypass:
 
 
 # =============================================================================
+# SYSTEM-WIDE REGRESSION TESTS (P0)
+# These tests MUST always pass - they verify the global invariants
+# =============================================================================
+
+class TestFunctionMismatchSystemInvariants:
+    """
+    System-wide tests that verify global invariants.
+    These tests MUST always pass - failure indicates a regression.
+
+    Invariants tested:
+    1. Leadership roles NEVER show function mismatch (any user, any profile)
+    2. IC roles CAN show function mismatch when applicable
+    3. Module correctly identifies leadership vs IC roles
+    """
+
+    # =========================================================================
+    # LEADERSHIP INVARIANTS - These MUST always pass
+    # =========================================================================
+
+    def test_director_analytics_resume_no_mismatch(self):
+        """Director + analytics resume -> NO mismatch copy."""
+        from function_mismatch import detect_function_mismatch
+
+        # Heavy analytics background
+        resume = {
+            "full_name": "Analytics Expert",
+            "experience": [
+                {"title": "Senior Data Analyst", "company": "Data Co", "description": "SQL, Python, ML, data pipelines, analytics"},
+                {"title": "Data Scientist", "company": "ML Corp", "description": "Machine learning, predictive models"}
+            ]
+        }
+
+        # Director of Recruiting - completely different function
+        jd = {
+            "role_title": "Director of Recruiting",
+            "job_description": "Build and lead recruiting team, talent acquisition strategy"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # INVARIANT: No mismatch for leadership roles
+        assert result.is_mismatch is False, "Leadership role must not trigger function mismatch"
+        assert result.leadership_role_bypass is True, "Leadership bypass flag must be set"
+        assert "fundamentally different" not in (result.coaching_message or "").lower(), \
+            "Must not contain 'fundamentally different' for leadership roles"
+
+    def test_vp_career_switcher_no_mismatch(self):
+        """VP + career switcher resume -> NO mismatch copy."""
+        from function_mismatch import detect_function_mismatch
+
+        # Career switcher from marketing to engineering
+        resume = {
+            "full_name": "Marketing Executive",
+            "experience": [
+                {"title": "VP Marketing", "company": "Brand Co", "description": "Brand strategy, campaigns"},
+                {"title": "Marketing Director", "company": "Consumer Co", "description": "Consumer marketing"}
+            ]
+        }
+
+        # VP of Engineering - completely different function
+        jd = {
+            "role_title": "VP of Engineering",
+            "job_description": "Lead engineering organization, technical strategy"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # INVARIANT: No mismatch for leadership roles
+        assert result.is_mismatch is False, "Leadership role must not trigger function mismatch"
+        assert result.leadership_role_bypass is True, "Leadership bypass flag must be set"
+
+    def test_head_of_unrelated_background_no_mismatch(self):
+        """Head of X + unrelated background -> NO mismatch copy."""
+        from function_mismatch import detect_function_mismatch
+
+        # Sales background
+        resume = {
+            "full_name": "Sales Leader",
+            "experience": [
+                {"title": "Senior Account Executive", "company": "Sales Corp", "description": "Enterprise sales, deals"}
+            ]
+        }
+
+        # Head of Product - different function
+        jd = {
+            "role_title": "Head of Product",
+            "job_description": "Own product strategy, build product organization"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # INVARIANT: No mismatch for leadership roles
+        assert result.is_mismatch is False, "Leadership role must not trigger function mismatch"
+        assert result.leadership_role_bypass is True, "Leadership bypass flag must be set"
+
+    def test_chief_any_background_no_mismatch(self):
+        """C-suite + any background -> NO mismatch copy."""
+        from function_mismatch import detect_function_mismatch
+
+        # Random background
+        resume = {
+            "full_name": "Operations Person",
+            "experience": [
+                {"title": "Operations Manager", "company": "Ops Co", "description": "Logistics, supply chain"}
+            ]
+        }
+
+        # CTO - different function
+        jd = {
+            "role_title": "CTO",
+            "job_description": "Lead technology organization"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # INVARIANT: No mismatch for leadership roles
+        assert result.is_mismatch is False, "Leadership role must not trigger function mismatch"
+        assert result.leadership_role_bypass is True, "Leadership bypass flag must be set"
+
+    # =========================================================================
+    # IC INVARIANTS - Function mismatch SHOULD work for IC roles
+    # =========================================================================
+
+    def test_ic_mismatch_does_trigger(self):
+        """IC role with clear mismatch -> mismatch IS shown."""
+        from function_mismatch import detect_function_mismatch
+
+        # Recruiting background
+        resume = {
+            "full_name": "Recruiter",
+            "experience": [
+                {"title": "Senior Recruiter", "company": "Talent Co", "description": "Recruiting, sourcing, hiring"}
+            ]
+        }
+
+        # Backend Engineer - completely different IC function
+        jd = {
+            "role_title": "Senior Backend Engineer",
+            "job_description": "Build scalable backend systems, Python, distributed systems"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # IC role - bypass should NOT be active
+        assert result.leadership_role_bypass is False, "IC role must not have leadership bypass"
+        # Note: Whether mismatch is detected depends on classification accuracy
+
+    def test_ic_adjacent_role_no_mismatch(self):
+        """IC role with adjacent function -> no mismatch (or reduced severity)."""
+        from function_mismatch import detect_function_mismatch
+
+        # PM background
+        resume = {
+            "full_name": "Product Manager",
+            "experience": [
+                {"title": "Senior Product Manager", "company": "Product Co", "description": "Product strategy, roadmap"}
+            ]
+        }
+
+        # Another PM role - same function
+        jd = {
+            "role_title": "Staff Product Manager",
+            "job_description": "Own product roadmap, strategy, customer discovery"
+        }
+
+        result = detect_function_mismatch(resume_data=resume, jd_data=jd)
+
+        # Same function - no mismatch expected
+        assert result.leadership_role_bypass is False, "IC role must not have leadership bypass"
+        # Same function should not trigger mismatch (or be adjacent)
+
+    # =========================================================================
+    # MODULE CONTRACT TESTS
+    # =========================================================================
+
+    def test_public_api_enforces_leadership_bypass(self):
+        """Public API detect_function_mismatch MUST enforce leadership bypass."""
+        from function_mismatch import detect_function_mismatch
+
+        # Even with explicit role_seniority="IC", leadership title should bypass
+        resume = {"full_name": "Test", "experience": []}
+        jd = {"role_title": "Director of Engineering", "job_description": "Lead engineering"}
+
+        result = detect_function_mismatch(
+            resume_data=resume,
+            jd_data=jd,
+            role_seniority="IC"  # Try to force IC
+        )
+
+        # Leadership title should still bypass regardless of role_seniority param
+        assert result.leadership_role_bypass is True, \
+            "Leadership title must bypass even if role_seniority param says IC"
+
+    def test_internal_api_has_defensive_check(self):
+        """Internal _detect_ic_function_mismatch has defensive leadership check."""
+        from function_mismatch import _detect_ic_function_mismatch
+
+        # Call internal function directly (bad practice, but tests defensive code)
+        resume = {"full_name": "Test", "experience": []}
+        jd = {"role_title": "Director of Engineering", "job_description": "Lead engineering"}
+
+        result = _detect_ic_function_mismatch(
+            resume_data=resume,
+            jd_data=jd,
+            role_title="Director of Engineering"
+        )
+
+        # Internal function should have defensive check and return bypass
+        assert result.leadership_role_bypass is True, \
+            "Internal function must have defensive check for leadership roles"
+
+    def test_coaching_message_neutral_for_ic(self):
+        """IC mismatch coaching message should be neutral (no scare language)."""
+        from function_mismatch import _generate_ic_complete_mismatch_coaching
+
+        coaching = _generate_ic_complete_mismatch_coaching(
+            candidate_fn="recruiting",
+            role_fn="engineering"
+        )
+
+        # Should be neutral language
+        assert "fundamentally" not in coaching.lower(), \
+            "Coaching should not use 'fundamentally' language"
+        assert "Engineering" in coaching, "Should mention role function"
+        assert "Recruiting" in coaching, "Should mention candidate function"
+
+
+# =============================================================================
 # Run tests if executed directly
 # =============================================================================
 

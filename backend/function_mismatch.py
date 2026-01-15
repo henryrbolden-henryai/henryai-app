@@ -681,6 +681,10 @@ def classify_role_function(jd_data: Dict[str, Any]) -> FunctionClassification:
     )
 
 
+# =============================================================================
+# PUBLIC API - SINGLE ENTRY POINT FOR FUNCTION MISMATCH
+# =============================================================================
+
 def detect_function_mismatch(
     resume_data: Dict[str, Any],
     jd_data: Dict[str, Any],
@@ -690,10 +694,18 @@ def detect_function_mismatch(
     role_title: Optional[str] = None
 ) -> FunctionMismatchResult:
     """
-    Compare candidate function to role function and determine mismatch severity.
+    PUBLIC API: Detect function mismatch between candidate and role.
 
-    P0 FIX: Leadership roles bypass ALL function mismatch logic.
-    This is role-driven, not candidate-driven.
+    CRITICAL ARCHITECTURE:
+    - Leadership roles are FUNCTION-AGNOSTIC by definition
+    - This function is the ONLY entry point for function mismatch logic
+    - NO caller can bypass the leadership rule
+    - The rule is enforced HERE, not at call sites
+
+    Leadership roles (Director, Head, VP, Chief, GM, Managing Director, Partner)
+    ALWAYS return no-mismatch. This is role-driven, not candidate-driven.
+
+    IC roles use _detect_ic_function_mismatch() for discipline alignment.
 
     Args:
         resume_data: Resume dictionary
@@ -707,14 +719,14 @@ def detect_function_mismatch(
         FunctionMismatchResult with severity, score cap, and coaching
     """
     # =========================================================================
-    # P0 FIX: LEADERSHIP ROLE SHORT-CIRCUIT
-    # Leadership roles are function-agnostic by definition.
-    # This check must happen BEFORE any candidate profile comparison.
+    # HARD RULE: Leadership roles are function-agnostic
+    # This check MUST happen first. No exceptions. No bypasses.
     # =========================================================================
     detected_role_title = role_title or jd_data.get("role_title", "")
 
     if role_seniority == "LEADERSHIP" or is_leadership_role(detected_role_title):
-        print(f"🔒 Skipping function-mismatch analysis for leadership role: {detected_role_title}")
+        print(f"🔒 [LEADERSHIP BYPASS] Function mismatch disabled for: {detected_role_title}")
+        print(f"   Leadership roles are function-agnostic by definition")
         # Return no-mismatch result for leadership roles
         return FunctionMismatchResult(
             is_mismatch=False,
@@ -726,7 +738,70 @@ def detect_function_mismatch(
             coaching_message=None,
             candidate_classification=None,
             role_classification=None,
-            leadership_role_bypass=True  # New flag for debugging
+            leadership_role_bypass=True
+        )
+
+    # =========================================================================
+    # IC ROLES ONLY: Delegate to IC-specific mismatch detection
+    # =========================================================================
+    return _detect_ic_function_mismatch(
+        resume_data=resume_data,
+        jd_data=jd_data,
+        candidate_function_override=candidate_function_override,
+        role_function_override=role_function_override,
+        role_title=detected_role_title
+    )
+
+
+# =============================================================================
+# INTERNAL: IC-ONLY FUNCTION MISMATCH DETECTION
+# This function should NEVER be called directly - use detect_function_mismatch()
+# =============================================================================
+
+def _detect_ic_function_mismatch(
+    resume_data: Dict[str, Any],
+    jd_data: Dict[str, Any],
+    candidate_function_override: Optional[str] = None,
+    role_function_override: Optional[str] = None,
+    role_title: str = ""
+) -> FunctionMismatchResult:
+    """
+    INTERNAL: Detect function mismatch for IC roles only.
+
+    WARNING: This function should NEVER be called directly.
+    Always use detect_function_mismatch() which enforces the leadership bypass.
+
+    Function mismatch is ONLY valid for IC roles where:
+    - Role requires a specific technical discipline
+    - Candidate primary function != role function
+    - Gap is core to execution, not just tooling
+
+    Args:
+        resume_data: Resume dictionary
+        jd_data: JD dictionary
+        candidate_function_override: Optional override for candidate function
+        role_function_override: Optional override for role function
+        role_title: Role title for logging
+
+    Returns:
+        FunctionMismatchResult with severity, score cap, and coaching
+    """
+    # DEFENSIVE CHECK: Double-verify this is not a leadership role
+    # This should never fire if callers use the public API correctly
+    if is_leadership_role(role_title):
+        print(f"⚠️ [DEFENSIVE] _detect_ic_function_mismatch called for leadership role: {role_title}")
+        print(f"   This indicates a bug - returning no-mismatch as safety fallback")
+        return FunctionMismatchResult(
+            is_mismatch=False,
+            severity=MismatchSeverity.NONE,
+            candidate_function="leadership",
+            role_function="leadership",
+            transferable_skills=[],
+            score_cap=None,
+            coaching_message=None,
+            candidate_classification=None,
+            role_classification=None,
+            leadership_role_bypass=True
         )
 
     # Classify functions
@@ -771,9 +846,11 @@ def detect_function_mismatch(
     adjacency = ADJACENCY_MAP.get(pair) or ADJACENCY_MAP.get(reverse_pair)
 
     if adjacency:
-        coaching = adjacency["coaching"].format(
-            role_fn=_format_function_name(role_fn),
-            candidate_fn=_format_function_name(candidate_fn)
+        # Use neutral, actionable language for IC mismatch
+        coaching = _generate_ic_mismatch_coaching(
+            candidate_fn=candidate_fn,
+            role_fn=role_fn,
+            adjacency=adjacency
         )
 
         return FunctionMismatchResult(
@@ -789,11 +866,10 @@ def detect_function_mismatch(
         )
 
     # No defined adjacency = complete mismatch
-    coaching = (
-        f"This is a {_format_function_name(role_fn)} role, not a "
-        f"{_format_function_name(candidate_fn)} role. Your background doesn't align "
-        f"with the core responsibilities. Consider targeting roles within your function "
-        f"or exploring structured career transition paths."
+    # Use neutral, non-judgmental language
+    coaching = _generate_ic_complete_mismatch_coaching(
+        candidate_fn=candidate_fn,
+        role_fn=role_fn
     )
 
     return FunctionMismatchResult(
@@ -806,6 +882,61 @@ def detect_function_mismatch(
         coaching_message=coaching,
         candidate_classification=candidate_classification,
         role_classification=role_classification
+    )
+
+
+def _generate_ic_mismatch_coaching(
+    candidate_fn: str,
+    role_fn: str,
+    adjacency: Dict[str, Any]
+) -> str:
+    """
+    Generate neutral, actionable coaching message for IC function mismatch.
+
+    Language is:
+    - Neutral (no scare tactics)
+    - Actionable (what to do)
+    - Non-judgmental (no "fundamentally different")
+    """
+    role_name = _format_function_name(role_fn)
+    candidate_name = _format_function_name(candidate_fn)
+
+    # Use adjacency coaching if available, otherwise generate neutral message
+    if adjacency.get("coaching"):
+        return adjacency["coaching"].format(
+            role_fn=role_name,
+            candidate_fn=candidate_name
+        )
+
+    # Default neutral coaching
+    return (
+        f"This IC role requires hands-on experience in {role_name}. "
+        f"Your background is primarily in {candidate_name}. "
+        f"Consider whether the skill overlap is sufficient for execution requirements."
+    )
+
+
+def _generate_ic_complete_mismatch_coaching(
+    candidate_fn: str,
+    role_fn: str
+) -> str:
+    """
+    Generate neutral coaching message for complete IC function mismatch.
+
+    Language is:
+    - Neutral (not "fundamentally different")
+    - Actionable (suggests alternatives)
+    - Non-judgmental
+    """
+    role_name = _format_function_name(role_fn)
+    candidate_name = _format_function_name(candidate_fn)
+
+    return (
+        f"This IC role requires deep hands-on experience in {role_name}. "
+        f"Your background is primarily in {candidate_name}, which suggests "
+        f"a significant execution gap for this role. "
+        f"Consider targeting {candidate_name} roles or exploring "
+        f"structured career transition paths if this function interests you."
     )
 
 
