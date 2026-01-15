@@ -5024,7 +5024,7 @@
 
         // Check if a status is a rejection status (any of the rejection subcategories)
         function isRejectedStatus(status) {
-            return status && status.startsWith('Rejected:');
+            return status && (status.startsWith('Rejected:') || status === 'Auto-Rejected');
         }
 
         // Check if a status is any closed/negative outcome
@@ -5413,12 +5413,88 @@
                 };
             }
 
-            // Inactive statuses
+            // Closed statuses - provide specific guidance based on rejection type
+            if (status === 'Auto-Rejected') {
+                return {
+                    type: 'archived',
+                    context: "Auto-rejected by ATS or initial screen.",
+                    action: "Review your resume keywords. Consider tailoring more closely to job descriptions."
+                };
+            }
+
+            if (status === 'Rejected: No Fit') {
+                return {
+                    type: 'archived',
+                    context: "The role wasn't a strong match for your profile.",
+                    action: "Focus on roles where you meet 70%+ of requirements."
+                };
+            }
+
+            if (status === 'Rejected: Experience Gap') {
+                return {
+                    type: 'archived',
+                    context: "They needed more experience in specific areas.",
+                    action: "Consider building skills through projects or targeting adjacent roles."
+                };
+            }
+
+            if (status === 'Rejected: Culture Fit') {
+                return {
+                    type: 'archived',
+                    context: "Cultural alignment wasn't there.",
+                    action: "This may have been a bullet dodged. Research culture more in future interviews."
+                };
+            }
+
+            if (status === 'Rejected: Went Internal') {
+                return {
+                    type: 'archived',
+                    context: "Role went to an internal candidate.",
+                    action: "Not a reflection of you. Ask to stay connected for future opportunities."
+                };
+            }
+
+            if (status === 'Rejected: Other') {
+                return {
+                    type: 'archived',
+                    context: "This opportunity has closed.",
+                    action: "Request feedback if possible. Apply learnings to your next application."
+                };
+            }
+
+            if (status === 'Withdrawn') {
+                const withdrawalReason = app.rejectionData?.withdrawalReason;
+                const reasonActions = {
+                    'accepted-other': "Congrats on the new role! Update your profile and close out other applications.",
+                    'compensation': "Know your worth. Use this as a data point for future negotiations.",
+                    'role-mismatch': "Good call. Refine your targeting criteria for better matches.",
+                    'culture-concerns': "Trust your instincts. Culture fit matters for long-term success.",
+                    'location-remote': "Location matters. Filter more carefully in your search.",
+                    'timeline': "Timing is everything. Keep this company on your radar for later.",
+                    'red-flags': "Smart move. Your instincts protected you from a bad situation.",
+                    'personal': "Life happens. The right opportunity will come at the right time."
+                };
+                return {
+                    type: 'archived',
+                    context: "You withdrew from this opportunity.",
+                    action: reasonActions[withdrawalReason] || "Reflect on what drove this decision to refine future targeting."
+                };
+            }
+
+            if (status === 'No Response' || status === 'Ghosted') {
+                return {
+                    type: 'archived',
+                    context: "They went silent on you.",
+                    action: "Not personal - this market is brutal. Keep your momentum going."
+                };
+            }
+
+            // Generic closed status fallback
             if (isClosedStatus(status)) {
                 return {
-                    type: 'dead',
-                    context: isRejectedStatus(status) ? "This one didn't work out." : status === 'Withdrawn' ? "You withdrew from this one." : status === 'Ghosted' ? "They went silent on you." : "No response received.",
-                    action: "Archive it mentally and keep moving. Every silence gets you closer to the right fit."
+                    type: 'archived',
+                    context: "This opportunity has closed.",
+                    action: "Learn from it and keep moving forward."
                 };
             }
 
