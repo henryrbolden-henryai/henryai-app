@@ -355,7 +355,8 @@ def calculate_fit_score_llm(
 # =============================================================================
 
 # Kill switch - when False, bypass cache entirely (no read, no write)
-ENABLE_RESUME_CACHE = os.getenv("ENABLE_RESUME_CACHE", "true").lower() == "true"
+# Default to false until Supabase tables are created
+ENABLE_RESUME_CACHE = os.getenv("ENABLE_RESUME_CACHE", "false").lower() == "true"
 
 # Cache TTL in days
 RESUME_CACHE_TTL_DAYS = 7
@@ -462,7 +463,8 @@ def store_cached_analysis(resume_hash: str, analysis_payload: Dict[str, Any]) ->
 # =============================================================================
 
 # Kill switch - when False, bypass JD cache entirely
-ENABLE_JD_CACHE = os.getenv("ENABLE_JD_CACHE", "true").lower() == "true"
+# Default to false until Supabase tables are created
+ENABLE_JD_CACHE = os.getenv("ENABLE_JD_CACHE", "false").lower() == "true"
 
 # Cache TTL in days
 JD_CACHE_TTL_DAYS = 7
