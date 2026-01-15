@@ -292,6 +292,7 @@
                 console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
 
                 // Add cache-busting timestamp to prevent stale responses
+                // Note: Using query param for cache-busting instead of headers to avoid CORS preflight issues
                 const cacheBuster = Date.now();
                 const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze?_t=${cacheBuster}`, {
                     method: 'POST',
@@ -299,25 +300,19 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(requestPayload)
-                    // No AbortController - long-running analysis is expected
                 });
 
-                // Step 1: Explicit logging and guards for fetch completion
-                console.log('[analyze] HTTP status:', analyzeResponse.status);
-                console.log('[analyze] response.ok:', analyzeResponse.ok);
+                console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);
 
                 if (!analyzeResponse.ok) {
                     const errorData = await analyzeResponse.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Analyze API returned non-200 (${analyzeResponse.status})`);
+                    throw new Error(errorData.detail || `Analysis failed (${analyzeResponse.status})`);
                 }
 
                 const analysisData = await analyzeResponse.json();
-
-                // SUCCESS CONDITION: response.ok + valid object
-                // Do NOT gate on analysis_id, fit_score, or any specific fields
-                if (!analysisData || typeof analysisData !== 'object') {
-                    throw new Error('Invalid analyze response');
-                }
+                console.log('Analysis response:', analysisData);
+                console.log('🔍 DEBUG - fit_score from API:', analysisData.fit_score);
+                console.log('🔍 DEBUG - recommendation from API:', analysisData.recommendation);
 
                 // Build full data for results page
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -341,8 +336,17 @@
                     _createdAt: new Date().toISOString()
                 };
 
-                console.log('Analysis complete');
-
+                // 🚨 DIAGNOSTIC: Log what we're storing before redirect
+                console.log("🚨 ANALYZING COMPLETE - STORING TO SESSION:", JSON.stringify(fullData, null, 2));
+                console.log("🔍 CRITICAL FIELDS FROM API RESPONSE:", {
+                    has_final_recommendation: 'final_recommendation' in fullData,
+                    final_recommendation_value: fullData.final_recommendation,
+                    has_fit_score: 'fit_score' in fullData,
+                    fit_score_value: fullData.fit_score,
+                    fit_score_type: typeof fullData.fit_score,
+                    has_strengths: 'strengths' in fullData,
+                    strengths_length: Array.isArray(fullData.strengths) ? fullData.strengths.length : 'NOT_ARRAY'
+                });
                 // Store analysis data (with localStorage backup for Safari)
                 const analysisDataStr = JSON.stringify(fullData);
                 sessionStorage.setItem('analysisData', analysisDataStr);
@@ -358,10 +362,15 @@
             } catch (error) {
                 console.error('Analysis error:', error);
 
-                // Only show error if fetch actually failed
                 let errorMsg = 'Something went wrong. Please try again.';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
+                } else if (error.message && error.message.includes('temporarily busy')) {
+                    // Friendly message for API overload
+                    errorMsg = error.message;
+                } else if (error.message && error.message.includes('Claude API')) {
+                    // Clean up raw API error messages
+                    errorMsg = 'Our AI is temporarily unavailable. Please try again in a moment.';
                 } else if (error.message) {
                     errorMsg = error.message;
                 }

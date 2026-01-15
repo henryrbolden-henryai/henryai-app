@@ -64,8 +64,7 @@
       "Bash(netlify deploy:*)",
       "Bash(npx netlify-cli:*)",
       "Bash(fly deploy:*)",
-      "Bash(/opt/homebrew/bin/fly deploy)",
-      "Bash(npm run deploy:*)"
+      "Bash(/opt/homebrew/bin/fly deploy)"
     ],
     "deny": [],
     "ask": []

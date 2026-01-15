@@ -650,21 +650,29 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS MUST be added immediately after app creation, before anything else
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://henryai-app.vercel.app",
-        "http://localhost:3000",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Add rate limiter to app state and exception handler
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Configure CORS - explicit origins for production
+ALLOWED_ORIGINS = [
+    "https://henryai-app.vercel.app",
+    "https://www.henryhq.ai",
+    "https://henryhq.ai",
+    "http://localhost:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 
 # Log startup
@@ -677,15 +685,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors(), "body": str(exc.body)[:500]}
-    )
-
-# Global exception handler to ensure CORS headers are always present
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)[:200]}
     )
 
 # =============================================================================
@@ -12052,7 +12051,7 @@ def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: di
 
 @app.post("/api/jd/analyze")
 @limiter.limit("20/minute")
-async def analyze_jd(request: Request, body: JDAnalyzeRequest):
+async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]:
     """
     Analyze job description with MANDATORY Intelligence Layer
 
@@ -12340,7 +12339,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest):
 
         print(f"🔍🔍🔍 DRY-RUN COMPLETE - $0 API SPEND 🔍🔍🔍\n")
 
-        return JSONResponse(content=dry_run_response)
+        return dry_run_response
 
     # ========================================================================
     # P0 OPTIMIZATION: Skip Claude call entirely if hard gate already failed
@@ -12401,7 +12400,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest):
         }
 
         print(f"🚫🚫🚫 RETURNING GATED RESPONSE - $0 API SPEND 🚫🚫🚫\n")
-        return JSONResponse(content=gated_response)
+        return gated_response
 
     system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
 
@@ -14658,8 +14657,7 @@ Role: {body.role_title}
             # Add canonical context to response for debugging
             parsed_data["_canonical_leadership_context"] = leadership_ctx.to_dict()
 
-        print(f"✅ Analysis complete, returning response")
-        return JSONResponse(content=parsed_data)
+        return parsed_data
     except json.JSONDecodeError as e:
         # Log the problematic section of Claude's response for debugging
         error_pos = e.pos if hasattr(e, 'pos') else 0
@@ -14740,8 +14738,7 @@ Role: {body.role_title}
             # This must run as the absolute last step before returning
             parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
-            print(f"✅ Analysis complete (after JSON fix), returning response")
-            return JSONResponse(content=parsed_data)
+            return parsed_data
         except Exception as fix_error:
             print(f"   Fix attempt failed: {fix_error}")
 
