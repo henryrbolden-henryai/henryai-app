@@ -309,17 +309,28 @@
 
                 clearTimeout(timeoutId);
 
-                console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);
+                // Step 1: Explicit logging and guards for fetch completion
+                console.log('[analyze] HTTP status:', analyzeResponse.status);
+                console.log('[analyze] response.ok:', analyzeResponse.ok);
 
                 if (!analyzeResponse.ok) {
                     const errorData = await analyzeResponse.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Analysis failed (${analyzeResponse.status})`);
+                    throw new Error(errorData.detail || `Analyze API returned non-200 (${analyzeResponse.status})`);
                 }
 
                 const analysisData = await analyzeResponse.json();
-                console.log('Analysis response:', analysisData);
-                console.log('🔍 DEBUG - fit_score from API:', analysisData.fit_score);
-                console.log('🔍 DEBUG - recommendation from API:', analysisData.recommendation);
+                console.log('[analyze] response received:', analysisData);
+
+                // Step 2: Guard against false error transitions - validate response shape
+                if (!analysisData || typeof analysisData !== 'object') {
+                    throw new Error('Invalid analyze response shape');
+                }
+
+                // Warnings are non-fatal. Do not block analysis completion.
+                // Missing requirements, benefits, location etc. are acceptable - rely only on fit_score.status
+                console.log('[analyze] fit_score:', analysisData.fit_score);
+                console.log('[analyze] fit_score.status:', analysisData.fit_score?.status);
+                console.log('[analyze] recommendation:', analysisData.recommendation);
 
                 // Build full data for results page
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
