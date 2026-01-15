@@ -3463,6 +3463,94 @@ class TestDryRunSafetyContract:
 
 
 # =============================================================================
+# P0 UI-SAFE: FIT SCORE RESPONSE CONTRACT TESTS
+# Per spec: All /jd/analyze responses MUST include fit_score in canonical shape
+# =============================================================================
+
+class TestFitScoreContract:
+    """
+    P0 UI-SAFE tests for fit_score response contract.
+
+    Per spec:
+    - fit_score must always be an object with value, status, reason
+    - Never return a bare number or missing fit_score
+    - Different helpers for different exit paths
+    """
+
+    def test_create_fit_score_response_basic(self):
+        """create_fit_score_response returns canonical shape."""
+        from backend import create_fit_score_response
+
+        result = create_fit_score_response(value=75, status="CALCULATED", reason="Test")
+
+        assert "value" in result, "fit_score must have 'value' field"
+        assert "status" in result, "fit_score must have 'status' field"
+        assert "reason" in result, "fit_score must have 'reason' field"
+        assert result["value"] == 75
+        assert result["status"] == "CALCULATED"
+        assert result["reason"] == "Test"
+
+    def test_create_fit_score_calculated(self):
+        """create_fit_score_calculated returns CALCULATED status."""
+        from backend import create_fit_score_calculated
+
+        result = create_fit_score_calculated(85)
+
+        assert result["value"] == 85
+        assert result["status"] == "CALCULATED"
+        assert "calculated" in result["reason"].lower()
+
+    def test_create_fit_score_calculated_capped(self):
+        """create_fit_score_calculated with cap shows cap reason."""
+        from backend import create_fit_score_calculated
+
+        result = create_fit_score_calculated(30, capped=True, cap_reason="Leadership gate")
+
+        assert result["value"] == 30
+        assert result["status"] == "CALCULATED"
+        assert "capped" in result["reason"].lower()
+        assert "Leadership gate" in result["reason"]
+
+    def test_create_fit_score_not_calculated(self):
+        """create_fit_score_not_calculated returns NOT_CALCULATED status with null value."""
+        from backend import create_fit_score_not_calculated
+
+        result = create_fit_score_not_calculated("Dry-run mode")
+
+        assert result["value"] is None, "NOT_CALCULATED must have null value"
+        assert result["status"] == "NOT_CALCULATED"
+        assert "Dry-run" in result["reason"]
+
+    def test_create_fit_score_gated(self):
+        """create_fit_score_gated returns NOT_CALCULATED with capped value."""
+        from backend import create_fit_score_gated
+
+        result = create_fit_score_gated(30, "Leadership requirement not met")
+
+        assert result["value"] == 30, "Gated fit_score should have cap value"
+        assert result["status"] == "NOT_CALCULATED"
+        assert "Leadership" in result["reason"]
+
+    def test_create_fit_score_error(self):
+        """create_fit_score_error returns ERROR status."""
+        from backend import create_fit_score_error
+
+        result = create_fit_score_error("Analysis failed")
+
+        assert result["value"] is None
+        assert result["status"] == "ERROR"
+        assert "failed" in result["reason"].lower()
+
+    def test_fit_score_status_enum_values(self):
+        """FitScoreStatus enum has expected values."""
+        from backend import FitScoreStatus
+
+        assert FitScoreStatus.CALCULATED == "CALCULATED"
+        assert FitScoreStatus.NOT_CALCULATED == "NOT_CALCULATED"
+        assert FitScoreStatus.ERROR == "ERROR"
+
+
+# =============================================================================
 # Run tests if executed directly
 # =============================================================================
 
