@@ -5828,13 +5828,28 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
                 "job_description": response_data.get("job_description", ""),
                 "responsibilities": response_data.get("responsibilities", [])
             }
+
+            # P0 FIX: Pass role_seniority to bypass function mismatch for leadership roles
+            # Get role seniority from leadership context if available
+            detected_role_title = response_data.get("role_title", "")
+            detected_role_seniority = None
+            if leadership_ctx and leadership_ctx.leadership_gate_locked:
+                detected_role_seniority = "LEADERSHIP" if leadership_ctx.is_leadership_role else "IC"
+
             function_mismatch_result = detect_function_mismatch(
                 resume_data=resume_data or {},
-                jd_data=jd_data_for_mismatch
+                jd_data=jd_data_for_mismatch,
+                role_seniority=detected_role_seniority,
+                role_title=detected_role_title
             )
-            print(f"🔍 Function Mismatch Detection: is_mismatch={function_mismatch_result.is_mismatch}, "
-                  f"severity={function_mismatch_result.severity.value if function_mismatch_result.is_mismatch else 'none'}, "
-                  f"candidate={function_mismatch_result.candidate_function}, role={function_mismatch_result.role_function}")
+
+            # Log result with leadership bypass info
+            if getattr(function_mismatch_result, 'leadership_role_bypass', False):
+                print(f"🔒 Function Mismatch BYPASSED: Leadership role detected ({detected_role_title})")
+            else:
+                print(f"🔍 Function Mismatch Detection: is_mismatch={function_mismatch_result.is_mismatch}, "
+                      f"severity={function_mismatch_result.severity.value if function_mismatch_result.is_mismatch else 'none'}, "
+                      f"candidate={function_mismatch_result.candidate_function}, role={function_mismatch_result.role_function}")
         except ImportError:
             print("⚠️ function_mismatch module not available")
         except Exception as fm_err:
@@ -5908,8 +5923,24 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             response_data["coaching_mode"] = terminal_state_contract.coaching_mode.value
 
             # Add function mismatch data to response for UI banner
+            # P0 FIX: Global assertion - NEVER render mismatch UI for leadership roles
             if function_mismatch_result:
-                response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
+                if getattr(function_mismatch_result, 'leadership_role_bypass', False):
+                    print(f"🔒 Function Mismatch UI SUPPRESSED: Leadership role bypass active")
+                    # Do NOT add function_mismatch to response - this prevents UI rendering
+                elif function_mismatch_result.is_mismatch:
+                    # P0 ASSERTION: Double-check this is not a leadership role
+                    role_title_check = response_data.get("role_title", "")
+                    from function_mismatch import is_leadership_role
+                    if is_leadership_role(role_title_check):
+                        print(f"⚠️ ASSERTION: Function mismatch detected for leadership role - BLOCKING UI render")
+                        print(f"   This is a global violation: {role_title_check}")
+                        # Block the mismatch from being rendered
+                    else:
+                        response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
+                else:
+                    # No mismatch detected, safe to add (will show as no-mismatch)
+                    response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
 
     except ImportError as e:
         print(f"⚠️ Terminal state contract not available: {e}")

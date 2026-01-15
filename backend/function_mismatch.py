@@ -15,6 +15,10 @@ Score Caps by Severity:
 - adjacent: 55%
 - significant: 35-50%
 - complete: 25-30%
+
+P0 FIX: Leadership roles are FUNCTION-AGNOSTIC by definition.
+Any role with Director, Head, VP, SVP, EVP, Chief, GM, Managing Director, Partner
+must bypass ALL function-mismatch logic for ALL users. This is role-driven, not candidate-driven.
 """
 
 from dataclasses import dataclass, field
@@ -29,6 +33,59 @@ class MismatchSeverity(str, Enum):
     ADJACENT = "adjacent"
     SIGNIFICANT = "significant"
     COMPLETE = "complete"
+
+
+# =============================================================================
+# P0 FIX: LEADERSHIP ROLE CLASSIFICATION (CANONICAL)
+# Leadership roles are function-agnostic by definition.
+# =============================================================================
+LEADERSHIP_ROLE_KEYWORDS = [
+    "director",
+    "head of",
+    "head,",  # Head, Engineering (with comma)
+    "vp ",
+    "vp,",
+    "vice president",
+    "svp",
+    "evp",
+    "chief",
+    "cto",
+    "cfo",
+    "coo",
+    "ceo",
+    "cmo",
+    "cpo",
+    "cro",
+    "gm",
+    "general manager",
+    "managing director",
+    "partner",
+]
+
+
+def is_leadership_role(role_title: str) -> bool:
+    """
+    Determine if a role is a leadership role based on title.
+
+    P0 FIX: Leadership roles bypass ALL function mismatch logic.
+    This is role-driven, not candidate-driven.
+
+    Args:
+        role_title: The role title to check
+
+    Returns:
+        True if this is a leadership role, False otherwise
+    """
+    if not role_title:
+        return False
+
+    title_lower = role_title.lower().strip()
+
+    for keyword in LEADERSHIP_ROLE_KEYWORDS:
+        if keyword in title_lower:
+            return True
+
+    return False
 
 
 # =============================================================================
@@ -403,6 +460,9 @@ class FunctionMismatchResult:
     candidate_classification: Optional[FunctionClassification] = None
     role_classification: Optional[FunctionClassification] = None
 
+    # P0 FIX: Leadership role bypass flag
+    leadership_role_bypass: bool = False
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "detected": self.is_mismatch,
@@ -413,7 +473,8 @@ class FunctionMismatchResult:
             "score_cap": self.score_cap,
             "message": self.coaching_message,
             "candidate_classification": self.candidate_classification.to_dict() if self.candidate_classification else None,
-            "role_classification": self.role_classification.to_dict() if self.role_classification else None
+            "role_classification": self.role_classification.to_dict() if self.role_classification else None,
+            "leadership_role_bypass": self.leadership_role_bypass  # P0 FIX
         }
 
 
@@ -624,20 +685,50 @@ def detect_function_mismatch(
     resume_data: Dict[str, Any],
     jd_data: Dict[str, Any],
     candidate_function_override: Optional[str] = None,
-    role_function_override: Optional[str] = None
+    role_function_override: Optional[str] = None,
+    role_seniority: Optional[str] = None,
+    role_title: Optional[str] = None
 ) -> FunctionMismatchResult:
     """
     Compare candidate function to role function and determine mismatch severity.
+
+    P0 FIX: Leadership roles bypass ALL function mismatch logic.
+    This is role-driven, not candidate-driven.
 
     Args:
         resume_data: Resume dictionary
         jd_data: JD dictionary
         candidate_function_override: Optional override for candidate function
         role_function_override: Optional override for role function
+        role_seniority: Optional role seniority ("LEADERSHIP" or "IC")
+        role_title: Optional role title for leadership detection
 
     Returns:
         FunctionMismatchResult with severity, score cap, and coaching
     """
+    # =========================================================================
+    # P0 FIX: LEADERSHIP ROLE SHORT-CIRCUIT
+    # Leadership roles are function-agnostic by definition.
+    # This check must happen BEFORE any candidate profile comparison.
+    # =========================================================================
+    detected_role_title = role_title or jd_data.get("role_title", "")
+
+    if role_seniority == "LEADERSHIP" or is_leadership_role(detected_role_title):
+        print(f"🔒 Skipping function-mismatch analysis for leadership role: {detected_role_title}")
+        # Return no-mismatch result for leadership roles
+        return FunctionMismatchResult(
+            is_mismatch=False,
+            severity=MismatchSeverity.NONE,
+            candidate_function="leadership",  # Mark as leadership role
+            role_function="leadership",
+            transferable_skills=[],
+            score_cap=None,
+            coaching_message=None,
+            candidate_classification=None,
+            role_classification=None,
+            leadership_role_bypass=True  # New flag for debugging
+        )
+
     # Classify functions
     candidate_classification = classify_candidate_function(resume_data)
     role_classification = classify_role_function(jd_data)
