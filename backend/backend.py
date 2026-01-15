@@ -137,6 +137,75 @@ def assert_no_claude_in_dry_run(request, context: str = ""):
 
 
 # =============================================================================
+# FIT SCORE RESPONSE CONTRACT (P0 UI-SAFE)
+# Per spec: All /jd/analyze responses MUST include fit_score in canonical shape
+# This ensures frontend never crashes on early exits (dry_run, gate, bypass)
+# =============================================================================
+
+class FitScoreStatus(str, Enum):
+    """Canonical fit_score status values."""
+    CALCULATED = "CALCULATED"           # Normal analysis completed
+    NOT_CALCULATED = "NOT_CALCULATED"   # Early exit (gate, dry_run, bypass)
+    ERROR = "ERROR"                     # Analysis failed
+
+
+def create_fit_score_response(
+    value: Optional[int] = None,
+    status: str = "NOT_CALCULATED",
+    reason: str = ""
+) -> Dict[str, Any]:
+    """
+    Create a canonical fit_score response object.
+
+    Per P0 spec: All /jd/analyze responses MUST include fit_score in this shape.
+    Never return a bare number or missing fit_score.
+
+    Args:
+        value: The fit score (0-100) or None if not calculated
+        status: CALCULATED, NOT_CALCULATED, or ERROR
+        reason: Human-readable explanation for status
+
+    Returns:
+        Canonical fit_score object:
+        {
+            "value": int | null,
+            "status": "CALCULATED" | "NOT_CALCULATED" | "ERROR",
+            "reason": str
+        }
+    """
+    return {
+        "value": value,
+        "status": status,
+        "reason": reason
+    }
+
+
+def create_fit_score_calculated(value: int, capped: bool = False, cap_reason: str = "") -> Dict[str, Any]:
+    """Create fit_score for normal calculated result."""
+    reason = f"Score calculated (capped: {cap_reason})" if capped else "Score calculated"
+    return create_fit_score_response(value=value, status="CALCULATED", reason=reason)
+
+
+def create_fit_score_not_calculated(reason: str) -> Dict[str, Any]:
+    """Create fit_score for early exit (dry_run, gate, bypass)."""
+    return create_fit_score_response(value=None, status="NOT_CALCULATED", reason=reason)
+
+
+def create_fit_score_gated(cap_value: int, reason: str) -> Dict[str, Any]:
+    """Create fit_score for gated response with capped value."""
+    return create_fit_score_response(
+        value=cap_value,
+        status="NOT_CALCULATED",
+        reason=reason
+    )
+
+
+def create_fit_score_error(reason: str) -> Dict[str, Any]:
+    """Create fit_score for error state."""
+    return create_fit_score_response(value=None, status="ERROR", reason=reason)
+
+
+# =============================================================================
 # CANONICAL LEADERSHIP CONTEXT
 # Per P0 fix: Single source of truth for leadership gating
 # This class stores the canonical leadership gate result set ONCE by the
@@ -12162,6 +12231,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
 
         # Build dry-run response with deterministic values only
         # Per P0 spec: Include dry_run_confirmed=True for explicit verification
+        # Per P0 UI-SAFE: Include fit_score in canonical shape
         dry_run_response = {
             "dry_run": True,
             "dry_run_confirmed": True,  # P0 UX: Explicit confirmation field
@@ -12177,6 +12247,8 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "fit_cap": None,
             "decision": "APPLY",  # Will be set below
             "decision_reason": "",
+            # P0 UI-SAFE: Canonical fit_score shape for frontend rendering
+            "fit_score": create_fit_score_not_calculated("Dry-run mode: scoring skipped"),
             # Additional diagnostic info
             "role_type_detected": isolated_role_detection.get("role_type", "general") if isolated_role_detection else "general",
             "candidate_years": isolated_role_detection.get("candidate_years", 0.0) if isolated_role_detection else 0.0,
@@ -12280,17 +12352,22 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         print(f"   Fit Cap: {pre_llm_leadership_gate.get('fit_cap', 30)}%")
 
         # Build minimal response without Claude
+        # Per P0 UI-SAFE: Include fit_score in canonical shape
+        gate_reason = pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met")
+        fit_cap = pre_llm_leadership_gate.get("fit_cap", 30)
+
         gated_response = {
             "analysis_id": analysis_id,
             "company": body.company,
             "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
-            "fit_score": pre_llm_leadership_gate.get("fit_cap", 30),
+            # P0 UI-SAFE: Canonical fit_score shape
+            "fit_score": create_fit_score_gated(fit_cap, f"Leadership gate: {gate_reason}"),
             "fit_score_capped_by_leadership_gate": True,
             "recommendation": "Do Not Apply",
             "recommendation_locked": True,
             "recommendation_locked_by_leadership_gate": True,
-            "recommendation_rationale": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
-            "leadership_gate_reason": pre_llm_leadership_gate.get("gate_reason", ""),
+            "recommendation_rationale": f"Do not apply. {gate_reason}",
+            "leadership_gate_reason": gate_reason,
             "apply_disabled": True,
             "apply_disabled_reason": "Not eligible for this role",
             # Minimal required fields
@@ -12301,12 +12378,12 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "gaps": [
                 {
                     "gap_type": "leadership_experience",
-                    "gap_description": pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met"),
+                    "gap_description": gate_reason,
                     "severity": "critical"
                 }
             ],
             "reality_check": {
-                "strategic_action": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
+                "strategic_action": f"Do not apply. {gate_reason}",
                 "hard_truth": "This role requires people leadership experience you do not have."
             },
             "experience_analysis": {
@@ -14736,24 +14813,29 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
             }
 
     # If hard gate failed, return gated response immediately (no streaming needed)
+    # Per P0 UI-SAFE: Include fit_score in canonical shape
     if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") == "FAIL":
         print(f"\n🚫🚫🚫 [STREAM] HARD GATE FAILED - SKIPPING CLAUDE CALL 🚫🚫🚫")
+        gate_reason = pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met")
+        fit_cap = pre_llm_leadership_gate.get("fit_cap", 30)
+
         gated_response = {
             "analysis_id": analysis_id,
             "company": body.company,
             "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
-            "fit_score": pre_llm_leadership_gate.get("fit_cap", 30),
+            # P0 UI-SAFE: Canonical fit_score shape
+            "fit_score": create_fit_score_gated(fit_cap, f"Leadership gate: {gate_reason}"),
             "fit_score_capped_by_leadership_gate": True,
             "recommendation": "Do Not Apply",
             "recommendation_locked": True,
             "recommendation_locked_by_leadership_gate": True,
-            "recommendation_rationale": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
+            "recommendation_rationale": f"Do not apply. {gate_reason}",
             "apply_disabled": True,
             "apply_disabled_reason": "Not eligible for this role",
             "key_responsibilities": [], "required_skills": [], "preferred_skills": [],
             "strengths": [],
-            "gaps": [{"gap_type": "leadership_experience", "gap_description": pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met"), "severity": "critical"}],
-            "reality_check": {"strategic_action": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}", "hard_truth": "This role requires people leadership experience you do not have."},
+            "gaps": [{"gap_type": "leadership_experience", "gap_description": gate_reason, "severity": "critical"}],
+            "reality_check": {"strategic_action": f"Do not apply. {gate_reason}", "hard_truth": "This role requires people leadership experience you do not have."},
             "experience_analysis": {"eligibility_gate_passed": False, "recommendation_locked": True, "hard_requirement_failure": True, "leadership_hard_gate_failed": True},
             "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM"
         }
