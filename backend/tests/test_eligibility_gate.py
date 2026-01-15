@@ -3355,6 +3355,114 @@ class TestFunctionMismatchSystemInvariants:
 
 
 # =============================================================================
+# P0 UX + SAFETY: DRY-RUN MODE TESTS
+# These tests verify the dry-run contract is explicit, verifiable, and unmistakable
+# =============================================================================
+
+class TestDryRunSafetyContract:
+    """
+    P0 UX + SAFETY tests for dry-run mode.
+
+    Per spec:
+    - dry_run must default to False
+    - dry_run_confirmed field must be present when dry_run=True
+    - Claude must NEVER be called during dry_run
+    - Execution mode banner must appear in logs
+    """
+
+    def test_is_dry_run_helper_returns_false_by_default(self):
+        """is_dry_run() returns False when attribute is missing."""
+        from backend import is_dry_run
+
+        class MockRequest:
+            pass
+
+        request = MockRequest()
+        assert is_dry_run(request) is False, "is_dry_run must return False when attribute missing"
+
+    def test_is_dry_run_helper_returns_false_when_explicitly_false(self):
+        """is_dry_run() returns False when dry_run=False."""
+        from backend import is_dry_run
+
+        class MockRequest:
+            dry_run = False
+
+        request = MockRequest()
+        assert is_dry_run(request) is False, "is_dry_run must return False when dry_run=False"
+
+    def test_is_dry_run_helper_returns_true_when_explicitly_true(self):
+        """is_dry_run() returns True when dry_run=True."""
+        from backend import is_dry_run
+
+        class MockRequest:
+            dry_run = True
+
+        request = MockRequest()
+        assert is_dry_run(request) is True, "is_dry_run must return True when dry_run=True"
+
+    def test_is_dry_run_handles_none_gracefully(self):
+        """is_dry_run() handles None dry_run gracefully (returns False)."""
+        from backend import is_dry_run
+
+        class MockRequest:
+            dry_run = None
+
+        request = MockRequest()
+        assert is_dry_run(request) is False, "is_dry_run must return False when dry_run=None"
+
+    def test_assert_no_claude_raises_in_dry_run(self):
+        """assert_no_claude_in_dry_run raises AssertionError when dry_run=True."""
+        from backend import assert_no_claude_in_dry_run
+
+        class MockRequest:
+            dry_run = True
+
+        request = MockRequest()
+        with pytest.raises(AssertionError) as exc_info:
+            assert_no_claude_in_dry_run(request, "test_context")
+
+        assert "CRITICAL: Claude call attempted during dry_run" in str(exc_info.value)
+        assert "test_context" in str(exc_info.value)
+
+    def test_assert_no_claude_does_not_raise_when_not_dry_run(self):
+        """assert_no_claude_in_dry_run does not raise when dry_run=False."""
+        from backend import assert_no_claude_in_dry_run
+
+        class MockRequest:
+            dry_run = False
+
+        request = MockRequest()
+        # Should not raise
+        assert_no_claude_in_dry_run(request, "test_context")
+
+    def test_dry_run_default_is_false_in_request_model(self):
+        """JDAnalyzeRequest.dry_run defaults to False."""
+        from backend import JDAnalyzeRequest
+
+        # Create request without specifying dry_run
+        request = JDAnalyzeRequest(
+            company="Test Co",
+            role_title="Test Role",
+            job_description="Test job description that is long enough to pass validation"
+        )
+
+        assert request.dry_run is False, "dry_run must default to False"
+
+    def test_dry_run_can_be_explicitly_set_true(self):
+        """JDAnalyzeRequest.dry_run can be explicitly set to True."""
+        from backend import JDAnalyzeRequest
+
+        request = JDAnalyzeRequest(
+            company="Test Co",
+            role_title="Test Role",
+            job_description="Test job description that is long enough to pass validation",
+            dry_run=True
+        )
+
+        assert request.dry_run is True, "dry_run must be settable to True"
+
+
+# =============================================================================
 # Run tests if executed directly
 # =============================================================================
 
