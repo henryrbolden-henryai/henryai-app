@@ -320,12 +320,10 @@
 
                 const analysisData = await analyzeResponse.json();
 
-                // SUCCESS CONDITION (canonical): response.ok + data + analysis_id
-                // Backend uses _analysis_id (main path) or analysis_id (gated/dry_run paths)
-                // Do NOT gate on fit_score.value, fit_score.status, or optional sections
-                const analysisId = analysisData.analysis_id || analysisData._analysis_id;
-                if (!analysisData || !analysisId) {
-                    throw new Error('Invalid analyze response: missing analysis_id');
+                // SUCCESS CONDITION: response.ok + valid object
+                // Do NOT gate on analysis_id, fit_score, or any specific fields
+                if (!analysisData || typeof analysisData !== 'object') {
+                    throw new Error('Invalid analyze response');
                 }
 
                 // Build full data for results page
@@ -350,7 +348,7 @@
                     _createdAt: new Date().toISOString()
                 };
 
-                console.log('Analysis complete:', analysisId);
+                console.log('Analysis complete');
 
                 // Store analysis data (with localStorage backup for Safari)
                 const analysisDataStr = JSON.stringify(fullData);
