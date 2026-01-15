@@ -12726,8 +12726,10 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "fit_cap": None,
             "decision": "APPLY",  # Will be set below
             "decision_reason": "",
-            # P0 UI-SAFE: Canonical fit_score shape for frontend rendering
-            "fit_score": create_fit_score_not_calculated("Dry-run mode: scoring skipped"),
+            # CRITICAL: fit_score MUST be a number for frontend compatibility
+            # For dry-run mode, use None to indicate "not calculated" (frontend handles this)
+            "fit_score": None,
+            "fit_score_not_calculated_reason": "Dry-run mode: scoring skipped",
             # Additional diagnostic info
             "role_type_detected": isolated_role_detection.get("role_type", "general") if isolated_role_detection else "general",
             "candidate_years": isolated_role_detection.get("candidate_years", 0.0) if isolated_role_detection else 0.0,
@@ -12839,8 +12841,9 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "analysis_id": analysis_id,
             "company": body.company,
             "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
-            # P0 UI-SAFE: Canonical fit_score shape
-            "fit_score": create_fit_score_gated(fit_cap, f"Leadership gate: {gate_reason}"),
+            # CRITICAL: fit_score MUST be a number for frontend compatibility
+            "fit_score": fit_cap,  # Use the capped value directly as a number
+            "fit_score_gated_reason": f"Leadership gate: {gate_reason}",
             "fit_score_capped_by_leadership_gate": True,
             "recommendation": "Do Not Apply",
             "recommendation_locked": True,
@@ -15323,10 +15326,12 @@ Role: {body.role_title}
             print(f"   Fix attempt failed: {fix_error}")
 
         # P0 FIX: Return fallback response instead of 500 (tokens already spent)
+        # CRITICAL: fit_score MUST be a number for frontend compatibility
         print(f"⚠️ [{analysis_id}] Returning fallback response after JSON parse failure")
         fallback_response = {
             "analysis_id": analysis_id,
-            "fit_score": {"value": None, "status": "PARSE_ERROR", "reason": "Analysis completed but response parsing failed"},
+            "fit_score": 0,  # Frontend expects number, not object
+            "fit_score_error": "PARSE_ERROR: Analysis completed but response parsing failed",
             "recommendation": "Unable to Analyze",
             "role_title": body.role_title or "Unknown",
             "company": body.company or "Unknown",
@@ -15338,13 +15343,15 @@ Role: {body.role_title}
     except Exception as post_llm_error:
         # P0 FIX: Catch ALL post-LLM errors and return controlled response
         # Tokens are already spent - never return 500 after LLM success
+        # CRITICAL: fit_score MUST be a number for frontend compatibility
         print(f"❌ [{analysis_id}] Post-LLM error (tokens spent, returning fallback): {post_llm_error}")
         import traceback
         traceback.print_exc()
 
         fallback_response = {
             "analysis_id": analysis_id,
-            "fit_score": {"value": None, "status": "POST_PROCESS_ERROR", "reason": f"Analysis completed but post-processing failed: {str(post_llm_error)[:100]}"},
+            "fit_score": 0,  # Frontend expects number, not object
+            "fit_score_error": f"POST_PROCESS_ERROR: {str(post_llm_error)[:100]}",
             "recommendation": "Unable to Analyze",
             "role_title": body.role_title or "Unknown",
             "company": body.company or "Unknown",
@@ -15430,8 +15437,9 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
             "analysis_id": analysis_id,
             "company": body.company,
             "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
-            # P0 UI-SAFE: Canonical fit_score shape
-            "fit_score": create_fit_score_gated(fit_cap, f"Leadership gate: {gate_reason}"),
+            # CRITICAL: fit_score MUST be a number for frontend compatibility
+            "fit_score": fit_cap,  # Use the capped value directly as a number
+            "fit_score_gated_reason": f"Leadership gate: {gate_reason}",
             "fit_score_capped_by_leadership_gate": True,
             "recommendation": "Do Not Apply",
             "recommendation_locked": True,
