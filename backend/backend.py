@@ -206,6 +206,148 @@ def create_fit_score_error(reason: str) -> Dict[str, Any]:
 
 
 # =============================================================================
+# ISOLATED FIT SCORE LLM CALL
+# Per P0 spec: Minimal, deterministic scoring call - no retries, no streaming
+# =============================================================================
+
+# Kill switch - when False, skip LLM fit scoring entirely and use deterministic only
+ENABLE_FIT_SCORE_LLM = os.getenv("ENABLE_FIT_SCORE_LLM", "true").lower() == "true"
+
+# Minimal prompt for fit scoring - no narrative, no explanation, just numbers
+FIT_SCORE_MINIMAL_PROMPT = """You are a scoring engine.
+
+Given the structured inputs below, calculate a fit score.
+
+Rules:
+- Output JSON only
+- Do not include explanations longer than one sentence per field
+- Do not include prose, commentary, or advice
+- Do not restate inputs
+
+Scoring:
+- experience_match: 0-25
+- scope_match: 0-25
+- domain_match: 0-25
+- seniority_match: 0-25
+
+Return this exact schema:
+
+{
+  "fit_score": number (0-100),
+  "confidence": number (0-1),
+  "drivers": {
+    "experience_match": number,
+    "scope_match": number,
+    "domain_match": number,
+    "seniority_match": number
+  }
+}"""
+
+
+def calculate_fit_score_llm(
+    role_title: str,
+    role_level: str,
+    required_years: float,
+    candidate_years: float,
+    domain_tags: list,
+    scope_flags: dict,
+    leadership_required: bool,
+    analysis_id: str
+) -> Dict[str, Any]:
+    """
+    Isolated LLM call for fit scoring.
+
+    Rules:
+    - One call, one attempt, no retries
+    - No streaming
+    - max_tokens <= 300
+    - temperature = 0
+    - JSON output only
+
+    If this call errors, times out, or returns invalid JSON:
+    - Do NOT retry
+    - Do NOT fall back to narrative scoring
+    - Return NOT_CALCULATED status
+
+    This must NOT block the rest of the analysis.
+    """
+    # Kill switch check
+    if not ENABLE_FIT_SCORE_LLM:
+        print(f"🔧 [{analysis_id}] FIT SCORE LLM DISABLED - using deterministic only")
+        return create_fit_score_not_calculated("LLM fit scoring disabled (kill switch)")
+
+    # Build minimal input payload - precomputed signals only
+    input_payload = {
+        "role_title": role_title,
+        "role_level": role_level,
+        "required_years": required_years if required_years is not None else 0,
+        "candidate_years": candidate_years if candidate_years is not None else 0,
+        "domain_tags": domain_tags if domain_tags else [],
+        "scope_flags": scope_flags if scope_flags else {},
+        "leadership_required": leadership_required
+    }
+
+    user_message = f"""Calculate fit score for:
+{json.dumps(input_payload, indent=2)}"""
+
+    try:
+        # Import here to avoid circular dependency at module load
+        from backend.services import call_claude
+
+        print(f"🎯 [{analysis_id}] Calling isolated fit score LLM (max_tokens=300, no retries)")
+
+        # Single call, no retries (max_retries=1), hard token cap
+        response = call_claude(
+            system_prompt=FIT_SCORE_MINIMAL_PROMPT,
+            user_message=user_message,
+            max_tokens=300,
+            max_retries=1,  # No retries
+            temperature=0,
+            model="claude-3-5-haiku-20241022"  # Cheapest, fastest model
+        )
+
+        # Parse JSON response
+        response = response.strip()
+        if response.startswith("```"):
+            response = response.split("```")[1]
+            if response.startswith("json"):
+                response = response[4:]
+            response = response.strip()
+
+        parsed = json.loads(response)
+
+        # Validate required fields
+        fit_score = parsed.get("fit_score")
+        if fit_score is None or not isinstance(fit_score, (int, float)):
+            print(f"⚠️ [{analysis_id}] Fit score LLM returned invalid fit_score: {fit_score}")
+            return create_fit_score_not_calculated("Invalid fit score from LLM")
+
+        # Ensure within bounds
+        fit_score = max(0, min(100, int(fit_score)))
+
+        confidence = parsed.get("confidence", 0.5)
+        drivers = parsed.get("drivers", {})
+
+        print(f"✅ [{analysis_id}] Fit score LLM returned: {fit_score}% (confidence: {confidence})")
+
+        return {
+            "value": fit_score,
+            "status": "CALCULATED",
+            "reason": "LLM scoring",
+            "confidence": confidence,
+            "drivers": drivers,
+            "source": "llm_isolated"
+        }
+
+    except json.JSONDecodeError as e:
+        print(f"⚠️ [{analysis_id}] Fit score LLM returned invalid JSON: {e}")
+        return create_fit_score_not_calculated("Fit score unavailable (invalid JSON)")
+    except Exception as e:
+        print(f"⚠️ [{analysis_id}] Fit score LLM failed: {e}")
+        return create_fit_score_not_calculated(f"Fit score unavailable")
+
+
+# =============================================================================
 # CANONICAL LEADERSHIP CONTEXT
 # Per P0 fix: Single source of truth for leadership gating
 # This class stores the canonical leadership gate result set ONCE by the
@@ -14263,6 +14405,84 @@ Role: {body.role_title}
                 parsed_data["experience_analysis"]["role_level_info"] = isolated_role_detection["role_level_info"]
             if "pre_llm_leadership_gate" in isolated_role_detection:
                 parsed_data["experience_analysis"]["pre_llm_leadership_gate"] = isolated_role_detection["pre_llm_leadership_gate"]
+
+        # ========================================================================
+        # P0 FIT SCORE REBUILD: Use isolated LLM call for fit scoring
+        # Per spec: Minimal prompt, no retries, low tokens, JSON only
+        # This replaces the fit_score from the main Claude call
+        # ========================================================================
+        if ENABLE_FIT_SCORE_LLM:
+            # Extract precomputed signals from isolated_role_detection
+            role_title = parsed_data.get("role_title", body.role_title or "")
+            role_level = "IC"
+            required_years = 0.0
+            candidate_years = 0.0
+            domain_tags = []
+            scope_flags = {}
+            leadership_required = False
+
+            if isolated_role_detection:
+                role_level_info = isolated_role_detection.get("role_level_info", {})
+                role_level = role_level_info.get("role_level", "IC")
+                leadership_required = role_level_info.get("is_leadership_role", False)
+                candidate_years = isolated_role_detection.get("candidate_years", 0.0)
+
+                # Extract domain tags from JD keywords if available
+                domain_tags = parsed_data.get("ats_keywords", [])[:5] if parsed_data.get("ats_keywords") else []
+
+                # Extract scope flags
+                scope_flags = {
+                    "role_type": isolated_role_detection.get("role_type", "general"),
+                    "has_leadership": leadership_required,
+                    "alignment_confidence": isolated_role_detection.get("alignment", {}).get("confidence", 0.5)
+                }
+
+            # Get required years from experience analysis
+            if parsed_data.get("experience_analysis"):
+                required_years = parsed_data["experience_analysis"].get("required_years", 0.0)
+
+            # Call isolated fit scoring
+            print(f"\n{'='*60}")
+            print(f"🎯 [{analysis_id}] ISOLATED FIT SCORE CALL")
+            print(f"{'='*60}")
+            print(f"   Role: {role_title}")
+            print(f"   Level: {role_level}")
+            print(f"   Required Years: {required_years}")
+            print(f"   Candidate Years: {candidate_years}")
+            print(f"   Leadership Required: {leadership_required}")
+
+            isolated_fit_result = calculate_fit_score_llm(
+                role_title=role_title,
+                role_level=role_level,
+                required_years=required_years,
+                candidate_years=candidate_years,
+                domain_tags=domain_tags,
+                scope_flags=scope_flags,
+                leadership_required=leadership_required,
+                analysis_id=analysis_id
+            )
+
+            # Use isolated result if successful
+            if isolated_fit_result.get("status") == "CALCULATED":
+                original_score = parsed_data.get("fit_score", 50)
+                new_score = isolated_fit_result.get("value", original_score)
+                print(f"   ✅ Isolated fit score: {new_score}% (main prompt returned: {original_score}%)")
+                parsed_data["fit_score"] = new_score
+                parsed_data["fit_score_source"] = "isolated_llm"
+                parsed_data["fit_score_drivers"] = isolated_fit_result.get("drivers", {})
+                parsed_data["fit_score_confidence"] = isolated_fit_result.get("confidence", 0.5)
+            else:
+                # Fall back to main prompt score if isolated call failed
+                print(f"   ⚠️ Isolated fit score failed: {isolated_fit_result.get('reason')}")
+                print(f"   Using main prompt fit_score: {parsed_data.get('fit_score', 50)}%")
+                parsed_data["fit_score_source"] = "main_prompt_fallback"
+                parsed_data["fit_score_isolated_error"] = isolated_fit_result.get("reason")
+
+            print(f"{'='*60}\n")
+        else:
+            # Kill switch is off - use main prompt score
+            print(f"🔧 [{analysis_id}] FIT SCORE LLM DISABLED - using main prompt score")
+            parsed_data["fit_score_source"] = "main_prompt"
 
         # ========================================================================
         # CRITICAL: ENFORCE PRE-LLM LEADERSHIP GATE BEFORE FURTHER PROCESSING
