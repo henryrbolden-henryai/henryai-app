@@ -288,26 +288,19 @@
 
             startProgressAnimation();
 
-            // Set up AbortController with 180-second timeout for long-running analysis
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 180000);
-
             try {
                 console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
 
                 // Add cache-busting timestamp to prevent stale responses
-                // Note: Using query param for cache-busting instead of headers to avoid CORS preflight issues
                 const cacheBuster = Date.now();
                 const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze?_t=${cacheBuster}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(requestPayload),
-                    signal: controller.signal
+                    body: JSON.stringify(requestPayload)
+                    // No AbortController - long-running analysis is expected
                 });
-
-                clearTimeout(timeoutId);
 
                 // Step 1: Explicit logging and guards for fetch completion
                 console.log('[analyze] HTTP status:', analyzeResponse.status);
@@ -363,20 +356,12 @@
                 window.location.href = 'results.html';
 
             } catch (error) {
-                clearTimeout(timeoutId);
                 console.error('Analysis error:', error);
 
+                // Only show error if fetch actually failed
                 let errorMsg = 'Something went wrong. Please try again.';
-                if (error.name === 'AbortError') {
-                    errorMsg = 'Analysis is taking longer than expected. Please try again.';
-                } else if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
-                } else if (error.message && error.message.includes('temporarily busy')) {
-                    // Friendly message for API overload
-                    errorMsg = error.message;
-                } else if (error.message && error.message.includes('Claude API')) {
-                    // Clean up raw API error messages
-                    errorMsg = 'Our AI is temporarily unavailable. Please try again in a moment.';
                 } else if (error.message) {
                     errorMsg = error.message;
                 }
