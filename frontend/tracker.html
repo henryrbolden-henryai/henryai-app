@@ -4953,6 +4953,11 @@
         // Organized by category for cleaner dropdown display
         // ========================================================================
 
+        // API Base URL for backend calls
+        const API_BASE_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : 'https://henryai-app-production.up.railway.app';
+
         // Status categories for grouped dropdown with visual prefixes
         const STATUS_CATEGORIES = {
             '📋 Application': ['Preparing', 'Applied', 'Networking'],
@@ -7878,6 +7883,30 @@
                 </div>
             ` : '';
 
+            // Rejection email section (only for rejection statuses, not withdrawn)
+            const isRejection = !isWithdrawn && app.status !== 'No Response' && app.status !== 'Ghosted';
+            const savedRejectionEmail = rejectionData.rejectionEmail || '';
+            const hasAIAnalysis = rejectionData.aiAnalysis;
+
+            const rejectionEmailSection = isRejection ? `
+                <div style="border-top: 1px solid var(--color-border); padding-top: 16px; margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Rejection Email (paste for AI analysis)</div>
+                        <button id="analyzeRejectionBtn" onclick="analyzeRejectionEmail('${appId}')"
+                            style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"
+                            ${!savedRejectionEmail ? 'disabled style="opacity: 0.5; cursor: not-allowed; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8rem;"' : ''}>
+                            <span>🤖</span> Analyze with AI
+                        </button>
+                    </div>
+                    <textarea id="rejectionEmailInput" placeholder="Paste the rejection email here for personalized coaching insights..."
+                        style="width: 100%; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; min-height: 120px; resize: vertical; font-family: inherit;"
+                        oninput="handleRejectionEmailInput('${appId}', this.value)">${savedRejectionEmail}</textarea>
+                </div>
+                <div id="aiAnalysisResults" style="margin-top: 16px; display: ${hasAIAnalysis ? 'block' : 'none'};">
+                    ${hasAIAnalysis ? renderAIAnalysis(rejectionData.aiAnalysis) : ''}
+                </div>
+            ` : '';
+
             content.innerHTML = `
                 <div style="background: var(--color-surface); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
@@ -7895,7 +7924,9 @@
 
                     ${withdrawalReasonSection}
 
-                    <div style="border-top: 1px solid var(--color-border); padding-top: 16px; margin-top: ${isWithdrawn ? '16px' : '0'};">
+                    ${rejectionEmailSection}
+
+                    <div style="border-top: 1px solid var(--color-border); padding-top: 16px; margin-top: 16px;">
                         <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">Notes (optional)</div>
                         <textarea id="rejectionFeedbackInput" placeholder="${isWithdrawn ? 'Add any notes about your decision to withdraw...' : 'Add any feedback or notes about this rejection...'}"
                             style="width: 100%; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; min-height: 80px; resize: vertical; font-family: inherit;"
@@ -7937,6 +7968,190 @@
                 apps[idx].rejectionData.withdrawalReason = reason;
                 saveApplications(apps);
             }
+        }
+
+        function handleRejectionEmailInput(appId, emailText) {
+            // Save the email text
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx !== -1) {
+                if (!apps[idx].rejectionData) apps[idx].rejectionData = {};
+                apps[idx].rejectionData.rejectionEmail = emailText;
+                saveApplications(apps);
+            }
+
+            // Enable/disable the analyze button
+            const btn = document.getElementById('analyzeRejectionBtn');
+            if (btn) {
+                btn.disabled = !emailText.trim();
+                btn.style.opacity = emailText.trim() ? '1' : '0.5';
+                btn.style.cursor = emailText.trim() ? 'pointer' : 'not-allowed';
+            }
+        }
+
+        async function analyzeRejectionEmail(appId) {
+            const app = getApplications().find(a => String(a.id) === String(appId));
+            if (!app) return;
+
+            const rejectionEmail = app.rejectionData?.rejectionEmail;
+            if (!rejectionEmail) return;
+
+            const btn = document.getElementById('analyzeRejectionBtn');
+            const resultsDiv = document.getElementById('aiAnalysisResults');
+
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span> Analyzing...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/tracker/analyze-rejection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        application_id: appId,
+                        company: app.company,
+                        role: app.role,
+                        rejection_email: rejectionEmail,
+                        date_applied: app.dateApplied,
+                        date_rejected: app.rejectionData?.date || new Date().toISOString(),
+                        previous_status: app.previousStatus || 'Applied',
+                        had_interviews: !!app.dateInterviewed
+                    })
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+
+                const analysis = await response.json();
+
+                // Save the analysis
+                const apps = getApplications();
+                const idx = apps.findIndex(a => String(a.id) === String(appId));
+                if (idx !== -1) {
+                    apps[idx].rejectionData.aiAnalysis = analysis;
+                    // Update status if recommended
+                    if (analysis.recommended_status && analysis.recommended_status !== apps[idx].status) {
+                        apps[idx].status = analysis.recommended_status;
+                    }
+                    saveApplications(apps);
+                }
+
+                // Render the results
+                resultsDiv.innerHTML = renderAIAnalysis(analysis);
+                resultsDiv.style.display = 'block';
+
+                btn.innerHTML = '<span>✓</span> Analysis Complete';
+                btn.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+
+            } catch (error) {
+                console.error('Rejection analysis failed:', error);
+                btn.innerHTML = '<span>⚠️</span> Analysis Failed';
+                btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                setTimeout(() => {
+                    btn.innerHTML = '<span>🤖</span> Analyze with AI';
+                    btn.style.background = 'linear-gradient(135deg, #8b5cf6, #6366f1)';
+                    btn.disabled = false;
+                }, 3000);
+            }
+        }
+
+        function renderAIAnalysis(analysis) {
+            if (!analysis) return '';
+
+            const timingColor = analysis.timing_analysis?.ats_filtered_likelihood === 'high' ? '#ef4444' :
+                               analysis.timing_analysis?.ats_filtered_likelihood === 'medium' ? '#eab308' : '#22c55e';
+
+            const reasonsList = (analysis.likely_reasons || []).map(r => `
+                <div style="background: var(--color-bg); padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span style="color: var(--color-text); font-weight: 500;">${r.reason}</span>
+                        <span style="color: ${r.confidence === 'high' ? '#22c55e' : r.confidence === 'medium' ? '#eab308' : '#6b7280'}; font-size: 0.8rem; text-transform: uppercase;">${r.confidence}</span>
+                    </div>
+                    <div style="color: var(--color-text-muted); font-size: 0.85rem;">${r.evidence}</div>
+                </div>
+            `).join('');
+
+            const questionsList = (analysis.coaching_questions || []).map(q => `
+                <li style="margin-bottom: 8px; color: var(--color-text-secondary);">${q}</li>
+            `).join('');
+
+            return `
+                <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                        <span style="font-size: 1.2rem;">🤖</span>
+                        <h4 style="color: #a78bfa; margin: 0;">AI Analysis Results</h4>
+                    </div>
+
+                    <!-- Rejection Type -->
+                    <div style="background: var(--color-surface); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 4px;">Classification</div>
+                        <div style="color: var(--color-text); font-weight: 500;">${analysis.rejection_type_reasoning}</div>
+                    </div>
+
+                    <!-- Timing Analysis -->
+                    <div style="background: var(--color-surface); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 4px;">Timing Analysis</div>
+                        <div style="color: var(--color-text);">${analysis.timing_analysis?.speed_interpretation || 'Unknown'}</div>
+                        <div style="display: flex; gap: 16px; margin-top: 8px;">
+                            <div style="font-size: 0.8rem;">
+                                <span style="color: var(--color-text-muted);">ATS Filtered:</span>
+                                <span style="color: ${timingColor}; font-weight: 500; margin-left: 4px;">${analysis.timing_analysis?.ats_filtered_likelihood || 'Unknown'}</span>
+                            </div>
+                            <div style="font-size: 0.8rem;">
+                                <span style="color: var(--color-text-muted);">Human Review:</span>
+                                <span style="color: var(--color-text); font-weight: 500; margin-left: 4px;">${analysis.timing_analysis?.human_review_likelihood || 'Unknown'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Signals -->
+                    <div style="background: var(--color-surface); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 4px;">What the Email Reveals</div>
+                        <div style="color: var(--color-text);">${analysis.email_signals?.hidden_meaning || 'Standard rejection language'}</div>
+                        ${analysis.email_signals?.key_phrases?.length ? `
+                            <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;">
+                                ${analysis.email_signals.key_phrases.map(p => `<span style="background: var(--color-bg); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; color: var(--color-text-muted);">"${p}"</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Likely Reasons -->
+                    ${reasonsList ? `
+                        <div style="margin-bottom: 12px;">
+                            <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 8px;">Likely Reasons</div>
+                            ${reasonsList}
+                        </div>
+                    ` : ''}
+
+                    <!-- Coaching -->
+                    <div style="background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                        <h5 style="color: #22c55e; margin: 0 0 8px 0;">💡 ${analysis.coaching?.primary_insight || 'Key Insight'}</h5>
+                        <div style="margin-bottom: 12px;">
+                            <div style="color: var(--color-text-muted); font-size: 0.8rem;">What to do now:</div>
+                            <div style="color: var(--color-text);">${analysis.coaching?.what_to_do_now || ''}</div>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <div style="color: var(--color-text-muted); font-size: 0.8rem;">What to improve:</div>
+                            <div style="color: var(--color-text);">${analysis.coaching?.what_to_improve || ''}</div>
+                        </div>
+                        ${analysis.coaching?.silver_lining ? `
+                            <div>
+                                <div style="color: var(--color-text-muted); font-size: 0.8rem;">Silver lining:</div>
+                                <div style="color: var(--color-text);">${analysis.coaching.silver_lining}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Reflection Questions -->
+                    ${questionsList ? `
+                        <div style="background: var(--color-surface); border-radius: 8px; padding: 12px;">
+                            <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 8px;">Questions to Reflect On</div>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                ${questionsList}
+                            </ul>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
         }
 
         function closeRejectionDebriefModal() {

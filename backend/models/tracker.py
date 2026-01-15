@@ -212,3 +212,62 @@ class CalculateConfidenceResponse(BaseModel):
     label: str  # high, medium, low
     factors: ConfidenceFactors
     guidance: str
+
+
+# Rejection Analysis models
+class RejectionAnalysisRequest(BaseModel):
+    """Request to analyze a rejection email"""
+    application_id: str
+    company: str
+    role: str
+    rejection_email: str
+    date_applied: Optional[str] = None
+    date_rejected: Optional[str] = None
+    previous_status: Optional[str] = None  # Status before rejection
+    had_interviews: bool = False
+
+
+class TimingAnalysis(BaseModel):
+    """Analysis of rejection timing"""
+    speed: str  # same_day, within_week, extended, unknown
+    speed_interpretation: str
+    ats_filtered_likelihood: str  # high, medium, low, none
+    human_review_likelihood: str  # high, medium, low, none
+
+
+class EmailSignals(BaseModel):
+    """Signals extracted from the rejection email"""
+    is_template: bool
+    personalization_level: str  # none, minimal, moderate, high
+    door_left_open: bool
+    specific_feedback_given: bool
+    key_phrases: List[str]
+    hidden_meaning: str
+
+
+class LikelyReason(BaseModel):
+    """A likely reason for rejection"""
+    reason: str
+    confidence: str  # high, medium, low
+    evidence: str
+
+
+class RejectionCoaching(BaseModel):
+    """Coaching insights from rejection analysis"""
+    primary_insight: str
+    what_to_do_now: str
+    what_to_improve: str
+    silver_lining: Optional[str] = None
+
+
+class RejectionAnalysisResponse(BaseModel):
+    """Response from rejection email analysis"""
+    rejection_type: str  # auto_rejected, pre_screen, post_screen, post_interview, offer_stage, unknown
+    rejection_type_confidence: str  # high, medium, low
+    rejection_type_reasoning: str
+    timing_analysis: TimingAnalysis
+    email_signals: EmailSignals
+    likely_reasons: List[LikelyReason]
+    coaching: RejectionCoaching
+    coaching_questions: List[str]
+    recommended_status: str

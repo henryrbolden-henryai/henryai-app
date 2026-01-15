@@ -71,7 +71,10 @@
       "Bash(git -C:*)",
       "Bash(MISS)",
       "Bash(RESUME=HIT)",
-      "Bash(MISS\"\n- Clear visibility into which caches are saving money\n\nExpected savings:\n- Same JD retries = $0 for JD parsing\n- Same JD + same resume = FULL CACHE HIT = $0 total\n- Same JD + new resume = only fit score call needed\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(MISS\"\n- Clear visibility into which caches are saving money\n\nExpected savings:\n- Same JD retries = $0 for JD parsing\n- Same JD + same resume = FULL CACHE HIT = $0 total\n- Same JD + new resume = only fit score call needed\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(xargs ls:*)",
+      "Bash(./deploy.sh)",
+      "Bash(vercel --prod:*)"
     ],
     "deny": [],
     "ask": []

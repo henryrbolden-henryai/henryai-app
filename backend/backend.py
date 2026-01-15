@@ -4194,6 +4194,66 @@ class CalculateConfidenceResponse(BaseModel):
     guidance: str
 
 
+# --- Rejection Analysis Models ---
+
+class RejectionAnalysisRequest(BaseModel):
+    """Request to analyze a rejection email"""
+    application_id: str
+    company: str
+    role: str
+    rejection_email: str
+    date_applied: Optional[str] = None
+    date_rejected: Optional[str] = None
+    previous_status: Optional[str] = None
+    had_interviews: bool = False
+
+
+class TimingAnalysis(BaseModel):
+    """Analysis of rejection timing"""
+    speed: str
+    speed_interpretation: str
+    ats_filtered_likelihood: str
+    human_review_likelihood: str
+
+
+class EmailSignals(BaseModel):
+    """Signals extracted from the rejection email"""
+    is_template: bool
+    personalization_level: str
+    door_left_open: bool
+    specific_feedback_given: bool
+    key_phrases: List[str]
+    hidden_meaning: str
+
+
+class LikelyReason(BaseModel):
+    """A likely reason for rejection"""
+    reason: str
+    confidence: str
+    evidence: str
+
+
+class RejectionCoaching(BaseModel):
+    """Coaching insights from rejection analysis"""
+    primary_insight: str
+    what_to_do_now: str
+    what_to_improve: str
+    silver_lining: Optional[str] = None
+
+
+class RejectionAnalysisResponse(BaseModel):
+    """Response from rejection email analysis"""
+    rejection_type: str
+    rejection_type_confidence: str
+    rejection_type_reasoning: str
+    timing_analysis: TimingAnalysis
+    email_signals: EmailSignals
+    likely_reasons: List[LikelyReason]
+    coaching: RejectionCoaching
+    coaching_questions: List[str]
+    recommended_status: str
+
+
 # ============================================================================
 # HELPER FUNCTIONS
 # Note: Core helpers (call_claude, clean_claude_json, detect_role_type, etc.)
@@ -18047,6 +18107,132 @@ async def calculate_confidence_endpoint(request: CalculateConfidenceRequest):
         ),
         guidance=guidance
     )
+
+
+@app.post("/api/tracker/analyze-rejection", response_model=RejectionAnalysisResponse)
+async def analyze_rejection_email(request: RejectionAnalysisRequest):
+    """
+    COMMAND CENTER: Rejection Email Analysis
+
+    Analyzes a rejection email to provide:
+    - Classification of rejection type (ATS, pre-screen, post-interview, etc.)
+    - Timing analysis (same-day rejection signals ATS filtering)
+    - Email signal extraction (template vs personal, door left open, etc.)
+    - Likely reasons for rejection with confidence levels
+    - Personalized coaching based on company/role context
+    - Reflection questions to help the candidate learn
+    - Recommended status for tracking
+    """
+    from datetime import datetime
+    from prompts.debrief import REJECTION_ANALYSIS_PROMPT
+
+    # Calculate days in process
+    days_in_process = "unknown"
+    if request.date_applied and request.date_rejected:
+        try:
+            applied = datetime.fromisoformat(request.date_applied.replace('Z', '+00:00'))
+            rejected = datetime.fromisoformat(request.date_rejected.replace('Z', '+00:00'))
+            days_in_process = str((rejected - applied).days)
+        except:
+            pass
+
+    # Format the prompt
+    prompt = REJECTION_ANALYSIS_PROMPT.format(
+        company=request.company,
+        role=request.role,
+        date_applied=request.date_applied or "Unknown",
+        date_rejected=request.date_rejected or "Today",
+        days_in_process=days_in_process,
+        previous_status=request.previous_status or "Applied",
+        had_interviews="Yes" if request.had_interviews else "No",
+        rejection_email=request.rejection_email
+    )
+
+    try:
+        response = call_claude(
+            system_prompt="You are an expert career coach analyzing rejection emails. Return only valid JSON.",
+            user_message=prompt,
+            max_tokens=2000,
+            temperature=0.3
+        )
+
+        # Parse JSON response
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', response)
+        if not json_match:
+            raise ValueError("No JSON found in response")
+
+        analysis = json.loads(json_match.group())
+
+        return RejectionAnalysisResponse(
+            rejection_type=analysis.get("rejection_type", "unknown"),
+            rejection_type_confidence=analysis.get("rejection_type_confidence", "low"),
+            rejection_type_reasoning=analysis.get("rejection_type_reasoning", "Unable to determine"),
+            timing_analysis=TimingAnalysis(
+                speed=analysis.get("timing_analysis", {}).get("speed", "unknown"),
+                speed_interpretation=analysis.get("timing_analysis", {}).get("speed_interpretation", ""),
+                ats_filtered_likelihood=analysis.get("timing_analysis", {}).get("ats_filtered_likelihood", "unknown"),
+                human_review_likelihood=analysis.get("timing_analysis", {}).get("human_review_likelihood", "unknown")
+            ),
+            email_signals=EmailSignals(
+                is_template=analysis.get("email_signals", {}).get("is_template", True),
+                personalization_level=analysis.get("email_signals", {}).get("personalization_level", "none"),
+                door_left_open=analysis.get("email_signals", {}).get("door_left_open", False),
+                specific_feedback_given=analysis.get("email_signals", {}).get("specific_feedback_given", False),
+                key_phrases=analysis.get("email_signals", {}).get("key_phrases", []),
+                hidden_meaning=analysis.get("email_signals", {}).get("hidden_meaning", "")
+            ),
+            likely_reasons=[
+                LikelyReason(
+                    reason=r.get("reason", ""),
+                    confidence=r.get("confidence", "low"),
+                    evidence=r.get("evidence", "")
+                ) for r in analysis.get("likely_reasons", [])
+            ],
+            coaching=RejectionCoaching(
+                primary_insight=analysis.get("coaching", {}).get("primary_insight", ""),
+                what_to_do_now=analysis.get("coaching", {}).get("what_to_do_now", ""),
+                what_to_improve=analysis.get("coaching", {}).get("what_to_improve", ""),
+                silver_lining=analysis.get("coaching", {}).get("silver_lining")
+            ),
+            coaching_questions=analysis.get("coaching_questions", []),
+            recommended_status=analysis.get("recommended_status", "Rejected: Other")
+        )
+
+    except Exception as e:
+        logger.error(f"Rejection analysis failed: {e}")
+        # Return a fallback response
+        return RejectionAnalysisResponse(
+            rejection_type="unknown",
+            rejection_type_confidence="low",
+            rejection_type_reasoning="Analysis could not be completed",
+            timing_analysis=TimingAnalysis(
+                speed="unknown",
+                speed_interpretation="Unable to analyze timing",
+                ats_filtered_likelihood="unknown",
+                human_review_likelihood="unknown"
+            ),
+            email_signals=EmailSignals(
+                is_template=True,
+                personalization_level="unknown",
+                door_left_open=False,
+                specific_feedback_given=False,
+                key_phrases=[],
+                hidden_meaning="Unable to analyze email"
+            ),
+            likely_reasons=[],
+            coaching=RejectionCoaching(
+                primary_insight="Review the rejection email for any specific feedback",
+                what_to_do_now="Continue applying to similar roles",
+                what_to_improve="Consider having your resume reviewed",
+                silver_lining=None
+            ),
+            coaching_questions=[
+                "What stage were you at when you received this rejection?",
+                "Did you tailor your resume for this specific role?"
+            ],
+            recommended_status="Rejected: Other"
+        )
 
 
 # ============================================================================
