@@ -15188,16 +15188,17 @@ Role: {body.role_title}
         # P0 FIX: DEFENSIVE ASSERTION - Verify leadership years consistency
         # Per spec: Assert canonical leadership years match before rendering
         # If this fires, the pipeline has been violated.
+        # P0 FIX: Use leadership_context directly (it's always a LeadershipContext object)
+        # NOTE: Do NOT use isolated_role_detection.get("leadership_context") - that's a serialized dict
         # =========================================================================
-        leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
-        if leadership_ctx and leadership_ctx.leadership_gate_locked:
+        if leadership_context and leadership_context.leadership_gate_locked:
             # Get leadership years from parsed_data (what would be displayed in UI)
             displayed_years = parsed_data.get("experience_analysis", {}).get("people_leadership_years", 0.0)
             if displayed_years != 0.0:
-                leadership_ctx.assert_consistency(displayed_years, "final_response")
+                leadership_context.assert_consistency(displayed_years, "final_response")
 
             # Add canonical context to response for debugging
-            parsed_data["_canonical_leadership_context"] = leadership_ctx.to_dict()
+            parsed_data["_canonical_leadership_context"] = leadership_context.to_dict()
 
         # =====================================================================
         # P0 RESUME CACHE: Store successful analysis in cache
@@ -15294,9 +15295,9 @@ Role: {body.role_title}
                     parsed_data["role_title"] = user_role
 
             # Continue with penalty enforcement
-            # P0 FIX: Pass leadership_context to skip legacy eligibility gate
-            leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
-            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
+            # P0 FIX: Use leadership_context directly (it's always a LeadershipContext object)
+            # NOTE: Do NOT use isolated_role_detection.get("leadership_context") - that's a serialized dict
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_context)
 
             # CRITICAL: Apply final sanitization to remove em/en dashes and markdown
             # This must run as the absolute last step before returning
@@ -15775,10 +15776,9 @@ Role: {body.role_title}
                     parsed_data["role_title"] = user_role
 
             # Apply experience penalties
-            # P0 FIX: Pass leadership_context to skip legacy eligibility gate
-            # Note: In streaming context, leadership_context may not exist, so pass None
-            leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else None
-            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
+            # P0 FIX: Streaming endpoint doesn't have LeadershipContext, pass None
+            # NOTE: Do NOT use isolated_role_detection.get("leadership_context") - that's a serialized dict
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, None)
 
             # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
             career_gap = detect_career_gap(body.resume)
