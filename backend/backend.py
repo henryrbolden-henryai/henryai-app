@@ -71,6 +71,133 @@ class DryRunMetrics:
 dry_run_metrics = DryRunMetrics()
 
 
+# =============================================================================
+# CANONICAL LEADERSHIP CONTEXT
+# Per P0 fix: Single source of truth for leadership gating
+# This class stores the canonical leadership gate result set ONCE by the
+# pre-LLM gate and MUST be used by all downstream code
+# =============================================================================
+class LeadershipContext:
+    """
+    Canonical leadership context for a single analysis request.
+
+    CRITICAL: Once leadership_gate_locked is True, NO OTHER CODE may:
+    - Re-evaluate leadership eligibility
+    - Override leadership_years
+    - Change the gate decision
+
+    This establishes a SINGLE SOURCE OF TRUTH for leadership gating.
+    """
+
+    def __init__(self, analysis_id: str):
+        self.analysis_id = analysis_id
+
+        # Gate lock flag - once True, gate is immutable
+        self.leadership_gate_locked = False
+
+        # Canonical leadership data (set once, never recomputed)
+        self.canonical_leadership_years = 0.0
+        self.leadership_years_confidence = "NONE"  # HIGH, MEDIUM, INFERRED, NONE
+        self.leadership_gate_result = "PASS"  # PASS, FAIL, WARN
+        self.leadership_required = False
+        self.leadership_required_years = 0.0
+        self.fit_cap = None  # None or int (e.g., 30)
+        self.gate_reason = ""
+        self.apply_decision = None  # None, "DO_NOT_APPLY", "APPLY_WITH_CAUTION"
+
+        # Role detection (set with gate)
+        self.role_level = "IC"  # IC, MANAGER, DIRECTOR_OR_ABOVE
+        self.is_leadership_role = False
+        self.leadership_keywords_found = []
+
+    def lock_gate(
+        self,
+        leadership_years: float,
+        years_confidence: str,
+        gate_result: str,
+        leadership_required: bool,
+        required_years: float,
+        fit_cap,
+        gate_reason: str,
+        apply_decision: str,
+        role_level: str,
+        is_leadership_role: bool,
+        keywords_found: list
+    ):
+        """
+        Lock the leadership gate with canonical values.
+
+        Once called, this context is IMMUTABLE. Any attempt to re-evaluate
+        leadership should be blocked by checking leadership_gate_locked.
+        """
+        if self.leadership_gate_locked:
+            # DEFENSIVE: Gate already locked, log warning and refuse
+            print(f"⚠️ [{self.analysis_id}] WARNING: Attempted to re-lock leadership gate - IGNORED")
+            return
+
+        self.canonical_leadership_years = leadership_years
+        self.leadership_years_confidence = years_confidence
+        self.leadership_gate_result = gate_result
+        self.leadership_required = leadership_required
+        self.leadership_required_years = required_years
+        self.fit_cap = fit_cap
+        self.gate_reason = gate_reason
+        self.apply_decision = apply_decision
+        self.role_level = role_level
+        self.is_leadership_role = is_leadership_role
+        self.leadership_keywords_found = keywords_found
+
+        # LOCK THE GATE - no further modifications allowed
+        self.leadership_gate_locked = True
+
+        print(f"🔐 [{self.analysis_id}] Canonical leadership gate LOCKED")
+        print(f"   Leadership years: {leadership_years} ({years_confidence})")
+        print(f"   Gate result: {gate_result}")
+        print(f"   Required: {leadership_required} ({required_years} years)")
+        print(f"   Fit cap: {fit_cap}")
+        print(f"   Decision: {apply_decision or 'APPLY'}")
+
+    def get_canonical_years(self) -> float:
+        """Get canonical leadership years. MUST be used instead of re-extracting."""
+        if not self.leadership_gate_locked:
+            print(f"⚠️ [{self.analysis_id}] WARNING: Accessing leadership years before gate is locked")
+        return self.canonical_leadership_years
+
+    def assert_consistency(self, leadership_years: float, source: str):
+        """
+        Assert that a given leadership years value matches the canonical value.
+
+        DEFENSIVE: Called before rendering output to catch pipeline violations.
+        """
+        if not self.leadership_gate_locked:
+            return  # Gate not locked, no assertion needed
+
+        if abs(leadership_years - self.canonical_leadership_years) > 0.01:
+            error_msg = (
+                f"LEADERSHIP CONTEXT VIOLATION in {source}: "
+                f"expected {self.canonical_leadership_years}, got {leadership_years}"
+            )
+            print(f"❌ [{self.analysis_id}] {error_msg}")
+            # Log but don't crash - soft fail for now
+            logger.error(f"[{self.analysis_id}] {error_msg}")
+
+    def to_dict(self) -> dict:
+        """Export canonical context for API response."""
+        return {
+            "leadership_gate_locked": self.leadership_gate_locked,
+            "canonical_leadership_years": self.canonical_leadership_years,
+            "leadership_years_confidence": self.leadership_years_confidence,
+            "leadership_gate_result": self.leadership_gate_result,
+            "leadership_required": self.leadership_required,
+            "leadership_required_years": self.leadership_required_years,
+            "fit_cap": self.fit_cap,
+            "gate_reason": self.gate_reason,
+            "apply_decision": self.apply_decision,
+            "role_level": self.role_level,
+            "is_leadership_role": self.is_leadership_role
+        }
+
+
 def log_dry_run_event(
     analysis_id: str,
     role_title: str,
@@ -5217,7 +5344,7 @@ def detect_career_gap(resume_data: Dict) -> Optional[Dict]:
         return None
 
 
-def force_apply_experience_penalties(response_data: dict, resume_data: dict = None) -> dict:
+def force_apply_experience_penalties(response_data: dict, resume_data: dict = None, leadership_context: LeadershipContext = None) -> dict:
     """
     Force-apply experience penalties and hard caps to Claude's response.
     This ensures penalties are applied even if Claude ignores the prompt instructions.
@@ -5230,9 +5357,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     Each run generates a unique analysis_id. All extracted data is tagged to this ID
     and destroyed at completion. No cross-candidate memory permitted.
 
+    P0 FIX: If leadership_context is provided and locked, SKIP the legacy eligibility
+    gate entirely. The pre-LLM gate is the SINGLE SOURCE OF TRUTH for leadership.
+
     Args:
         response_data: Parsed JSON response from Claude
         resume_data: Original resume data (optional, for credibility adjustment)
+        leadership_context: Canonical leadership context from pre-LLM gate (optional)
 
     Returns:
         Modified response_data with corrected fit_score and recommendation
@@ -5253,10 +5384,25 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     required_years = experience_analysis.get("required_years", 0)
 
     # ========================================================================
+    # P0 FIX: CHECK IF LEADERSHIP GATE IS ALREADY LOCKED (PRE-LLM)
+    # If leadership_context.leadership_gate_locked is True, the pre-LLM gate
+    # has already made the canonical decision. SKIP legacy eligibility gate.
+    # ========================================================================
+    skip_legacy_eligibility_gate = False
+    if leadership_context and leadership_context.leadership_gate_locked:
+        skip_legacy_eligibility_gate = True
+        print(f"🔒 [{leadership_context.analysis_id}] Legacy eligibility gate SKIPPED - pre-LLM gate is canonical")
+        print(f"   Canonical leadership years: {leadership_context.canonical_leadership_years}")
+        print(f"   Canonical gate result: {leadership_context.leadership_gate_result}")
+        print(f"   Canonical fit cap: {leadership_context.fit_cap}")
+
+    # ========================================================================
     # STEP 1: ELIGIBILITY GATE - RUNS BEFORE EVERYTHING ELSE
     # Per Eligibility Gate Enforcement Spec: "Before scoring, determine if the
     # candidate is *eligible*. Eligibility failure overrides score, confidence,
     # and tone."
+    #
+    # P0 FIX: SKIP THIS ENTIRELY if leadership gate is already locked
     # ========================================================================
     recommendation_locked = False
     locked_recommendation = None
@@ -5265,7 +5411,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     required_people_leadership = 0.0
     eligibility_result = None
 
-    if resume_data:
+    if resume_data and not skip_legacy_eligibility_gate:
         print("🚪 ELIGIBILITY GATE CHECK (RUNS BEFORE SCORING)")
         eligibility_result = check_eligibility_gate(resume_data, response_data)
 
@@ -5305,6 +5451,19 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         else:
             experience_analysis["eligibility_gate_passed"] = True
             response_data["experience_analysis"] = experience_analysis
+    elif skip_legacy_eligibility_gate:
+        # Leadership gate was already applied - use its result for eligibility status
+        if leadership_context.leadership_gate_result == "FAIL":
+            experience_analysis["eligibility_gate_passed"] = False
+            experience_analysis["recommendation_locked"] = True
+            experience_analysis["locked_reason"] = leadership_context.gate_reason
+            experience_analysis["leadership_hard_gate_failed"] = True
+            recommendation_locked = True
+            locked_recommendation = "Do Not Apply"
+            locked_reason = leadership_context.gate_reason
+        else:
+            experience_analysis["eligibility_gate_passed"] = True
+        response_data["experience_analysis"] = experience_analysis
 
     # Skip further enforcement if no experience requirements detected
     if required_years == 0 and not recommendation_locked:
@@ -5324,8 +5483,21 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     # - Leadership must be modeled in tiers (strategic, people, org-level)
     # - "0 years" ONLY when NO leadership signals exist at all
     # - "insufficient" when leadership exists but doesn't meet requirement
+    #
+    # P0 FIX: SKIP if leadership gate is already locked - use canonical values
     # ========================================================================
-    if resume_data and not recommendation_locked:
+    if skip_legacy_eligibility_gate:
+        print("🔒 PEOPLE LEADERSHIP CHECK SKIPPED - using canonical leadership context")
+        # Use canonical leadership years from the locked context
+        if leadership_context:
+            people_leadership_years = leadership_context.canonical_leadership_years
+            required_people_leadership = leadership_context.leadership_required_years
+            # Store in experience_analysis for consistency
+            experience_analysis["people_leadership_years"] = people_leadership_years
+            experience_analysis["required_people_leadership_years"] = required_people_leadership
+            experience_analysis["leadership_source"] = "canonical_pre_llm_gate"
+            response_data["experience_analysis"] = experience_analysis
+    elif resume_data and not recommendation_locked:
         # Extract TIERED leadership analysis (new model)
         tiered_leadership = extract_tiered_leadership(resume_data)
         people_leadership_years = tiered_leadership.get("people_leadership_years", 0.0)
@@ -11783,11 +11955,47 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
                 candidate_leadership_years,
                 analysis_id
             )
+
+            # ====================================================================
+            # P0 FIX: CREATE AND LOCK CANONICAL LEADERSHIP CONTEXT
+            # This establishes a SINGLE SOURCE OF TRUTH for leadership gating
+            # No other code may re-evaluate or override this decision
+            # ====================================================================
+            leadership_context = LeadershipContext(analysis_id)
+
+            # Determine leadership years confidence
+            leadership_source = leadership_info.get("source", "")
+            has_explicit_evidence = leadership_info.get("has_explicit_evidence", False)
+            if has_explicit_evidence or "direct reports" in str(leadership_info).lower() or "managed" in str(leadership_info).lower():
+                years_confidence = "HIGH"
+            elif candidate_leadership_years > 0 and any(kw in str(leadership_info).lower() for kw in ["director", "head", "vp", "manager"]):
+                years_confidence = "MEDIUM"
+            elif candidate_leadership_years > 0:
+                years_confidence = "INFERRED"
+            else:
+                years_confidence = "NONE"
+
+            # Lock the leadership gate with canonical values
+            leadership_context.lock_gate(
+                leadership_years=candidate_leadership_years,
+                years_confidence=years_confidence,
+                gate_result=pre_llm_leadership_gate.get("gate_status", "PASS"),
+                leadership_required=role_level_info.get("is_leadership_role", False),
+                required_years=required_leadership_years,
+                fit_cap=pre_llm_leadership_gate.get("fit_cap"),
+                gate_reason=pre_llm_leadership_gate.get("gate_reason", ""),
+                apply_decision=pre_llm_leadership_gate.get("apply_decision"),
+                role_level=role_level_info.get("role_level", "IC"),
+                is_leadership_role=role_level_info.get("is_leadership_role", False),
+                keywords_found=role_level_info.get("leadership_keywords_found", [])
+            )
         else:
             candidate_years = 0.0
             gap_info = {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
             leadership_info = {"meets_requirement": True, "candidate_years": 0.0, "gap_severity": "none", "skipped": True}
             pre_llm_leadership_gate = {"gate_status": "PASS", "fit_cap": None, "apply_decision": None, "hard_requirement": False, "gate_reason": ""}
+            # No resume data - create unlocked leadership context
+            leadership_context = LeadershipContext(analysis_id)
 
         isolated_role_detection = {
             "extracted_title": extracted_title,
@@ -11797,7 +12005,8 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "gap_info": gap_info,
             "leadership_info": leadership_info,
             "role_level_info": role_level_info,  # NEW: Leadership role level detection
-            "pre_llm_leadership_gate": pre_llm_leadership_gate  # NEW: Pre-LLM gate result
+            "pre_llm_leadership_gate": pre_llm_leadership_gate,  # NEW: Pre-LLM gate result
+            "leadership_context": leadership_context  # P0 FIX: Canonical leadership context
         }
 
         print(f"\n{'='*80}")
@@ -11810,9 +12019,14 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         print(f"Gap: {gap_info['gap_months']} months (penalty: {gap_info['penalty_points']})")
         if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") != "PASS":
             print(f"🚦 PRE-LLM GATE: {pre_llm_leadership_gate['gate_status']} - {pre_llm_leadership_gate.get('gate_reason', '')}")
+        if leadership_context.leadership_gate_locked:
+            print(f"🔐 CANONICAL GATE: LOCKED (years={leadership_context.canonical_leadership_years}, result={leadership_context.leadership_gate_result})")
         if alignment['warnings']:
             print(f"Warnings: {alignment['warnings']}")
         print(f"{'='*80}\n")
+    else:
+        # No JD text - create unlocked leadership context
+        leadership_context = LeadershipContext(analysis_id)
 
     print(f"✅ [{analysis_id}] Request isolation verified - using only request data")
 
@@ -13887,7 +14101,9 @@ Role: {body.role_title}
 
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
-        parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
+        # P0 FIX: Pass leadership_context to skip legacy eligibility gate
+        leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
+        parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
 
         # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
         career_gap = detect_career_gap(body.resume)
@@ -14217,6 +14433,21 @@ Role: {body.role_title}
             print(f"   ✅ Em dash {'REMOVED' if not has_em_dash_after else 'STILL PRESENT'} after final sanitization")
             print(f"      Result: '{strategic_action_after[:50]}...'")
 
+        # =========================================================================
+        # P0 FIX: DEFENSIVE ASSERTION - Verify leadership years consistency
+        # Per spec: Assert canonical leadership years match before rendering
+        # If this fires, the pipeline has been violated.
+        # =========================================================================
+        leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
+        if leadership_ctx and leadership_ctx.leadership_gate_locked:
+            # Get leadership years from parsed_data (what would be displayed in UI)
+            displayed_years = parsed_data.get("experience_analysis", {}).get("people_leadership_years", 0.0)
+            if displayed_years != 0.0:
+                leadership_ctx.assert_consistency(displayed_years, "final_response")
+
+            # Add canonical context to response for debugging
+            parsed_data["_canonical_leadership_context"] = leadership_ctx.to_dict()
+
         return parsed_data
     except json.JSONDecodeError as e:
         # Log the problematic section of Claude's response for debugging
@@ -14290,7 +14521,9 @@ Role: {body.role_title}
                     parsed_data["role_title"] = user_role
 
             # Continue with penalty enforcement
-            parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
+            # P0 FIX: Pass leadership_context to skip legacy eligibility gate
+            leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else leadership_context
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
 
             # CRITICAL: Apply final sanitization to remove em/en dashes and markdown
             # This must run as the absolute last step before returning
@@ -14738,7 +14971,10 @@ Role: {body.role_title}
                     parsed_data["role_title"] = user_role
 
             # Apply experience penalties
-            parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
+            # P0 FIX: Pass leadership_context to skip legacy eligibility gate
+            # Note: In streaming context, leadership_context may not exist, so pass None
+            leadership_ctx = isolated_role_detection.get("leadership_context") if isolated_role_detection else None
+            parsed_data = force_apply_experience_penalties(parsed_data, body.resume, leadership_ctx)
 
             # POST-PROCESSING: Detect career gap (bypass unreliable prompt-based detection)
             career_gap = detect_career_gap(body.resume)
