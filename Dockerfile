@@ -12,4 +12,4 @@ COPY document_generator /app/document_generator
 
 ENV PORT=8000
 
-CMD ["uvicorn", "backend.backend:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.backend:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "300"]
