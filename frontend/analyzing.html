@@ -319,18 +319,12 @@
                 }
 
                 const analysisData = await analyzeResponse.json();
-                console.log('[analyze] response received:', analysisData);
 
-                // Step 2: Guard against false error transitions - validate response shape
-                if (!analysisData || typeof analysisData !== 'object') {
-                    throw new Error('Invalid analyze response shape');
+                // SUCCESS CONDITION (canonical): response.ok + data + analysis_id
+                // Do NOT gate on fit_score.value, fit_score.status, or optional sections
+                if (!analysisData || !analysisData.analysis_id) {
+                    throw new Error('Invalid analyze response: missing analysis_id');
                 }
-
-                // Warnings are non-fatal. Do not block analysis completion.
-                // Missing requirements, benefits, location etc. are acceptable - rely only on fit_score.status
-                console.log('[analyze] fit_score:', analysisData.fit_score);
-                console.log('[analyze] fit_score.status:', analysisData.fit_score?.status);
-                console.log('[analyze] recommendation:', analysisData.recommendation);
 
                 // Build full data for results page
                 const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
@@ -354,17 +348,8 @@
                     _createdAt: new Date().toISOString()
                 };
 
-                // 🚨 DIAGNOSTIC: Log what we're storing before redirect
-                console.log("🚨 ANALYZING COMPLETE - STORING TO SESSION:", JSON.stringify(fullData, null, 2));
-                console.log("🔍 CRITICAL FIELDS FROM API RESPONSE:", {
-                    has_final_recommendation: 'final_recommendation' in fullData,
-                    final_recommendation_value: fullData.final_recommendation,
-                    has_fit_score: 'fit_score' in fullData,
-                    fit_score_value: fullData.fit_score,
-                    fit_score_type: typeof fullData.fit_score,
-                    has_strengths: 'strengths' in fullData,
-                    strengths_length: Array.isArray(fullData.strengths) ? fullData.strengths.length : 'NOT_ARRAY'
-                });
+                console.log('Analysis complete:', analysisData.analysis_id);
+
                 // Store analysis data (with localStorage backup for Safari)
                 const analysisDataStr = JSON.stringify(fullData);
                 sessionStorage.setItem('analysisData', analysisDataStr);
