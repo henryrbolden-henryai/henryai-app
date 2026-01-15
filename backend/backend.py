@@ -5923,23 +5923,42 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             response_data["coaching_mode"] = terminal_state_contract.coaching_mode.value
 
             # Add function mismatch data to response for UI banner
-            # P0 FIX: Global assertion - NEVER render mismatch UI for leadership roles
+            # =================================================================
+            # GLOBAL RENDER GUARD: HARD INVARIANT
+            # Function mismatch UI must NEVER render for leadership roles.
+            # This is a hard assertion that will fail loudly if violated.
+            # =================================================================
             if function_mismatch_result:
-                if getattr(function_mismatch_result, 'leadership_role_bypass', False):
-                    print(f"🔒 Function Mismatch UI SUPPRESSED: Leadership role bypass active")
-                    # Do NOT add function_mismatch to response - this prevents UI rendering
-                elif function_mismatch_result.is_mismatch:
-                    # P0 ASSERTION: Double-check this is not a leadership role
-                    role_title_check = response_data.get("role_title", "")
-                    from function_mismatch import is_leadership_role
-                    if is_leadership_role(role_title_check):
-                        print(f"⚠️ ASSERTION: Function mismatch detected for leadership role - BLOCKING UI render")
-                        print(f"   This is a global violation: {role_title_check}")
-                        # Block the mismatch from being rendered
+                role_title_check = response_data.get("role_title", "")
+                from function_mismatch import is_leadership_role
+
+                # HARD INVARIANT: If this is a leadership role, mismatch MUST have bypass flag
+                if is_leadership_role(role_title_check):
+                    if function_mismatch_result.is_mismatch:
+                        # This should NEVER happen - the module should have bypassed
+                        error_msg = (
+                            f"CRITICAL INVARIANT VIOLATION: Function mismatch detected "
+                            f"for leadership role '{role_title_check}'. "
+                            f"This indicates a bug in the function mismatch module."
+                        )
+                        print(f"❌❌❌ {error_msg}")
+                        logger.error(error_msg)
+                        # DO NOT render mismatch UI - block it
+                        # Optionally raise an error in development
+                        # assert False, error_msg
                     else:
-                        response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
+                        print(f"🔒 Leadership role confirmed: No function mismatch UI will render")
+                    # For leadership roles, NEVER add function_mismatch to response
+                    # This ensures the UI component never renders
+                elif getattr(function_mismatch_result, 'leadership_role_bypass', False):
+                    # Module correctly identified leadership role
+                    print(f"🔒 Function Mismatch UI SUPPRESSED: Leadership role bypass active")
+                elif function_mismatch_result.is_mismatch:
+                    # IC role with mismatch - safe to render
+                    print(f"📊 Function Mismatch UI will render for IC role: {role_title_check}")
+                    response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
                 else:
-                    # No mismatch detected, safe to add (will show as no-mismatch)
+                    # IC role with no mismatch - include in response for completeness
                     response_data["function_mismatch"] = format_mismatch_for_response(function_mismatch_result)
 
     except ImportError as e:
@@ -6015,7 +6034,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         else:  # Do Not Apply
             alternative_actions = [
                 f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
-                "This role requires fundamentally different experience than you have",
+                "Focus on roles that match your current experience profile",
                 "Focus your energy on roles where you're a stronger match"
             ]
 
@@ -6038,7 +6057,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             correct_recommendation = "Do Not Apply"
             alternative_actions = [
                 f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
-                "This role requires fundamentally different experience than you have",
+                "Focus on roles that match your current experience profile",
                 "Focus your energy on roles where you're a stronger match"
             ]
         elif capped_score >= 85:
@@ -6080,7 +6099,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             correct_recommendation = "Do Not Apply"
             alternative_actions = [
                 f"Target roles requiring {max(1, int(candidate_years))}-{int(candidate_years) + 2} years of experience",
-                "This role requires fundamentally different experience than you have",
+                "Focus on roles that match your current experience profile",
                 "Focus your energy on roles where you're a stronger match"
             ]
 
