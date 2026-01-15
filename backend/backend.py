@@ -12052,7 +12052,7 @@ def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: di
 
 @app.post("/api/jd/analyze")
 @limiter.limit("20/minute")
-async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]:
+async def analyze_jd(request: Request, body: JDAnalyzeRequest):
     """
     Analyze job description with MANDATORY Intelligence Layer
 
@@ -12340,7 +12340,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
 
         print(f"🔍🔍🔍 DRY-RUN COMPLETE - $0 API SPEND 🔍🔍🔍\n")
 
-        return dry_run_response
+        return JSONResponse(content=dry_run_response)
 
     # ========================================================================
     # P0 OPTIMIZATION: Skip Claude call entirely if hard gate already failed
@@ -12401,7 +12401,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         }
 
         print(f"🚫🚫🚫 RETURNING GATED RESPONSE - $0 API SPEND 🚫🚫🚫\n")
-        return gated_response
+        return JSONResponse(content=gated_response)
 
     system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
 
@@ -14658,7 +14658,8 @@ Role: {body.role_title}
             # Add canonical context to response for debugging
             parsed_data["_canonical_leadership_context"] = leadership_ctx.to_dict()
 
-        return parsed_data
+        print(f"✅ Analysis complete, returning response")
+        return JSONResponse(content=parsed_data)
     except json.JSONDecodeError as e:
         # Log the problematic section of Claude's response for debugging
         error_pos = e.pos if hasattr(e, 'pos') else 0
@@ -14739,7 +14740,8 @@ Role: {body.role_title}
             # This must run as the absolute last step before returning
             parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
-            return parsed_data
+            print(f"✅ Analysis complete (after JSON fix), returning response")
+            return JSONResponse(content=parsed_data)
         except Exception as fix_error:
             print(f"   Fix attempt failed: {fix_error}")
 
