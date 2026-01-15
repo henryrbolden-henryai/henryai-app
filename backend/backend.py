@@ -5965,10 +5965,11 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
             # P0 FIX: Pass role_seniority to bypass function mismatch for leadership roles
             # Get role seniority from leadership context if available
+            # FIX: Use leadership_context (function param), not leadership_ctx
             detected_role_title = response_data.get("role_title", "")
             detected_role_seniority = None
-            if leadership_ctx and leadership_ctx.leadership_gate_locked:
-                detected_role_seniority = "LEADERSHIP" if leadership_ctx.is_leadership_role else "IC"
+            if leadership_context and leadership_context.leadership_gate_locked:
+                detected_role_seniority = "LEADERSHIP" if leadership_context.is_leadership_role else "IC"
 
             function_mismatch_result = detect_function_mismatch(
                 resume_data=resume_data or {},
