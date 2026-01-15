@@ -360,6 +360,9 @@ ENABLE_RESUME_CACHE = os.getenv("ENABLE_RESUME_CACHE", "true").lower() == "true"
 # Cache TTL in days
 RESUME_CACHE_TTL_DAYS = 7
 
+# Preflight flags - set to False if table access fails, prevents repeated errors
+_RESUME_CACHE_TABLE_VERIFIED = None  # None = not checked, True = exists, False = missing
+
 
 def compute_resume_hash(resume_data: dict) -> str:
     """
@@ -383,7 +386,13 @@ def get_cached_analysis(resume_hash: str) -> Optional[Dict[str, Any]]:
     Returns cached payload if found and not expired, None otherwise.
     Updates last_used_at on hit.
     """
+    global _RESUME_CACHE_TABLE_VERIFIED
+
     if not ENABLE_RESUME_CACHE:
+        return None
+
+    # Skip if table was previously verified as missing
+    if _RESUME_CACHE_TABLE_VERIFIED is False:
         return None
 
     # Supabase client imported at module level
@@ -395,6 +404,7 @@ def get_cached_analysis(resume_hash: str) -> Optional[Dict[str, Any]]:
     try:
         # Query cache table
         result = supabase.table("resume_analysis_cache").select("*").eq("resume_hash", resume_hash).execute()
+        _RESUME_CACHE_TABLE_VERIFIED = True  # Table exists
 
         if not result.data or len(result.data) == 0:
             return None
@@ -420,7 +430,13 @@ def get_cached_analysis(resume_hash: str) -> Optional[Dict[str, Any]]:
         return cached["analysis_payload"]
 
     except Exception as e:
-        print(f"⚠️ Resume cache lookup failed: {e}")
+        error_str = str(e)
+        # Check if table doesn't exist
+        if "PGRST205" in error_str or "Could not find the table" in error_str:
+            print(f"⚠️ Resume cache table missing - disabling cache: {e}")
+            _RESUME_CACHE_TABLE_VERIFIED = False
+        else:
+            print(f"⚠️ Resume cache lookup failed: {e}")
         return None
 
 
@@ -467,6 +483,9 @@ ENABLE_JD_CACHE = os.getenv("ENABLE_JD_CACHE", "true").lower() == "true"
 # Cache TTL in days
 JD_CACHE_TTL_DAYS = 7
 
+# Preflight flag for JD cache table
+_JD_CACHE_TABLE_VERIFIED = None  # None = not checked, True = exists, False = missing
+
 
 def generate_jd_cache_key(jd_text: str) -> str:
     """
@@ -485,7 +504,13 @@ def get_cached_jd_context(jd_hash: str) -> Optional[Dict[str, Any]]:
 
     Returns cached JD context if found and not expired, None otherwise.
     """
+    global _JD_CACHE_TABLE_VERIFIED
+
     if not ENABLE_JD_CACHE:
+        return None
+
+    # Skip if table was previously verified as missing
+    if _JD_CACHE_TABLE_VERIFIED is False:
         return None
 
     global supabase
@@ -494,6 +519,7 @@ def get_cached_jd_context(jd_hash: str) -> Optional[Dict[str, Any]]:
 
     try:
         result = supabase.table("jd_cache").select("*").eq("jd_hash", jd_hash).execute()
+        _JD_CACHE_TABLE_VERIFIED = True  # Table exists
 
         if not result.data or len(result.data) == 0:
             return None
@@ -511,7 +537,12 @@ def get_cached_jd_context(jd_hash: str) -> Optional[Dict[str, Any]]:
         return cached
 
     except Exception as e:
-        print(f"⚠️ JD cache lookup failed: {e}")
+        error_str = str(e)
+        if "PGRST205" in error_str or "Could not find the table" in error_str:
+            print(f"⚠️ JD cache table missing - disabling cache: {e}")
+            _JD_CACHE_TABLE_VERIFIED = False
+        else:
+            print(f"⚠️ JD cache lookup failed: {e}")
         return None
 
 
@@ -14552,7 +14583,8 @@ Role: {body.role_title}
     assert_no_claude_in_dry_run(body, "analyze_jd")
 
     # Call Claude with higher token limit for comprehensive analysis
-    response = call_claude(system_prompt, user_message, max_tokens=4096)
+    # P0 FIX: max_retries=1 to prevent cost leak from retry loops
+    response = call_claude(system_prompt, user_message, max_tokens=4096, max_retries=1)
 
     # Parse JSON response
     try:
@@ -15274,10 +15306,36 @@ Role: {body.role_title}
         except Exception as fix_error:
             print(f"   Fix attempt failed: {fix_error}")
 
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to parse Claude response. The AI returned malformed JSON. Please try again."
-        )
+        # P0 FIX: Return fallback response instead of 500 (tokens already spent)
+        print(f"⚠️ [{analysis_id}] Returning fallback response after JSON parse failure")
+        fallback_response = {
+            "analysis_id": analysis_id,
+            "fit_score": {"value": None, "status": "PARSE_ERROR", "reason": "Analysis completed but response parsing failed"},
+            "recommendation": "Unable to Analyze",
+            "role_title": body.role_title or "Unknown",
+            "company": body.company or "Unknown",
+            "partial_result": True,
+            "error": "JSON parse error - please retry",
+            "_raw_response_length": len(response) if response else 0
+        }
+        return JSONResponse(content=fallback_response)
+    except Exception as post_llm_error:
+        # P0 FIX: Catch ALL post-LLM errors and return controlled response
+        # Tokens are already spent - never return 500 after LLM success
+        print(f"❌ [{analysis_id}] Post-LLM error (tokens spent, returning fallback): {post_llm_error}")
+        import traceback
+        traceback.print_exc()
+
+        fallback_response = {
+            "analysis_id": analysis_id,
+            "fit_score": {"value": None, "status": "POST_PROCESS_ERROR", "reason": f"Analysis completed but post-processing failed: {str(post_llm_error)[:100]}"},
+            "recommendation": "Unable to Analyze",
+            "role_title": body.role_title or "Unknown",
+            "company": body.company or "Unknown",
+            "partial_result": True,
+            "error": f"Post-processing error: {str(post_llm_error)[:100]}"
+        }
+        return JSONResponse(content=fallback_response)
 
 
 @app.post("/api/jd/analyze/stream")
