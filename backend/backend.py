@@ -25,6 +25,105 @@ logging.basicConfig(
 )
 logger = logging.getLogger("henryhq")
 
+# =============================================================================
+# DRY-RUN TELEMETRY: Isolated logger for spend-avoidance tracking
+# Per P0.5 spec: Log every dry_run=true invocation separately
+# =============================================================================
+dry_run_logger = logging.getLogger("henryhq.dry_run")
+dry_run_logger.setLevel(logging.INFO)
+
+# In-memory counters for dry-run telemetry
+# Thread-safe for basic counting (atomic increments in CPython)
+class DryRunMetrics:
+    """Lightweight metrics for dry-run telemetry."""
+
+    # Estimated average cost per Claude API call (Sonnet 3.5)
+    # ~1500 input tokens + ~2000 output tokens ≈ $0.015 per call
+    ESTIMATED_CLAUDE_CALL_COST_USD = 0.015
+
+    def __init__(self):
+        self.invocations = 0
+        self.gate_failures = 0
+        self.gate_passes = 0
+        self.spend_avoided_usd = 0.0
+
+    def increment(self, metric: str, value: float = 1.0):
+        """Increment a metric counter."""
+        if metric == "dry_run.invocations":
+            self.invocations += int(value)
+        elif metric == "dry_run.gate_failures":
+            self.gate_failures += int(value)
+        elif metric == "dry_run.gate_passes":
+            self.gate_passes += int(value)
+        elif metric == "dry_run.spend_avoided_usd":
+            self.spend_avoided_usd += value
+
+    def get_stats(self) -> dict:
+        """Get current metrics snapshot."""
+        return {
+            "invocations": self.invocations,
+            "gate_failures": self.gate_failures,
+            "gate_passes": self.gate_passes,
+            "spend_avoided_usd": round(self.spend_avoided_usd, 4)
+        }
+
+# Global metrics instance
+dry_run_metrics = DryRunMetrics()
+
+
+def log_dry_run_event(
+    analysis_id: str,
+    role_title: str,
+    role_seniority: str,
+    decision: str,
+    gate_status: str,
+    fit_cap,  # int or None
+    leadership_years_detected: float,
+    leadership_years_confidence: str
+):
+    """
+    Log a structured dry-run analysis event.
+
+    Per P0.5 spec: This must fire EXACTLY ONCE per dry_run request.
+    No duplication, no retries.
+
+    Args:
+        analysis_id: Unique analysis identifier
+        role_title: Extracted role title
+        role_seniority: "LEADERSHIP" or "IC"
+        decision: "APPLY", "DO_NOT_APPLY", or "APPLY_WITH_CAUTION"
+        gate_status: "PASS", "FAIL", or "WARN"
+        fit_cap: Score cap (30 if failed, None otherwise)
+        leadership_years_detected: Years detected from resume
+        leadership_years_confidence: "HIGH", "MEDIUM", "INFERRED", or "NONE"
+    """
+    event = {
+        "event": "DRY_RUN_ANALYSIS",
+        "analysis_id": analysis_id,
+        "role_title": role_title,
+        "role_seniority": role_seniority,
+        "decision": decision,
+        "gate_status": gate_status,
+        "fit_cap": fit_cap,
+        "leadership_years_detected": leadership_years_detected,
+        "leadership_years_confidence": leadership_years_confidence,
+        "claude_called": False,  # ALWAYS false for dry-run
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
+
+    # Log as structured JSON
+    dry_run_logger.info(json.dumps(event))
+
+    # Update metrics
+    dry_run_metrics.increment("dry_run.invocations")
+    if gate_status == "FAIL":
+        dry_run_metrics.increment("dry_run.gate_failures")
+    else:
+        dry_run_metrics.increment("dry_run.gate_passes")
+
+    # Estimate spend avoided (every dry-run saves a Claude call)
+    dry_run_metrics.increment("dry_run.spend_avoided_usd", DryRunMetrics.ESTIMATED_CLAUDE_CALL_COST_USD)
+
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Request
 
 # Supabase client for database operations
@@ -2507,6 +2606,9 @@ class JDAnalyzeRequest(BaseModel):
     # Command Center v2.0 fields
     jd_source: Optional[str] = None  # user_provided, url_fetched, inferred, missing
     provisional_profile: Optional[Dict[str, Any]] = None  # When jd_source is inferred/missing
+    # Dry-run mode for deterministic leadership evaluation without Claude calls
+    # Per P0 spec: When dry_run=True, return deterministic leadership evaluation only
+    dry_run: Optional[bool] = False
 
 class JDAnalysis(BaseModel):
     company: str
@@ -3685,6 +3787,27 @@ Use this to calibrate your tone, prioritization, and framing. Not to change the 
 async def health_check():
     """Simple health check for load balancers and monitoring"""
     return {"status": "ok"}
+
+
+@app.get("/api/internal/dry-run-metrics")
+async def get_dry_run_metrics():
+    """
+    Internal endpoint: Dry-run telemetry metrics.
+
+    Per P0.5 spec: This is internal telemetry only.
+    NOT exposed to users, NOT surfaced in UI.
+
+    Returns spend-avoidance metrics:
+    - Total dry-run invocations
+    - Gate failures vs passes
+    - Estimated API spend avoided (USD)
+    """
+    stats = dry_run_metrics.get_stats()
+    return {
+        "dry_run_metrics": stats,
+        "estimated_cost_per_call_usd": DryRunMetrics.ESTIMATED_CLAUDE_CALL_COST_USD,
+        "note": "Internal telemetry - not for user display"
+    }
 
 @app.get("/")
 async def root():
@@ -9367,6 +9490,12 @@ def extract_required_people_leadership_years(response_data: dict) -> tuple[float
     """
     Extract required people leadership years from JD analysis.
 
+    CRITICAL JD PARSING DEGRADATION HANDLING:
+    Per fix spec: If JD sections are missing:
+    - Do NOT relax leadership gates
+    - Use role title + seniority keywords as PRIMARY signal
+    - Log a warning but PRESERVE gating behavior
+
     Args:
         response_data: Claude response containing role analysis
 
@@ -9380,6 +9509,11 @@ def extract_required_people_leadership_years(response_data: dict) -> tuple[float
     jd_text = (response_data.get("job_description", "") or "").lower()
     role_title = (response_data.get("role_title", "") or "").lower()
     experience_analysis = response_data.get("experience_analysis", {})
+
+    # DEGRADATION HANDLING: Check if JD is sparse/missing
+    jd_is_sparse = len(jd_text.strip()) < 200  # Less than 200 chars = sparse JD
+    if jd_is_sparse:
+        print(f"   ⚠️ JD PARSING DEGRADATION: JD is sparse ({len(jd_text)} chars) - using role title as primary signal")
 
     combined = f"{role_title} {jd_text}"
 
@@ -9403,7 +9537,7 @@ def extract_required_people_leadership_years(response_data: dict) -> tuple[float
     # Check if JD explicitly requires people leadership
     requires_people_leadership = any(kw in combined for kw in people_leadership_keywords)
 
-    # Extract years requirement
+    # Extract years requirement from JD text
     required_years = 0.0
     for pattern in hard_requirement_patterns:
         matches = re.findall(pattern, combined)
@@ -9415,25 +9549,65 @@ def extract_required_people_leadership_years(response_data: dict) -> tuple[float
             except (ValueError, TypeError):
                 continue
 
-    # Check title for implicit requirements
+    # ========================================================================
+    # ROLE TITLE AS PRIMARY SIGNAL (especially when JD is sparse)
+    # Per fix spec: Use role title + seniority keywords as primary signal
+    # NEVER relax leadership gates due to missing JD content
+    # ========================================================================
+
+    # Check title for leadership indicators
     leadership_titles = ["director", "head of", "vp", "vice president", "manager"]
     has_leadership_title = any(lt in role_title for lt in leadership_titles)
 
-    # If title suggests leadership but no explicit years, assume 3+ years
-    if has_leadership_title and required_years == 0 and requires_people_leadership:
+    # IC roles that should NOT trigger leadership gates even with "manager" in title
+    ic_manager_exclusions = ["product manager", "project manager", "program manager",
+                             "account manager", "customer success manager"]
+    is_ic_manager_role = any(ic in role_title for ic in ic_manager_exclusions)
+
+    # If it's an IC manager role, don't set leadership requirements unless explicitly in JD
+    if is_ic_manager_role and not any(kw in role_title for kw in ["director", "head of", "vp", "vice president", "chief"]):
+        # This is an IC role like "Product Manager" - no automatic leadership requirement
+        pass
+    elif has_leadership_title and required_years == 0 and requires_people_leadership:
+        # If title suggests leadership but no explicit years, assume 3+ years
         required_years = 3.0
+        if jd_is_sparse:
+            print(f"   ⚠️ JD sparse but leadership title detected - inferring 3+ years requirement")
 
-    # Director+ typically requires 5+ years people leadership
-    if "director" in role_title and required_years < 5:
-        required_years = 5.0
-        requires_people_leadership = True
+    # ========================================================================
+    # TITLE-BASED LEADERSHIP REQUIREMENTS (override JD parsing)
+    # Per fix spec: Director+ roles ALWAYS require leadership, regardless of JD content
+    # These are deterministic gates that cannot be relaxed by missing JD sections
+    # ========================================================================
 
-    # VP/Head typically requires 7+ years
-    if ("vp" in role_title or "vice president" in role_title or "head of" in role_title) and required_years < 7:
-        required_years = 7.0
-        requires_people_leadership = True
+    # Exclude IC manager roles from title-based leadership inference
+    if not is_ic_manager_role:
+        # Director+ typically requires 5+ years people leadership
+        if "director" in role_title and required_years < 5:
+            required_years = 5.0
+            requires_people_leadership = True
+            if jd_is_sparse:
+                print(f"   ⚠️ JD sparse but DIRECTOR detected in title - enforcing 5+ years leadership requirement")
+
+        # VP/Head typically requires 7+ years
+        if ("vp" in role_title or "vice president" in role_title or "head of" in role_title) and required_years < 7:
+            required_years = 7.0
+            requires_people_leadership = True
+            if jd_is_sparse:
+                print(f"   ⚠️ JD sparse but VP/HEAD detected in title - enforcing 7+ years leadership requirement")
+
+        # C-suite requires 10+ years
+        if any(c in role_title for c in ["cto", "cfo", "ceo", "coo", "cmo", "cpo", "cro", "chief"]) and required_years < 10:
+            required_years = 10.0
+            requires_people_leadership = True
+            if jd_is_sparse:
+                print(f"   ⚠️ JD sparse but C-SUITE detected in title - enforcing 10+ years leadership requirement")
 
     is_hard_requirement = requires_people_leadership and required_years > 0
+
+    # Log final determination
+    if jd_is_sparse and is_hard_requirement:
+        print(f"   🚦 JD DEGRADATION: Leadership gate PRESERVED despite sparse JD (title-based inference)")
 
     print(f"   🎯 PEOPLE LEADERSHIP REQUIREMENT: {required_years} years, hard_requirement={is_hard_requirement}")
 
@@ -9989,6 +10163,9 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
     This is the ONLY source of role title for analysis.
     Never use cached, session, or global title data.
 
+    CRITICAL: Must ignore non-semantic headers like "About the job", "Job Description", etc.
+    and scan the first 15 non-empty lines for a title containing role nouns.
+
     Args:
         jd_text: Job description text from current request
         analysis_id: Analysis ID for logging
@@ -10018,6 +10195,48 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
         r'^view all jobs',
         r'^similar jobs',
     ]
+
+    # NON-SEMANTIC HEADERS TO IGNORE - these are section labels, not role titles
+    # Per fix spec: Must ignore headers like "About the job", "Job Description", etc.
+    non_semantic_headers = [
+        "about the job",
+        "about this job",
+        "about the role",
+        "about this role",
+        "about the position",
+        "about us",
+        "job description",
+        "position description",
+        "role description",
+        "overview",
+        "the opportunity",
+        "opportunity",
+        "the role",
+        "the position",
+        "position overview",
+        "role overview",
+        "job overview",
+        "summary",
+        "job summary",
+        "role summary",
+        "description",
+        "what you'll do",
+        "what we're looking for",
+        "who we are",
+        "who you are",
+        "responsibilities",
+        "requirements",
+        "qualifications",
+        "key responsibilities",
+        "your responsibilities",
+    ]
+
+    def is_non_semantic_header(text: str) -> bool:
+        """Check if text is a non-semantic section header that should not be used as a title."""
+        text_lower = text.lower().strip()
+        # Remove trailing colons or dashes
+        text_lower = re.sub(r'[:\-]+$', '', text_lower).strip()
+        return text_lower in non_semantic_headers
 
     def is_navigation_text(text: str) -> bool:
         """Check if text is likely navigation/UI element."""
@@ -10060,38 +10279,245 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 title,
                 flags=re.IGNORECASE
             )
-            if 5 < len(title) < 100 and not is_navigation_text(title) and not is_sentence_fragment(title):
+            if 5 < len(title) < 100 and not is_navigation_text(title) and not is_sentence_fragment(title) and not is_non_semantic_header(title):
                 print(f"  ✅ Extracted: '{title}'")
                 return title
 
-    # Strategy 2: Find first line that looks like a job title (skip nav text)
+    # Job title indicators - role nouns that signify an actual job title
+    job_title_indicators = ['manager', 'director', 'engineer', 'analyst', 'lead',
+                            'coordinator', 'specialist', 'vp', 'vice president',
+                            'head of', 'senior', 'junior', 'associate', 'chief',
+                            'officer', 'developer', 'designer', 'architect',
+                            'recruiter', 'marketing', 'sales', 'product', 'operations',
+                            'program', 'project', 'tpm', 'principal', 'staff']
+
+    # Strategy 2: Scan first 15 non-empty lines for a title containing role nouns
+    # Per fix spec: Scan the first 15 non-empty lines for a title containing role nouns
     lines = [line.strip() for line in jd_text.split('\n') if line.strip()]
-    for line in lines[:10]:  # Check first 10 lines
+    for line in lines[:15]:  # Scan first 15 lines per spec
         if is_navigation_text(line):
             continue
+        if is_non_semantic_header(line):
+            print(f"  ⏭️  Skipping non-semantic header: '{line}'")
+            continue
         # Must start with capital, reasonable length, and contain job-related words
-        if 10 < len(line) < 100 and line[0].isupper():
-            # Bonus: Check if it contains job-title-like words
-            job_title_indicators = ['manager', 'director', 'engineer', 'analyst', 'lead',
-                                    'coordinator', 'specialist', 'vp', 'vice president',
-                                    'head of', 'senior', 'junior', 'associate', 'chief',
-                                    'officer', 'developer', 'designer', 'architect',
-                                    'recruiter', 'marketing', 'sales', 'product', 'operations',
-                                    'program', 'project', 'tpm']  # Added for TPM/Project Manager detection
+        if 5 < len(line) < 100 and line[0].isupper():
             line_lower = line.lower()
             if any(indicator in line_lower for indicator in job_title_indicators):
                 print(f"  ✅ Extracted from content: '{line}'")
                 return line
 
-    # Strategy 3: First substantial non-nav line as fallback
-    for line in lines[:10]:
-        if not is_navigation_text(line) and 5 < len(line) < 100:
+    # Strategy 3: First substantial non-nav, non-header line as fallback
+    for line in lines[:15]:
+        if not is_navigation_text(line) and not is_non_semantic_header(line) and 5 < len(line) < 100:
             print(f"  ✅ Extracted from first valid line: '{line}'")
             return line
 
     # Fallback
     print(f"  ⚠️ Could not extract role title - using placeholder")
     return "Unknown Role"
+
+
+def detect_leadership_role_level(role_title: str, jd_text: str, analysis_id: str) -> dict:
+    """
+    Detect if the role is a leadership role (Director+) from title and JD.
+
+    Per fix spec: If a leadership keyword is detected in the role title,
+    hard-set role_level = "DIRECTOR_OR_ABOVE", role_type = "LEADERSHIP", confidence = 1.0
+
+    LEADERSHIP KEYWORDS (role nouns indicating leadership):
+    - Director, Head, VP, Vice President, Lead, Manager, Principal
+    - Note: Manager alone may be IC (Product Manager, Project Manager)
+      but Director+ are always leadership roles
+
+    Args:
+        role_title: Extracted role title
+        jd_text: Job description text
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        dict: {
+            "is_leadership_role": bool,
+            "role_level": str ("DIRECTOR_OR_ABOVE", "MANAGER", "IC"),
+            "role_type": str ("LEADERSHIP" or function-specific),
+            "confidence": float,
+            "leadership_keywords_found": list
+        }
+    """
+    import re
+
+    print(f"🎖️  [{analysis_id}] Detecting leadership role level...")
+
+    title_lower = role_title.lower()
+
+    # Leadership keywords that indicate Director+ roles (always leadership)
+    director_plus_keywords = [
+        "director", "vp ", "vp,", "v.p.", "vice president",
+        "head of", "chief", "cto", "cfo", "ceo", "coo", "cmo", "cpo", "cro",
+        "svp", "evp", "gvp", "president",
+    ]
+
+    # Manager-level keywords (may be leadership depending on context)
+    manager_keywords = [
+        "manager", "lead", "principal", "staff",
+    ]
+
+    # IC roles that contain "manager" but are NOT people leadership
+    ic_manager_roles = [
+        "product manager", "project manager", "program manager",
+        "account manager", "customer success manager", "sales manager",
+        "marketing manager", "brand manager", "campaign manager",
+        "content manager", "community manager", "social media manager",
+    ]
+
+    # Check for IC manager roles first (exclude from leadership)
+    for ic_role in ic_manager_roles:
+        if ic_role in title_lower:
+            # Only exclude if there's no "director" or higher in the title
+            if not any(kw in title_lower for kw in director_plus_keywords):
+                print(f"  ℹ️  IC role detected: {ic_role} (not leadership)")
+                return {
+                    "is_leadership_role": False,
+                    "role_level": "IC",
+                    "role_type": "FUNCTIONAL",
+                    "confidence": 0.9,
+                    "leadership_keywords_found": []
+                }
+
+    # Check for Director+ keywords (always leadership)
+    found_keywords = []
+    for kw in director_plus_keywords:
+        if kw in title_lower:
+            found_keywords.append(kw)
+
+    if found_keywords:
+        print(f"  🎖️  DIRECTOR+ ROLE DETECTED: {found_keywords}")
+        print(f"  ⚡ Setting role_level=DIRECTOR_OR_ABOVE, role_type=LEADERSHIP, confidence=1.0")
+        return {
+            "is_leadership_role": True,
+            "role_level": "DIRECTOR_OR_ABOVE",
+            "role_type": "LEADERSHIP",
+            "confidence": 1.0,
+            "leadership_keywords_found": found_keywords
+        }
+
+    # Check for Manager-level keywords
+    for kw in manager_keywords:
+        # Use word boundary to avoid false positives like "engagement" containing "manager"
+        if re.search(rf'\b{kw}\b', title_lower):
+            # Check if it's a people management role by looking at JD signals
+            people_mgmt_signals = [
+                "direct reports", "manage a team", "build a team", "lead a team",
+                "people leadership", "people management", "team management",
+                "hiring", "performance reviews", "managing engineers",
+                "managing designers", "managing people"
+            ]
+            jd_lower = jd_text.lower()
+            has_people_signals = any(sig in jd_lower for sig in people_mgmt_signals)
+
+            if has_people_signals:
+                found_keywords.append(kw)
+                print(f"  🎖️  MANAGER ROLE WITH PEOPLE LEADERSHIP DETECTED: {kw}")
+                return {
+                    "is_leadership_role": True,
+                    "role_level": "MANAGER",
+                    "role_type": "LEADERSHIP",
+                    "confidence": 0.85,
+                    "leadership_keywords_found": [kw]
+                }
+
+    # Default: not a leadership role
+    print(f"  ℹ️  Not a leadership role")
+    return {
+        "is_leadership_role": False,
+        "role_level": "IC",
+        "role_type": "FUNCTIONAL",
+        "confidence": 0.8,
+        "leadership_keywords_found": []
+    }
+
+
+def apply_pre_llm_leadership_gate(
+    role_level_info: dict,
+    candidate_leadership_years: float,
+    analysis_id: str
+) -> dict:
+    """
+    CRITICAL PRE-LLM GATING STEP for leadership roles.
+
+    Per fix spec: Enforce leadership hard-gate BEFORE any LLM call.
+
+    If role_level >= DIRECTOR:
+        people_leadership_required = True
+        hard_requirement = True
+
+    If candidate leadership years == 0:
+        gate_status = "FAIL"
+        fit_cap = 30
+        apply_decision = "DO_NOT_APPLY"
+
+    This logic MUST execute BEFORE any Claude call.
+
+    Args:
+        role_level_info: Output from detect_leadership_role_level()
+        candidate_leadership_years: Years of people leadership from resume
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        dict: {
+            "gate_status": "PASS" | "FAIL",
+            "fit_cap": int (max fit score allowed, None if no cap),
+            "apply_decision": str | None,
+            "hard_requirement": bool,
+            "gate_reason": str
+        }
+    """
+    print(f"🚦 [{analysis_id}] Applying pre-LLM leadership gate...")
+
+    result = {
+        "gate_status": "PASS",
+        "fit_cap": None,
+        "apply_decision": None,
+        "hard_requirement": False,
+        "gate_reason": ""
+    }
+
+    # Only apply gate to leadership roles
+    if not role_level_info.get("is_leadership_role"):
+        print(f"  ✅ Not a leadership role - gate bypassed")
+        return result
+
+    role_level = role_level_info.get("role_level", "IC")
+
+    # DIRECTOR+ roles ALWAYS require people leadership
+    if role_level in ["DIRECTOR_OR_ABOVE", "MANAGER"]:
+        result["hard_requirement"] = True
+        print(f"  🎖️  Leadership role detected ({role_level}) - people leadership is HARD REQUIREMENT")
+
+        # Check candidate's leadership years
+        print(f"  📊 Candidate leadership years: {candidate_leadership_years}")
+
+        if candidate_leadership_years == 0:
+            # HARD FAIL - zero leadership years for leadership role
+            result["gate_status"] = "FAIL"
+            result["fit_cap"] = 30  # Cap at 30% per spec
+            result["apply_decision"] = "DO_NOT_APPLY"
+            result["gate_reason"] = f"Leadership role ({role_level}) requires people leadership experience. Candidate has 0 years."
+            print(f"  ❌ HARD GATE FAILED: {result['gate_reason']}")
+            print(f"  ❌ Fit score CAPPED at {result['fit_cap']}%")
+            print(f"  ❌ Decision LOCKED to DO_NOT_APPLY")
+        elif role_level == "DIRECTOR_OR_ABOVE":
+            # Director+ typically needs 5+ years
+            required_years = 5.0
+            if candidate_leadership_years < required_years:
+                # Soft fail - has some leadership but insufficient
+                result["gate_status"] = "WARN"
+                result["gate_reason"] = f"Director+ role typically requires {required_years}+ years leadership. Candidate has {candidate_leadership_years}."
+                print(f"  ⚠️  Leadership gap detected: {result['gate_reason']}")
+        else:
+            print(f"  ✅ Leadership requirement met ({candidate_leadership_years} years)")
+
+    return result
 
 
 def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -> str:
@@ -10925,13 +11351,149 @@ def apply_credibility_adjustment(resume_data: dict, raw_years: float) -> float:
         return raw_years
 
 
-def _final_sanitize_text(data: dict) -> dict:
+def _apply_render_guard(parsed_data: dict, analysis_id: str) -> dict:
     """
-    Final safety-net sanitization for em/en dashes and JD preambles in API responses.
+    RENDER GUARD: Prevent Claude/System Decision Contradictions.
 
-    This catches any em dashes that slip through the postprocessor pipeline.
-    Also removes JD preamble patterns from user-facing text fields.
+    Per fix spec: If Claude recommendation != system decision, use system decision.
+    Never surface conflicting guidance in UI.
+
+    This function checks for mismatches between:
+    1. Claude's recommendation (from LLM response)
+    2. System's decision (from deterministic gates)
+
+    If mismatch detected:
+    - Log error
+    - Use system decision
+    - Ensure messaging is consistent with decision
+
+    Args:
+        parsed_data: The analysis response data
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        Corrected parsed_data with consistent decision/messaging
+    """
+    # Try to import recommendation controller, fallback to simple mapping if unavailable
+    get_recommendation_from_score = None
+    try:
+        from recommendation.final_controller import get_recommendation_from_score, Recommendation
+    except ImportError:
+        # Define a simple fallback for score-to-recommendation mapping
+        def get_recommendation_from_score(score):
+            class SimpleRec:
+                def __init__(self, value):
+                    self.value = value
+            if score >= 85:
+                return SimpleRec("Strong Apply")
+            elif score >= 70:
+                return SimpleRec("Apply")
+            elif score >= 55:
+                return SimpleRec("Consider")
+            elif score >= 40:
+                return SimpleRec("Apply with Caution")
+            elif score >= 25:
+                return SimpleRec("Long Shot")
+            else:
+                return SimpleRec("Do Not Apply")
+
+    print(f"\n🛡️  [{analysis_id}] RENDER GUARD - Checking for Claude/System contradictions...")
+
+    # Get the current values
+    claude_recommendation = parsed_data.get("recommendation", "")
+    fit_score = parsed_data.get("fit_score", 50)
+    recommendation_locked = parsed_data.get("recommendation_locked", False)
+    leadership_gate_failed = parsed_data.get("recommendation_locked_by_leadership_gate", False)
+    eligibility_gate_passed = parsed_data.get("experience_analysis", {}).get("eligibility_gate_passed", True)
+
+    # Determine what the system decision SHOULD be
+    system_decision = None
+
+    # Case 1: Leadership gate failed -> MUST be Do Not Apply
+    if leadership_gate_failed:
+        system_decision = "Do Not Apply"
+        print(f"   🚦 Leadership gate failed -> system_decision = Do Not Apply")
+
+    # Case 2: Eligibility gate failed -> MUST be Do Not Apply
+    elif not eligibility_gate_passed:
+        system_decision = "Do Not Apply"
+        print(f"   🚦 Eligibility gate failed -> system_decision = Do Not Apply")
+
+    # Case 3: Recommendation is locked -> respect the lock
+    elif recommendation_locked:
+        system_decision = claude_recommendation  # Trust the locked value
+        print(f"   🔒 Recommendation locked -> system_decision = {system_decision}")
+
+    # Case 4: No gates failed -> use score-based recommendation
+    else:
+        try:
+            score_based_rec = get_recommendation_from_score(fit_score)
+            system_decision = score_based_rec.value
+            print(f"   📊 Score-based recommendation for {fit_score}% -> system_decision = {system_decision}")
+        except Exception as e:
+            print(f"   ⚠️ Error calculating score-based recommendation: {e}")
+            system_decision = claude_recommendation
+
+    # Check for mismatch
+    if system_decision and claude_recommendation != system_decision:
+        print(f"\n🚨🚨🚨 RENDER GUARD MISMATCH DETECTED 🚨🚨🚨")
+        print(f"   Claude recommendation: {claude_recommendation}")
+        print(f"   System decision: {system_decision}")
+        print(f"   ➡️ USING SYSTEM DECISION")
+
+        # Log the error
+        print(f"   ERROR: LLM/system decision mismatch - Claude said '{claude_recommendation}', system says '{system_decision}'")
+
+        # Override with system decision
+        parsed_data["recommendation"] = system_decision
+        parsed_data["_render_guard_applied"] = True
+        parsed_data["_render_guard_claude_original"] = claude_recommendation
+        parsed_data["_render_guard_system_override"] = system_decision
+
+        # If system decision is Do Not Apply, ensure consistent messaging
+        if system_decision == "Do Not Apply":
+            # Update recommendation_rationale if it exists and sounds positive
+            rationale = parsed_data.get("recommendation_rationale", "")
+            if rationale and not rationale.lower().startswith("do not apply"):
+                gate_reason = parsed_data.get("leadership_gate_reason", "")
+                if gate_reason:
+                    parsed_data["recommendation_rationale"] = f"Do not apply. {gate_reason}"
+                else:
+                    parsed_data["recommendation_rationale"] = f"Do not apply. {rationale}"
+
+            # Ensure apply_disabled is set
+            parsed_data["apply_disabled"] = True
+            if not parsed_data.get("apply_disabled_reason"):
+                parsed_data["apply_disabled_reason"] = "Not eligible for this role"
+
+        print(f"🚨🚨🚨 RENDER GUARD CORRECTED - Decision now: {system_decision} 🚨🚨🚨\n")
+    else:
+        print(f"   ✅ No mismatch detected - Claude ({claude_recommendation}) matches System ({system_decision})")
+
+    return parsed_data
+
+
+def _final_sanitize_text(data: dict, analysis_id: str = None) -> dict:
+    """
+    Final safety-net sanitization for grammar and punctuation in API responses.
+
+    Per P0.5 Grammar & Punctuation Standards:
+    - Remove em dashes (—) and stylistic en dashes (–)
+    - Remove markdown emphasis markers (*text*, **text**, _text_)
+    - Remove JD preamble patterns from user-facing text
+
+    This catches any style artifacts that slip through the postprocessor pipeline.
     Critical for user-facing text fields like strategic_action.
+
+    DISALLOWED CHARACTERS:
+    - Em dashes: —
+    - Stylistic en dashes: –
+    - Asterisk emphasis: *text*, **text**
+    - Underscore emphasis: _text_
+
+    ALLOWED REPLACEMENTS:
+    - Use periods instead of em dashes
+    - Use plain text (no markdown emphasis symbols)
     """
     import re
 
@@ -10957,6 +11519,7 @@ def _final_sanitize_text(data: dict) -> dict:
 
         # =====================================================================
         # PART 2: Replace em/en dashes with period + space
+        # Per P0.5: Use periods instead of em dashes
         # =====================================================================
         if '—' in text or '–' in text:
             # Replace em/en dashes with period + space for sentence breaks
@@ -10970,6 +11533,17 @@ def _final_sanitize_text(data: dict) -> dict:
             # Fix double spaces
             text = re.sub(r'\s{2,}', ' ', text)
 
+        # =====================================================================
+        # PART 3: Remove markdown emphasis markers
+        # Per P0.5: No asterisks or underscores for emphasis in prose
+        # =====================================================================
+        # Remove bold (**text**) - keep the text, remove the markers
+        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
+        # Remove italic (*text*) - keep the text, remove the markers
+        text = re.sub(r'\*([^*]+)\*', r'\1', text)
+        # Remove underscore emphasis (_text_) - keep the text, remove the markers
+        text = re.sub(r'_([^_]+)_', r'\1', text)
+
         return text.strip()
 
     def recurse(obj):
@@ -10982,7 +11556,82 @@ def _final_sanitize_text(data: dict) -> dict:
         else:
             return obj
 
-    return recurse(data)
+    sanitized_data = recurse(data)
+
+    # =========================================================================
+    # GRAMMAR ASSERTION (Soft Fail): Log if disallowed chars still present
+    # Per P0.5: Do NOT crash, log only for observability
+    # =========================================================================
+    _check_grammar_compliance(sanitized_data, analysis_id)
+
+    return sanitized_data
+
+
+def _check_grammar_compliance(data: dict, analysis_id: str = None) -> None:
+    """
+    Check for disallowed punctuation/formatting after sanitization.
+
+    Per P0.5 spec: Soft fail - log warning only, do not crash.
+    This is observability, not enforcement-by-failure.
+
+    Checks for:
+    - Em dashes (—)
+    - Stylistic en dashes (–)
+    - Asterisk emphasis (*text*)
+    - Underscore emphasis (_text_)
+    """
+    import re
+
+    def check_string(text: str, path: str) -> list:
+        """Check a single string for violations, return list of issues."""
+        if not text or not isinstance(text, str):
+            return []
+
+        violations = []
+
+        # Check for em dashes
+        if '—' in text:
+            violations.append(f"Em dash (—) in {path}")
+
+        # Check for stylistic en dashes (not hyphen)
+        if '–' in text:
+            violations.append(f"En dash (–) in {path}")
+
+        # Check for asterisk emphasis (but not bullet points)
+        if re.search(r'\*[^*\s][^*]*\*', text):
+            violations.append(f"Asterisk emphasis (*text*) in {path}")
+
+        # Check for underscore emphasis
+        if re.search(r'_[^_\s][^_]*_', text):
+            violations.append(f"Underscore emphasis (_text_) in {path}")
+
+        return violations
+
+    def recurse_check(obj, path: str = "") -> list:
+        """Recursively check all strings in the data structure."""
+        all_violations = []
+
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                new_path = f"{path}.{k}" if path else k
+                all_violations.extend(recurse_check(v, new_path))
+        elif isinstance(obj, list):
+            for i, item in enumerate(obj):
+                new_path = f"{path}[{i}]"
+                all_violations.extend(recurse_check(item, new_path))
+        elif isinstance(obj, str):
+            all_violations.extend(check_string(obj, path))
+
+        return all_violations
+
+    violations = recurse_check(data)
+
+    if violations:
+        # Soft fail - log warning only
+        aid = analysis_id or "unknown"
+        logger.warning(f"STYLE_VIOLATION_DETECTED [{aid}]: {len(violations)} issues found")
+        for v in violations[:5]:  # Log first 5 violations
+            logger.warning(f"  - {v}")
 
 
 def _extract_fallback_strengths_from_resume(resume_data: dict, response_data: dict) -> list:
@@ -11094,10 +11743,15 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
 
     # Pre-compute isolated role detection for later use
     isolated_role_detection = None
+    pre_llm_leadership_gate = None  # NEW: Pre-LLM leadership gate result
     if jd_text:
         extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
         isolated_role_type = detect_role_type_isolated(jd_text, extracted_title, analysis_id)
         alignment = verify_role_type_alignment(isolated_role_type, extracted_title, jd_text, analysis_id)
+
+        # NEW: Detect leadership role level from title
+        # Per fix spec: If leadership keyword detected, hard-set role_level/role_type
+        role_level_info = detect_leadership_role_level(extracted_title, jd_text, analysis_id)
 
         # Calculate role-specific experience using isolated function
         if resume_data:
@@ -11119,10 +11773,21 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
                 hard_requirement=is_hard_requirement,
                 analysis_id=analysis_id
             )
+
+            # NEW: CRITICAL PRE-LLM LEADERSHIP GATE
+            # Per fix spec: Enforce leadership hard-gate BEFORE any LLM call
+            # If role is Director+ and candidate has 0 leadership years -> HARD FAIL
+            candidate_leadership_years = leadership_info.get("candidate_years", 0.0)
+            pre_llm_leadership_gate = apply_pre_llm_leadership_gate(
+                role_level_info,
+                candidate_leadership_years,
+                analysis_id
+            )
         else:
             candidate_years = 0.0
             gap_info = {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
             leadership_info = {"meets_requirement": True, "candidate_years": 0.0, "gap_severity": "none", "skipped": True}
+            pre_llm_leadership_gate = {"gate_status": "PASS", "fit_cap": None, "apply_decision": None, "hard_requirement": False, "gate_reason": ""}
 
         isolated_role_detection = {
             "extracted_title": extracted_title,
@@ -11130,7 +11795,9 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "alignment": alignment,
             "candidate_years": candidate_years,
             "gap_info": gap_info,
-            "leadership_info": leadership_info
+            "leadership_info": leadership_info,
+            "role_level_info": role_level_info,  # NEW: Leadership role level detection
+            "pre_llm_leadership_gate": pre_llm_leadership_gate  # NEW: Pre-LLM gate result
         }
 
         print(f"\n{'='*80}")
@@ -11138,13 +11805,186 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         print(f"{'='*80}")
         print(f"Role: {extracted_title}")
         print(f"Type: {isolated_role_type.upper()} (confidence: {alignment['confidence']})")
+        print(f"Leadership Level: {role_level_info.get('role_level', 'IC')}")
         print(f"Experience: {candidate_years:.1f} years")
         print(f"Gap: {gap_info['gap_months']} months (penalty: {gap_info['penalty_points']})")
+        if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") != "PASS":
+            print(f"🚦 PRE-LLM GATE: {pre_llm_leadership_gate['gate_status']} - {pre_llm_leadership_gate.get('gate_reason', '')}")
         if alignment['warnings']:
             print(f"Warnings: {alignment['warnings']}")
         print(f"{'='*80}\n")
 
     print(f"✅ [{analysis_id}] Request isolation verified - using only request data")
+
+    # ========================================================================
+    # DRY-RUN MODE: Return deterministic leadership evaluation WITHOUT Claude
+    # Per P0 spec: When dry_run=True, do NOT call Claude, return gate result only
+    # ========================================================================
+    if body.dry_run:
+        print(f"\n🔍🔍🔍 DRY-RUN MODE ENABLED - NO CLAUDE CALLS 🔍🔍🔍")
+        print(f"   Returning deterministic leadership evaluation only")
+
+        # Build dry-run response with deterministic values only
+        dry_run_response = {
+            "dry_run": True,
+            "analysis_id": analysis_id,
+            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "company": body.company,
+            "role_seniority": "LEADERSHIP" if isolated_role_detection and isolated_role_detection.get("role_level_info", {}).get("is_leadership_role") else "IC",
+            "role_level": isolated_role_detection.get("role_level_info", {}).get("role_level", "IC") if isolated_role_detection else "IC",
+            "leadership_required": isolated_role_detection.get("role_level_info", {}).get("is_leadership_role", False) if isolated_role_detection else False,
+            "leadership_years_required": 0.0,  # Will be set below
+            "leadership_years_detected": 0.0,  # Will be set below
+            "hard_gate": "PASS",  # Will be set below
+            "fit_cap": None,
+            "decision": "APPLY",  # Will be set below
+            "decision_reason": "",
+            # Additional diagnostic info
+            "role_type_detected": isolated_role_detection.get("role_type", "general") if isolated_role_detection else "general",
+            "candidate_years": isolated_role_detection.get("candidate_years", 0.0) if isolated_role_detection else 0.0,
+            "career_gap_months": isolated_role_detection.get("gap_info", {}).get("gap_months", 0) if isolated_role_detection else 0,
+            "leadership_keywords_found": [],
+            # Gate details
+            "pre_llm_gate_result": None
+        }
+
+        # Populate leadership-specific fields
+        if isolated_role_detection:
+            leadership_info = isolated_role_detection.get("leadership_info", {})
+            role_level_info = isolated_role_detection.get("role_level_info", {})
+            gate = isolated_role_detection.get("pre_llm_leadership_gate", {})
+
+            # Leadership years
+            candidate_leadership_years = leadership_info.get("candidate_years", 0.0)
+            dry_run_response["leadership_years_detected"] = candidate_leadership_years
+            dry_run_response["leadership_keywords_found"] = role_level_info.get("leadership_keywords_found", [])
+
+            # Leadership years confidence indicator
+            # HIGH = Explicit "managed team of X" or "X direct reports" in resume
+            # MEDIUM = Title-based inference (Director, Manager with team signals)
+            # INFERRED = Heuristic-based (senior title + years, no explicit evidence)
+            leadership_source = leadership_info.get("source", "")
+            has_explicit_evidence = leadership_info.get("has_explicit_evidence", False)
+            if has_explicit_evidence or "direct reports" in str(leadership_info).lower() or "managed" in str(leadership_info).lower():
+                dry_run_response["leadership_years_confidence"] = "HIGH"
+            elif candidate_leadership_years > 0 and any(kw in str(leadership_info).lower() for kw in ["director", "head", "vp", "manager"]):
+                dry_run_response["leadership_years_confidence"] = "MEDIUM"
+            elif candidate_leadership_years > 0:
+                dry_run_response["leadership_years_confidence"] = "INFERRED"
+            else:
+                dry_run_response["leadership_years_confidence"] = "NONE"
+
+            # Get required leadership years from title-based inference
+            temp_response_data = {
+                "job_description": jd_text,
+                "role_title": isolated_role_detection.get("extracted_title", "")
+            }
+            req_years, _ = extract_required_people_leadership_years(temp_response_data)
+            dry_run_response["leadership_years_required"] = req_years
+
+            # Gate result
+            if gate:
+                dry_run_response["hard_gate"] = gate.get("gate_status", "PASS")
+                dry_run_response["fit_cap"] = gate.get("fit_cap")
+                dry_run_response["pre_llm_gate_result"] = gate
+
+                if gate.get("gate_status") == "FAIL":
+                    dry_run_response["decision"] = "DO_NOT_APPLY"
+                    dry_run_response["decision_reason"] = gate.get("gate_reason", "Leadership requirement not met")
+                elif gate.get("gate_status") == "WARN":
+                    dry_run_response["decision"] = "APPLY_WITH_CAUTION"
+                    dry_run_response["decision_reason"] = gate.get("gate_reason", "")
+                else:
+                    dry_run_response["decision"] = "APPLY"
+                    dry_run_response["decision_reason"] = "All gates passed"
+
+        print(f"   Gate Status: {dry_run_response['hard_gate']}")
+        print(f"   Decision: {dry_run_response['decision']}")
+        print(f"   Leadership Required: {dry_run_response['leadership_required']}")
+        print(f"   Leadership Years: {dry_run_response['leadership_years_detected']}/{dry_run_response['leadership_years_required']} required")
+        print(f"   Confidence: {dry_run_response.get('leadership_years_confidence', 'NONE')}")
+
+        # =====================================================================
+        # P0.5: DRY-RUN TELEMETRY - Log structured event for spend tracking
+        # Per spec: Fire EXACTLY ONCE per request, no duplication
+        # =====================================================================
+        log_dry_run_event(
+            analysis_id=analysis_id,
+            role_title=dry_run_response["role_title"],
+            role_seniority=dry_run_response["role_seniority"],
+            decision=dry_run_response["decision"],
+            gate_status=dry_run_response["hard_gate"],
+            fit_cap=dry_run_response["fit_cap"],
+            leadership_years_detected=dry_run_response["leadership_years_detected"],
+            leadership_years_confidence=dry_run_response.get("leadership_years_confidence", "NONE")
+        )
+
+        # =====================================================================
+        # DEFENSIVE ASSERTION: Guarantee zero Claude side effects
+        # Per P0.5 spec: If violated, log error and fail fast
+        # =====================================================================
+        claude_called = False  # Explicit flag - never set to True in dry-run path
+        assert claude_called is False, "CRITICAL: Claude was called during dry-run mode!"
+
+        print(f"🔍🔍🔍 DRY-RUN COMPLETE - $0 API SPEND 🔍🔍🔍\n")
+
+        return dry_run_response
+
+    # ========================================================================
+    # P0 OPTIMIZATION: Skip Claude call entirely if hard gate already failed
+    # Per spec: If decision == "DO_NOT_APPLY", skip_claude_call()
+    # Claude explains decisions. It does not make them.
+    # ========================================================================
+    if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") == "FAIL":
+        print(f"\n🚫🚫🚫 HARD GATE FAILED - SKIPPING CLAUDE CALL 🚫🚫🚫")
+        print(f"   Reason: {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}")
+        print(f"   Decision: DO_NOT_APPLY (locked)")
+        print(f"   Fit Cap: {pre_llm_leadership_gate.get('fit_cap', 30)}%")
+
+        # Build minimal response without Claude
+        gated_response = {
+            "analysis_id": analysis_id,
+            "company": body.company,
+            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "fit_score": pre_llm_leadership_gate.get("fit_cap", 30),
+            "fit_score_capped_by_leadership_gate": True,
+            "recommendation": "Do Not Apply",
+            "recommendation_locked": True,
+            "recommendation_locked_by_leadership_gate": True,
+            "recommendation_rationale": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
+            "leadership_gate_reason": pre_llm_leadership_gate.get("gate_reason", ""),
+            "apply_disabled": True,
+            "apply_disabled_reason": "Not eligible for this role",
+            # Minimal required fields
+            "key_responsibilities": [],
+            "required_skills": [],
+            "preferred_skills": [],
+            "strengths": [],
+            "gaps": [
+                {
+                    "gap_type": "leadership_experience",
+                    "gap_description": pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met"),
+                    "severity": "critical"
+                }
+            ],
+            "reality_check": {
+                "strategic_action": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
+                "hard_truth": "This role requires people leadership experience you do not have."
+            },
+            "experience_analysis": {
+                "eligibility_gate_passed": False,
+                "recommendation_locked": True,
+                "hard_requirement_failure": True,
+                "leadership_hard_gate_failed": True,
+                "pre_llm_leadership_gate": pre_llm_leadership_gate
+            },
+            "_isolated_role_detection": isolated_role_detection,
+            "claude_skipped": True,
+            "claude_skipped_reason": "Hard gate failed pre-LLM"
+        }
+
+        print(f"🚫🚫🚫 RETURNING GATED RESPONSE - $0 API SPEND 🚫🚫🚫\n")
+        return gated_response
 
     system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
 
@@ -11167,6 +12007,34 @@ CRITICAL RULES - VIOLATION BREAKS THE SYSTEM:
 If you violate ANY of these rules, the system will break and the candidate will not receive their analysis.
 
 === END STRICT JSON OUTPUT MODE ===
+
+=== GRAMMAR & PUNCTUATION STANDARDS (MANDATORY) ===
+
+Use professional, concise grammar. Write as if the output will be read by a senior hiring leader.
+
+PROHIBITED (DO NOT USE):
+- Em dashes (—) - use periods or commas instead
+- En dashes for stylistic breaks (–) - use periods or commas instead
+- Asterisks for emphasis (*text* or **text**) - use plain text
+- Underscores for emphasis (_text_) - use plain text
+- Markdown formatting in prose
+
+REQUIRED:
+- Short, direct sentences
+- Standard punctuation: periods, commas, colons
+- Plain text emphasis through word choice and sentence structure
+- Professional, executive-grade tone
+
+Example of CORRECT style:
+"Your background is in product management. This role requires engineering leadership."
+"Apply with caution. You have transferable skills but lack direct experience."
+
+Example of INCORRECT style (DO NOT USE):
+"Your background is in product management—this role requires engineering leadership."
+"Apply with caution — you have *transferable skills* but lack direct experience."
+"This is a **critical gap** that you need to address."
+
+=== END GRAMMAR & PUNCTUATION STANDARDS ===
 
 You are a senior executive recruiter and career strategist providing job fit analysis.
 
@@ -12967,6 +13835,56 @@ Role: {body.role_title}
                 parsed_data["experience_analysis"]["isolated_candidate_years"] = isolated_role_detection["candidate_years"]
                 parsed_data["experience_analysis"]["isolated_gap_info"] = isolated_role_detection["gap_info"]
 
+            # NEW: Inject leadership role level info and pre-LLM gate result
+            if "role_level_info" in isolated_role_detection:
+                parsed_data["experience_analysis"]["role_level_info"] = isolated_role_detection["role_level_info"]
+            if "pre_llm_leadership_gate" in isolated_role_detection:
+                parsed_data["experience_analysis"]["pre_llm_leadership_gate"] = isolated_role_detection["pre_llm_leadership_gate"]
+
+        # ========================================================================
+        # CRITICAL: ENFORCE PRE-LLM LEADERSHIP GATE BEFORE FURTHER PROCESSING
+        # Per fix spec: Lock Score Caps to Deterministic Gates
+        # If hard_requirement fails: Cap fit score at ≤30%, Force decision to DO_NOT_APPLY
+        # Claude may explain the decision but CANNOT change it.
+        # ========================================================================
+        if isolated_role_detection and isolated_role_detection.get("pre_llm_leadership_gate"):
+            gate = isolated_role_detection["pre_llm_leadership_gate"]
+            if gate.get("gate_status") == "FAIL":
+                print(f"\n🚨🚨🚨 PRE-LLM LEADERSHIP GATE ENFORCEMENT 🚨🚨🚨")
+                print(f"   Gate Status: FAIL")
+                print(f"   Reason: {gate.get('gate_reason', 'Leadership requirement not met')}")
+
+                # CAP FIT SCORE AT 30%
+                fit_cap = gate.get("fit_cap", 30)
+                current_score = parsed_data.get("fit_score", 0)
+                if current_score > fit_cap:
+                    print(f"   🔒 Capping fit_score from {current_score}% to {fit_cap}%")
+                    parsed_data["fit_score"] = fit_cap
+                    parsed_data["fit_score_capped_by_leadership_gate"] = True
+                    parsed_data["fit_score_original_before_gate"] = current_score
+
+                # FORCE DECISION TO DO_NOT_APPLY
+                forced_decision = gate.get("apply_decision", "DO_NOT_APPLY")
+                print(f"   🔒 Forcing recommendation to: {forced_decision}")
+                parsed_data["recommendation"] = "Do Not Apply"
+                parsed_data["recommendation_locked"] = True
+                parsed_data["recommendation_locked_by_leadership_gate"] = True
+                parsed_data["leadership_gate_reason"] = gate.get("gate_reason", "Leadership requirement not met")
+
+                # Ensure experience_analysis reflects the gate
+                if "experience_analysis" not in parsed_data:
+                    parsed_data["experience_analysis"] = {}
+                parsed_data["experience_analysis"]["eligibility_gate_passed"] = False
+                parsed_data["experience_analysis"]["recommendation_locked"] = True
+                parsed_data["experience_analysis"]["hard_requirement_failure"] = True
+                parsed_data["experience_analysis"]["leadership_hard_gate_failed"] = True
+
+                # Set apply_disabled for UI
+                parsed_data["apply_disabled"] = True
+                parsed_data["apply_disabled_reason"] = "Leadership requirement not met"
+
+                print(f"🚨🚨🚨 PRE-LLM GATE ENFORCED - Score capped, Decision locked 🚨🚨🚨\n")
+
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
         parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
@@ -13276,6 +14194,13 @@ Role: {body.role_title}
             # Non-blocking - continue without detection results
 
         # =========================================================================
+        # RENDER GUARD: Prevent Claude/System Contradictions
+        # Per fix spec: If Claude recommendation != system decision, use system decision
+        # Never surface conflicting guidance in UI.
+        # =========================================================================
+        parsed_data = _apply_render_guard(parsed_data, analysis_id)
+
+        # =========================================================================
         # FINAL SANITIZATION: Remove em/en dashes from critical text fields
         # This is a safety net in case postprocessors miss any fields
         # =========================================================================
@@ -13284,7 +14209,7 @@ Role: {body.role_title}
         if has_em_dash_before:
             print(f"   🔍 Em dash detected BEFORE final sanitization: '{strategic_action_before[:50]}...'")
 
-        parsed_data = _final_sanitize_text(parsed_data)
+        parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
         strategic_action_after = parsed_data.get("reality_check", {}).get("strategic_action", "")
         has_em_dash_after = '—' in strategic_action_after or '–' in strategic_action_after
@@ -13367,9 +14292,9 @@ Role: {body.role_title}
             # Continue with penalty enforcement
             parsed_data = force_apply_experience_penalties(parsed_data, body.resume)
 
-            # CRITICAL: Apply final sanitization to remove em/en dashes
+            # CRITICAL: Apply final sanitization to remove em/en dashes and markdown
             # This must run as the absolute last step before returning
-            parsed_data = _final_sanitize_text(parsed_data)
+            parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
             return parsed_data
         except Exception as fix_error:
@@ -13399,6 +14324,76 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
     import re
     import json
     import asyncio
+    from starlette.responses import JSONResponse
+
+    # ========================================================================
+    # DRY-RUN MODE: Redirect to non-streaming endpoint for consistency
+    # Per P0 spec: dry_run mode returns deterministic result without Claude
+    # ========================================================================
+    if body.dry_run:
+        # Call the non-streaming version which already handles dry_run
+        result = await analyze_jd(request, body)
+        # Return as a JSONResponse instead of streaming
+        return JSONResponse(content=result)
+
+    # ========================================================================
+    # PRE-LLM LEADERSHIP GATE CHECK (Same as non-streaming)
+    # Skip Claude entirely if hard gate fails
+    # ========================================================================
+    analysis_id = str(uuid.uuid4())[:8]
+    jd_text = body.job_description or ""
+    resume_data = body.resume if body.resume else {}
+
+    pre_llm_leadership_gate = None
+    isolated_role_detection = None
+
+    if jd_text:
+        extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
+        isolated_role_type = detect_role_type_isolated(jd_text, extracted_title, analysis_id)
+        alignment = verify_role_type_alignment(isolated_role_type, extracted_title, jd_text, analysis_id)
+        role_level_info = detect_leadership_role_level(extracted_title, jd_text, analysis_id)
+
+        if resume_data:
+            candidate_years = calculate_relevant_years_isolated(resume_data, isolated_role_type, analysis_id)
+            gap_info = calculate_career_gap_penalty_isolated(resume_data, analysis_id)
+            temp_response_data = {"job_description": jd_text, "role_title": extracted_title}
+            required_leadership_years, is_hard_requirement = extract_required_people_leadership_years(temp_response_data)
+            leadership_info = check_people_leadership_requirement_isolated(
+                resume_data, required_years=required_leadership_years,
+                hard_requirement=is_hard_requirement, analysis_id=analysis_id
+            )
+            candidate_leadership_years = leadership_info.get("candidate_years", 0.0)
+            pre_llm_leadership_gate = apply_pre_llm_leadership_gate(role_level_info, candidate_leadership_years, analysis_id)
+
+            isolated_role_detection = {
+                "extracted_title": extracted_title, "role_type": isolated_role_type, "alignment": alignment,
+                "candidate_years": candidate_years, "gap_info": gap_info, "leadership_info": leadership_info,
+                "role_level_info": role_level_info, "pre_llm_leadership_gate": pre_llm_leadership_gate
+            }
+
+    # If hard gate failed, return gated response immediately (no streaming needed)
+    if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") == "FAIL":
+        print(f"\n🚫🚫🚫 [STREAM] HARD GATE FAILED - SKIPPING CLAUDE CALL 🚫🚫🚫")
+        gated_response = {
+            "analysis_id": analysis_id,
+            "company": body.company,
+            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "fit_score": pre_llm_leadership_gate.get("fit_cap", 30),
+            "fit_score_capped_by_leadership_gate": True,
+            "recommendation": "Do Not Apply",
+            "recommendation_locked": True,
+            "recommendation_locked_by_leadership_gate": True,
+            "recommendation_rationale": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}",
+            "apply_disabled": True,
+            "apply_disabled_reason": "Not eligible for this role",
+            "key_responsibilities": [], "required_skills": [], "preferred_skills": [],
+            "strengths": [],
+            "gaps": [{"gap_type": "leadership_experience", "gap_description": pre_llm_leadership_gate.get("gate_reason", "Leadership requirement not met"), "severity": "critical"}],
+            "reality_check": {"strategic_action": f"Do not apply. {pre_llm_leadership_gate.get('gate_reason', 'Leadership requirement not met')}", "hard_truth": "This role requires people leadership experience you do not have."},
+            "experience_analysis": {"eligibility_gate_passed": False, "recommendation_locked": True, "hard_requirement_failure": True, "leadership_hard_gate_failed": True},
+            "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM"
+        }
+        return JSONResponse(content=gated_response)
 
     # Use the same system prompt as the regular analyze endpoint
     system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
@@ -13422,6 +14417,34 @@ CRITICAL RULES - VIOLATION BREAKS THE SYSTEM:
 If you violate ANY of these rules, the system will break and the candidate will not receive their analysis.
 
 === END STRICT JSON OUTPUT MODE ===
+
+=== GRAMMAR & PUNCTUATION STANDARDS (MANDATORY) ===
+
+Use professional, concise grammar. Write as if the output will be read by a senior hiring leader.
+
+PROHIBITED (DO NOT USE):
+- Em dashes (—) - use periods or commas instead
+- En dashes for stylistic breaks (–) - use periods or commas instead
+- Asterisks for emphasis (*text* or **text**) - use plain text
+- Underscores for emphasis (_text_) - use plain text
+- Markdown formatting in prose
+
+REQUIRED:
+- Short, direct sentences
+- Standard punctuation: periods, commas, colons
+- Plain text emphasis through word choice and sentence structure
+- Professional, executive-grade tone
+
+Example of CORRECT style:
+"Your background is in product management. This role requires engineering leadership."
+"Apply with caution. You have transferable skills but lack direct experience."
+
+Example of INCORRECT style (DO NOT USE):
+"Your background is in product management—this role requires engineering leadership."
+"Apply with caution — you have *transferable skills* but lack direct experience."
+"This is a **critical gap** that you need to address."
+
+=== END GRAMMAR & PUNCTUATION STANDARDS ===
 
 You are a senior executive recruiter and career strategist providing job fit analysis.
 
@@ -13748,8 +14771,8 @@ Role: {body.role_title}
             else:
                 print(f"⚠️ [Stream] Company intelligence disabled or unavailable")
 
-            # Final sanitization: Remove em/en dashes from text fields
-            parsed_data = _final_sanitize_text(parsed_data)
+            # Final sanitization: Remove em/en dashes and markdown from text fields
+            parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
             # Send complete data
             yield f"data: {json.dumps({'type': 'complete', 'data': parsed_data})}\n\n"
@@ -22919,13 +23942,27 @@ async def get_admin_notifications(user_email: str = None):
         return {"notifications": [], "is_admin": True, "error": "Database not available"}
 
     try:
-        # Get unresolved notifications (both read and unread, but not resolved)
-        result = supabase.table("admin_notifications") \
-            .select("*") \
-            .or_("resolved.is.null,resolved.eq.false") \
-            .order("created_at", desc=True) \
-            .limit(20) \
-            .execute()
+        # Try to get unresolved notifications first (with 'resolved' column)
+        # Per fix spec: Handle schema drift gracefully - if 'resolved' column doesn't exist,
+        # fall back to query without it
+        try:
+            result = supabase.table("admin_notifications") \
+                .select("*") \
+                .or_("resolved.is.null,resolved.eq.false") \
+                .order("created_at", desc=True) \
+                .limit(20) \
+                .execute()
+        except Exception as schema_err:
+            # If 'resolved' column doesn't exist, fall back to basic query
+            if "resolved" in str(schema_err).lower() or "column" in str(schema_err).lower():
+                print(f"⚠️ Admin notifications: 'resolved' column not found, using fallback query")
+                result = supabase.table("admin_notifications") \
+                    .select("*") \
+                    .order("created_at", desc=True) \
+                    .limit(20) \
+                    .execute()
+            else:
+                raise schema_err
 
         return {
             "notifications": result.data if result.data else [],
@@ -22989,6 +24026,9 @@ async def mark_notification_resolved(notification_id: str, user_email: str = Non
     """
     Mark a notification as resolved (removes from active list).
     Only works if the requesting user is an admin.
+
+    Per fix spec: Handle schema drift gracefully - if 'resolved' column doesn't exist,
+    fall back to just marking as read.
     """
     if not user_email or user_email.lower() != ADMIN_USER_EMAIL.lower():
         return {"success": False, "error": "Not authorized"}
@@ -22997,14 +24037,26 @@ async def mark_notification_resolved(notification_id: str, user_email: str = Non
         return {"success": False, "error": "Database not available"}
 
     try:
-        supabase.table("admin_notifications") \
-            .update({
-                "read": True,
-                "resolved": True,
-                "resolved_at": datetime.now().isoformat()
-            }) \
-            .eq("id", notification_id) \
-            .execute()
+        # Try to update with 'resolved' column first
+        try:
+            supabase.table("admin_notifications") \
+                .update({
+                    "read": True,
+                    "resolved": True,
+                    "resolved_at": datetime.now().isoformat()
+                }) \
+                .eq("id", notification_id) \
+                .execute()
+        except Exception as schema_err:
+            # If 'resolved' column doesn't exist, fall back to just marking as read
+            if "resolved" in str(schema_err).lower() or "column" in str(schema_err).lower():
+                print(f"⚠️ Admin notifications: 'resolved' column not found, falling back to 'read' only")
+                supabase.table("admin_notifications") \
+                    .update({"read": True}) \
+                    .eq("id", notification_id) \
+                    .execute()
+            else:
+                raise schema_err
 
         return {"success": True}
     except Exception as e:

@@ -1,0 +1,245 @@
+{
+  "_description": "Golden JD Test Set for Leadership Gating Validation",
+  "_purpose": "Test deterministic leadership detection across all functions with zero Claude calls",
+  "_version": "1.0.0",
+  "_usage": "python run_golden_tests.py --dry-run",
+
+  "test_cases": [
+    {
+      "id": "director_recruiting_no_leadership",
+      "name": "Director of Recruiting - No Leadership Experience",
+      "description": "Leadership role with zero leadership years should hard fail",
+      "jd": {
+        "company": "TechCorp",
+        "role_title": "Director of Recruiting",
+        "job_description": "About the job\n\nDirector of Recruiting\n\nWe are looking for a Director of Recruiting to build and lead our talent acquisition team.\n\nRequirements:\n- 7+ years of people leadership experience required\n- Direct reports: will manage team of 10+ recruiters\n- Must have built and scaled recruiting teams\n- Executive search experience preferred"
+      },
+      "resume": {
+        "full_name": "Test Candidate",
+        "experience": [
+          {
+            "title": "Senior Technical Recruiter",
+            "company": "Startup Inc",
+            "dates": "2018 - Present",
+            "description": "Full-cycle technical recruiting. Sourcing, screening, hiring for engineering teams.",
+            "highlights": ["Hired 100+ engineers", "Built recruiting processes"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "FAIL",
+        "decision": "DO_NOT_APPLY",
+        "fit_cap": 30
+      }
+    },
+
+    {
+      "id": "director_engineering_no_leadership",
+      "name": "Director of Engineering - No Leadership Experience",
+      "description": "Engineering leadership role with IC background should hard fail",
+      "jd": {
+        "company": "BigTech Inc",
+        "role_title": "Director of Engineering",
+        "job_description": "The Opportunity\n\nDirector of Engineering\n\nLead our platform engineering organization.\n\nRequirements:\n- 7+ years people leadership experience\n- Experience managing teams of 15+ engineers\n- Build and scale engineering teams"
+      },
+      "resume": {
+        "full_name": "Staff IC Engineer",
+        "experience": [
+          {
+            "title": "Staff Software Engineer",
+            "company": "Tech Corp",
+            "dates": "2015 - Present",
+            "description": "Technical leadership. Code reviews, architecture, mentoring.",
+            "highlights": ["Led technical design", "Mentored junior engineers"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "FAIL",
+        "decision": "DO_NOT_APPLY",
+        "fit_cap": 30
+      }
+    },
+
+    {
+      "id": "head_of_product_no_leadership",
+      "name": "Head of Product - No Leadership Experience",
+      "description": "Product leadership role with IC PM background should hard fail",
+      "jd": {
+        "company": "Scale-up Co",
+        "role_title": "Head of Product",
+        "job_description": "Job Description:\n\nHead of Product\n\nOwn product strategy and build the product organization.\n\nRequirements:\n- 10+ years product experience\n- 5+ years people leadership\n- Experience building and managing product teams"
+      },
+      "resume": {
+        "full_name": "Senior PM",
+        "experience": [
+          {
+            "title": "Senior Product Manager",
+            "company": "SaaS Corp",
+            "dates": "2016 - Present",
+            "description": "Product strategy and roadmap. Cross-functional leadership.",
+            "highlights": ["Launched 5 products", "0-1 product experience"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "FAIL",
+        "decision": "DO_NOT_APPLY",
+        "fit_cap": 30
+      }
+    },
+
+    {
+      "id": "senior_ic_role_no_gate",
+      "name": "Staff/Principal IC - No Leadership Gate",
+      "description": "IC role should not trigger leadership gate",
+      "jd": {
+        "company": "TechGiant",
+        "role_title": "Staff Software Engineer",
+        "job_description": "Overview\n\nStaff Software Engineer\n\nTechnical leadership for distributed systems team.\n\nRequirements:\n- 8+ years software engineering\n- Expert in Python/Go/Java\n- System design experience"
+      },
+      "resume": {
+        "full_name": "Senior Engineer",
+        "experience": [
+          {
+            "title": "Senior Software Engineer",
+            "company": "Tech Startup",
+            "dates": "2016 - Present",
+            "description": "Backend development. Distributed systems.",
+            "highlights": ["Built microservices", "Technical design"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "IC",
+        "leadership_required": false,
+        "hard_gate": "PASS",
+        "decision": "APPLY"
+      }
+    },
+
+    {
+      "id": "vp_operations_with_leadership",
+      "name": "VP of Operations - With Leadership Experience",
+      "description": "VP role with sufficient leadership should pass gate",
+      "jd": {
+        "company": "Enterprise Corp",
+        "role_title": "VP of Operations",
+        "job_description": "VP of Operations\n\nLead our global operations organization.\n\nRequirements:\n- 10+ years operations experience\n- 7+ years people leadership\n- Experience managing orgs of 50+"
+      },
+      "resume": {
+        "full_name": "Operations Leader",
+        "experience": [
+          {
+            "title": "Director of Operations",
+            "company": "Big Corp",
+            "dates": "2014 - Present",
+            "description": "Led operations team of 40. Built and scaled operations function.",
+            "highlights": ["Managed team of 40", "8 years people leadership", "Hired 30+ team members"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "PASS",
+        "decision": "APPLY"
+      }
+    },
+
+    {
+      "id": "director_sales_no_leadership",
+      "name": "Director of Sales - No Leadership Experience",
+      "description": "Sales leadership role with IC AE background should hard fail",
+      "jd": {
+        "company": "SaaS Unicorn",
+        "role_title": "Director of Sales",
+        "job_description": "Director of Sales\n\nBuild and lead our enterprise sales team.\n\nRequirements:\n- 5+ years people leadership\n- Experience managing 10+ AEs\n- Built sales teams from scratch"
+      },
+      "resume": {
+        "full_name": "Top AE",
+        "experience": [
+          {
+            "title": "Senior Account Executive",
+            "company": "Sales Corp",
+            "dates": "2017 - Present",
+            "description": "Enterprise sales. Closed $10M+ ARR annually.",
+            "highlights": ["Presidents Club 3x", "$10M quota attainment"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "FAIL",
+        "decision": "DO_NOT_APPLY",
+        "fit_cap": 30
+      }
+    },
+
+    {
+      "id": "product_manager_ic",
+      "name": "Senior Product Manager - IC Role",
+      "description": "PM role should not trigger leadership gate (IC role)",
+      "jd": {
+        "company": "Product Co",
+        "role_title": "Senior Product Manager",
+        "job_description": "Senior Product Manager\n\nOwn the product roadmap for our growth team.\n\nRequirements:\n- 5+ years product management\n- B2B SaaS experience\n- Data-driven approach"
+      },
+      "resume": {
+        "full_name": "PM Candidate",
+        "experience": [
+          {
+            "title": "Product Manager",
+            "company": "Tech Startup",
+            "dates": "2018 - Present",
+            "description": "Product management for growth. Owned roadmap.",
+            "highlights": ["Launched 3 features", "Data-driven PM"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "IC",
+        "leadership_required": false,
+        "hard_gate": "PASS",
+        "decision": "APPLY"
+      }
+    },
+
+    {
+      "id": "cto_no_leadership",
+      "name": "CTO - No Leadership Experience",
+      "description": "C-suite role with zero leadership should hard fail",
+      "jd": {
+        "company": "Series B Startup",
+        "role_title": "CTO",
+        "job_description": "Chief Technology Officer\n\nLead our engineering organization and technical strategy.\n\nRequirements:\n- 10+ years technical leadership\n- Built and scaled engineering orgs\n- Executive presence"
+      },
+      "resume": {
+        "full_name": "Architect",
+        "experience": [
+          {
+            "title": "Principal Architect",
+            "company": "Big Tech",
+            "dates": "2012 - Present",
+            "description": "Technical architecture. System design.",
+            "highlights": ["Designed systems at scale", "Technical leadership"]
+          }
+        ]
+      },
+      "expected": {
+        "role_seniority": "LEADERSHIP",
+        "leadership_required": true,
+        "hard_gate": "FAIL",
+        "decision": "DO_NOT_APPLY",
+        "fit_cap": 30
+      }
+    }
+  ]
+}

@@ -2372,6 +2372,570 @@ class TestLEPEIntegration:
 
 
 # =============================================================================
+# TEST SUITE 15: Leadership Gating Fix Validation Tests
+# Per Leadership Gating Fix Spec: Fix role detection, pre-LLM gates, score caps
+# =============================================================================
+
+class TestLeadershipGatingFix:
+    """
+    Validation tests for Leadership Gating + Role Detection fixes.
+
+    Per fix spec:
+    1. JD with "About the job" header still detects Director role
+    2. Director role with 0 leadership years -> hard fail
+    3. Claude output cannot override gated decision
+    4. Fit score capped correctly on hard-gate failure
+    """
+
+    def test_about_the_job_header_does_not_become_role_title(self):
+        """
+        Role title extraction must ignore non-semantic headers like 'About the job'.
+        Per fix spec: Role title extracted as 'About the job' forces GENERAL role type (BUG).
+        """
+        from backend import extract_role_title_from_jd
+
+        jd_with_bad_header = """
+        About the job
+
+        Director of Engineering
+
+        We are looking for a Director of Engineering to lead our platform team.
+
+        Requirements:
+        - 7+ years of people leadership experience
+        - Experience managing teams of 10+ engineers
+        """
+
+        # Extract role title
+        title = extract_role_title_from_jd(jd_with_bad_header, "test-001")
+
+        # Title must NOT be "About the job" - must be "Director of Engineering"
+        assert "about the job" not in title.lower(), \
+            f"Role title should not be 'About the job', got: {title}"
+        assert "director" in title.lower(), \
+            f"Role title should contain 'Director', got: {title}"
+
+    def test_job_description_header_ignored(self):
+        """'Job Description' header must not be used as role title."""
+        from backend import extract_role_title_from_jd
+
+        jd = """
+        Job Description:
+
+        VP of Product
+
+        Lead our product organization with 20+ direct reports.
+        """
+
+        title = extract_role_title_from_jd(jd, "test-002")
+
+        assert "job description" not in title.lower(), \
+            f"Role title should not be 'Job Description', got: {title}"
+        assert "vp" in title.lower() or "product" in title.lower(), \
+            f"Role title should contain 'VP' or 'Product', got: {title}"
+
+    def test_the_opportunity_header_ignored(self):
+        """'The Opportunity' header must not be used as role title."""
+        from backend import extract_role_title_from_jd
+
+        jd = """
+        The Opportunity
+
+        Head of Talent Acquisition
+
+        Build and lead our recruiting team.
+        """
+
+        title = extract_role_title_from_jd(jd, "test-003")
+
+        assert "opportunity" not in title.lower(), \
+            f"Role title should not be 'The Opportunity', got: {title}"
+        assert "head" in title.lower() or "talent" in title.lower(), \
+            f"Role title should contain 'Head' or 'Talent', got: {title}"
+
+    def test_overview_header_ignored(self):
+        """'Overview' header must not be used as role title."""
+        from backend import extract_role_title_from_jd
+
+        jd = """
+        Overview
+
+        Director of Sales
+
+        Drive revenue growth across enterprise accounts.
+        """
+
+        title = extract_role_title_from_jd(jd, "test-004")
+
+        assert title.lower() != "overview", \
+            f"Role title should not be 'Overview', got: {title}"
+        assert "director" in title.lower() or "sales" in title.lower(), \
+            f"Role title should contain 'Director' or 'Sales', got: {title}"
+
+    def test_director_role_detected_from_title(self):
+        """
+        Leadership role level must be detected from title keywords.
+        Per fix spec: If leadership keyword detected, hard-set role_level = DIRECTOR_OR_ABOVE.
+        """
+        from backend import detect_leadership_role_level
+
+        result = detect_leadership_role_level("Director of Engineering", "", "test-005")
+
+        assert result["is_leadership_role"] == True
+        assert result["role_level"] == "DIRECTOR_OR_ABOVE"
+        assert result["confidence"] == 1.0
+        assert "director" in result["leadership_keywords_found"]
+
+    def test_vp_role_detected_as_leadership(self):
+        """VP role must be detected as Director+ leadership."""
+        from backend import detect_leadership_role_level
+
+        result = detect_leadership_role_level("VP of Marketing", "", "test-006")
+
+        assert result["is_leadership_role"] == True
+        assert result["role_level"] == "DIRECTOR_OR_ABOVE"
+        assert result["confidence"] == 1.0
+
+    def test_head_of_role_detected_as_leadership(self):
+        """Head of [X] role must be detected as Director+ leadership."""
+        from backend import detect_leadership_role_level
+
+        result = detect_leadership_role_level("Head of Product", "", "test-007")
+
+        assert result["is_leadership_role"] == True
+        assert result["role_level"] == "DIRECTOR_OR_ABOVE"
+
+    def test_product_manager_not_detected_as_leadership(self):
+        """Product Manager (IC role) must NOT trigger leadership gate."""
+        from backend import detect_leadership_role_level
+
+        result = detect_leadership_role_level("Senior Product Manager", "", "test-008")
+
+        assert result["is_leadership_role"] == False
+        assert result["role_level"] == "IC"
+
+    def test_pre_llm_gate_fails_for_director_with_zero_leadership(self):
+        """
+        Director role with 0 leadership years must HARD FAIL.
+        Per fix spec: If candidate leadership years == 0, gate_status = FAIL, fit_cap = 30.
+        """
+        from backend import apply_pre_llm_leadership_gate
+
+        role_level_info = {
+            "is_leadership_role": True,
+            "role_level": "DIRECTOR_OR_ABOVE",
+            "confidence": 1.0
+        }
+
+        # Candidate with ZERO leadership years
+        result = apply_pre_llm_leadership_gate(role_level_info, 0.0, "test-009")
+
+        assert result["gate_status"] == "FAIL", \
+            "Gate should FAIL for Director role with 0 leadership years"
+        assert result["fit_cap"] == 30, \
+            f"Fit cap should be 30%, got: {result['fit_cap']}"
+        assert result["apply_decision"] == "DO_NOT_APPLY", \
+            f"Decision should be DO_NOT_APPLY, got: {result['apply_decision']}"
+        assert result["hard_requirement"] == True, \
+            "Leadership should be a hard requirement for Director+"
+
+    def test_pre_llm_gate_passes_for_director_with_leadership(self):
+        """Director role with sufficient leadership years should PASS."""
+        from backend import apply_pre_llm_leadership_gate
+
+        role_level_info = {
+            "is_leadership_role": True,
+            "role_level": "DIRECTOR_OR_ABOVE",
+            "confidence": 1.0
+        }
+
+        # Candidate with 6 years leadership
+        result = apply_pre_llm_leadership_gate(role_level_info, 6.0, "test-010")
+
+        assert result["gate_status"] == "PASS", \
+            "Gate should PASS for Director with 6 years leadership"
+        assert result["fit_cap"] is None, \
+            "Fit cap should be None when gate passes"
+        assert result["apply_decision"] is None, \
+            "Decision should be None when gate passes"
+
+    def test_pre_llm_gate_warns_for_director_with_insufficient_leadership(self):
+        """Director role with < 5 years leadership should WARN (not fail)."""
+        from backend import apply_pre_llm_leadership_gate
+
+        role_level_info = {
+            "is_leadership_role": True,
+            "role_level": "DIRECTOR_OR_ABOVE",
+            "confidence": 1.0
+        }
+
+        # Candidate with 3 years leadership (below 5 year threshold for Director+)
+        result = apply_pre_llm_leadership_gate(role_level_info, 3.0, "test-011")
+
+        assert result["gate_status"] == "WARN", \
+            "Gate should WARN for Director with 3 years leadership"
+        # Should not cap or force decision for WARN status
+        assert result["apply_decision"] is None
+
+    def test_pre_llm_gate_bypassed_for_ic_roles(self):
+        """IC roles should bypass the leadership gate entirely."""
+        from backend import apply_pre_llm_leadership_gate
+
+        role_level_info = {
+            "is_leadership_role": False,
+            "role_level": "IC",
+            "confidence": 0.9
+        }
+
+        result = apply_pre_llm_leadership_gate(role_level_info, 0.0, "test-012")
+
+        assert result["gate_status"] == "PASS", \
+            "Gate should PASS for IC roles"
+        assert result["hard_requirement"] == False
+
+    def test_score_capped_at_30_percent_on_hard_gate_failure(self):
+        """
+        Fit score must be capped at 30% when leadership hard gate fails.
+        Per fix spec: If hard_requirement fails, cap fit score at ≤30%.
+        """
+        # This is an integration test that would run through the full flow
+        # Here we test the gate output that should trigger the cap
+
+        from backend import apply_pre_llm_leadership_gate
+
+        role_level_info = {
+            "is_leadership_role": True,
+            "role_level": "DIRECTOR_OR_ABOVE",
+            "confidence": 1.0
+        }
+
+        result = apply_pre_llm_leadership_gate(role_level_info, 0.0, "test-013")
+
+        # The gate result should specify the cap
+        assert result["fit_cap"] == 30
+        assert result["gate_status"] == "FAIL"
+
+    def test_render_guard_catches_claude_system_mismatch(self):
+        """
+        Render guard must detect when Claude recommendation differs from system decision.
+        Per fix spec: If claude_recommendation != system_decision, use system_decision.
+        """
+        from backend import _apply_render_guard
+
+        # Simulate Claude saying "Apply" but system determined "Do Not Apply"
+        parsed_data = {
+            "recommendation": "Apply",  # Claude's recommendation
+            "fit_score": 75,
+            "recommendation_locked_by_leadership_gate": True,  # System locked it
+            "leadership_gate_reason": "Leadership requirement not met"
+        }
+
+        result = _apply_render_guard(parsed_data, "test-014")
+
+        # System decision (Do Not Apply) should override Claude's recommendation
+        assert result["recommendation"] == "Do Not Apply", \
+            f"System decision should override Claude, got: {result['recommendation']}"
+        assert result.get("_render_guard_applied") == True, \
+            "Render guard should mark that it was applied"
+
+    def test_render_guard_no_mismatch_when_aligned(self):
+        """Render guard should not modify when Claude and system agree."""
+        from backend import _apply_render_guard
+
+        parsed_data = {
+            "recommendation": "Do Not Apply",
+            "fit_score": 25,
+            "recommendation_locked_by_leadership_gate": True
+        }
+
+        result = _apply_render_guard(parsed_data, "test-015")
+
+        # Should still be Do Not Apply
+        assert result["recommendation"] == "Do Not Apply"
+        # Guard should not have applied override
+        assert result.get("_render_guard_applied") != True
+
+    def test_jd_sparse_still_enforces_director_leadership_gate(self):
+        """
+        Sparse JD must NOT relax leadership gates.
+        Per fix spec: If JD sections are missing, use role title + seniority keywords as primary signal.
+        """
+        from backend import extract_required_people_leadership_years
+
+        # Very sparse JD - just a title
+        response_data = {
+            "role_title": "Director of Engineering",
+            "job_description": "Join our team"  # Very sparse - only 12 chars
+        }
+
+        required_years, is_hard = extract_required_people_leadership_years(response_data)
+
+        # Should still enforce 5+ years for Director even with sparse JD
+        assert required_years >= 5.0, \
+            f"Director role should require 5+ years even with sparse JD, got: {required_years}"
+        assert is_hard == True, \
+            "Leadership should be hard requirement for Director role"
+
+    def test_jd_sparse_enforces_vp_leadership_gate(self):
+        """Sparse JD must enforce 7+ years for VP roles."""
+        from backend import extract_required_people_leadership_years
+
+        response_data = {
+            "role_title": "VP of Product",
+            "job_description": ""  # Empty JD
+        }
+
+        required_years, is_hard = extract_required_people_leadership_years(response_data)
+
+        assert required_years >= 7.0, \
+            f"VP role should require 7+ years even with empty JD, got: {required_years}"
+        assert is_hard == True
+
+    def test_jd_sparse_enforces_cto_leadership_gate(self):
+        """Sparse JD must enforce 10+ years for C-suite roles."""
+        from backend import extract_required_people_leadership_years
+
+        response_data = {
+            "role_title": "CTO",
+            "job_description": "Tech leader"  # Very sparse
+        }
+
+        required_years, is_hard = extract_required_people_leadership_years(response_data)
+
+        assert required_years >= 10.0, \
+            f"CTO role should require 10+ years even with sparse JD, got: {required_years}"
+
+
+class TestLeadershipGatingIntegration:
+    """Integration tests for the full leadership gating flow."""
+
+    def test_full_flow_director_with_zero_leadership(self):
+        """
+        INTEGRATION TEST: Director role + 0 leadership = hard fail.
+        Tests the complete flow through force_apply_experience_penalties.
+        """
+        from backend import force_apply_experience_penalties
+
+        # Candidate with no leadership experience
+        resume = {
+            "full_name": "Test IC",
+            "experience": [
+                {
+                    "title": "Senior Software Engineer",
+                    "company": "TechCorp",
+                    "dates": "2018 - Present",
+                    "description": "Built distributed systems. Code reviews. Technical design.",
+                    "highlights": ["Designed scalable systems", "Mentored junior engineers"]
+                }
+            ]
+        }
+
+        # Director role requiring leadership
+        response_data = {
+            "role_title": "Director of Engineering",
+            "job_description": """
+            Director of Engineering
+
+            Lead our engineering organization.
+
+            Requirements:
+            - 7+ years of people leadership experience
+            - Manage team of 15+ engineers
+            - Build and scale engineering teams
+            """,
+            "fit_score": 80,  # Claude might give high score
+            "recommendation": "Apply",  # Claude might say Apply
+            "experience_analysis": {
+                "required_years": 7
+            },
+            "gaps": []
+        }
+
+        result = force_apply_experience_penalties(response_data, resume)
+
+        # Must be locked to Do Not Apply
+        assert result["recommendation"] == "Do Not Apply", \
+            f"Recommendation must be 'Do Not Apply', got: {result['recommendation']}"
+
+        # Score should be capped if leadership gate applied (pre-LLM)
+        # Note: The cap is applied in analyze_jd, not force_apply_experience_penalties
+        # But recommendation must be locked
+        exp_analysis = result.get("experience_analysis", {})
+        assert exp_analysis.get("recommendation_locked") == True, \
+            "Recommendation must be locked for Director with 0 leadership"
+
+
+# =============================================================================
+# TEST SUITE 16: Grammar & Punctuation Standards Validation
+# Per P0.5 spec: No em dashes, no asterisks, no underscores for emphasis
+# =============================================================================
+
+class TestGrammarPunctuationStandards:
+    """
+    Validation tests for Grammar & Punctuation Standards.
+
+    Per P0.5 spec:
+    - No em dashes (—) in final output
+    - No en dashes (–) used stylistically
+    - No asterisks (*text*) or (**text**) for emphasis
+    - No underscores (_text_) for emphasis
+    - Sentences end with periods where appropriate
+    """
+
+    def test_em_dash_removed(self):
+        """Em dashes must be replaced with periods."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "Your background is in product management—this role requires engineering."}
+        result = _final_sanitize_text(data)
+
+        assert '—' not in result["text"], \
+            f"Em dash should be removed, got: {result['text']}"
+        assert '. ' in result["text"] or result["text"].count('.') > 0, \
+            "Em dash should be replaced with period"
+
+    def test_en_dash_removed(self):
+        """En dashes used stylistically must be replaced."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "Apply with caution – you have transferable skills."}
+        result = _final_sanitize_text(data)
+
+        assert '–' not in result["text"], \
+            f"En dash should be removed, got: {result['text']}"
+
+    def test_asterisk_bold_removed(self):
+        """Bold asterisks (**text**) must be removed, keeping text."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "This is a **critical gap** that needs addressing."}
+        result = _final_sanitize_text(data)
+
+        assert '**' not in result["text"], \
+            f"Bold markers should be removed, got: {result['text']}"
+        assert 'critical gap' in result["text"], \
+            "Text inside bold markers should be preserved"
+
+    def test_asterisk_italic_removed(self):
+        """Italic asterisks (*text*) must be removed, keeping text."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "You have *transferable skills* but lack experience."}
+        result = _final_sanitize_text(data)
+
+        assert result["text"].count('*') == 0, \
+            f"Asterisks should be removed, got: {result['text']}"
+        assert 'transferable skills' in result["text"], \
+            "Text inside italic markers should be preserved"
+
+    def test_underscore_emphasis_removed(self):
+        """Underscore emphasis (_text_) must be removed, keeping text."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "This is _important information_ for your application."}
+        result = _final_sanitize_text(data)
+
+        # Check that underscore emphasis is removed (but preserve underscores in identifiers)
+        assert '_important information_' not in result["text"], \
+            f"Underscore emphasis should be removed, got: {result['text']}"
+        assert 'important information' in result["text"], \
+            "Text inside underscore markers should be preserved"
+
+    def test_nested_data_sanitized(self):
+        """Sanitization must work on nested dict/list structures."""
+        from backend import _final_sanitize_text
+
+        data = {
+            "recommendation": "Apply—this role fits well.",
+            "gaps": [
+                {"description": "Missing **key skill** in cloud."},
+                {"description": "Your _background_ doesn't match."}
+            ],
+            "reality_check": {
+                "strategic_action": "Focus on these—they matter most."
+            }
+        }
+
+        result = _final_sanitize_text(data)
+
+        assert '—' not in result["recommendation"]
+        assert '**' not in result["gaps"][0]["description"]
+        assert '_background_' not in result["gaps"][1]["description"]
+        assert '—' not in result["reality_check"]["strategic_action"]
+
+    def test_clean_text_unchanged(self):
+        """Clean text without violations should pass through unchanged."""
+        from backend import _final_sanitize_text
+
+        original_text = "Your background is in product management. This role requires engineering leadership."
+        data = {"text": original_text}
+
+        result = _final_sanitize_text(data)
+
+        assert result["text"] == original_text, \
+            "Clean text should not be modified"
+
+    def test_grammar_compliance_checker(self):
+        """Grammar compliance checker should detect violations."""
+        from backend import _check_grammar_compliance
+        import logging
+
+        # Set up a handler to capture log output
+        test_handler = logging.Handler()
+        test_handler.setLevel(logging.WARNING)
+
+        data_with_violations = {
+            "text": "This has an em dash—and *emphasis* markers."
+        }
+
+        # This should log warnings but not crash
+        _check_grammar_compliance(data_with_violations, "test-001")
+        # Test passes if no exception raised
+
+    def test_multiple_em_dashes_all_removed(self):
+        """Multiple em dashes in a single string should all be removed."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "First point—second point—third point—conclusion."}
+        result = _final_sanitize_text(data)
+
+        assert '—' not in result["text"], \
+            f"All em dashes should be removed, got: {result['text']}"
+        # Should have periods instead
+        assert result["text"].count('.') >= 3, \
+            "Em dashes should be replaced with periods"
+
+    def test_capitalization_after_replacement(self):
+        """Sentence after replaced em dash should be capitalized."""
+        from backend import _final_sanitize_text
+
+        data = {"text": "This is important—but needs work."}
+        result = _final_sanitize_text(data)
+
+        # After replacement, should be "This is important. But needs work."
+        assert '. B' in result["text"] or '. b' not in result["text"], \
+            "Character after period should be capitalized"
+
+    def test_json_keys_not_modified(self):
+        """JSON keys should not be modified by sanitizer."""
+        from backend import _final_sanitize_text
+
+        data = {
+            "strategic_action": "Apply now.",
+            "reality_check": {"hard_truth": "You need more experience."},
+            "fit_score": 75
+        }
+
+        result = _final_sanitize_text(data)
+
+        # Keys should remain unchanged
+        assert "strategic_action" in result
+        assert "reality_check" in result
+        assert "hard_truth" in result["reality_check"]
+        assert "fit_score" in result
+
+
+# =============================================================================
 # Run tests if executed directly
 # =============================================================================
 
