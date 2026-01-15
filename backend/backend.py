@@ -12197,7 +12197,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "leadership_info": leadership_info,
             "role_level_info": role_level_info,  # NEW: Leadership role level detection
             "pre_llm_leadership_gate": pre_llm_leadership_gate,  # NEW: Pre-LLM gate result
-            "leadership_context": leadership_context  # P0 FIX: Canonical leadership context
+            "leadership_context": leadership_context.to_dict() if leadership_context else None  # P0 FIX: Canonical leadership context (serialized)
         }
 
         print(f"\n{'='*80}")
