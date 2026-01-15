@@ -650,28 +650,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add rate limiter to app state and exception handler
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# Configure CORS - explicit origins for production
-ALLOWED_ORIGINS = [
-    "https://henryai-app.vercel.app",
-    "https://www.henryhq.ai",
-    "https://henryhq.ai",
-    "http://localhost:3000",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
-    "http://localhost:8080",
-]
-
+# CORS MUST be added immediately after app creation, before anything else
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[
+        "https://henryai-app.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add rate limiter to app state and exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # Log startup
