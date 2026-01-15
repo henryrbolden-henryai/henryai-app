@@ -1052,6 +1052,13 @@
     };
 
     // Get file icon based on type
+    // Escape HTML to prevent XSS attacks - used throughout for user/assistant content
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
     function getFileIcon(mimeType) {
         if (mimeType.startsWith('image/')) return '🖼️';
         if (mimeType === 'application/pdf') return '📄';
@@ -1824,7 +1831,8 @@
                 const timeStr = getTimeAgo(date);
                 const messages = convo.messages || [];
                 const lastUserMsg = messages.filter(m => m.role === 'user').pop();
-                const preview = lastUserMsg ? (lastUserMsg.content || '').substring(0, 80) + (lastUserMsg.content?.length > 80 ? '...' : '') : 'Conversation';
+                const rawPreview = lastUserMsg ? (lastUserMsg.content || '').substring(0, 80) + (lastUserMsg.content?.length > 80 ? '...' : '') : 'Conversation';
+                const preview = escapeHtml(rawPreview);
 
                 historyHtml += `
                     <div class="ask-henry-history-item" data-convo-id="${convo.id}">
@@ -4117,10 +4125,10 @@ Page: ${context.name} (${window.location.href})`;
                         content: "Thanks! I've shared your feedback with the Henry team. They review everything and it really helps make HenryHQ better. Is there anything else I can help you with?"
                     });
                 } else {
-                    addMessage('assistant', "I tried to send your feedback but hit a snag. Don't worry though - you can always email the team directly at hello@henryhq.ai. What else can I help with?");
+                    addMessage('assistant', "I tried to send your feedback but hit a snag. You can always email the team directly at support@henryhq.com. What else can I help with?");
                     conversationHistory.push({
                         role: 'assistant',
-                        content: "I tried to send your feedback but hit a snag. Don't worry though - you can always email the team directly at hello@henryhq.ai. What else can I help with?"
+                        content: "I tried to send your feedback but hit a snag. You can always email the team directly at support@henryhq.com. What else can I help with?"
                     });
                 }
                 saveConversationHistory();
@@ -5035,7 +5043,7 @@ Page: ${context.name} (${window.location.href})`;
 
                 const confirmMessage = result.success
                     ? "Got it! I've sent your meeting request to Henry. He typically responds within 24 hours. In the meantime, is there anything else I can help you with?"
-                    : "I had trouble sending the request, but don't worry - you can email Henry directly at hb@henryhq.ai. Is there anything else I can help with?";
+                    : "I had trouble sending the request. You can email the team directly at support@henryhq.com. Is there anything else I can help with?";
 
                 addMessage('assistant', confirmMessage);
                 conversationHistory.push({ role: 'assistant', content: confirmMessage });
@@ -5069,8 +5077,8 @@ Page: ${context.name} (${window.location.href})`;
                             // This is likely a bug with resume parsing or data extraction - offer to file a bug
                             pendingFeedback = { text: message, type: 'bug' };
                             feedbackFlowState = 'awaiting_details';
-                            addMessage('assistant', "That sounds like a parsing issue that I can't fix directly. Let me get this to the team. Can you describe what's wrong and what it should say? A screenshot would help too.");
-                            conversationHistory.push({ role: 'assistant', content: "That sounds like a parsing issue that I can't fix directly. Let me get this to the team. Can you describe what's wrong and what it should say? A screenshot would help too." });
+                            addMessage('assistant', "That sounds like a parsing issue that I can't fix directly. I can send this to the team once I have a few details. Can you describe what's wrong and what it should say? A screenshot would help too.");
+                            conversationHistory.push({ role: 'assistant', content: "That sounds like a parsing issue that I can't fix directly. I can send this to the team once I have a few details. Can you describe what's wrong and what it should say? A screenshot would help too." });
                             saveConversationHistory();
                             isLoading = false;
                             return;
@@ -5495,7 +5503,9 @@ Page: ${context.name} (${window.location.href})`;
     }
 
     function formatMessage(content) {
-        return content
+        // First escape HTML to prevent XSS, then apply safe markdown transformations
+        const escaped = escapeHtml(content);
+        return escaped
             .split('\n\n').map(para => {
                 if (para.match(/^[-•]\s/m)) {
                     const items = para.split('\n')
@@ -5572,86 +5582,6 @@ Page: ${context.name} (${window.location.href})`;
     // Keep legacy function for backwards compatibility
     window.closeAskHenry = window.closeHeyHenry;
 
-    // ==========================================
-    // Admin Notification Polling (Real-time alerts)
-    // ==========================================
-
-    let adminNotificationInterval = null;
-    let lastNotificationCheck = 0;
-    const NOTIFICATION_CHECK_INTERVAL = 30000; // 30 seconds
-
-    async function checkAdminNotifications() {
-        // Only check if HenryAuth is available
-        if (typeof HenryAuth === 'undefined') return;
-
-        try {
-            const user = await HenryAuth.getUser();
-            if (!user?.email) return;
-
-            const response = await fetch(`${API_BASE}/api/admin/notifications?user_email=${encodeURIComponent(user.email)}`);
-            if (!response.ok) return;
-
-            const data = await response.json();
-
-            // Not an admin, stop polling
-            if (!data.is_admin) {
-                if (adminNotificationInterval) {
-                    clearInterval(adminNotificationInterval);
-                    adminNotificationInterval = null;
-                }
-                return;
-            }
-
-            // Show notifications in Hey Henry
-            if (data.notifications && data.notifications.length > 0) {
-                const notification = data.notifications[0]; // Show most recent
-
-                // Open Hey Henry drawer
-                openDrawer();
-
-                // Add notification message
-                const typeEmoji = {
-                    'bug': '🐛', 'feature_request': '💡', 'praise': '🎉',
-                    'ux_issue': '🎨', 'general': '💬'
-                }[notification.feedback_type] || '📬';
-
-                const fromDisplay = notification.from_name || notification.from_email || 'Someone';
-                const notificationMessage = `**${typeEmoji} New Feedback Alert**\n\n**From:** ${fromDisplay} (${notification.from_email})\n**Type:** ${notification.feedback_type?.replace('_', ' ')}\n**Page:** ${notification.current_page || 'Unknown'}\n\n> ${notification.summary || notification.full_content?.substring(0, 200) || 'No details'}\n\n*Click here or reply to respond to them directly.*`;
-
-                addMessage('assistant', notificationMessage);
-                conversationHistory.push({ role: 'assistant', content: notificationMessage });
-                saveConversationHistory();
-
-                // Mark as read
-                fetch(`${API_BASE}/api/admin/notifications/${notification.id}/read?user_email=${encodeURIComponent(user.email)}`, {
-                    method: 'POST'
-                }).catch(e => console.warn('Could not mark notification read:', e));
-
-                // Play a subtle sound or visual indicator
-                const fab = document.querySelector('.ask-henry-fab');
-                if (fab) {
-                    fab.style.animation = 'pulse 0.5s ease-in-out 3';
-                    setTimeout(() => fab.style.animation = '', 1500);
-                }
-            }
-        } catch (e) {
-            console.warn('Admin notification check failed:', e);
-        }
-    }
-
-    // Start polling after widget is created
-    function startAdminNotificationPolling() {
-        // Initial check after 5 seconds
-        setTimeout(checkAdminNotifications, 5000);
-
-        // Then poll every 30 seconds
-        adminNotificationInterval = setInterval(checkAdminNotifications, NOTIFICATION_CHECK_INTERVAL);
-    }
-
-    // Start polling when widget initializes
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', startAdminNotificationPolling);
-    } else {
-        startAdminNotificationPolling();
-    }
+    // Note: Admin notifications are handled by admin-alerts.js (separate panel)
+    // Do NOT show admin alerts in Hey Henry chat - they go to the dedicated Alerts panel
 })();

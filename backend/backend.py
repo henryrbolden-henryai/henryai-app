@@ -22066,7 +22066,8 @@ async def hey_henry(request: Request, body: HeyHenryRequest):
     - Clarification detection for vague inputs
     - Conversation history for continuity
     """
-    print(f"💬 Hey Henry: {body.context.current_page} - {body.message[:50]}...")
+    # Log request without sensitive user content (privacy protection)
+    print(f"💬 Hey Henry: {body.context.current_page} - message_len={len(body.message)}")
 
     # Detect pipeline analysis request (Phase 2.2 trigger)
     pipeline_analysis_triggers = [
@@ -22527,9 +22528,10 @@ POSITIONING STRATEGY YOU DEVELOPED:
 
     # Format system prompt
     user_name = body.context.user_name
+    # Use empty string instead of "Unknown" to comply with prompt rule: "Never treat 'Unknown' as a name"
     name_note = "" if user_name else "(name not available - use warm generic greetings)"
     system_prompt = HEY_HENRY_SYSTEM_PROMPT.format(
-        user_name=user_name or "Unknown",
+        user_name=user_name or "",
         name_note=name_note,
         current_page=body.context.current_page,
         page_description=body.context.page_description,
@@ -22562,18 +22564,15 @@ POSITIONING STRATEGY YOU DEVELOPED:
 
 The user is asking for a strategic review of their job search. Use the PIPELINE PATTERN ANALYSIS data above to provide a comprehensive, specific analysis.
 
-REQUIRED RESPONSE FORMAT:
-1. **Pipeline Health** (1-2 sentences): Give them the headline. Are they on track or off track?
+REQUIRED RESPONSE STRUCTURE (use conversational prose, not bullet points):
 
-2. **Patterns I'm Seeing** (3-5 bullet points): Use the actual pattern data:
-   - Fit distribution (are they overreaching?)
-   - Conversion rates at each stage (where are they dropping off?)
-   - Velocity trends (accelerating, slowing, or steady?)
-   - Any weak spots identified
+1. Pipeline Health (1-2 sentences): Give them the headline. Are they on track or off track?
 
-3. **The Signal** (1-2 sentences): What's the ONE thing the data is telling them?
+2. Patterns I'm Seeing (3-5 observations as flowing prose): Cover fit distribution, conversion rates at each stage, velocity trends, and any weak spots. Write it conversationally, not as a list.
 
-4. **Recommendation** (1-2 actionable steps): What should they do next?
+3. The Signal (1-2 sentences): What's the ONE thing the data is telling them?
+
+4. Recommendation (1-2 actionable steps): What should they do next?
 
 CRITICAL RULES:
 - Use SPECIFIC numbers from the pattern data. Never say "some" or "a few" when you have exact counts.
@@ -22581,16 +22580,16 @@ CRITICAL RULES:
 - If they're overreaching (high % of reaches/long shots), say so directly.
 - If they're stalling at a specific stage, diagnose why.
 - NO generic advice. Everything must be grounded in THEIR data.
+- Write in conversational prose. NO bullet points, NO bold/asterisks, NO numbered lists.
 
 Example of GOOD analysis:
-"Here's what I'm seeing across your search:
+"Here's what I'm seeing across your search.
 
-Pipeline Health: 12 applications, 3 active, 2 interviews scheduled, 4 rejected, 3 ghosted
+Pipeline Health: You've got 12 applications total, with 3 active, 2 in interviews, 4 rejected, and 3 likely ghosted.
 
-Patterns:
-* You're overreaching on scope. 8 of 12 were stretch roles.
-* Strong conversion to first round (67%), but dropping off at hiring manager stage (25%).
-* All your ghosted applications were at companies with 50+ open roles. They're probably overwhelmed.
+Patterns: You're overreaching on scope. 8 of your 12 applications were stretch roles where you're under 60% fit. Your conversion to first round is strong at 67%, but you're dropping off hard at the hiring manager stage with only 25% making it through. I also noticed all your ghosted applications were at companies with 50+ open roles. They're probably overwhelmed and slow to respond.
+
+The Signal: Your targeting is the issue, not your interview skills.
 
 Recommendation: Tighten your targeting to roles where you're a 75%+ fit. Your hit rate will improve."
 
@@ -22625,30 +22624,28 @@ REJECTION DATA:
 - At hiring manager: {rej_by_stage.get('hiringManager', 0)}
 - At final round: {rej_by_stage.get('finalRound', 0)}
 
-STAGE-SPECIFIC ANALYSIS:
-1. **Resume screen rejections** = Keywords missing, experience mismatch, or ATS issues. Resume needs refinement.
-2. **Recruiter screen rejections** = Communication issues, salary mismatch, or timeline misalignment. Prep recruiter conversations.
-3. **Hiring manager rejections** = Culture fit or scope concerns, not skills. Dig into those conversations.
-4. **Final round rejections** = Competition or factors outside control. You were qualified enough to get there.
+STAGE-SPECIFIC ANALYSIS (use this knowledge, but write conversationally):
+- Resume screen rejections typically mean keywords missing, experience mismatch, or ATS issues.
+- Recruiter screen rejections usually indicate communication issues, salary mismatch, or timeline misalignment.
+- Hiring manager rejections often signal culture fit or scope concerns rather than skills.
+- Final round rejections are usually competition or factors outside control.
 
-RESPONSE FORMAT:
-1. **The Pattern**: What stage are they dropping off at? Give specific numbers.
-2. **Likely Cause**: What typically causes rejection at this stage?
-3. **Diagnostic Questions**: Ask 1-2 questions to understand what happened.
-4. **Next Steps**: Specific actions to improve.
+RESPONSE STRUCTURE (write as conversational prose, not lists):
+1. The Pattern: What stage are they dropping off at? Give specific numbers.
+2. Likely Cause: What typically causes rejection at this stage?
+3. Diagnostic Questions: Ask 1-2 questions to understand what happened.
+4. Next Steps: Specific actions to improve.
 
 CRITICAL RULES:
 - Be direct but not harsh. Rejections sting.
 - Use THEIR specific data, not generic advice.
 - If rejections are spread across stages, note that too.
-- If they have little rejection data, say you need more to see patterns.
+- Write in conversational prose. NO bullet points, NO bold/asterisks, NO numbered lists.
 
 Example:
-"You've been rejected 4 times in the last month. Here's the pattern:
+"You've been rejected 4 times in the last month. Here's the pattern.
 
-* 2 rejections at resume screen: Your materials might not be optimized for these role types
-* 1 at recruiter screen: Was salary discussed? That's often the blocker there
-* 1 at final round: That one was competition, not qualification
+2 of those rejections happened at the resume screen, which suggests your materials might not be optimized for these role types. 1 was at the recruiter screen. Was salary discussed? That's often the blocker there. The last one was at final round, which honestly is usually about competition, not qualification.
 
 The signal: Your resume screen rejections are where to focus. What types of roles were those?"
 
@@ -22662,11 +22659,14 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
 === END NOTE ===
 """
 
-    # Build messages
+    # Build messages with role validation to prevent injection attacks
+    VALID_ROLES = {"user", "assistant"}
     messages = []
     for msg in body.conversation_history:
+        # Validate role - only allow "user" or "assistant" to prevent prompt injection
+        validated_role = msg.role if msg.role in VALID_ROLES else "user"
         messages.append({
-            "role": msg.role,
+            "role": validated_role,
             "content": msg.content
         })
 
@@ -22696,7 +22696,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                         "data": attachment.data
                     }
                 })
-                print(f"📎 Processing image: {attachment.name} ({attachment.type}, {attachment.size} bytes)")
+                print(f"📎 Processing image: type={attachment.type}, size={attachment.size} bytes")
 
             elif attachment.type == 'application/pdf':
                 # PDF - extract text description (Claude can't read PDFs directly via vision)
@@ -22704,7 +22704,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                     "type": "text",
                     "text": f"[PDF Attachment: {attachment.name}]\n(User uploaded a PDF document. Acknowledge you received it but note that PDF content extraction is not yet implemented. Ask them to copy/paste relevant text if needed.)"
                 })
-                print(f"📎 Processing PDF: {attachment.name} ({attachment.size} bytes)")
+                print(f"📎 Processing PDF: size={attachment.size} bytes")
 
             elif attachment.type in ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']:
                 # Word docs - placeholder
@@ -22712,7 +22712,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                     "type": "text",
                     "text": f"[Document Attachment: {attachment.name}]\n(User uploaded a Word document. Acknowledge you received it but note that document content extraction is not yet implemented. Ask them to copy/paste relevant text if needed.)"
                 })
-                print(f"📎 Processing document: {attachment.name} ({attachment.size} bytes)")
+                print(f"📎 Processing document: size={attachment.size} bytes")
 
             elif attachment.type == 'text/plain':
                 # Plain text - we can include the content directly
@@ -22723,7 +22723,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
                         "type": "text",
                         "text": f"[Text File: {attachment.name}]\n{text_content}"
                     })
-                    print(f"📎 Processing text file: {attachment.name} ({attachment.size} bytes)")
+                    print(f"📎 Processing text file: size={attachment.size} bytes")
                 except Exception as e:
                     user_content.append({
                         "type": "text",

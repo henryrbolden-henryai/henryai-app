@@ -1,7 +1,7 @@
 """Hey Henry chatbot Pydantic models"""
 
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from typing import Optional, List, Dict, Any, Literal
+from pydantic import BaseModel, field_validator
 
 
 class HeyHenryContext(BaseModel):
@@ -27,8 +27,16 @@ class HeyHenryContext(BaseModel):
 
 class HeyHenryMessage(BaseModel):
     """A single message in the conversation."""
-    role: str  # 'user' or 'assistant'
+    role: Literal["user", "assistant"]  # Strictly typed to prevent prompt injection
     content: str
+
+    @field_validator('role', mode='before')
+    @classmethod
+    def validate_role(cls, v):
+        """Coerce invalid roles to 'user' for safety."""
+        if v not in ("user", "assistant"):
+            return "user"
+        return v
 
 
 class HeyHenryAttachment(BaseModel):
