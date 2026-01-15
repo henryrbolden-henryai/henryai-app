@@ -7554,80 +7554,226 @@
 
             title.textContent = `${app.role} at ${app.company}`;
 
+            // Infer rejection stage from status and interview history
+            function inferRejectionStage(app) {
+                const status = app.status;
+
+                // Direct mapping from status to stage
+                if (status === 'Auto-Rejected') return 'pre-screen';
+                if (status === 'No Response' || status === 'Ghosted') return 'no-response';
+                if (status === 'Withdrawn') return 'withdrawn';
+
+                // Use previousStatus to determine what stage they were at
+                const prevStatus = app.previousStatus;
+
+                // Map previous status to rejection stage
+                const statusToStage = {
+                    'Preparing': 'pre-screen',
+                    'Applied': 'pre-screen',
+                    'Networking': 'pre-screen',
+                    'Recruiter Screen': 'after-screen',
+                    'Awaiting Screen Result': 'after-screen',
+                    'Hiring Manager': 'after-hiring-manager',
+                    'Technical Round': 'after-technical',
+                    'Panel Interview': 'after-technical',
+                    'Final Round': 'after-final',
+                    'Executive Interview': 'after-final',
+                    'Awaiting Decision': 'after-final',
+                    'Offer Received': 'after-final',
+                    'Negotiating': 'after-final'
+                };
+
+                if (prevStatus && statusToStage[prevStatus]) {
+                    return statusToStage[prevStatus];
+                }
+
+                // Fallback: use interview dates if no previousStatus
+                if (app.dateInterviewed) {
+                    return 'after-screen';
+                }
+
+                if (app.dateResponseReceived) {
+                    return 'after-screen';
+                }
+
+                return 'pre-screen';
+            }
+
             const rejectionData = app.rejectionData || {};
+            const inferredStage = rejectionData.stage || inferRejectionStage(app);
+
             const stageLabels = {
                 'pre-screen': 'Before any interviews (auto-rejection)',
                 'after-screen': 'After recruiter screen',
                 'after-hiring-manager': 'After hiring manager interview',
                 'after-technical': 'After technical round',
                 'after-final': 'After final round',
-                'no-response': 'Never heard back (ghosted)'
+                'no-response': 'Never heard back',
+                'withdrawn': 'Candidate withdrew'
             };
 
-            const stageLabel = stageLabels[rejectionData.stage] || 'Unknown stage';
-            const rejectionDate = rejectionData.date ? new Date(rejectionData.date).toLocaleDateString() : 'Unknown';
+            const stageLabel = stageLabels[inferredStage] || stageLabels['pre-screen'];
 
-            // Calculate insights based on rejection stage
-            let insights = '';
-            if (rejectionData.stage === 'pre-screen') {
-                insights = `
-                    <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 16px; border-radius: 8px; margin-top: 16px;">
-                        <h4 style="color: #ef4444; margin: 0 0 8px 0;">Auto-Rejection Analysis</h4>
-                        <p style="margin: 0; color: var(--color-text-secondary);">
-                            Pre-screen rejections often indicate ATS filtering or a mismatch with hard requirements. Consider:
-                        </p>
-                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
-                            <li>Does your resume contain the exact keywords from the job description?</li>
-                            <li>Do you meet all stated requirements (years of experience, degree, certifications)?</li>
-                            <li>Is your resume format ATS-friendly (no tables, columns, or graphics)?</li>
-                        </ul>
-                    </div>
-                `;
-            } else if (rejectionData.stage === 'after-screen') {
-                insights = `
-                    <div style="background: rgba(234, 179, 8, 0.1); border-left: 3px solid #eab308; padding: 16px; border-radius: 8px; margin-top: 16px;">
-                        <h4 style="color: #eab308; margin: 0 0 8px 0;">Post-Screen Rejection</h4>
-                        <p style="margin: 0; color: var(--color-text-secondary);">
-                            The recruiter saw potential but something didn't align. Common reasons:
-                        </p>
-                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
-                            <li>Salary expectations didn't match their budget</li>
-                            <li>Location/remote work preferences didn't align</li>
-                            <li>Timeline mismatch (they needed someone sooner/later)</li>
-                            <li>Better-matched candidates in the pipeline</li>
-                        </ul>
-                    </div>
-                `;
-            } else if (rejectionData.stage === 'no-response') {
-                insights = `
-                    <div style="background: rgba(107, 114, 128, 0.1); border-left: 3px solid #6b7280; padding: 16px; border-radius: 8px; margin-top: 16px;">
-                        <h4 style="color: #6b7280; margin: 0 0 8px 0;">Ghosted</h4>
-                        <p style="margin: 0; color: var(--color-text-secondary);">
-                            Unfortunately, ghosting is common. This usually reflects the company's process, not you:
-                        </p>
-                        <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
-                            <li>Role may have been filled, put on hold, or cancelled</li>
-                            <li>High application volume with limited recruiter capacity</li>
-                            <li>Internal candidates or referrals took priority</li>
-                        </ul>
-                    </div>
-                `;
-            } else {
-                insights = `
+            // Use rejection date, lastUpdated, or today
+            const rejectionDateValue = rejectionData.date || app.lastUpdated || new Date().toISOString();
+            const rejectionDateFormatted = new Date(rejectionDateValue).toLocaleDateString();
+
+            // Generate insights based on status type
+            function getInsightsForStatus(status, inferredStage) {
+                if (status === 'Auto-Rejected') {
+                    return `
+                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #ef4444; margin: 0 0 8px 0;">🤖 Auto-Rejection Analysis</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                Your application was likely filtered by an ATS or didn't meet initial screening criteria. Consider:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Does your resume contain the exact keywords from the job description?</li>
+                                <li>Do you meet all stated requirements (years of experience, degree, certifications)?</li>
+                                <li>Is your resume format ATS-friendly (no tables, columns, or graphics)?</li>
+                                <li>Did you complete all required application fields?</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Rejected: No Fit') {
+                    return `
+                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #ef4444; margin: 0 0 8px 0;">🎯 Targeting Analysis</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                The role wasn't a strong match for your profile. This feedback helps refine your search:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Review the job requirements vs. your experience - was this a stretch role?</li>
+                                <li>Consider focusing on roles where you meet 70%+ of requirements</li>
+                                <li>Your resume may need better positioning for this role type</li>
+                                <li>Look for roles that better leverage your core strengths</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Rejected: Experience Gap') {
+                    return `
+                        <div style="background: rgba(234, 179, 8, 0.1); border-left: 3px solid #eab308; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #eab308; margin: 0 0 8px 0;">📈 Skills Gap Analysis</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                They liked your profile but needed more experience in specific areas:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Identify which skills or experiences were mentioned as gaps</li>
+                                <li>Consider projects or certifications to build those skills</li>
+                                <li>Look for roles at companies with stronger L&D programs</li>
+                                <li>Target roles one level below for faster advancement later</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Rejected: Culture Fit') {
+                    return `
+                        <div style="background: rgba(168, 85, 247, 0.1); border-left: 3px solid #a855f7; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #a855f7; margin: 0 0 8px 0;">🤝 Culture Fit Analysis</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                The skills were there, but the cultural alignment wasn't right. This often means:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Your working style differs from their team dynamics</li>
+                                <li>Communication or collaboration approach wasn't aligned</li>
+                                <li>This could actually be a bullet dodged - culture mismatches lead to unhappy jobs</li>
+                                <li>Research company culture more deeply before future interviews</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Rejected: Went Internal') {
+                    return `
+                        <div style="background: rgba(107, 114, 128, 0.1); border-left: 3px solid #6b7280; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #6b7280; margin: 0 0 8px 0;">🏢 Internal Hire</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                The role was filled by an internal candidate. This is common and not a reflection of you:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Many companies are required to post roles externally even with internal candidates lined up</li>
+                                <li>Internal candidates have a built-in advantage (known quantity, no ramp-up)</li>
+                                <li>Your interview performance may still open doors for future roles</li>
+                                <li>Ask to stay in touch for future opportunities</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Rejected: Other') {
+                    return `
+                        <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #3b82f6; margin: 0 0 8px 0;">📋 General Rejection</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                Without specific feedback, common reasons for rejection include:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Budget constraints or headcount freezes</li>
+                                <li>Role requirements shifted during the hiring process</li>
+                                <li>Stronger candidates in the pipeline</li>
+                                <li>Consider reaching out to ask for specific feedback</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'No Response' || status === 'Ghosted') {
+                    return `
+                        <div style="background: rgba(107, 114, 128, 0.1); border-left: 3px solid #6b7280; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #6b7280; margin: 0 0 8px 0;">👻 No Response Analysis</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                Unfortunately, ghosting is common in hiring. This usually reflects the company's process, not you:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Role may have been filled, put on hold, or cancelled</li>
+                                <li>High application volume with limited recruiter capacity</li>
+                                <li>Internal candidates or referrals took priority</li>
+                                <li>Consider a polite follow-up email to confirm status</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                if (status === 'Withdrawn') {
+                    return `
+                        <div style="background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                            <h4 style="color: #22c55e; margin: 0 0 8px 0;">🚪 Withdrawal Reflection</h4>
+                            <p style="margin: 0; color: var(--color-text-secondary);">
+                                You withdrew from this opportunity. Reflect on what drove that decision:
+                            </p>
+                            <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
+                                <li>Did you receive a better offer? Great job on your search!</li>
+                                <li>Did red flags emerge during the process? Trust your instincts</li>
+                                <li>Was the role/company not what you expected? Refine your targeting</li>
+                                <li>Keep the door open - a polite withdrawal can lead to future opportunities</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                // Default post-interview rejection
+                return `
                     <div style="background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 16px;">
-                        <h4 style="color: #3b82f6; margin: 0 0 8px 0;">Post-Interview Rejection</h4>
+                        <h4 style="color: #3b82f6; margin: 0 0 8px 0;">📋 Rejection Analysis</h4>
                         <p style="margin: 0; color: var(--color-text-secondary);">
-                            You made it far! Late-stage rejections often come down to:
+                            Rejection is part of the process. Use this to improve:
                         </p>
                         <ul style="margin: 12px 0 0 0; padding-left: 20px; color: var(--color-text-secondary);">
-                            <li>Cultural fit or team dynamics</li>
-                            <li>Specific technical skills gaps</li>
-                            <li>Another candidate was simply a better match</li>
-                            <li>Budget or headcount changes</li>
+                            <li>Request feedback if you haven't already</li>
+                            <li>Review your interview performance for areas to improve</li>
+                            <li>Consider if this role type is the right target</li>
+                            <li>Keep momentum - apply to similar roles while the prep is fresh</li>
                         </ul>
                     </div>
                 `;
             }
+
+            const insights = getInsightsForStatus(app.status, inferredStage);
 
             content.innerHTML = `
                 <div style="background: var(--color-surface); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
@@ -7638,26 +7784,44 @@
                         </div>
                         <div style="text-align: right;">
                             <div style="color: var(--color-text-muted); font-size: 0.85rem;">Date</div>
-                            <div style="color: var(--color-text); font-weight: 500;">${rejectionDate}</div>
+                            <input type="date" id="rejectionDateInput" value="${rejectionDateValue.split('T')[0]}"
+                                style="background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 6px; padding: 4px 8px; font-weight: 500;"
+                                onchange="updateRejectionDate('${appId}', this.value)">
                         </div>
                     </div>
 
-                    ${rejectionData.feedback ? `
-                        <div style="border-top: 1px solid var(--color-border); padding-top: 16px;">
-                            <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">Feedback Received</div>
-                            <div style="color: var(--color-text); background: var(--color-bg); padding: 12px; border-radius: 8px;">${rejectionData.feedback}</div>
-                        </div>
-                    ` : `
-                        <div style="border-top: 1px solid var(--color-border); padding-top: 16px; color: var(--color-text-muted); font-style: italic;">
-                            No feedback provided
-                        </div>
-                    `}
+                    <div style="border-top: 1px solid var(--color-border); padding-top: 16px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">Notes (optional)</div>
+                        <textarea id="rejectionFeedbackInput" placeholder="Add any feedback or notes about this rejection..."
+                            style="width: 100%; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; min-height: 80px; resize: vertical; font-family: inherit;"
+                            onchange="updateRejectionFeedback('${appId}', this.value)">${rejectionData.feedback || ''}</textarea>
+                    </div>
                 </div>
 
                 ${insights}
             `;
 
             document.getElementById('rejectionDebriefModal').classList.add('show');
+        }
+
+        function updateRejectionDate(appId, dateValue) {
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx !== -1) {
+                if (!apps[idx].rejectionData) apps[idx].rejectionData = {};
+                apps[idx].rejectionData.date = new Date(dateValue).toISOString();
+                saveApplications(apps);
+            }
+        }
+
+        function updateRejectionFeedback(appId, feedback) {
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx !== -1) {
+                if (!apps[idx].rejectionData) apps[idx].rejectionData = {};
+                apps[idx].rejectionData.feedback = feedback;
+                saveApplications(apps);
+            }
         }
 
         function closeRejectionDebriefModal() {
@@ -8000,6 +8164,7 @@
 
             if (idx !== -1) {
                 const oldStatus = apps[idx].status;
+                apps[idx].previousStatus = oldStatus; // Track previous status for debrief inference
                 apps[idx].status = newStatus;
                 apps[idx].lastUpdated = new Date().toISOString();
 
