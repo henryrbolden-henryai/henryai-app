@@ -12547,7 +12547,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             # Use cached JD parsing results
             extracted_title = cached_jd_context.get("parsed_role_title", "")
             isolated_role_type = cached_jd_context.get("role_type", "general")
-            alignment = {"confidence": 0.8, "source": "cache"}  # Cached = trusted
+            alignment = {"confidence": 0.8, "source": "cache", "warnings": []}  # Cached = trusted
             role_level_info = {
                 "role_level": cached_jd_context.get("role_level", "IC"),
                 "is_leadership_role": cached_jd_context.get("leadership_required", False),
@@ -12675,7 +12675,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             print(f"🚦 PRE-LLM GATE: {pre_llm_leadership_gate['gate_status']} - {pre_llm_leadership_gate.get('gate_reason', '')}")
         if leadership_context.leadership_gate_locked:
             print(f"🔐 CANONICAL GATE: LOCKED (years={leadership_context.canonical_leadership_years}, result={leadership_context.leadership_gate_result})")
-        if alignment['warnings']:
+        if alignment.get('warnings'):
             print(f"Warnings: {alignment['warnings']}")
         print(f"{'='*80}\n")
     else:
