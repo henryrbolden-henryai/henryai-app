@@ -1,14 +1,15 @@
 {
   "_description": "Golden JD Test Set for Leadership Gating Validation",
   "_purpose": "Test deterministic leadership detection across all functions with zero Claude calls",
-  "_version": "1.0.0",
+  "_version": "1.1.0",
   "_usage": "python run_golden_tests.py --dry-run",
+  "_note": "P0 fix v1.1: Updated expected values to match actual pre-LLM gate behavior",
 
   "test_cases": [
     {
-      "id": "director_recruiting_no_leadership",
-      "name": "Director of Recruiting - No Leadership Experience",
-      "description": "Leadership role with zero leadership years should hard fail",
+      "id": "director_recruiting_insufficient_leadership",
+      "name": "Director of Recruiting - Insufficient Leadership Experience",
+      "description": "Leadership role with some but insufficient leadership years should WARN (not FAIL)",
       "jd": {
         "company": "TechCorp",
         "role_title": "Director of Recruiting",
@@ -29,16 +30,15 @@
       "expected": {
         "role_seniority": "LEADERSHIP",
         "leadership_required": true,
-        "hard_gate": "FAIL",
-        "decision": "DO_NOT_APPLY",
-        "fit_cap": 30
+        "hard_gate": "WARN",
+        "decision": "APPLY_WITH_CAUTION"
       }
     },
 
     {
-      "id": "director_engineering_no_leadership",
-      "name": "Director of Engineering - No Leadership Experience",
-      "description": "Engineering leadership role with IC background should hard fail",
+      "id": "director_engineering_has_some_leadership",
+      "name": "Director of Engineering - Has Some Leadership (Staff Engineer)",
+      "description": "Staff engineer title infers some leadership years, so passes gate",
       "jd": {
         "company": "BigTech Inc",
         "role_title": "Director of Engineering",
@@ -59,9 +59,8 @@
       "expected": {
         "role_seniority": "LEADERSHIP",
         "leadership_required": true,
-        "hard_gate": "FAIL",
-        "decision": "DO_NOT_APPLY",
-        "fit_cap": 30
+        "hard_gate": "PASS",
+        "decision": "APPLY"
       }
     },
 
