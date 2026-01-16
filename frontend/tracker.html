@@ -11795,11 +11795,9 @@ Thanks so much!
                     throw new Error(result.error.message || result.error);
                 }
 
-                // Success - close modal and refresh list
+                // Success - close modal and reload page to show new application
                 closeManualAddModal();
-                await loadApplications();
-
-                showToast(`Added ${company} - ${roleTitle}`);
+                location.reload();
 
             } catch (error) {
                 console.error('Manual add error:', error);
