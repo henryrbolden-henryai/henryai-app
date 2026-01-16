@@ -149,7 +149,7 @@
 
         .role-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 12px;
         }
 
@@ -180,6 +180,12 @@
         .role-name {
             color: #ffffff;
             font-size: 0.9rem;
+        }
+
+        .role-subtitle {
+            color: #6b7280;
+            font-size: 0.75rem;
+            margin-top: 4px;
         }
 
         /* Start Button */
@@ -740,8 +746,18 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
+            .role-subtitle {
+                font-size: 0.7rem;
+            }
+
             .summary-stats {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .role-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
@@ -796,31 +812,42 @@
         </div>
 
         <div class="role-section" id="roleSection">
-            <div class="section-label">Select your target role:</div>
+            <div class="section-label">Select your role cluster:</div>
             <div class="role-grid" id="roleGrid">
-                <div class="role-card" data-role="pm" onclick="selectRole('pm')">
-                    <div class="role-icon">📦</div>
-                    <div class="role-name">Product Manager</div>
-                </div>
-                <div class="role-card" data-role="swe" onclick="selectRole('swe')">
+                <div class="role-card" data-role="eng-ic" onclick="selectRole('eng-ic')">
                     <div class="role-icon">💻</div>
-                    <div class="role-name">Software Engineer</div>
+                    <div class="role-name">Engineering IC</div>
+                    <div class="role-subtitle">SWE, Data Engineer, SRE</div>
                 </div>
-                <div class="role-card" data-role="ux" onclick="selectRole('ux')">
+                <div class="role-card" data-role="eng-lead" onclick="selectRole('eng-lead')">
+                    <div class="role-icon">🏗️</div>
+                    <div class="role-name">Engineering Leadership</div>
+                    <div class="role-subtitle">EM, Staff+, TPM</div>
+                </div>
+                <div class="role-card" data-role="product" onclick="selectRole('product')">
+                    <div class="role-icon">📦</div>
+                    <div class="role-name">Product</div>
+                    <div class="role-subtitle">PM, PMM, Growth</div>
+                </div>
+                <div class="role-card" data-role="design" onclick="selectRole('design')">
                     <div class="role-icon">🎨</div>
-                    <div class="role-name">UX Designer</div>
+                    <div class="role-name">Design</div>
+                    <div class="role-subtitle">UX, UI, Research</div>
                 </div>
-                <div class="role-card" data-role="ui" onclick="selectRole('ui')">
-                    <div class="role-icon">✨</div>
-                    <div class="role-name">UI Designer</div>
+                <div class="role-card" data-role="gtm" onclick="selectRole('gtm')">
+                    <div class="role-icon">📈</div>
+                    <div class="role-name">GTM</div>
+                    <div class="role-subtitle">Sales, CS, Marketing</div>
                 </div>
-                <div class="role-card" data-role="ta" onclick="selectRole('ta')">
+                <div class="role-card" data-role="data" onclick="selectRole('data')">
+                    <div class="role-icon">📊</div>
+                    <div class="role-name">Data</div>
+                    <div class="role-subtitle">Analyst, Scientist, Analytics</div>
+                </div>
+                <div class="role-card" data-role="people" onclick="selectRole('people')">
                     <div class="role-icon">👥</div>
-                    <div class="role-name">Talent Acquisition</div>
-                </div>
-                <div class="role-card" data-role="leadership" onclick="selectRole('leadership')">
-                    <div class="role-icon">🎯</div>
-                    <div class="role-name">Leadership</div>
+                    <div class="role-name">People Ops</div>
+                    <div class="role-subtitle">HR, Recruiting, L&D</div>
                 </div>
             </div>
         </div>
@@ -976,47 +1003,75 @@
                 title: 'Role-Based Drill',
                 signal: 'functional_competency',
                 roleQuestions: {
-                    pm: [
+                    'eng-ic': [
+                        "Walk me through a system you architected. Why that approach?",
+                        "Describe a time you optimized performance. What was the impact?",
+                        "How would you scale an API to handle 10x traffic?",
+                        "Tell me about a technical disagreement with a teammate. How did you resolve it?",
+                        "How do you approach debugging an intermittent production issue?",
+                        "Describe a time you had to make a tradeoff between speed and quality.",
+                        "Walk me through your process for breaking down a complex technical problem.",
+                        "How do you stay current with new technologies? Give an example of something you learned and applied."
+                    ],
+                    'eng-lead': [
+                        "How do you balance technical work with people management?",
+                        "Tell me about a time you had to make a difficult technical decision that affected multiple teams.",
+                        "How do you handle underperformance on your team?",
+                        "Describe how you've scaled a team or engineering function during growth.",
+                        "How do you manage technical debt while still shipping features?",
+                        "Tell me about a time you influenced engineering culture or practices org-wide.",
+                        "Walk me through how you run a technical roadmap planning process.",
+                        "How do you align your team's work with company strategy?"
+                    ],
+                    'product': [
                         "Walk me through a feature you shipped end-to-end.",
                         "How do you decide what to build when everything feels important?",
                         "Tell me about a time engineering disagreed with your requirements.",
                         "How do you gather and incorporate user feedback?",
-                        "What metrics matter most for your product? Why?"
+                        "What metrics matter most for your product? Why?",
+                        "Describe a time you had to kill a feature or project. How did you handle it?",
+                        "How do you communicate product vision to stakeholders with competing priorities?",
+                        "Tell me about a time you launched something that failed. What did you learn?"
                     ],
-                    swe: [
-                        "Walk me through a system you architected. Why that approach?",
-                        "Describe a time you optimized performance. What was the impact?",
-                        "How would you scale an API to handle 10x traffic?",
-                        "Tell me about a technical disagreement with a teammate.",
-                        "How do you approach debugging an intermittent production issue?"
-                    ],
-                    ux: [
+                    'design': [
                         "Walk me through a user insight that changed your design direction.",
                         "How do you approach research when time is tight?",
                         "Tell me about a time you advocated for the user against business priorities.",
                         "Describe how you would redesign an onboarding flow.",
-                        "How do you validate your design decisions?"
-                    ],
-                    ui: [
+                        "How do you validate your design decisions?",
                         "Explain your typography, spacing, and layout decisions on a recent project.",
-                        "How do you ensure visual consistency across surfaces?",
-                        "How would you improve accessibility without impacting the brand?",
                         "Tell me about building or maintaining a design system.",
                         "How do you prioritize visual polish vs. shipping speed?"
                     ],
-                    ta: [
+                    'gtm': [
+                        "Walk me through your largest deal. What made it successful?",
+                        "How do you handle objections during a sales conversation?",
+                        "Describe your approach to building pipeline in a new territory.",
+                        "Tell me about a time you turned around an unhappy customer.",
+                        "How do you prioritize accounts when you have more opportunities than time?",
+                        "Describe a time you collaborated with product to solve a customer problem.",
+                        "How do you forecast accurately? Walk me through your process.",
+                        "Tell me about a deal you lost. What would you do differently?"
+                    ],
+                    'data': [
+                        "Walk me through a data analysis that changed a business decision.",
+                        "How do you approach a data request when the question is unclear?",
+                        "Describe a time you found something unexpected in the data. What did you do?",
+                        "How do you communicate complex findings to non-technical stakeholders?",
+                        "Tell me about a time you had to work with messy or incomplete data.",
+                        "How do you prioritize multiple data requests from different teams?",
+                        "Describe your approach to building a dashboard or report that's actually used.",
+                        "How do you validate that your analysis is correct before sharing it?"
+                    ],
+                    'people': [
                         "Walk me through how you source for hard-to-fill roles.",
                         "How do you build relationships with hiring managers?",
                         "Describe your approach to improving candidate experience.",
                         "How do you prioritize multiple urgent roles?",
-                        "What metrics do you use to measure recruiting success?"
-                    ],
-                    leadership: [
-                        "Tell me about your leadership philosophy.",
-                        "How have you scaled a team or function during growth?",
-                        "How do you handle underperformance on your team?",
-                        "How do you align your team's work with company strategy?",
-                        "Tell me about a time you led through organizational change."
+                        "What metrics do you use to measure recruiting success?",
+                        "Tell me about a time you had to give difficult feedback to a hiring manager.",
+                        "How do you handle a situation where a candidate declines an offer?",
+                        "Describe how you've improved a hiring process or talent program."
                     ]
                 }
             }
