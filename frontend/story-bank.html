@@ -1219,9 +1219,9 @@
             </div>
             <div id="draftsContainer">
                 <div class="empty-state">
-                    <div class="empty-state-icon">&#9733;</div>
-                    <h2>No Drafts Yet</h2>
-                    <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
+                    <div class="empty-state-icon">&#9997;</div>
+                    <h2>Henry's waiting to write your stories</h2>
+                    <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories — you make them yours.</p>
                     <button class="btn-generate" onclick="generateCore3Stories()">
                         <span>&#9733;</span> Generate Core 3 Stories
                     </button>
@@ -1512,9 +1512,9 @@ Result: [Measurable outcomes]"></textarea>
             if (drafts.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-state-icon">&#9733;</div>
-                        <h2>No Drafts Yet</h2>
-                        <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
+                        <div class="empty-state-icon">&#9997;</div>
+                        <h2>Henry's waiting to write your stories</h2>
+                        <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories — you make them yours.</p>
                         <button class="btn-generate" onclick="generateCore3Stories()">
                             <span>&#9733;</span> Generate Core 3 Stories
                         </button>
@@ -1689,7 +1689,9 @@ Result: [Measurable outcomes]"></textarea>
             const container = document.getElementById('templatesContainer');
 
             try {
-                const response = await window.HenryData.getStoryTemplates();
+                // Get user's tier for access check
+                const userTier = window.HenryData.userTier || 'preview';
+                const response = await window.HenryData.getStoryTemplates(userTier);
 
                 if (response.is_premium_locked) {
                     container.innerHTML = `
