@@ -12623,12 +12623,18 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             extracted_title = cached_jd_context.get("parsed_role_title", "")
             isolated_role_type = cached_jd_context.get("role_type", "general")
             alignment = {"confidence": 0.8, "source": "cache", "warnings": []}  # Cached = trusted
+            cached_role_level = cached_jd_context.get("role_level", "IC")
+
+            # P0 FIX: Derive is_leadership_role from role_level, not from stale cache
+            # MANAGER, DIRECTOR_OR_ABOVE roles always require people leadership
+            is_leadership_from_level = cached_role_level in ["MANAGER", "DIRECTOR_OR_ABOVE"]
+
             role_level_info = {
-                "role_level": cached_jd_context.get("role_level", "IC"),
-                "is_leadership_role": cached_jd_context.get("leadership_required", False),
+                "role_level": cached_role_level,
+                "is_leadership_role": is_leadership_from_level,  # Derive from level, not stale cache value
                 "source": "cache"
             }
-            print(f"🧠 Using cached JD context: {extracted_title} / {isolated_role_type} / {role_level_info['role_level']}")
+            print(f"🧠 Using cached JD context: {extracted_title} / {isolated_role_type} / {role_level_info['role_level']} (leadership={is_leadership_from_level})")
         else:
             # Compute JD context fresh
             extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
@@ -12667,11 +12673,16 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             }
             required_leadership_years, is_hard_requirement = extract_required_people_leadership_years(temp_response_data)
 
-            # Check leadership if JD requires it
+            # P0 FIX: ALWAYS check leadership for MANAGER/DIRECTOR roles
+            # Even if JD doesn't explicitly state years required, these roles need people leadership
+            is_leadership_role = role_level_info.get("is_leadership_role", False)
+            effective_hard_requirement = is_hard_requirement or is_leadership_role
+
+            # Check leadership if JD requires it OR if it's a leadership role
             leadership_info = check_people_leadership_requirement_isolated(
                 resume_data,
-                required_years=required_leadership_years,
-                hard_requirement=is_hard_requirement,
+                required_years=required_leadership_years if required_leadership_years > 0 else (1.0 if is_leadership_role else 0.0),
+                hard_requirement=effective_hard_requirement,
                 analysis_id=analysis_id
             )
 
