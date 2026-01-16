@@ -4696,8 +4696,8 @@
                 <label for="manualRole">Role Title *</label>
                 <input type="text" id="manualRole" required placeholder="e.g., Senior Product Manager">
 
-                <label for="manualJD">Job Description <span style="color: var(--color-text-muted); font-weight: normal;">(optional - enables fit analysis)</span></label>
-                <textarea id="manualJD" rows="6" placeholder="Paste the job description to get fit score and strategy..."></textarea>
+                <label for="manualJD">Job Description <span style="color: var(--color-text-muted); font-weight: normal;">(optional - for interview prep)</span></label>
+                <textarea id="manualJD" rows="6" placeholder="Paste the job description for reference during interview prep..."></textarea>
 
                 <div class="form-row">
                     <div>
@@ -11758,6 +11758,7 @@ Thanks so much!
             const submitBtn = document.getElementById('manualAddSubmit');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
 
             try {
                 const company = document.getElementById('manualCompany').value.trim();
@@ -11768,60 +11769,20 @@ Thanks so much!
                 const dateApplied = document.getElementById('manualDateApplied').value;
                 const status = document.getElementById('manualStatus').value;
 
-                let analysisData = null;
-                let fitScore = null;
-
-                // Only call analyze API if job description is provided
-                if (jobDescription) {
-                    submitBtn.textContent = 'Analyzing...';
-
-                    // Get resume for analysis
-                    const resumeJson = await getStoredResumeForManualAdd();
-                    if (!resumeJson) {
-                        alert('Please upload your resume first from the Dashboard to enable fit analysis.');
-                        submitBtn.textContent = originalText;
-                        submitBtn.disabled = false;
-                        return;
-                    }
-
-                    // Call /api/jd/analyze - ONLY this endpoint, no resume/cover letter generation
-                    const response = await fetch(`${API_BASE}/api/jd/analyze`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            company: company,
-                            role_title: roleTitle,
-                            job_description: jobDescription,
-                            resume: resumeJson,
-                            jd_source: 'user_provided'
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Analysis failed');
-                    }
-
-                    analysisData = await response.json();
-                    fitScore = analysisData.fit_score;
-                } else {
-                    submitBtn.textContent = 'Saving...';
-                }
-
-                // Create application object with full Command Center fields
+                // Create application object - no fit score for external applications
+                // (fit score helps decide whether to apply; they've already applied)
                 const today = new Date().toISOString().split('T')[0];
                 const application = {
                     company: company,
                     role: roleTitle,
                     status: status,
-                    fitScore: fitScore,
+                    fitScore: null,
                     dateApplied: dateApplied || today,
                     jobUrl: jobUrl || null,
                     jobDescription: jobDescription || null,
                     salary: salary || null,
-                    analysisData: analysisData,
-                    // Command Center fields for reporting
+                    // Command Center fields
                     jd_source: jobDescription ? 'user_provided' : 'missing',
-                    confidence_label: jobDescription ? 'refined' : 'directional',
                     last_activity_date: dateApplied || today,
                     source: 'manual_external'
                 };
@@ -11837,9 +11798,7 @@ Thanks so much!
                 closeManualAddModal();
                 await loadApplications();
 
-                // Show success message
-                const fitText = fitScore ? ` (Fit: ${fitScore}%)` : '';
-                showToast(`Added ${company} - ${roleTitle}${fitText}`);
+                showToast(`Added ${company} - ${roleTitle}`);
 
             } catch (error) {
                 console.error('Manual add error:', error);
@@ -11848,24 +11807,6 @@ Thanks so much!
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }
-        }
-
-        // Helper to get stored resume for manual add
-        async function getStoredResumeForManualAdd() {
-            // Try Supabase first
-            if (typeof HenryData !== 'undefined') {
-                try {
-                    const profile = await HenryData.getProfile();
-                    if (profile?.resume_json) {
-                        return profile.resume_json;
-                    }
-                } catch (e) {
-                    console.warn('Could not fetch profile from Supabase:', e);
-                }
-            }
-            // Fallback to localStorage
-            const stored = localStorage.getItem('henryResume');
-            return stored ? JSON.parse(stored) : null;
         }
 
         // ========================================================================
