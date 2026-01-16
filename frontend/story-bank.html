@@ -1124,19 +1124,50 @@
             background: #f59e0b;
         }
     </style>
+        /* Standard header */
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid #374151;
+            background: #0a0a0a;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Instrument Serif', Georgia, serif;
+            font-size: 1.8rem;
+            color: #ffffff;
+            text-decoration: none;
+            position: fixed;
+            left: 90px;
+            top: 24px;
+            z-index: 100;
+        }
+
+        .logo em {
+            font-style: italic;
+            color: #22d3ee;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="top-nav">
-        <a href="/tracker" class="nav-brand">
-            <img src="images/h-mark.png" alt="HenryHQ">
-            HenryHQ
-        </a>
-        <div class="nav-links">
-            <a href="/tracker">Command Center</a>
-            <a href="/profile-edit">Profile</a>
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
-    </nav>
+    </header>
 
     <div class="container">
         <!-- Page Header -->
@@ -2303,9 +2334,11 @@ Result: [Measurable outcomes]"></textarea>
         }
     </script>
 
+    <script src="js/supabase-client.js"></script>
+    <script src="js/auth-check.js"></script>
     <script src="components/analytics.js"></script>
-<script src="components/hey-henry.js"></script>
-<script src="components/admin-alerts.js"></script>
-<script src="components/top-nav.js"></script>
+    <script src="components/hey-henry.js"></script>
+    <script src="components/admin-alerts.js"></script>
+    <script src="components/strategy-nav.js"></script>
 </body>
 </html>

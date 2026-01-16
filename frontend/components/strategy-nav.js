@@ -102,6 +102,8 @@
             'practice-drills': 'interview-intelligence',
             'mock-interview': 'interview-intelligence',
             'mock-debrief': 'interview-intelligence',
+            'story-bank': 'interview-intelligence',
+            'coach-view': 'interview-intelligence',
             'analyzing': 'analyze',
             'generating': 'overview',
             'strengthen': 'resume-leveling',
