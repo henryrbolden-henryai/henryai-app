@@ -38,30 +38,30 @@
             padding: 2rem;
         }
 
-        /* Header */
+        /* Header - matches platform standard */
         .page-header {
-            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 32px;
         }
 
         .page-header h1 {
-            font-size: 2rem;
+            font-size: 2.25rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
             color: #fff;
         }
 
-        .page-header p {
+        .page-header .subtitle {
             color: #9ca3af;
-            font-size: 1rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            margin-top: 4px;
         }
 
         .header-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
+            gap: 12px;
         }
 
         .btn-primary {
@@ -787,7 +787,7 @@
             display: block;
         }
 
-        /* AI Draft Cards */
+        /* Henry's Draft Cards */
         .draft-card {
             border: 2px dashed #a855f7 !important;
             position: relative;
@@ -822,7 +822,7 @@
             color: #fbbf24;
         }
 
-        /* AI Draft Banner */
+        /* Henry's Draft Banner */
         .draft-banner {
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
             border: 1px solid rgba(168, 85, 247, 0.3);
@@ -1141,18 +1141,17 @@
     <div class="container">
         <!-- Page Header -->
         <div class="page-header">
-            <h1>Your interview stories. Ranked by what actually works.</h1>
-            <p>Not all stories age well. Track which ones land, which ones stall, and which ones need a rewrite.</p>
-
+            <div>
+                <h1>Story Bank</h1>
+                <p class="subtitle">Your interview stories. Ranked by what actually works.</p>
+            </div>
             <div class="header-actions">
-                <div style="display: flex; gap: 0.75rem;">
-                    <button class="btn-primary" onclick="openAddModal()">
-                        <span>+</span> Add New Story
-                    </button>
-                    <button class="btn-generate" onclick="generateCore3Stories()">
-                        <span>&#9733;</span> Generate Core 3
-                    </button>
-                </div>
+                <button class="btn-primary" onclick="openAddModal()">
+                    <span>+</span> Add New Story
+                </button>
+                <button class="btn-generate" onclick="generateCore3Stories()">
+                    <span>&#9733;</span> Generate Core 3
+                </button>
                 <select class="filter-select" id="storyFilter" onchange="filterStories()">
                     <option value="all">All Stories</option>
                     <option value="high-impact">High Impact</option>
@@ -1191,16 +1190,16 @@
 
         <!-- Tab Navigation -->
         <div class="tab-nav">
-            <button class="tab-btn active" data-tab="stories" onclick="switchTab('stories')">My Stories</button>
-            <button class="tab-btn" data-tab="drafts" onclick="switchTab('drafts')">
-                AI Drafts <span class="tab-badge" id="draftCount">0</span>
+            <button class="tab-btn active" data-tab="drafts" onclick="switchTab('drafts')">
+                Henry's Drafts <span class="tab-badge" id="draftCount">0</span>
             </button>
+            <button class="tab-btn" data-tab="stories" onclick="switchTab('stories')">My Stories</button>
             <button class="tab-btn" data-tab="templates" onclick="switchTab('templates')">Templates</button>
             <button class="tab-btn" data-tab="insights" onclick="switchTab('insights')">Insights</button>
         </div>
 
         <!-- Tab: My Stories -->
-        <div class="tab-content active" id="storiesTab">
+        <div class="tab-content" id="storiesTab">
             <div id="storiesContainer">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -1209,19 +1208,19 @@
             </div>
         </div>
 
-        <!-- Tab: AI Drafts -->
-        <div class="tab-content" id="draftsTab">
+        <!-- Tab: Henry's Drafts -->
+        <div class="tab-content active" id="draftsTab">
             <div class="draft-banner">
                 <div class="draft-banner-icon">&#128161;</div>
                 <div class="draft-banner-text">
-                    <h3>AI-Generated Story Drafts</h3>
-                    <p>This story was AI-generated from your resume. Edit it until it sounds like you, then lock it in.</p>
+                    <h3>Henry's Generated Story Drafts</h3>
+                    <p>This story was generated based on your resume. Edit until it sounds like you, then lock it in.</p>
                 </div>
             </div>
             <div id="draftsContainer">
                 <div class="empty-state">
                     <div class="empty-state-icon">&#9733;</div>
-                    <h2>No AI Drafts Yet</h2>
+                    <h2>No Drafts Yet</h2>
                     <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
                     <button class="btn-generate" onclick="generateCore3Stories()">
                         <span>&#9733;</span> Generate Core 3 Stories
@@ -1386,7 +1385,7 @@ Result: [Measurable outcomes]"></textarea>
         let currentFilter = 'all';
         let currentStoryId = null;
         let demonstratesTags = [];
-        let currentTab = 'stories';
+        let currentTab = 'drafts';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1442,8 +1441,12 @@ Result: [Measurable outcomes]"></textarea>
             try {
                 // Get user's resume
                 const resume = await window.HenryData.getDefaultResume();
-                if (!resume || !resume.resume_json) {
-                    alert('Please upload a resume first to generate stories.');
+                if (!resume) {
+                    alert('No resume found. Please upload a resume in your Profile first.');
+                    return;
+                }
+                if (!resume.resume_json) {
+                    alert('Your resume needs to be processed. Please re-upload your resume in Profile.');
                     return;
                 }
 
@@ -1465,17 +1468,28 @@ Result: [Measurable outcomes]"></textarea>
                     // Reload drafts and switch to drafts tab
                     await loadDrafts();
                     switchTab('drafts');
+                } else {
+                    alert('No stories were generated. Please ensure your resume has work experience listed.');
                 }
             } catch (error) {
                 console.error('Error generating stories:', error);
-                alert('Failed to generate stories. Please try again.');
+                // Provide more helpful error messages
+                let message = 'Failed to generate stories. ';
+                if (error.message.includes('Not authenticated')) {
+                    message += 'Please sign in and try again.';
+                } else if (error.message.includes('500')) {
+                    message += 'Server error - please try again in a moment.';
+                } else {
+                    message += 'Please check your resume and try again.';
+                }
+                alert(message);
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        // Load AI Drafts
+        // Load Henry's Drafts
         async function loadDrafts() {
             if (typeof window.HenryData === 'undefined') return;
 
@@ -1491,7 +1505,7 @@ Result: [Measurable outcomes]"></textarea>
             }
         }
 
-        // Render AI Drafts
+        // Render Henry's Drafts
         function renderDrafts() {
             const container = document.getElementById('draftsContainer');
 
@@ -1499,7 +1513,7 @@ Result: [Measurable outcomes]"></textarea>
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">&#9733;</div>
-                        <h2>No AI Drafts Yet</h2>
+                        <h2>No Drafts Yet</h2>
                         <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
                         <button class="btn-generate" onclick="generateCore3Stories()">
                             <span>&#9733;</span> Generate Core 3 Stories
@@ -1664,7 +1678,7 @@ Result: [Measurable outcomes]"></textarea>
                 questionsList.appendChild(row);
             });
 
-            document.getElementById('modalTitle').textContent = 'Edit AI Draft';
+            document.getElementById('modalTitle').textContent = 'Edit Henry\'s Draft';
             document.getElementById('storyModal').classList.add('active');
         }
 
