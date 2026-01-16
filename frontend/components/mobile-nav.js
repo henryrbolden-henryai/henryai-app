@@ -23,19 +23,19 @@
 
   // App navigation (for logged-in users) - matches platform sidebar
   const appNavItems = [
-    { label: 'Dashboard', href: '/dashboard.html' },
-    { label: 'Job Fit Score', href: '/results.html' },
-    { label: 'Resume Level Analysis', href: '/resume-leveling.html' }
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Job Fit Score', href: '/results' },
+    { label: 'Resume Level Analysis', href: '/resume-leveling' }
   ];
 
   // Strategy Overview section
   const strategyItems = [
-    { label: 'Positioning Strategy', href: '/positioning.html' },
-    { label: 'Tailored Documents', href: '/documents.html' },
-    { label: 'LinkedIn Optimization', href: '/linkedin-optimization.html' },
-    { label: 'Network & Outreach', href: '/outreach.html' },
-    { label: 'Interview Intelligence', href: '/interview-prep.html' },
-    { label: 'Command Center', href: '/tracker.html' }
+    { label: 'Positioning Strategy', href: '/positioning' },
+    { label: 'Tailored Documents', href: '/documents' },
+    { label: 'LinkedIn Optimization', href: '/linkedin-optimization' },
+    { label: 'Network & Outreach', href: '/outreach' },
+    { label: 'Interview Intelligence', href: '/interview-prep' },
+    { label: 'Command Center', href: '/tracker' }
   ];
 
   function createMobileNav() {
@@ -62,7 +62,7 @@
 
     drawer.innerHTML = onLanding ? `
       <div class="mobile-nav-header">
-        <a href="/index.html" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
+        <a href="/" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
         <button class="mobile-nav-close" aria-label="Close navigation">&times;</button>
       </div>
       <ul class="mobile-nav-links">
@@ -73,11 +73,11 @@
         `).join('')}
       </ul>
       <div class="mobile-nav-footer">
-        <a href="/login.html" class="mobile-nav-signin">Sign In</a>
+        <a href="/login" class="mobile-nav-signin">Sign In</a>
       </div>
     ` : `
       <div class="mobile-nav-header">
-        <a href="/index.html" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
+        <a href="/" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
         <button class="mobile-nav-close" aria-label="Close navigation">&times;</button>
       </div>
       <div class="mobile-nav-content">
@@ -100,7 +100,7 @@
         </div>
       </div>
       <div class="mobile-nav-footer">
-        <a href="/analyze.html" class="mobile-nav-cta">Analyze New Role</a>
+        <a href="/analyze" class="mobile-nav-cta">Analyze New Role</a>
       </div>
     `;
 

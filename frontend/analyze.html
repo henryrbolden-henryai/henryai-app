@@ -765,7 +765,7 @@
   <!-- Beta Access Gate -->
   <script>
       if (localStorage.getItem('beta_verified') !== 'true') {
-          window.location.href = 'beta-access.html';
+          window.location.href = '/beta-access';
       }
   </script>
 </head>
@@ -775,7 +775,7 @@
   <!-- ========== HEADER ========== -->
   <header>
     <div class="container">
-      <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+      <a href="/index" class="logo"><em>Henry</em>HQ</a>
     </div>
   </header>
 
@@ -1186,7 +1186,7 @@
       sessionStorage.setItem('pendingAnalysis', JSON.stringify(pendingData));
 
       // Navigate to the analyzing page
-      window.location.href = 'analyzing.html';
+      window.location.href = '/analyzing';
     });
 
     // ========================================================================
@@ -1317,7 +1317,7 @@
       if (fullData) {
         sessionStorage.setItem('analysisData', JSON.stringify(fullData));
       }
-      window.location.href = 'results.html';
+      window.location.href = '/results';
     }
 
     // Submit clarifying answers
@@ -1391,7 +1391,7 @@
         };
 
         sessionStorage.setItem('analysisData', JSON.stringify(updatedData));
-        window.location.href = 'results.html';
+        window.location.href = '/results';
 
       } catch (error) {
         console.error('Error during reanalysis:', error);
@@ -1742,8 +1742,8 @@
     const goToProfileBtn = document.getElementById('goToProfileBtn');
     if (goToProfileBtn) {
       goToProfileBtn.addEventListener('click', function() {
-        console.log('Button clicked, redirecting to profile-edit.html');
-        window.location.href = 'profile-edit.html';
+        console.log('Button clicked, redirecting to /profile-edit');
+        window.location.href = '/profile-edit';
       });
     }
   </script>

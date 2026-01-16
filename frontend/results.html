@@ -1562,12 +1562,12 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
     <div class="container">
-        <a href="analyze.html" class="back-link">← Analyze Another Role</a>
+        <a href="/analyze" class="back-link">← Analyze Another Role</a>
 
         <!-- VIEW TOGGLE (centered, outside results-layout) -->
         <div class="view-toggle-container">
@@ -2060,7 +2060,7 @@
                     // No valid session - clear storage and redirect
                     sessionStorage.removeItem('analysisData');
                     localStorage.removeItem('analysisData_backup');
-                    window.location.href = 'login.html';
+                    window.location.href = '/login';
                     return;
                 }
                 isAuthenticated = true;
@@ -2069,7 +2069,7 @@
                 console.error('Auth check failed:', authErr);
                 sessionStorage.removeItem('analysisData');
                 localStorage.removeItem('analysisData_backup');
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -2089,7 +2089,7 @@
 
             // Redirect if no data
             if (!data) {
-                window.location.href = 'analyze.html';
+                window.location.href = '/analyze';
                 return;
             }
 
@@ -2247,7 +2247,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #f87171; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Authentication Required</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="login.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
+                    <a href="/login" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -2258,7 +2258,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #fbbf24; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Analysis Error</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="analyze.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Re-run Analysis</a>
+                    <a href="/analyze" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Re-run Analysis</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -3177,7 +3177,7 @@
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // Navigate to resume-leveling (same as normal apply flow)
-            window.location.href = 'resume-leveling.html';
+            window.location.href = '/resume-leveling';
         }
 
         // =====================================================================
@@ -3541,7 +3541,7 @@
             // R6: Enforce auth for actions
             if (!isAuthenticated) {
                 alert('Sign in required to track actions and avoid duplicates.');
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 
@@ -3564,7 +3564,7 @@
             }
 
             // Persistence confirmed - proceed to resume-leveling
-            window.location.href = 'resume-leveling.html';
+            window.location.href = '/resume-leveling';
         }
 
         // Prior interaction modal handlers
@@ -3578,7 +3578,7 @@
 
             if (pendingPriorInteraction.interaction_type === 'applied' || pendingPriorInteraction.interaction_type === 'override') {
                 // Go to tracker
-                window.location.href = 'tracker.html';
+                window.location.href = '/tracker';
             } else if (pendingPriorInteraction.analysis_snapshot) {
                 // Restore previous analysis
                 sessionStorage.setItem('analysisData', JSON.stringify(pendingPriorInteraction.analysis_snapshot));
@@ -3631,12 +3631,12 @@
             // R6: Enforce auth for actions
             if (!isAuthenticated) {
                 alert('Sign in required to track actions and avoid duplicates.');
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 
             if (!pendingSkipData) {
-                window.location.href = 'tracker.html';
+                window.location.href = '/tracker';
                 return;
             }
 
@@ -3691,7 +3691,7 @@
 
             // Persistence confirmed - proceed
             sessionStorage.removeItem('analysisData');
-            window.location.href = 'tracker.html';
+            window.location.href = '/tracker';
         }
 
         document.getElementById('skipBtn').addEventListener('click', showPassModal);
@@ -3777,7 +3777,7 @@
                     // Fallback: just open the chat if prompt function not available
                 } else {
                     // Fallback: navigate to hey-henry page with context
-                    window.location.href = 'hey-henry.html?context=better_paths';
+                    window.location.href = '/hey-henry?context=better_paths';
                 }
 
                 // Track event
@@ -4014,7 +4014,7 @@
                         window.HeyHenry.open(initialPrompt);
                     } else {
                         // Fallback: navigate to hey-henry page with context
-                        window.location.href = 'hey-henry.html?context=career_changer';
+                        window.location.href = '/hey-henry?context=career_changer';
                     }
 
                     // Track

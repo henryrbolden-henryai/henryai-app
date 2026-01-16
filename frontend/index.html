@@ -1004,7 +1004,7 @@
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
+            window.location.href = '/beta-access';
         }
     </script>
 </head>
@@ -1013,13 +1013,13 @@
   <!-- Top Navigation -->
   <nav class="top-nav" id="topNav">
     <div class="top-nav-container">
-      <a href="index.html" class="top-nav-logo"><em>Henry</em>HQ</a>
+      <a href="/" class="top-nav-logo"><em>Henry</em>HQ</a>
       <div class="top-nav-links" id="navLinks">
         <a href="#about-henry" class="top-nav-link">About</a>
         <a href="#how-it-works" class="top-nav-link">How it works</a>
         <a href="#capabilities" class="top-nav-link">Features</a>
         <a href="#pricing" class="top-nav-link">Pricing</a>
-        <a href="login.html" class="top-nav-link" id="loginLink">Sign In</a>
+        <a href="/login" class="top-nav-link" id="loginLink">Sign In</a>
       </div>
     </div>
   </nav>
@@ -1398,7 +1398,7 @@
               <li>LinkedIn vs resume gap check</li>
               <li>See where you stand before wasting time</li>
             </ul>
-            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html'">Get Started</button>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup'">Get Started</button>
           </div>
 
           <!-- Recruiter - $25/mo -->
@@ -1414,7 +1414,7 @@
               <li>Strategic coaching chat (15/month)</li>
               <li>One mock recruiter screen</li>
             </ul>
-            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=recruiter'">Start Free Trial</button>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=recruiter'">Start Free Trial</button>
           </div>
 
           <!-- Principal - $69/mo (Most Popular) -->
@@ -1432,7 +1432,7 @@
               <li>Five mock interviews/month</li>
               <li>Strategic coaching chat (30/month)</li>
             </ul>
-            <button class="btn btn-popular pricing-cta" onclick="window.location.href='signup.html?plan=principal'">Start Free Trial</button>
+            <button class="btn btn-popular pricing-cta" onclick="window.location.href='/signup?plan=principal'">Start Free Trial</button>
           </div>
 
           <!-- Partner - $129/mo -->
@@ -1449,7 +1449,7 @@
               <li>Negotiation guidance</li>
               <li>One 30-min live coaching session/month</li>
             </ul>
-            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=partner'">Start Free Trial</button>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=partner'">Start Free Trial</button>
           </div>
 
           <!-- Coach - $225/mo -->
@@ -1465,7 +1465,7 @@
               <li>Full negotiation support</li>
               <li>Two 45-min live coaching sessions/month</li>
             </ul>
-            <button class="btn btn-primary pricing-cta" onclick="window.location.href='signup.html?plan=coach'">Start Free Trial</button>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=coach'">Start Free Trial</button>
           </div>
         </div>
 
@@ -1615,11 +1615,11 @@
     <div class="container">
       <p>© 2026 HenryHQ</p>
       <div class="footer-links">
-        <a href="privacy.html">Privacy Policy</a>
+        <a href="/privacy">Privacy Policy</a>
         <span>·</span>
-        <a href="terms.html">Terms of Service</a>
+        <a href="/terms">Terms of Service</a>
         <span>·</span>
-        <a href="contact.html">Contact</a>
+        <a href="/contact">Contact</a>
       </div>
     </div>
   </footer>
@@ -1647,7 +1647,7 @@
 
       if (!isAuthenticated) {
         // Not authenticated - redirect to login
-        window.location.href = 'login.html';
+        window.location.href = '/login';
         return;
       }
 
@@ -1672,16 +1672,16 @@
 
       if (!isProfileComplete(profileData)) {
         // Profile incomplete - redirect to profile setup
-        window.location.href = 'profile-edit.html';
+        window.location.href = '/profile-edit';
         return;
       }
 
       // Auth valid and profile complete - proceed to analyze
-      window.location.href = 'analyze.html';
+      window.location.href = '/analyze';
     } catch (error) {
       console.error('CTA handler error:', error);
       // On error, redirect to login as safe fallback
-      window.location.href = 'login.html';
+      window.location.href = '/login';
     }
   }
 
@@ -1712,7 +1712,7 @@
     const loginLink = document.getElementById('loginLink');
     if (loginLink) {
       loginLink.textContent = 'Dashboard';
-      loginLink.href = 'dashboard.html';
+      loginLink.href = '/dashboard';
     }
 
     // Show page in preview mode
@@ -1745,10 +1745,10 @@
             }
 
             if (isProfileComplete(profileData)) {
-              window.location.href = 'dashboard.html';
+              window.location.href = '/dashboard';
             } else {
               // Profile incomplete - redirect to profile setup
-              window.location.href = 'profile-edit.html';
+              window.location.href = '/profile-edit';
             }
             // Don't show page - we're redirecting
             return;
@@ -1761,9 +1761,9 @@
           try {
             const profileData = JSON.parse(storedProfile);
             if (isProfileComplete(profileData)) {
-              window.location.href = 'dashboard.html';
+              window.location.href = '/dashboard';
             } else {
-              window.location.href = 'profile-edit.html';
+              window.location.href = '/profile-edit';
             }
             // Don't show page - we're redirecting
             return;

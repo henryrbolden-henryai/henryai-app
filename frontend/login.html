@@ -304,14 +304,14 @@
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
+            window.location.href = '/beta-access';
         }
     </script>
 </head>
 <body>
     <!-- Top left logo -->
     <header class="top-header">
-        <a href="index.html" class="top-logo"><em>Henry</em>HQ</a>
+        <a href="/index" class="top-logo"><em>Henry</em>HQ</a>
     </header>
 
     <div class="login-container">
@@ -417,7 +417,7 @@
             const session = await HenryAuth.getSession();
             if (session) {
                 // Already logged in, redirect
-                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || '/dashboard';
                 sessionStorage.removeItem('redirectAfterLogin');
                 window.location.href = redirect;
             }
@@ -502,7 +502,7 @@
             await HenryData.migrateFromLocalStorage();
 
             // Redirect
-            const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard.html';
+            const redirect = sessionStorage.getItem('redirectAfterLogin') || '/dashboard';
             sessionStorage.removeItem('redirectAfterLogin');
             window.location.href = redirect;
         }
@@ -540,7 +540,7 @@
                 localStorage.setItem('signupTimestamp', Date.now().toString());
                 localStorage.setItem('hasSeenWelcome', 'false');
                 localStorage.setItem('hasSeenWelcomeBack', 'false');
-                window.location.href = 'profile-edit.html';
+                window.location.href = '/profile-edit';
             }
         }
 

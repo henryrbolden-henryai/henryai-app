@@ -1052,7 +1052,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -1098,7 +1098,7 @@
         <div id="errorState" class="error-state" style="display: none;">
             <div class="icon">⚠️</div>
             <h3>Interview not found</h3>
-            <p>Please <a href="interview-intelligence.html">go back</a> and select an interview.</p>
+            <p>Please <a href="/interview-intelligence">go back</a> and select an interview.</p>
         </div>
 
         <!-- Prep Guide Content -->
@@ -2074,9 +2074,9 @@
             if (type === 'mock') {
                 startStageMockInterview();
             } else if (type === 'intro') {
-                window.location.href = 'practice-intro.html';
+                window.location.href = '/practice-intro';
             } else {
-                window.location.href = `practice-drills.html?type=${type}`;
+                window.location.href = `/practice-drills?type=${type}`;
             }
         }
 
@@ -2089,7 +2089,7 @@
                 type: currentInterview.type,
                 jobDescription: currentInterview.jobDescription
             }));
-            window.location.href = 'mock-interview.html';
+            window.location.href = '/mock-interview';
         }
 
         // Render Interviewer Intelligence section

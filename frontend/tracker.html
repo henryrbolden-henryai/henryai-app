@@ -4161,7 +4161,7 @@
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
+            window.location.href = '/beta-access';
         }
     </script>
 </head>
@@ -4169,7 +4169,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -4331,7 +4331,7 @@
             <div class="empty-state-icon">📋</div>
             <h3 class="empty-state-title">No applications yet</h3>
             <p class="empty-state-text">Start tracking your job applications to see your pipeline intelligence here.</p>
-            <a href="analyze.html" class="empty-state-btn">Analyze a Job</a>
+            <a href="/analyze" class="empty-state-btn">Analyze a Job</a>
         </div>
 
         <!-- COMMAND CENTER: ERROR STATE -->
@@ -4549,7 +4549,7 @@
 
         <!-- ANALYZE NEW ROLE BUTTON -->
         <div class="bottom-cta">
-            <a href="analyze.html" class="analyze-btn">Analyze New Role</a>
+            <a href="/analyze" class="analyze-btn">Analyze New Role</a>
         </div>
         </div>
 
@@ -4918,7 +4918,7 @@
 
                 <div id="manualInterviewLink" style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
                     <span style="color: var(--color-text-muted); font-size: 0.85rem;">
-                        Don't see your application? <a href="interview-intelligence.html" style="color: var(--color-accent);">Add manually in Interview Intelligence</a>
+                        Don't see your application? <a href="/interview-intelligence" style="color: var(--color-accent);">Add manually in Interview Intelligence</a>
                     </span>
                 </div>
             </div>
@@ -6997,7 +6997,7 @@
                 const daysSince = getDaysSince(app.lastUpdated || app.dateAdded);
 
                 return `
-                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" style="cursor: pointer;">
+                    <div class="priority-item ${statusLabel}" onclick="navigateWithAnalysis('${app.id}', '/overview')" style="cursor: pointer;">
                         <span class="priority-badge ${statusLabel}">${statusLabel.toUpperCase()}</span>
                         <div class="priority-content">
                             <div class="priority-role">${app.role}</div>
@@ -7041,7 +7041,7 @@
                     <div class="empty-state">
                         <h2>Your command center is ready.</h2>
                         <p>Analyze your first role to start building your strategic pipeline.</p>
-                        <a href="analyze.html">Analyze First Role</a>
+                        <a href="/analyze">Analyze First Role</a>
                     </div>
                 `;
                 cardContainer.innerHTML = emptyHTML;
@@ -7103,7 +7103,7 @@
                         <span class="table-company">${app.company || 'Unknown'}</span>
                     </td>
                     <td class="col-role">
-                        <span class="table-role" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" title="View strategy">
+                        <span class="table-role" onclick="navigateWithAnalysis('${app.id}', '/overview')" title="View strategy">
                             ${app.role || 'Unknown Role'}
                         </span>
                     </td>
@@ -7227,7 +7227,7 @@
                 <div class="app-card ${statusLabel === 'hot' ? 'hot' : ''} ${isInactive ? 'inactive' : ''} ${isGhostRisk ? 'ghost-risk' : ''}" data-id="${app.id}">
                     <div class="card-header">
                         <div class="card-title-section">
-                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis('${app.id}', 'overview.html')" title="View application strategy">
+                            <div class="card-title" style="cursor: pointer;" onclick="navigateWithAnalysis('${app.id}', '/overview')" title="View application strategy">
                                 ${app.role}
                                 ${isLeverage ? '<span class="leverage-badge">🔥 LEVERAGE</span>' : ''}
                             </div>
@@ -7399,12 +7399,12 @@
                 if (!app.dateApplied) {
                     actions.push({ label: '📤 Submit Application', action: `markAction('${app.id}', 'dateApplied')`, primary: true });
                 }
-                actions.push({ label: '📝 Review Materials', action: `navigateWithAnalysis('${app.id}', 'documents.html')` });
+                actions.push({ label: '📝 Review Materials', action: `navigateWithAnalysis('${app.id}', '/documents')` });
             }
             // Just Applied - waiting for response
             else if (['Applied', 'Networking'].includes(status)) {
                 if (daysSince >= 5 && daysSince <= 10) {
-                    actions.push({ label: '📧 Send Follow-Up', action: `navigateWithAnalysis('${app.id}', 'outreach.html')`, primary: true });
+                    actions.push({ label: '📧 Send Follow-Up', action: `navigateWithAnalysis('${app.id}', '/outreach')`, primary: true });
                 } else if (daysSince > 10) {
                     actions.push({ label: '⏰ Schedule Check-In', action: `scheduleFollowUp('${app.id}')`, primary: true });
                 }
@@ -7443,7 +7443,7 @@
             }
             // Offer stage
             else if (['Offer Received', 'Negotiating'].includes(status)) {
-                actions.push({ label: '💰 Prep Negotiation', action: `navigateWithAnalysis('${app.id}', 'overview.html')`, primary: true });
+                actions.push({ label: '💰 Prep Negotiation', action: `navigateWithAnalysis('${app.id}', '/overview')`, primary: true });
                 actions.push({ label: '📊 Compare Offers', action: `compareOffers('${app.id}')` });
                 actions.push({ label: '✅ Accept Offer', action: `updateStatus('${app.id}', 'Accepted')` });
             }
@@ -9406,7 +9406,7 @@ Thanks so much!
             // Set the interview ID and navigate to debrief
             sessionStorage.setItem('currentInterviewId', interview.id);
             closeDebriefSelectModal();
-            window.location.href = 'interview-debrief.html';
+            window.location.href = '/interview-debrief';
         }
 
         // SCHEDULE INTERVIEW MODAL
@@ -9568,7 +9568,7 @@ Thanks so much!
         // Legacy function - redirect to Interview Intelligence for manual entry
         function createNewInterview() {
             closeScheduleInterviewModal();
-            window.location.href = 'interview-intelligence.html';
+            window.location.href = '/interview-intelligence';
         }
 
         // Navigate directly to Interview Intelligence with app context
@@ -9596,7 +9596,7 @@ Thanks so much!
                 appId: app.id
             }));
 
-            window.location.href = 'interview-intelligence.html';
+            window.location.href = '/interview-intelligence';
         }
 
         // Add "Schedule Interview" to contextual actions for interview stages
@@ -10009,7 +10009,7 @@ Thanks so much!
                     <span class="pulse-action-text">
                         <strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}
                     </span>
-                    <a href="interview-intelligence.html" class="pulse-action-btn">Prep Now</a>
+                    <a href="/interview-intelligence" class="pulse-action-btn">Prep Now</a>
                 `;
             }
 
@@ -10028,7 +10028,7 @@ Thanks so much!
 
                 return `
                     <span class="pulse-action-text">${actionText}</span>
-                    <button class="pulse-action-btn" onclick="navigateWithAnalysis('${oldestFollowUp.id}', 'outreach.html')">Draft Follow-up</button>
+                    <button class="pulse-action-btn" onclick="navigateWithAnalysis('${oldestFollowUp.id}', '/outreach')">Draft Follow-up</button>
                 `;
             }
 
@@ -10051,7 +10051,7 @@ Thanks so much!
 
                 return `
                     <span class="pulse-action-text">${suggestionText}</span>
-                    <a href="analyze.html" class="pulse-action-btn">${buttonText}</a>
+                    <a href="/analyze" class="pulse-action-btn">${buttonText}</a>
                 `;
             }
 
@@ -10067,7 +10067,7 @@ Thanks so much!
 
             return `
                 <span class="pulse-action-text">${encouragementText}</span>
-                <a href="analyze.html" class="pulse-action-btn">Add Another</a>
+                <a href="/analyze" class="pulse-action-btn">Add Another</a>
             `;
         }
 
@@ -10436,49 +10436,49 @@ Thanks so much!
             if (status.includes('applied') || status === 'networking') {
                 return {
                     action: `Know anyone at ${company}?`,
-                    reason: `<a href="outreach.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Network & Outreach →</a>`
+                    reason: `<a href="/outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Network & Outreach →</a>`
                 };
             } else if (status.includes('recruiter') || status.includes('screen')) {
                 return {
                     action: 'Nail your intro sell',
-                    reason: `<a href="practice-intro.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Practice 60-sec opener →</a>`
+                    reason: `<a href="/practice-intro?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Practice 60-sec opener →</a>`
                 };
             } else if (status.includes('hiring manager')) {
                 return {
                     action: 'Prep for Hiring Manager',
-                    reason: `<a href="prep-guide.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Prep Guide →</a>`
+                    reason: `<a href="/prep-guide?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Prep Guide →</a>`
                 };
             } else if (status.includes('technical')) {
                 return {
                     action: 'Technical prep time',
-                    reason: `<a href="practice-drills.html?type=strategy&appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Run Strategy Drills →</a>`
+                    reason: `<a href="/practice-drills?type=strategy&appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Run Strategy Drills →</a>`
                 };
             } else if (status.includes('panel')) {
                 return {
                     action: 'Panel interview prep',
-                    reason: `<a href="interview-intelligence.html" class="next-action-link" onclick="event.stopPropagation()">Add interviewers for intel →</a>`
+                    reason: `<a href="/interview-intelligence" class="next-action-link" onclick="event.stopPropagation()">Add interviewers for intel →</a>`
                 };
             } else if (status.includes('final') || status.includes('executive')) {
                 return {
                     action: 'Final round prep',
-                    reason: `<a href="story-bank.html" class="next-action-link" onclick="event.stopPropagation()">Review your best stories →</a>`
+                    reason: `<a href="/story-bank" class="next-action-link" onclick="event.stopPropagation()">Review your best stories →</a>`
                 };
             } else if (status.includes('offer') || status.includes('negotiat')) {
                 return {
                     action: 'Negotiation time',
-                    reason: `<a href="positioning.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review your leverage →</a>`
+                    reason: `<a href="/positioning?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review your leverage →</a>`
                 };
             } else if (status.includes('awaiting')) {
                 return {
                     action: 'Time to follow up',
-                    reason: `<a href="outreach.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Draft follow-up message →</a>`
+                    reason: `<a href="/outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Draft follow-up message →</a>`
                 };
             }
 
             // Default fallback
             return {
                 action: 'Review your strategy',
-                reason: `<a href="overview.html?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">View full analysis →</a>`
+                reason: `<a href="/overview?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">View full analysis →</a>`
             };
         }
 
@@ -10578,7 +10578,7 @@ Thanks so much!
                      tabindex="0"
                      role="button"
                      aria-label="${cleanCompany} - ${cleanRole}"
-                     onclick="navigateWithAnalysis('${app.id}', 'overview.html')">
+                     onclick="navigateWithAnalysis('${app.id}', '/overview')">
                     ${app.user_override ? '<span class="override-badge" title="You have overridden the system recommendation">Manual Override</span>' : ''}
 
                     <div class="card-header-v2">
@@ -10844,7 +10844,7 @@ Thanks so much!
                     }
                     break;
                 case 'open_prep':
-                    navigateWithAnalysis(appId, 'interview-prep.html');
+                    navigateWithAnalysis(appId, '/interview-prep');
                     break;
                 case 'block_time':
                     // TODO: Calendar integration
@@ -10866,7 +10866,7 @@ Thanks so much!
             if (typeof window.openReachOutModal === 'function') {
                 window.openReachOutModal(appId);
             } else {
-                navigateWithAnalysis(appId, 'overview.html');
+                navigateWithAnalysis(appId, '/overview');
             }
         }
 
@@ -10975,7 +10975,7 @@ Thanks so much!
          * Navigate to strategy review
          */
         function navigateToStrategy() {
-            window.location.href = 'profile.html';
+            window.location.href = '/profile';
         }
 
         /**
@@ -11627,7 +11627,7 @@ Thanks so much!
 
         function showManualAddModal() {
             // Navigate to analyze page for manual entry
-            window.location.href = 'analyze.html';
+            window.location.href = '/analyze';
         }
 
         // ========================================================================
@@ -12455,7 +12455,7 @@ Thanks so much!
             }
 
             closeReconsiderModal();
-            window.location.href = 'results.html';
+            window.location.href = '/results';
         }
 
         /**
@@ -12480,7 +12480,7 @@ Thanks so much!
             }
 
             closeReconsiderModal();
-            window.location.href = 'analyze.html?reconsider=true';
+            window.location.href = '/analyze?reconsider=true';
         }
 
         // Set up reconsider modal event listeners

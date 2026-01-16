@@ -639,7 +639,7 @@
     <div class="container">
         <!-- Header Navigation -->
         <div class="header">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
 
         <h1>
@@ -918,7 +918,7 @@
             if (!analysisDataStr) {
                 console.log('No analysis data found in sessionStorage - redirecting');
                 alert('No analysis data found. Please analyze a job first.');
-                window.location.href = 'index.html';
+                window.location.href = '/index';
                 return;
             }
             
@@ -927,13 +927,13 @@
                 if (!analysisData._company_name && !analysisData.company) {
                     console.log('Analysis data exists but has no company - redirecting');
                     alert('No analysis data found. Please analyze a job first.');
-                    window.location.href = 'index.html';
+                    window.location.href = '/index';
                     return;
                 }
             } catch (e) {
                 console.error('Failed to parse analysis data:', e);
                 alert('Invalid analysis data. Please analyze a job first.');
-                window.location.href = 'index.html';
+                window.location.href = '/index';
                 return;
             }
         })();

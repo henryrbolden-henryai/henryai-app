@@ -1425,7 +1425,7 @@
             </div>
         </div>
 
-        <a href="results.html" class="back-link">← Back to Results</a>
+        <a href="/results" class="back-link">← Back to Results</a>
 
         <h1>Resume Level Analysis</h1>
         <p class="subtitle" id="subtitle">Analyzing your career level against the target role...</p>
@@ -1774,7 +1774,7 @@
             }
 
             if (!analysisDataStr) {
-                window.location.href = 'analyze.html';
+                window.location.href = '/analyze';
                 return;
             }
             analysisData = JSON.parse(analysisDataStr);
@@ -2097,11 +2097,11 @@
 
             if (shouldStrengthen) {
                 // Proceed to strengthen phase
-                window.location.href = 'strengthen.html';
+                window.location.href = '/strengthen';
             } else {
                 // Skip straight to generating or results
                 // For skip/do not apply, go directly to results
-                window.location.href = 'results.html';
+                window.location.href = '/results';
             }
         }
 
@@ -3094,7 +3094,7 @@
                 sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
                 localStorage.setItem('levelingData_backup', JSON.stringify(levelingData));
             }
-            window.location.href = 'strengthen.html';
+            window.location.href = '/strengthen';
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
@@ -3120,7 +3120,7 @@
                 localStorage.setItem('strengthenedData_backup', JSON.stringify(skipData));
             }
             // Go directly to generating/application strategy
-            window.location.href = 'generating.html';
+            window.location.href = '/generating';
         });
     </script>
     <script src="components/flow-state.js"></script>

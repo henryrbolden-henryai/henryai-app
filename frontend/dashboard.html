@@ -1027,7 +1027,7 @@
     <!-- TOP NAVIGATION -->
     <nav class="top-nav">
         <div class="top-nav-container">
-            <a href="dashboard.html" class="top-nav-logo"><em>Henry</em>HQ</a>
+            <a href="/dashboard" class="top-nav-logo"><em>Henry</em>HQ</a>
             <div class="account-dropdown" id="accountDropdown">
                 <button class="account-btn" onclick="toggleAccountMenu()">
                     My Account
@@ -1036,13 +1036,13 @@
                     </svg>
                 </button>
                 <div class="account-menu">
-                    <a href="profile-edit.html" class="account-menu-item">
+                    <a href="/profile-edit" class="account-menu-item">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
                         </svg>
                         Edit Profile
                     </a>
-                    <a href="settings.html" class="account-menu-item">
+                    <a href="/settings" class="account-menu-item">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
                         </svg>
@@ -1226,7 +1226,7 @@
             localStorage.removeItem('henryhq_user');
             sessionStorage.clear();
             // Redirect to login
-            window.location.href = 'login.html';
+            window.location.href = '/login';
         }
 
         // ========================================================================
@@ -1640,7 +1640,7 @@
                 icon: '⚠️',
                 headline: '',
                 detail: '',
-                primaryBtn: { text: 'Analyze Role', link: 'analyze.html' },
+                primaryBtn: { text: 'Analyze Role', link: '/analyze' },
                 secondaryBtn: null
             };
 
@@ -1651,7 +1651,7 @@
                     icon: '🚨',
                     headline: 'Urgent search, zero pipeline',
                     detail: `You said your job search is <strong>${timeline === 'urgent' ? 'urgent' : 'happening soon'}</strong>, but you have no active applications. Every day without applications in play is a day lost. The average successful job search takes 3-6 months. Start now.`,
-                    primaryBtn: { text: 'Analyze Your First Role', link: 'analyze.html' },
+                    primaryBtn: { text: 'Analyze Your First Role', link: '/analyze' },
                     secondaryBtn: null
                 };
             }
@@ -1663,7 +1663,7 @@
                     icon: '⚠️',
                     headline: 'One application isn\'t a job search',
                     detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy, that's hope. <strong>Build to 5-10 active applications</strong> over the next few weeks. Quality over quantity, but you need options.`,
-                    primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
+                    primaryBtn: { text: 'Add Another Role', link: '/analyze' },
                     secondaryBtn: { text: 'Why This Matters', prompt: 'Why does having only 1 application hurt my job search? Explain the math and psychology behind building a pipeline of 5-10 applications.' }
                 };
             }
@@ -1675,7 +1675,7 @@
                     icon: '💪',
                     headline: 'Let\'s get your pipeline working for you',
                     detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Build toward 5-10 quality applications. Take it one role at a time.`,
-                    primaryBtn: { text: 'Add Another Role', link: 'analyze.html' },
+                    primaryBtn: { text: 'Add Another Role', link: '/analyze' },
                     secondaryBtn: { text: 'Talk Strategy', action: 'openHeyHenry' }
                 };
             }
@@ -1686,8 +1686,8 @@
                     icon: '🎯',
                     headline: 'Confidence comes from preparation',
                     detail: `You mentioned feeling ${confidence === 'low' ? 'low confidence' : 'like you need validation'} about your search. Here's the truth: <strong>confidence is built, not found</strong>. Practice your story, research your targets, and prepare like the interviews are already scheduled. You've got this.`,
-                    primaryBtn: { text: 'Practice Interview', link: 'interview-intelligence.html' },
-                    secondaryBtn: { text: 'Review Positioning', link: 'positioning.html' }
+                    primaryBtn: { text: 'Practice Interview', link: '/interview-intelligence' },
+                    secondaryBtn: { text: 'Review Positioning', link: '/positioning' }
                 };
             }
             // Scenario 5: Thin pipeline without urgency (gentler nudge)
@@ -1961,7 +1961,7 @@
                     label: 'Interview Coming Up',
                     message: interviewMsg,
                     buttonText: 'Prep Now',
-                    buttonLink: 'interview-intelligence.html',
+                    buttonLink: '/interview-intelligence',
                     type: 'urgent'
                 });
             } else if (upcomingInterviews.length > 0) {
@@ -1970,7 +1970,7 @@
                     label: 'Priority',
                     message: `<strong>Prepare for ${nextInterview.status.toLowerCase()}</strong> at ${nextInterview.company}`,
                     buttonText: 'Interview Prep',
-                    buttonLink: 'interview-intelligence.html'
+                    buttonLink: '/interview-intelligence'
                 });
             } else if (completedInterviews.length > 0) {
                 // They have completed interviews - suggest follow-up or debrief
@@ -1985,14 +1985,14 @@
                             label: 'Priority',
                             message: `<strong>Follow up with ${app.company}</strong>: ${daysSince} days since your interview`,
                             buttonText: 'Draft Follow-up',
-                            buttonLink: 'outreach.html'
+                            buttonLink: '/outreach'
                         });
                     } else {
                         items.push({
                             label: 'Awaiting Response',
                             message: `Waiting to hear back from <strong>${app.company}</strong> after your interview`,
                             buttonText: 'View Status',
-                            buttonLink: 'tracker.html',
+                            buttonLink: '/tracker',
                             buttonType: 'secondary'
                         });
                     }
@@ -2006,7 +2006,7 @@
                     label: 'Priority',
                     message: `<strong>Follow up with ${oldestFollowUp.company}</strong>: ${daysSince} days since applying`,
                     buttonText: 'Draft Follow-up',
-                    buttonLink: 'outreach.html'
+                    buttonLink: '/outreach'
                 });
             } else if (activeApps.length > 0) {
                 // Has active apps but nothing urgent - suggest keeping momentum
@@ -2014,7 +2014,7 @@
                     label: 'On Track',
                     message: `<strong>${activeApps.length} active applications</strong> in your pipeline. Keep the momentum going.`,
                     buttonText: 'View Pipeline',
-                    buttonLink: 'tracker.html',
+                    buttonLink: '/tracker',
                     buttonType: 'secondary'
                 });
             }
@@ -2070,7 +2070,7 @@
                     label: 'Maintenance',
                     message: `<strong>${staleApps.length} stale application${staleApps.length > 1 ? 's' : ''}</strong>: No activity in 14+ days. Review and archive if needed.`,
                     buttonText: 'Review',
-                    buttonLink: 'tracker.html',
+                    buttonLink: '/tracker',
                     type: 'secondary',
                     buttonType: 'secondary'
                 });
@@ -2080,16 +2080,16 @@
                     label: 'Follow-ups',
                     message: `<strong>${followUpsDue.length} applications</strong> need follow-up messages`,
                     buttonText: 'Draft All',
-                    buttonLink: 'outreach.html',
+                    buttonLink: '/outreach',
                     type: 'secondary',
                     buttonType: 'secondary'
                 });
             } else {
                 // General coaching tip
                 const tips = [
-                    { message: '<strong>Tip:</strong> Personalize each application. Generic submissions get filtered out.', link: 'positioning.html', btn: 'Positioning' },
-                    { message: '<strong>Tip:</strong> Network connections increase response rates by 4x.', link: 'outreach.html', btn: 'Outreach' },
-                    { message: '<strong>Tip:</strong> Practice your story. Preparation shows in interviews.', link: 'interview-intelligence.html', btn: 'Prep' }
+                    { message: '<strong>Tip:</strong> Personalize each application. Generic submissions get filtered out.', link: '/positioning', btn: 'Positioning' },
+                    { message: '<strong>Tip:</strong> Network connections increase response rates by 4x.', link: '/outreach', btn: 'Outreach' },
+                    { message: '<strong>Tip:</strong> Practice your story. Preparation shows in interviews.', link: '/interview-intelligence', btn: 'Prep' }
                 ];
                 const tip = tips[Math.floor(Math.random() * tips.length)];
                 items.push({
@@ -2181,7 +2181,7 @@
             // If we have analysis data, store it in sessionStorage and navigate to overview
             if (analysisData) {
                 sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
-                window.location.href = 'overview.html';
+                window.location.href = '/overview';
             } else {
                 // D4: Show explicit message instead of silent fallback
                 const goToTracker = confirm(
@@ -2190,7 +2190,7 @@
                     'Would you like to view this application in the tracker instead?'
                 );
                 if (goToTracker) {
-                    window.location.href = `tracker.html?highlight=${appId}`;
+                    window.location.href = `/tracker?highlight=${appId}`;
                 }
             }
         }
@@ -2370,7 +2370,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #f87171; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Authentication Required</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="login.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
+                    <a href="/login" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -2381,7 +2381,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #fbbf24; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Data Error</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="dashboard.html" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Refresh</a>
+                    <a href="/dashboard" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Refresh</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -2409,14 +2409,14 @@
                 const session = await HenryAuth.getSession();
                 if (!session) {
                     // Not logged in, redirect to login
-                    window.location.href = 'login.html';
+                    window.location.href = '/login';
                     return;
                 }
 
                 // Beta gate - check localStorage (standard flow for private beta)
                 // Note: Server-side beta verification deferred to v1.1
                 if (localStorage.getItem('beta_verified') !== 'true') {
-                    window.location.href = 'beta-access.html';
+                    window.location.href = '/beta-access';
                     return;
                 }
 
@@ -2447,7 +2447,7 @@
                     localStorage.removeItem('henryai_needs_onboarding');
 
                     if (!hasExistingData) {
-                        window.location.href = 'profile-edit.html';
+                        window.location.href = '/profile-edit';
                         return;
                     }
                     console.log('Skipping onboarding - user has existing profile data');
@@ -2515,8 +2515,8 @@
             } catch (authErr) {
                 console.error('Auth check failed:', authErr);
                 // Only redirect if not already redirecting (prevent loops)
-                if (!window.location.href.includes('login.html')) {
-                    window.location.href = 'login.html';
+                if (!window.location.href.includes('login')) {
+                    window.location.href = '/login';
                 }
             }
         })();
@@ -2670,7 +2670,7 @@ I'm always here. If you're unsure about a role or how to position yourself, just
             }
 
             // Redirect to profile setup
-            window.location.href = 'profile-edit.html';
+            window.location.href = '/profile-edit';
         }
 
         // ==========================================
@@ -2706,7 +2706,7 @@ I'm always here. If you're unsure about a role or how to position yourself, just
                 // Mark welcome back as seen so it doesn't show on refresh
                 localStorage.setItem('hasSeenWelcomeBack', 'true');
                 // Clean URL
-                window.history.replaceState({}, '', 'dashboard.html');
+                window.history.replaceState({}, '', '/dashboard');
                 return;
             }
 
@@ -2903,7 +2903,7 @@ ${dynamicClosing}`;
             analyzeBtn.className = 'btn-welcome';
             analyzeBtn.style.cssText = 'flex: 1; min-width: 140px;';
             analyzeBtn.onclick = () => {
-                window.location.href = 'analyze.html';
+                window.location.href = '/analyze';
             };
 
             const exploreBtn = document.createElement('button');

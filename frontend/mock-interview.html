@@ -432,7 +432,7 @@
 <body>
     <!-- HEADER -->
     <header>
-        <a href="interview-intelligence.html" class="logo"><em>Henry</em>HQ</a>
+        <a href="/interview-intelligence" class="logo"><em>Henry</em>HQ</a>
         <button class="exit-btn" onclick="exitInterview()">Exit Interview</button>
     </header>
 
@@ -740,7 +740,7 @@
 
                 // Store debrief data and redirect
                 sessionStorage.setItem('debriefData', JSON.stringify(data));
-                window.location.href = 'mock-debrief.html';
+                window.location.href = '/mock-debrief';
 
             } catch (error) {
                 console.error('Error ending interview:', error);
@@ -916,7 +916,7 @@
                     return;
                 }
             }
-            window.location.href = 'interview-intelligence.html';
+            window.location.href = '/interview-intelligence';
         }
     </script>
 <script src="components/analytics.js"></script>

@@ -673,7 +673,7 @@
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
+            window.location.href = '/beta-access';
         }
     </script>
     <!-- Supabase for data persistence -->
@@ -684,7 +684,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -735,7 +735,7 @@
                     <p>PM, SWE, UX, UI, TA, and Leadership specific drills.</p>
                 </div>
 
-                <div class="practice-card" onclick="window.location.href='story-bank.html'">
+                <div class="practice-card" onclick="window.location.href='/story-bank'">
                     <div class="card-icon">📚</div>
                     <h3>Story Bank</h3>
                     <p>Manage your behavioral examples. Track usage and effectiveness.</p>
@@ -798,7 +798,7 @@
                         <!-- Options populated dynamically -->
                     </select>
                     <div style="margin-top: 8px; font-size: 0.8rem; color: #6b7280;">
-                        Don't see it? <a href="analyze.html" style="color: #22d3ee;">Analyze a role</a> first, or
+                        Don't see it? <a href="/analyze" style="color: #22d3ee;">Analyze a role</a> first, or
                         <span style="color: #22d3ee; cursor: pointer;" onclick="showManualEntry()">enter manually</span>
                     </div>
                 </div>
@@ -1106,19 +1106,19 @@
         // ============================================================================
         function startMockInterview() {
             // Navigate to mock interview page
-            window.location.href = 'mock-interview.html';
+            window.location.href = '/mock-interview';
         }
 
         function openPractice(type) {
             // Navigate to specific practice page
             if (type === 'intro-sell') {
-                window.location.href = 'practice-intro.html';
+                window.location.href = '/practice-intro';
             } else if (type === 'behavioral') {
-                window.location.href = 'practice-drills.html?type=behavioral';
+                window.location.href = '/practice-drills?type=behavioral';
             } else if (type === 'strategy') {
-                window.location.href = 'practice-drills.html?type=strategy';
+                window.location.href = '/practice-drills?type=strategy';
             } else if (type === 'role-based') {
-                window.location.href = 'practice-drills.html?type=role';
+                window.location.href = '/practice-drills?type=role';
             }
         }
 
@@ -1611,7 +1611,7 @@
 
             // Link to full prep
             lines.push('FULL PREP GUIDE:');
-            lines.push(`${window.location.origin}/interview-prep.html`);
+            lines.push(`${window.location.origin}//interview-prep`);
             lines.push('');
             lines.push("You've got this. Trust your prep.");
             lines.push('');
@@ -1876,19 +1876,19 @@
         function viewDebrief(interviewId) {
             // Store the interview ID and navigate to debrief page (which will load saved conversation)
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = 'interview-debrief.html';
+            window.location.href = '/interview-debrief';
         }
 
         function openPrepGuide(interviewId) {
             // Store the interview ID and navigate to prep guide page
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = 'prep-guide.html';
+            window.location.href = '/prep-guide';
         }
 
         function openDebrief(interviewId) {
             // Store the interview ID and navigate to debrief page
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = 'interview-debrief.html';
+            window.location.href = '/interview-debrief';
         }
 
         function deleteInterview(interviewId) {

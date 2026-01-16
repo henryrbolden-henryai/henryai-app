@@ -263,7 +263,7 @@
         }
 
         function goBack() {
-            window.location.href = 'analyze.html';
+            window.location.href = '/analyze';
         }
 
         // Progress through stages while waiting
@@ -357,7 +357,7 @@
 
                 // Always go to results page first (fit score + strategy overview)
                 // User will then click "Generate Documents" which routes through strengthen if needed
-                window.location.href = 'results.html';
+                window.location.href = '/results';
 
             } catch (error) {
                 console.error('Analysis error:', error);

@@ -456,7 +456,7 @@ function skipAll() {
 function proceedToLinkedIn() {
     // Skip LinkedIn during intake - go directly to Strategy Overview
     // Users can upload LinkedIn profile in the LinkedIn Optimization module when needed
-    window.location.href = 'overview.html';
+    window.location.href = '/overview';
 }
 
 /**

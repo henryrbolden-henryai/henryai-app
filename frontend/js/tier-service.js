@@ -163,7 +163,7 @@ const TierService = {
                     </p>
                 ` : ''}
                 <div class="upgrade-modal-cta">
-                    <a href="pricing.html" class="btn btn-primary upgrade-modal-btn">View Plans</a>
+                    <a href="/pricing" class="btn btn-primary upgrade-modal-btn">View Plans</a>
                     <button class="btn btn-secondary upgrade-modal-dismiss" onclick="TierService.closeUpgradeModal()">
                         Maybe Later
                     </button>

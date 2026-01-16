@@ -1,17 +1,16 @@
 // HenryHQ Service Worker
 const CACHE_NAME = 'henryhq-v8';
-const OFFLINE_URL = '/offline.html';
+const OFFLINE_URL = '/offline';
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
   '/',
-  '/index.html',
-  '/dashboard.html',
-  '/tracker.html',
-  '/login.html',
-  '/offline.html',
-  '/results.html',
-  '/resume-leveling.html',
+  '/dashboard',
+  '/tracker',
+  '/login',
+  '/offline',
+  '/results',
+  '/resume-leveling',
   '/assets/henryhq-logo.png',
   '/css/mobile.css'
 ];

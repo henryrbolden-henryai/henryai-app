@@ -2229,14 +2229,14 @@ ${confidenceClosing}`,
         if (action === 'create_profile') {
             localStorage.setItem('heyHenrySeenWelcome', 'true');
             localStorage.setItem('heyHenrySignupTime', Date.now().toString());
-            window.location.href = 'profile-edit.html';
+            window.location.href = '/profile-edit';
         } else if (action === 'analyze_role') {
             // Remove URL param
             const url = new URL(window.location);
             url.searchParams.delete('from');
             window.history.replaceState({}, '', url);
             sessionStorage.setItem('heyHenrySeenWelcomeBack', 'true');
-            window.location.href = 'analyze.html';
+            window.location.href = '/analyze';
         } else if (action === 'close') {
             // Remove URL param if present
             const url = new URL(window.location);

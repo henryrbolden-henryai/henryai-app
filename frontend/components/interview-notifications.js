@@ -287,7 +287,7 @@
                             {
                                 label: 'Review Prep',
                                 primary: true,
-                                onclick: `window.location.href='prep-guide.html?id=${interview.id}'`
+                                onclick: `window.location.href='/prep-guide?id=${interview.id}'`
                             },
                             {
                                 label: 'Dismiss',
@@ -317,7 +317,7 @@
                             {
                                 label: 'Quick Prep',
                                 primary: true,
-                                onclick: `window.location.href='prep-guide.html?id=${interview.id}'`
+                                onclick: `window.location.href='/prep-guide?id=${interview.id}'`
                             },
                             {
                                 label: 'Got It',
@@ -362,7 +362,7 @@
                         {
                             label: 'Start Debrief',
                             primary: true,
-                            onclick: `window.location.href='interview-debrief.html?id=${interview.id}'`
+                            onclick: `window.location.href='/interview-debrief?id=${interview.id}'`
                         },
                         {
                             label: 'Later',
@@ -402,7 +402,7 @@
                         {
                             label: 'Start Debrief',
                             primary: true,
-                            onclick: `window.location.href='interview-debrief.html?id=app-${app.id}'`
+                            onclick: `window.location.href='/interview-debrief?id=app-${app.id}'`
                         },
                         {
                             label: 'Later',

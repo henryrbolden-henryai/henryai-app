@@ -484,7 +484,7 @@
   <div class="container">
     <!-- Header -->
     <div class="page-header">
-      <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+      <a href="/index" class="logo"><em>Henry</em>HQ</a>
       <h1>Let's get to know each other</h1>
       <p>Tell me about yourself and where you're at. The more I understand your situation, the better I can help you figure out which roles are actually worth your time.</p>
     </div>
@@ -801,7 +801,7 @@
     // Check if profile already exists
     const existingProfile = localStorage.getItem('userProfile');
     if (existingProfile) {
-      window.location.href = 'analyze.html';
+      window.location.href = '/analyze';
     }
 
     // Elements
@@ -1025,7 +1025,7 @@
       }
 
       // Redirect to analyze page
-      window.location.href = 'analyze.html';
+      window.location.href = '/analyze';
     });
 
     function showError(message) {

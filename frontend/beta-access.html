@@ -200,7 +200,7 @@
         // Check if already verified
         function checkVerification() {
             if (localStorage.getItem(STORAGE_KEY) === 'true') {
-                window.location.href = 'index.html';
+                window.location.href = '/index';
             }
         }
 
@@ -215,7 +215,7 @@
             if (enteredCode === BETA_PASSCODE) {
                 // Success - set verification flag and redirect
                 localStorage.setItem(STORAGE_KEY, 'true');
-                window.location.href = 'index.html';
+                window.location.href = '/index';
             } else {
                 // Failure - show error
                 errorMessage.classList.add('show');

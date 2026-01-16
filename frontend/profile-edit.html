@@ -1004,7 +1004,7 @@
     <!-- Beta Access Gate -->
     <script>
         if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = 'beta-access.html';
+            window.location.href = '/beta-access';
         }
     </script>
 </head>
@@ -1012,12 +1012,12 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
     <div class="container">
-        <a href="analyze.html" class="back-link" id="backLink" style="display: none;">← Back</a>
+        <a href="/analyze" class="back-link" id="backLink" style="display: none;">← Back</a>
 
         <h1 id="pageTitle">Set Up Your Profile</h1>
         <p class="subtitle" id="pageSubtitle">I need a few details to give you honest fit assessments and strategic positioning.</p>
@@ -1211,7 +1211,7 @@
                         <span class="resume-info-name" id="resumeName">Loading...</span>
                     </div>
                     <div class="resume-info-meta" id="resumeMeta"></div>
-                    <a href="resume-discuss.html" class="resume-chat-link">💬 Chat with Henry about your resume</a>
+                    <a href="/resume-discuss" class="resume-chat-link">💬 Chat with Henry about your resume</a>
                     <div class="resume-actions" style="margin-top: 12px; display: flex; gap: 10px;">
                         <button type="button" class="btn-secondary" id="replaceResumeBtn">Replace Resume</button>
                         <button type="button" class="btn-danger-outline" id="deleteResumeBtn">Delete</button>
@@ -2999,10 +2999,10 @@
                 // Redirect based on whether this is initial profile setup or update
                 if (isNewProfile) {
                     // First-time profile setup - go to dashboard for Hey Henry first action prompt
-                    window.location.href = 'dashboard.html?from=profile-setup';
+                    window.location.href = '/dashboard?from=profile-setup';
                 } else {
                     // Existing profile update - go to analyze page
-                    window.location.href = 'analyze.html';
+                    window.location.href = '/analyze';
                 }
 
             } catch (error) {
@@ -3070,7 +3070,7 @@
 
                 // Mark as needing onboarding and redirect
                 localStorage.setItem('henryai_needs_onboarding', 'true');
-                window.location.href = 'profile-edit.html';
+                window.location.href = '/profile-edit';
             } catch (error) {
                 console.error('Reset error:', error);
                 errorMessage.textContent = 'Failed to reset profile: ' + error.message;
@@ -3142,7 +3142,7 @@
                 sessionStorage.clear();
 
                 // Redirect to landing page
-                window.location.href = 'index.html';
+                window.location.href = '/index';
             } catch (error) {
                 console.error('Delete account error:', error);
                 errorMessage.textContent = 'Failed to delete account: ' + error.message;
@@ -3179,7 +3179,7 @@
                 console.error('Auth library failed to load - blocking profile access');
                 document.body.innerHTML = '<div style="padding: 40px; text-align: center; color: #f87171;">' +
                     '<h2>Unable to verify authentication</h2>' +
-                    '<p>Please refresh the page or <a href="login.html" style="color: #22d3ee;">return to login</a>.</p>' +
+                    '<p>Please refresh the page or <a href="/login" style="color: #22d3ee;">return to login</a>.</p>' +
                     '</div>';
                 return;
             }
@@ -3189,13 +3189,13 @@
                 const session = await HenryAuth.getSession();
                 if (!session) {
                     // Not logged in, redirect to login
-                    window.location.href = 'login.html';
+                    window.location.href = '/login';
                     return;
                 }
             } catch (authError) {
                 console.error('Auth verification failed:', authError);
                 // Fail closed - redirect to login on auth error
-                window.location.href = 'login.html';
+                window.location.href = '/login';
                 return;
             }
 

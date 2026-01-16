@@ -330,12 +330,12 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="index.html" class="logo"><em>Henry</em>HQ</a>
+            <a href="/index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
     <div class="container">
-        <a href="interview-intelligence.html" class="back-link">← Back to Interview Intelligence</a>
+        <a href="/interview-intelligence" class="back-link">← Back to Interview Intelligence</a>
 
         <h1>🏆 Interview Complete!</h1>
         <p class="subtitle">Here's your performance breakdown and personalized coaching.</p>
@@ -441,7 +441,7 @@
             const debriefData = sessionStorage.getItem('debriefData');
 
             if (!debriefData) {
-                window.location.href = 'interview-intelligence.html';
+                window.location.href = '/interview-intelligence';
                 return;
             }
 
@@ -450,7 +450,7 @@
                 renderDebrief(data);
             } catch (e) {
                 console.error('Error parsing debrief data:', e);
-                window.location.href = 'interview-intelligence.html';
+                window.location.href = '/interview-intelligence';
             }
         });
 
@@ -556,12 +556,12 @@
         }
 
         function openDrill(type) {
-            window.location.href = `practice-drills.html?type=${type}`;
+            window.location.href = `/practice-drills?type=${type}`;
         }
 
         function practiceAgain() {
             sessionStorage.removeItem('debriefData');
-            window.location.href = 'mock-interview.html';
+            window.location.href = '/mock-interview';
         }
     </script>
 <script src="components/top-nav.js"></script>
