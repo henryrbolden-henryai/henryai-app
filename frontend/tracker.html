@@ -9026,7 +9026,16 @@ Thanks so much!
             document.getElementById('editAppCompany').value = app.company || '';
             document.getElementById('editAppRole').value = app.role || app.roleTitle || '';
             document.getElementById('editAppLocation').value = app.location || '';
-            document.getElementById('editAppSalary').value = app.salary || '';
+
+            // Extract just the salary range from longer description strings
+            // e.g., "$160K-$200K base for Lead/Director level People roles in NY" -> "$160K-$200K"
+            let salaryValue = app.salary || '';
+            const salaryMatch = salaryValue.match(/\$[\d,]+[Kk]?\s*[-–]\s*\$[\d,]+[Kk]?|\$[\d,]+(?:\s*[-–]\s*[\d,]+)?[Kk]?/);
+            if (salaryMatch) {
+                salaryValue = salaryMatch[0];
+            }
+            document.getElementById('editAppSalary').value = salaryValue;
+
             document.getElementById('editAppJobUrl').value = app.jobUrl || '';
 
             // Show modal
@@ -9070,10 +9079,15 @@ Thanks so much!
             try {
                 // Use the new updateApplicationFields function that syncs across all storage
                 if (typeof HenryData !== 'undefined') {
+                    console.log('📝 Calling HenryData.updateApplicationFields with:', editAppId, fields);
                     const result = await HenryData.updateApplicationFields(editAppId, fields);
+                    console.log('📝 Update result:', result);
                     if (result.error) {
-                        throw new Error(result.error.message || 'Failed to save');
+                        console.error('📝 Update error details:', result.error);
+                        throw new Error(result.error.message || result.error.details || JSON.stringify(result.error) || 'Failed to save');
                     }
+                } else {
+                    console.warn('HenryData not available, saving to localStorage only');
                 }
 
                 // Also update local cache

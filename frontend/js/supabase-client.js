@@ -384,10 +384,17 @@ const HenryData = {
      * @param {Object} fields - Fields to update (company, role, salary, location, etc.)
      */
     async updateApplicationFields(appId, fields) {
+        console.log('📝 updateApplicationFields called with appId:', appId, 'fields:', fields);
+
         const user = await HenryAuth.getUser();
-        if (!user) return { error: 'Not authenticated' };
+        if (!user) {
+            console.error('📝 No authenticated user');
+            return { error: { message: 'Not authenticated' } };
+        }
+        console.log('📝 User authenticated:', user.id);
 
         // First, get the current application to merge analysis_data
+        console.log('📝 Fetching current application...');
         const { data: currentApp, error: fetchError } = await supabase
             .from('applications')
             .select('*')
@@ -396,9 +403,10 @@ const HenryData = {
             .single();
 
         if (fetchError) {
-            console.error('Error fetching application for update:', fetchError);
+            console.error('📝 Error fetching application for update:', fetchError);
             return { error: fetchError };
         }
+        console.log('📝 Current app fetched:', currentApp?.id, currentApp?.company);
 
         // Build update object
         const updateData = {
@@ -453,6 +461,7 @@ const HenryData = {
         }
 
         // Perform the update
+        console.log('📝 Performing update with data:', JSON.stringify(updateData, null, 2));
         const { data, error } = await supabase
             .from('applications')
             .update(updateData)
@@ -462,11 +471,14 @@ const HenryData = {
             .single();
 
         if (error) {
-            console.error('Error updating application:', error);
+            console.error('📝 Error updating application:', error);
+            console.error('📝 Error code:', error.code);
+            console.error('📝 Error message:', error.message);
+            console.error('📝 Error details:', error.details);
             return { error };
         }
 
-        console.log('✅ Application updated successfully:', appId);
+        console.log('✅ Application updated successfully:', appId, data);
 
         // Also update candidate_role_interactions if role was changed
         if (fields.role !== undefined || fields.company !== undefined) {
