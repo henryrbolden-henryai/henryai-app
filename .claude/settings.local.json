@@ -74,7 +74,20 @@
       "Bash(MISS\"\n- Clear visibility into which caches are saving money\n\nExpected savings:\n- Same JD retries = $0 for JD parsing\n- Same JD + same resume = FULL CACHE HIT = $0 total\n- Same JD + new resume = only fit score call needed\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(xargs ls:*)",
       "Bash(./deploy.sh)",
-      "Bash(vercel --prod:*)"
+      "Bash(vercel --prod:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Remove PWA install banner and enable clean URLs\n\n- Remove pwa-install.js from index.html to hide install banner\n- Add cleanUrls: true to vercel.json for cleaner page URLs\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(curl:*)",
+      "Bash(open http://localhost:8080/tracker.html)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nrefactor: Rename Import Tracker to Import Applications, remove screenshot option\n\n- Rename button from \"Import Tracker\" to \"Import Applications\"\n- Remove screenshot import option \\(to revisit after parsing tested\\)\n- Keep \"Import from File\" and \"Add Manually\" options\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add Comp Range field to manual application entry\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: Include JD in resume cache key to prevent stale analysis\n\nCRITICAL BUG FIX: The resume analysis cache was keyed only by resume\nhash, causing the same cached analysis \\(e.g., Mozilla\\) to be returned\nfor different job descriptions with the same resume.\n\nRoot cause: compute_resume_hash\\(\\) only hashed resume data\n- User analyzes Mozilla role → cached with resume hash\n- User analyzes different role → same hash → stale Mozilla analysis\n\nFix: compute_resume_hash\\(\\) now includes both resume AND JD text\n- Different JDs produce different cache keys\n- Each resume+JD combination gets its own cache entry\n\nThis was causing 95% fit scores for unqualified roles because the\ncache returned the previous Mozilla analysis regardless of new JD.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add pre-LLM overqualification gate to prevent \"Apply\" for IC roles\n\nWhen a Director+ level candidate applies for a mid-level IC role \\(like\n\"Recruiter - 6 month contract\"\\), the system now correctly identifies\noverqualification and adjusts the recommendation:\n\n- Level gap >= 2: Forces \"Skip - Overqualified\" recommendation\n- Level gap == 1: Downgrades to \"Apply with Caution\"\n\nThe gate runs BEFORE Claude analysis and enforces the decision in\npost-processing, ensuring the recommendation reflects the level mismatch.\n\nRoot cause: Reality checks detected overqualification but only added\ncoaching notes - they didn''t override Claude''s \"Apply\" recommendation.\n\nNow: Pre-LLM gate runs deterministically based on:\n- Candidate''s highest level from resume titles \\(Director+, Manager, etc.\\)\n- Target role level from JD title\n- Level gap calculation \\(director_plus=5, manager=4, senior=3, mid=2\\)\n\nThis prevents trust erosion when candidates see \"Apply\" for roles they''re\nclearly overqualified for.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(export PATH=\"$HOME/.railway/bin:$PATH\")",
+      "Bash(npx @railway/cli up:*)",
+      "Bash(lsof:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add conversational/text mode toggle to Practice Drills\n\n- Add mode selection UI with Conversational \\(default\\) and Text Only options\n- Display benefits of conversational mode \\(real simulation, think on feet, voice response, better retention\\)\n- Fix audio cutting off issue - TTS now fully completes before allowing response\n- Add visual \"Coach is speaking...\" indicator during audio playback\n- Fix speech-to-text transcription API endpoint and response handling\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(gh workflow:*)",
+      "Bash(railway status:*)"
     ],
     "deny": [],
     "ask": []

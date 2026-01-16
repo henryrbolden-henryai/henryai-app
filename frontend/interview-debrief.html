@@ -373,8 +373,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 16px;
+            gap: 6px;
+            padding: 20px 16px;
             background: #1f2937;
             border: 1px solid #374151;
             border-radius: 10px;
@@ -393,15 +393,221 @@
         }
 
         .outcome-icon {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+            color: #9ca3af;
         }
 
         .outcome-text {
             color: #e5e7eb;
             font-size: 0.9rem;
+            font-weight: 500;
         }
 
-        /* Next Round Section */
+        .outcome-subtext {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        /* Signal-Specific Coaching Sections */
+        .coaching-section {
+            background: #1f2937;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid #374151;
+        }
+
+        .coaching-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .coaching-header.positive { border-bottom-color: #10b98140; }
+        .coaching-header.mixed { border-bottom-color: #f59e0b40; }
+        .coaching-header.neutral { border-bottom-color: #6b728040; }
+        .coaching-header.waiting { border-bottom-color: #3b82f640; }
+
+        .coaching-icon {
+            font-size: 1.5rem;
+        }
+
+        .coaching-title {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .coaching-content {
+            color: #d1d5db;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .coaching-content p {
+            margin-bottom: 12px;
+        }
+
+        .coaching-content strong {
+            color: #f59e0b;
+        }
+
+        .coaching-content .highlight {
+            background: rgba(245, 158, 11, 0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 3px solid #f59e0b;
+            margin: 16px 0;
+        }
+
+        .coaching-content .learning {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 3px solid #3b82f6;
+            margin: 16px 0;
+        }
+
+        .coaching-content .reassurance {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 3px solid #10b981;
+            margin: 16px 0;
+        }
+
+        .coaching-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px;
+            color: #9ca3af;
+        }
+
+        .coaching-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .coaching-action-btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .coaching-action-btn.primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+        }
+
+        .coaching-action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .coaching-action-btn.secondary {
+            background: #374151;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+        }
+
+        .coaching-action-btn.secondary:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+
+        .coaching-action-btn.tertiary {
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid #374151;
+        }
+
+        .coaching-action-btn.tertiary:hover {
+            color: #e5e7eb;
+            border-color: #4b5563;
+        }
+
+        .form-section-title {
+            color: #9ca3af;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .follow-up-output-section {
+            margin-top: 20px;
+        }
+
+        /* Reflection Checkpoint (Mixed Signal) */
+        .reflection-checkpoint,
+        .takeaway-checkpoint {
+            padding: 8px 0;
+        }
+
+        .reflection-prompt,
+        .takeaway-prompt {
+            color: #e5e7eb;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .reflection-input {
+            width: 100%;
+            min-height: 100px;
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #e5e7eb;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            resize: vertical;
+            margin-bottom: 16px;
+        }
+
+        .reflection-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .reflection-input::placeholder {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .reflection-timer {
+            color: #6b7280;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 12px;
+            transition: color 0.3s;
+        }
+
+        .reflection-timer.ready {
+            color: #10b981;
+        }
+
+        .takeaway-input-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #374151;
+        }
+
+        /* Next Round Section (legacy) */
         .next-round-section {
             background: #1f2937;
             border-radius: 12px;
@@ -1114,29 +1320,51 @@ Examples of helpful info:
             </div>
             <div class="debrief-complete-section" id="debriefCompleteSection" style="display: none;">
                 <div class="outcome-section" id="outcomeSection">
-                    <p class="outcome-prompt">How did the interview end?</p>
+                    <p class="outcome-prompt">What signal did you get?</p>
                     <div class="outcome-buttons">
-                        <button class="outcome-btn" data-outcome="offer" onclick="selectOutcome('offer')">
-                            <span class="outcome-icon">🎉</span>
-                            <span class="outcome-text">Got an offer</span>
+                        <button class="outcome-btn" data-outcome="strong_positive" onclick="selectOutcome('strong_positive')">
+                            <span class="outcome-icon">✓</span>
+                            <span class="outcome-text">Strong positive signal</span>
+                            <span class="outcome-subtext">Felt aligned, good energy, clear next steps</span>
                         </button>
-                        <button class="outcome-btn" data-outcome="next_round" onclick="selectOutcome('next_round')">
-                            <span class="outcome-icon">⏩</span>
-                            <span class="outcome-text">Moving to next round</span>
+                        <button class="outcome-btn" data-outcome="mixed" onclick="selectOutcome('mixed')">
+                            <span class="outcome-icon">~</span>
+                            <span class="outcome-text">Mixed / unclear signal</span>
+                            <span class="outcome-subtext">Some traction, some flags, no clarity yet</span>
                         </button>
-                        <button class="outcome-btn" data-outcome="rejected" onclick="selectOutcome('rejected')">
+                        <button class="outcome-btn" data-outcome="likely_no" onclick="selectOutcome('likely_no')">
                             <span class="outcome-icon">✕</span>
-                            <span class="outcome-text">Didn't advance</span>
+                            <span class="outcome-text">Likely no</span>
+                            <span class="outcome-subtext">Energy off, gaps exposed, or soft rejection</span>
                         </button>
-                        <button class="outcome-btn" data-outcome="waiting" onclick="selectOutcome('waiting')">
-                            <span class="outcome-icon">⏳</span>
-                            <span class="outcome-text">Still waiting to hear</span>
+                        <button class="outcome-btn" data-outcome="awaiting" onclick="selectOutcome('awaiting')">
+                            <span class="outcome-icon">...</span>
+                            <span class="outcome-text">Awaiting response</span>
+                            <span class="outcome-subtext">No signal yet, timing dependent</span>
                         </button>
                     </div>
                 </div>
-                <div class="next-round-section" id="nextRoundSection" style="display: none;">
-                    <p class="next-round-prompt">Great! Let's schedule your next round.</p>
-                    <div class="next-round-form">
+                <!-- SIGNAL-SPECIFIC COACHING SECTIONS -->
+
+                <!-- Strong Positive: Reinforce + Next Round -->
+                <div class="coaching-section" id="coachingStrongPositive" style="display: none;">
+                    <div class="coaching-header positive">
+                        <span class="coaching-icon">🔥</span>
+                        <span class="coaching-title">You're in a strong position</span>
+                    </div>
+                    <div class="coaching-content" id="strongPositiveCoaching">
+                        <div class="coaching-loading">
+                            <div class="loading-spinner"></div>
+                            <span>Generating coaching...</span>
+                        </div>
+                    </div>
+                    <div class="coaching-actions">
+                        <button class="coaching-action-btn primary" onclick="generateFollowUp('thank_you')">
+                            ✉️ Draft thank-you email
+                        </button>
+                    </div>
+                    <div class="next-round-form" id="nextRoundForm" style="margin-top: 20px;">
+                        <p class="form-section-title">Schedule your next round</p>
                         <div class="form-row">
                             <label>Interview Type</label>
                             <select id="nextRoundType">
@@ -1154,28 +1382,108 @@ Examples of helpful info:
                             <label>Interviewer Name (if known)</label>
                             <input type="text" id="nextRoundInterviewer" placeholder="e.g., Sarah Chen" />
                         </div>
+                        <button class="schedule-next-btn" onclick="scheduleNextRound()">
+                            Schedule Next Round
+                        </button>
+                        <button class="skip-btn" onclick="skipToComplete()">
+                            I'll add details later
+                        </button>
                     </div>
-                    <button class="schedule-next-btn" onclick="scheduleNextRound()">
-                        Schedule Next Round
-                    </button>
-                    <button class="skip-btn" onclick="skipNextRound()">
-                        I'll add details later
-                    </button>
                 </div>
-                <div class="follow-up-section" id="followUpSection" style="display: none;">
-                    <div class="follow-up-header">
-                        <span class="follow-up-icon">✉️</span>
-                        <span class="follow-up-title">Send a follow-up email</span>
+
+                <!-- Mixed Signal: Reflect + Adjust -->
+                <div class="coaching-section" id="coachingMixed" style="display: none;">
+                    <div class="coaching-header mixed">
+                        <span class="coaching-icon">🎯</span>
+                        <span class="coaching-title">Let's unpack what happened</span>
                     </div>
-                    <div class="follow-up-buttons">
-                        <button class="follow-up-type-btn" onclick="generateFollowUp('thank_you')">
-                            Thank You Email
-                        </button>
-                        <button class="follow-up-type-btn" onclick="generateFollowUp('check_in')" id="checkInBtn" style="display: none;">
-                            Check-in Email
+                    <!-- Phase 1: Reflection checkpoint (30 seconds minimum) -->
+                    <div class="reflection-checkpoint" id="mixedReflectionCheckpoint">
+                        <p class="reflection-prompt">Before we get tactical—was there a moment where you felt the energy shift?</p>
+                        <textarea class="reflection-input" id="mixedReflectionInput" placeholder="A question that caught you off guard, a point where your answer wasn't landing, a topic that seemed to change the room..."></textarea>
+                        <div class="reflection-timer" id="mixedReflectionTimer">Take a moment</div>
+                        <button class="coaching-action-btn primary" id="mixedReflectionSubmit" onclick="submitMixedReflection()" disabled>
+                            Continue
                         </button>
                     </div>
-                    <div class="follow-up-output" id="followUpOutput" style="display: none;">
+                    <!-- Phase 2: Coaching (shown after reflection) -->
+                    <div class="coaching-content" id="mixedCoaching" style="display: none;">
+                        <div class="coaching-loading">
+                            <div class="loading-spinner"></div>
+                            <span>Processing your reflection...</span>
+                        </div>
+                    </div>
+                    <div class="coaching-actions" id="mixedActions" style="display: none;">
+                        <button class="coaching-action-btn primary" onclick="generateFollowUp('strategic')">
+                            ✉️ Draft strategic follow-up
+                        </button>
+                        <button class="coaching-action-btn secondary" onclick="continueReflection()">
+                            💭 Keep reflecting
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Likely No: Contain + Extract + Move -->
+                <div class="coaching-section" id="coachingLikelyNo" style="display: none;">
+                    <div class="coaching-header neutral">
+                        <span class="coaching-icon">📝</span>
+                        <span class="coaching-title">Extract the lesson, move forward</span>
+                    </div>
+                    <!-- Phase 1: Takeaway extraction -->
+                    <div class="takeaway-checkpoint" id="likelyNoTakeawayCheckpoint">
+                        <div class="coaching-content" id="likelyNoCoaching">
+                            <div class="coaching-loading">
+                                <div class="loading-spinner"></div>
+                                <span>Processing...</span>
+                            </div>
+                        </div>
+                        <div class="takeaway-input-section" id="takeawayInputSection" style="display: none;">
+                            <p class="takeaway-prompt">One thing you wish you'd said differently:</p>
+                            <textarea class="reflection-input" id="takeawayInput" placeholder="Not the whole interview. Just one moment."></textarea>
+                            <button class="coaching-action-btn primary" onclick="submitTakeaway()">
+                                Save this for next time
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Phase 2: Actions (shown after takeaway) -->
+                    <div class="coaching-actions" id="likelyNoActions" style="display: none;">
+                        <button class="coaching-action-btn primary" onclick="goToCommandCenter()">
+                            → Back to pipeline
+                        </button>
+                        <button class="coaching-action-btn secondary" onclick="showPracticeRecommendation()">
+                            🎯 Work on that skill
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Awaiting Response: Prevent Spiral -->
+                <div class="coaching-section" id="coachingAwaiting" style="display: none;">
+                    <div class="coaching-header waiting">
+                        <span class="coaching-icon">⏱️</span>
+                        <span class="coaching-title">The waiting game</span>
+                    </div>
+                    <div class="coaching-content" id="awaitingCoaching">
+                        <div class="coaching-loading">
+                            <div class="loading-spinner"></div>
+                            <span>Loading guidance...</span>
+                        </div>
+                    </div>
+                    <div class="coaching-actions" id="awaitingActions" style="display: none;">
+                        <button class="coaching-action-btn primary" onclick="generateFollowUp('thank_you')">
+                            ✉️ Send thank-you now
+                        </button>
+                        <button class="coaching-action-btn secondary" onclick="scheduleCheckIn()">
+                            📅 Set follow-up reminder
+                        </button>
+                        <button class="coaching-action-btn tertiary" onclick="goToCommandCenter()">
+                            → Focus on other opportunities
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shared Follow-up Email Output -->
+                <div class="follow-up-output-section" id="followUpOutputSection" style="display: none;">
+                    <div class="follow-up-output">
                         <div class="follow-up-email" id="followUpEmail"></div>
                         <div class="follow-up-actions">
                             <button class="copy-email-btn" onclick="copyFollowUpEmail()">
@@ -1470,28 +1778,321 @@ Examples of helpful info:
                 selectedBtn.classList.add('selected');
             }
 
-            // Handle different outcomes
-            if (outcome === 'next_round') {
-                // Show next round scheduling form
-                document.getElementById('nextRoundSection').style.display = 'block';
-                document.getElementById('followUpSection').style.display = 'none';
-                document.getElementById('goToCommandCenterBtn').style.display = 'none';
-            } else {
-                // Hide next round form, show follow-up section and go to CC button
-                document.getElementById('nextRoundSection').style.display = 'none';
-                showFollowUpSection();
-                document.getElementById('goToCommandCenterBtn').style.display = 'block';
+            // Hide all coaching sections first
+            document.getElementById('coachingStrongPositive').style.display = 'none';
+            document.getElementById('coachingMixed').style.display = 'none';
+            document.getElementById('coachingLikelyNo').style.display = 'none';
+            document.getElementById('coachingAwaiting').style.display = 'none';
+            document.getElementById('followUpOutputSection').style.display = 'none';
+            document.getElementById('goToCommandCenterBtn').style.display = 'none';
 
-                // Update status based on outcome
-                if (currentInterview) {
-                    if (outcome === 'offer') {
-                        updateTrackerStatus('Offer');
-                    } else if (outcome === 'rejected') {
-                        updateTrackerStatus('Rejected');
+            // Update status based on signal
+            if (currentInterview && outcome === 'likely_no') {
+                updateTrackerStatus('Rejected');
+            }
+
+            // Branch immediately to signal-specific coaching
+            switch (outcome) {
+                case 'strong_positive':
+                    document.getElementById('coachingStrongPositive').style.display = 'block';
+                    generateSignalCoaching('strong_positive');
+                    break;
+                case 'mixed':
+                    // Show reflection checkpoint first, don't auto-generate coaching
+                    document.getElementById('coachingMixed').style.display = 'block';
+                    startMixedReflectionTimer();
+                    break;
+                case 'likely_no':
+                    document.getElementById('coachingLikelyNo').style.display = 'block';
+                    generateSignalCoaching('likely_no');
+                    break;
+                case 'awaiting':
+                    document.getElementById('coachingAwaiting').style.display = 'block';
+                    generateSignalCoaching('awaiting');
+                    break;
+            }
+        }
+
+        // Generate signal-specific coaching based on outcome
+        async function generateSignalCoaching(signal) {
+            const contentMap = {
+                'strong_positive': 'strongPositiveCoaching',
+                'mixed': 'mixedCoaching',
+                'likely_no': 'likelyNoCoaching',
+                'awaiting': 'awaitingCoaching'
+            };
+            const actionsMap = {
+                'mixed': 'mixedActions',
+                'awaiting': 'awaitingActions'
+                // Note: likely_no actions shown after takeaway, not after coaching
+            };
+
+            const contentEl = document.getElementById(contentMap[signal]);
+            const actionsEl = actionsMap[signal] ? document.getElementById(actionsMap[signal]) : null;
+
+            try {
+                // Build debrief context from conversation
+                let debriefContext = '';
+                if (conversationHistory.length > 0) {
+                    debriefContext = conversationHistory
+                        .map(m => `${m.role === 'user' ? 'Candidate' : 'Coach'}: ${m.content}`)
+                        .join('\n\n')
+                        .substring(0, 3000);
+                }
+
+                // For mixed signals, include the reflection they just wrote
+                let reflectionContext = '';
+                if (signal === 'mixed' && mixedReflectionText) {
+                    reflectionContext = `\n\nCandidate's reflection on what shifted: ${mixedReflectionText}`;
+                }
+
+                const response = await fetch(`${API_BASE}/api/debrief/signal-coaching`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        signal: signal,
+                        feeling: selectedFeeling,
+                        company: currentInterview?.company,
+                        role: currentInterview?.role,
+                        interview_type: currentInterview?.type,
+                        debrief_context: debriefContext + reflectionContext,
+                        candidate_name: resumeData?.name || null,
+                        reflection: mixedReflectionText || null
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to generate coaching');
+
+                const data = await response.json();
+                contentEl.innerHTML = formatCoachingContent(data.coaching, signal);
+
+                // Signal-specific post-coaching actions
+                handlePostCoaching(signal, actionsEl);
+
+            } catch (error) {
+                console.error('Error generating coaching:', error);
+                // Fallback to static coaching
+                contentEl.innerHTML = formatCoachingContent(getStaticCoaching(signal), signal);
+                handlePostCoaching(signal, actionsEl);
+            }
+        }
+
+        function handlePostCoaching(signal, actionsEl) {
+            switch (signal) {
+                case 'strong_positive':
+                    // Show done button
+                    document.getElementById('goToCommandCenterBtn').style.display = 'block';
+                    break;
+                case 'mixed':
+                    // Show follow-up actions
+                    if (actionsEl) actionsEl.style.display = 'flex';
+                    document.getElementById('goToCommandCenterBtn').style.display = 'block';
+                    break;
+                case 'likely_no':
+                    // Show takeaway input first, not actions yet
+                    showTakeawayInput();
+                    break;
+                case 'awaiting':
+                    // Show actions
+                    if (actionsEl) actionsEl.style.display = 'flex';
+                    break;
+            }
+        }
+
+        function formatCoachingContent(text, signal) {
+            // Convert markdown-like formatting to styled HTML
+            let html = text
+                .split('\n\n')
+                .map(para => {
+                    // Highlight boxes based on signal
+                    if (para.startsWith('**Leverage:**') || para.startsWith('**Double down on:**')) {
+                        return `<div class="highlight">${para.replace(/\*\*(.+?):\*\*/, '<strong>$1:</strong>')}</div>`;
                     }
-                    // 'waiting' keeps status as 'Interviewed'
+                    if (para.startsWith('**Learning:**') || para.startsWith('**Takeaway:**')) {
+                        return `<div class="learning">${para.replace(/\*\*(.+?):\*\*/, '<strong>$1:</strong>')}</div>`;
+                    }
+                    if (para.startsWith('**Remember:**') || para.startsWith('**Reality check:**')) {
+                        return `<div class="reassurance">${para.replace(/\*\*(.+?):\*\*/, '<strong>$1:</strong>')}</div>`;
+                    }
+                    // Regular paragraphs with bold/italic
+                    return `<p>${para
+                        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    }</p>`;
+                })
+                .join('');
+            return html;
+        }
+
+        function getStaticCoaching(signal) {
+            const company = currentInterview?.company || 'the company';
+
+            switch (signal) {
+                case 'strong_positive':
+                    return `Good energy coming out of that one. Now let's make sure you don't leave momentum on the table.
+
+**Leverage:** Your instincts are telling you something landed. Trust that. In your thank-you email, reference one specific moment from the conversation that felt like genuine connection—not generic enthusiasm.
+
+**Double down on:** Whatever made them light up, that's your edge. Make sure you can articulate that same energy in the next round with a different interviewer who wasn't in the room.
+
+Don't over-prepare yourself out of the authenticity that got you here.`;
+
+                case 'mixed':
+                    return `Mixed signals are the most common outcome—and the most coachable. Let's figure out what actually happened.
+
+Before I give you tactical advice, I need you to be honest with yourself: Was there a moment where you felt the energy shift? A question that caught you off guard? A point where you knew your answer wasn't landing?
+
+**Learning:** The gap between "it went okay" and "they're moving forward" is usually one of two things: Either you didn't connect your experience to *their* specific problem, or you said something that raised an unstated concern.
+
+Your follow-up email is a chance to address whichever one it was—without being defensive. One clean clarification. One proof point they didn't hear the first time.`;
+
+                case 'likely_no':
+                    return `This happens. To everyone. More than anyone admits.
+
+Let's not dwell—let's extract the lesson and move. One question: What's the *one thing* you wish you'd said differently? Not the whole interview. Just one moment.
+
+**Takeaway:** That moment is your coaching for the next one. Write it down somewhere you'll see it before your next interview.
+
+**Remember:** Rejection rarely means "you're not good enough." It usually means "not the right fit for this specific team, this specific moment." The same skills that didn't land here might be exactly what another team needs.
+
+You've got other shots in play. Let's go focus on those.`;
+
+                case 'awaiting':
+                    return `The waiting is the hardest part. Let's make sure you don't spiral.
+
+**Reality check:** Most interview processes take longer than they say. "We'll get back to you by Friday" often means "sometime next week." This is not a reflection of how well you did.
+
+Here's what you should do:
+1. Send a thank-you email today if you haven't already
+2. Set a calendar reminder to follow up in 5-7 business days
+3. Do NOT check your email every 30 minutes—it won't make them respond faster
+
+The best thing you can do while waiting is keep other opportunities moving. Pipeline momentum is the antidote to interview anxiety.`;
+            }
+            return '';
+        }
+
+        function skipToComplete() {
+            document.getElementById('goToCommandCenterBtn').style.display = 'block';
+        }
+
+        function continueReflection() {
+            // Scroll back to chat and add a prompt
+            document.getElementById('chatInput').focus();
+            document.getElementById('chatInput').placeholder = 'Tell me more about that moment...';
+        }
+
+        function showPracticeRecommendation() {
+            // Navigate to practice drills with a suggested skill
+            window.location.href = '/practice-drills';
+        }
+
+        // ============================================================================
+        // MIXED SIGNAL: REFLECTION CHECKPOINT
+        // ============================================================================
+        let mixedReflectionTimer = null;
+        let mixedReflectionSeconds = 30;
+        let mixedReflectionText = '';
+
+        function startMixedReflectionTimer() {
+            const timerEl = document.getElementById('mixedReflectionTimer');
+            const submitBtn = document.getElementById('mixedReflectionSubmit');
+            const inputEl = document.getElementById('mixedReflectionInput');
+
+            mixedReflectionSeconds = 30;
+            timerEl.textContent = 'Take a moment (30s)';
+            timerEl.classList.remove('ready');
+            submitBtn.disabled = true;
+
+            // Enable on input OR after timer
+            inputEl.addEventListener('input', function() {
+                mixedReflectionText = this.value;
+                // If they've written something meaningful (>20 chars), enable early
+                if (this.value.trim().length > 20) {
+                    enableMixedReflectionSubmit();
+                }
+            });
+
+            mixedReflectionTimer = setInterval(() => {
+                mixedReflectionSeconds--;
+                if (mixedReflectionSeconds > 0) {
+                    timerEl.textContent = `Take a moment (${mixedReflectionSeconds}s)`;
+                } else {
+                    enableMixedReflectionSubmit();
+                }
+            }, 1000);
+        }
+
+        function enableMixedReflectionSubmit() {
+            if (mixedReflectionTimer) {
+                clearInterval(mixedReflectionTimer);
+                mixedReflectionTimer = null;
+            }
+            const timerEl = document.getElementById('mixedReflectionTimer');
+            const submitBtn = document.getElementById('mixedReflectionSubmit');
+
+            timerEl.textContent = 'Ready when you are';
+            timerEl.classList.add('ready');
+            submitBtn.disabled = false;
+        }
+
+        async function submitMixedReflection() {
+            const inputEl = document.getElementById('mixedReflectionInput');
+            mixedReflectionText = inputEl.value.trim();
+
+            // Hide reflection checkpoint, show coaching
+            document.getElementById('mixedReflectionCheckpoint').style.display = 'none';
+            document.getElementById('mixedCoaching').style.display = 'block';
+
+            // Now generate coaching that incorporates their reflection
+            await generateSignalCoaching('mixed');
+        }
+
+        // ============================================================================
+        // LIKELY NO: TAKEAWAY EXTRACTION
+        // ============================================================================
+        let extractedTakeaway = '';
+
+        function showTakeawayInput() {
+            document.getElementById('takeawayInputSection').style.display = 'block';
+        }
+
+        async function submitTakeaway() {
+            const inputEl = document.getElementById('takeawayInput');
+            extractedTakeaway = inputEl.value.trim();
+
+            if (extractedTakeaway) {
+                // Store the takeaway for future reference
+                try {
+                    const takeaways = JSON.parse(localStorage.getItem('interviewTakeaways') || '[]');
+                    takeaways.push({
+                        company: currentInterview?.company,
+                        role: currentInterview?.role,
+                        date: new Date().toISOString(),
+                        takeaway: extractedTakeaway
+                    });
+                    localStorage.setItem('interviewTakeaways', JSON.stringify(takeaways));
+                } catch (e) {
+                    console.error('Error saving takeaway:', e);
                 }
             }
+
+            // Hide takeaway section, show final actions
+            document.getElementById('likelyNoTakeawayCheckpoint').style.display = 'none';
+            document.getElementById('likelyNoActions').style.display = 'flex';
+            document.getElementById('goToCommandCenterBtn').style.display = 'block';
+        }
+
+        function scheduleCheckIn() {
+            // Calculate 5 business days from now
+            const followUpDate = new Date();
+            followUpDate.setDate(followUpDate.getDate() + 7);
+
+            // Create a reminder (could integrate with calendar)
+            alert(`Reminder set! Follow up with ${currentInterview?.company || 'them'} on ${followUpDate.toLocaleDateString()}`);
+
+            // For now, just show the done button
+            document.getElementById('goToCommandCenterBtn').style.display = 'block';
         }
 
         function updateTrackerStatus(newStatus) {
@@ -1548,7 +2149,7 @@ Examples of helpful info:
                     trackedApps[appIndex].interviewerName = interviewerName;
                     trackedApps[appIndex].interviewRounds = (trackedApps[appIndex].interviewRounds || 1) + 1;
                     trackedApps[appIndex].lastUpdated = new Date().toISOString();
-                    trackedApps[appIndex].outcome = 'next_round';
+                    trackedApps[appIndex].outcome = 'strong_positive';
                     localStorage.setItem('trackedApplications', JSON.stringify(trackedApps));
                 }
             } catch (error) {
@@ -1564,8 +2165,7 @@ Examples of helpful info:
         }
 
         function skipNextRound() {
-            // Just go to command center without scheduling
-            document.getElementById('nextRoundSection').style.display = 'none';
+            // Just show the done button without scheduling
             document.getElementById('goToCommandCenterBtn').style.display = 'block';
         }
 
@@ -1575,27 +2175,13 @@ Examples of helpful info:
         let currentFollowUpType = null;
         let generatedEmail = '';
 
-        function showFollowUpSection() {
-            document.getElementById('followUpSection').style.display = 'block';
-            // Show check-in button if waiting for response
-            if (selectedOutcome === 'waiting') {
-                document.getElementById('checkInBtn').style.display = 'block';
-            }
-        }
-
         async function generateFollowUp(type) {
             currentFollowUpType = type;
 
-            // Update button states
-            document.querySelectorAll('.follow-up-type-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-
-            // Show loading state
-            const outputDiv = document.getElementById('followUpOutput');
+            // Show the follow-up output section
+            const outputSection = document.getElementById('followUpOutputSection');
             const emailDiv = document.getElementById('followUpEmail');
-            outputDiv.style.display = 'block';
+            outputSection.style.display = 'block';
             emailDiv.innerHTML = '<div class="follow-up-loading"><span class="loading-spinner"></span> Generating email...</div>';
 
             try {
@@ -1655,6 +2241,20 @@ Thank you for taking the time to speak with me today about the ${role} position 
 Our conversation reinforced my enthusiasm for this opportunity. I was particularly energized by [mention specific topic discussed] and I'm confident that my experience in [relevant skill/area] would allow me to contribute meaningfully from day one.
 
 Please don't hesitate to reach out if you need any additional information. I look forward to the possibility of joining the ${company} team.
+
+Best regards,
+[Your Name]`;
+            } else if (type === 'strategic') {
+                // Strategic follow-up for mixed signals - address potential concerns
+                return `Subject: A thought after our conversation about ${role}
+
+Hi ${firstName},
+
+Thank you again for our conversation about the ${role} position. I've been reflecting on our discussion and wanted to share one additional thought.
+
+[When we discussed X, I realize I could have been clearer about Y. To add context: brief clarification that addresses potential concern without being defensive.]
+
+I remain excited about the opportunity to contribute to ${company}, particularly around [specific area you discussed]. If there's any additional information that would be helpful as you continue the process, I'm happy to provide it.
 
 Best regards,
 [Your Name]`;
@@ -1807,10 +2407,10 @@ Best regards,
                 if (existingAppIndex !== -1) {
                     // Update existing application - determine status based on outcome
                     const outcomeToStatus = {
-                        'offer': 'Offer',
-                        'rejected': 'Rejected',
-                        'next_round': 'Interviewed',
-                        'waiting': 'Interviewed'
+                        'strong_positive': 'Interviewed',
+                        'mixed': 'Interviewed',
+                        'likely_no': 'Rejected',
+                        'awaiting': 'Interviewed'
                     };
                     const newStatus = interview.outcome ? (outcomeToStatus[interview.outcome] || 'Interviewed') : 'Interviewed';
                     trackedApps[existingAppIndex].status = newStatus;
