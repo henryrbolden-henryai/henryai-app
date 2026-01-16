@@ -1123,7 +1123,7 @@
         .btn-upgrade:hover {
             background: #f59e0b;
         }
-    </style>
+
         /* Standard header */
         header {
             padding: 20px 0;
@@ -1157,6 +1157,12 @@
         .logo em {
             font-style: italic;
             color: #22d3ee;
+        }
+
+        /* Hide header and nav when embedded */
+        body.embedded header,
+        body.embedded .logo {
+            display: none;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
