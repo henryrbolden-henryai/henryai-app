@@ -465,6 +465,7 @@
             border-radius: 8px;
             font-size: 0.9rem;
             font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
@@ -915,6 +916,201 @@
             opacity: 0.9;
         }
 
+        /* COACHING MODAL (for Positioning/Outreach context selection) */
+        .coaching-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .coaching-modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .coaching-modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            max-width: 520px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 28px;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .coaching-modal-overlay.show .coaching-modal {
+            transform: translateY(0);
+        }
+
+        .coaching-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .coaching-modal-icon {
+            font-size: 1.5rem;
+        }
+
+        .coaching-modal h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .coaching-modal-intro {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .coaching-modal-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .coaching-app-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .coaching-app-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .coaching-app-item:hover {
+            border-color: var(--color-accent);
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        .coaching-app-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .coaching-app-company {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 0.95rem;
+        }
+
+        .coaching-app-role {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .coaching-app-arrow {
+            color: var(--color-text-muted);
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+        }
+
+        .coaching-app-item:hover .coaching-app-arrow {
+            transform: translateX(4px);
+            color: var(--color-accent);
+        }
+
+        .coaching-empty-state {
+            text-align: center;
+            padding: 24px 16px;
+            color: var(--color-text-secondary);
+        }
+
+        .coaching-empty-state p {
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .coaching-empty-cta {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--color-accent);
+            color: #000;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .coaching-empty-cta:hover {
+            opacity: 0.9;
+        }
+
+        .coaching-modal-tip {
+            background: rgba(34, 211, 238, 0.08);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-top: 16px;
+        }
+
+        .coaching-modal-tip-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .coaching-modal-tip p {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .coaching-modal-close {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.2s;
+        }
+
+        .coaching-modal-close:hover {
+            border-color: var(--color-text-secondary);
+            color: var(--color-text);
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -1189,6 +1385,28 @@
                     <p>Calculate your target rate: (Annual Salary ÷ 2000 hours) × 1.3 to account for benefits/taxes you'll self-pay.</p>
                 </div>
                 <button class="contract-modal-close" onclick="closeContractGuidanceModal()">Got it</button>
+            </div>
+        </div>
+
+        <!-- Coaching Context Modal (for Positioning/Outreach) -->
+        <div class="coaching-modal-overlay" id="coachingModalOverlay" onclick="closeCoachingModal(event)">
+            <div class="coaching-modal" onclick="event.stopPropagation()">
+                <div class="coaching-modal-header">
+                    <span class="coaching-modal-icon" id="coachingModalIcon">🎯</span>
+                    <h3 id="coachingModalTitle">Select a Role</h3>
+                </div>
+                <p class="coaching-modal-intro" id="coachingModalIntro">
+                    Positioning and outreach strategies are tailored to each specific role. Select one of your active applications to view its strategy.
+                </p>
+                <div class="coaching-modal-label">Your Active Applications</div>
+                <div class="coaching-app-list" id="coachingAppList">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="coaching-modal-tip">
+                    <div class="coaching-modal-tip-label">How it works</div>
+                    <p id="coachingModalTip">Each role you analyze gets personalized positioning guidance and outreach templates. Access them anytime from the strategy overview page.</p>
+                </div>
+                <button class="coaching-modal-close" onclick="closeCoachingModal()">Cancel</button>
             </div>
         </div>
 
@@ -1687,7 +1905,7 @@
                     headline: 'Confidence comes from preparation',
                     detail: `You mentioned feeling ${confidence === 'low' ? 'low confidence' : 'like you need validation'} about your search. Here's the truth: <strong>confidence is built, not found</strong>. Practice your story, research your targets, and prepare like the interviews are already scheduled. You've got this.`,
                     primaryBtn: { text: 'Practice Interview', link: '/interview-intelligence' },
-                    secondaryBtn: { text: 'Review Positioning', link: '/positioning' }
+                    secondaryBtn: { text: 'Review Positioning', modalDest: 'positioning' }
                 };
             }
             // Scenario 5: Thin pipeline without urgency (gentler nudge)
@@ -1720,6 +1938,9 @@
                         actionsHTML += `<button class="reality-check-btn secondary" data-prompt="${encodeURIComponent(realityContent.secondaryBtn.prompt)}" onclick="handleHeyHenryPrompt(this)">${realityContent.secondaryBtn.text}</button>`;
                     } else if (realityContent.secondaryBtn.action === 'openHeyHenry') {
                         actionsHTML += `<button class="reality-check-btn secondary" onclick="if(window.openHeyHenry) window.openHeyHenry();">${realityContent.secondaryBtn.text}</button>`;
+                    } else if (realityContent.secondaryBtn.modalDest) {
+                        // Use coaching modal for positioning/outreach
+                        actionsHTML += `<button class="reality-check-btn secondary" onclick="showCoachingModal('${realityContent.secondaryBtn.modalDest}')">${realityContent.secondaryBtn.text}</button>`;
                     } else {
                         actionsHTML += `<a href="${realityContent.secondaryBtn.link}" class="reality-check-btn secondary">${realityContent.secondaryBtn.text}</a>`;
                     }
@@ -1872,21 +2093,181 @@
             document.getElementById('contractModalOverlay').classList.remove('show');
         }
 
+        // ========================================================================
+        // COACHING MODAL (for context-aware Positioning/Outreach navigation)
+        // ========================================================================
+        let pendingCoachingDestination = null;
+
+        const COACHING_MODAL_CONTENT = {
+            positioning: {
+                icon: '🎯',
+                title: 'View Positioning Strategy',
+                intro: 'Your positioning strategy is tailored to each role you\'re targeting. Select an application to see how to best position yourself for that specific opportunity.',
+                tip: 'Positioning shows you what to emphasize and de-emphasize based on the role requirements, company culture, and your background.'
+            },
+            outreach: {
+                icon: '📧',
+                title: 'View Outreach Templates',
+                intro: 'Outreach messages are customized for each company and role. Select an application to access personalized email templates and LinkedIn messages.',
+                tip: 'Each role has ready-to-send templates for reaching out to recruiters, hiring managers, and internal contacts.'
+            }
+        };
+
+        function showCoachingModal(destination) {
+            pendingCoachingDestination = destination;
+            const content = COACHING_MODAL_CONTENT[destination] || COACHING_MODAL_CONTENT.positioning;
+
+            // Update modal content
+            document.getElementById('coachingModalIcon').textContent = content.icon;
+            document.getElementById('coachingModalTitle').textContent = content.title;
+            document.getElementById('coachingModalIntro').textContent = content.intro;
+            document.getElementById('coachingModalTip').textContent = content.tip;
+
+            // Populate application list
+            const apps = getApplications();
+            const activeApps = apps.filter(a => {
+                const status = STATUSES[a.status];
+                return status && status.active;
+            });
+
+            const listContainer = document.getElementById('coachingAppList');
+
+            if (activeApps.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="coaching-empty-state">
+                        <p>You don't have any active applications yet. Analyze a new role to get personalized ${destination} strategies.</p>
+                        <a href="/index" class="coaching-empty-cta">Analyze New Role</a>
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = activeApps.map(app => `
+                    <div class="coaching-app-item" onclick="navigateToCoachingDestination('${app.id}')">
+                        <div class="coaching-app-info">
+                            <div class="coaching-app-company">${app.company || 'Unknown Company'}</div>
+                            <div class="coaching-app-role">${app.role_title || app.role || 'Role'}</div>
+                        </div>
+                        <span class="coaching-app-arrow">→</span>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('coachingModalOverlay').classList.add('show');
+        }
+
+        function closeCoachingModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('coachingModalOverlay').classList.remove('show');
+            pendingCoachingDestination = null;
+        }
+
+        function navigateToCoachingDestination(appId) {
+            const apps = getApplications();
+            const app = apps.find(a => String(a.id) === String(appId));
+            if (!app) {
+                console.error('Application not found:', appId);
+                return;
+            }
+
+            // Get analysis data - prefer Supabase, fall back to localStorage
+            let analysisData = null;
+
+            if (app.analysisData && typeof app.analysisData === 'object') {
+                analysisData = app.analysisData;
+            } else if (app.analysis_data && typeof app.analysis_data === 'object') {
+                analysisData = app.analysis_data;
+            } else if (app.analysisKey) {
+                const stored = localStorage.getItem(app.analysisKey);
+                if (stored) {
+                    try {
+                        analysisData = JSON.parse(stored);
+                    } catch (e) {
+                        console.error('Failed to parse localStorage analysis data');
+                    }
+                }
+            }
+
+            if (!analysisData) {
+                // No analysis data available - redirect to strategy overview instead
+                alert('Strategy data not found for this application. Please view the Strategy Overview.');
+                closeCoachingModal();
+                return;
+            }
+
+            // Store in sessionStorage for the destination page
+            sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
+
+            // Navigate to destination
+            closeCoachingModal();
+            window.location.href = '/' + pendingCoachingDestination;
+        }
+
+        // Direct navigation with specific app context (skips modal)
+        function navigateWithAppContext(appId, destination) {
+            const apps = getApplications();
+            const app = apps.find(a => String(a.id) === String(appId));
+            if (!app) {
+                console.error('Application not found:', appId);
+                // Fall back to modal
+                showCoachingModal(destination);
+                return;
+            }
+
+            // Get analysis data - prefer Supabase, fall back to localStorage
+            let analysisData = null;
+
+            if (app.analysisData && typeof app.analysisData === 'object') {
+                analysisData = app.analysisData;
+            } else if (app.analysis_data && typeof app.analysis_data === 'object') {
+                analysisData = app.analysis_data;
+            } else if (app.analysisKey) {
+                const stored = localStorage.getItem(app.analysisKey);
+                if (stored) {
+                    try {
+                        analysisData = JSON.parse(stored);
+                    } catch (e) {
+                        console.error('Failed to parse localStorage analysis data');
+                    }
+                }
+            }
+
+            if (!analysisData) {
+                // No analysis data - fall back to modal to let user pick another app
+                showCoachingModal(destination);
+                return;
+            }
+
+            // Store in sessionStorage and navigate directly
+            sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
+            window.location.href = '/' + destination;
+        }
+
         function renderTodaysFocus(profile, apps, activeApps) {
             const container = document.getElementById('focusItems');
             const focusItems = generateFocusItems(profile, apps, activeApps);
 
-            container.innerHTML = focusItems.map((item, i) => `
-                <div class="focus-item ${item.type || ''} ${item.completed ? 'completed' : ''}">
-                    <div class="focus-item-content">
-                        ${item.label ? `<div class="focus-item-label">${item.label}</div>` : ''}
-                        <div class="focus-message">${item.message}</div>
+            container.innerHTML = focusItems.map((item, i) => {
+                let buttonHtml = '';
+                if (item.buttonText) {
+                    if (item.buttonAppId && item.buttonModalDest) {
+                        // Direct navigation with specific app context (e.g., follow-up for specific company)
+                        buttonHtml = `<button onclick="navigateWithAppContext('${item.buttonAppId}', '${item.buttonModalDest}')" class="focus-button ${item.buttonType || ''}">${item.buttonText}</button>`;
+                    } else if (item.buttonModalDest) {
+                        // Use modal for positioning/outreach (context-aware navigation)
+                        buttonHtml = `<button onclick="showCoachingModal('${item.buttonModalDest}')" class="focus-button ${item.buttonType || ''}">${item.buttonText}</button>`;
+                    } else if (item.buttonLink) {
+                        buttonHtml = `<a href="${item.buttonLink}" class="focus-button ${item.buttonType || ''}">${item.buttonText}</a>`;
+                    }
+                }
+                return `
+                    <div class="focus-item ${item.type || ''} ${item.completed ? 'completed' : ''}">
+                        <div class="focus-item-content">
+                            ${item.label ? `<div class="focus-item-label">${item.label}</div>` : ''}
+                            <div class="focus-message">${item.message}</div>
+                        </div>
+                        ${buttonHtml}
                     </div>
-                    ${item.buttonText ? `
-                        <a href="${item.buttonLink}" class="focus-button ${item.buttonType || ''}">${item.buttonText}</a>
-                    ` : ''}
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function generateFocusItems(profile, apps, activeApps) {
@@ -1985,7 +2366,8 @@
                             label: 'Priority',
                             message: `<strong>Follow up with ${app.company}</strong>: ${daysSince} days since your interview`,
                             buttonText: 'Draft Follow-up',
-                            buttonLink: '/outreach'
+                            buttonModalDest: 'outreach',
+                            buttonAppId: app.id
                         });
                     } else {
                         items.push({
@@ -2006,7 +2388,8 @@
                     label: 'Priority',
                     message: `<strong>Follow up with ${oldestFollowUp.company}</strong>: ${daysSince} days since applying`,
                     buttonText: 'Draft Follow-up',
-                    buttonLink: '/outreach'
+                    buttonModalDest: 'outreach',
+                    buttonAppId: oldestFollowUp.id
                 });
             } else if (activeApps.length > 0) {
                 // Has active apps but nothing urgent - suggest keeping momentum
@@ -2075,20 +2458,20 @@
                     buttonType: 'secondary'
                 });
             } else if (followUpsDue.length > 1) {
-                // Multiple follow-ups due
+                // Multiple follow-ups due - show modal to select which one
                 items.push({
                     label: 'Follow-ups',
                     message: `<strong>${followUpsDue.length} applications</strong> need follow-up messages`,
-                    buttonText: 'Draft All',
-                    buttonLink: '/outreach',
+                    buttonText: 'Draft Follow-up',
+                    buttonModalDest: 'outreach',
                     type: 'secondary',
                     buttonType: 'secondary'
                 });
             } else {
                 // General coaching tip
                 const tips = [
-                    { message: '<strong>Tip:</strong> Personalize each application. Generic submissions get filtered out.', link: '/positioning', btn: 'Positioning' },
-                    { message: '<strong>Tip:</strong> Network connections increase response rates by 4x.', link: '/outreach', btn: 'Outreach' },
+                    { message: '<strong>Tip:</strong> Personalize each application. Generic submissions get filtered out.', btn: 'Positioning', modalDest: 'positioning' },
+                    { message: '<strong>Tip:</strong> Network connections increase response rates by 4x.', btn: 'Outreach', modalDest: 'outreach' },
                     { message: '<strong>Tip:</strong> Practice your story. Preparation shows in interviews.', link: '/interview-intelligence', btn: 'Prep' }
                 ];
                 const tip = tips[Math.floor(Math.random() * tips.length)];
@@ -2096,7 +2479,8 @@
                     label: 'Coaching',
                     message: tip.message,
                     buttonText: tip.btn,
-                    buttonLink: tip.link,
+                    buttonLink: tip.link || null,
+                    buttonModalDest: tip.modalDest || null,
                     type: 'secondary',
                     buttonType: 'secondary'
                 });
