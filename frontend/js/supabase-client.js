@@ -1694,6 +1694,255 @@ const HenryData = {
     },
 
     // ==========================================
+    // Story Bank Enhancement Methods
+    // AI Generation, Recommendations, Insights, Templates, Coach View
+    // ==========================================
+
+    /**
+     * Generate AI draft stories from resume
+     * @param {Object} resumeJson - Parsed resume data
+     * @param {Object} options - Generation options
+     * @returns {Object} - Generated stories with coaching cues
+     */
+    async generateAIStories(resumeJson, options = {}) {
+        const response = await fetch(`${this.API_BASE}/api/story-bank/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                resume_json: resumeJson,
+                interview_stage: options.interview_stage || 'hiring_manager',
+                target_role_level: options.role_level,
+                target_role: options.target_role,
+                competencies: options.competencies,
+                generate_core_3: options.generate_core_3 !== false, // Default true
+                max_stories: options.max_stories || 3
+            })
+        });
+        if (!response.ok) throw new Error('Failed to generate stories');
+        return response.json();
+    },
+
+    /**
+     * Get story recommendations for interview prep
+     * @param {Object} context - Interview context
+     * @returns {Object} - Recommended stories with tiers
+     */
+    async getStoryRecommendations(context) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const response = await fetch(`${this.API_BASE}/api/story-bank/recommend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: user.id,
+                company: context.company,
+                role_title: context.role_title,
+                interview_stage: context.interview_stage || 'hiring_manager',
+                role_level: context.role_level || 'Manager',
+                company_type: context.company_type,
+                competencies_to_focus: context.competencies,
+                include_conflict_story: context.include_conflict_story !== false
+            })
+        });
+        if (!response.ok) throw new Error('Failed to get recommendations');
+        return response.json();
+    },
+
+    /**
+     * Get story insights/analytics
+     * @returns {Object} - Performance analytics by dimension
+     */
+    async getStoryInsights() {
+        const user = await HenryAuth.getUser();
+        if (!user) return null;
+
+        const response = await fetch(`${this.API_BASE}/api/story-bank/insights/${user.id}`);
+        if (!response.ok) throw new Error('Failed to fetch insights');
+        return response.json();
+    },
+
+    /**
+     * Get story templates (tier-gated)
+     * @param {string} tier - User's tier for access check
+     * @returns {Object} - Templates list with access status
+     */
+    async getStoryTemplates(tier = 'preview') {
+        const user = await HenryAuth.getUser();
+        const userId = user ? user.id : null;
+
+        const response = await fetch(`${this.API_BASE}/api/story-bank/templates?user_id=${userId}&tier=${tier}`);
+        if (!response.ok) throw new Error('Failed to fetch templates');
+        return response.json();
+    },
+
+    /**
+     * Create story from template
+     * @param {string} templateId - Template UUID
+     * @param {Object} responses - User's STAR responses
+     * @returns {Object} - Created story
+     */
+    async useStoryTemplate(templateId, responses) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const response = await fetch(`${this.API_BASE}/api/story-bank/templates/use?user_id=${user.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                template_id: templateId,
+                user_responses: responses
+            })
+        });
+        if (!response.ok) throw new Error('Failed to create story from template');
+        return response.json();
+    },
+
+    /**
+     * Lock a story (enables tracking and recommendations)
+     * @param {string} storyId - Story UUID
+     * @returns {Object} - Lock confirmation
+     */
+    async lockStory(storyId) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const response = await fetch(`${this.API_BASE}/api/story-bank/lock/${storyId}?user_id=${user.id}`, {
+            method: 'POST'
+        });
+        if (!response.ok) throw new Error('Failed to lock story');
+        return response.json();
+    },
+
+    /**
+     * Promote AI draft to user story
+     * @param {string} storyId - Story UUID
+     * @param {Object} updates - Optional edits during promotion
+     * @returns {Object} - Promoted story
+     */
+    async promoteStory(storyId, updates = null) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const body = updates ? { updates } : {};
+        const response = await fetch(`${this.API_BASE}/api/story-bank/promote/${storyId}?user_id=${user.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!response.ok) throw new Error('Failed to promote story');
+        return response.json();
+    },
+
+    /**
+     * Get AI draft stories (source='AI Draft', locked=false)
+     * @returns {Array} - Unlocked AI draft stories
+     */
+    async getAIDrafts() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('source', 'AI Draft')
+            .eq('locked', false)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching AI drafts:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get locked stories ready for recommendations
+     * @returns {Array} - Locked stories
+     */
+    async getLockedStories() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('locked', true)
+            .order('effectiveness_avg', { ascending: false, nullsFirst: false });
+
+        if (error) {
+            console.error('Error fetching locked stories:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Get Core 3 stories
+     * @returns {Array} - Core 3 stories (Leadership, Execution, Failure)
+     */
+    async getCore3Stories() {
+        const user = await HenryAuth.getUser();
+        if (!user) return [];
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_core', true)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching Core 3 stories:', error);
+            return [];
+        }
+
+        return data || [];
+    },
+
+    /**
+     * Save AI-generated story to bank
+     * @param {Object} story - Generated story data
+     * @returns {Object} - Saved story
+     */
+    async saveGeneratedStory(story) {
+        const user = await HenryAuth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabase
+            .from('user_story_bank')
+            .insert({
+                user_id: user.id,
+                story_name: story.title,
+                story_summary: `Situation: ${story.situation}\n\nTask: ${story.task}\n\nAction: ${story.action}\n\nResult: ${story.result}`,
+                demonstrates: story.demonstrates || [],
+                best_for_questions: story.best_for_questions || [],
+                source: 'AI Draft',
+                confidence: 'Low',
+                is_core: story.is_core || false,
+                locked: false,
+                role_level: story.role_level,
+                interview_stages: story.interview_stages || [],
+                opening_line: story.opening_line,
+                coaching_cues: story.coaching_cues || {}
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving generated story:', error);
+            throw error;
+        }
+
+        console.log('✅ Saved AI draft story:', story.title);
+        return data;
+    },
+
+    // ==========================================
     // Multi-Resume Management
     // ==========================================
 

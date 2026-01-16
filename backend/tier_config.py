@@ -94,6 +94,8 @@ TIER_LIMITS = {
             'live_coaching': False,
             'reality_check': False,
             'priority_henry': False,
+            'story_templates': False,
+            'coach_view': False,
         }
     },
     'recruiter': {
@@ -134,6 +136,8 @@ TIER_LIMITS = {
             'live_coaching': False,
             'reality_check': True,
             'priority_henry': False,
+            'story_templates': False,
+            'coach_view': False,
         }
     },
     'principal': {
@@ -174,6 +178,8 @@ TIER_LIMITS = {
             'live_coaching': False,
             'reality_check': True,
             'priority_henry': False,
+            'story_templates': False,
+            'coach_view': False,
         }
     },
     'partner': {
@@ -215,6 +221,8 @@ TIER_LIMITS = {
             'reality_check': True,
             'priority_henry': False,
             'cross_interview_patterns': True,
+            'story_templates': True,
+            'coach_view': True,
         }
     },
     'coach': {
@@ -257,6 +265,8 @@ TIER_LIMITS = {
             'reality_check': True,
             'priority_henry': True,
             'cross_interview_patterns': True,
+            'story_templates': True,
+            'coach_view': True,
         }
     },
 }

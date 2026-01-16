@@ -24194,6 +24194,479 @@ async def analyze_debrief_patterns(debriefs: List[Dict[str, Any]]):
 
 
 # ============================================================================
+# STORY BANK ENHANCEMENT API
+# AI Story Generation, Recommendations, Insights, Templates, Coach View
+# ============================================================================
+
+from backend.models.story_bank import (
+    GenerateStoriesRequest, GenerateStoriesResponse, GeneratedStory,
+    RecommendStoriesRequest, RecommendStoriesResponse, RecommendedStory, PrepRecommendations,
+    StoryInsightsRequest, StoryInsightsResponse, DimensionPerformance,
+    ListTemplatesResponse, StoryTemplate, UseTemplateRequest, UseTemplateResponse,
+    LockStoryRequest, LockStoryResponse, PromoteStoryRequest, PromoteStoryResponse,
+    CoachingCues
+)
+from backend.prompts.story_bank import (
+    STORY_GENERATION_PROMPT, CORE_3_GENERATION_PROMPT, COACHING_CUES_PROMPT,
+    RECOMMENDATION_CONTEXT_PROMPT, INSIGHTS_GENERATION_PROMPT, TEMPLATE_STORY_PROMPT
+)
+
+
+def calculate_story_score(story: Dict[str, Any], context: Dict[str, Any]) -> tuple:
+    """
+    Rules-based story scoring (v2 with Core 3 boost).
+
+    Score = (effectiveness_avg × 0.35)
+          + (competency_match × 0.2)
+          + (stage_fit × 0.15)
+          + (recency_bonus × 0.1)
+          - (overuse_penalty × 0.15)
+
+    Core 3 modifiers:
+    - is_core=true AND locked=true → +0.2 boost
+    - confidence=High → +0.05
+    - source='AI Draft' AND locked=false → -0.3 hard penalty
+
+    Returns (score, tier, penalty_applied)
+    """
+    from datetime import datetime
+    from dateutil.parser import parse
+
+    # Base effectiveness (normalize to 0-1)
+    effectiveness = (story.get('effectiveness_avg') or 2.5) / 5.0
+
+    # Competency match: % overlap
+    required = set(context.get('competencies', []))
+    has = set(story.get('demonstrates', []))
+    competency_match = len(required & has) / max(len(required), 1) if required else 0.5
+
+    # Stage fit
+    story_stages = story.get('interview_stages', [])
+    target_stage = context.get('interview_stage', 'hiring_manager')
+    if target_stage in story_stages:
+        stage_fit = 1.0
+    elif not story_stages:
+        stage_fit = 0.7  # Flexible
+    else:
+        stage_fit = 0.3
+
+    # Recency bonus: days since last use
+    last_used = story.get('last_used_at')
+    if last_used:
+        try:
+            days_ago = (datetime.now() - parse(last_used)).days
+            recency_bonus = max(0, 1 - (days_ago / 90))  # Decays over 90 days
+        except:
+            recency_bonus = 0.5
+    else:
+        recency_bonus = 0.5  # Never used = neutral
+
+    # Overuse penalty: kicks in at 3+ uses
+    times_used = story.get('times_used', 0)
+    overuse_penalty = max(0, (times_used - 2) * 0.2) if times_used > 2 else 0
+
+    # Base score
+    score = (
+        (effectiveness * 0.35) +
+        (competency_match * 0.2) +
+        (stage_fit * 0.15) +
+        (recency_bonus * 0.1) -
+        (overuse_penalty * 0.15)
+    )
+
+    # Core 3 modifiers
+    is_core = story.get('is_core', False)
+    is_locked = story.get('locked', False)
+    source = story.get('source', 'User')
+    confidence = story.get('confidence', 'High')
+
+    if is_core and is_locked:
+        score += 0.2  # Core 3 boost
+    if confidence == 'High':
+        score += 0.05
+    if source == 'AI Draft' and not is_locked:
+        score -= 0.3  # Never recommend unlocked drafts
+
+    # Normalize to 0-100
+    score = max(0, min(1, score)) * 100
+
+    # Determine tier
+    if score >= 70 and times_used < 3:
+        tier = "Lead with this"
+    elif score >= 50:
+        tier = "Strong backup"
+    elif times_used >= 3 and (story.get('effectiveness_avg') or 0) < 3.5:
+        tier = "Retire soon"
+    else:
+        tier = "Strong backup"
+
+    return (round(score, 1), tier, round(overuse_penalty * 100, 1))
+
+
+@app.post("/api/story-bank/generate", response_model=GenerateStoriesResponse)
+async def generate_stories(request: GenerateStoriesRequest):
+    """
+    Generate AI draft stories from resume.
+
+    Triggers:
+    - Resume upload (if story bank < 3 stories)
+    - Interview prep start
+    - Stage change
+
+    Core 3 mode generates exactly 3 stories:
+    - Leadership / Influence
+    - Execution / Problem-Solving
+    - Failure / Conflict
+
+    Stories are created with source='AI Draft', confidence='Low', locked=false.
+    User must edit and lock to enable tracking.
+    """
+    print(f"📝 Generating stories for interview_stage={request.interview_stage}")
+
+    # Build resume text
+    resume_text = ""
+    if request.resume_json:
+        if isinstance(request.resume_json, dict):
+            # Extract relevant sections
+            if 'experience' in request.resume_json:
+                for exp in request.resume_json.get('experience', []):
+                    resume_text += f"\n{exp.get('title', '')} at {exp.get('company', '')}\n"
+                    for bullet in exp.get('bullets', []):
+                        resume_text += f"- {bullet}\n"
+            if 'summary' in request.resume_json:
+                resume_text = request.resume_json['summary'] + "\n" + resume_text
+        else:
+            resume_text = str(request.resume_json)
+
+    # Select prompt
+    if request.generate_core_3:
+        prompt = CORE_3_GENERATION_PROMPT.format(
+            resume_text=resume_text,
+            target_role=request.target_role or "Not specified",
+            role_level=request.target_role_level or "Manager",
+            interview_stage=request.interview_stage or "hiring_manager"
+        )
+    else:
+        competencies = request.competencies or ["Leadership", "Problem-Solving", "Execution"]
+        prompt = STORY_GENERATION_PROMPT.format(
+            resume_text=resume_text,
+            target_role=request.target_role or "Not specified",
+            role_level=request.target_role_level or "Manager",
+            interview_stage=request.interview_stage or "hiring_manager",
+            competencies=", ".join(competencies)
+        )
+
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            temperature=0.7,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        response_text = response.content[0].text.strip()
+
+        # Parse JSON response
+        if response_text.startswith("```"):
+            response_text = response_text.split("```")[1]
+            if response_text.startswith("json"):
+                response_text = response_text[4:]
+
+        stories_data = json.loads(response_text)
+
+        # Convert to GeneratedStory objects with coaching cues
+        stories = []
+        competencies_covered = set()
+
+        for s in stories_data:
+            # Generate coaching cues for each story
+            cues_prompt = COACHING_CUES_PROMPT.format(
+                story_title=s.get('title', ''),
+                opening_line=s.get('opening_line', ''),
+                situation=s.get('situation', ''),
+                task=s.get('task', ''),
+                action=s.get('action', ''),
+                result=s.get('result', ''),
+                demonstrates=", ".join(s.get('demonstrates', [])),
+                interview_stage=request.interview_stage or "hiring_manager"
+            )
+
+            cues_response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=500,
+                temperature=0.5,
+                messages=[{"role": "user", "content": cues_prompt}]
+            )
+
+            cues_text = cues_response.content[0].text.strip()
+            if cues_text.startswith("```"):
+                cues_text = cues_text.split("```")[1]
+                if cues_text.startswith("json"):
+                    cues_text = cues_text[4:]
+
+            try:
+                cues_data = json.loads(cues_text)
+                coaching_cues = CoachingCues(
+                    emphasize=cues_data.get('emphasize', []),
+                    avoid=cues_data.get('avoid', []),
+                    stop_talking_when=cues_data.get('stop_talking_when'),
+                    recovery_line=cues_data.get('recovery_line')
+                )
+            except:
+                coaching_cues = CoachingCues()
+
+            story = GeneratedStory(
+                title=s.get('title', 'Untitled Story'),
+                opening_line=s.get('opening_line', ''),
+                demonstrates=s.get('demonstrates', []),
+                situation=s.get('situation', ''),
+                task=s.get('task', ''),
+                action=s.get('action', ''),
+                result=s.get('result', ''),
+                best_for_questions=s.get('best_for_questions', []),
+                interview_stages=s.get('interview_stages', []),
+                role_level=s.get('role_level'),
+                resume_evidence=s.get('resume_evidence'),
+                source="AI Draft",
+                confidence="Low",
+                is_core=s.get('is_core', request.generate_core_3),
+                core_category=s.get('core_category'),
+                coaching_cues=coaching_cues
+            )
+            stories.append(story)
+            competencies_covered.update(s.get('demonstrates', []))
+
+        print(f"✅ Generated {len(stories)} stories covering {len(competencies_covered)} competencies")
+
+        return GenerateStoriesResponse(
+            stories=stories,
+            competencies_covered=list(competencies_covered),
+            gaps_identified=[],
+            core_3_generated=request.generate_core_3
+        )
+
+    except Exception as e:
+        print(f"❌ Story generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Story generation failed: {str(e)}")
+
+
+@app.post("/api/story-bank/recommend", response_model=RecommendStoriesResponse)
+async def recommend_stories(request: RecommendStoriesRequest):
+    """
+    Get recommended stories for interview prep.
+
+    Uses rules-based scoring (v2 with Core 3 boost):
+    - effectiveness_avg × 0.35
+    - competency_match × 0.2
+    - stage_fit × 0.15
+    - recency_bonus × 0.1
+    - overuse_penalty × 0.15
+
+    Core 3 locked stories get +0.2 boost.
+    Unlocked AI drafts get -0.3 penalty (never recommended).
+
+    Returns:
+    - primary_recommendations: "Lead with this" (top 3)
+    - backup_recommendations: "Strong backup" (2-3)
+    - retire_soon: Stories that need rotation
+    - prep_view: Primary/Backup/Conflict for interview
+    """
+    print(f"📊 Recommending stories for {request.company} - {request.role_title}")
+
+    # In production, fetch stories from Supabase
+    # For now, return structure that frontend can populate
+
+    # Build context for scoring
+    context = {
+        'company': request.company,
+        'role_title': request.role_title,
+        'interview_stage': request.interview_stage,
+        'role_level': request.role_level,
+        'company_type': request.company_type,
+        'competencies': request.competencies_to_focus or []
+    }
+
+    # This would be populated from database
+    # Placeholder response showing structure
+    return RecommendStoriesResponse(
+        primary_recommendations=[],
+        backup_recommendations=[],
+        retire_soon=[],
+        coverage_analysis={},
+        prep_view=PrepRecommendations(
+            primary_story=None,
+            backup_story=None,
+            conflict_story=None,
+            soft_time_limit_minutes=2 if request.interview_stage == "recruiter_screen" else 3,
+            coverage_gaps=[]
+        )
+    )
+
+
+@app.get("/api/story-bank/insights/{user_id}", response_model=StoryInsightsResponse)
+async def get_story_insights(user_id: str):
+    """
+    Get analytics on story performance.
+
+    Slices by:
+    - Role level (Director vs VP)
+    - Company type (Big Tech vs startup)
+    - Interview stage (Recruiter vs HM vs Executive)
+
+    Identifies:
+    - Overused stories
+    - Underused high-performers
+    - Actionable insights
+    """
+    print(f"📈 Generating story insights for user {user_id}")
+
+    # In production, aggregate from Supabase with joins
+    # Placeholder structure
+    return StoryInsightsResponse(
+        total_stories=0,
+        total_uses=0,
+        locked_stories=0,
+        avg_effectiveness=0.0,
+        by_role_level=[],
+        by_company_type=[],
+        by_interview_stage=[],
+        overused_stories=[],
+        underused_high_performers=[],
+        actionable_insights=["Add more stories to see insights"]
+    )
+
+
+@app.get("/api/story-bank/templates", response_model=ListTemplatesResponse)
+async def list_story_templates(user_id: Optional[str] = None, tier: Optional[str] = None):
+    """
+    List available story templates.
+
+    Gated to Partner+ tier via story_templates feature flag.
+    Returns is_premium_locked=true if user cannot access premium templates.
+    """
+    from backend.tier_config import get_tier_features
+
+    # Check tier access
+    user_tier = tier or 'preview'
+    features = get_tier_features(user_tier)
+    can_access_templates = features.get('story_templates', False)
+
+    # Templates are seeded in database
+    # This would fetch from Supabase
+    templates = [
+        StoryTemplate(
+            id="1",
+            template_name="Leading through ambiguity",
+            template_category="leadership",
+            demonstrates=["Leadership", "Strategic Thinking", "Decision Making"],
+            best_for_questions=["Tell me about navigating uncertainty", "How do you make decisions with incomplete information"],
+            situation_prompt="Describe a situation where you had to make decisions without complete information.",
+            task_prompt="What was your specific responsibility in navigating this uncertainty?",
+            action_prompt="Walk through the steps you took to create clarity and move forward.",
+            result_prompt="What were the measurable outcomes? What did you learn?",
+            target_levels=["Manager", "Director", "VP"],
+            is_premium=True
+        ),
+        StoryTemplate(
+            id="2",
+            template_name="Conflict with a peer",
+            template_category="conflict",
+            demonstrates=["Conflict Resolution", "Collaboration", "Influence"],
+            best_for_questions=["Tell me about a disagreement with a colleague", "How do you handle conflict"],
+            situation_prompt="Describe a meaningful disagreement with a peer at your level.",
+            task_prompt="What was at stake? What was your role in resolving it?",
+            action_prompt="How did you approach the conversation? What tactics did you use?",
+            result_prompt="How was it resolved? What changed in the relationship?",
+            target_levels=["IC", "Manager", "Director"],
+            is_premium=True
+        ),
+        StoryTemplate(
+            id="3",
+            template_name="Executive influence without authority",
+            template_category="influence",
+            demonstrates=["Influence", "Stakeholder Management", "Strategic Thinking"],
+            best_for_questions=["Tell me about influencing leadership", "Getting buy-in from executives"],
+            situation_prompt="Describe needing buy-in from executives you did not report to.",
+            task_prompt="What did you need from them? Why was it challenging?",
+            action_prompt="How did you build your case? How did you navigate politics?",
+            result_prompt="Did you get the outcome? What did you learn about influencing up?",
+            target_levels=["Manager", "Director", "VP"],
+            is_premium=True
+        )
+    ]
+
+    return ListTemplatesResponse(
+        templates=templates,
+        is_premium_locked=not can_access_templates
+    )
+
+
+@app.post("/api/story-bank/templates/use", response_model=UseTemplateResponse)
+async def use_story_template(request: UseTemplateRequest, user_id: Optional[str] = None):
+    """
+    Create a story from a template.
+
+    Takes user's filled-in STAR responses and:
+    1. Cleans up into polished format
+    2. Generates opening line
+    3. Generates coaching cues
+
+    Created with source='Template', confidence='Medium'.
+    """
+    print(f"📝 Creating story from template {request.template_id}")
+
+    # Would fetch template from database
+    # Generate polished story using TEMPLATE_STORY_PROMPT
+
+    return UseTemplateResponse(
+        story_id=str(uuid.uuid4()),
+        story_name="Story from template",
+        message="Story created from template. Edit and lock to finalize."
+    )
+
+
+@app.post("/api/story-bank/lock/{story_id}", response_model=LockStoryResponse)
+async def lock_story(story_id: str, user_id: Optional[str] = None):
+    """
+    Lock a story to enable tracking and recommendations.
+
+    Stories cannot be tracked or recommended until locked.
+    Locking freezes content and enables effectiveness tracking.
+    """
+    print(f"🔒 Locking story {story_id}")
+
+    # Would update in Supabase: locked=true, locked_at=now()
+
+    return LockStoryResponse(
+        story_id=story_id,
+        locked=True,
+        locked_at=datetime.now(),
+        message="Story locked. It will now be tracked and can be recommended."
+    )
+
+
+@app.post("/api/story-bank/promote/{story_id}", response_model=PromoteStoryResponse)
+async def promote_story(story_id: str, request: Optional[PromoteStoryRequest] = None, user_id: Optional[str] = None):
+    """
+    Promote an AI Draft to User story.
+
+    Called when user edits and saves an AI-generated story.
+    Updates: source='User', confidence='High', locked=true.
+    """
+    print(f"⬆️ Promoting story {story_id}")
+
+    # Would update in Supabase
+
+    return PromoteStoryResponse(
+        story_id=story_id,
+        source="User",
+        confidence="High",
+        locked=True,
+        message="Story promoted. It's now yours and ready for interviews."
+    )
+
+
+# ============================================================================
 # PHASE 1.5: SCREENING QUESTIONS ANALYSIS ENDPOINT
 # ============================================================================
 

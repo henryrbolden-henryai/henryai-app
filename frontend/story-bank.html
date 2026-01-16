@@ -716,6 +716,395 @@
             gap: 1rem;
             justify-content: center;
         }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab-btn:hover {
+            color: #e5e7eb;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.1);
+            border-bottom: 2px solid #60a5fa;
+        }
+
+        .tab-badge {
+            background: rgba(168, 85, 247, 0.3);
+            color: #a855f7;
+            padding: 0.125rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* AI Draft Cards */
+        .draft-card {
+            border: 2px dashed #a855f7 !important;
+            position: relative;
+        }
+
+        .draft-card::before {
+            content: 'AI DRAFT';
+            position: absolute;
+            top: -10px;
+            left: 1rem;
+            background: #a855f7;
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-draft {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+        }
+
+        .badge-locked {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-core {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        /* AI Draft Banner */
+        .draft-banner {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .draft-banner-icon {
+            font-size: 2rem;
+        }
+
+        .draft-banner-text h3 {
+            color: #a855f7;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .draft-banner-text p {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Opening Line Display */
+        .opening-line {
+            background: #111827;
+            border-left: 3px solid #60a5fa;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 1.1rem;
+            color: #e5e7eb;
+            font-style: italic;
+        }
+
+        /* Coaching Cues */
+        .coaching-cues {
+            background: #111827;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .coaching-cues h4 {
+            color: #60a5fa;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .cue-section {
+            margin-bottom: 0.75rem;
+        }
+
+        .cue-label {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .cue-emphasize { color: #10b981; }
+        .cue-avoid { color: #f59e0b; }
+        .cue-stop { color: #ef4444; }
+        .cue-recovery { color: #60a5fa; font-style: italic; }
+
+        /* Templates Section */
+        .templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .template-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: #60a5fa;
+        }
+
+        .template-card.locked {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .template-category {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .template-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 0.75rem;
+        }
+
+        .template-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-use-template {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-use-template:hover {
+            background: #2563eb;
+        }
+
+        /* Insights Section */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .insight-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .insight-card h3 {
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insight-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .insight-bar-label {
+            width: 100px;
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .insight-bar-track {
+            flex: 1;
+            height: 8px;
+            background: #374151;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .insight-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            border-radius: 4px;
+        }
+
+        .insight-bar-value {
+            width: 50px;
+            text-align: right;
+            color: #e5e7eb;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .actionable-insights {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .actionable-insights h3 {
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .insight-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #374151;
+            color: #d1d5db;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        .insight-icon {
+            font-size: 1.25rem;
+        }
+
+        /* Generate Stories Button */
+        .btn-generate {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-generate:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+        }
+
+        /* Promote Button */
+        .btn-promote {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .btn-promote:hover {
+            background: #059669;
+        }
+
+        /* Lock Button */
+        .btn-lock {
+            background: #374151;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .btn-lock:hover {
+            background: #4b5563;
+        }
+
+        /* Upgrade Prompt */
+        .upgrade-prompt {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .upgrade-prompt h3 {
+            color: #fbbf24;
+            margin-bottom: 0.5rem;
+        }
+
+        .upgrade-prompt p {
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+
+        .btn-upgrade {
+            background: #fbbf24;
+            color: #1f2937;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-upgrade:hover {
+            background: #f59e0b;
+        }
     </style>
 </head>
 <body>
@@ -734,13 +1123,18 @@
     <div class="container">
         <!-- Page Header -->
         <div class="page-header">
-            <h1>Your Story Bank</h1>
-            <p>These are the examples and stories you've used (or can use) in interviews. Strong candidates have 8-12 polished stories covering different competencies.</p>
+            <h1>Your interview stories. Ranked by what actually works.</h1>
+            <p>Not all stories age well. Track which ones land, which ones stall, and which ones need a rewrite.</p>
 
             <div class="header-actions">
-                <button class="btn-primary" onclick="openAddModal()">
-                    <span>+</span> Add New Story
-                </button>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn-primary" onclick="openAddModal()">
+                        <span>+</span> Add New Story
+                    </button>
+                    <button class="btn-generate" onclick="generateCore3Stories()">
+                        <span>&#9733;</span> Generate Core 3
+                    </button>
+                </div>
                 <select class="filter-select" id="storyFilter" onchange="filterStories()">
                     <option value="all">All Stories</option>
                     <option value="high-impact">High Impact</option>
@@ -748,6 +1142,8 @@
                     <option value="needs-work">Needs Work</option>
                     <option value="new">New (Unused)</option>
                     <option value="retired">Retired</option>
+                    <option value="core">Core 3</option>
+                    <option value="locked">Locked</option>
                 </select>
             </div>
         </div>
@@ -775,11 +1171,87 @@
             </div>
         </div>
 
-        <!-- Stories Container -->
-        <div id="storiesContainer">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <p>Loading your stories...</p>
+        <!-- Tab Navigation -->
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="stories" onclick="switchTab('stories')">My Stories</button>
+            <button class="tab-btn" data-tab="drafts" onclick="switchTab('drafts')">
+                AI Drafts <span class="tab-badge" id="draftCount">0</span>
+            </button>
+            <button class="tab-btn" data-tab="templates" onclick="switchTab('templates')">Templates</button>
+            <button class="tab-btn" data-tab="insights" onclick="switchTab('insights')">Insights</button>
+        </div>
+
+        <!-- Tab: My Stories -->
+        <div class="tab-content active" id="storiesTab">
+            <div id="storiesContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading your stories...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: AI Drafts -->
+        <div class="tab-content" id="draftsTab">
+            <div class="draft-banner">
+                <div class="draft-banner-icon">&#128161;</div>
+                <div class="draft-banner-text">
+                    <h3>AI-Generated Story Drafts</h3>
+                    <p>This story was AI-generated from your resume. Edit it until it sounds like you, then lock it in.</p>
+                </div>
+            </div>
+            <div id="draftsContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">&#9733;</div>
+                    <h2>No AI Drafts Yet</h2>
+                    <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
+                    <button class="btn-generate" onclick="generateCore3Stories()">
+                        <span>&#9733;</span> Generate Core 3 Stories
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Templates -->
+        <div class="tab-content" id="templatesTab">
+            <div id="templatesContainer">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading templates...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Insights -->
+        <div class="tab-content" id="insightsTab">
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h3>&#128200; By Role Level</h3>
+                    <div id="roleLevelInsights">
+                        <p style="color: #6b7280; font-size: 0.875rem;">Use stories in interviews to see performance data</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <h3>&#127970; By Company Type</h3>
+                    <div id="companyTypeInsights">
+                        <p style="color: #6b7280; font-size: 0.875rem;">Big Tech vs startup performance will appear here</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <h3>&#128172; By Interview Stage</h3>
+                    <div id="stageInsights">
+                        <p style="color: #6b7280; font-size: 0.875rem;">Recruiter vs HM vs Executive performance</p>
+                    </div>
+                </div>
+            </div>
+            <div class="actionable-insights">
+                <h3>&#128161; Actionable Insights</h3>
+                <div id="actionableInsightsContent">
+                    <div class="insight-item">
+                        <span class="insight-icon">&#128279;</span>
+                        <span>Add more stories and use them in interviews to unlock insights</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -892,9 +1364,11 @@ Result: [Measurable outcomes]"></textarea>
     <script>
         // State
         let stories = [];
+        let drafts = [];
         let currentFilter = 'all';
         let currentStoryId = null;
         let demonstratesTags = [];
+        let currentTab = 'stories';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -906,7 +1380,359 @@ Result: [Measurable outcomes]"></textarea>
             }
 
             await loadStories();
+            await loadDrafts();
+            await loadTemplates();
         });
+
+        // Tab Navigation
+        function switchTab(tabName) {
+            currentTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            // Load data for specific tabs
+            if (tabName === 'insights') {
+                loadInsights();
+            }
+        }
+
+        // Generate Core 3 Stories
+        async function generateCore3Stories() {
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="loading-spinner" style="width: 16px; height: 16px; margin-right: 0.5rem;"></span> Generating...';
+            btn.disabled = true;
+
+            try {
+                // Get user's resume
+                const resume = await window.HenryData.getDefaultResume();
+                if (!resume || !resume.resume_json) {
+                    alert('Please upload a resume first to generate stories.');
+                    return;
+                }
+
+                const response = await window.HenryData.generateAIStories(
+                    resume.resume_json,
+                    {
+                        generate_core_3: true,
+                        interview_stage: 'hiring_manager',
+                        role_level: 'Manager'
+                    }
+                );
+
+                if (response.stories && response.stories.length > 0) {
+                    // Save each story as draft
+                    for (const story of response.stories) {
+                        await window.HenryData.saveGeneratedStory(story);
+                    }
+
+                    // Reload drafts and switch to drafts tab
+                    await loadDrafts();
+                    switchTab('drafts');
+                }
+            } catch (error) {
+                console.error('Error generating stories:', error);
+                alert('Failed to generate stories. Please try again.');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Load AI Drafts
+        async function loadDrafts() {
+            if (typeof window.HenryData === 'undefined') return;
+
+            try {
+                drafts = await window.HenryData.getAIDrafts();
+
+                // Update badge count
+                document.getElementById('draftCount').textContent = drafts.length;
+
+                renderDrafts();
+            } catch (error) {
+                console.error('Error loading drafts:', error);
+            }
+        }
+
+        // Render AI Drafts
+        function renderDrafts() {
+            const container = document.getElementById('draftsContainer');
+
+            if (drafts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">&#9733;</div>
+                        <h2>No AI Drafts Yet</h2>
+                        <p>Click "Generate Core 3" to create your essential interview stories based on your resume.</p>
+                        <button class="btn-generate" onclick="generateCore3Stories()">
+                            <span>&#9733;</span> Generate Core 3 Stories
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="stories-grid">';
+            for (const draft of drafts) {
+                const coachingCues = draft.coaching_cues || {};
+                html += `
+                    <div class="story-card draft-card" onclick="viewDraft('${draft.id}')">
+                        <div class="story-header">
+                            <div class="story-title">
+                                ${draft.story_name}
+                            </div>
+                            <div class="story-actions">
+                                ${draft.is_core ? '<span class="badge badge-core">CORE</span>' : ''}
+                            </div>
+                        </div>
+                        ${draft.opening_line ? `<div class="opening-line">"${draft.opening_line}"</div>` : ''}
+                        <div class="demonstrates-tags">
+                            ${(draft.demonstrates || []).slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            ${(draft.demonstrates || []).length > 3 ? `<span class="tag">+${draft.demonstrates.length - 3}</span>` : ''}
+                        </div>
+                        ${coachingCues.emphasize ? `
+                            <div class="coaching-cues">
+                                <h4>Coaching Cues</h4>
+                                <div class="cue-section">
+                                    <div class="cue-label cue-emphasize">Emphasize</div>
+                                    <div>${coachingCues.emphasize[0] || ''}</div>
+                                </div>
+                                ${coachingCues.stop_talking_when ? `
+                                    <div class="cue-section">
+                                        <div class="cue-label cue-stop">Stop when</div>
+                                        <div>${coachingCues.stop_talking_when}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                            <button class="btn-promote" onclick="event.stopPropagation(); promoteDraft('${draft.id}')">
+                                Lock & Promote
+                            </button>
+                            <button class="btn-secondary" onclick="event.stopPropagation(); editDraft('${draft.id}')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                Edit
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // View Draft Details
+        function viewDraft(draftId) {
+            const draft = drafts.find(d => d.id === draftId);
+            if (!draft) return;
+
+            currentStoryId = draftId;
+            document.getElementById('detailTitle').textContent = draft.story_name;
+
+            const coachingCues = draft.coaching_cues || {};
+            let content = '';
+
+            if (draft.opening_line) {
+                content += `<div class="opening-line">"${draft.opening_line}"</div>`;
+            }
+
+            content += `
+                <div class="detail-section">
+                    <h3>Demonstrates</h3>
+                    <div class="demonstrates-tags">
+                        ${(draft.demonstrates || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3>Story</h3>
+                    <div class="story-content">${draft.story_summary || 'No content yet'}</div>
+                </div>
+            `;
+
+            if (coachingCues.emphasize || coachingCues.avoid || coachingCues.stop_talking_when) {
+                content += `
+                    <div class="coaching-cues" style="margin-top: 1.5rem;">
+                        <h4>Coaching Cues</h4>
+                        ${coachingCues.emphasize ? `
+                            <div class="cue-section">
+                                <div class="cue-label cue-emphasize">Emphasize</div>
+                                ${coachingCues.emphasize.map(e => `<div>• ${e}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${coachingCues.avoid ? `
+                            <div class="cue-section">
+                                <div class="cue-label cue-avoid">Avoid</div>
+                                ${coachingCues.avoid.map(a => `<div>• ${a}</div>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${coachingCues.stop_talking_when ? `
+                            <div class="cue-section">
+                                <div class="cue-label cue-stop">Stop talking when</div>
+                                <div>${coachingCues.stop_talking_when}</div>
+                            </div>
+                        ` : ''}
+                        ${coachingCues.recovery_line ? `
+                            <div class="cue-section">
+                                <div class="cue-label cue-recovery">Recovery line</div>
+                                <div>"${coachingCues.recovery_line}"</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            document.getElementById('detailContent').innerHTML = content;
+            document.getElementById('detailRetireBtn').textContent = 'Delete Draft';
+            document.getElementById('detailEditBtn').textContent = 'Edit & Promote';
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // Promote Draft to User Story
+        async function promoteDraft(draftId) {
+            try {
+                await window.HenryData.promoteStory(draftId);
+                await loadStories();
+                await loadDrafts();
+
+                // If on drafts tab and no more drafts, show empty state
+                if (currentTab === 'drafts' && drafts.length === 0) {
+                    renderDrafts();
+                }
+            } catch (error) {
+                console.error('Error promoting draft:', error);
+                alert('Failed to promote story. Please try again.');
+            }
+        }
+
+        // Edit Draft
+        function editDraft(draftId) {
+            const draft = drafts.find(d => d.id === draftId);
+            if (!draft) return;
+
+            // Pre-fill the edit modal
+            document.getElementById('storyId').value = draft.id;
+            document.getElementById('storyName').value = draft.story_name || '';
+            document.getElementById('storySummary').value = draft.story_summary || '';
+
+            demonstratesTags = draft.demonstrates || [];
+            renderTags('demonstrates');
+
+            // Clear and populate questions
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+            const questions = draft.best_for_questions || [''];
+            questions.forEach(q => {
+                const row = document.createElement('div');
+                row.className = 'question-row';
+                row.innerHTML = `<input type="text" class="form-input question-input" value="${q}" placeholder="e.g., Tell me about a time you delivered under pressure">`;
+                questionsList.appendChild(row);
+            });
+
+            document.getElementById('modalTitle').textContent = 'Edit AI Draft';
+            document.getElementById('storyModal').classList.add('active');
+        }
+
+        // Load Templates
+        async function loadTemplates() {
+            if (typeof window.HenryData === 'undefined') return;
+
+            const container = document.getElementById('templatesContainer');
+
+            try {
+                const response = await window.HenryData.getStoryTemplates();
+
+                if (response.is_premium_locked) {
+                    container.innerHTML = `
+                        <div class="upgrade-prompt">
+                            <h3>Unlock Story Templates</h3>
+                            <p>Get recruiter-grade frameworks for common interview competencies with Partner tier.</p>
+                            <a href="/pricing" class="btn-upgrade">Upgrade to Partner</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (!response.templates || response.templates.length === 0) {
+                    container.innerHTML = '<p style="color: #6b7280;">No templates available.</p>';
+                    return;
+                }
+
+                let html = '<div class="templates-grid">';
+                for (const template of response.templates) {
+                    html += `
+                        <div class="template-card">
+                            <div class="template-category">${template.template_category}</div>
+                            <div class="template-name">${template.template_name}</div>
+                            <div class="template-tags">
+                                ${template.demonstrates.slice(0, 3).map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                            <button class="btn-use-template" onclick="useTemplate('${template.id}')">
+                                Use This Template
+                            </button>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                container.innerHTML = '<p style="color: #ef4444;">Failed to load templates.</p>';
+            }
+        }
+
+        // Use Template
+        async function useTemplate(templateId) {
+            // For now, show a simple prompt - in future this would open a template-specific modal
+            alert('Template modal coming soon. Use "Add New Story" for now.');
+        }
+
+        // Load Insights
+        async function loadInsights() {
+            if (typeof window.HenryData === 'undefined') return;
+
+            try {
+                const insights = await window.HenryData.getStoryInsights();
+
+                // Render role level insights
+                if (insights.by_role_level && insights.by_role_level.length > 0) {
+                    const container = document.getElementById('roleLevelInsights');
+                    container.innerHTML = insights.by_role_level.map(d => `
+                        <div class="insight-bar">
+                            <div class="insight-bar-label">${d.value}</div>
+                            <div class="insight-bar-track">
+                                <div class="insight-bar-fill" style="width: ${(d.avg_effectiveness / 5) * 100}%"></div>
+                            </div>
+                            <div class="insight-bar-value">${d.avg_effectiveness.toFixed(1)}</div>
+                        </div>
+                    `).join('');
+                }
+
+                // Render actionable insights
+                if (insights.actionable_insights && insights.actionable_insights.length > 0) {
+                    const container = document.getElementById('actionableInsightsContent');
+                    container.innerHTML = insights.actionable_insights.map(insight => `
+                        <div class="insight-item">
+                            <span class="insight-icon">&#128161;</span>
+                            <span>${insight}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading insights:', error);
+            }
+        }
 
         // Load stories from Supabase
         async function loadStories() {
@@ -985,6 +1811,12 @@ Result: [Measurable outcomes]"></textarea>
                 case 'retired':
                     filtered = stories.filter(s => s.status === 'retired');
                     break;
+                case 'core':
+                    filtered = stories.filter(s => s.is_core === true && s.status !== 'retired');
+                    break;
+                case 'locked':
+                    filtered = stories.filter(s => s.locked === true && s.status !== 'retired');
+                    break;
                 default:
                     filtered = stories.filter(s => s.status !== 'retired');
             }
@@ -1036,6 +1868,8 @@ Result: [Measurable outcomes]"></textarea>
 
             // Determine badges
             let badges = [];
+            if (story.is_core) badges.push('<span class="badge badge-core">CORE</span>');
+            if (story.locked) badges.push('<span class="badge badge-locked">&#128274; Locked</span>');
             if (effectiveness >= 4) badges.push('<span class="badge badge-high-impact">✅ High Impact</span>');
             if (timesUsed >= 3 && !isRetired) badges.push('<span class="badge badge-overused">⚠️ Overused</span>');
             if (timesUsed === 0 && !isRetired) badges.push('<span class="badge badge-new">🆕 New</span>');
@@ -1057,6 +1891,8 @@ Result: [Measurable outcomes]"></textarea>
                                 <button class="btn-icon" onclick="toggleDropdown(event, '${story.id}')" title="More">⋮</button>
                                 <div class="dropdown-menu" id="dropdown-${story.id}">
                                     <button class="dropdown-item" onclick="viewStory('${story.id}')">View Full Story</button>
+                                    ${story.locked ? `<button class="dropdown-item" onclick="openCoachView('${story.id}')">&#127919; Coach View</button>` : ''}
+                                    ${!story.locked && story.source !== 'AI Draft' ? `<button class="dropdown-item" onclick="lockStory('${story.id}')">&#128274; Lock Story</button>` : ''}
                                     ${isRetired
                                         ? `<button class="dropdown-item" onclick="restoreStory('${story.id}')">Restore</button>`
                                         : `<button class="dropdown-item" onclick="retireStory('${story.id}')">Mark as Retired</button>`
@@ -1371,6 +2207,22 @@ Result: [Measurable outcomes]"></textarea>
                 await restoreStory(currentStoryId);
                 closeDetailModal();
             }
+        }
+
+        // Lock story (enables tracking and recommendations)
+        async function lockStory(storyId) {
+            try {
+                await window.HenryData.lockStory(storyId);
+                await loadStories();
+            } catch (error) {
+                console.error('Error locking story:', error);
+                alert('Error locking story: ' + error.message);
+            }
+        }
+
+        // Open Coach View
+        function openCoachView(storyId) {
+            window.open(`/coach-view?story=${storyId}`, '_blank');
         }
 
         // Delete story

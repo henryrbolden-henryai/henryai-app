@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interview Coach View | HenryHQ</title>
+    <link rel="icon" type="image/png" href="images/h-mark.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: #e5e7eb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Main Container - Full Screen */
+        .coach-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Top Banner */
+        .coach-banner {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .coach-banner-text {
+            color: #60a5fa;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .coach-banner-close {
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .coach-banner-close:hover {
+            color: #9ca3af;
+        }
+
+        /* Story Title Section */
+        .story-title-section {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .story-instruction {
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .story-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Opening Line - PRIMARY FOCUS */
+        .opening-line-section {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .opening-line-label {
+            color: #10b981;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .opening-line {
+            font-size: 1.5rem;
+            color: #fff;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        /* STAR Skeleton - Collapsed by Default */
+        .star-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .star-header {
+            padding: 1rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .star-header:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .star-header-text {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .star-expand-icon {
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+
+        .star-section.expanded .star-expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .star-content {
+            display: none;
+            padding: 0 1.25rem 1.25rem;
+            border-top: 1px solid #374151;
+        }
+
+        .star-section.expanded .star-content {
+            display: block;
+        }
+
+        .star-item {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .star-item:last-child {
+            border-bottom: none;
+        }
+
+        .star-label {
+            color: #60a5fa;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .star-text {
+            color: #d1d5db;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Coaching Cues - Always Visible */
+        .coaching-cues-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .cue-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .cue-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .cue-box {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 8px;
+        }
+
+        .cue-box.emphasize {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .cue-box.avoid {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .cue-box.stop {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .cue-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .cue-label.emphasize { color: #10b981; }
+        .cue-label.avoid { color: #f59e0b; }
+        .cue-label.stop { color: #ef4444; }
+
+        .cue-text {
+            color: #d1d5db;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        /* Timer Section */
+        .timer-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .timer-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #10b981 0deg,
+                #10b981 var(--progress, 0deg),
+                #374151 var(--progress, 0deg),
+                #374151 360deg
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .timer-ring::before {
+            content: '';
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background: #1f2937;
+            border-radius: 50%;
+        }
+
+        .timer-text {
+            position: relative;
+            z-index: 1;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .timer-ring.warning {
+            background: conic-gradient(
+                #f59e0b 0deg,
+                #f59e0b var(--progress, 0deg),
+                #374151 var(--progress, 0deg),
+                #374151 360deg
+            );
+        }
+
+        /* Recovery Line - Always Visible */
+        .recovery-section {
+            text-align: center;
+            padding: 1rem;
+            border-top: 1px solid #374151;
+        }
+
+        .recovery-label {
+            color: #6b7280;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .recovery-line {
+            color: #60a5fa;
+            font-size: 1rem;
+            font-style: italic;
+        }
+
+        /* Swipe Navigation */
+        .swipe-nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            margin-top: auto;
+        }
+
+        .swipe-btn {
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            color: #d1d5db;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .swipe-btn:hover {
+            background: #4b5563;
+            border-color: #6b7280;
+        }
+
+        .swipe-btn.primary {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+
+        .swipe-btn.conflict {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.3);
+            color: #f59e0b;
+        }
+
+        /* Loading State */
+        .loading-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 1rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #374151;
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            .coach-container {
+                padding: 1rem;
+            }
+
+            .opening-line {
+                font-size: 1.25rem;
+            }
+
+            .cue-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="coach-container" id="coachContainer">
+        <div class="loading-state" id="loadingState">
+            <div class="loading-spinner"></div>
+            <p>Loading your story...</p>
+        </div>
+    </div>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        // State
+        let currentStory = null;
+        let backupStory = null;
+        let conflictStory = null;
+        let timerInterval = null;
+        let elapsedSeconds = 0;
+        let targetMinutes = 2;
+
+        // Get story ID from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const storyId = urlParams.get('story');
+        const interviewStage = urlParams.get('stage') || 'hiring_manager';
+
+        // Set target time based on stage
+        switch (interviewStage) {
+            case 'recruiter_screen':
+                targetMinutes = 2;
+                break;
+            case 'hiring_manager':
+            case 'technical':
+                targetMinutes = 3;
+                break;
+            case 'executive':
+                targetMinutes = 2.5;
+                break;
+            default:
+                targetMinutes = 2;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!storyId) {
+                showEmptyState('No story selected', 'Go to Story Bank to select a story for practice.');
+                return;
+            }
+
+            await loadStory(storyId);
+        });
+
+        // Load Story
+        async function loadStory(id) {
+            try {
+                const stories = await window.HenryData.getStoryBank();
+                currentStory = stories.find(s => s.id === id);
+
+                if (!currentStory) {
+                    showEmptyState('Story not found', 'This story may have been deleted.');
+                    return;
+                }
+
+                // Find backup and conflict stories
+                const otherStories = stories.filter(s => s.id !== id && s.locked && s.status === 'active');
+                backupStory = otherStories.find(s => !s.demonstrates?.some(d => d.toLowerCase().includes('conflict') || d.toLowerCase().includes('failure')));
+                conflictStory = otherStories.find(s => s.demonstrates?.some(d => d.toLowerCase().includes('conflict') || d.toLowerCase().includes('failure')));
+
+                renderCoachView();
+            } catch (error) {
+                console.error('Error loading story:', error);
+                showEmptyState('Error loading story', error.message);
+            }
+        }
+
+        // Render Coach View
+        function renderCoachView() {
+            const container = document.getElementById('coachContainer');
+            const cues = currentStory.coaching_cues || {};
+
+            container.innerHTML = `
+                <!-- Top Banner -->
+                <div class="coach-banner">
+                    <span class="coach-banner-text">Tell this story.</span>
+                    <button class="coach-banner-close" onclick="window.close()">&times;</button>
+                </div>
+
+                <!-- Story Title -->
+                <div class="story-title-section">
+                    <div class="story-instruction">YOUR STORY</div>
+                    <h1 class="story-title">${currentStory.story_name}</h1>
+                </div>
+
+                <!-- Opening Line - PRIMARY FOCUS -->
+                <div class="opening-line-section">
+                    <div class="opening-line-label">Start with this</div>
+                    <div class="opening-line">"${currentStory.opening_line || extractOpeningLine(currentStory.story_summary)}"</div>
+                </div>
+
+                <!-- STAR Skeleton - Collapsed -->
+                <div class="star-section" id="starSection">
+                    <div class="star-header" onclick="toggleStar()">
+                        <span class="star-header-text">STAR Details (tap to expand)</span>
+                        <span class="star-expand-icon">&#9660;</span>
+                    </div>
+                    <div class="star-content">
+                        ${renderStarContent(currentStory.story_summary)}
+                    </div>
+                </div>
+
+                <!-- Coaching Cues - Always Visible -->
+                <div class="coaching-cues-section">
+                    <div class="cue-row">
+                        <div class="cue-box emphasize">
+                            <div class="cue-label emphasize">Emphasize</div>
+                            <div class="cue-text">${cues.emphasize ? cues.emphasize.join('. ') : 'Judgment. Tradeoffs. Why you chose that path.'}</div>
+                        </div>
+                        <div class="cue-box avoid">
+                            <div class="cue-label avoid">Avoid</div>
+                            <div class="cue-text">${cues.avoid ? cues.avoid.join('. ') : 'Too much setup. Team-by-team breakdowns.'}</div>
+                        </div>
+                    </div>
+                    <div class="cue-row">
+                        <div class="cue-box stop">
+                            <div class="cue-label stop">Stop talking when</div>
+                            <div class="cue-text">${cues.stop_talking_when || 'You say what changed next time.'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="timer-section">
+                    <div class="timer-ring" id="timerRing" style="--progress: 0deg;">
+                        <span class="timer-text" id="timerText">0:00</span>
+                    </div>
+                </div>
+
+                <!-- Recovery Line -->
+                <div class="recovery-section">
+                    <div class="recovery-label">If you're losing them</div>
+                    <div class="recovery-line">"${cues.recovery_line || 'If you want the short version...'}"</div>
+                </div>
+
+                <!-- Swipe Navigation -->
+                <div class="swipe-nav">
+                    ${conflictStory ? `
+                        <button class="swipe-btn conflict" onclick="switchToStory('${conflictStory.id}')">
+                            <span>&larr;</span> Conflict Story
+                        </button>
+                    ` : '<div></div>'}
+                    ${backupStory ? `
+                        <button class="swipe-btn primary" onclick="switchToStory('${backupStory.id}')">
+                            Backup Story <span>&rarr;</span>
+                        </button>
+                    ` : '<div></div>'}
+                </div>
+            `;
+
+            startTimer();
+        }
+
+        // Extract opening line from STAR content
+        function extractOpeningLine(starContent) {
+            if (!starContent) return 'I have a great example for this...';
+
+            // Try to get first sentence of situation
+            const situationMatch = starContent.match(/Situation:\s*([^\.]+\.)/i);
+            if (situationMatch) {
+                return situationMatch[1].trim();
+            }
+
+            // Fallback to first line
+            const firstLine = starContent.split('\n')[0];
+            return firstLine.length > 100 ? firstLine.substring(0, 100) + '...' : firstLine;
+        }
+
+        // Render STAR content
+        function renderStarContent(summary) {
+            if (!summary) {
+                return `
+                    <div class="star-item">
+                        <div class="star-text" style="color: #6b7280;">No STAR content available. Edit this story to add details.</div>
+                    </div>
+                `;
+            }
+
+            const sections = {
+                Situation: '',
+                Task: '',
+                Action: '',
+                Result: ''
+            };
+
+            // Parse STAR format
+            let currentSection = '';
+            summary.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.toLowerCase().startsWith('situation:')) {
+                    currentSection = 'Situation';
+                    sections.Situation = trimmed.replace(/situation:/i, '').trim();
+                } else if (trimmed.toLowerCase().startsWith('task:')) {
+                    currentSection = 'Task';
+                    sections.Task = trimmed.replace(/task:/i, '').trim();
+                } else if (trimmed.toLowerCase().startsWith('action:')) {
+                    currentSection = 'Action';
+                    sections.Action = trimmed.replace(/action:/i, '').trim();
+                } else if (trimmed.toLowerCase().startsWith('result:')) {
+                    currentSection = 'Result';
+                    sections.Result = trimmed.replace(/result:/i, '').trim();
+                } else if (currentSection && trimmed) {
+                    sections[currentSection] += ' ' + trimmed;
+                }
+            });
+
+            return Object.entries(sections).map(([label, text]) => `
+                <div class="star-item">
+                    <div class="star-label">${label}</div>
+                    <div class="star-text">${text || 'Not specified'}</div>
+                </div>
+            `).join('');
+        }
+
+        // Toggle STAR section
+        function toggleStar() {
+            document.getElementById('starSection').classList.toggle('expanded');
+        }
+
+        // Timer
+        function startTimer() {
+            elapsedSeconds = 0;
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                elapsedSeconds++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = elapsedSeconds % 60;
+            const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            document.getElementById('timerText').textContent = display;
+
+            // Update progress ring
+            const targetSeconds = targetMinutes * 60;
+            const progress = Math.min(elapsedSeconds / targetSeconds, 1) * 360;
+            const ring = document.getElementById('timerRing');
+            ring.style.setProperty('--progress', progress + 'deg');
+
+            // Warning at 80%
+            if (elapsedSeconds >= targetSeconds * 0.8) {
+                ring.classList.add('warning');
+            }
+        }
+
+        // Switch to different story
+        function switchToStory(storyId) {
+            clearInterval(timerInterval);
+            window.location.href = `/coach-view?story=${storyId}&stage=${interviewStage}`;
+        }
+
+        // Show empty state
+        function showEmptyState(title, message) {
+            document.getElementById('coachContainer').innerHTML = `
+                <div class="empty-state">
+                    <h2>${title}</h2>
+                    <p>${message}</p>
+                    <a href="/story-bank" class="btn-primary">Go to Story Bank</a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
