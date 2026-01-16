@@ -4257,10 +4257,9 @@
                     <span>📝</span> Let's Debrief
                 </button>
                 <button class="header-btn" onclick="showImportOptions()" title="Import applications">
-                    <span>📤</span> Import Tracker
+                    <span>📤</span> Import Applications
                 </button>
                 <input type="file" id="importFile" accept=".json,.csv,.xlsx,.xls" style="display: none;" onchange="handleImport(event)">
-                <input type="file" id="screenshotFile" accept="image/*" style="display: none;" onchange="handleScreenshotImport(event)">
             </div>
         </div>
 
@@ -4658,21 +4657,13 @@
     <div class="modal-overlay" id="importOptionsModal">
         <div class="modal" style="max-width: 500px;">
             <h2>📤 Import Applications</h2>
-            <p style="color: var(--color-text-muted);">Choose how you'd like to import your applications</p>
+            <p style="color: var(--color-text-muted);">Choose how you'd like to add applications</p>
 
             <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 12px;">
-                <button class="import-option-btn" onclick="closeImportOptions(); document.getElementById('screenshotFile').click();">
-                    <span class="import-option-icon">📸</span>
-                    <div class="import-option-text">
-                        <strong>From Screenshot</strong>
-                        <span>Screenshot your Greenhouse, Lever, or any ATS job list</span>
-                    </div>
-                </button>
-
                 <button class="import-option-btn" onclick="closeImportOptions(); document.getElementById('importFile').click();">
                     <span class="import-option-icon">📄</span>
                     <div class="import-option-text">
-                        <strong>From File</strong>
+                        <strong>Import from File</strong>
                         <span>Import from CSV, Excel, or JSON backup</span>
                     </div>
                 </button>
