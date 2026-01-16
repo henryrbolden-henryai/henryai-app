@@ -11098,6 +11098,14 @@ def detect_leadership_role_level(role_title: str, jd_text: str, analysis_id: str
         "svp", "evp", "gvp", "president",
     ]
 
+    # Senior Manager is ALWAYS a people leadership role (not IC)
+    # Check this before the generic "manager" keyword
+    senior_manager_keywords = [
+        "senior manager", "sr manager", "sr. manager",
+        "senior engineering manager", "senior product manager",  # These ARE leadership despite "product manager"
+        "senior program manager", "senior project manager",  # These ARE leadership despite "project manager"
+    ]
+
     # Manager-level keywords (may be leadership depending on context)
     manager_keywords = [
         "manager", "lead", "principal", "staff",
@@ -11111,7 +11119,20 @@ def detect_leadership_role_level(role_title: str, jd_text: str, analysis_id: str
         "content manager", "community manager", "social media manager",
     ]
 
-    # Check for IC manager roles first (exclude from leadership)
+    # Check for Senior Manager keywords FIRST (always leadership, even if title contains "product manager" etc)
+    for sm_kw in senior_manager_keywords:
+        if sm_kw in title_lower:
+            print(f"  🎖️  SENIOR MANAGER ROLE DETECTED: {sm_kw}")
+            print(f"  ⚡ Setting role_level=MANAGER, role_type=LEADERSHIP, confidence=1.0")
+            return {
+                "is_leadership_role": True,
+                "role_level": "MANAGER",
+                "role_type": "LEADERSHIP",
+                "confidence": 1.0,
+                "leadership_keywords_found": [sm_kw]
+            }
+
+    # Check for IC manager roles (exclude from leadership)
     for ic_role in ic_manager_roles:
         if ic_role in title_lower:
             # Only exclude if there's no "director" or higher in the title
