@@ -12678,12 +12678,8 @@ Thanks so much!
             // Set up manual add form
             document.getElementById('manualAddForm')?.addEventListener('submit', handleManualAdd);
 
-            // Close manual add modal if clicking outside
-            document.getElementById('manualAddModal')?.addEventListener('click', function(e) {
-                if (e.target.id === 'manualAddModal') {
-                    closeManualAddModal();
-                }
-            });
+            // Manual add modal: only close via Cancel button, not by clicking outside
+            // (prevents accidental data loss)
         });
 
         // Start initialization - wait for henryAuthReady event from auth-check.js
