@@ -378,6 +378,120 @@ const HenryData = {
     },
 
     /**
+     * Update specific fields of an application
+     * Handles syncing role_title across all storage locations
+     * @param {string} appId - Application UUID
+     * @param {Object} fields - Fields to update (company, role, salary, location, etc.)
+     */
+    async updateApplicationFields(appId, fields) {
+        const user = await HenryAuth.getUser();
+        if (!user) return { error: 'Not authenticated' };
+
+        // First, get the current application to merge analysis_data
+        const { data: currentApp, error: fetchError } = await supabase
+            .from('applications')
+            .select('*')
+            .eq('id', appId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching application for update:', fetchError);
+            return { error: fetchError };
+        }
+
+        // Build update object
+        const updateData = {
+            updated_at: new Date().toISOString()
+        };
+
+        // Map frontend field names to database column names
+        if (fields.company !== undefined) updateData.company = fields.company;
+        if (fields.role !== undefined) updateData.role = fields.role;
+        if (fields.salary !== undefined) updateData.salary = fields.salary;
+        if (fields.location !== undefined) updateData.location = fields.location;
+        if (fields.notes !== undefined) updateData.notes = fields.notes;
+        if (fields.status !== undefined) updateData.status = fields.status;
+        if (fields.jobUrl !== undefined) updateData.job_url = fields.jobUrl;
+
+        // CRITICAL: If role is being updated, also update it inside analysis_data
+        // This ensures consistency across all places where role_title is read
+        if (fields.role !== undefined && currentApp.analysis_data) {
+            const updatedAnalysisData = { ...currentApp.analysis_data };
+
+            // Update role_title in analysis_data (main location)
+            updatedAnalysisData.role_title = fields.role;
+
+            // Also update _role if it exists (legacy field)
+            if (updatedAnalysisData._role !== undefined) {
+                updatedAnalysisData._role = fields.role;
+            }
+
+            // Update nested locations if they exist
+            if (updatedAnalysisData.jd_analysis && updatedAnalysisData.jd_analysis.role_title !== undefined) {
+                updatedAnalysisData.jd_analysis.role_title = fields.role;
+            }
+
+            updateData.analysis_data = updatedAnalysisData;
+            console.log('📝 Synced role_title in analysis_data:', fields.role);
+        }
+
+        // CRITICAL: If company is being updated, also update it inside analysis_data
+        if (fields.company !== undefined && currentApp.analysis_data) {
+            const updatedAnalysisData = updateData.analysis_data || { ...currentApp.analysis_data };
+
+            updatedAnalysisData.company = fields.company;
+            updatedAnalysisData._company = fields.company;
+            updatedAnalysisData._company_name = fields.company;
+
+            if (updatedAnalysisData.jd_analysis && updatedAnalysisData.jd_analysis.company !== undefined) {
+                updatedAnalysisData.jd_analysis.company = fields.company;
+            }
+
+            updateData.analysis_data = updatedAnalysisData;
+            console.log('📝 Synced company in analysis_data:', fields.company);
+        }
+
+        // Perform the update
+        const { data, error } = await supabase
+            .from('applications')
+            .update(updateData)
+            .eq('id', appId)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating application:', error);
+            return { error };
+        }
+
+        console.log('✅ Application updated successfully:', appId);
+
+        // Also update candidate_role_interactions if role was changed
+        if (fields.role !== undefined || fields.company !== undefined) {
+            try {
+                const interactionUpdate = {};
+                if (fields.role !== undefined) interactionUpdate.role_title = fields.role;
+                if (fields.company !== undefined) interactionUpdate.company = fields.company;
+
+                await supabase
+                    .from('candidate_role_interactions')
+                    .update(interactionUpdate)
+                    .eq('application_id', appId)
+                    .eq('user_id', user.id);
+
+                console.log('📝 Synced update to candidate_role_interactions');
+            } catch (e) {
+                // Non-critical - log but don't fail
+                console.warn('Could not sync to candidate_role_interactions:', e);
+            }
+        }
+
+        return { data, error: null };
+    },
+
+    /**
      * Delete candidate profile for current user
      */
     async deleteCandidateProfile() {

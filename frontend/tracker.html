@@ -4805,6 +4805,53 @@
         </div>
     </div>
 
+    <!-- EDIT APPLICATION MODAL -->
+    <div class="modal-overlay" id="editAppModal">
+        <div class="modal" style="max-width: 500px;">
+            <h2><span>✏️</span> Edit Application</h2>
+            <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Update application details. Changes will sync across all views.</p>
+
+            <input type="hidden" id="editAppId">
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Company *</label>
+                    <input type="text" id="editAppCompany" placeholder="Company name"
+                           style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Job Title *</label>
+                    <input type="text" id="editAppRole" placeholder="Job title"
+                           style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Location</label>
+                    <input type="text" id="editAppLocation" placeholder="City, State or Remote"
+                           style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Salary</label>
+                    <input type="text" id="editAppSalary" placeholder="e.g. $120,000 - $150,000"
+                           style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+
+                <div>
+                    <label style="display: block; color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 8px;">Job URL</label>
+                    <input type="url" id="editAppJobUrl" placeholder="https://..."
+                           style="width: 100%; padding: 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.95rem; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px;">
+                <button class="modal-btn secondary" onclick="closeEditAppModal()">Cancel</button>
+                <button class="modal-btn primary" onclick="saveAppEdits()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <!-- DATE EDIT MODAL -->
     <div class="modal-overlay" id="dateEditModal">
         <div class="modal date-edit-modal">
@@ -6999,6 +7046,9 @@
                     </td>
                     <td class="col-actions">
                         <div class="table-actions-menu">
+                            <button class="table-icon-btn" onclick="showEditAppModal('${app.id}')" title="Edit">
+                                ✏️
+                            </button>
                             <button class="table-icon-btn" onclick="showReachOutModal('${app.id}')" title="Reach Out">
                                 💬
                             </button>
@@ -8447,6 +8497,145 @@ Thanks so much!
         }
 
         // ========================================================================
+        // EDIT APPLICATION MODAL
+        // ========================================================================
+        let editAppId = null;
+
+        function showEditAppModal(appId) {
+            console.log('showEditAppModal called with:', appId);
+            editAppId = appId;
+            const allApps = getApplications();
+            const app = allApps.find(a => String(a.id) === String(appId));
+
+            if (!app) {
+                console.error('App not found for id:', appId);
+                return;
+            }
+
+            // Populate form fields
+            document.getElementById('editAppId').value = appId;
+            document.getElementById('editAppCompany').value = app.company || '';
+            document.getElementById('editAppRole').value = app.role || app.roleTitle || '';
+            document.getElementById('editAppLocation').value = app.location || '';
+            document.getElementById('editAppSalary').value = app.salary || '';
+            document.getElementById('editAppJobUrl').value = app.jobUrl || '';
+
+            // Show modal
+            document.getElementById('editAppModal').classList.add('show');
+        }
+
+        function closeEditAppModal() {
+            editAppId = null;
+            document.getElementById('editAppModal').classList.remove('show');
+        }
+
+        async function saveAppEdits() {
+            if (!editAppId) return;
+
+            const company = document.getElementById('editAppCompany').value.trim();
+            const role = document.getElementById('editAppRole').value.trim();
+            const location = document.getElementById('editAppLocation').value.trim();
+            const salary = document.getElementById('editAppSalary').value.trim();
+            const jobUrl = document.getElementById('editAppJobUrl').value.trim();
+
+            if (!company || !role) {
+                alert('Company and Job Title are required.');
+                return;
+            }
+
+            // Build fields to update
+            const fields = {
+                company: company,
+                role: role
+            };
+            if (location) fields.location = location;
+            if (salary) fields.salary = salary;
+            if (jobUrl) fields.jobUrl = jobUrl;
+
+            // Show saving state
+            const saveBtn = document.querySelector('#editAppModal .modal-btn.primary');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                // Use the new updateApplicationFields function that syncs across all storage
+                if (typeof HenryData !== 'undefined') {
+                    const result = await HenryData.updateApplicationFields(editAppId, fields);
+                    if (result.error) {
+                        throw new Error(result.error.message || 'Failed to save');
+                    }
+                }
+
+                // Also update local cache
+                const apps = getApplications();
+                const idx = apps.findIndex(a => String(a.id) === String(editAppId));
+                if (idx !== -1) {
+                    apps[idx].company = company;
+                    apps[idx].role = role;
+                    if (location) apps[idx].location = location;
+                    if (salary) apps[idx].salary = salary;
+                    if (jobUrl) apps[idx].jobUrl = jobUrl;
+                    apps[idx].lastUpdated = new Date().toISOString();
+
+                    // Also update analysisData if it exists
+                    if (apps[idx].analysisData) {
+                        apps[idx].analysisData.role_title = role;
+                        apps[idx].analysisData._role = role;
+                        apps[idx].analysisData.company = company;
+                        apps[idx].analysisData._company = company;
+                        apps[idx].analysisData._company_name = company;
+                    }
+
+                    saveApplications(apps);
+                }
+
+                closeEditAppModal();
+                renderAll(getApplications());
+
+                // Show success toast
+                showToast('Application updated successfully', 'success');
+
+            } catch (error) {
+                console.error('Error saving application edits:', error);
+                alert('Failed to save changes. Please try again.');
+            } finally {
+                saveBtn.textContent = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Helper for toast notifications
+        function showToast(message, type = 'info') {
+            // Check if toast container exists, create if not
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000;';
+                document.body.appendChild(toastContainer);
+            }
+
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                background: ${type === 'success' ? 'var(--color-active)' : 'var(--color-surface-elevated)'};
+                color: var(--color-text);
+                padding: 12px 20px;
+                border-radius: 8px;
+                margin-top: 8px;
+                box-shadow: var(--shadow-md);
+                animation: slideIn 0.3s ease-out;
+            `;
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ========================================================================
         // DATE EDIT MODAL
         // ========================================================================
         let dateEditAppId = null;
@@ -9868,6 +10057,12 @@ Thanks so much!
                         </div>
                         <div class="card-header-actions">
                             ${ui.badge ? `<span class="card-badge">${ui.badge}</span>` : ''}
+                            <button class="card-override-btn"
+                                    onclick="event.stopPropagation(); showEditAppModal('${app.id}')"
+                                    title="Edit application details"
+                                    aria-label="Edit application">
+                                ✏️
+                            </button>
                             <button class="card-override-btn"
                                     onclick="event.stopPropagation(); openOverrideModal('${app.id}')"
                                     title="Override system recommendation"
