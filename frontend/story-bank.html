@@ -14,6 +14,24 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
+        /* Embedded mode - hide nav and reduce padding */
+        body.embedded {
+            background: transparent;
+        }
+
+        body.embedded .container {
+            padding: 0.5rem;
+        }
+
+        body.embedded .page-header h1,
+        body.embedded .page-header > p {
+            display: none;
+        }
+
+        body.embedded .header-actions {
+            margin-top: 0;
+        }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -1372,6 +1390,12 @@ Result: [Measurable outcomes]"></textarea>
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check for embedded mode
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('embedded') === 'true') {
+                document.body.classList.add('embedded');
+            }
+
             // Restore filter from session
             const savedFilter = sessionStorage.getItem('storyBankFilter');
             if (savedFilter) {

@@ -692,10 +692,11 @@
         <h1>Interview Intelligence</h1>
         <p class="subtitle">Prepare strategically. Perform confidently.</p>
 
-        <!-- Main Tabs: Upcoming Interviews | Practice -->
+        <!-- Main Tabs: Upcoming Interviews | Practice | Story Bank -->
         <div class="main-tabs">
             <button class="main-tab active" onclick="switchMainTab('upcoming')">Upcoming Interviews</button>
             <button class="main-tab" onclick="switchMainTab('practice')">Practice</button>
+            <button class="main-tab" onclick="switchMainTab('storybank')">Story Bank</button>
         </div>
 
         <!-- ============================================ -->
@@ -735,11 +736,6 @@
                     <p>PM, SWE, UX, UI, TA, and Leadership specific drills.</p>
                 </div>
 
-                <div class="practice-card" onclick="window.location.href='/story-bank'">
-                    <div class="card-icon">📚</div>
-                    <h3>Story Bank</h3>
-                    <p>Manage your behavioral examples. Track usage and effectiveness.</p>
-                </div>
             </div>
 
             <!-- Footer hint -->
@@ -782,6 +778,18 @@
                     <!-- Past interviews will be dynamically added here -->
                 </div>
             </div>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- STORY BANK TAB -->
+        <!-- ============================================ -->
+        <div id="storybankTab" class="tab-content">
+            <iframe
+                id="storyBankFrame"
+                src="/story-bank?embedded=true"
+                style="width: 100%; height: calc(100vh - 200px); border: none; border-radius: 12px;"
+                title="Story Bank"
+            ></iframe>
         </div>
     </div>
 
@@ -1098,6 +1106,8 @@
                 document.getElementById('practiceTab').classList.add('active');
             } else if (tabName === 'upcoming') {
                 document.getElementById('upcomingTab').classList.add('active');
+            } else if (tabName === 'storybank') {
+                document.getElementById('storybankTab').classList.add('active');
             }
         }
 
