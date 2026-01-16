@@ -11456,6 +11456,138 @@ def apply_pre_llm_leadership_gate(
     return result
 
 
+def apply_pre_llm_overqualification_gate(
+    resume_data: dict,
+    role_level: str,
+    extracted_title: str,
+    analysis_id: str
+) -> dict:
+    """
+    CRITICAL PRE-LLM GATING STEP for overqualification.
+
+    Detects when a senior candidate (Director+) is applying for an IC/mid-level role.
+    This should trigger a "Skip - Overqualified" or "Position" recommendation.
+
+    Args:
+        resume_data: Parsed resume data with experience
+        role_level: Target role level ("IC", "MANAGER", "DIRECTOR_OR_ABOVE")
+        extracted_title: Role title extracted from JD
+        analysis_id: Analysis ID for logging
+
+    Returns:
+        dict: {
+            "gate_status": "PASS" | "OVERQUALIFIED",
+            "candidate_level": str,
+            "target_level": str,
+            "level_gap": int,
+            "recommendation_cap": str | None,  # e.g., "Position" or "Skip"
+            "gate_reason": str
+        }
+    """
+    print(f"📊 [{analysis_id}] Checking overqualification gate...")
+
+    result = {
+        "gate_status": "PASS",
+        "candidate_level": "unknown",
+        "target_level": "unknown",
+        "level_gap": 0,
+        "recommendation_cap": None,
+        "gate_reason": ""
+    }
+
+    if not resume_data:
+        print(f"  ⏭️  No resume data - skipping overqualification check")
+        return result
+
+    # Detect candidate's highest level from resume
+    experience = resume_data.get("experience", []) or resume_data.get("roles", [])
+
+    # Level hierarchy
+    level_hierarchy = {
+        "entry": 1,
+        "mid": 2,
+        "senior": 3,
+        "manager": 4,
+        "director_plus": 5
+    }
+
+    # Detect candidate level from titles
+    candidate_level = "mid"  # default
+    for role in experience:
+        title = (role.get("title", "") or role.get("role", "") or "").lower()
+
+        # Director+ level (highest priority)
+        if any(x in title for x in [
+            "director", "vp", "vice president", "head of", "chief",
+            "president", "svp", "evp", "ceo", "cfo", "cto", "coo", "chro",
+            "global head", "general manager", "founder"
+        ]):
+            if level_hierarchy.get("director_plus", 0) > level_hierarchy.get(candidate_level, 0):
+                candidate_level = "director_plus"
+
+        # Manager level
+        elif any(x in title for x in ["manager", "supervisor", "team lead"]) and "senior" not in title and "director" not in title:
+            if level_hierarchy.get("manager", 0) > level_hierarchy.get(candidate_level, 0):
+                candidate_level = "manager"
+
+        # Senior level
+        elif any(x in title for x in ["senior", "staff", "principal", "sr.", "lead"]) and "manager" not in title:
+            if level_hierarchy.get("senior", 0) > level_hierarchy.get(candidate_level, 0):
+                candidate_level = "senior"
+
+    result["candidate_level"] = candidate_level
+    print(f"  📋 Candidate level: {candidate_level}")
+
+    # Detect target role level from title
+    title_lower = extracted_title.lower()
+    if any(x in title_lower for x in ["vp", "vice president", "director", "head of", "chief", "president"]):
+        target_level = "director_plus"
+    elif any(x in title_lower for x in ["manager", "team lead", "supervisor"]):
+        target_level = "manager"
+    elif any(x in title_lower for x in ["senior", "staff", "principal", "lead", "sr."]):
+        target_level = "senior"
+    elif any(x in title_lower for x in ["associate", "junior", "entry", "coordinator", "assistant"]):
+        target_level = "entry"
+    else:
+        target_level = "mid"
+
+    result["target_level"] = target_level
+    print(f"  🎯 Target role level: {target_level}")
+
+    # Calculate level gap
+    candidate_rank = level_hierarchy.get(candidate_level, 2)
+    target_rank = level_hierarchy.get(target_level, 2)
+    level_gap = candidate_rank - target_rank
+    result["level_gap"] = level_gap
+
+    # Determine if overqualified
+    if level_gap >= 2:
+        # Significant overqualification (e.g., Director applying to mid-level IC)
+        result["gate_status"] = "OVERQUALIFIED"
+        result["recommendation_cap"] = "Skip"
+        result["gate_reason"] = (
+            f"Significant level mismatch: You operate at {candidate_level} level "
+            f"but this is a {target_level}-level role. "
+            f"You'll likely be seen as overqualified and a flight risk."
+        )
+        print(f"  ❌ OVERQUALIFIED (gap={level_gap}): {result['gate_reason']}")
+
+    elif level_gap == 1:
+        # Mild overqualification (e.g., Manager applying to Senior IC)
+        result["gate_status"] = "OVERQUALIFIED"
+        result["recommendation_cap"] = "Position"
+        result["gate_reason"] = (
+            f"You operate at {candidate_level} level but this appears to be a {target_level}-level role. "
+            f"Position this as a strategic move if pursuing."
+        )
+        print(f"  ⚠️  MILDLY OVERQUALIFIED (gap={level_gap}): {result['gate_reason']}")
+
+    else:
+        print(f"  ✅ Not overqualified (gap={level_gap})")
+
+    return result
+
+
 def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -> str:
     """
     Detect role type from job description and title.
@@ -12834,6 +12966,15 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
                 analysis_id
             )
 
+            # NEW: PRE-LLM OVERQUALIFICATION GATE
+            # Detects when Director+ candidate applies to IC/mid-level role
+            pre_llm_overqualification_gate = apply_pre_llm_overqualification_gate(
+                resume_data,
+                role_level_info.get("role_level", "IC"),
+                extracted_title,
+                analysis_id
+            )
+
             # ====================================================================
             # P0 FIX: CREATE AND LOCK CANONICAL LEADERSHIP CONTEXT
             # This establishes a SINGLE SOURCE OF TRUTH for leadership gating
@@ -12872,6 +13013,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             gap_info = {"has_gap": False, "gap_months": 0, "penalty_points": 0, "severity": "none"}
             leadership_info = {"meets_requirement": True, "candidate_years": 0.0, "gap_severity": "none", "skipped": True}
             pre_llm_leadership_gate = {"gate_status": "PASS", "fit_cap": None, "apply_decision": None, "hard_requirement": False, "gate_reason": ""}
+            pre_llm_overqualification_gate = {"gate_status": "PASS", "candidate_level": "unknown", "target_level": "unknown", "level_gap": 0, "recommendation_cap": None, "gate_reason": ""}
             # No resume data - create unlocked leadership context
             leadership_context = LeadershipContext(analysis_id)
 
@@ -12884,6 +13026,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "leadership_info": leadership_info,
             "role_level_info": role_level_info,  # NEW: Leadership role level detection
             "pre_llm_leadership_gate": pre_llm_leadership_gate,  # NEW: Pre-LLM gate result
+            "pre_llm_overqualification_gate": pre_llm_overqualification_gate,  # NEW: Pre-LLM overqualification gate
             "leadership_context": leadership_context.to_dict() if leadership_context else None  # P0 FIX: Canonical leadership context (serialized)
         }
 
@@ -12896,7 +13039,9 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         print(f"Experience: {candidate_years:.1f} years")
         print(f"Gap: {gap_info['gap_months']} months (penalty: {gap_info['penalty_points']})")
         if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") != "PASS":
-            print(f"🚦 PRE-LLM GATE: {pre_llm_leadership_gate['gate_status']} - {pre_llm_leadership_gate.get('gate_reason', '')}")
+            print(f"🚦 PRE-LLM LEADERSHIP GATE: {pre_llm_leadership_gate['gate_status']} - {pre_llm_leadership_gate.get('gate_reason', '')}")
+        if pre_llm_overqualification_gate and pre_llm_overqualification_gate.get("gate_status") != "PASS":
+            print(f"📊 PRE-LLM OVERQUALIFICATION GATE: {pre_llm_overqualification_gate['gate_status']} - {pre_llm_overqualification_gate.get('gate_reason', '')}")
         if leadership_context.leadership_gate_locked:
             print(f"🔐 CANONICAL GATE: LOCKED (years={leadership_context.canonical_leadership_years}, result={leadership_context.leadership_gate_result})")
         if alignment.get('warnings'):
@@ -15076,6 +15221,54 @@ Role: {body.role_title}
                 parsed_data["apply_disabled_reason"] = "Leadership requirement not met"
 
                 print(f"🚨🚨🚨 PRE-LLM GATE ENFORCED - Score capped, Decision locked 🚨🚨🚨\n")
+
+        # ========================================================================
+        # CRITICAL: ENFORCE PRE-LLM OVERQUALIFICATION GATE
+        # If candidate is Director+ applying for mid-level IC role, cap recommendation
+        # ========================================================================
+        if isolated_role_detection and isolated_role_detection.get("pre_llm_overqualification_gate"):
+            overq_gate = isolated_role_detection["pre_llm_overqualification_gate"]
+            if overq_gate.get("gate_status") == "OVERQUALIFIED":
+                recommendation_cap = overq_gate.get("recommendation_cap", "Position")
+                level_gap = overq_gate.get("level_gap", 0)
+                gate_reason = overq_gate.get("gate_reason", "")
+
+                print(f"\n📊📊📊 PRE-LLM OVERQUALIFICATION GATE ENFORCEMENT 📊📊📊")
+                print(f"   Gate Status: OVERQUALIFIED")
+                print(f"   Level Gap: {level_gap}")
+                print(f"   Candidate Level: {overq_gate.get('candidate_level')}")
+                print(f"   Target Level: {overq_gate.get('target_level')}")
+                print(f"   Recommendation Cap: {recommendation_cap}")
+
+                # For severe overqualification (gap >= 2), force SKIP recommendation
+                if level_gap >= 2:
+                    print(f"   🔒 Forcing recommendation to: Skip - Overqualified")
+                    parsed_data["recommendation"] = "Skip - Overqualified"
+                    parsed_data["recommendation_locked"] = True
+                    parsed_data["recommendation_locked_by_overqualification"] = True
+                    parsed_data["overqualification_gate_reason"] = gate_reason
+
+                    # Add overqualification to gaps if not present
+                    if "gaps" not in parsed_data:
+                        parsed_data["gaps"] = []
+                    overq_gap = {
+                        "gap_type": "overqualified",
+                        "severity": "high",
+                        "description": gate_reason,
+                        "mitigation": "Consider roles at Director or VP level that match your experience."
+                    }
+                    parsed_data["gaps"].insert(0, overq_gap)  # Put at front
+
+                # For mild overqualification (gap == 1), add coaching but allow Apply with Caution
+                elif level_gap == 1:
+                    current_rec = parsed_data.get("recommendation", "Apply")
+                    # Only downgrade, never upgrade
+                    if current_rec in ["Apply", "Strong Apply"]:
+                        print(f"   ⚠️ Downgrading recommendation from {current_rec} to Apply with Caution")
+                        parsed_data["recommendation"] = "Apply with Caution"
+                    parsed_data["overqualification_advisory"] = gate_reason
+
+                print(f"📊📊📊 OVERQUALIFICATION GATE ENFORCED 📊📊📊\n")
 
         # CRITICAL: Force-apply experience penalties as a backup
         # This ensures hard caps are enforced even if Claude ignores the prompt instructions
