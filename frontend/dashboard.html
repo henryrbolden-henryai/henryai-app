@@ -2171,25 +2171,63 @@
             // Get analysis data - prefer Supabase, fall back to localStorage
             let analysisData = null;
 
+            // Check if app has analysisData embedded (from Supabase)
             if (app.analysisData && typeof app.analysisData === 'object') {
                 analysisData = app.analysisData;
-            } else if (app.analysis_data && typeof app.analysis_data === 'object') {
+                console.log('Using analysisData from Supabase app object');
+            }
+            // Also check analysis_data (snake_case from DB)
+            else if (app.analysis_data && typeof app.analysis_data === 'object') {
                 analysisData = app.analysis_data;
-            } else if (app.analysisKey) {
+                console.log('Using analysis_data from Supabase app object');
+            }
+            // Fall back to localStorage using analysisKey
+            else if (app.analysisKey) {
                 const stored = localStorage.getItem(app.analysisKey);
                 if (stored) {
                     try {
                         analysisData = JSON.parse(stored);
+                        console.log('Using analysisData from localStorage key:', app.analysisKey);
                     } catch (e) {
-                        console.error('Failed to parse localStorage analysis data');
+                        console.error('Failed to parse localStorage analysis data:', e);
+                    }
+                } else {
+                    console.log('No data found in localStorage for key:', app.analysisKey);
+                }
+            }
+            // Last resort: try to find by company/role pattern in localStorage
+            else {
+                console.log('No analysisKey found, searching localStorage for company:', app.company);
+                // Try common key patterns
+                const possibleKeys = [
+                    `analysis_${app.company}_${app.role_title || app.role}`,
+                    `analysis_${app.company}`,
+                ];
+                for (const key of possibleKeys) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        try {
+                            analysisData = JSON.parse(stored);
+                            console.log('Found analysisData using fallback key:', key);
+                            break;
+                        } catch (e) {
+                            console.error('Failed to parse fallback key:', key, e);
+                        }
                     }
                 }
             }
 
             if (!analysisData) {
-                // No analysis data available - redirect to strategy overview instead
-                alert('Strategy data not found for this application. Please view the Strategy Overview.');
+                // No analysis data available - offer to go to strategy overview
                 closeCoachingModal();
+                const viewStrategy = confirm(
+                    `Analysis data not found for ${app.company}.\n\n` +
+                    'This may happen if the analysis was run on a different device.\n\n' +
+                    'Would you like to view this application in the Strategy Overview instead?'
+                );
+                if (viewStrategy) {
+                    window.location.href = `/tracker?highlight=${appId}`;
+                }
                 return;
             }
 
@@ -2215,17 +2253,40 @@
             // Get analysis data - prefer Supabase, fall back to localStorage
             let analysisData = null;
 
+            // Check if app has analysisData embedded (from Supabase)
             if (app.analysisData && typeof app.analysisData === 'object') {
                 analysisData = app.analysisData;
-            } else if (app.analysis_data && typeof app.analysis_data === 'object') {
+            }
+            // Also check analysis_data (snake_case from DB)
+            else if (app.analysis_data && typeof app.analysis_data === 'object') {
                 analysisData = app.analysis_data;
-            } else if (app.analysisKey) {
+            }
+            // Fall back to localStorage using analysisKey
+            else if (app.analysisKey) {
                 const stored = localStorage.getItem(app.analysisKey);
                 if (stored) {
                     try {
                         analysisData = JSON.parse(stored);
                     } catch (e) {
                         console.error('Failed to parse localStorage analysis data');
+                    }
+                }
+            }
+            // Last resort: try to find by company/role pattern in localStorage
+            else {
+                const possibleKeys = [
+                    `analysis_${app.company}_${app.role_title || app.role}`,
+                    `analysis_${app.company}`,
+                ];
+                for (const key of possibleKeys) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        try {
+                            analysisData = JSON.parse(stored);
+                            break;
+                        } catch (e) {
+                            // Continue to next key
+                        }
                     }
                 }
             }
