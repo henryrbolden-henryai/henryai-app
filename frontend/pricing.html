@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plans & Pricing | HenryHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HenryHQ is strategic job search intelligence that tells you where you stand before you apply. Fit scoring, interview prep, and coaching from someone who's been on the other side of the hiring table. Plans from $25/month.">
+
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HenryHQ">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --color-bg: #000000;
+      --color-surface: #000000;
+      --color-surface-elevated: #0a0a0a;
+      --color-border: rgba(255, 255, 255, 0.08);
+      --color-border-hover: rgba(255, 255, 255, 0.15);
+      --color-text: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-accent: #22d3ee;
+      --color-accent-muted: rgba(34, 211, 238, 0.15);
+      --color-success: #4ade80;
+      --color-warning: #fbbf24;
+      --color-error: #f87171;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'DM Sans', -apple-system, sans-serif;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ========== TOP NAVIGATION ========== */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 24px;
+    }
+
+    .top-nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .top-nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .top-nav-logo em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+
+    .top-nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .top-nav-link {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .top-nav-link:hover {
+      color: var(--color-accent);
+    }
+
+    .top-nav-link.active {
+      color: var(--color-accent);
+    }
+
+    /* ========== HERO SECTION ========== */
+    .pricing-hero {
+      padding: 140px 0 80px;
+      text-align: center;
+    }
+
+    .pricing-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 400;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .pricing-hero h1 em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+
+    .pricing-hero .subheadline {
+      font-size: 1.15rem;
+      color: var(--color-text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ========== BILLING TOGGLE ========== */
+    .billing-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin: 40px 0;
+    }
+
+    .billing-toggle span {
+      font-size: 0.95rem;
+      color: var(--color-text-secondary);
+      transition: color 0.2s;
+    }
+
+    .billing-toggle span.active {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 56px;
+      height: 28px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: var(--color-text);
+      border-radius: 50%;
+      transition: transform 0.2s var(--ease-out);
+    }
+
+    .toggle-switch.annual::after {
+      transform: translateX(28px);
+    }
+
+    .toggle-switch.annual {
+      background: var(--color-accent-muted);
+      border-color: var(--color-accent);
+    }
+
+    .savings-badge {
+      background: var(--color-success);
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    /* ========== PRICING GRID ========== */
+    .pricing-section {
+      padding: 40px 0 80px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s var(--ease-out);
+      position: relative;
+    }
+
+    .pricing-card:hover {
+      border-color: var(--color-border-hover);
+      transform: translateY(-4px);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--color-accent);
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.05) 0%, var(--color-surface) 100%);
+      box-shadow: 0 0 40px rgba(34, 211, 238, 0.1);
+    }
+
+    .pricing-card.premium {
+      border-color: rgba(251, 191, 36, 0.4);
+      background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, var(--color-surface) 100%);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-accent);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pricing-badge.premium-badge {
+      background: var(--color-warning);
+    }
+
+    .pricing-tier-name {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 400;
+      margin-bottom: 4px;
+    }
+
+    .pricing-tagline {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      min-height: 40px;
+    }
+
+    .pricing-price {
+      font-size: 2.25rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .pricing-price span {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
+
+    .pricing-annual-note {
+      font-size: 0.8rem;
+      color: var(--color-success);
+      margin-bottom: 8px;
+      min-height: 20px;
+    }
+
+    .pricing-best-for {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
+      margin-bottom: 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin: 16px 0;
+      padding: 0;
+      flex-grow: 1;
+    }
+
+    .pricing-features li {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+      line-height: 1.4;
+    }
+
+    .pricing-features li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      color: var(--color-success);
+      font-size: 0.85rem;
+    }
+
+    .pricing-features li.includes-prev {
+      color: var(--color-text);
+      font-weight: 500;
+      padding-left: 0;
+    }
+
+    .pricing-features li.includes-prev::before {
+      display: none;
+    }
+
+    button, .btn {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s var(--ease-out);
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--color-text);
+      color: var(--color-bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(34, 211, 238, 0.25);
+    }
+
+    .pricing-cta {
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .pricing-cta.btn-popular {
+      background: var(--color-accent);
+      color: #000;
+    }
+
+    .pricing-cta.btn-popular:hover {
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(34, 211, 238, 0.3);
+    }
+
+    /* ========== FEATURE COMPARISON TABLE ========== */
+    .comparison-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .comparison-section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .comparison-table-wrapper {
+      overflow-x: auto;
+      margin: 0 -20px;
+      padding: 0 20px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .comparison-table th {
+      font-weight: 500;
+      color: var(--color-text);
+      font-size: 0.95rem;
+    }
+
+    .comparison-table th:first-child,
+    .comparison-table td:first-child {
+      text-align: left;
+      padding-left: 0;
+    }
+
+    .comparison-table td {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .comparison-table td.feature-name {
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .comparison-table .check {
+      color: var(--color-success);
+    }
+
+    .comparison-table .dash {
+      color: var(--color-text-secondary);
+      opacity: 0.5;
+    }
+
+    .comparison-table thead th {
+      background: var(--color-surface-elevated);
+      position: sticky;
+      top: 0;
+    }
+
+    .comparison-table thead th.popular-col {
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--color-accent);
+    }
+
+    /* ========== FEATURE EXPLANATIONS ========== */
+    .features-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .features-section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ========== FAQ SECTION ========== */
+    .faq-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .faq-section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .faq-list {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 24px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .faq-question:hover {
+      color: var(--color-accent);
+    }
+
+    .faq-icon {
+      font-size: 1.25rem;
+      color: var(--color-text-secondary);
+      transition: transform 0.3s var(--ease-out);
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+
+    .faq-item.active .faq-icon {
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s var(--ease-out), padding 0.3s var(--ease-out);
+    }
+
+    .faq-item.active .faq-answer {
+      max-height: 500px;
+      padding-bottom: 24px;
+    }
+
+    .faq-answer p {
+      color: var(--color-text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    /* ========== TESTIMONIALS ========== */
+    .testimonials-section {
+      padding: 80px 0;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .testimonials-section h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .testimonial-card blockquote {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--color-text);
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+
+    .testimonial-card cite {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      font-style: normal;
+    }
+
+    /* ========== BOTTOM CTA ========== */
+    .bottom-cta {
+      padding: 100px 0;
+      text-align: center;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .bottom-cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 400;
+      margin-bottom: 16px;
+    }
+
+    .bottom-cta p {
+      color: var(--color-text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+
+    .bottom-cta .button-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--color-surface-elevated);
+      border-color: var(--color-border-hover);
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--color-border);
+      text-align: center;
+    }
+
+    footer p {
+      color: var(--color-text-secondary);
+      font-size: 0.85rem;
+    }
+
+    footer .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .footer-links a {
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--color-accent);
+    }
+
+    .footer-links span {
+      color: var(--color-text-secondary);
+      opacity: 0.5;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1200px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .pricing-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .top-nav-links {
+        display: none !important;
+      }
+
+      .top-nav {
+        padding: 12px 16px;
+      }
+
+      .top-nav-logo {
+        margin-left: 50px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+
+      .pricing-card {
+        padding: 24px 20px;
+      }
+
+      .billing-toggle {
+        flex-wrap: wrap;
+      }
+
+      .bottom-cta .button-group {
+        flex-direction: column;
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+
+      .bottom-cta .button-group .btn {
+        width: 100%;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="css/mobile.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+  <!-- Top Navigation -->
+  <nav class="top-nav">
+    <div class="top-nav-container">
+      <a href="/" class="top-nav-logo"><em>Henry</em>HQ</a>
+      <div class="top-nav-links">
+        <a href="/#about-henry" class="top-nav-link">About</a>
+        <a href="/#how-it-works" class="top-nav-link">How it works</a>
+        <a href="/#capabilities" class="top-nav-link">Features</a>
+        <a href="/pricing" class="top-nav-link active">Pricing</a>
+        <a href="/login" class="top-nav-link" id="loginLink">Sign In</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ========== HERO ========== -->
+    <section class="pricing-hero">
+      <div class="container">
+        <h1>Know where you stand <em>before</em> you apply.</h1>
+        <p class="subheadline">Strategic job search intelligence from someone who's been on the other side of the hiring table.</p>
+
+        <!-- Billing Toggle -->
+        <div class="billing-toggle">
+          <span class="active" id="monthlyLabel">Monthly</span>
+          <div class="toggle-switch" id="billingToggle" role="button" tabindex="0" aria-label="Toggle annual billing"></div>
+          <span id="annualLabel">Annual</span>
+          <span class="savings-badge">Save up to 33%</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== PRICING CARDS ========== -->
+    <section class="pricing-section">
+      <div class="container">
+        <div class="pricing-grid">
+          <!-- Preview - Free -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Preview</h3>
+            <p class="pricing-tagline">See what HenryHQ can do</p>
+            <div class="pricing-price">Free</div>
+            <p class="pricing-annual-note">&nbsp;</p>
+            <ul class="pricing-features">
+              <li>1 fit analysis (preview mode)</li>
+              <li>See how we evaluate your match</li>
+              <li>No credit card required</li>
+            </ul>
+            <p class="pricing-best-for"></p>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup'">Try It Free</button>
+          </div>
+
+          <!-- Recruiter - $25/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Recruiter</h3>
+            <p class="pricing-tagline">Apply smarter, not harder</p>
+            <div class="pricing-price" data-monthly="25" data-annual="199">$25<span>/mo</span></div>
+            <p class="pricing-annual-note annual-savings" style="display: none;">$199/year (save $101)</p>
+            <ul class="pricing-features">
+              <li>10 applications/month</li>
+              <li>Full fit analysis with Reality Check</li>
+              <li>Screening question guidance</li>
+              <li>3 tailored resumes/month</li>
+              <li>3 tailored cover letters/month</li>
+              <li>10 Hey Henry coaching chats/month</li>
+            </ul>
+            <p class="pricing-best-for">Best for: Job seekers who want to stop wasting time on bad-fit applications.</p>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=recruiter'">Start with Recruiter</button>
+          </div>
+
+          <!-- Principal - $49/mo (Most Popular) -->
+          <div class="pricing-card popular">
+            <span class="pricing-badge">Most Popular</span>
+            <h3 class="pricing-tier-name">Principal</h3>
+            <p class="pricing-tagline">Your full search toolkit</p>
+            <div class="pricing-price" data-monthly="49" data-annual="399">$49<span>/mo</span></div>
+            <p class="pricing-annual-note annual-savings" style="display: none;">$399/year (save $189)</p>
+            <ul class="pricing-features">
+              <li class="includes-prev">Everything in Recruiter, plus:</li>
+              <li>30 applications/month</li>
+              <li>15 resumes and cover letters/month</li>
+              <li>30 Hey Henry conversations/month</li>
+              <li>Interview prep guides</li>
+              <li>5 mock interviews/month</li>
+              <li>Outreach templates for recruiters and hiring managers</li>
+              <li>Pipeline Command Center</li>
+              <li>Pattern insights on your applications</li>
+            </ul>
+            <p class="pricing-best-for">Best for: Serious searchers running an active job search.</p>
+            <button class="btn btn-popular pricing-cta" onclick="window.location.href='/signup?plan=principal'">Get Principal</button>
+          </div>
+
+          <!-- Partner - $99/mo -->
+          <div class="pricing-card">
+            <h3 class="pricing-tier-name">Partner</h3>
+            <p class="pricing-tagline">Learn from every interview</p>
+            <div class="pricing-price" data-monthly="99" data-annual="799">$99<span>/mo</span></div>
+            <p class="pricing-annual-note annual-savings" style="display: none;">$799/year (save $389)</p>
+            <ul class="pricing-features">
+              <li class="includes-prev">Everything in Principal, plus:</li>
+              <li>50 applications/month</li>
+              <li>Unlimited fit analyses</li>
+              <li>Unlimited document generation</li>
+              <li>Unlimited Hey Henry access</li>
+              <li>15 mock interviews/month</li>
+              <li>Cross-interview pattern analysis</li>
+              <li>Story Bank with effectiveness tracking</li>
+              <li>Rejection forensics</li>
+              <li>Negotiation prep</li>
+            </ul>
+            <p class="pricing-best-for">Best for: Candidates deep in interviews who need to improve their close rate.</p>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=partner'">Upgrade to Partner</button>
+          </div>
+
+          <!-- Coach - $199/mo -->
+          <div class="pricing-card premium">
+            <span class="pricing-badge premium-badge">Limited Seats</span>
+            <h3 class="pricing-tier-name">Coach</h3>
+            <p class="pricing-tagline">Close with confidence</p>
+            <div class="pricing-price" data-monthly="199" data-annual="1599">$199<span>/mo</span></div>
+            <p class="pricing-annual-note annual-savings" style="display: none;">$1,599/year (save $789)</p>
+            <ul class="pricing-features">
+              <li class="includes-prev">Everything in Partner, plus:</li>
+              <li>Unlimited mock interviews</li>
+              <li>Two 45-minute live coaching sessions/month</li>
+              <li>Full negotiation support</li>
+              <li>Counter-offer strategy and drafts</li>
+              <li>Priority Hey Henry responses</li>
+            </ul>
+            <p class="pricing-best-for">Best for: Candidates with offers who need human judgment to close.</p>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/signup?plan=coach'">Get Coach Access</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURE COMPARISON TABLE ========== -->
+    <section class="comparison-section">
+      <div class="container">
+        <h2>Compare Plans</h2>
+        <div class="comparison-table-wrapper">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Preview</th>
+                <th>Recruiter</th>
+                <th class="popular-col">Principal</th>
+                <th>Partner</th>
+                <th>Coach</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="feature-name">Applications/month</td>
+                <td>1</td>
+                <td>10</td>
+                <td>30</td>
+                <td>50</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Fit analyses</td>
+                <td>1 (gated)</td>
+                <td>10</td>
+                <td>30</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Resume generation</td>
+                <td class="dash">-</td>
+                <td>3/mo</td>
+                <td>15/mo</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Cover letter generation</td>
+                <td class="dash">-</td>
+                <td>3/mo</td>
+                <td>15/mo</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Hey Henry conversations</td>
+                <td class="dash">-</td>
+                <td>10/mo</td>
+                <td>30/mo</td>
+                <td>Unlimited</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Reality Check</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Screening question guidance</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Interview prep guides</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Mock interviews</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td>5/mo</td>
+                <td>15/mo</td>
+                <td>Unlimited</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Outreach templates</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Pipeline Command Center</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Pipeline pattern insights</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Cross-interview patterns</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Story Bank</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Rejection forensics</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Negotiation prep</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Live coaching sessions</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td>2/mo</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Full negotiation support</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+              </tr>
+              <tr>
+                <td class="feature-name">Priority Hey Henry</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="dash">-</td>
+                <td class="check">&#10003;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FEATURE EXPLANATIONS ========== -->
+    <section class="features-section">
+      <div class="container">
+        <h2>What's Included</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3>Fit Analysis</h3>
+            <p>We score your match against every job using a 50/30/20 model: 50% skills, 30% experience, 20% scope/seniority. You get a clear number, not vague encouragement.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Reality Check</h3>
+            <p>Market context that most candidates never see: how competitive this role is, what salary range to expect, and red flags in the job posting.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Screening Question Guidance</h3>
+            <p>Many applications auto-reject based on screening questions. We show you which answers matter and why.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Interview Prep Guides</h3>
+            <p>Company-specific preparation with likely questions, talking points, and what they're really evaluating at each stage.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Mock Interviews</h3>
+            <p>Practice with an AI interviewer trained on real interview patterns. Get scored feedback on your answers.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Pipeline Command Center</h3>
+            <p>Track every application with status, priority, and recommended next actions. See your whole search at a glance.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Cross-Interview Pattern Analysis</h3>
+            <p>After 3+ interviews, we analyze patterns across all your debriefs. Find out if you keep stumbling on the same question types.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Story Bank</h3>
+            <p>Curate your STAR stories and track which ones land. Know which stories to tell and which ones to retire.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Rejection Forensics</h3>
+            <p>Analyze your rejection patterns to find the leak in your funnel. Are you getting rejected at resume, recruiter, or HM stage? We'll tell you why.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Negotiation Prep</h3>
+            <p>Comp benchmarks for your target role, talking points for the conversation, and strategy for counter-offers.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Live Coaching Sessions</h3>
+            <p>45-minute sessions with a human coach. Strategy, role-play, gut checks. For when you need judgment, not just data.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TESTIMONIALS ========== -->
+    <section class="testimonials-section">
+      <div class="container">
+        <h2>What Users Say</h2>
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <blockquote>"I went from getting ghosted to landing 3 final rounds in 6 weeks. The fit analysis saved me from applying to 20+ roles I had no shot at."</blockquote>
+            <cite>- Jordan, Product Manager</cite>
+          </div>
+          <div class="testimonial-card">
+            <blockquote>"The rejection forensics showed me I was bombing HM rounds because I kept underselling my scope. Fixed it, got an offer."</blockquote>
+            <cite>- Adam, Senior Engineer</cite>
+          </div>
+          <div class="testimonial-card">
+            <blockquote>"I was skeptical of another AI tool. But this one actually told me NOT to apply to jobs. That's when I knew it was different."</blockquote>
+            <cite>- Darnel, Engineering Manager</cite>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== FAQ SECTION ========== -->
+    <section class="faq-section">
+      <div class="container">
+        <h2>Frequently Asked Questions</h2>
+        <div class="faq-list">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can I change plans anytime?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. Upgrade instantly, downgrade at the end of your billing cycle. No long-term contracts.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What happens to my data if I downgrade?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Your data stays. You just lose access to higher-tier features until you upgrade again.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Is there a free trial?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Preview mode lets you try one fit analysis for free. No credit card required.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What's the difference between Principal and Partner?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Principal gives you the tools to apply and prep. Partner helps you learn from your interviews. If you're getting callbacks but not closing, Partner shows you why.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Why is Coach so expensive?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Coach includes human time. Two 45-minute sessions with a real coach, plus unlimited mock interviews and full negotiation support. It's for candidates with offers who need to close.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Do you offer refunds?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>We offer a 14-day money-back guarantee on all paid plans. If HenryHQ isn't working for you, email us and we'll refund you.</p>
+            </div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Can my company pay for this?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <p>Yes. Many candidates expense job search tools as professional development. We can provide invoices for reimbursement.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== BOTTOM CTA ========== -->
+    <section class="bottom-cta">
+      <div class="container">
+        <h2>Ready to search smarter?</h2>
+        <p>Most job seekers apply to 100+ roles hoping something sticks. HenryHQ tells you which 10 are worth your time.</p>
+        <div class="button-group">
+          <button class="btn btn-primary" onclick="window.location.href='/signup'">Start Free Preview</button>
+          <button class="btn btn-secondary" onclick="window.location.href='/signup?plan=principal'">Get Principal - $49/mo</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 HenryHQ</p>
+      <div class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <span>&middot;</span>
+        <a href="/terms">Terms of Service</a>
+        <span>&middot;</span>
+        <a href="/contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/supabase-client.js"></script>
+  <script>
+    // Billing toggle functionality
+    const billingToggle = document.getElementById('billingToggle');
+    const monthlyLabel = document.getElementById('monthlyLabel');
+    const annualLabel = document.getElementById('annualLabel');
+    const priceElements = document.querySelectorAll('.pricing-price[data-monthly]');
+    const annualSavings = document.querySelectorAll('.annual-savings');
+    let isAnnual = false;
+
+    function updatePricing() {
+      priceElements.forEach(el => {
+        const monthly = el.dataset.monthly;
+        const annual = el.dataset.annual;
+        if (isAnnual) {
+          const monthlyEquiv = Math.round(annual / 12);
+          el.innerHTML = `$${monthlyEquiv}<span>/mo</span>`;
+        } else {
+          el.innerHTML = `$${monthly}<span>/mo</span>`;
+        }
+      });
+
+      annualSavings.forEach(el => {
+        el.style.display = isAnnual ? 'block' : 'none';
+      });
+
+      monthlyLabel.classList.toggle('active', !isAnnual);
+      annualLabel.classList.toggle('active', isAnnual);
+      billingToggle.classList.toggle('annual', isAnnual);
+    }
+
+    billingToggle.addEventListener('click', () => {
+      isAnnual = !isAnnual;
+      updatePricing();
+    });
+
+    billingToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        isAnnual = !isAnnual;
+        updatePricing();
+      }
+    });
+
+    // FAQ Accordion functionality
+    document.querySelectorAll('.faq-question').forEach(button => {
+      button.addEventListener('click', () => {
+        const faqItem = button.parentElement;
+        const isActive = faqItem.classList.contains('active');
+
+        // Close all other FAQ items
+        document.querySelectorAll('.faq-item').forEach(item => {
+          item.classList.remove('active');
+        });
+
+        // Toggle current item
+        if (!isActive) {
+          faqItem.classList.add('active');
+        }
+      });
+    });
+
+    // Check auth state for nav
+    (async function() {
+      try {
+        if (typeof HenryAuth !== 'undefined') {
+          const session = await HenryAuth.getSession();
+          if (session) {
+            const loginLink = document.getElementById('loginLink');
+            if (loginLink) {
+              loginLink.textContent = 'Dashboard';
+              loginLink.href = '/dashboard';
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Auth check error:', error);
+      }
+    })();
+  </script>
+  <script src="components/analytics.js"></script>
+  <script src="components/mobile-nav.js"></script>
+</body>
+</html>
