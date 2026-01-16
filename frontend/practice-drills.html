@@ -131,6 +131,115 @@
             font-size: 0.85rem;
         }
 
+        /* Mode Selection */
+        .mode-section {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .mode-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .mode-title {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: #111827;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .mode-option {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            color: #9ca3af;
+        }
+
+        .mode-option.active {
+            background: #22d3ee;
+            color: #000;
+            font-weight: 500;
+        }
+
+        .mode-option:not(.active):hover {
+            color: #fff;
+        }
+
+        .mode-benefits {
+            display: none;
+        }
+
+        .mode-benefits.visible {
+            display: block;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(34, 211, 238, 0.05);
+            border-radius: 10px;
+        }
+
+        .benefit-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .benefit-text {
+            color: #d1d5db;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .benefit-text strong {
+            color: #22d3ee;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .text-mode-note {
+            display: none;
+            padding: 12px;
+            background: rgba(156, 163, 175, 0.1);
+            border-radius: 10px;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .text-mode-note.visible {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Role Selection */
         .role-section {
             display: none;
@@ -616,6 +725,30 @@
             margin-top: 10px;
         }
 
+        .input-hint.speaking {
+            color: #22d3ee;
+        }
+
+        .speaking-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .speaking-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #22d3ee;
+            border-radius: 50%;
+            animation: speakPulse 1s infinite;
+        }
+
+        @keyframes speakPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
         /* Continue Button */
         .continue-btn {
             display: none;
@@ -808,6 +941,54 @@
                 <div class="drill-type-icon">💼</div>
                 <div class="drill-type-name">Role-Based</div>
                 <div class="drill-type-desc">Job-specific questions</div>
+            </div>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="mode-section" id="modeSection" style="display: none;">
+            <div class="mode-header">
+                <span class="mode-title">Practice Mode</span>
+                <div class="mode-toggle">
+                    <button class="mode-option active" data-mode="conversational" onclick="selectMode('conversational')">Conversational</button>
+                    <button class="mode-option" data-mode="text" onclick="selectMode('text')">Text Only</button>
+                </div>
+            </div>
+
+            <div class="mode-benefits visible" id="conversationalBenefits">
+                <div class="benefits-grid">
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🎯</span>
+                        <div class="benefit-text">
+                            <strong>Real interview simulation</strong>
+                            Hear questions spoken aloud, just like in a real interview
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">⚡</span>
+                        <div class="benefit-text">
+                            <strong>Practice thinking on your feet</strong>
+                            Build confidence responding without prep time
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🎙️</span>
+                        <div class="benefit-text">
+                            <strong>Voice response option</strong>
+                            Speak your answers naturally or type them
+                        </div>
+                    </div>
+                    <div class="benefit-item">
+                        <span class="benefit-icon">🧠</span>
+                        <div class="benefit-text">
+                            <strong>Better retention</strong>
+                            Hearing + speaking creates stronger memory
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-mode-note" id="textModeNote">
+                Text-only mode: Questions appear as text. Great for practicing structure and content at your own pace.
             </div>
         </div>
 
@@ -1095,6 +1276,7 @@
         // State
         let selectedType = null;
         let selectedRole = null;
+        let selectedMode = 'conversational'; // 'conversational' or 'text'
         let currentQuestion = '';
         let questionNumber = 0;
         let scores = [];
@@ -1102,6 +1284,7 @@
         let isRecording = false;
         let mediaRecorder = null;
         let awaitingResponse = false;
+        let isSpeaking = false; // Track if TTS is currently playing
 
         // Select drill type
         function selectDrillType(type) {
@@ -1111,6 +1294,9 @@
             document.querySelectorAll('.drill-type-card').forEach(card => {
                 card.classList.toggle('selected', card.dataset.type === type);
             });
+
+            // Show mode selection section
+            document.getElementById('modeSection').style.display = 'block';
 
             // Show/hide role selection
             const roleSection = document.getElementById('roleSection');
@@ -1123,6 +1309,28 @@
                 roleSection.classList.remove('visible');
                 selectedRole = null;
                 document.getElementById('startBtn').disabled = false;
+            }
+        }
+
+        // Select practice mode
+        function selectMode(mode) {
+            selectedMode = mode;
+
+            // Update toggle buttons
+            document.querySelectorAll('.mode-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            // Show/hide benefits and note
+            const benefits = document.getElementById('conversationalBenefits');
+            const note = document.getElementById('textModeNote');
+
+            if (mode === 'conversational') {
+                benefits.classList.add('visible');
+                note.classList.remove('visible');
+            } else {
+                benefits.classList.remove('visible');
+                note.classList.add('visible');
             }
         }
 
@@ -1187,10 +1395,27 @@
             // Add coach message with question
             addMessage('coach', currentQuestion);
 
-            // Speak the question
-            speakText(currentQuestion);
+            // Speak the question only in conversational mode
+            if (selectedMode === 'conversational') {
+                speakText(currentQuestion);
+            } else {
+                // In text mode, allow response immediately
+                awaitingResponse = true;
+            }
+        }
 
-            awaitingResponse = true;
+        // Update input hint based on speaking state
+        function updateInputHint(speaking) {
+            const hint = document.querySelector('.input-hint');
+            if (hint) {
+                if (speaking) {
+                    hint.classList.add('speaking');
+                    hint.innerHTML = '<span class="speaking-indicator">Coach is speaking... Listen to the question</span>';
+                } else {
+                    hint.classList.remove('speaking');
+                    hint.textContent = 'Press Enter to send, Shift+Enter for new line';
+                }
+            }
         }
 
         // Text-to-speech function
@@ -1202,6 +1427,9 @@
                 currentAudio.pause();
                 currentAudio = null;
             }
+
+            isSpeaking = true;
+            updateInputHint(true);
 
             try {
                 // Try OpenAI TTS via backend first
@@ -1215,7 +1443,30 @@
                     const audioBlob = await response.blob();
                     const audioUrl = URL.createObjectURL(audioBlob);
                     currentAudio = new Audio(audioUrl);
-                    currentAudio.play();
+
+                    // Wait for audio to finish before allowing response
+                    currentAudio.onended = () => {
+                        isSpeaking = false;
+                        awaitingResponse = true;
+                        updateInputHint(false);
+                        URL.revokeObjectURL(audioUrl); // Clean up
+                    };
+
+                    currentAudio.onerror = () => {
+                        isSpeaking = false;
+                        awaitingResponse = true;
+                        updateInputHint(false);
+                        console.error('Audio playback error');
+                    };
+
+                    // Wait for audio to be ready before playing
+                    await new Promise((resolve, reject) => {
+                        currentAudio.oncanplaythrough = resolve;
+                        currentAudio.onerror = reject;
+                        currentAudio.load();
+                    });
+
+                    await currentAudio.play();
                     return;
                 }
             } catch (error) {
@@ -1231,6 +1482,19 @@
                 utterance.rate = 0.95;
                 utterance.pitch = 1;
 
+                // Wait for speech to finish before allowing response
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    awaitingResponse = true;
+                    updateInputHint(false);
+                };
+
+                utterance.onerror = () => {
+                    isSpeaking = false;
+                    awaitingResponse = true;
+                    updateInputHint(false);
+                };
+
                 // Try to get a good voice
                 const voices = speechSynthesis.getVoices();
                 const preferredVoice = voices.find(v =>
@@ -1243,11 +1507,17 @@
                 }
 
                 speechSynthesis.speak(utterance);
+            } else {
+                // No TTS available, allow response immediately
+                isSpeaking = false;
+                awaitingResponse = true;
+                updateInputHint(false);
             }
         }
 
         // Stop speech when ending drill
         function stopSpeech() {
+            isSpeaking = false;
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
@@ -1463,19 +1733,31 @@
                         const blob = new Blob(chunks, { type: 'audio/webm' });
                         stream.getTracks().forEach(t => t.stop());
 
-                        // Transcribe
+                        // Show processing state
+                        btn.textContent = '...';
+
+                        // Transcribe using the correct API base
                         try {
                             const formData = new FormData();
                             formData.append('audio', blob);
-                            const res = await fetch('/api/transcribe', { method: 'POST', body: formData });
+                            const res = await fetch(`${API_BASE}/api/transcribe`, { method: 'POST', body: formData });
                             if (res.ok) {
                                 const data = await res.json();
-                                document.getElementById('userInput').value = data.transcription;
-                                autoResize(document.getElementById('userInput'));
+                                // Backend returns { text: ... }
+                                const transcribedText = data.text || data.transcription || '';
+                                if (transcribedText) {
+                                    document.getElementById('userInput').value = transcribedText;
+                                    autoResize(document.getElementById('userInput'));
+                                }
+                            } else {
+                                console.error('Transcription failed:', res.status);
                             }
                         } catch (e) {
                             console.error('Transcription error:', e);
                         }
+
+                        // Reset button
+                        btn.textContent = '🎤';
                     };
 
                     mediaRecorder.start();
