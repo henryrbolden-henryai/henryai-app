@@ -1486,6 +1486,75 @@
             color: var(--color-text-muted);
         }
 
+        /* Manual Add Modal Form */
+        #manualAddModal .modal-content {
+            max-width: 600px;
+        }
+
+        #manualAddForm label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 6px;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+        }
+
+        #manualAddForm label:first-of-type {
+            margin-top: 8px;
+        }
+
+        #manualAddForm input,
+        #manualAddForm textarea,
+        #manualAddForm select {
+            width: 100%;
+            padding: 12px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+
+        #manualAddForm textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        #manualAddForm input:focus,
+        #manualAddForm textarea:focus,
+        #manualAddForm select:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+
+        #manualAddForm select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        #manualAddForm .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        #manualAddForm .form-row > div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #manualAddForm .modal-actions {
+            margin-top: 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
         /* Screenshot Upload Area */
         .screenshot-upload-area {
             margin-top: 20px;
@@ -4620,6 +4689,51 @@
             <div class="modal-actions" style="margin-top: 24px;">
                 <button class="modal-btn secondary" onclick="closeImportOptions()">Cancel</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MANUAL ADD APPLICATION MODAL -->
+    <div class="modal-overlay" id="manualAddModal">
+        <div class="modal-content">
+            <h2>Add External Application</h2>
+            <p style="color: var(--color-text-muted); margin-bottom: 8px;">Track a job you applied to outside the platform</p>
+
+            <form id="manualAddForm">
+                <label for="manualCompany">Company *</label>
+                <input type="text" id="manualCompany" required placeholder="e.g., Acme Corp">
+
+                <label for="manualRole">Role Title *</label>
+                <input type="text" id="manualRole" required placeholder="e.g., Senior Product Manager">
+
+                <label for="manualJD">Job Description <span style="color: var(--color-text-muted); font-weight: normal;">(optional - enables fit analysis)</span></label>
+                <textarea id="manualJD" rows="6" placeholder="Paste the job description to get fit score and strategy..."></textarea>
+
+                <label for="manualJobUrl">Job URL <span style="color: var(--color-text-muted); font-weight: normal;">(optional)</span></label>
+                <input type="url" id="manualJobUrl" placeholder="https://...">
+
+                <div class="form-row">
+                    <div>
+                        <label for="manualDateApplied">Date Applied</label>
+                        <input type="date" id="manualDateApplied">
+                    </div>
+                    <div>
+                        <label for="manualStatus">Status</label>
+                        <select id="manualStatus">
+                            <option value="Applied">Applied</option>
+                            <option value="Recruiter Screen">Recruiter Screen</option>
+                            <option value="Hiring Manager Interview">Hiring Manager Interview</option>
+                            <option value="Technical Round">Technical Round</option>
+                            <option value="Final Round">Final Round</option>
+                            <option value="Offer Received">Offer Received</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn secondary" onclick="closeManualAddModal()">Cancel</button>
+                    <button type="submit" class="modal-btn primary" id="manualAddSubmit">Add Application</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -11625,9 +11739,132 @@ Thanks so much!
             document.getElementById('importOptionsModal').classList.remove('show');
         }
 
+        // ========================================================================
+        // MANUAL ADD APPLICATION
+        // ========================================================================
         function showManualAddModal() {
-            // Navigate to analyze page for manual entry
-            window.location.href = '/analyze';
+            document.getElementById('manualAddModal').classList.add('show');
+            // Set default date to today
+            document.getElementById('manualDateApplied').value = new Date().toISOString().split('T')[0];
+        }
+
+        function closeManualAddModal() {
+            document.getElementById('manualAddModal').classList.remove('show');
+            document.getElementById('manualAddForm').reset();
+        }
+
+        async function handleManualAdd(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('manualAddSubmit');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+
+            try {
+                const company = document.getElementById('manualCompany').value.trim();
+                const roleTitle = document.getElementById('manualRole').value.trim();
+                const jobDescription = document.getElementById('manualJD').value.trim();
+                const jobUrl = document.getElementById('manualJobUrl').value.trim();
+                const dateApplied = document.getElementById('manualDateApplied').value;
+                const status = document.getElementById('manualStatus').value;
+
+                let analysisData = null;
+                let fitScore = null;
+
+                // Only call analyze API if job description is provided
+                if (jobDescription) {
+                    submitBtn.textContent = 'Analyzing...';
+
+                    // Get resume for analysis
+                    const resumeJson = await getStoredResumeForManualAdd();
+                    if (!resumeJson) {
+                        alert('Please upload your resume first from the Dashboard to enable fit analysis.');
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    // Call /api/jd/analyze - ONLY this endpoint, no resume/cover letter generation
+                    const response = await fetch(`${API_BASE}/api/jd/analyze`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            company: company,
+                            role_title: roleTitle,
+                            job_description: jobDescription,
+                            resume: resumeJson,
+                            jd_source: 'user_provided'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Analysis failed');
+                    }
+
+                    analysisData = await response.json();
+                    fitScore = analysisData.fit_score;
+                } else {
+                    submitBtn.textContent = 'Saving...';
+                }
+
+                // Create application object with full Command Center fields
+                const today = new Date().toISOString().split('T')[0];
+                const application = {
+                    company: company,
+                    role: roleTitle,
+                    status: status,
+                    fitScore: fitScore,
+                    dateApplied: dateApplied || today,
+                    jobUrl: jobUrl || null,
+                    jobDescription: jobDescription || null,
+                    analysisData: analysisData,
+                    // Command Center fields for reporting
+                    jd_source: jobDescription ? 'user_provided' : 'missing',
+                    confidence_label: jobDescription ? 'refined' : 'directional',
+                    last_activity_date: dateApplied || today,
+                    source: 'manual_external'
+                };
+
+                // Save to Supabase
+                const result = await HenryData.saveApplication(application);
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                // Success - close modal and refresh list
+                closeManualAddModal();
+                await loadApplications();
+
+                // Show success message
+                const fitText = fitScore ? ` (Fit: ${fitScore}%)` : '';
+                showToast(`Added ${company} - ${roleTitle}${fitText}`);
+
+            } catch (error) {
+                console.error('Manual add error:', error);
+                alert('Failed to add application. Please try again.');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Helper to get stored resume for manual add
+        async function getStoredResumeForManualAdd() {
+            // Try Supabase first
+            if (typeof HenryData !== 'undefined') {
+                try {
+                    const profile = await HenryData.getProfile();
+                    if (profile?.resume_json) {
+                        return profile.resume_json;
+                    }
+                } catch (e) {
+                    console.warn('Could not fetch profile from Supabase:', e);
+                }
+            }
+            // Fallback to localStorage
+            const stored = localStorage.getItem('henryResume');
+            return stored ? JSON.parse(stored) : null;
         }
 
         // ========================================================================
@@ -12493,6 +12730,16 @@ Thanks so much!
             document.getElementById('reconsiderModal')?.addEventListener('click', function(e) {
                 if (e.target.id === 'reconsiderModal') {
                     closeReconsiderModal();
+                }
+            });
+
+            // Set up manual add form
+            document.getElementById('manualAddForm')?.addEventListener('submit', handleManualAdd);
+
+            // Close manual add modal if clicking outside
+            document.getElementById('manualAddModal')?.addEventListener('click', function(e) {
+                if (e.target.id === 'manualAddModal') {
+                    closeManualAddModal();
                 }
             });
         });

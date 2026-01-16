@@ -314,6 +314,10 @@ const HenryData = {
             interview_date: app.interviewDate || null,
             analysis_data: app.analysisData || {},
             documents_data: app.documentsData || {},
+            // Command Center fields
+            jd_source: app.jd_source || null,
+            confidence_label: app.confidence_label || null,
+            last_activity_date: app.last_activity_date || app.dateApplied || null,
             metadata: {
                 source: app.source,
                 statusHistory: app.statusHistory,
