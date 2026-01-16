@@ -10,6 +10,11 @@
  */
 
 (function() {
+    // Don't render nav when embedded in iframe
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('embedded') === 'true') {
+        return;
+    }
     // Navigation items configuration - hierarchical structure
     // NOTE: Command Center and Interview Intelligence are top-level operational tools,
     // NOT nested under Strategy. Strategy = planning. These = execution.
