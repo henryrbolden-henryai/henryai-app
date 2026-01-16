@@ -4699,8 +4699,16 @@
                 <label for="manualJD">Job Description <span style="color: var(--color-text-muted); font-weight: normal;">(optional - enables fit analysis)</span></label>
                 <textarea id="manualJD" rows="6" placeholder="Paste the job description to get fit score and strategy..."></textarea>
 
-                <label for="manualJobUrl">Job URL <span style="color: var(--color-text-muted); font-weight: normal;">(optional)</span></label>
-                <input type="url" id="manualJobUrl" placeholder="https://...">
+                <div class="form-row">
+                    <div>
+                        <label for="manualJobUrl">Job URL <span style="color: var(--color-text-muted); font-weight: normal;">(optional)</span></label>
+                        <input type="url" id="manualJobUrl" placeholder="https://...">
+                    </div>
+                    <div>
+                        <label for="manualSalary">Comp Range <span style="color: var(--color-text-muted); font-weight: normal;">(optional)</span></label>
+                        <input type="text" id="manualSalary" placeholder="e.g., $150k-$180k">
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div>
@@ -11756,6 +11764,7 @@ Thanks so much!
                 const roleTitle = document.getElementById('manualRole').value.trim();
                 const jobDescription = document.getElementById('manualJD').value.trim();
                 const jobUrl = document.getElementById('manualJobUrl').value.trim();
+                const salary = document.getElementById('manualSalary').value.trim();
                 const dateApplied = document.getElementById('manualDateApplied').value;
                 const status = document.getElementById('manualStatus').value;
 
@@ -11808,6 +11817,7 @@ Thanks so much!
                     dateApplied: dateApplied || today,
                     jobUrl: jobUrl || null,
                     jobDescription: jobDescription || null,
+                    salary: salary || null,
                     analysisData: analysisData,
                     // Command Center fields for reporting
                     jd_source: jobDescription ? 'user_provided' : 'missing',
