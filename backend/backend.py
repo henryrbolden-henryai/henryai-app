@@ -364,19 +364,27 @@ RESUME_CACHE_TTL_DAYS = 7
 _RESUME_CACHE_TABLE_VERIFIED = None  # None = not checked, True = exists, False = missing
 
 
-def compute_resume_hash(resume_data: dict) -> str:
+def compute_resume_hash(resume_data: dict, jd_text: str = "") -> str:
     """
-    Compute deterministic hash for resume content.
+    Compute deterministic hash for resume + JD content.
+
+    CRITICAL FIX: Cache key MUST include BOTH resume AND JD to prevent
+    returning stale analysis for different jobs with the same resume.
 
     Rules:
-    - Hash changes only when resume content changes
+    - Hash changes when resume OR JD changes
     - Ignores whitespace and formatting noise
     - Uses SHA-256 for collision resistance
     """
     # Convert resume dict to string, normalize whitespace
     resume_text = json.dumps(resume_data, sort_keys=True)
-    normalized = " ".join(resume_text.lower().split())
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    normalized_resume = " ".join(resume_text.lower().split())
+
+    # Include JD in hash to ensure different JDs get different cache entries
+    normalized_jd = " ".join(jd_text.lower().split()) if jd_text else ""
+
+    combined = f"{normalized_resume}|||{normalized_jd}"
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest()
 
 
 def get_cached_analysis(resume_hash: str) -> Optional[Dict[str, Any]]:
@@ -11178,7 +11186,36 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
         if is_non_semantic_header(line):
             print(f"  ⏭️  Skipping non-semantic header: '{line}'")
             continue
-        # Must start with capital, reasonable length, and contain job-related words
+
+        # If the line is too long (>100 chars), it's likely a sentence - try to extract role from it
+        if len(line) > 100 and line[0].isupper():
+            line_lower = line.lower()
+            if any(indicator in line_lower for indicator in job_title_indicators):
+                # Try to extract just the role title from the sentence
+                # Pattern: "The [Role Title] will..." or "[Role Title] is responsible..."
+                # Note: We strip "The " prefix after extraction if present
+                role_extraction_patterns = [
+                    r'^(?:The\s+)?([A-Z][A-Za-z\s,]+?(?:Director|Manager|Lead|Head|VP|Vice President|Engineer|Recruiter|Analyst|Specialist|Coordinator|Chief|Officer)(?:\s+of\s+[A-Za-z\s]+)?)(?:\s+will|\s+is\s+responsible|\s+leads|\s+manages|\s+at\s+|\s+reports)',
+                    r'^(?:The\s+)?([A-Z][A-Za-z\s,]+?(?:of\s+)?(?:Recruiting|Engineering|Product|Sales|Marketing|Operations|HR|Finance|Data|Analytics)[A-Za-z\s,]*?)(?:\s+will|\s+is\s+responsible|\s+leads|\s+manages)',
+                    r'^(?:The\s+)?([A-Z][A-Za-z\s]+?)(?:\s+will\s+lead|\s+will\s+be\s+responsible)',
+                ]
+                for pattern in role_extraction_patterns:
+                    match = re.search(pattern, line, re.IGNORECASE)
+                    if match:
+                        extracted_role = match.group(1).strip()
+                        # Clean up leading "The" if captured (shouldn't be, but just in case)
+                        if extracted_role.lower().startswith('the '):
+                            extracted_role = extracted_role[4:].strip()
+                        # Clean up trailing articles/prepositions
+                        extracted_role = re.sub(r'\s+(a|an|the|and|or|for|to|with)$', '', extracted_role, flags=re.IGNORECASE).strip()
+                        if 5 < len(extracted_role) < 60:
+                            print(f"  ✅ Extracted role from sentence: '{extracted_role}' (from line: '{line[:60]}...')")
+                            return extracted_role
+                # Couldn't extract cleanly - skip this line
+                print(f"  ⏭️  Line too long, couldn't extract clean role: '{line[:60]}...'")
+                continue
+
+        # Standard case: reasonable length line
         if 5 < len(line) < 100 and line[0].isupper():
             line_lower = line.lower()
             if any(indicator in line_lower for indicator in job_title_indicators):
@@ -12649,11 +12686,14 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
     # ========================================================================
     # P0 RESUME CACHE: Check for cached analysis BEFORE any LLM calls
     # If cache hit, return immediately - ZERO Claude calls
+    # CRITICAL FIX: Cache key now includes BOTH resume AND JD to prevent
+    # returning stale Mozilla analysis for different job descriptions
     # ========================================================================
     resume_hash = None
     if ENABLE_RESUME_CACHE and resume_data:
-        resume_hash = compute_resume_hash(resume_data)
-        print(f"💾 [{analysis_id}] Resume hash: {resume_hash[:12]}...")
+        # Include JD in hash - same resume + different JD = different cache entry
+        resume_hash = compute_resume_hash(resume_data, jd_text)
+        print(f"💾 [{analysis_id}] Resume+JD hash: {resume_hash[:12]}...")
 
         cached_analysis = get_cached_analysis(resume_hash)
         if cached_analysis:
@@ -21417,7 +21457,13 @@ Experience:
         # Build target context if provided
         target_context = ""
         if request.target_title or request.role_title:
-            target_title = request.target_title or request.role_title
+            raw_target_title = request.target_title or request.role_title
+            # Sanitize the target title - if it's too long/sentence-like, extract the role
+            target_title = sanitize_role_title(raw_target_title)
+            if target_title == "Unknown Role" and raw_target_title:
+                # Try to extract role from the sentence-like input
+                target_title = extract_role_title_from_jd(raw_target_title, "leveling")
+                print(f"   📋 Extracted role from long input: '{target_title}'")
             target_context = f"""
 === TARGET ROLE ANALYSIS ===
 Target Title: {target_title}
