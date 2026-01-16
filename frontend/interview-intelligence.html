@@ -1813,8 +1813,10 @@
             // Sort: interviews needing debrief first, then by date (most recent first)
             const sorted = [...completedInterviews].sort((a, b) => {
                 // Prioritize interviews that need debrief
-                const aNeedsDebrief = a.needsDebrief && !a.debriefCompletedAt;
-                const bNeedsDebrief = b.needsDebrief && !b.debriefCompletedAt;
+                const aDebriefed = a.debriefCompletedAt || a.debriefCompleted || a.feeling;
+                const bDebriefed = b.debriefCompletedAt || b.debriefCompleted || b.feeling;
+                const aNeedsDebrief = a.needsDebrief && !aDebriefed;
+                const bNeedsDebrief = b.needsDebrief && !bDebriefed;
                 if (aNeedsDebrief && !bNeedsDebrief) return -1;
                 if (!aNeedsDebrief && bNeedsDebrief) return 1;
                 // Then sort by date (most recent first)
@@ -1843,7 +1845,7 @@
                 const initial = interview.company.charAt(0).toUpperCase();
 
                 // Check if this interview has been debriefed
-                const hasDebrief = interview.debriefCompletedAt || interview.feeling;
+                const hasDebrief = interview.debriefCompletedAt || interview.debriefCompleted || interview.feeling;
                 const needsDebrief = interview.needsDebrief && !hasDebrief;
 
                 if (needsDebrief) {

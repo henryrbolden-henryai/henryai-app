@@ -1759,6 +1759,23 @@ Best regards,
 
                 // Sync to Command Center tracker
                 syncInterviewToTracker(interview);
+            } else {
+                // Interview might already be in completedInterviews (past interview)
+                // Find and update it there
+                const completedIndex = completedInterviews.findIndex(i => i.id === currentInterview.id);
+                if (completedIndex > -1) {
+                    // Update debrief info on the existing completed interview
+                    completedInterviews[completedIndex].debriefCompleted = true;
+                    completedInterviews[completedIndex].debriefCompletedAt = new Date().toISOString();
+                    completedInterviews[completedIndex].feeling = selectedFeeling;
+                    completedInterviews[completedIndex].needsDebrief = false;
+
+                    // Save updated list
+                    localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+
+                    // Sync to Command Center tracker
+                    syncInterviewToTracker(completedInterviews[completedIndex]);
+                }
             }
         }
 
