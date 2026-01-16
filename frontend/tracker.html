@@ -11791,7 +11791,8 @@ Thanks so much!
                 const result = await HenryData.saveApplication(application);
 
                 if (result.error) {
-                    throw new Error(result.error);
+                    console.error('Supabase save error:', result.error);
+                    throw new Error(result.error.message || result.error);
                 }
 
                 // Success - close modal and refresh list
