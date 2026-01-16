@@ -3288,12 +3288,22 @@ class LevelingContext(BaseModel):
     recommendations: Optional[List[Dict[str, Any]]] = None
     gaps: Optional[List[Dict[str, Any]]] = None
 
+class PreApprovedResume(BaseModel):
+    """User-provided pre-formatted resume that should be used verbatim."""
+    summary: str
+    core_competencies: List[str]
+    experience: List[Dict[str, Any]]  # Each: {company, title, location, dates, description, bullets}
+    education: Optional[List[Dict[str, Any]]] = None
+    skills: Optional[List[str]] = None
+    formatting_specs: Optional[Dict[str, Any]] = None  # Font, margins, etc.
+
 class DocumentsGenerateRequest(BaseModel):
     resume: Dict[str, Any]
     jd_analysis: Dict[str, Any]
     preferences: Optional[Dict[str, Any]] = None
     supplements: Optional[List[SupplementAnswer]] = None  # User-provided answers from Strengthen page
     leveling: Optional[LevelingContext] = None  # Career level assessment data
+    pre_approved_resume: Optional[PreApprovedResume] = None  # If provided, use this VERBATIM instead of generating
 
 class ResumeContent(BaseModel):
     summary: str
@@ -10957,6 +10967,53 @@ def verify_request_isolation(resume_data: Dict[str, Any], analysis_id: str) -> N
     print(f"   Data source: request parameters only (no global state)")
 
 
+def sanitize_role_title(title: str) -> str:
+    """
+    Validate and sanitize a role title to prevent corrupted/garbage data.
+
+    Returns the original title if valid, or 'Unknown Role' if invalid.
+
+    Invalid titles include:
+    - Sentence fragments (contains recommendation-style phrases)
+    - Truncated text (starts with lowercase letters)
+    - Contains em/en dashes (indicates advice text, not title)
+    - Too long (> 100 chars)
+    """
+    if not title or not isinstance(title, str):
+        return "Unknown Role"
+
+    title = title.strip()
+
+    # Too short or too long
+    if len(title) < 3 or len(title) > 100:
+        return "Unknown Role"
+
+    # Starts with lowercase (truncated text like "s fine—but you")
+    if title[0].islower():
+        print(f"⚠️ Rejecting role_title (starts lowercase): '{title}'")
+        return "Unknown Role"
+
+    # Contains em/en dashes (recommendation text)
+    if '—' in title or '–' in title:
+        print(f"⚠️ Rejecting role_title (contains dashes): '{title}'")
+        return "Unknown Role"
+
+    # Contains recommendation phrases
+    title_lower = title.lower()
+    bad_phrases = ['fine', 'but you', 'should', 'however', 'although', 'recommend',
+                   'consider', 'suggest', 'because', 'since', 'it\'s', 'that\'s']
+    if any(phrase in title_lower for phrase in bad_phrases):
+        print(f"⚠️ Rejecting role_title (recommendation phrase): '{title}'")
+        return "Unknown Role"
+
+    # Too many words (likely a sentence)
+    if len(title.split()) > 10:
+        print(f"⚠️ Rejecting role_title (too many words): '{title}'")
+        return "Unknown Role"
+
+    return title
+
+
 def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
     """
     Extract role title from job description text.
@@ -11062,11 +11119,23 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
         text_lower = text.lower().strip()
         # Sentence fragments often start with conjunctions, articles, or verbs
         fragment_starters = ['and ', 'or ', 'the ', 'a ', 'an ', 'plans', 'including',
-                            'such as', 'with ', 'for ', 'to ', 'in ', 'on ', 'at ']
+                            'such as', 'with ', 'for ', 'to ', 'in ', 'on ', 'at ',
+                            's ', 't ', 're ', 'll ', 've ']  # Truncated contractions
         if any(text_lower.startswith(starter) for starter in fragment_starters):
             return True
         # Too many words suggests a sentence, not a title (titles rarely exceed 8 words)
         if len(text.split()) > 8:
+            return True
+        # Em dashes or en dashes in text suggest recommendation/advice text, not titles
+        if '—' in text or '–' in text:
+            return True
+        # Recommendation-style phrases
+        recommendation_phrases = ['fine', 'but you', 'should', 'consider', 'recommend',
+                                   'suggest', 'however', 'although', 'because', 'since']
+        if any(phrase in text_lower for phrase in recommendation_phrases):
+            return True
+        # Truncated text (starts without capital or with punctuation remnant)
+        if text and not text[0].isupper() and text[0].isalpha():
             return True
         return False
 
@@ -12807,7 +12876,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             "dry_run": True,
             "dry_run_confirmed": True,  # P0 UX: Explicit confirmation field
             "analysis_id": analysis_id,
-            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "role_title": sanitize_role_title(isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title),
             "company": body.company,
             "role_seniority": "LEADERSHIP" if isolated_role_detection and isolated_role_detection.get("role_level_info", {}).get("is_leadership_role") else "IC",
             "role_level": isolated_role_detection.get("role_level_info", {}).get("role_level", "IC") if isolated_role_detection else "IC",
@@ -12860,7 +12929,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
             # Get required leadership years from title-based inference
             temp_response_data = {
                 "job_description": jd_text,
-                "role_title": isolated_role_detection.get("extracted_title", "")
+                "role_title": sanitize_role_title(isolated_role_detection.get("extracted_title", ""))
             }
             req_years, _ = extract_required_people_leadership_years(temp_response_data)
             dry_run_response["leadership_years_required"] = req_years
@@ -12932,7 +13001,7 @@ async def analyze_jd(request: Request, body: JDAnalyzeRequest) -> Dict[str, Any]
         gated_response = {
             "analysis_id": analysis_id,
             "company": body.company,
-            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "role_title": sanitize_role_title(isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title),
             # CRITICAL: fit_score MUST be a number for frontend compatibility
             "fit_score": fit_cap,  # Use the capped value directly as a number
             "fit_score_gated_reason": f"Leadership gate: {gate_reason}",
@@ -15528,7 +15597,7 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
         gated_response = {
             "analysis_id": analysis_id,
             "company": body.company,
-            "role_title": isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title,
+            "role_title": sanitize_role_title(isolated_role_detection.get("extracted_title", body.role_title) if isolated_role_detection else body.role_title),
             # CRITICAL: fit_score MUST be a number for frontend compatibility
             "fit_score": fit_cap,  # Use the capped value directly as a number
             "fit_score_gated_reason": f"Leadership gate: {gate_reason}",
@@ -16147,8 +16216,240 @@ async def generate_documents(request: Request, body: DocumentsGenerateRequest) -
     """
     Generate tailored resume, cover letter, interview prep, and outreach content.
     Returns complete JSON for frontend consumption including full resume preview.
+
+    If pre_approved_resume is provided, use that content VERBATIM instead of generating.
     """
-    
+
+    # =========================================================================
+    # PRE-APPROVED RESUME BYPASS
+    # If user provides a pre-formatted resume, use it verbatim instead of generating
+    # =========================================================================
+    if body.pre_approved_resume:
+        print("\n" + "="*60)
+        print("📋 PRE-APPROVED RESUME PROVIDED - Using verbatim content")
+        print("="*60)
+
+        pre_approved = body.pre_approved_resume
+
+        # Convert pre-approved resume to resume_output format
+        experience_sections = []
+        for exp in pre_approved.experience:
+            experience_sections.append({
+                "company": exp.get("company", ""),
+                "title": exp.get("title", ""),
+                "location": exp.get("location", ""),
+                "dates": exp.get("dates", ""),
+                "overview": exp.get("description", ""),  # Company description/overview
+                "bullets": exp.get("bullets", [])
+            })
+
+        # Build education from pre-approved
+        education = []
+        if pre_approved.education:
+            for edu in pre_approved.education:
+                education.append({
+                    "institution": edu.get("institution", ""),
+                    "degree": edu.get("degree", ""),
+                    "details": edu.get("details", "")
+                })
+
+        # Generate full_text from pre-approved content in user's preferred format
+        full_text_lines = []
+
+        # Summary
+        full_text_lines.append("SUMMARY")
+        full_text_lines.append(pre_approved.summary)
+        full_text_lines.append("")
+
+        # Core Competencies - inline with bullet separators
+        if pre_approved.core_competencies:
+            full_text_lines.append("CORE COMPETENCIES")
+            full_text_lines.append(" • ".join(pre_approved.core_competencies))
+            full_text_lines.append("")
+
+        # Experience - Company first, then title (per user's preference)
+        full_text_lines.append("PROFESSIONAL EXPERIENCE")
+        for exp in pre_approved.experience:
+            company = exp.get("company", "")
+            title = exp.get("title", "")
+            location = exp.get("location", "")
+            dates = exp.get("dates", "")
+            description = exp.get("description", "")
+            bullets = exp.get("bullets", [])
+
+            # Format: Company first, then title on same line (user preference)
+            header_parts = []
+            if company:
+                header_parts.append(company)
+            if title:
+                header_parts.append(title)
+            if location:
+                header_parts.append(location)
+            if dates:
+                header_parts.append(dates)
+            full_text_lines.append(" | ".join(header_parts))
+
+            # Italicized company description (will be rendered by frontend)
+            if description:
+                full_text_lines.append(f"_{description}_")
+
+            # Bullet points (not numbered)
+            for bullet in bullets:
+                if bullet:
+                    full_text_lines.append(f"• {bullet}")
+            full_text_lines.append("")
+
+        # Skills
+        if pre_approved.skills:
+            full_text_lines.append("SKILLS")
+            full_text_lines.append(", ".join(pre_approved.skills))
+            full_text_lines.append("")
+
+        # Education
+        if education:
+            full_text_lines.append("EDUCATION")
+            for edu in education:
+                edu_parts = []
+                if edu.get("institution"):
+                    edu_parts.append(edu["institution"])
+                if edu.get("degree"):
+                    edu_parts.append(edu["degree"])
+                full_text_lines.append(" | ".join(edu_parts))
+                if edu.get("details"):
+                    full_text_lines.append(edu["details"])
+            full_text_lines.append("")
+
+        full_text = "\n".join(full_text_lines).strip()
+
+        # Build the resume_output structure
+        resume_output = {
+            "headline": None,
+            "summary": pre_approved.summary,
+            "core_competencies": pre_approved.core_competencies,
+            "experience_sections": experience_sections,
+            "skills": pre_approved.skills or [],
+            "tools_technologies": [],
+            "education": education,
+            "additional_sections": [],
+            "ats_keywords": [],
+            "full_text": full_text
+        }
+
+        # Still need to generate cover letter, interview prep, outreach via Claude
+        # But use the pre-approved resume as the source
+        company = body.jd_analysis.get("company", "the company")
+        role = body.jd_analysis.get("role_title", "this role")
+
+        # Generate supporting documents using Claude with pre-approved resume context
+        cover_letter_prompt = f"""Based on this candidate's resume and the job, generate a cover letter.
+
+CANDIDATE RESUME:
+{full_text}
+
+JOB DETAILS:
+Company: {company}
+Role: {role}
+JD Analysis: {json.dumps(body.jd_analysis, indent=2)}
+
+Generate a professional cover letter with:
+- greeting: "Dear Hiring Manager,"
+- opening: 2-3 sentences leading with strongest relevant experience
+- body: 2-3 paragraphs connecting specific achievements to role requirements
+- closing: Confident close with specific ask
+- full_text: Complete cover letter
+
+Also generate:
+- interview_prep with narrative, talking_points, gap_mitigation
+- outreach with hiring_manager and recruiter LinkedIn messages
+
+Return valid JSON only:
+{{
+  "cover_letter": {{"greeting": "", "opening": "", "body": "", "closing": "", "full_text": ""}},
+  "interview_prep": {{"narrative": "", "talking_points": [], "gap_mitigation": []}},
+  "outreach": {{"hiring_manager": "", "recruiter": "", "linkedin_help_text": ""}}
+}}"""
+
+        try:
+            supporting_response = call_claude(
+                "You are a career coach generating supporting application materials. Be concise and professional. No exclamation points in outreach.",
+                cover_letter_prompt,
+                max_tokens=3000
+            )
+
+            # Parse supporting docs
+            cleaned = supporting_response.strip()
+            if cleaned.startswith("```"):
+                cleaned = cleaned.split("```")[1]
+                if cleaned.startswith("json"):
+                    cleaned = cleaned[4:]
+                cleaned = cleaned.strip()
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3].strip()
+
+            supporting_docs = json.loads(cleaned)
+        except Exception as e:
+            print(f"⚠️ Failed to generate supporting docs: {e}")
+            # Provide fallback supporting docs
+            supporting_docs = {
+                "cover_letter": {
+                    "greeting": "Dear Hiring Manager,",
+                    "opening": f"I am writing to express my interest in the {role} position at {company}.",
+                    "body": "My experience aligns well with the requirements of this role.",
+                    "closing": "I would welcome the opportunity to discuss how I can contribute to your team.",
+                    "full_text": f"Dear Hiring Manager,\n\nI am writing to express my interest in the {role} position at {company}.\n\nMy experience aligns well with the requirements of this role.\n\nI would welcome the opportunity to discuss how I can contribute to your team.\n\nSincerely"
+                },
+                "interview_prep": {
+                    "narrative": "Review the job description and prepare to discuss how your experience aligns.",
+                    "talking_points": ["Highlight relevant experience", "Discuss key achievements"],
+                    "gap_mitigation": ["Address gaps by emphasizing transferable skills"]
+                },
+                "outreach": {
+                    "hiring_manager": f"I recently applied for the {role} position at {company}. Would you be open to a brief call?",
+                    "recruiter": f"I submitted my application for the {role} role at {company}. Happy to provide additional information.",
+                    "linkedin_help_text": f"Search LinkedIn for '{company}' employees and filter by relevant titles."
+                }
+            }
+
+        # Build final response
+        parsed_data = {
+            "resume": {
+                "summary": pre_approved.summary,
+                "skills": pre_approved.skills or [],
+                "experience": pre_approved.experience
+            },
+            "resume_output": resume_output,
+            "cover_letter": supporting_docs.get("cover_letter", {}),
+            "interview_prep": supporting_docs.get("interview_prep", {}),
+            "outreach": supporting_docs.get("outreach", {}),
+            "changes_summary": {
+                "resume": {
+                    "summary_rationale": "Using pre-approved resume content provided by user.",
+                    "qualifications_rationale": "Content preserved exactly as specified by user.",
+                    "ats_keywords": [],
+                    "positioning_statement": "Resume uses your exact formatting and content preferences."
+                },
+                "cover_letter": {
+                    "opening_rationale": "Generated to complement your pre-approved resume.",
+                    "body_rationale": "Aligned with job requirements.",
+                    "close_rationale": "Professional tone.",
+                    "positioning_statement": "Cover letter complements your resume positioning."
+                }
+            },
+            "pre_approved_used": True,
+            "formatting_specs": pre_approved.formatting_specs
+        }
+
+        print(f"✅ Pre-approved resume converted successfully")
+        print(f"   Experience sections: {len(experience_sections)}")
+        print(f"   Full text length: {len(full_text)} chars")
+        print("="*60 + "\n")
+
+        return parsed_data
+
+    # =========================================================================
+    # STANDARD GENERATION PATH (no pre-approved resume)
+    # =========================================================================
+
     system_prompt = """You are an elite executive recruiter building a resume for a candidate you personally want to place.
 Your reputation depends on this resume making hiring managers lean in, not skim past.
 
