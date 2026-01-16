@@ -1074,22 +1074,58 @@
       let role = '';
 
       // Extract company from JD text
-      const companyMatch = jdText.match(/(?:About|Join|At)\s+([A-Z][A-Za-z0-9\s&]+?)(?:\s+is|\s+we|\s*,|\s*\.)/);
+      // IMPORTANT: "At" is removed from the alternation to avoid matching "Recruiter at Company"
+      // which would incorrectly capture patterns like "at Turquoise Health"
+      const companyMatch = jdText.match(/(?:About|Join)\s+([A-Z][A-Za-z0-9\s&]+?)(?:\s+is|\s+we|\s*,|\s*\.)/);
       if (companyMatch) {
         company = companyMatch[1].trim();
       } else {
-        company = 'Company';
+        // Fallback: Look for "Company Name is a" pattern at start of sentences
+        const fallbackMatch = jdText.match(/^([A-Z][A-Za-z0-9\s&]{2,40}?)\s+(?:is a|is an|is the)/m);
+        if (fallbackMatch) {
+          company = fallbackMatch[1].trim();
+        } else {
+          company = 'Company';
+        }
+      }
+
+      // Clean up company name - remove duplicates like "Company At Company"
+      // This can happen from malformed JD text
+      const companyLower = company.toLowerCase();
+      if (companyLower.includes(' at ')) {
+        const parts = company.split(/\s+at\s+/i);
+        if (parts.length === 2 && parts[0].toLowerCase() === parts[1].toLowerCase().substring(0, parts[0].length)) {
+          // "Company At Company" -> "Company"
+          company = parts[0].trim();
+        }
       }
 
       // Extract role from JD text
       const roleMatch = jdText.match(/(?:Title|Position|Role):\s*([^\n]+)/i);
       if (roleMatch) {
-        role = roleMatch[1].trim();
+        role = roleMatch[1].trim().substring(0, 60);
       } else {
         const lines = jdText.split('\n').slice(0, 10);
         for (const line of lines) {
-          if (line.match(/\b(Manager|Director|Lead|Engineer|Recruiter|Specialist|Analyst|Head|VP|Chief|Coordinator)\b/i)) {
-            role = line.trim().substring(0, 60);
+          const trimmedLine = line.trim();
+          // Skip lines that are too long - they're likely sentences, not titles
+          if (trimmedLine.length > 80) {
+            // Try to extract role from sentence like "The Director of X will lead..."
+            const sentenceMatch = trimmedLine.match(/^(?:The\s+)?([A-Z][A-Za-z\s,]+?(?:Director|Manager|Lead|Head|VP|Engineer|Recruiter|Analyst|Specialist|Coordinator|Chief)(?:\s+of\s+[A-Za-z\s]+)?)(?:\s+will|\s+is\s+responsible|\s+leads|\s+manages|\s+at\s+)/i);
+            if (sentenceMatch) {
+              let extractedRole = sentenceMatch[1].trim();
+              // Remove leading "The " if captured
+              if (extractedRole.toLowerCase().startsWith('the ')) {
+                extractedRole = extractedRole.substring(4);
+              }
+              role = extractedRole.substring(0, 60);
+              break;
+            }
+            continue; // Skip this long line if no role extracted
+          }
+          // Standard extraction for shorter lines
+          if (trimmedLine.match(/\b(Manager|Director|Lead|Engineer|Recruiter|Specialist|Analyst|Head|VP|Chief|Coordinator)\b/i)) {
+            role = trimmedLine.substring(0, 60);
             break;
           }
         }
