@@ -2234,9 +2234,10 @@
             // Store in sessionStorage for the destination page
             sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
 
-            // Navigate to destination
+            // Navigate to destination (capture destination before closing modal clears it)
+            const destination = pendingCoachingDestination;
             closeCoachingModal();
-            window.location.href = '/' + pendingCoachingDestination;
+            window.location.href = '/' + destination;
         }
 
         // Direct navigation with specific app context (skips modal)
