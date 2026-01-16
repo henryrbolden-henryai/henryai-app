@@ -1649,13 +1649,35 @@ Examples of helpful info:
                 currentInterview.debriefCompletedAt = currentInterview.debriefCompletedAt || new Date().toISOString();
                 currentInterview.feeling = selectedFeeling || currentInterview.feeling;
                 currentInterview.outcome = selectedOutcome;
+                currentInterview.needsDebrief = false;
 
                 console.log('Syncing interview to tracker:', currentInterview);
                 syncInterviewToTracker(currentInterview);
+
+                // Also update completedInterviews directly to ensure Interview Intelligence shows correct state
+                updateCompletedInterviewsWithOutcome();
             } else {
                 console.error('No currentInterview found to sync');
             }
             window.location.href = '/tracker';
+        }
+
+        function updateCompletedInterviewsWithOutcome() {
+            try {
+                const completedInterviews = JSON.parse(localStorage.getItem('completedInterviews') || '[]');
+                const idx = completedInterviews.findIndex(i => String(i.id) === String(currentInterview.id));
+                if (idx > -1) {
+                    completedInterviews[idx].debriefCompleted = true;
+                    completedInterviews[idx].debriefCompletedAt = currentInterview.debriefCompletedAt;
+                    completedInterviews[idx].feeling = selectedFeeling;
+                    completedInterviews[idx].outcome = selectedOutcome;
+                    completedInterviews[idx].needsDebrief = false;
+                    localStorage.setItem('completedInterviews', JSON.stringify(completedInterviews));
+                    console.log('Updated completedInterviews with outcome:', selectedOutcome);
+                }
+            } catch (e) {
+                console.error('Error updating completedInterviews:', e);
+            }
         }
 
         /**

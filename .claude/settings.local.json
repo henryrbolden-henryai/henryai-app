@@ -87,7 +87,8 @@
       "Bash(lsof:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Add conversational/text mode toggle to Practice Drills\n\n- Add mode selection UI with Conversational \\(default\\) and Text Only options\n- Display benefits of conversational mode \\(real simulation, think on feet, voice response, better retention\\)\n- Fix audio cutting off issue - TTS now fully completes before allowing response\n- Add visual \"Coach is speaking...\" indicator during audio playback\n- Fix speech-to-text transcription API endpoint and response handling\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(gh workflow:*)",
-      "Bash(railway status:*)"
+      "Bash(railway status:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Signal-based debrief outcomes with coaching branches\n\nReplace recruiter-coded outcomes with signal-based framing:\n- Strong positive signal \\(aligned, good energy, clear next steps\\)\n- Mixed / unclear signal \\(some traction, flags, no clarity\\)\n- Likely no \\(energy off, gaps exposed, soft rejection\\)\n- Awaiting response \\(no signal yet, timing dependent\\)\n\nEach signal branches to dedicated coaching:\n- Strong positive: Reinforce confidence, draft thank-you, schedule next round\n- Mixed: 30-second reflection checkpoint before tactical advice\n- Likely no: Containment → takeaway extraction → back to pipeline\n- Awaiting: Prevent spiral with timing norms and distraction\n\nKey UX decisions:\n- Mixed signals force reflection before drafting \\(>20 chars or 30s timer\\)\n- Likely no extracts 1 takeaway before showing actions \\(respects emotional timing\\)\n- Takeaways stored to localStorage, surfaced in future prep guides\n- Past takeaways labeled \"From a past interview\" for continuity\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ],
     "deny": [],
     "ask": []
