@@ -47,7 +47,7 @@ Return valid JSON only."""
 # ============================================
 
 CORE_3_GENERATION_PROMPT = """You are a recruiter-grade interview coach.
-Using the candidate's resume, generate exactly 3 **Core Interview Stories** that every candidate needs:
+Using the candidate's resume, generate exactly 3 **Core Interview Stories** tailored for their target role and company.
 
 1. **Leadership / Influence** - Leading a team, driving alignment, influencing without authority
 2. **Execution / Problem-Solving** - Shipping under pressure, debugging complex issues, delivering results
@@ -57,6 +57,7 @@ Rules:
 
 * Stories must be **truth-adjacent** to resume experience. No fabrication.
 * Anchor to real roles, companies, scope, and outcomes from the resume.
+* **Tailor stories to the target company and role** - emphasize relevant experience that would resonate with this specific opportunity.
 * Each story needs a **one-sentence opening line** that hooks the interviewer immediately.
 * Adjust depth for the interview stage: {interview_stage}
   * Recruiter: clarity, scope, basics (2 min max)
@@ -68,6 +69,7 @@ Rules:
 {resume_text}
 
 === TARGET CONTEXT ===
+Target Company: {target_company}
 Target Role: {target_role}
 Role Level: {role_level}
 Interview Stage: {interview_stage}

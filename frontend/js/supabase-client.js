@@ -1713,6 +1713,7 @@ const HenryData = {
                 interview_stage: options.interview_stage || 'hiring_manager',
                 target_role_level: options.role_level,
                 target_role: options.target_role,
+                target_company: options.target_company,
                 competencies: options.competencies,
                 generate_core_3: options.generate_core_3 !== false, // Default true
                 max_stories: options.max_stories || 3

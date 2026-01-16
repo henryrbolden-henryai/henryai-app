@@ -1177,12 +1177,12 @@
 
     <div class="container">
         <!-- Page Header -->
-        <div class="page-header">
-            <div>
+        <div class="page-header" style="flex-direction: column; align-items: stretch;">
+            <div style="margin-bottom: 1rem;">
                 <h1>Story Bank</h1>
                 <p class="subtitle">Your interview stories. Ranked by what actually works.</p>
             </div>
-            <div class="header-actions">
+            <div class="header-actions" style="justify-content: flex-start;">
                 <button class="btn-primary" onclick="openAddModal()">
                     <span>+</span> Add New Story
                 </button>
@@ -1258,7 +1258,7 @@
                 <div class="empty-state">
                     <div class="empty-state-icon">&#9997;</div>
                     <h2>Henry's waiting to write your stories</h2>
-                    <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories — you make them yours.</p>
+                    <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories - you make them yours.</p>
                     <button class="btn-generate" onclick="generateCore3Stories()">
                         <span>&#9733;</span> Generate Core 3 Stories
                     </button>
@@ -1487,12 +1487,95 @@ Result: [Measurable outcomes]"></textarea>
                     return;
                 }
 
+                // Get context from upcoming interviews or applications
+                let targetRole = null;
+                let targetCompany = null;
+                let roleLevel = 'Manager';
+                let contextSource = null;
+
+                // First, try to get context from upcoming interviews
+                try {
+                    const interviews = await window.HenryData.getInterviews();
+                    // Find the next upcoming interview (scheduled in the future)
+                    const now = new Date();
+                    const upcomingInterview = interviews
+                        .filter(i => new Date(i.scheduled_time) > now)
+                        .sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time))[0];
+
+                    if (upcomingInterview) {
+                        targetRole = upcomingInterview.role;
+                        targetCompany = upcomingInterview.company;
+                        contextSource = 'upcoming interview';
+
+                        // Infer level from role title
+                        const roleLower = (upcomingInterview.role || '').toLowerCase();
+                        if (roleLower.includes('director') || roleLower.includes('head of')) {
+                            roleLevel = 'Director';
+                        } else if (roleLower.includes('vp') || roleLower.includes('vice president')) {
+                            roleLevel = 'VP';
+                        } else if (roleLower.includes('senior') || roleLower.includes('staff') || roleLower.includes('principal')) {
+                            roleLevel = 'Senior IC';
+                        } else if (roleLower.includes('manager') || roleLower.includes('lead')) {
+                            roleLevel = 'Manager';
+                        }
+                    }
+                } catch (e) {
+                    console.log('No upcoming interviews found');
+                }
+
+                // If no upcoming interviews, fall back to active applications
+                if (!targetRole) {
+                    try {
+                        const applications = await window.HenryData.getApplications();
+                        // Find most recent active application (not rejected/withdrawn)
+                        const activeApp = applications.find(app =>
+                            !['rejected', 'withdrawn', 'declined'].includes(app.status?.toLowerCase())
+                        );
+                        if (activeApp) {
+                            targetRole = activeApp.role;
+                            targetCompany = activeApp.company;
+                            contextSource = 'active application';
+
+                            // Try to infer level from role title
+                            const roleLower = (activeApp.role || '').toLowerCase();
+                            if (roleLower.includes('director') || roleLower.includes('head of')) {
+                                roleLevel = 'Director';
+                            } else if (roleLower.includes('vp') || roleLower.includes('vice president')) {
+                                roleLevel = 'VP';
+                            } else if (roleLower.includes('senior') || roleLower.includes('staff') || roleLower.includes('principal')) {
+                                roleLevel = 'Senior IC';
+                            } else if (roleLower.includes('manager') || roleLower.includes('lead')) {
+                                roleLevel = 'Manager';
+                            }
+                        }
+                    } catch (e) {
+                        console.log('No applications found');
+                    }
+                }
+
+                // If still no context, show a dropdown to select a role
+                if (!targetRole) {
+                    const result = await showRoleSelectionModal();
+                    if (!result) {
+                        // User cancelled
+                        return;
+                    }
+                    targetRole = result.role;
+                    targetCompany = result.company;
+                    roleLevel = result.roleLevel || 'Manager';
+                    contextSource = 'user selection';
+                }
+
+                console.log(`Generating stories for ${targetRole} at ${targetCompany} (${contextSource})`);
+
                 const response = await window.HenryData.generateAIStories(
                     resume.resume_json,
                     {
                         generate_core_3: true,
                         interview_stage: 'hiring_manager',
-                        role_level: 'Manager'
+                        role_level: roleLevel,
+                        target_role: targetRole,
+                        target_company: targetCompany
                     }
                 );
 
@@ -1526,6 +1609,136 @@ Result: [Measurable outcomes]"></textarea>
             }
         }
 
+        // Show modal for selecting which role to generate stories for
+        async function showRoleSelectionModal() {
+            return new Promise(async (resolve) => {
+                // Try to get any applications or interviews for options
+                let options = [];
+
+                try {
+                    const applications = await window.HenryData.getApplications();
+                    options = applications.map(app => ({
+                        role: app.role,
+                        company: app.company,
+                        roleLevel: inferRoleLevel(app.role)
+                    }));
+                } catch (e) {}
+
+                // Create modal HTML
+                const modalHtml = `
+                    <div class="modal-overlay active" id="roleSelectModal" style="z-index: 1001;">
+                        <div class="modal" style="max-width: 500px;">
+                            <div class="modal-header">
+                                <h2>Which role are you preparing for?</h2>
+                                <button class="modal-close" onclick="closeRoleSelectModal(null)">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <p style="color: #9ca3af; margin-bottom: 1.5rem;">
+                                    Stories will be tailored to resonate with this company and role.
+                                </p>
+                                ${options.length > 0 ? `
+                                    <div style="margin-bottom: 1.5rem;">
+                                        <label style="color: #e5e7eb; font-weight: 600; margin-bottom: 0.5rem; display: block;">Your Applications</label>
+                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                            ${options.slice(0, 5).map((opt, i) => `
+                                                <button class="role-option-btn" onclick="selectRoleOption(${i})" style="
+                                                    background: #1f2937;
+                                                    border: 1px solid #374151;
+                                                    border-radius: 8px;
+                                                    padding: 1rem;
+                                                    text-align: left;
+                                                    cursor: pointer;
+                                                    color: #e5e7eb;
+                                                    transition: border-color 0.2s;
+                                                ">
+                                                    <div style="font-weight: 600;">${escapeHtml(opt.role)}</div>
+                                                    <div style="color: #9ca3af; font-size: 0.875rem;">${escapeHtml(opt.company)}</div>
+                                                </button>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                <div style="border-top: 1px solid #374151; padding-top: 1rem;">
+                                    <label style="color: #e5e7eb; font-weight: 600; margin-bottom: 0.5rem; display: block;">Or enter manually</label>
+                                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                        <input type="text" id="manualCompany" class="form-input" placeholder="Company name (e.g., Google)">
+                                        <input type="text" id="manualRole" class="form-input" placeholder="Role title (e.g., Senior Product Manager)">
+                                        <select id="manualLevel" class="filter-select" style="width: 100%;">
+                                            <option value="IC">IC</option>
+                                            <option value="Senior IC">Senior IC</option>
+                                            <option value="Manager" selected>Manager</option>
+                                            <option value="Director">Director</option>
+                                            <option value="VP">VP</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn-secondary" onclick="closeRoleSelectModal(null)">Cancel</button>
+                                <button class="btn-primary" onclick="submitManualRole()">Generate Stories</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Inject modal
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // Store options and resolve function globally for callbacks
+                window._roleSelectOptions = options;
+                window._roleSelectResolve = resolve;
+
+                // Add hover styles
+                document.querySelectorAll('.role-option-btn').forEach(btn => {
+                    btn.addEventListener('mouseenter', () => btn.style.borderColor = '#60a5fa');
+                    btn.addEventListener('mouseleave', () => btn.style.borderColor = '#374151');
+                });
+            });
+        }
+
+        function selectRoleOption(index) {
+            const option = window._roleSelectOptions[index];
+            closeRoleSelectModal(option);
+        }
+
+        function submitManualRole() {
+            const company = document.getElementById('manualCompany').value.trim();
+            const role = document.getElementById('manualRole').value.trim();
+            const roleLevel = document.getElementById('manualLevel').value;
+
+            if (!company || !role) {
+                alert('Please enter both company and role.');
+                return;
+            }
+
+            closeRoleSelectModal({ company, role, roleLevel });
+        }
+
+        function closeRoleSelectModal(result) {
+            const modal = document.getElementById('roleSelectModal');
+            if (modal) modal.remove();
+
+            if (window._roleSelectResolve) {
+                window._roleSelectResolve(result);
+                window._roleSelectResolve = null;
+                window._roleSelectOptions = null;
+            }
+        }
+
+        function inferRoleLevel(roleTitle) {
+            const roleLower = (roleTitle || '').toLowerCase();
+            if (roleLower.includes('director') || roleLower.includes('head of')) {
+                return 'Director';
+            } else if (roleLower.includes('vp') || roleLower.includes('vice president')) {
+                return 'VP';
+            } else if (roleLower.includes('senior') || roleLower.includes('staff') || roleLower.includes('principal')) {
+                return 'Senior IC';
+            } else if (roleLower.includes('manager') || roleLower.includes('lead')) {
+                return 'Manager';
+            }
+            return 'IC';
+        }
+
         // Load Henry's Drafts
         async function loadDrafts() {
             if (typeof window.HenryData === 'undefined') return;
@@ -1551,7 +1764,7 @@ Result: [Measurable outcomes]"></textarea>
                     <div class="empty-state">
                         <div class="empty-state-icon">&#9997;</div>
                         <h2>Henry's waiting to write your stories</h2>
-                        <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories — you make them yours.</p>
+                        <p>Let me turn your resume into interview gold. I'll draft your Core 3 stories - you make them yours.</p>
                         <button class="btn-generate" onclick="generateCore3Stories()">
                             <span>&#9733;</span> Generate Core 3 Stories
                         </button>

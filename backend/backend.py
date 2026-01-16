@@ -24342,6 +24342,7 @@ async def generate_stories(request: GenerateStoriesRequest):
     if request.generate_core_3:
         prompt = CORE_3_GENERATION_PROMPT.format(
             resume_text=resume_text,
+            target_company=request.target_company or "Not specified",
             target_role=request.target_role or "Not specified",
             role_level=request.target_role_level or "Manager",
             interview_stage=request.interview_stage or "hiring_manager"

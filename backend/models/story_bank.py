@@ -82,6 +82,7 @@ class GenerateStoriesRequest(BaseModel):
     resume_json: Dict[str, Any]
     resume_id: Optional[str] = None
     target_role: Optional[str] = None
+    target_company: Optional[str] = None
     target_role_level: Optional[RoleLevel] = None
     interview_stage: InterviewStage = InterviewStage.HIRING_MANAGER
     competencies: Optional[List[str]] = None
