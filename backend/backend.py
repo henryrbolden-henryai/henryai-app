@@ -4216,6 +4216,13 @@ class RejectionAnalysisRequest(BaseModel):
     date_rejected: Optional[str] = None
     previous_status: Optional[str] = None
     had_interviews: bool = False
+    # Mental state context for tone calibration
+    holding_up: Optional[str] = None  # doing_well, stressed_but_managing, struggling, rather_not_say
+    timeline: Optional[str] = None  # no_rush, actively_looking, soon, urgent
+    confidence: Optional[str] = None  # strong, shaky, low, need_validation
+    # Pipeline context for encouragement
+    active_applications_count: Optional[int] = None
+    upcoming_interviews_count: Optional[int] = None
 
 
 class TimingAnalysis(BaseModel):
@@ -4249,6 +4256,7 @@ class RejectionCoaching(BaseModel):
     what_to_do_now: str
     what_to_improve: str
     silver_lining: Optional[str] = None
+    henrys_encouragement: Optional[str] = None
 
 
 class RejectionAnalysisResponse(BaseModel):
@@ -18492,6 +18500,43 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
         except:
             pass
 
+    # Build mental state context string
+    mental_state_parts = []
+    if request.holding_up:
+        holding_up_map = {
+            'doing_well': 'doing well, exploring opportunistically',
+            'stressed_but_managing': 'stressed but managing',
+            'struggling': 'struggling emotionally',
+            'rather_not_say': 'preferred not to share'
+        }
+        mental_state_parts.append(f"Emotional state: {holding_up_map.get(request.holding_up, request.holding_up)}")
+    if request.timeline:
+        timeline_map = {
+            'no_rush': 'no rush, waiting for the right thing',
+            'actively_looking': 'actively looking (1-3 months)',
+            'soon': 'needs something soon (under a month)',
+            'urgent': 'urgent, financial pressure'
+        }
+        mental_state_parts.append(f"Timeline: {timeline_map.get(request.timeline, request.timeline)}")
+    if request.confidence:
+        confidence_map = {
+            'strong': 'feeling confident',
+            'shaky': 'confidence is shaky after rejections',
+            'low': 'confidence is low, hard to stay motivated',
+            'need_validation': 'needs reassurance they are on the right track'
+        }
+        mental_state_parts.append(f"Confidence: {confidence_map.get(request.confidence, request.confidence)}")
+
+    mental_state_str = "; ".join(mental_state_parts) if mental_state_parts else "Not provided"
+
+    # Build pipeline context string
+    pipeline_parts = []
+    if request.active_applications_count is not None:
+        pipeline_parts.append(f"{request.active_applications_count} other active applications")
+    if request.upcoming_interviews_count is not None and request.upcoming_interviews_count > 0:
+        pipeline_parts.append(f"{request.upcoming_interviews_count} upcoming interviews")
+    pipeline_str = "; ".join(pipeline_parts) if pipeline_parts else "Unknown"
+
     # Format the prompt
     prompt = REJECTION_ANALYSIS_PROMPT.format(
         company=request.company,
@@ -18501,7 +18546,9 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
         days_in_process=days_in_process,
         previous_status=request.previous_status or "Applied",
         had_interviews="Yes" if request.had_interviews else "No",
-        rejection_email=request.rejection_email
+        rejection_email=request.rejection_email,
+        mental_state=mental_state_str,
+        pipeline_context=pipeline_str
     )
 
     try:
@@ -18549,7 +18596,8 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
                 primary_insight=analysis.get("coaching", {}).get("primary_insight", ""),
                 what_to_do_now=analysis.get("coaching", {}).get("what_to_do_now", ""),
                 what_to_improve=analysis.get("coaching", {}).get("what_to_improve", ""),
-                silver_lining=analysis.get("coaching", {}).get("silver_lining")
+                silver_lining=analysis.get("coaching", {}).get("silver_lining"),
+                henrys_encouragement=analysis.get("coaching", {}).get("henrys_encouragement")
             ),
             coaching_questions=analysis.get("coaching_questions", []),
             recommended_status=analysis.get("recommended_status", "Rejected: Other")

@@ -5629,20 +5629,21 @@
 
             if (status === 'Withdrawn') {
                 const withdrawalReason = app.rejectionData?.withdrawalReason;
-                const reasonActions = {
-                    'accepted-other': "Congrats on the new role! Update your profile and close out other applications.",
-                    'compensation': "Know your worth. Use this as a data point for future negotiations.",
-                    'role-mismatch': "Good call. Refine your targeting criteria for better matches.",
-                    'culture-concerns': "Trust your instincts. Culture fit matters for long-term success.",
-                    'location-remote': "Location matters. Filter more carefully in your search.",
-                    'timeline': "Timing is everything. Keep this company on your radar for later.",
-                    'red-flags': "Smart move. Your instincts protected you from a bad situation.",
-                    'personal': "Life happens. The right opportunity will come at the right time."
+                const reasonContext = {
+                    'accepted-other': { context: "You accepted another offer.", action: "Send gracious notes to close the loop professionally." },
+                    'compensation': { context: "Compensation didn't meet your needs.", action: "Document this data point for future negotiations." },
+                    'role-mismatch': { context: "The role wasn't what you expected.", action: "Refine your screening questions for next time." },
+                    'culture-concerns': { context: "You had culture or values concerns.", action: "Trust your gut. Document what raised the flag." },
+                    'location-remote': { context: "Location or remote policy didn't work.", action: "Filter for these requirements earlier in your search." },
+                    'timeline': { context: "The timing didn't align.", action: "Keep this company warm for later." },
+                    'red-flags': { context: "You spotted warning signs.", action: "Good instincts. Document what you saw." },
+                    'personal': { context: "Personal circumstances changed.", action: "Take care of yourself. The search will be here when you're ready." }
                 };
+                const coaching = reasonContext[withdrawalReason] || { context: "You withdrew from this opportunity.", action: "Reflect on what drove this decision." };
                 return {
                     type: 'archived',
-                    context: "You withdrew from this opportunity.",
-                    action: reasonActions[withdrawalReason] || "Reflect on what drove this decision to refine future targeting."
+                    context: coaching.context,
+                    action: coaching.action
                 };
             }
 
@@ -8035,6 +8036,9 @@
             ];
             const currentWithdrawalReason = rejectionData.withdrawalReason || '';
 
+            const withdrawalNotes = rejectionData.withdrawalNotes || '';
+            const showNotesPrompt = ['red-flags', 'culture-concerns', 'role-mismatch', 'compensation'].includes(currentWithdrawalReason);
+
             const withdrawalReasonSection = isWithdrawn ? `
                 <div style="border-top: 1px solid var(--color-border); padding-top: 16px; margin-top: 16px;">
                     <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">Why did you withdraw?</div>
@@ -8043,6 +8047,16 @@
                         onchange="updateWithdrawalReason('${appId}', this.value)">
                         ${withdrawalReasons.map(r => `<option value="${r.value}" ${currentWithdrawalReason === r.value ? 'selected' : ''}>${r.label}</option>`).join('')}
                     </select>
+                </div>
+                <div id="withdrawalNotesSection" style="display: ${showNotesPrompt ? 'block' : 'none'}; margin-top: 16px;">
+                    <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-bottom: 8px;">What happened? (optional)</div>
+                    <textarea id="withdrawalNotesInput"
+                        placeholder="Tell me about it. What did you see? What felt off? Sometimes writing it out helps process the decision..."
+                        style="width: 100%; background: var(--color-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; min-height: 100px; resize: vertical; font-family: inherit;"
+                        onchange="updateWithdrawalNotes('${appId}', this.value)">${withdrawalNotes}</textarea>
+                </div>
+                <div id="withdrawalCoaching" style="display: ${currentWithdrawalReason ? 'block' : 'none'};">
+                    ${currentWithdrawalReason ? renderWithdrawalCoaching(currentWithdrawalReason, app) : ''}
                 </div>
             ` : '';
 
@@ -8054,11 +8068,11 @@
             const rejectionEmailSection = isRejection ? `
                 <div style="border-top: 1px solid var(--color-border); padding-top: 16px; margin-top: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Rejection Email (paste for AI analysis)</div>
+                        <div style="color: var(--color-text-muted); font-size: 0.85rem;">Rejection Email (paste for Henry analysis)</div>
                         <button id="analyzeRejectionBtn" onclick="analyzeRejectionEmail('${appId}')"
                             style="background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"
                             ${!savedRejectionEmail ? 'disabled style="opacity: 0.5; cursor: not-allowed; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.8rem;"' : ''}>
-                            <span>🤖</span> Analyze with AI
+                            <span>🤖</span> Analyze with Henry
                         </button>
                     </div>
                     <textarea id="rejectionEmailInput" placeholder="Paste the rejection email here for personalized coaching insights..."
@@ -8130,7 +8144,164 @@
                 if (!apps[idx].rejectionData) apps[idx].rejectionData = {};
                 apps[idx].rejectionData.withdrawalReason = reason;
                 saveApplications(apps);
+
+                // Show/hide notes section based on reason
+                const notesSection = document.getElementById('withdrawalNotesSection');
+                if (notesSection) {
+                    const showNotes = ['red-flags', 'culture-concerns', 'role-mismatch', 'compensation'].includes(reason);
+                    notesSection.style.display = showNotes ? 'block' : 'none';
+                }
+
+                // Update the withdrawal coaching display
+                const coachingDiv = document.getElementById('withdrawalCoaching');
+                if (coachingDiv) {
+                    coachingDiv.innerHTML = renderWithdrawalCoaching(reason, apps[idx]);
+                    coachingDiv.style.display = reason ? 'block' : 'none';
+                }
             }
+        }
+
+        function updateWithdrawalNotes(appId, notes) {
+            const apps = getApplications();
+            const idx = apps.findIndex(a => String(a.id) === String(appId));
+            if (idx !== -1) {
+                if (!apps[idx].rejectionData) apps[idx].rejectionData = {};
+                apps[idx].rejectionData.withdrawalNotes = notes;
+                saveApplications(apps);
+            }
+        }
+
+        function renderWithdrawalCoaching(reason, app) {
+            if (!reason) return '';
+
+            // Get pipeline context
+            const allApps = getApplications();
+            const activeAppsCount = allApps.filter(a => STATUSES[a.status]?.active && String(a.id) !== String(app.id)).length;
+
+            // Get mental state from profile
+            const profile = getUserProfile();
+            const situation = profile?.situation || {};
+            const isStruggling = situation.holding_up === 'struggling' || situation.confidence === 'low';
+
+            const coaching = getWithdrawalCoaching(reason, app, activeAppsCount, isStruggling);
+
+            return `
+                <div style="background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(34, 211, 238, 0.3); border-radius: 12px; padding: 20px; margin-top: 16px;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                        <span style="font-size: 1.2rem;">🧠</span>
+                        <h4 style="color: #22d3ee; margin: 0;">Henry's Take</h4>
+                    </div>
+
+                    <div style="background: var(--color-surface); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 4px;">The Decision</div>
+                        <div style="color: var(--color-text); font-weight: 500;">${coaching.validation}</div>
+                    </div>
+
+                    <div style="background: var(--color-surface); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-bottom: 4px;">What This Means</div>
+                        <div style="color: var(--color-text);">${coaching.insight}</div>
+                    </div>
+
+                    <div style="background: rgba(34, 197, 94, 0.1); border-left: 3px solid #22c55e; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                        <div style="color: #22c55e; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px;">What to Do Now</div>
+                        <div style="color: var(--color-text);">${coaching.nextStep}</div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(139, 92, 246, 0.1)); border-left: 3px solid #22d3ee; padding: 16px; border-radius: 8px;">
+                        <div style="color: #22d3ee; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Henry's Encouragement</div>
+                        <div style="color: var(--color-text); font-style: italic;">${coaching.encouragement}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getWithdrawalCoaching(reason, app, activeAppsCount, isStruggling) {
+            const company = app.company || 'this company';
+            const pipelineNote = activeAppsCount > 0
+                ? `You still have ${activeAppsCount} active application${activeAppsCount !== 1 ? 's' : ''} in motion.`
+                : "Let's get some more applications going.";
+
+            // Build forward-looking CTA based on pipeline
+            const forwardCTA = activeAppsCount > 0
+                ? `Now let's focus on what's next. You have ${activeAppsCount} active application${activeAppsCount !== 1 ? 's' : ''} to keep moving.`
+                : "Now let's focus on what's next. Time to add some fresh opportunities to your pipeline.";
+
+            const coachingMap = {
+                'accepted-other': {
+                    validation: "You did it. All that work, all that stress, all those rejections along the way: it led here.",
+                    insight: "The people you met at " + company + " are now part of your network. A gracious withdrawal keeps that door open for the future.",
+                    nextStep: "Send a quick thank-you note to everyone you interviewed with at " + company + ". Then close out your other active applications with the same grace. A clean exit protects your reputation.",
+                    encouragement: isStruggling
+                        ? "I know this journey was brutal. The anxiety, the waiting, the self-doubt. But you pushed through and you got here. I'm genuinely proud of you. Take a moment to breathe before you start your new chapter."
+                        : "Congrats! Go crush it in your new role. You earned this."
+                },
+                'compensation': {
+                    validation: "You know your worth and you walked away when the numbers didn't work. That takes courage.",
+                    insight: "Compensation mismatches often signal deeper issues: budget constraints, leveling disagreements, or how they value the role. Starting a job feeling underpaid breeds resentment from day one.",
+                    nextStep: "Write down what they offered vs. what you need. This is market data for your next negotiation. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "I know walking away from an offer when you need income feels impossible. But accepting something that doesn't meet your needs leads to resentment, and you'll be back on the market soon anyway. You're not saying no to money. You're saying no to the wrong money. We got this."
+                        : "Good call. Never settle for less than you're worth. The right offer is coming."
+                },
+                'role-mismatch': {
+                    validation: "You realized the role wasn't what it seemed. Better to discover this now than three months in.",
+                    insight: "Job descriptions rarely tell the full story. What you learned in the interviews revealed the actual job, and you made the right call based on real information.",
+                    nextStep: "Add this to your list of things to clarify earlier in future interviews. What specifically was the mismatch? " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "I know it's frustrating to invest time in something that doesn't work out. But you just got smarter about what you're looking for. That's progress. We got this."
+                        : "Good instincts. Use this to sharpen your targeting."
+                },
+                'culture-concerns': {
+                    validation: "Culture concerns are real. If something felt off during the interview, it would only feel worse as an employee.",
+                    insight: "Your gut picked up on signals that matter. The candidate experience is often a reflection of the employee experience. Whether it was management style, communication patterns, or how they treated your time, you're protecting yourself from a bad fit.",
+                    nextStep: "Write down what raised the concern so you can spot these patterns earlier next time. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "Trusting your instincts when you're under pressure is hard. I know you might be thinking 'can I afford to be picky?' But a bad culture fit leads to burnout, and being miserable at work affects everything else. You're not being picky. You're being smart. We got this."
+                        : "Trust your gut. A bad culture fit leads to burnout. You dodged a bullet."
+                },
+                'location-remote': {
+                    validation: "Location and remote policy affect your daily life. This isn't a small thing to compromise on.",
+                    insight: "A role that requires a commute you can't sustain, or an office policy that doesn't work for your life, will wear you down over time. You made the practical call.",
+                    nextStep: "Ask about location and remote policy earlier in future conversations so you don't invest time in roles that won't work. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "I know it's tough to walk away from an opportunity over logistics. But your quality of life matters. The right setup exists. We got this."
+                        : "Work-life fit matters. The right opportunity will check all the boxes."
+                },
+                'timeline': {
+                    validation: "Sometimes timing just doesn't align. That's not a reflection of you or the opportunity.",
+                    insight: "Their timeline didn't match yours, or circumstances changed. This happens more than people realize. The relationship you built isn't wasted.",
+                    nextStep: "Send a note to your contact at " + company + " expressing that you'd love to reconnect when timing aligns. Keep them warm. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "Timing issues are frustrating because they're out of your control. But staying connected means this could still work out later. We got this."
+                        : "Keep " + company + " on your radar. Timing changes."
+                },
+                'red-flags': {
+                    validation: "You spotted warning signs and acted on them. That's self-awareness protecting you from a bad situation.",
+                    insight: "How a company treats candidates often mirrors how they treat employees. Disorganization, disrespect, poor communication, lack of follow-through: these don't improve after you're hired. They get worse.",
+                    nextStep: "Document what you saw so you can spot these patterns faster next time. You're not saying no to money or opportunity. You're saying no to this specific situation because the red flags are real. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "Walking away when you need a role takes real courage. I know you might be second-guessing yourself, wondering if you can afford to pass. But accepting a bad situation out of desperation leads to being back on the market in 6 months with a short stint to explain. You made the right call. I'm proud of you. We got this."
+                        : "Smart move. You just saved yourself months of misery."
+                },
+                'personal': {
+                    validation: "Life happens. Personal circumstances change, and it's okay to step back when you need to.",
+                    insight: "The job search will still be here when you're ready. Taking care of yourself isn't giving up; it's being strategic about when to push.",
+                    nextStep: "No pressure to jump back in immediately. When you're ready, everything you've built is still here. Focus on what you need to focus on right now.",
+                    encouragement: isStruggling
+                        ? "You're dealing with a lot. It's okay to pause. I'll be here when you're ready to pick this back up. Take care of yourself first."
+                        : "Life first, job search second. Come back when you're ready."
+                },
+                'other': {
+                    validation: "You had your reasons, and you made a decision. That's what matters.",
+                    insight: "Not every withdrawal needs a category. Sometimes you just know it's not right, and that's enough.",
+                    nextStep: "If there's something specific you learned from this process, write it down. Every experience sharpens your judgment. " + forwardCTA,
+                    encouragement: isStruggling
+                        ? "Whatever your reason, you made the call that felt right to you. We got this."
+                        : "Onward to the next one."
+                }
+            };
+
+            return coachingMap[reason] || coachingMap['other'];
         }
 
         function handleRejectionEmailInput(appId, emailText) {
@@ -8167,6 +8338,20 @@
             btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span> Analyzing...';
 
             try {
+                // Get mental state from profile for tone calibration
+                const profile = getUserProfile();
+                const situation = profile?.situation || {};
+
+                // Get pipeline context for encouragement
+                const allApps = getApplications();
+                const activeAppsCount = allApps.filter(a => STATUSES[a.status]?.active && String(a.id) !== String(appId)).length;
+                const upcomingInterviews = allApps.filter(a => {
+                    if (!a.interviewDate || String(a.id) === String(appId)) return false;
+                    const interviewDate = new Date(a.interviewDate);
+                    const today = new Date();
+                    return interviewDate >= today;
+                }).length;
+
                 const response = await fetch(`${API_BASE_URL}/api/tracker/analyze-rejection`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -8178,7 +8363,14 @@
                         date_applied: app.dateApplied,
                         date_rejected: app.rejectionData?.date || new Date().toISOString(),
                         previous_status: app.previousStatus || 'Applied',
-                        had_interviews: !!app.dateInterviewed
+                        had_interviews: !!app.dateInterviewed,
+                        // Mental state for tone calibration
+                        holding_up: situation.holding_up || null,
+                        timeline: situation.timeline || null,
+                        confidence: situation.confidence || null,
+                        // Pipeline context for encouragement
+                        active_applications_count: activeAppsCount,
+                        upcoming_interviews_count: upcomingInterviews
                     })
                 });
 
@@ -8210,7 +8402,7 @@
                 btn.innerHTML = '<span>⚠️</span> Analysis Failed';
                 btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
                 setTimeout(() => {
-                    btn.innerHTML = '<span>🤖</span> Analyze with AI';
+                    btn.innerHTML = '<span>🤖</span> Analyze with Henry';
                     btn.style.background = 'linear-gradient(135deg, #8b5cf6, #6366f1)';
                     btn.disabled = false;
                 }, 3000);
@@ -8240,8 +8432,8 @@
             return `
                 <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(99, 102, 241, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-                        <span style="font-size: 1.2rem;">🤖</span>
-                        <h4 style="color: #a78bfa; margin: 0;">AI Analysis Results</h4>
+                        <span style="font-size: 1.2rem;">🧠</span>
+                        <h4 style="color: #a78bfa; margin: 0;">Henry Analysis</h4>
                     </div>
 
                     <!-- Rejection Type -->
@@ -8297,12 +8489,20 @@
                             <div style="color: var(--color-text);">${analysis.coaching?.what_to_improve || ''}</div>
                         </div>
                         ${analysis.coaching?.silver_lining ? `
-                            <div>
+                            <div style="margin-bottom: 12px;">
                                 <div style="color: var(--color-text-muted); font-size: 0.8rem;">Silver lining:</div>
                                 <div style="color: var(--color-text);">${analysis.coaching.silver_lining}</div>
                             </div>
                         ` : ''}
                     </div>
+
+                    <!-- Henry's Encouragement -->
+                    ${analysis.coaching?.henrys_encouragement ? `
+                        <div style="background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(139, 92, 246, 0.1)); border-left: 3px solid #22d3ee; padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="color: #22d3ee; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; text-transform: uppercase;">Henry's Take</div>
+                            <div style="color: var(--color-text); font-style: italic;">${analysis.coaching.henrys_encouragement}</div>
+                        </div>
+                    ` : ''}
 
                     <!-- Reflection Questions -->
                     ${questionsList ? `
