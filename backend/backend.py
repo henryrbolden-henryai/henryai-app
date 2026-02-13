@@ -16229,10 +16229,13 @@ Role: {body.role_title}
                 )
 
             # Parse complete JSON
+            print(f"📝 [Stream] Raw response length: {len(response)} chars, starts with: {response[:50]}")
             try:
                 parsed_data = json.loads(response)
+                print(f"✅ [Stream] JSON parsed successfully, {len(parsed_data)} keys")
             except json.JSONDecodeError as first_error:
-                print(f"⚠️ First JSON parse failed, attempting repair...")
+                print(f"⚠️ First JSON parse failed at pos {first_error.pos if hasattr(first_error, 'pos') else '?'}: {first_error}")
+                print(f"⚠️ Response near error: ...{response[max(0,first_error.pos-50):first_error.pos+50]}...")
                 error_pos = first_error.pos if hasattr(first_error, 'pos') else len(response)
                 truncated = response[:error_pos]
                 last_comma = truncated.rfind(',')
@@ -16242,7 +16245,7 @@ Role: {body.role_title}
                 open_brackets = truncated.count('[') - truncated.count(']')
                 truncated += ']' * open_brackets + '}' * open_braces
                 parsed_data = json.loads(truncated)
-                print(f"✅ Salvaged JSON by truncating")
+                print(f"✅ Salvaged JSON by truncating, {len(parsed_data)} keys")
 
             # Ensure job_description, company, and role_title are in parsed_data
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
@@ -16296,8 +16299,12 @@ Role: {body.role_title}
             # Final sanitization: Remove em/en dashes and markdown from text fields
             parsed_data = _final_sanitize_text(parsed_data, analysis_id)
 
+            # Debug: log critical fields before sending complete event
+            print(f"✅ [Stream] COMPLETE EVENT - fit_score: {parsed_data.get('fit_score')}, recommendation: {parsed_data.get('recommendation')}, keys: {list(parsed_data.keys())[:15]}")
+
             # Send complete data
             yield f"data: {json.dumps({'type': 'complete', 'data': parsed_data})}\n\n"
+            print(f"✅ [Stream] Complete event sent successfully")
 
         except Exception as e:
             print(f"🔥 Streaming error: {e}")
