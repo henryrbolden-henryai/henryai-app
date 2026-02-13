@@ -208,21 +208,16 @@
 
         /*
          * DOCUMENT PREVIEW STYLING
-         * Must match RESUME_COVERLETTER_FORMATTING_SPEC.md:
-         * - Font: Calibri, Arial, or Helvetica only
-         * - Resume body: 10.5pt (scaled for screen: ~12px)
-         * - Line spacing: 1.0-1.15
+         * WYSIWYG HTML preview that mirrors the DOCX output exactly.
+         * Styles match document_generator/styles.py constants.
          */
         .document-text {
             width: 100%;
             background: transparent;
             border: none;
             color: #1f2937;
-            /* Spec: Calibri, Arial, Helvetica only */
             font-family: 'Calibri', 'Arial', 'Helvetica', sans-serif;
-            /* Spec: 10.5pt body text, scaled for screen readability */
             font-size: 12px;
-            /* Spec: 1.0-1.15 line spacing */
             line-height: 1.15;
             resize: none;
             min-height: 600px;
@@ -235,6 +230,16 @@
         .document-text:focus {
             outline: none;
         }
+
+        /* WYSIWYG resume preview container */
+        .resume-preview-html {
+            width: 100%;
+            min-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* The .resume-page div from to_html() renders inside here.
+           Inline styles on that div handle all formatting to match DOCX. */
 
         .loading-state {
             text-align: center;
@@ -818,7 +823,9 @@
                         <div class="loading-spinner"></div>
                         <div>Loading resume...</div>
                     </div>
-                    <!-- Plain text preview - matches DOCX structure exactly -->
+                    <!-- WYSIWYG HTML preview matching DOCX layout -->
+                    <div class="resume-preview-html" id="resumePreview" style="display: none;"></div>
+                    <!-- Hidden plain text for legacy fallback and recalculate -->
                     <textarea class="document-text" id="resumeText" style="display: none;"></textarea>
                 </div>
             </div>
@@ -846,7 +853,7 @@
             </div>
         </div>
 
-        <p class="disclaimer">* Preview formatting may differ from downloaded document. We strongly encourage proofreading before submitting.</p>
+        <p class="disclaimer">* We strongly encourage proofreading your documents before submitting.</p>
     </div>
 
     <!-- Success Message -->
@@ -1647,31 +1654,44 @@ ${'─'.repeat(60)}
 
 `;
 
-            // Resume preview - USE CANONICAL DOCUMENT IF AVAILABLE (single source of truth)
-            let resumeText;
-            if (documentsData.resume_output?.canonical_full_text) {
-                // Use canonical full_text directly - it already includes the header
-                // DO NOT prepend resumeHeader to avoid duplication
-                resumeText = documentsData.resume_output.canonical_full_text;
-                console.log('✅ Using canonical resume preview (single source of truth)');
+            // Resume preview - USE CANONICAL HTML IF AVAILABLE (WYSIWYG), then text fallback
+            const resumePreviewDiv = document.getElementById('resumePreview');
+            const resumeTextarea = document.getElementById('resumeText');
+
+            if (documentsData.resume_output?.canonical_html) {
+                // WYSIWYG HTML preview — visually matches the DOCX download
+                resumePreviewDiv.innerHTML = documentsData.resume_output.canonical_html;
+                resumePreviewDiv.style.display = 'block';
+                resumeTextarea.style.display = 'none';
+                console.log('✅ Using WYSIWYG HTML resume preview (single source of truth)');
+
+                // Also store plain text for recalculate and legacy needs
+                if (documentsData.resume_output?.canonical_full_text) {
+                    resumeTextarea.value = documentsData.resume_output.canonical_full_text;
+                }
+            } else if (documentsData.resume_output?.canonical_full_text) {
+                // Canonical text fallback (no HTML available)
+                resumePreviewDiv.style.display = 'none';
+                resumeTextarea.style.display = 'block';
+                resumeTextarea.value = documentsData.resume_output.canonical_full_text;
+                resumeTextarea.style.height = 'auto';
+                resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
+                console.log('⚠️ Using canonical text preview (no HTML available)');
             } else {
-                // Fallback to legacy full_text - prepend header since legacy may not include it
+                // Legacy fallback
                 const resumeBody = documentsData.resume_output?.full_text ||
                             documentsData.resume?.full_text ||
                             'Resume content not available.';
-                resumeText = resumeHeader + resumeBody;
+                const resumeText = resumeHeader + resumeBody;
+                resumePreviewDiv.style.display = 'none';
+                resumeTextarea.style.display = 'block';
+                resumeTextarea.value = resumeText;
+                resumeTextarea.style.height = 'auto';
+                resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
                 console.log('⚠️ Using legacy resume preview (may differ from download)');
             }
 
             document.getElementById('resumeLoading').style.display = 'none';
-
-            // Show plain text preview (matches DOCX structure exactly)
-            const resumeTextarea = document.getElementById('resumeText');
-            resumeTextarea.style.display = 'block';
-            resumeTextarea.value = resumeText;
-            // Auto-resize textarea to fit content
-            resumeTextarea.style.height = 'auto';
-            resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
 
             document.getElementById('downloadResumeBtn').disabled = false;
 

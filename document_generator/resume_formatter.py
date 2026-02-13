@@ -1,7 +1,12 @@
 """
 Resume formatter that generates DOCX files matching the exact template specification.
 Every formatting value comes from styles.py.
+
+Also generates HTML preview and plain text from the same tracked content,
+ensuring preview === download (single source of truth).
 """
+
+import html as html_module
 
 from docx import Document
 from docx.shared import Pt, Inches
@@ -12,12 +17,19 @@ from .utils import add_paragraph_border, format_date_range, validate_contact_inf
 
 
 class ResumeFormatter:
-    """Generates formatted resume documents."""
+    """Generates formatted resume documents, HTML previews, and plain text."""
 
     def __init__(self):
         """Initialize document with default settings."""
         self.doc = Document()
         self._setup_document()
+        # Content tracking for to_plain_text() and to_html()
+        self._content = {
+            "name": "",
+            "tagline": "",
+            "contact_parts": [],
+            "sections": [],       # ordered list of (section_type, section_data)
+        }
 
     def _setup_document(self):
         """Configure page settings and margins."""
@@ -41,6 +53,16 @@ class ResumeFormatter:
         """
         contact_info = validate_contact_info(contact_info)
 
+        # Track content
+        self._content["name"] = name
+        self._content["tagline"] = tagline
+        self._content["contact_parts"] = [v for v in [
+            contact_info['phone'],
+            contact_info['email'],
+            contact_info['linkedin'],
+            contact_info['location']
+        ] if v]
+
         # Name - centered, bold, 18pt
         name_para = self.doc.add_paragraph()
         name_para.alignment = styles.ALIGN_CENTER
@@ -63,13 +85,7 @@ class ResumeFormatter:
         # Contact info - centered, 9pt, bullet-separated
         contact_para = self.doc.add_paragraph()
         contact_para.alignment = styles.ALIGN_CENTER
-        contact_parts = [v for v in [
-            contact_info['phone'],
-            contact_info['email'],
-            contact_info['linkedin'],
-            contact_info['location']
-        ] if v]
-        contact_text = " • ".join(contact_parts)
+        contact_text = " \u2022 ".join(self._content["contact_parts"])
         contact_run = contact_para.add_run(contact_text)
         contact_run.font.size = styles.FONT_SIZE_RESUME_CONTACT
         contact_run.font.name = styles.FONT_FAMILY
@@ -86,6 +102,10 @@ class ResumeFormatter:
         Args:
             title (str): Section name (will be uppercased)
         """
+        # Track: we record the section header. The actual content gets
+        # attached by the next add_* call (summary, competencies, etc.)
+        self._content["sections"].append(("header", title.upper()))
+
         header_para = self.doc.add_paragraph()
         header_para.alignment = styles.ALIGN_LEFT
         header_run = header_para.add_run(title.upper())
@@ -113,6 +133,8 @@ class ResumeFormatter:
         Args:
             text (str): Summary text
         """
+        self._content["sections"].append(("summary", text))
+
         summary_para = self.doc.add_paragraph()
         summary_para.alignment = styles.ALIGN_JUSTIFY
         summary_run = summary_para.add_run(text)
@@ -128,6 +150,8 @@ class ResumeFormatter:
         Args:
             competencies (list): List of competency strings
         """
+        self._content["sections"].append(("competencies", list(competencies)))
+
         # Calculate rows needed for 3-column layout
         rows_needed = (len(competencies) + 2) // 3
 
@@ -159,7 +183,7 @@ class ResumeFormatter:
             cell_para.paragraph_format.first_line_indent = Pt(-12)  # Negative indent for first line (checkmark)
 
             # Add checkmark
-            check_run = cell_para.add_run("✓ ")
+            check_run = cell_para.add_run("\u2713 ")
             check_run.font.size = styles.FONT_SIZE_DEFAULT
             check_run.font.name = styles.FONT_FAMILY
 
@@ -184,6 +208,15 @@ class ResumeFormatter:
         if bullets is None:
             bullets = []
 
+        self._content["sections"].append(("experience_entry", {
+            "company": company,
+            "title": title,
+            "location": location,
+            "dates": dates,
+            "overview": overview,
+            "bullets": list(bullets),
+        }))
+
         # Create 2-row table for proper layout:
         # Row 1: Company (left) | Location (right)
         # Row 2: Job Title (left) | Dates (right)
@@ -206,7 +239,7 @@ class ResumeFormatter:
         # Row 1, Left cell: Company name (bold, 11pt)
         company_cell = company_table.rows[0].cells[0]
         company_para = company_cell.paragraphs[0]
-        company_para.paragraph_format.space_after = Pt(0)  # Remove spacing after company
+        company_para.paragraph_format.space_after = Pt(0)
         company_run = company_para.add_run(company)
         company_run.font.size = styles.FONT_SIZE_COMPANY
         company_run.font.bold = True
@@ -226,7 +259,7 @@ class ResumeFormatter:
         # Row 2, Left cell: Job title (bold, 10pt)
         title_cell = company_table.rows[1].cells[0]
         title_para = title_cell.paragraphs[0]
-        title_para.paragraph_format.space_before = Pt(0)  # Remove spacing between rows
+        title_para.paragraph_format.space_before = Pt(0)
         title_run = title_para.add_run(title)
         title_run.font.size = styles.FONT_SIZE_JOB_TITLE
         title_run.font.bold = True
@@ -237,7 +270,7 @@ class ResumeFormatter:
         dates_cell = company_table.rows[1].cells[1]
         dates_para = dates_cell.paragraphs[0]
         dates_para.alignment = styles.ALIGN_RIGHT
-        dates_para.paragraph_format.space_before = Pt(0)  # Single-spaced
+        dates_para.paragraph_format.space_before = Pt(0)
         dates_run = dates_para.add_run(dates)
         dates_run.font.size = styles.FONT_SIZE_DEFAULT
         dates_run.font.name = styles.FONT_FAMILY
@@ -248,27 +281,24 @@ class ResumeFormatter:
             overview_para = self.doc.add_paragraph()
             overview_para.alignment = styles.ALIGN_LEFT
             overview_run = overview_para.add_run(f"Company Overview: {overview}")
-            overview_run.font.size = styles.FONT_SIZE_DEFAULT  # Same as location/dates
+            overview_run.font.size = styles.FONT_SIZE_DEFAULT
             overview_run.font.italic = True
             overview_run.font.name = styles.FONT_FAMILY
             overview_run.font.color.rgb = styles.COLOR_DARK_GRAY
-            overview_para.paragraph_format.space_before = Pt(0)  # Single-spaced
-            overview_para.paragraph_format.space_after = Pt(6)  # Add space before bullets
+            overview_para.paragraph_format.space_before = Pt(0)
+            overview_para.paragraph_format.space_after = Pt(6)
 
         # Bullets (left-aligned with hanging indent)
         for i, bullet in enumerate(bullets):
             bullet_para = self.doc.add_paragraph()
             bullet_para.alignment = styles.ALIGN_LEFT
-            # Bullet at 0.0", text starts at 0.25", wrapped text aligns at 0.25"
-            bullet_para.paragraph_format.left_indent = Inches(0.25)  # Where all text (including wrapped) starts
-            bullet_para.paragraph_format.first_line_indent = Inches(-0.25)  # Pulls first line (bullet) back to 0.0"
-            # Use tab after bullet to ensure text starts exactly at 0.25"
-            bullet_run = bullet_para.add_run("•\t" + bullet)
+            bullet_para.paragraph_format.left_indent = Inches(0.25)
+            bullet_para.paragraph_format.first_line_indent = Inches(-0.25)
+            bullet_run = bullet_para.add_run("\u2022\t" + bullet)
             bullet_run.font.size = styles.FONT_SIZE_DEFAULT
             bullet_run.font.name = styles.FONT_FAMILY
             bullet_run.font.color.rgb = styles.COLOR_BLACK
             bullet_para.paragraph_format.space_after = styles.SPACING_BETWEEN_BULLETS
-            # Add extra spacing after the last bullet to separate jobs
             if i == len(bullets) - 1:
                 bullet_para.paragraph_format.space_after = styles.SPACING_BETWEEN_JOBS
 
@@ -279,6 +309,8 @@ class ResumeFormatter:
         Args:
             skills_dict (dict): {"Category": ["skill1", "skill2", ...]}
         """
+        self._content["sections"].append(("skills", dict(skills_dict)))
+
         for category, skills_list in skills_dict.items():
             skills_para = self.doc.add_paragraph()
 
@@ -290,7 +322,7 @@ class ResumeFormatter:
             category_run.font.color.rgb = styles.COLOR_BLACK
 
             # Skills (bullet-separated)
-            skills_text = " • ".join(skills_list)
+            skills_text = " \u2022 ".join(skills_list)
             skills_run = skills_para.add_run(skills_text)
             skills_run.font.size = styles.FONT_SIZE_DEFAULT
             skills_run.font.name = styles.FONT_FAMILY
@@ -306,6 +338,12 @@ class ResumeFormatter:
             degree (str): Degree type and major
             details (list): Optional list of detail strings (e.g., concentration, honors)
         """
+        self._content["sections"].append(("education", {
+            "school": school,
+            "degree": degree,
+            "details": details,
+        }))
+
         # Line 1: Degree type and major (regular, 10pt)
         if degree and degree.strip():
             degree_para = self.doc.add_paragraph()
@@ -314,7 +352,7 @@ class ResumeFormatter:
             degree_run.font.size = styles.FONT_SIZE_DEFAULT
             degree_run.font.name = styles.FONT_FAMILY
             degree_run.font.color.rgb = styles.COLOR_BLACK
-            degree_para.paragraph_format.space_after = Pt(0)  # Single-spaced
+            degree_para.paragraph_format.space_after = Pt(0)
 
         # Line 2: Institution/School name (bold, 10pt)
         if school and school.strip():
@@ -325,11 +363,10 @@ class ResumeFormatter:
             school_run.font.bold = True
             school_run.font.name = styles.FONT_FAMILY
             school_run.font.color.rgb = styles.COLOR_BLACK
-            school_para.paragraph_format.space_after = Pt(0)  # Single-spaced
+            school_para.paragraph_format.space_after = Pt(0)
 
         # Line 3+: Details like concentration (regular, 10pt)
         if details:
-            # Handle both string and list formats
             if isinstance(details, str):
                 details_list = [details]
             elif isinstance(details, list):
@@ -355,8 +392,293 @@ class ResumeFormatter:
             filepath (str): Output path
         """
         self.doc.save(filepath)
-        print(f"✓ Resume saved to: {filepath}")
+        print(f"\u2713 Resume saved to: {filepath}")
 
     def get_document(self):
         """Return the document object for further processing."""
         return self.doc
+
+    # =========================================================================
+    # PLAIN TEXT OUTPUT (for canonical hash + fallback preview)
+    # =========================================================================
+
+    def to_plain_text(self):
+        """
+        Generate plain text representation of resume from tracked content.
+        Used by canonical_document.py for hash computation and text preview.
+        """
+        lines = []
+        esc = lambda s: str(s) if s else ""
+
+        # Header
+        lines.append(esc(self._content["name"]).upper())
+        if self._content["tagline"]:
+            lines.append(esc(self._content["tagline"]))
+        if self._content["contact_parts"]:
+            lines.append(" | ".join(self._content["contact_parts"]))
+        lines.append("")
+        lines.append("\u2500" * 60)
+        lines.append("")
+
+        for section_type, data in self._content["sections"]:
+            if section_type == "header":
+                lines.append(data)
+
+            elif section_type == "summary":
+                lines.append(esc(data))
+                lines.append("")
+
+            elif section_type == "competencies":
+                lines.append(" \u2022 ".join(data))
+                lines.append("")
+
+            elif section_type == "experience_entry":
+                company_line = esc(data["company"])
+                if data["location"]:
+                    company_line += f", {data['location']}"
+                if data["dates"]:
+                    company_line += f"  |  {data['dates']}"
+                lines.append(company_line)
+                if data["title"]:
+                    lines.append(esc(data["title"]))
+                if data["overview"]:
+                    lines.append(f"Company Overview: {data['overview']}")
+                for bullet in data["bullets"]:
+                    if bullet:
+                        bt = esc(bullet)
+                        lines.append(f"\u2022 {bt}" if not bt.startswith("\u2022") else bt)
+                lines.append("")
+
+            elif section_type == "skills":
+                if isinstance(data, dict):
+                    for category, skill_list in data.items():
+                        cat = category.title() if category else ""
+                        if isinstance(skill_list, list):
+                            lines.append(f"{cat}: {', '.join(skill_list)}")
+                        else:
+                            lines.append(f"{cat}: {skill_list}")
+                elif isinstance(data, list):
+                    lines.append(" \u2022 ".join(data))
+                else:
+                    lines.append(str(data))
+                lines.append("")
+
+            elif section_type == "education":
+                if data.get("degree") and str(data["degree"]).strip():
+                    lines.append(esc(data["degree"]))
+                if data.get("school") and str(data["school"]).strip():
+                    lines.append(esc(data["school"]))
+                details = data.get("details")
+                if details:
+                    if isinstance(details, list):
+                        for d in details:
+                            if d and str(d).strip():
+                                lines.append(str(d))
+                    elif str(details).strip():
+                        lines.append(str(details))
+                lines.append("")
+
+        return "\n".join(lines).strip()
+
+    # =========================================================================
+    # HTML OUTPUT (WYSIWYG preview matching DOCX layout)
+    # =========================================================================
+
+    def to_html(self):
+        """
+        Generate styled HTML that visually mirrors the DOCX output.
+        Uses inline styles derived from styles.py constants for exact parity.
+        """
+        e = html_module.escape
+        parts = []
+
+        # Outer page container — mimics 8.5" page with proper margins
+        parts.append(
+            '<div class="resume-page" style="'
+            'max-width: 816px; '  # 8.5" at 96dpi
+            'margin: 0 auto; '
+            'padding: 48px 62px; '  # ~0.5" top/bottom, ~0.65" left/right
+            'font-family: Arial, Calibri, Helvetica, sans-serif; '
+            'color: #000; '
+            'line-height: 1.3; '
+            'background: #fff; '
+            '">'
+        )
+
+        # ── Header ──
+        name = e(self._content["name"].upper()) if self._content["name"] else ""
+        parts.append(
+            f'<div class="resume-name" style="'
+            f'text-align: center; '
+            f'font-size: 18pt; '
+            f'font-weight: bold; '
+            f'margin-bottom: 2px; '
+            f'">{name}</div>'
+        )
+
+        if self._content["tagline"]:
+            parts.append(
+                f'<div class="resume-tagline" style="'
+                f'text-align: center; '
+                f'font-size: 11pt; '
+                f'color: #666666; '
+                f'margin-bottom: 4px; '
+                f'">{e(self._content["tagline"])}</div>'
+            )
+
+        if self._content["contact_parts"]:
+            contact_html = " &bull; ".join(e(p) for p in self._content["contact_parts"])
+            parts.append(
+                f'<div class="resume-contact" style="'
+                f'text-align: center; '
+                f'font-size: 9pt; '
+                f'padding-bottom: 6px; '
+                f'border-bottom: 1px solid #000; '
+                f'margin-bottom: 8px; '
+                f'">{contact_html}</div>'
+            )
+
+        # ── Sections ──
+        for section_type, data in self._content["sections"]:
+            if section_type == "header":
+                parts.append(
+                    f'<div class="resume-section-header" style="'
+                    f'font-size: 12pt; '
+                    f'font-weight: bold; '
+                    f'text-transform: uppercase; '
+                    f'border-top: 2px solid #000; '
+                    f'border-bottom: 1px solid #000; '
+                    f'padding: 3px 0; '
+                    f'margin-top: 8px; '
+                    f'margin-bottom: 4px; '
+                    f'">{e(data)}</div>'
+                )
+
+            elif section_type == "summary":
+                parts.append(
+                    f'<div class="resume-summary" style="'
+                    f'font-size: 10pt; '
+                    f'text-align: justify; '
+                    f'margin-bottom: 8px; '
+                    f'">{e(data)}</div>'
+                )
+
+            elif section_type == "competencies":
+                parts.append(
+                    '<div class="resume-competencies" style="'
+                    'display: grid; '
+                    'grid-template-columns: 1fr 1fr 1fr; '
+                    'gap: 2px 12px; '
+                    'font-size: 10pt; '
+                    'margin-bottom: 8px; '
+                    '">'
+                )
+                for comp in data:
+                    parts.append(
+                        f'<div style="padding: 1px 0;">'
+                        f'<span style="color: #000;">\u2713</span> {e(comp)}'
+                        f'</div>'
+                    )
+                parts.append('</div>')
+
+            elif section_type == "experience_entry":
+                parts.append('<div class="resume-experience-entry" style="margin-bottom: 8px;">')
+
+                # Row 1: Company | Location
+                parts.append(
+                    '<div style="display: flex; justify-content: space-between; align-items: baseline;">'
+                )
+                parts.append(
+                    f'<span style="font-size: 11pt; font-weight: bold;">'
+                    f'{e(data["company"])}</span>'
+                )
+                if data["location"]:
+                    parts.append(
+                        f'<span style="font-size: 10pt; color: #666666;">'
+                        f'{e(data["location"])}</span>'
+                    )
+                parts.append('</div>')
+
+                # Row 2: Title | Dates
+                parts.append(
+                    '<div style="display: flex; justify-content: space-between; align-items: baseline;">'
+                )
+                parts.append(
+                    f'<span style="font-size: 10pt; font-weight: bold;">'
+                    f'{e(data["title"])}</span>'
+                )
+                if data["dates"]:
+                    parts.append(
+                        f'<span style="font-size: 10pt; color: #666666;">'
+                        f'{e(data["dates"])}</span>'
+                    )
+                parts.append('</div>')
+
+                # Overview
+                if data.get("overview"):
+                    parts.append(
+                        f'<div style="font-size: 10pt; font-style: italic; color: #666666; '
+                        f'margin-top: 2px; margin-bottom: 4px;">'
+                        f'Company Overview: {e(data["overview"])}</div>'
+                    )
+
+                # Bullets
+                if data["bullets"]:
+                    parts.append(
+                        '<ul style="'
+                        'list-style: none; '
+                        'padding-left: 18px; '
+                        'margin: 3px 0 0 0; '
+                        '">'
+                    )
+                    for bullet in data["bullets"]:
+                        if bullet:
+                            bt = e(bullet.lstrip("\u2022 ").strip())
+                            parts.append(
+                                f'<li style="'
+                                f'font-size: 10pt; '
+                                f'text-indent: -14px; '
+                                f'padding-left: 14px; '
+                                f'margin-bottom: 2px; '
+                                f'">&bull;&ensp;{bt}</li>'
+                            )
+                    parts.append('</ul>')
+
+                parts.append('</div>')
+
+            elif section_type == "skills":
+                parts.append('<div class="resume-skills" style="margin-bottom: 6px;">')
+                if isinstance(data, dict):
+                    for category, skill_list in data.items():
+                        cat = e(category)
+                        if isinstance(skill_list, list):
+                            skills_str = " &bull; ".join(e(s) for s in skill_list)
+                        else:
+                            skills_str = e(str(skill_list))
+                        parts.append(
+                            f'<div style="font-size: 10pt; margin-bottom: 4px;">'
+                            f'<strong>{cat}:</strong> {skills_str}'
+                            f'</div>'
+                        )
+                parts.append('</div>')
+
+            elif section_type == "education":
+                parts.append('<div class="resume-education" style="font-size: 10pt;">')
+                if data.get("degree") and str(data["degree"]).strip():
+                    parts.append(f'<div>{e(str(data["degree"]))}</div>')
+                if data.get("school") and str(data["school"]).strip():
+                    parts.append(
+                        f'<div style="font-weight: bold;">{e(str(data["school"]))}</div>'
+                    )
+                details = data.get("details")
+                if details:
+                    if isinstance(details, list):
+                        for d in details:
+                            if d and str(d).strip():
+                                parts.append(f'<div>{e(str(d))}</div>')
+                    elif str(details).strip():
+                        parts.append(f'<div>{e(str(details))}</div>')
+                parts.append('</div>')
+
+        parts.append('</div>')  # close .resume-page
+        return "\n".join(parts)
