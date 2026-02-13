@@ -15876,7 +15876,7 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
                 "role_level_info": role_level_info, "pre_llm_leadership_gate": pre_llm_leadership_gate
             }
 
-    # If hard gate failed, return gated response immediately (no streaming needed)
+    # If hard gate failed, return gated response as SSE stream (must match frontend protocol)
     # Per P0 UI-SAFE: Include fit_score in canonical shape
     if pre_llm_leadership_gate and pre_llm_leadership_gate.get("gate_status") == "FAIL":
         print(f"\n🚫🚫🚫 [STREAM] HARD GATE FAILED - SKIPPING CLAUDE CALL 🚫🚫🚫")
@@ -15904,7 +15904,15 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
             "experience_analysis": {"eligibility_gate_passed": False, "recommendation_locked": True, "hard_requirement_failure": True, "leadership_hard_gate_failed": True},
             "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM"
         }
-        return JSONResponse(content=gated_response)
+
+        # Wrap in SSE format so the frontend can parse it correctly
+        async def gated_sse_generator():
+            yield f"data: {json.dumps({'type': 'start', 'message': 'Hard gate evaluation complete'})}\n\n"
+            yield f"data: {json.dumps({'type': 'partial', 'fit_score': fit_cap})}\n\n"
+            yield f"data: {json.dumps({'type': 'partial', 'recommendation': 'Do Not Apply'})}\n\n"
+            yield f"data: {json.dumps({'type': 'complete', 'data': gated_response})}\n\n"
+
+        return StreamingResponse(gated_sse_generator(), media_type="text/event-stream")
 
     # Use the same system prompt as the regular analyze endpoint
     system_prompt = """You are HenryHQ-STRUCT, a deterministic JSON-generation engine for job analysis.
