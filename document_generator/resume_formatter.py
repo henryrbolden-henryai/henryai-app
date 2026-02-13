@@ -492,16 +492,21 @@ class ResumeFormatter:
         e = html_module.escape
         parts = []
 
-        # Outer page container — mimics 8.5" page with proper margins
+        # Outer page container — exact replica of 8.5"x11" DOCX page
+        # Dimensions from styles.py: 8.5" wide, 11" tall at 96dpi
+        # Margins: 0.5" top/bottom (48px), 0.65" left/right (62px)
         parts.append(
             '<div class="resume-page" style="'
-            'max-width: 816px; '  # 8.5" at 96dpi
+            'width: 816px; '       # 8.5" at 96dpi
+            'min-height: 1056px; ' # 11" at 96dpi (one page minimum)
             'margin: 0 auto; '
-            'padding: 48px 62px; '  # ~0.5" top/bottom, ~0.65" left/right
+            'padding: 48px 62px; ' # 0.5" top/bottom, 0.65" left/right
             'font-family: Arial, Calibri, Helvetica, sans-serif; '
+            'font-size: 10pt; '
             'color: #000; '
-            'line-height: 1.3; '
+            'line-height: 1.15; '
             'background: #fff; '
+            'box-sizing: border-box; '
             '">'
         )
 

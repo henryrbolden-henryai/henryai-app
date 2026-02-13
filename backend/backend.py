@@ -13,6 +13,7 @@ import logging
 import requests
 import logging
 import hashlib
+import asyncio
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -5535,7 +5536,7 @@ Generate the tailored resume following the exact format in the system instructio
 Remember: NO fabrication - only use information from the candidate's actual resume AND the additional context provided above."""
 
     try:
-        response = call_claude(system_prompt, user_message, max_tokens=4000)
+        response = call_claude(system_prompt, user_message, max_tokens=4000, model="claude-opus-4-6")
         cleaned = clean_claude_json(response)
         result = json.loads(cleaned)
 
@@ -14962,9 +14963,29 @@ Role: {body.role_title}
     # ========================================================================
     assert_no_claude_in_dry_run(body, "analyze_jd")
 
+    # ========================================================================
+    # PERFORMANCE: Kick off company intel fetch in parallel with main Claude call
+    # Company intel only needs company_name (known upfront) and takes 5-10s.
+    # Running it concurrently with the main Opus call saves that wait time.
+    # ========================================================================
+    company_intel_task = None
+    company_name_for_intel = body.company or ""
+    if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED and company_name_for_intel:
+        print(f"🚀 [{analysis_id}] Starting company intel fetch in parallel for: {company_name_for_intel}")
+        company_intel_task = asyncio.create_task(
+            asyncio.to_thread(get_company_intelligence, company_name_for_intel)
+        )
+
     # Call Claude with higher token limit for comprehensive analysis
     # P0 FIX: max_retries=1 to prevent cost leak from retry loops
-    response = call_claude(system_prompt, user_message, max_tokens=4096, max_retries=1)
+    # PERFORMANCE: Run in thread to avoid blocking event loop, enables parallel company intel
+    response = await asyncio.to_thread(
+        call_claude, system_prompt, user_message,
+        4096,   # max_tokens
+        1,      # max_retries
+        0,      # temperature
+        "claude-opus-4-6",  # model
+    )
 
     # Parse JSON response
     try:
@@ -15404,19 +15425,32 @@ Role: {body.role_title}
                 "specific_gaps": parsed_data.get("gaps", []),
             }
 
-            # Fetch company intelligence (if enabled)
+            # Fetch company intelligence - use pre-fetched result from parallel task
             company_intel = None
             print(f"🔍 Company Intel check: AVAILABLE={COMPANY_INTEL_AVAILABLE}, ENABLED={COMPANY_INTEL_ENABLED}")
             print(f"   body.company='{body.company}', parsed_data.company='{parsed_data.get('company', '')}'")
-            if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
-                company_name = body.company or parsed_data.get("company", "")
+            if company_intel_task is not None:
+                # Use the result from the parallel fetch started before the main Claude call
+                try:
+                    intel_result = await company_intel_task
+                    company_intel = intel_result.to_dict()
+                    parsed_data["company_intelligence"] = company_intel
+                    print(f"✅ Company intelligence (parallel fetch): {intel_result.company_health_signal.value}")
+                except Exception as ci_e:
+                    print(f"⚠️ Company intelligence parallel fetch failed (non-blocking): {str(ci_e)}")
+                    import traceback
+                    traceback.print_exc()
+                    company_intel = None
+            elif COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
+                # Fallback: company name wasn't available upfront but was extracted by Claude
+                company_name = parsed_data.get("company", "")
                 if company_name:
                     try:
-                        print(f"🔍 Fetching company intelligence for: {company_name}")
-                        intel_result = get_company_intelligence(company_name)
+                        print(f"🔍 Fetching company intelligence (fallback): {company_name}")
+                        intel_result = await asyncio.to_thread(get_company_intelligence, company_name)
                         company_intel = intel_result.to_dict()
                         parsed_data["company_intelligence"] = company_intel
-                        print(f"✅ Company intelligence: {intel_result.company_health_signal.value}")
+                        print(f"✅ Company intelligence (fallback): {intel_result.company_health_signal.value}")
                     except Exception as ci_e:
                         print(f"⚠️ Company intelligence fetch failed (non-blocking): {str(ci_e)}")
                         import traceback
@@ -15738,6 +15772,9 @@ Role: {body.role_title}
         # P0 FIX: Return fallback response instead of 500 (tokens already spent)
         # CRITICAL: fit_score MUST be a number for frontend compatibility
         print(f"⚠️ [{analysis_id}] Returning fallback response after JSON parse failure")
+        # Cancel parallel company intel task if still running
+        if company_intel_task and not company_intel_task.done():
+            company_intel_task.cancel()
         fallback_response = {
             "analysis_id": analysis_id,
             "fit_score": 0,  # Frontend expects number, not object
@@ -15757,6 +15794,9 @@ Role: {body.role_title}
         print(f"❌ [{analysis_id}] Post-LLM error (tokens spent, returning fallback): {post_llm_error}")
         import traceback
         traceback.print_exc()
+        # Cancel parallel company intel task if still running
+        if company_intel_task and not company_intel_task.done():
+            company_intel_task.cancel()
 
         fallback_response = {
             "analysis_id": analysis_id,
@@ -16105,7 +16145,7 @@ Role: {body.role_title}
 
         try:
             # Stream Claude's response
-            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096):
+            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096, model="claude-opus-4-6"):
                 buffer += chunk
 
                 # Try to extract key fields as they become available
@@ -16975,7 +17015,8 @@ REQUIREMENTS:
 Generate the complete JSON response with ALL required fields populated."""
     
     # Call Claude with longer token limit for comprehensive response
-    response = call_claude(system_prompt, user_message, max_tokens=8000)
+    # Using Opus 4.6 for highest quality document generation
+    response = call_claude(system_prompt, user_message, max_tokens=8000, model="claude-opus-4-6")
     
     # DEBUG: Print raw Claude response to console
     print("\n" + "="*60)

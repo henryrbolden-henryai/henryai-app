@@ -730,11 +730,32 @@ def assemble_canonical_document(
     else:
         skills = {}
 
-    # Build education
-    edu_data = source_resume.get("education", {})
-    if isinstance(edu_data, list) and edu_data:
+    # Build education — try generated output first, fall back to source resume
+    # Claude's generation includes education as a list of dicts
+    edu_data = None
+    gen_education = resume_output.get("education", [])
+    if isinstance(gen_education, list) and gen_education:
+        first = gen_education[0]
+        if isinstance(first, dict) and (first.get("institution") or first.get("school") or first.get("degree")):
+            # Map "institution" -> "school" for Education.from_dict compatibility
+            if "institution" in first and "school" not in first:
+                first["school"] = first["institution"]
+            edu_data = first
+
+    # Fall back to source resume education if generation didn't include it
+    if not edu_data:
+        edu_data = source_resume.get("education", {})
+
+    # Parse education from whatever format we got
+    if isinstance(edu_data, str) and edu_data.strip():
+        education = Education(school=edu_data.strip(), degree="", details="")
+    elif isinstance(edu_data, list) and edu_data:
         edu_data = edu_data[0]
-    education = Education.from_dict(edu_data) if isinstance(edu_data, dict) else Education("", "", "")
+        education = Education.from_dict(edu_data) if isinstance(edu_data, dict) else Education(str(edu_data), "", "")
+    elif isinstance(edu_data, dict):
+        education = Education.from_dict(edu_data)
+    else:
+        education = Education("", "", "")
 
     # Build resume
     resume = CanonicalResume(

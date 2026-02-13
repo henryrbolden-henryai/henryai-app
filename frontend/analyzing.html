@@ -227,32 +227,22 @@
         const errorMessage = document.getElementById('errorMessage');
         const errorText = document.getElementById('errorText');
 
-        const stages = [
-            { text: 'Reading job description...', subtext: 'This usually takes 30-45 seconds', dot: 1 },
-            { text: 'Analyzing your fit...', subtext: 'Comparing your experience to requirements', dot: 2 },
-            { text: 'Building your strategy...', subtext: 'Crafting positioning recommendations', dot: 3 },
-            { text: 'Finalizing analysis...', subtext: 'Almost there', dot: 4 }
-        ];
+        let currentDot = 1;
 
-        let currentStage = 0;
+        function updateStage(dot, text, subtext) {
+            statusText.textContent = text;
+            statusSubtext.textContent = subtext;
 
-        function updateStage(stageIndex) {
-            if (stageIndex >= stages.length) return;
-
-            const stage = stages[stageIndex];
-            statusText.textContent = stage.text;
-            statusSubtext.textContent = stage.subtext;
-
-            // Update dots
             for (let i = 1; i <= 4; i++) {
-                const dot = document.getElementById(`dot${i}`);
-                dot.classList.remove('active', 'completed');
-                if (i < stage.dot) {
-                    dot.classList.add('completed');
-                } else if (i === stage.dot) {
-                    dot.classList.add('active');
+                const dotEl = document.getElementById(`dot${i}`);
+                dotEl.classList.remove('active', 'completed');
+                if (i < dot) {
+                    dotEl.classList.add('completed');
+                } else if (i === dot) {
+                    dotEl.classList.add('active');
                 }
             }
+            currentDot = dot;
         }
 
         function showError(message) {
@@ -266,16 +256,6 @@
             window.location.href = '/analyze';
         }
 
-        // Progress through stages while waiting
-        function startProgressAnimation() {
-            // Stage 2 after 5 seconds
-            setTimeout(() => updateStage(1), 5000);
-            // Stage 3 after 15 seconds
-            setTimeout(() => updateStage(2), 15000);
-            // Stage 4 after 30 seconds
-            setTimeout(() => updateStage(3), 30000);
-        }
-
         async function runAnalysis() {
             // Get the pending analysis data from sessionStorage
             const pendingData = sessionStorage.getItem('pendingAnalysis');
@@ -286,90 +266,144 @@
 
             const { requestPayload, resumeJson, candidateName, company, role, jobDescription } = JSON.parse(pendingData);
 
-            startProgressAnimation();
+            // Start with initial stage
+            updateStage(1, 'Reading job description...', 'This usually takes 15-30 seconds');
+
+            // Fallback timer: if no streaming events arrive, advance stages on a timer
+            const fallbackTimers = [
+                setTimeout(() => { if (currentDot < 2) updateStage(2, 'Analyzing your fit...', 'Comparing your experience to requirements'); }, 8000),
+                setTimeout(() => { if (currentDot < 3) updateStage(3, 'Building your strategy...', 'Crafting positioning recommendations'); }, 18000),
+                setTimeout(() => { if (currentDot < 4) updateStage(4, 'Finalizing analysis...', 'Almost there'); }, 30000),
+            ];
 
             try {
-                console.log('Sending analysis request to:', `${API_BASE_URL}/api/jd/analyze`);
+                console.log('Sending streaming analysis request to:', `${API_BASE_URL}/api/jd/analyze/stream`);
 
-                // Add cache-busting timestamp to prevent stale responses
-                // Note: Using query param for cache-busting instead of headers to avoid CORS preflight issues
-                const cacheBuster = Date.now();
-                const analyzeResponse = await fetch(`${API_BASE_URL}/api/jd/analyze?_t=${cacheBuster}`, {
+                // Extract only the fields the streaming API expects (exclude 'profile')
+                const { company: reqCompany, role_title, job_description, resume, preferences } = requestPayload;
+                const streamPayload = { company: reqCompany, role_title, job_description, resume, preferences };
+
+                const response = await fetch(`${API_BASE_URL}/api/jd/analyze/stream`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestPayload)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(streamPayload)
                 });
 
-                console.log('Response received:', analyzeResponse.status, analyzeResponse.statusText);
-
-                if (!analyzeResponse.ok) {
-                    const errorData = await analyzeResponse.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `Analysis failed (${analyzeResponse.status})`);
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Analysis failed (${response.status})`);
                 }
 
-                const analysisData = await analyzeResponse.json();
-                console.log('Analysis response:', analysisData);
-                console.log('🔍 DEBUG - fit_score from API:', analysisData.fit_score);
-                console.log('🔍 DEBUG - recommendation from API:', analysisData.recommendation);
+                // Read the SSE stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-                // Build full data for results page
-                const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                // Use backend-extracted company/role if available (more accurate than frontend regex)
-                const extractedCompany = analysisData.company || company;
-                const extractedRole = analysisData.role_title || role;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                // Generate unique application ID to prevent duplicates on retry
-                const applicationId = `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line in buffer
 
-                const fullData = {
-                    ...analysisData,
-                    _resume_json: resumeJson,
-                    _candidate_name: candidateName,
-                    _company: extractedCompany,
-                    _company_name: extractedCompany,  // Also set _company_name for compatibility
-                    _role: extractedRole,
-                    _jd_text: jobDescription,
-                    _profile: userProfile,
-                    _applicationId: applicationId,
-                    _createdAt: new Date().toISOString()
-                };
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
 
-                // 🚨 DIAGNOSTIC: Log what we're storing before redirect
-                console.log("🚨 ANALYZING COMPLETE - STORING TO SESSION:", JSON.stringify(fullData, null, 2));
-                console.log("🔍 CRITICAL FIELDS FROM API RESPONSE:", {
-                    has_final_recommendation: 'final_recommendation' in fullData,
-                    final_recommendation_value: fullData.final_recommendation,
-                    has_fit_score: 'fit_score' in fullData,
-                    fit_score_value: fullData.fit_score,
-                    fit_score_type: typeof fullData.fit_score,
-                    has_strengths: 'strengths' in fullData,
-                    strengths_length: Array.isArray(fullData.strengths) ? fullData.strengths.length : 'NOT_ARRAY'
-                });
-                // Store analysis data (with localStorage backup for Safari)
-                const analysisDataStr = JSON.stringify(fullData);
-                sessionStorage.setItem('analysisData', analysisDataStr);
-                localStorage.setItem('analysisData_backup', analysisDataStr);
+                        let data;
+                        try {
+                            data = JSON.parse(line.slice(6));
+                        } catch (e) {
+                            console.error('Failed to parse SSE event:', e, line);
+                            continue;
+                        }
 
-                // Clear pending data
-                sessionStorage.removeItem('pendingAnalysis');
+                        const { type, field, value: eventValue, message } = data;
 
-                // Always go to results page first (fit score + strategy overview)
-                // User will then click "Generate Documents" which routes through strengthen if needed
-                window.location.href = '/results';
+                        if (type === 'start') {
+                            console.log('Stream started:', message);
+                        }
+                        else if (type === 'partial') {
+                            if (field === 'fit_score') {
+                                updateStage(2, 'Analyzing your fit...', `Fit score: ${eventValue}%`);
+                                console.log('🎯 Streaming fit_score:', eventValue);
+                            }
+                            else if (field === 'recommendation') {
+                                updateStage(3, 'Building your strategy...', `Recommendation: ${eventValue}`);
+                                console.log('📋 Streaming recommendation:', eventValue);
+                            }
+                            else if (field === 'strengths') {
+                                updateStage(3, 'Building your strategy...', `Found ${eventValue.length} key strengths`);
+                                console.log('💪 Streaming strengths:', eventValue);
+                            }
+                            else if (field === 'expected_applicants') {
+                                updateStage(4, 'Finalizing analysis...', 'Almost there');
+                                console.log('📊 Streaming expected_applicants:', eventValue);
+                            }
+                        }
+                        else if (type === 'complete') {
+                            // Clear fallback timers
+                            fallbackTimers.forEach(t => clearTimeout(t));
+
+                            updateStage(4, 'Analysis complete', 'Redirecting to results...');
+
+                            const analysisData = data.data;
+                            console.log('✅ Stream complete, building full data');
+                            console.log('🔍 fit_score:', analysisData.fit_score);
+                            console.log('🔍 recommendation:', analysisData.recommendation);
+
+                            // Build full data for results page (same enrichment as non-streaming path)
+                            const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+                            const extractedCompany = analysisData.company || company;
+                            const extractedRole = analysisData.role_title || role;
+                            const applicationId = `app_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+                            const fullData = {
+                                ...analysisData,
+                                _resume_json: resumeJson,
+                                _candidate_name: candidateName,
+                                _company: extractedCompany,
+                                _company_name: extractedCompany,
+                                _role: extractedRole,
+                                _jd_text: jobDescription,
+                                _profile: userProfile,
+                                _applicationId: applicationId,
+                                _createdAt: new Date().toISOString()
+                            };
+
+                            // Store analysis data (with localStorage backup for Safari)
+                            const analysisDataStr = JSON.stringify(fullData);
+                            sessionStorage.setItem('analysisData', analysisDataStr);
+                            localStorage.setItem('analysisData_backup', analysisDataStr);
+
+                            // Clear pending data
+                            sessionStorage.removeItem('pendingAnalysis');
+
+                            // Redirect to results page
+                            window.location.href = '/results';
+                            return;
+                        }
+                        else if (type === 'error') {
+                            throw new Error(message || 'Analysis stream error');
+                        }
+                    }
+                }
+
+                // If stream ended without a complete event
+                if (!sessionStorage.getItem('analysisData')) {
+                    throw new Error('Analysis incomplete. Please try again.');
+                }
 
             } catch (error) {
                 console.error('Analysis error:', error);
+                fallbackTimers.forEach(t => clearTimeout(t));
 
                 let errorMsg = 'Something went wrong. Please try again.';
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
                 } else if (error.message && error.message.includes('temporarily busy')) {
-                    // Friendly message for API overload
                     errorMsg = error.message;
                 } else if (error.message && error.message.includes('Claude API')) {
-                    // Clean up raw API error messages
                     errorMsg = 'Our AI is temporarily unavailable. Please try again in a moment.';
                 } else if (error.message) {
                     errorMsg = error.message;
