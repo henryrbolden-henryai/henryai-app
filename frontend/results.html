@@ -2099,6 +2099,7 @@
             if (typeof data.fit_score !== 'number' || isNaN(data.fit_score)) {
                 showDataError('Analysis incomplete: fit score missing. Please re-run analysis.');
                 sessionStorage.removeItem('analysisData');
+                localStorage.removeItem('analysisData_backup');
                 return;
             }
             fitScore = data.fit_score;
@@ -2147,6 +2148,7 @@
                 console.error('🚨 CANONICAL MISSING: No recommendation in analysis data');
                 showDataError('Analysis incomplete: recommendation missing. Please re-run analysis.');
                 sessionStorage.removeItem('analysisData');
+                localStorage.removeItem('analysisData_backup');
                 return;
             }
 

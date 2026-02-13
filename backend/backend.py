@@ -15906,10 +15906,11 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
         }
 
         # Wrap in SSE format so the frontend can parse it correctly
+        # MUST use 'field'/'value' keys for partial events (frontend destructures these)
         async def gated_sse_generator():
             yield f"data: {json.dumps({'type': 'start', 'message': 'Hard gate evaluation complete'})}\n\n"
-            yield f"data: {json.dumps({'type': 'partial', 'fit_score': fit_cap})}\n\n"
-            yield f"data: {json.dumps({'type': 'partial', 'recommendation': 'Do Not Apply'})}\n\n"
+            yield f"data: {json.dumps({'type': 'partial', 'field': 'fit_score', 'value': fit_cap})}\n\n"
+            yield f"data: {json.dumps({'type': 'partial', 'field': 'recommendation', 'value': 'Do Not Apply'})}\n\n"
             yield f"data: {json.dumps({'type': 'complete', 'data': gated_response})}\n\n"
 
         return StreamingResponse(gated_sse_generator(), media_type="text/event-stream")
