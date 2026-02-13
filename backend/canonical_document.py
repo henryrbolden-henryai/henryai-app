@@ -147,16 +147,13 @@ class CanonicalResume:
             ats_keywords=list(data.get("ats_keywords", []) or []),
         )
 
-    def to_full_text(self) -> str:
+    def _build_formatter(self):
         """
-        Generate the full text representation for preview.
-
-        Uses ResumeFormatter to ensure preview === download.
-        The formatter builds both DOCX and plain text from the same source.
+        Build a ResumeFormatter populated with canonical data.
+        Shared by to_full_text(), to_html(), and DOCX generation.
         """
         from document_generator import ResumeFormatter
 
-        # Create formatter and populate it with canonical data
         formatter = ResumeFormatter()
 
         # Add header
@@ -208,8 +205,21 @@ class CanonicalResume:
                 details=self.education.details,
             )
 
-        # Return plain text from formatter (same content as DOCX)
-        return formatter.to_plain_text()
+        return formatter
+
+    def to_full_text(self) -> str:
+        """
+        Generate the full text representation for preview and hash computation.
+        Uses ResumeFormatter to ensure preview === download.
+        """
+        return self._build_formatter().to_plain_text()
+
+    def to_html(self) -> str:
+        """
+        Generate styled HTML preview that visually mirrors the DOCX output.
+        Uses the same ResumeFormatter and canonical data as to_full_text().
+        """
+        return self._build_formatter().to_html()
 
 
 @dataclass
