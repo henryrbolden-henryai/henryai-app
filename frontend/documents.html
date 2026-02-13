@@ -6,12 +6,30 @@
     <title>Your Tailored Documents - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
     <!-- docx.js for client-side DOCX generation -->
     <script src="https://unpkg.com/docx@8.2.2/build/index.umd.js"></script>
     <!-- FileSaver.js for downloading -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -19,83 +37,86 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-            color: #e0e0e0;
-            padding: 20px;
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
             min-height: 100vh;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
         }
 
         .container {
-            max-width: 100%;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 0 60px;
         }
 
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: #60a5fa;
-            text-decoration: none;
-            margin-bottom: 30px;
-            font-size: 14px;
-            transition: color 0.2s;
+        /* ── Page Header ── */
+        .page-header {
+            margin-bottom: 24px;
         }
 
-        .back-link:hover {
-            color: #93c5fd;
+        .role-title {
+            color: var(--color-accent);
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            letter-spacing: 0.2px;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        .page-title {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .page-title h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--color-text);
+            margin: 0;
         }
 
         .subtitle {
-            color: #9ca3af;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
         }
 
-        .disclaimer {
-            color: #6b7280;
-            font-size: 0.85rem;
-            font-style: italic;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
+        /* ── Tabs ── */
         .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #374151;
+            display: inline-flex;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 24px;
         }
 
         .tab {
-            padding: 12px 24px;
+            padding: 10px 24px;
             background: transparent;
             border: none;
-            color: #9ca3af;
-            font-size: 16px;
-            font-weight: 600;
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-family: var(--font-body);
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
+            border-radius: 8px;
+            transition: all 0.2s ease;
         }
 
         .tab:hover {
-            color: #e0e0e0;
+            color: var(--color-text);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .tab.active {
-            color: #60a5fa;
-            border-bottom-color: #60a5fa;
+            background: var(--color-accent);
+            color: #000;
+            font-weight: 600;
         }
 
         .tab-content {
@@ -106,115 +127,79 @@
             display: block;
         }
 
-        .document-section {
-            background: #1f2937;
-            border-radius: 12px;
-            padding: 40px;
-            margin-bottom: 30px;
-            border: 1px solid #374151;
-            width: 100%;
+        /* ── Two-Column Document Layout ── */
+        .document-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+            align-items: start;
         }
 
-        .document-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .document-title {
-            font-size: 1.5rem;
-            color: #60a5fa;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-download {
-            padding: 12px 24px;
-            background: #60a5fa;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-download:hover {
-            background: #3b82f6;
-            transform: translateY(-2px);
-        }
-
-        .btn-download:disabled {
-            background: #4b5563;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .keywords-section {
-            margin-bottom: 25px;
-        }
-
-        .keywords-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #9ca3af;
-            margin-bottom: 12px;
-        }
-
-        .keywords {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .keyword-tag {
-            padding: 6px 14px;
-            background: rgba(96, 165, 250, 0.2);
-            border: 1px solid #60a5fa;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            color: #60a5fa;
+        .document-main {
+            min-width: 0;
         }
 
         .document-preview {
-            background: #e5e7eb;
-            border-radius: 8px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
             padding: 24px;
             width: 100%;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .document-preview::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
 
         .document-preview::-webkit-scrollbar-track {
-            background: #f3f4f6;
+            background: transparent;
         }
 
         .document-preview::-webkit-scrollbar-thumb {
-            background: #9ca3af;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
         }
 
-        /*
-         * DOCUMENT PREVIEW STYLING
-         * WYSIWYG HTML preview that mirrors the DOCX output exactly.
-         * Styles match document_generator/styles.py constants.
-         */
+        .document-preview::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* ── WYSIWYG Resume Preview ── */
+        .resume-preview-html {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .resume-preview-html .resume-page {
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            transform-origin: top center;
+        }
+
+        /* Scale down the 816px resume page when main column is narrow */
+        @media (max-width: 1200px) {
+            .resume-preview-html .resume-page {
+                transform: scale(0.82);
+                margin-bottom: -120px;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .resume-preview-html .resume-page {
+                transform: scale(1);
+                margin-bottom: 0;
+            }
+        }
+
+        /* ── Document Text (cover letter / fallback) ── */
         .document-text {
             width: 100%;
             background: #ffffff;
             border: none;
+            border-radius: 4px;
             color: #1f2937;
             font-family: 'Calibri', 'Arial', 'Helvetica', sans-serif;
             font-size: 12px;
@@ -233,27 +218,286 @@
             outline: none;
         }
 
-        /* WYSIWYG resume preview — renders .resume-page as a document page */
-        .resume-preview-html {
-            width: 100%;
+        /* ── Sidebar ── */
+        .document-sidebar {
+            position: sticky;
+            top: 80px;
             display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* ── Download Card ── */
+        .download-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 14px 20px;
+            background: var(--color-text);
+            color: var(--color-bg);
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.25s var(--ease-out);
+            display: flex;
+            align-items: center;
             justify-content: center;
+            gap: 8px;
         }
 
-        /* Page shadow to look like a printed document */
-        .resume-preview-html .resume-page {
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        .btn-download:hover {
+            background: var(--color-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(34, 211, 238, 0.25);
         }
 
+        .btn-download:disabled {
+            background: var(--color-surface-elevated);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .download-hint {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* ── Keywords Card ── */
+        .keywords-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .keywords-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .keywords-card-header.expanded {
+            margin-bottom: 14px;
+        }
+
+        .keywords-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+        }
+
+        .keywords-count {
+            font-size: 0.7rem;
+            color: var(--color-accent);
+            background: var(--color-accent-muted);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .keywords-toggle {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            padding: 4px;
+        }
+
+        .keywords-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .keywords-body {
+            display: none;
+        }
+
+        .keywords-body.expanded {
+            display: block;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .keyword-tag {
+            padding: 4px 10px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.25);
+            border-radius: 6px;
+            font-size: 0.78rem;
+            color: var(--color-accent);
+            font-weight: 500;
+        }
+
+        /* ── Fit Score Delta ── */
+        .fit-score-delta {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .fit-score-delta .delta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .fit-score-delta .delta-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
+        }
+
+        .fit-score-delta .delta-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .fit-score-delta .delta-badge.improved {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--color-success);
+        }
+
+        .fit-score-delta .delta-badge.unchanged {
+            background: rgba(156, 163, 175, 0.15);
+            color: var(--color-text-secondary);
+        }
+
+        .fit-score-delta .delta-scores {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .fit-score-delta .score-before,
+        .fit-score-delta .score-after {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .fit-score-delta .score-label {
+            font-size: 0.7rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .fit-score-delta .score-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .fit-score-delta .score-before .score-value {
+            color: var(--color-text-secondary);
+        }
+
+        .fit-score-delta .score-after .score-value {
+            color: var(--color-accent);
+        }
+
+        .fit-score-delta .score-verdict {
+            font-size: 0.65rem;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .fit-score-delta .score-arrow {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+        }
+
+        .fit-score-delta .delta-summary {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin: 0;
+            font-style: italic;
+        }
+
+        .btn-recalculate {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            padding: 8px 14px;
+            background: transparent;
+            color: var(--color-accent);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--font-body);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+
+        .btn-recalculate:hover {
+            background: var(--color-accent-muted);
+            border-color: var(--color-accent);
+        }
+
+        .btn-recalculate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-recalculate .spinner {
+            display: none;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(34, 211, 238, 0.3);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .btn-recalculate.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-recalculate.loading .btn-text {
+            display: none;
+        }
+
+        /* ── Loading & States ── */
         .loading-state {
             text-align: center;
             padding: 60px 20px;
-            color: #9ca3af;
+            color: var(--color-text-secondary);
         }
 
         .loading-spinner {
-            border: 3px solid #374151;
-            border-top: 3px solid #60a5fa;
+            border: 3px solid var(--color-surface-elevated);
+            border-top: 3px solid var(--color-accent);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -266,14 +510,35 @@
             100% { transform: rotate(360deg); }
         }
 
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-error);
+        }
+
+        .error-state p {
+            margin-bottom: 20px;
+        }
+
+        .error-state a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .error-state a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Success Message ── */
         .success-message {
             position: fixed;
-            top: 20px;
+            top: 80px;
             right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 16px 24px;
-            border-radius: 8px;
+            background: var(--color-success);
+            color: #000;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             opacity: 0;
             transform: translateY(-20px);
@@ -286,7 +551,60 @@
             transform: translateY(0);
         }
 
-        /* Post-Download Modal */
+        /* ── Disclaimer ── */
+        .disclaimer {
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            font-style: italic;
+            margin-top: 24px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        /* ── Warning Banner ── */
+        .job-fit-warning-banner {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.08), rgba(248, 113, 113, 0.04));
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .job-fit-warning-banner.proceeded {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .job-fit-warning-banner .warning-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .job-fit-warning-banner .warning-content {
+            flex: 1;
+        }
+
+        .job-fit-warning-banner strong {
+            display: block;
+            color: var(--color-error);
+            margin-bottom: 4px;
+        }
+
+        .job-fit-warning-banner.proceeded strong {
+            color: var(--color-warning);
+        }
+
+        .job-fit-warning-banner p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* ── Post-Download Modal ── */
         .post-download-modal {
             display: none;
             position: fixed;
@@ -315,8 +633,8 @@
 
         .post-download-modal .modal-content {
             position: relative;
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border: 1px solid #374151;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
             border-radius: 20px;
             padding: 40px;
             max-width: 480px;
@@ -327,14 +645,8 @@
         }
 
         @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .modal-close {
@@ -343,14 +655,14 @@
             right: 16px;
             background: none;
             border: none;
-            color: #9ca3af;
+            color: var(--color-text-secondary);
             font-size: 24px;
             cursor: pointer;
             transition: color 0.2s;
         }
 
         .modal-close:hover {
-            color: #ffffff;
+            color: var(--color-text);
         }
 
         .modal-icon {
@@ -360,7 +672,7 @@
 
         .post-download-modal h3 {
             font-size: 1.5rem;
-            color: #ffffff;
+            color: var(--color-text);
             margin-bottom: 16px;
         }
 
@@ -371,11 +683,11 @@
         }
 
         .modal-stat strong {
-            color: #22d3ee;
+            color: var(--color-accent);
         }
 
         .modal-insight {
-            color: #9ca3af;
+            color: var(--color-text-secondary);
             font-size: 0.95rem;
             margin-bottom: 28px;
             line-height: 1.6;
@@ -389,130 +701,46 @@
 
         .modal-btn-primary {
             padding: 14px 28px;
-            background: #22d3ee;
-            color: #000;
+            background: var(--color-text);
+            color: var(--color-bg);
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
             font-weight: 600;
+            font-family: var(--font-body);
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: all 0.25s var(--ease-out);
+            display: inline-block;
         }
 
         .modal-btn-primary:hover {
-            background: #06b6d4;
+            background: var(--color-accent);
             transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(34, 211, 238, 0.25);
         }
 
         .modal-btn-secondary {
             padding: 12px 24px;
             background: transparent;
-            color: #9ca3af;
-            border: 1px solid #4b5563;
-            border-radius: 10px;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
             font-size: 0.95rem;
+            font-family: var(--font-body);
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .modal-btn-secondary:hover {
             background: rgba(255, 255, 255, 0.05);
-            color: #e0e0e0;
+            color: var(--color-text);
         }
 
-        .error-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #f87171;
-        }
-
-        .error-state p {
-            margin-bottom: 20px;
-        }
-
-        .error-state a {
-            color: #60a5fa;
-            text-decoration: none;
-        }
-
-        .error-state a:hover {
-            text-decoration: underline;
-        }
-
-        .navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid #374151;
-        }
-
-        .btn {
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: #60a5fa;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #3b82f6;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: #9ca3af;
-            border: 1px solid #4b5563;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #e0e0e0;
-        }
-
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-
-            .document-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: stretch;
-            }
-
-            .btn-download {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .navigation {
-                flex-direction: column-reverse;
-                gap: 15px;
-            }
-
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        /* HEADER */
+        /* ── Header / Logo ── */
         header {
             padding: 24px 0;
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid var(--color-border);
             margin-bottom: 32px;
         }
 
@@ -526,9 +754,9 @@
         }
 
         .logo {
-            font-family: 'Instrument Serif', Georgia, serif;
+            font-family: var(--font-display);
             font-size: 1.8rem;
-            color: #ffffff;
+            color: var(--color-text);
             text-decoration: none;
             position: fixed;
             left: 90px;
@@ -536,7 +764,6 @@
             z-index: 100;
         }
 
-        /* Hide page header when strategy-nav is present */
         body.has-strategy-nav header,
         body.has-strategy-nav .logo {
             display: none !important;
@@ -544,203 +771,55 @@
 
         .logo em {
             font-style: italic;
-            color: #22d3ee;
+            color: var(--color-accent);
         }
 
-        .header-nav {
-            display: flex;
-            gap: 24px;
-            align-items: center;
+        /* ── Responsive ── */
+        @media (max-width: 960px) {
+            .document-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .document-sidebar {
+                position: static;
+                order: -1;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .keywords-card {
+                grid-column: 1 / -1;
+            }
+
+            .resume-preview-html .resume-page {
+                transform: none;
+                margin-bottom: 0;
+            }
         }
 
-        .nav-link {
-            color: #9ca3af;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s ease;
-        }
+        @media (max-width: 640px) {
+            body {
+                padding: 20px 12px;
+            }
 
-        .nav-link:hover {
-            color: #22d3ee;
-        }
+            .document-sidebar {
+                grid-template-columns: 1fr;
+            }
 
-        /* Job Fit Impact Delta Module - reassurance, not gamification */
-        .fit-score-delta {
-            background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(34, 211, 238, 0.03));
-            border: 1px solid rgba(34, 211, 238, 0.25);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-        }
+            .document-preview {
+                padding: 12px;
+                max-height: 70vh;
+            }
 
-        .fit-score-delta .delta-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
+            .page-title h1 {
+                font-size: 1.5rem;
+            }
 
-        .fit-score-delta .delta-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #9ca3af;
-        }
-
-        .fit-score-delta .delta-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .fit-score-delta .delta-badge.improved {
-            background: rgba(74, 222, 128, 0.15);
-            color: #4ade80;
-        }
-
-        .fit-score-delta .delta-badge.unchanged {
-            background: rgba(156, 163, 175, 0.15);
-            color: #9ca3af;
-        }
-
-        .fit-score-delta .delta-scores {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        .fit-score-delta .score-before,
-        .fit-score-delta .score-after {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .fit-score-delta .score-label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-bottom: 4px;
-        }
-
-        .fit-score-delta .score-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .fit-score-delta .score-before .score-value {
-            color: #9ca3af;
-        }
-
-        .fit-score-delta .score-after .score-value {
-            color: #22d3ee;
-        }
-
-        .fit-score-delta .score-verdict {
-            font-size: 0.7rem;
-            color: #6b7280;
-            margin-top: 2px;
-        }
-
-        .fit-score-delta .score-arrow {
-            font-size: 1.25rem;
-            color: #4b5563;
-        }
-
-        .fit-score-delta .delta-summary {
-            font-size: 0.85rem;
-            color: #9ca3af;
-            margin: 0;
-            font-style: italic;
-        }
-
-        .btn-recalculate {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 18px;
-            background: transparent;
-            color: #22d3ee;
-            border: 1px solid rgba(34, 211, 238, 0.4);
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 12px;
-        }
-
-        .btn-recalculate:hover {
-            background: rgba(34, 211, 238, 0.1);
-            border-color: #22d3ee;
-        }
-
-        .btn-recalculate:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-recalculate .spinner {
-            display: none;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(34, 211, 238, 0.3);
-            border-top-color: #22d3ee;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .btn-recalculate.loading .spinner {
-            display: inline-block;
-        }
-
-        .btn-recalculate.loading .btn-text {
-            display: none;
-        }
-
-        /* SINGLE SOURCE OF TRUTH: Job Fit Warning Banner */
-        .job-fit-warning-banner {
-            background: linear-gradient(135deg, rgba(248, 113, 113, 0.15), rgba(248, 113, 113, 0.08));
-            border: 1px solid rgba(248, 113, 113, 0.4);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .job-fit-warning-banner.proceeded {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
-            border-color: rgba(251, 191, 36, 0.3);
-        }
-
-        .job-fit-warning-banner .warning-icon {
-            font-size: 1.5rem;
-            flex-shrink: 0;
-        }
-
-        .job-fit-warning-banner .warning-content {
-            flex: 1;
-        }
-
-        .job-fit-warning-banner strong {
-            display: block;
-            color: #f87171;
-            margin-bottom: 4px;
-        }
-
-        .job-fit-warning-banner.proceeded strong {
-            color: #fbbf24;
-        }
-
-        .job-fit-warning-banner p {
-            color: #a1a1aa;
-            font-size: 0.9rem;
-            margin: 0;
-            line-height: 1.5;
+            .tab {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
@@ -757,44 +836,22 @@
     </header>
 
     <div class="container">
-        <!-- SINGLE SOURCE OF TRUTH: Job Fit Accountability Banner -->
+        <!-- Job Fit Warning Banner (conditional) -->
         <div id="jobFitWarningBanner" class="job-fit-warning-banner" style="display: none;">
-            <div class="warning-icon">⚠️</div>
+            <div class="warning-icon">&#9888;&#65039;</div>
             <div class="warning-content">
                 <strong id="warningTitle">HenryHQ Guidance</strong>
                 <p id="warningMessage"></p>
             </div>
         </div>
 
-        <h1>
-            <span>📄</span> Your Tailored Documents
-        </h1>
-        <p class="subtitle">ATS-optimized resume and custom cover letter for this role</p>
-
-        <!-- Job Fit Impact Module (shows delta, not re-analysis) -->
-        <div id="fitScoreDelta" class="fit-score-delta" style="display: none;">
-            <div class="delta-header">
-                <span class="delta-label">Job Fit Impact</span>
-                <span class="delta-badge" id="deltaBadge"></span>
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="role-title" id="roleTitle"></div>
+            <div class="page-title">
+                <h1>Tailored Documents</h1>
             </div>
-            <div class="delta-scores">
-                <div class="score-before">
-                    <span class="score-label">Before</span>
-                    <span class="score-value" id="scoreBefore">--</span>
-                    <span class="score-verdict" id="verdictBefore"></span>
-                </div>
-                <div class="score-arrow">→</div>
-                <div class="score-after">
-                    <span class="score-label">After</span>
-                    <span class="score-value" id="scoreAfter">--</span>
-                    <span class="score-verdict" id="verdictAfter"></span>
-                </div>
-            </div>
-            <p class="delta-summary" id="deltaSummary"></p>
-            <button class="btn-recalculate" id="recalculateBtn" onclick="recalculateFitScore()">
-                <span class="spinner"></span>
-                <span class="btn-text">↻ Recalculate Fit Score</span>
-            </button>
+            <p class="subtitle">ATS-optimized resume and custom cover letter for this role</p>
         </div>
 
         <!-- Tabs -->
@@ -805,54 +862,93 @@
 
         <!-- Resume Tab -->
         <div id="resumeTab" class="tab-content active">
-            <div class="document-section">
-                <div class="document-header">
-                    <div class="document-title">
-                        <span>📝</span> Tailored Resume
-                    </div>
-                    <button class="btn-download" id="downloadResumeBtn" onclick="downloadResume()">
-                        <span>↓</span> Download Resume
-                    </button>
-                </div>
-
-                <div class="keywords-section">
-                    <div class="keywords-label">ATS Keywords Incorporated</div>
-                    <div class="keywords" id="resumeKeywords">
-                        <!-- Keywords will be inserted here -->
+            <div class="document-layout">
+                <!-- Main Preview -->
+                <div class="document-main">
+                    <div class="document-preview">
+                        <div id="resumeLoading" class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <div>Loading resume...</div>
+                        </div>
+                        <!-- WYSIWYG HTML preview matching DOCX layout -->
+                        <div class="resume-preview-html" id="resumePreview" style="display: none;"></div>
+                        <!-- Hidden plain text for legacy fallback and recalculate -->
+                        <textarea class="document-text" id="resumeText" style="display: none;"></textarea>
                     </div>
                 </div>
 
-                <div class="document-preview">
-                    <div id="resumeLoading" class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <div>Loading resume...</div>
+                <!-- Sidebar -->
+                <div class="document-sidebar">
+                    <!-- Download Action -->
+                    <div class="download-card">
+                        <button class="btn-download" id="downloadResumeBtn" onclick="downloadResume()">
+                            <span>&#8595;</span> Download Resume
+                        </button>
+                        <div class="download-hint">Downloads as .docx</div>
                     </div>
-                    <!-- WYSIWYG HTML preview matching DOCX layout -->
-                    <div class="resume-preview-html" id="resumePreview" style="display: none;"></div>
-                    <!-- Hidden plain text for legacy fallback and recalculate -->
-                    <textarea class="document-text" id="resumeText" style="display: none;"></textarea>
+
+                    <!-- Fit Score Delta (conditionally shown) -->
+                    <div id="fitScoreDelta" class="fit-score-delta" style="display: none;">
+                        <div class="delta-header">
+                            <span class="delta-label">Job Fit Impact</span>
+                            <span class="delta-badge" id="deltaBadge"></span>
+                        </div>
+                        <div class="delta-scores">
+                            <div class="score-before">
+                                <span class="score-label">Before</span>
+                                <span class="score-value" id="scoreBefore">--</span>
+                                <span class="score-verdict" id="verdictBefore"></span>
+                            </div>
+                            <div class="score-arrow">&rarr;</div>
+                            <div class="score-after">
+                                <span class="score-label">After</span>
+                                <span class="score-value" id="scoreAfter">--</span>
+                                <span class="score-verdict" id="verdictAfter"></span>
+                            </div>
+                        </div>
+                        <p class="delta-summary" id="deltaSummary"></p>
+                        <button class="btn-recalculate" id="recalculateBtn" onclick="recalculateFitScore()">
+                            <span class="spinner"></span>
+                            <span class="btn-text">&#8635; Recalculate</span>
+                        </button>
+                    </div>
+
+                    <!-- ATS Keywords (collapsible) -->
+                    <div class="keywords-card">
+                        <div class="keywords-card-header expanded" onclick="toggleKeywords()">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span class="keywords-label">ATS Keywords</span>
+                                <span class="keywords-count" id="keywordsCount"></span>
+                            </div>
+                            <button class="keywords-toggle expanded" aria-label="Toggle keywords">&#9660;</button>
+                        </div>
+                        <div class="keywords-body expanded" id="keywordsBody">
+                            <div class="keywords" id="resumeKeywords"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Cover Letter Tab -->
         <div id="coverLetterTab" class="tab-content">
-            <div class="document-section">
-                <div class="document-header">
-                    <div class="document-title">
-                        <span>✉️</span> Cover Letter
+            <div class="document-layout">
+                <div class="document-main">
+                    <div class="document-preview">
+                        <div id="coverLetterLoading" class="loading-state">
+                            <div class="loading-spinner"></div>
+                            <div>Loading cover letter...</div>
+                        </div>
+                        <textarea class="document-text" id="coverLetterText" style="display: none;"></textarea>
                     </div>
-                    <button class="btn-download" id="downloadCoverLetterBtn" onclick="downloadCoverLetter()">
-                        <span>↓</span> Download Cover Letter
-                    </button>
                 </div>
-
-                <div class="document-preview">
-                    <div id="coverLetterLoading" class="loading-state">
-                        <div class="loading-spinner"></div>
-                        <div>Loading cover letter...</div>
+                <div class="document-sidebar">
+                    <div class="download-card">
+                        <button class="btn-download" id="downloadCoverLetterBtn" onclick="downloadCoverLetter()">
+                            <span>&#8595;</span> Download Cover Letter
+                        </button>
+                        <div class="download-hint">Downloads as .docx</div>
                     </div>
-                    <textarea class="document-text" id="coverLetterText" style="display: none;"></textarea>
                 </div>
             </div>
         </div>
@@ -868,7 +964,7 @@
         <div class="modal-overlay" onclick="closePostDownloadModal()"></div>
         <div class="modal-content">
             <button class="modal-close" onclick="closePostDownloadModal()">&times;</button>
-            <div class="modal-icon">🤝</div>
+            <div class="modal-icon">&#129309;</div>
             <h3>Great, your documents are ready!</h3>
             <p class="modal-stat">But here's the reality: <strong>70% of jobs are filled through referrals.</strong></p>
             <p class="modal-insight" id="networkModalInsight">
@@ -904,6 +1000,16 @@
             } else if (tabName === 'coverLetter') {
                 document.getElementById('coverLetterTab').classList.add('active');
             }
+        }
+
+        // Toggle keywords collapse/expand
+        function toggleKeywords() {
+            const header = document.querySelector('.keywords-card-header');
+            const body = document.getElementById('keywordsBody');
+            const toggle = document.querySelector('.keywords-toggle');
+            header.classList.toggle('expanded');
+            body.classList.toggle('expanded');
+            toggle.classList.toggle('expanded');
         }
 
         // Show success message
@@ -949,31 +1055,21 @@
         // Create a DOCX document from text
         function createDocxFromText(text, title) {
             const paragraphs = text.split('\n').map(line => {
-                // Check if it's a section header (ALL CAPS or ends with colon)
                 const isHeader = /^[A-Z\s&]+$/.test(line.trim()) ||
                                  (line.trim().endsWith(':') && line.trim().length < 50);
-
-                // Check if it's a bullet point
                 const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
 
                 if (isHeader && line.trim().length > 0) {
                     return new Paragraph({
                         children: [
-                            new TextRun({
-                                text: line.trim(),
-                                bold: true,
-                                size: 24 // 12pt
-                            })
+                            new TextRun({ text: line.trim(), bold: true, size: 24 })
                         ],
                         spacing: { before: 240, after: 120 }
                     });
                 } else if (isBullet) {
                     return new Paragraph({
                         children: [
-                            new TextRun({
-                                text: line.trim(),
-                                size: 22 // 11pt
-                            })
+                            new TextRun({ text: line.trim(), size: 22 })
                         ],
                         spacing: { after: 60 },
                         indent: { left: 360 }
@@ -981,10 +1077,7 @@
                 } else {
                     return new Paragraph({
                         children: [
-                            new TextRun({
-                                text: line,
-                                size: 22 // 11pt
-                            })
+                            new TextRun({ text: line, size: 22 })
                         ],
                         spacing: { after: 120 }
                     });
@@ -1015,7 +1108,7 @@
 
             try {
                 btn.disabled = true;
-                btn.innerHTML = '<span>⏳</span> Generating...';
+                btn.innerHTML = '<span>&#9203;</span> Generating...';
 
                 // CHECK FOR CANONICAL DOCUMENT - single source of truth
                 if (documentsData.canonical_document) {
@@ -1042,14 +1135,12 @@
                             alert(`Cannot download: ${issues}`);
                             return;
                         }
-                        // Fall through to legacy download on server error
                         console.warn(`⚠️ Canonical download failed (${response.status}), falling back to legacy`);
                     } else {
                         const blob = await response.blob();
                         const contentHash = response.headers.get('X-Document-Hash');
                         console.log(`✅ Downloaded with hash: ${contentHash}`);
 
-                        // Lock the fit score at download (freeze it)
                         lockFitScoreAtDownload();
 
                         const candidateName = documentsData.canonical_document?.resume?.contact?.name || 'Resume';
@@ -1063,7 +1154,6 @@
                 // FALLBACK: Legacy download path (deprecated)
                 console.log('⚠️ Using legacy download endpoint (may differ from preview)');
 
-                // Get candidate data from multiple possible sources
                 const candidateName = analysisData?._candidate_name ||
                                      analysisData?._profile?.full_name ||
                                      analysisData?._resume_json?.candidate?.name ||
@@ -1073,32 +1163,25 @@
 
                 console.log('Building resume with data:', { candidateName, resumeData, profile, analysisData });
 
-                // Normalize skills to Dict[str, List[str]] format
                 let normalizedSkills = {};
                 const skillsSource = resumeData.skills || profile.skills;
                 if (skillsSource) {
                     if (Array.isArray(skillsSource)) {
-                        // If skills is an array, convert to object
                         normalizedSkills = { "Skills": skillsSource };
                     } else if (typeof skillsSource === 'object') {
-                        // Ensure each value is an array
                         for (const [key, value] of Object.entries(skillsSource)) {
                             normalizedSkills[key] = Array.isArray(value) ? value : [value];
                         }
                     }
                 }
 
-                // Normalize education to proper format
                 let normalizedEducation = {};
                 const eduSource = resumeData.education || profile.education || analysisData?._profile?.education;
                 if (eduSource) {
                     if (Array.isArray(eduSource) && eduSource.length > 0) {
                         const edu = eduSource[0];
-                        // Ensure details is always a string, not an array
                         let eduDetails = edu.details || edu.highlights || edu.activities || '';
-                        if (Array.isArray(eduDetails)) {
-                            eduDetails = eduDetails.join(', ');
-                        }
+                        if (Array.isArray(eduDetails)) { eduDetails = eduDetails.join(', '); }
                         normalizedEducation = {
                             school: edu.school || edu.institution || edu.university || edu.name || '',
                             degree: edu.degree || edu.qualification || edu.field_of_study ||
@@ -1106,22 +1189,16 @@
                             details: eduDetails
                         };
                     } else if (typeof eduSource === 'object' && !Array.isArray(eduSource)) {
-                        // Ensure details is always a string, not an array
                         let eduDetails = eduSource.details || eduSource.highlights || '';
-                        if (Array.isArray(eduDetails)) {
-                            eduDetails = eduDetails.join(', ');
-                        }
+                        if (Array.isArray(eduDetails)) { eduDetails = eduDetails.join(', '); }
                         normalizedEducation = {
                             school: eduSource.school || eduSource.institution || eduSource.university || eduSource.name || '',
                             degree: eduSource.degree || eduSource.qualification || eduSource.field_of_study || '',
                             details: eduDetails
                         };
                     } else if (typeof eduSource === 'string') {
-                        // If education is just a string, try to parse school and degree
-                        // Common format: "School Name, Degree" or "Degree - School"
-                        const parts = eduSource.split(/[,\-–]/).map(p => p.trim());
+                        const parts = eduSource.split(/[,\-\u2013]/).map(p => p.trim());
                         if (parts.length >= 2) {
-                            // Try to identify which is school vs degree
                             const degreeKeywords = ['bachelor', 'master', 'phd', 'b.a.', 'b.s.', 'm.a.', 'm.s.', 'mba', 'degree'];
                             const firstIsDegree = degreeKeywords.some(kw => parts[0].toLowerCase().includes(kw));
                             if (firstIsDegree) {
@@ -1135,12 +1212,10 @@
                     }
                 }
 
-                // Helper to safely extract string value
                 const safeString = (val) => {
                     if (val === null || val === undefined) return '';
                     if (typeof val === 'string') return val;
                     if (typeof val === 'object') {
-                        // Try common location object patterns
                         if (val.city && val.state) return `${val.city}, ${val.state}`;
                         if (val.location) return String(val.location);
                         if (val.name) return String(val.name);
@@ -1149,24 +1224,17 @@
                     return String(val);
                 };
 
-                // Extract contact info carefully
                 const contactPhone = safeString(profile.phone || resumeData.contact?.phone || resumeData.candidate?.contact?.phone);
                 const contactEmail = safeString(profile.email || resumeData.contact?.email || resumeData.candidate?.contact?.email);
                 const contactLinkedin = safeString(profile.linkedin || resumeData.contact?.linkedin || resumeData.candidate?.contact?.linkedin);
-                // Try multiple sources for location - profile, contact, job posting location, first experience location
                 let contactLocation = safeString(profile.location || resumeData.contact?.location || resumeData.candidate?.contact?.location);
                 if (!contactLocation) {
-                    // Try to get from job posting or first experience
                     contactLocation = safeString(analysisData?.job_location ||
                                                  analysisData?._profile?.location ||
                                                  resumeData.experience?.[0]?.location);
                 }
 
-                // Get the tailored experience from documentsData - this is already in STRATEGIC order
-                // Use experience_sections which contains the strategic ordering from Claude
                 const experienceSections = documentsData.resume_output?.experience_sections || [];
-
-                // Map experience_sections to the format expected by backend
                 const mergedExperience = experienceSections.map(job => {
                     return {
                         company: safeString(job.company || ''),
@@ -1178,22 +1246,16 @@
                     };
                 });
 
-                // Build tagline from target role and competencies (like package.html does)
                 let tagline = safeString(profile.tagline || resumeData.tagline || profile.current_title || '');
                 if (!tagline) {
-                    // Build from role and competencies
                     const targetRole = analysisData?._role || analysisData?.role_title || '';
                     const apiHeadline = analysisData?.resume_output?.headline || documentsData?.resume_output?.headline || '';
-
                     if (apiHeadline && apiHeadline.includes('|')) {
-                        // Use the API-provided headline
                         tagline = apiHeadline;
                     } else if (targetRole) {
-                        // Build from role + competencies
                         const competencies = resumeData.core_competencies || profile.core_competencies ||
                                             analysisData?.required_skills || analysisData?.ats_keywords || [];
                         const topCompetencies = competencies.slice(0, 3).map(c => {
-                            // Clean and title case
                             return String(c).trim().split(' ')
                                 .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
                                 .join(' ');
@@ -1206,7 +1268,6 @@
                     }
                 }
 
-                // Get tailored competencies from API response (priority) or fall back to resume data
                 const tailoredCompetencies = documentsData.resume_output?.core_competencies ||
                                             documentsData.resume_output?.competencies ||
                                             analysisData?.core_competencies ||
@@ -1214,12 +1275,10 @@
                                             profile.core_competencies ||
                                             [];
 
-                // Get tailored skills from API response
                 let tailoredSkills = normalizedSkills;
                 const apiSkills = documentsData.resume_output?.skills || analysisData?.skills;
                 if (apiSkills) {
                     if (typeof apiSkills === 'object' && !Array.isArray(apiSkills)) {
-                        // Already in correct format
                         tailoredSkills = {};
                         for (const [key, value] of Object.entries(apiSkills)) {
                             tailoredSkills[key] = Array.isArray(value) ? value : [value];
@@ -1229,7 +1288,6 @@
                     }
                 }
 
-                // Build request payload for professional formatter
                 const requestPayload = {
                     candidate_name: candidateName,
                     tagline: tagline,
@@ -1250,9 +1308,7 @@
 
                 const response = await fetch(`${API_BASE}/api/download/resume`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestPayload)
                 });
 
@@ -1262,7 +1318,6 @@
                     throw new Error(`Failed to generate resume: ${response.status} - ${JSON.stringify(errorData.detail || errorData)}`);
                 }
 
-                // Download the file
                 const blob = await response.blob();
                 const filename = `${candidateName.replace(/\s+/g, '_')}_Resume.docx`;
                 saveAs(blob, filename);
@@ -1289,9 +1344,8 @@
 
             try {
                 btn.disabled = true;
-                btn.innerHTML = '<span>⏳</span> Generating...';
+                btn.innerHTML = '<span>&#9203;</span> Generating...';
 
-                // CHECK FOR CANONICAL DOCUMENT - single source of truth
                 if (documentsData.canonical_document) {
                     console.log('✅ Using canonical download for cover letter');
                     const response = await fetch(`${API_BASE}/api/download/canonical`, {
@@ -1326,7 +1380,7 @@
                     return;
                 }
 
-                // FALLBACK: Legacy download path (deprecated)
+                // FALLBACK: Legacy download path
                 console.log('⚠️ Using legacy cover letter download');
 
                 const candidateName = analysisData?._candidate_name ||
@@ -1336,7 +1390,6 @@
                 const resumeData = analysisData?._resume_json || {};
                 const profile = analysisData?._profile || {};
 
-                // Helper to safely extract string value
                 const safeString = (val) => {
                     if (val === null || val === undefined) return '';
                     if (typeof val === 'string') return val;
@@ -1349,24 +1402,17 @@
                     return String(val);
                 };
 
-                // Build tagline - prioritize API headline from job analysis
                 const apiHeadline = documentsData?.resume_output?.headline ||
                                    analysisData?.resume_output?.headline ||
                                    analysisData?.headline || '';
                 const targetRole = analysisData?._role || analysisData?.role_title || '';
 
                 let tagline = '';
-
-                // Priority 1: API-generated headline (most accurate to job description)
                 if (apiHeadline) {
                     tagline = apiHeadline;
-                }
-                // Priority 2: Profile/resume tagline
-                else if (profile.tagline || resumeData.tagline || profile.current_title) {
+                } else if (profile.tagline || resumeData.tagline || profile.current_title) {
                     tagline = safeString(profile.tagline || resumeData.tagline || profile.current_title);
-                }
-                // Priority 3: Build from job role + competencies
-                else if (targetRole) {
+                } else if (targetRole) {
                     const competencies = resumeData.core_competencies || profile.core_competencies ||
                                         analysisData?.required_skills || analysisData?.ats_keywords || [];
                     const topCompetencies = competencies.slice(0, 3).map(c => {
@@ -1381,9 +1427,6 @@
                     }
                 }
 
-                console.log('Tagline sources:', { apiHeadline, targetRole, profileTagline: profile.tagline, tagline });
-
-                // Extract contact info
                 const contactPhone = safeString(profile.phone || resumeData.contact?.phone || resumeData.candidate?.contact?.phone);
                 const contactEmail = safeString(profile.email || resumeData.contact?.email || resumeData.candidate?.contact?.email);
                 const contactLinkedin = safeString(profile.linkedin || resumeData.contact?.linkedin || resumeData.candidate?.contact?.linkedin);
@@ -1394,14 +1437,12 @@
                                                  resumeData.experience?.[0]?.location);
                 }
 
-                // Split cover letter into paragraphs
                 const coverLetterText = documentsData.cover_letter?.full_text || '';
                 const paragraphs = coverLetterText
                     .split(/\n\n+/)
                     .map(p => p.trim())
                     .filter(p => p.length > 0 && !p.toLowerCase().startsWith('dear') && !p.toLowerCase().startsWith('sincerely'));
 
-                // Build request payload for professional formatter
                 const requestPayload = {
                     candidate_name: String(candidateName),
                     tagline: tagline,
@@ -1419,9 +1460,7 @@
 
                 const response = await fetch(`${API_BASE}/api/download/cover-letter`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestPayload)
                 });
 
@@ -1429,7 +1468,6 @@
                     throw new Error(`Failed to generate cover letter: ${response.status}`);
                 }
 
-                // Download the file
                 const blob = await response.blob();
                 const filename = `${candidateName.replace(/\s+/g, '_')}_Cover_Letter.docx`;
                 saveAs(blob, filename);
@@ -1450,14 +1488,13 @@
             el.innerHTML = `
                 <div class="error-state">
                     <p>${message}</p>
-                    <a href="/results">← Go back and try again</a>
+                    <a href="/results">&larr; Go back and try again</a>
                 </div>
             `;
         }
 
         /**
          * SINGLE SOURCE OF TRUTH: Display Job Fit warning banner
-         * Per QA Spec: Documents page MUST reference Job Fit decision
          */
         function checkAndDisplayJobFitWarning(analysisData) {
             const banner = document.getElementById('jobFitWarningBanner');
@@ -1472,7 +1509,6 @@
             const proceededDespiteGuidance = sessionStorage.getItem('proceeded_despite_guidance') === 'true';
             const targetRole = analysisData.role_title || analysisData._role || 'this role';
 
-            // Check for "Do Not Apply" recommendation
             if (recommendation === 'do not apply' || recommendation === 'skip') {
                 banner.style.display = 'flex';
 
@@ -1502,10 +1538,8 @@
                 });
             });
 
-            // Get analysis data for candidate name with localStorage fallback (Safari compatibility)
+            // Get analysis data
             let analysisDataStr = sessionStorage.getItem('analysisData');
-
-            // Safari fallback: check localStorage if sessionStorage is empty
             if (!analysisDataStr) {
                 analysisDataStr = localStorage.getItem('analysisData_backup');
                 if (analysisDataStr) {
@@ -1520,21 +1554,28 @@
             }
             analysisData = JSON.parse(analysisDataStr);
 
-            // =========================================================================
-            // SINGLE SOURCE OF TRUTH: Check and display Job Fit decision
-            // Per QA Spec Rule 6: Documents page MUST reference Job Fit decision
-            // =========================================================================
+            // Set role title in header
+            const roleTitleEl = document.getElementById('roleTitle');
+            if (roleTitleEl) {
+                const targetRole = analysisData._role || analysisData.role_title || '';
+                const company = analysisData._company_name || analysisData._company || '';
+                if (targetRole && company) {
+                    roleTitleEl.textContent = `${targetRole} at ${company}`;
+                } else if (targetRole) {
+                    roleTitleEl.textContent = targetRole;
+                }
+            }
+
+            // Check and display Job Fit decision
             checkAndDisplayJobFitWarning(analysisData);
 
-            // Get documents data - try sessionStorage first, then Supabase, then localStorage fallback
+            // Get documents data
             let documentsDataStr = sessionStorage.getItem('documentsData');
 
-            // If not in sessionStorage, try to load from Supabase or localStorage
             if (!documentsDataStr) {
                 const company = analysisData._company || analysisData.company_name || '';
                 const role = analysisData._role || analysisData.role_title || '';
 
-                // Try Supabase first
                 if (typeof HenryData !== 'undefined' && company && role) {
                     try {
                         const apps = await HenryData.getApplications();
@@ -1552,13 +1593,10 @@
                     }
                 }
 
-                // Fallback to localStorage
                 if (!documentsDataStr && company && role) {
                     const documentsKey = `documents_${company}_${role}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
                     documentsDataStr = localStorage.getItem(documentsKey);
                     console.log('Loaded documents from localStorage:', documentsKey, !!documentsDataStr);
-
-                    // Also restore to sessionStorage for consistency
                     if (documentsDataStr) {
                         sessionStorage.setItem('documentsData', documentsDataStr);
                     }
@@ -1593,7 +1631,7 @@
                             [];
 
             if (keywords.length === 0) {
-                keywordsContainer.innerHTML = '<span style="color: #9ca3af; font-style: italic;">Keywords extracted from job description</span>';
+                keywordsContainer.innerHTML = '<span style="color: var(--color-text-secondary); font-style: italic; font-size: 0.8rem;">Keywords extracted from job description</span>';
             } else {
                 keywords.forEach(keyword => {
                     const tag = document.createElement('div');
@@ -1601,6 +1639,12 @@
                     tag.textContent = keyword;
                     keywordsContainer.appendChild(tag);
                 });
+            }
+
+            // Update keywords count badge
+            const countEl = document.getElementById('keywordsCount');
+            if (countEl && keywords.length > 0) {
+                countEl.textContent = keywords.length;
             }
 
             // Helper to safely extract string value
@@ -1624,7 +1668,7 @@
             const resumeData = analysisData?._resume_json || {};
             const profile = analysisData?._profile || {};
 
-            // Build tagline - prioritize API headline from job analysis
+            // Build tagline
             const apiHeadline = documentsData?.resume_output?.headline ||
                                analysisData?.resume_output?.headline ||
                                analysisData?.headline || '';
@@ -1645,11 +1689,9 @@
             const linkedin = safeStr(profile.linkedin || contact.linkedin);
             const location = safeStr(profile.location || contact.location);
 
-            // Build contact line
             const contactParts = [phone, email, linkedin, location].filter(p => p);
             const contactLine = contactParts.join(' | ');
 
-            // Build resume header
             const resumeHeader = `${candidateName.toUpperCase()}
 ${tagline}
 ${contactLine}
@@ -1658,23 +1700,20 @@ ${'─'.repeat(60)}
 
 `;
 
-            // Resume preview - USE CANONICAL HTML IF AVAILABLE (WYSIWYG), then text fallback
+            // Resume preview - USE CANONICAL HTML IF AVAILABLE (WYSIWYG)
             const resumePreviewDiv = document.getElementById('resumePreview');
             const resumeTextarea = document.getElementById('resumeText');
 
             if (documentsData.resume_output?.canonical_html) {
-                // WYSIWYG HTML preview — visually matches the DOCX download
                 resumePreviewDiv.innerHTML = documentsData.resume_output.canonical_html;
                 resumePreviewDiv.style.display = 'block';
                 resumeTextarea.style.display = 'none';
                 console.log('✅ Using WYSIWYG HTML resume preview (single source of truth)');
 
-                // Also store plain text for recalculate and legacy needs
                 if (documentsData.resume_output?.canonical_full_text) {
                     resumeTextarea.value = documentsData.resume_output.canonical_full_text;
                 }
             } else if (documentsData.resume_output?.canonical_full_text) {
-                // Canonical text fallback (no HTML available)
                 resumePreviewDiv.style.display = 'none';
                 resumeTextarea.style.display = 'block';
                 resumeTextarea.value = documentsData.resume_output.canonical_full_text;
@@ -1682,7 +1721,6 @@ ${'─'.repeat(60)}
                 resumeTextarea.style.height = resumeTextarea.scrollHeight + 'px';
                 console.log('⚠️ Using canonical text preview (no HTML available)');
             } else {
-                // Legacy fallback
                 const resumeBody = documentsData.resume_output?.full_text ||
                             documentsData.resume?.full_text ||
                             'Resume content not available.';
@@ -1696,14 +1734,12 @@ ${'─'.repeat(60)}
             }
 
             document.getElementById('resumeLoading').style.display = 'none';
-
             document.getElementById('downloadResumeBtn').disabled = false;
 
-            // Check document integrity and show warnings if needed
+            // Check document integrity
             if (documentsData.document_integrity && !documentsData.document_integrity.passed) {
                 const issues = documentsData.document_integrity.issues || [];
                 console.warn('⚠️ Document integrity issues:', issues);
-                // Show warning banner for critical issues
                 const criticalIssues = issues.filter(i =>
                     i.type === 'missing_name' || i.type === 'missing_email'
                 );
@@ -1712,7 +1748,7 @@ ${'─'.repeat(60)}
                 }
             }
 
-            // Build cover letter header (same format)
+            // Cover letter header
             const coverLetterHeader = `${candidateName.toUpperCase()}
 ${tagline}
 ${contactLine}
@@ -1723,7 +1759,7 @@ COVER LETTER
 
 `;
 
-            // Cover letter preview - USE CANONICAL DOCUMENT IF AVAILABLE
+            // Cover letter preview
             let coverLetterBody;
             if (documentsData.cover_letter?.canonical_full_text) {
                 coverLetterBody = documentsData.cover_letter.canonical_full_text;
@@ -1739,7 +1775,6 @@ COVER LETTER
             const coverLetterTextarea = document.getElementById('coverLetterText');
             coverLetterTextarea.style.display = 'block';
             coverLetterTextarea.value = coverLetterText;
-            // Auto-resize textarea to fit content
             coverLetterTextarea.style.height = 'auto';
             coverLetterTextarea.style.height = coverLetterTextarea.scrollHeight + 'px';
             document.getElementById('downloadCoverLetterBtn').disabled = false;
@@ -1762,21 +1797,19 @@ COVER LETTER
             }
         }
 
-        // Show Job Fit Impact delta - reassurance, not gamification
+        // Show Job Fit Impact delta
         function showFitScoreDelta(fitScoreDelta) {
             if (!fitScoreDelta) return;
 
             const container = document.getElementById('fitScoreDelta');
             if (!container) return;
 
-            // Populate values
             document.getElementById('scoreBefore').textContent = `${fitScoreDelta.original_score}%`;
             document.getElementById('scoreAfter').textContent = `${fitScoreDelta.final_score}%`;
             document.getElementById('verdictBefore').textContent = fitScoreDelta.original_verdict;
             document.getElementById('verdictAfter').textContent = fitScoreDelta.final_verdict;
             document.getElementById('deltaSummary').textContent = fitScoreDelta.improvement_summary;
 
-            // Set badge based on improvement
             const badge = document.getElementById('deltaBadge');
             if (fitScoreDelta.delta > 0) {
                 badge.textContent = `+${fitScoreDelta.delta}%`;
@@ -1793,12 +1826,11 @@ COVER LETTER
             console.log('✅ Showing fit score delta:', fitScoreDelta);
         }
 
-        // Recalculate fit score after user edits resume
+        // Recalculate fit score after user edits
         async function recalculateFitScore() {
             const btn = document.getElementById('recalculateBtn');
             if (!btn) return;
 
-            // Get edited resume text
             const resumeTextarea = document.getElementById('resumeText');
             const editedResumeText = resumeTextarea?.value || '';
 
@@ -1807,7 +1839,6 @@ COVER LETTER
                 return;
             }
 
-            // Get job context (use sessionStorage which was restored from localStorage if needed)
             const currentAnalysisData = JSON.parse(sessionStorage.getItem('analysisData') || localStorage.getItem('analysisData_backup') || '{}');
             const jobId = currentAnalysisData._job_id;
 
@@ -1816,7 +1847,6 @@ COVER LETTER
                 return;
             }
 
-            // Show loading state
             btn.classList.add('loading');
             btn.disabled = true;
 
@@ -1837,17 +1867,14 @@ COVER LETTER
                 const result = await response.json();
 
                 if (result.fit_score_delta) {
-                    // Update the display
                     showFitScoreDelta(result.fit_score_delta);
 
-                    // Update session storage with new score
                     const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
                     if (documentsData.canonical_document?.metadata) {
                         documentsData.canonical_document.metadata.fit_score_delta = result.fit_score_delta;
                         sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
                     }
 
-                    // Show success message
                     const improvement = result.fit_score_delta.delta;
                     if (improvement > 0) {
                         showSuccessMessage(`Score improved by ${improvement}%!`);
@@ -1866,7 +1893,7 @@ COVER LETTER
             }
         }
 
-        // Lock fit score at download - prevents obsessive re-running
+        // Lock fit score at download
         function lockFitScoreAtDownload() {
             const documentsData = JSON.parse(sessionStorage.getItem('documentsData') || '{}');
             if (documentsData.canonical_document?.metadata?.fit_score_delta) {
@@ -1874,10 +1901,9 @@ COVER LETTER
                 documentsData.canonical_document.metadata.fit_score_delta.locked_at = new Date().toISOString();
                 sessionStorage.setItem('documentsData', JSON.stringify(documentsData));
 
-                // Update UI to show locked state
                 const deltaLabel = document.querySelector('.fit-score-delta .delta-label');
                 if (deltaLabel) {
-                    deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: #4ade80;">✓ Final</span>';
+                    deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: var(--color-success);">&#10003; Final</span>';
                 }
                 console.log('✅ Fit score locked at download');
             }
@@ -1890,11 +1916,10 @@ COVER LETTER
             if (fitScoreDelta) {
                 showFitScoreDelta(fitScoreDelta);
 
-                // If already locked, show locked state
                 if (fitScoreDelta.score_locked) {
                     const deltaLabel = document.querySelector('.fit-score-delta .delta-label');
                     if (deltaLabel) {
-                        deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: #4ade80;">✓ Final</span>';
+                        deltaLabel.innerHTML = 'Job Fit Impact <span style="font-size: 0.7rem; color: var(--color-success);">&#10003; Final</span>';
                     }
                 }
             }
