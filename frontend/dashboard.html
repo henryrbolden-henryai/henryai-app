@@ -1581,6 +1581,11 @@
             font-weight: 500;
         }
 
+        .job-source {
+            font-style: italic;
+            opacity: 0.7;
+        }
+
         .job-network-badge {
             display: inline-flex;
             align-items: center;
@@ -1860,14 +1865,6 @@
             <p class="welcome-subtext" id="welcomeSubtext">Let's keep building momentum on your job search.</p>
         </div>
 
-        <!-- LinkedIn Reminder Banner Container -->
-        <div id="linkedin-reminder-container"></div>
-
-        <!-- DAILY PULSE BANNER -->
-        <div class="daily-pulse" id="dailyPulse">
-            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
-        </div>
-
         <!-- SETUP CHECKLIST (shown until all steps complete) -->
         <div class="setup-checklist-section" id="setupChecklistSection" style="display: none;">
             <h2>Get Set Up</h2>
@@ -1882,6 +1879,14 @@
                     <!-- Dynamically populated -->
                 </div>
             </div>
+        </div>
+
+        <!-- LinkedIn Reminder Banner Container -->
+        <div id="linkedin-reminder-container"></div>
+
+        <!-- DAILY PULSE BANNER -->
+        <div class="daily-pulse" id="dailyPulse">
+            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
         </div>
 
         <!-- QUICK STATS CARDS -->
@@ -1913,6 +1918,16 @@
             <h2>Your Next Actions</h2>
             <div class="priority-actions-card" id="priorityActionsCard">
                 <!-- Dynamically populated with intelligence-driven actions -->
+            </div>
+        </div>
+
+        <!-- TODAY'S FOCUS -->
+        <div class="focus-section">
+            <h2>Today's Focus</h2>
+            <div class="focus-card">
+                <div class="focus-items" id="focusItems">
+                    <!-- Dynamically populated with 3+ action items -->
+                </div>
             </div>
         </div>
 
@@ -1958,16 +1973,6 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TODAY'S FOCUS -->
-        <div class="focus-section">
-            <h2>Today's Focus</h2>
-            <div class="focus-card">
-                <div class="focus-items" id="focusItems">
-                    <!-- Dynamically populated with 3+ action items -->
                 </div>
             </div>
         </div>

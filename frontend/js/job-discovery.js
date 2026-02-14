@@ -44,7 +44,12 @@
         async init() {
             // Get profile data for search
             const profile = this.getUserProfile();
-            const resumeData = this.getResumeData();
+            let resumeData = this.getResumeData();
+
+            // If no resume in localStorage, fetch the default resume from Supabase
+            if (!resumeData) {
+                resumeData = await this.fetchDefaultResume();
+            }
 
             // Build network context from existing data sources
             this.buildNetworkContext(resumeData);
@@ -71,6 +76,41 @@
             this.renderLoading();
             this.container.style.display = 'block';
             await this.fetchJobs(searchParams);
+        }
+
+        /**
+         * Fetch the user's default resume from the API (Supabase user_resumes table).
+         * This covers the case where the resume was uploaded on the profile page
+         * but isn't in localStorage on the dashboard.
+         */
+        async fetchDefaultResume() {
+            try {
+                const userId = await this.getUserId();
+                if (!userId) return null;
+
+                const response = await fetch(`${API_BASE}/api/resumes?user_id=${encodeURIComponent(userId)}`);
+                if (!response.ok) return null;
+
+                const data = await response.json();
+                if (!data.resumes || data.resumes.length === 0) return null;
+
+                // Find default resume, or fall back to the first one
+                const defaultResume = data.resumes.find(r => r.is_default) || data.resumes[0];
+                const resumeJson = defaultResume.resume_json;
+                if (!resumeJson) return null;
+
+                // Cache it in localStorage so subsequent visits don't need the fetch
+                try {
+                    localStorage.setItem('primaryResume', JSON.stringify(defaultResume));
+                } catch (e) {
+                    // Storage full or unavailable - not critical
+                }
+
+                return resumeJson;
+            } catch (e) {
+                console.warn('[JobDiscovery] Could not fetch default resume from API:', e);
+                return null;
+            }
         }
 
         /**
@@ -283,7 +323,13 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    this.renderError(data.error);
+                    // Hide developer-facing config errors; show user-friendly message
+                    if (data.error.includes('not configured') || data.error.includes('environment variable')) {
+                        console.warn('[JobDiscovery] Service not configured:', data.error);
+                        this.container.style.display = 'none';
+                    } else {
+                        this.renderError('Job recommendations are temporarily unavailable. Please try again later.');
+                    }
                     return;
                 }
 
@@ -400,6 +446,7 @@
                                 <span class="job-location">${this.escapeHtml(job.location)}</span>
                                 ${salary ? `<span class="job-salary">${salary}</span>` : ''}
                                 <span class="job-posted">${daysAgo}</span>
+                                ${job.publisher ? `<span class="job-source">via ${this.escapeHtml(job.publisher)}</span>` : ''}
                             </div>
                         </div>
                         <div class="job-card-actions">
@@ -487,7 +534,12 @@
         async refresh() {
             localStorage.removeItem(CACHE_KEY);
             const profile = this.getUserProfile();
-            const resumeData = this.getResumeData();
+            let resumeData = this.getResumeData();
+
+            // If no resume in localStorage, fetch from Supabase
+            if (!resumeData) {
+                resumeData = await this.fetchDefaultResume();
+            }
 
             // Rebuild network context (user may have uploaded connections since last load)
             this.buildNetworkContext(resumeData);
