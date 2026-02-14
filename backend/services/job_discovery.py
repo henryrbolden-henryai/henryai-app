@@ -99,7 +99,7 @@ class JobDiscoveryService:
             "query": query,
             "page": "1",
             "num_pages": "1",
-            "date_posted": "week",  # Only recent jobs
+            "date_posted": "month",  # JSearch "week" filter is unreliable
         }
 
         if location_parts:

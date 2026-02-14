@@ -1054,7 +1054,8 @@
             text-align: center;
         }
 
-        .linkedin-upload-dropzone:hover {
+        .linkedin-upload-dropzone:hover,
+        .linkedin-upload-dropzone.dragover {
             border-color: var(--color-accent);
             background: rgba(34, 211, 238, 0.03);
         }
@@ -1470,9 +1471,9 @@
                     <div class="linkedin-upload-dropzone" id="linkedinDropzone">
                         <div class="linkedin-dropzone-icon">📁</div>
                         <div class="linkedin-dropzone-text">
-                            <label for="linkedinConnectionsFile" class="linkedin-dropzone-label">
+                            <span class="linkedin-dropzone-label">
                                 Click to upload your LinkedIn connections CSV
-                            </label>
+                            </span>
                             <input type="file" id="linkedinConnectionsFile" accept=".csv" style="display: none;">
                             <p class="linkedin-dropzone-hint">
                                 Export from LinkedIn: Settings &gt; Data Privacy &gt; Get a copy of your data &gt; Connections
@@ -1786,6 +1787,29 @@
             }
             if (dropzone) {
                 dropzone.addEventListener('click', () => fileInput?.click());
+
+                // Drag-and-drop support
+                dropzone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('dragover');
+                });
+                dropzone.addEventListener('dragleave', () => {
+                    dropzone.classList.remove('dragover');
+                });
+                dropzone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file && file.name.toLowerCase().endsWith('.csv')) {
+                        // Create a synthetic event for the handler
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        fileInput.files = dt.files;
+                        fileInput.dispatchEvent(new Event('change'));
+                    } else if (file) {
+                        alert('Please upload a .csv file. LinkedIn exports connections as CSV.');
+                    }
+                });
             }
 
             // Check for existing connections
