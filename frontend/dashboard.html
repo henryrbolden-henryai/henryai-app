@@ -1111,6 +1111,248 @@
             color: var(--color-text);
         }
 
+        /* SETUP CHECKLIST */
+        .setup-checklist-section {
+            margin-bottom: 32px;
+        }
+
+        .setup-checklist-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .setup-checklist-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .setup-progress {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .setup-progress-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .setup-progress-fill {
+            height: 100%;
+            background: var(--color-accent);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .setup-progress-text {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .setup-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .setup-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s;
+        }
+
+        .setup-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .setup-item.completed {
+            opacity: 0.6;
+        }
+
+        .setup-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--color-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            color: transparent;
+            transition: all 0.2s;
+        }
+
+        .setup-item.completed .setup-check {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: #000;
+        }
+
+        .setup-item-content {
+            flex: 1;
+        }
+
+        .setup-item-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .setup-item.completed .setup-item-title {
+            text-decoration: line-through;
+            color: var(--color-text-secondary);
+        }
+
+        .setup-item-desc {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .setup-item-action {
+            padding: 8px 16px;
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .setup-item-action:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .setup-item.completed .setup-item-action {
+            display: none;
+        }
+
+        /* PRIORITY ACTIONS (from Command Center intelligence) */
+        .priority-actions-section {
+            margin-bottom: 32px;
+        }
+
+        .priority-actions-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .priority-actions-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .priority-action-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            gap: 14px;
+            transition: background 0.15s;
+        }
+
+        .priority-action-item:last-child {
+            border-bottom: none;
+        }
+
+        .priority-action-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .priority-action-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+        }
+
+        .priority-action-info {
+            flex: 1;
+        }
+
+        .priority-action-company {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .priority-action-text {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .priority-action-btn {
+            padding: 8px 16px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .priority-action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .priority-actions-footer {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .priority-actions-footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .priority-actions-footer a:hover {
+            text-decoration: underline;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -1282,6 +1524,22 @@
             <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
         </div>
 
+        <!-- SETUP CHECKLIST (shown until all steps complete) -->
+        <div class="setup-checklist-section" id="setupChecklistSection" style="display: none;">
+            <h2>Get Set Up</h2>
+            <div class="setup-checklist-card">
+                <div class="setup-progress">
+                    <div class="setup-progress-bar">
+                        <div class="setup-progress-fill" id="setupProgressFill" style="width: 0%"></div>
+                    </div>
+                    <span class="setup-progress-text" id="setupProgressText">0 of 4 complete</span>
+                </div>
+                <div class="setup-items" id="setupItems">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
         <!-- QUICK STATS CARDS -->
         <div class="quick-stats">
             <div class="stat-card" id="cardActive">
@@ -1303,6 +1561,14 @@
                 <div class="stat-icon">⏱️</div>
                 <div class="stat-value" id="statResponseTime">—</div>
                 <div class="stat-label">Avg Response Time</div>
+            </div>
+        </div>
+
+        <!-- PRIORITY ACTIONS (from Command Center intelligence) -->
+        <div class="priority-actions-section" id="priorityActionsSection" style="display: none;">
+            <h2>Your Next Actions</h2>
+            <div class="priority-actions-card" id="priorityActionsCard">
+                <!-- Dynamically populated with intelligence-driven actions -->
             </div>
         </div>
 
@@ -1732,7 +1998,9 @@
 
                 renderWelcome(profile);
                 renderDailyPulse(profile, apps);
+                renderSetupChecklist(profile, apps);
                 renderQuickStats(apps, activeApps);
+                renderPriorityActions(apps);
                 renderRealityCheck(profile, apps, activeApps);
                 renderTodaysFocus(profile, apps, activeApps);
                 renderStrategicOptions(profile);
@@ -1831,6 +2099,177 @@
 
             const avgResponseTime = getAvgResponseTime(apps);
             statResponseTime.textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
+        }
+
+        // ========================================================================
+        // SETUP CHECKLIST
+        // ========================================================================
+        function renderSetupChecklist(profile, apps) {
+            const section = document.getElementById('setupChecklistSection');
+            const itemsContainer = document.getElementById('setupItems');
+            const progressFill = document.getElementById('setupProgressFill');
+            const progressText = document.getElementById('setupProgressText');
+
+            if (!section || !itemsContainer) return;
+
+            // Define the 4 setup steps and check completion
+            const steps = [
+                {
+                    id: 'resume',
+                    title: 'Upload your resume',
+                    desc: 'Your resume powers everything — fit scores, positioning, interview prep',
+                    done: !!(profile?.resume || profile?.work_history?.length > 0),
+                    action: 'Upload',
+                    link: '/linkedin-upload'
+                },
+                {
+                    id: 'profile',
+                    title: 'Complete your profile',
+                    desc: 'Tell us your situation so we can tailor guidance to you',
+                    done: !!(profile?.situation?.holding_up && profile?.situation?.timeline),
+                    action: 'Set Up',
+                    link: '/profile-edit'
+                },
+                {
+                    id: 'analyze',
+                    title: 'Analyze your first role',
+                    desc: 'Paste a job description to get a fit score and strategy',
+                    done: apps.some(a => a.analysisData || a.analysis_data || a.analysisKey),
+                    action: 'Analyze',
+                    link: '/analyze'
+                },
+                {
+                    id: 'track',
+                    title: 'Track your first application',
+                    desc: 'Start building your pipeline to unlock intelligence',
+                    done: apps.length > 0,
+                    action: 'Add',
+                    link: '/tracker'
+                }
+            ];
+
+            const completedCount = steps.filter(s => s.done).length;
+            const totalSteps = steps.length;
+
+            // If all steps done, hide the checklist entirely
+            if (completedCount === totalSteps) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            progressFill.style.width = `${(completedCount / totalSteps) * 100}%`;
+            progressText.textContent = `${completedCount} of ${totalSteps} complete`;
+
+            itemsContainer.innerHTML = steps.map(step => `
+                <div class="setup-item ${step.done ? 'completed' : ''}">
+                    <div class="setup-check">${step.done ? '&#10003;' : ''}</div>
+                    <div class="setup-item-content">
+                        <div class="setup-item-title">${step.title}</div>
+                        <div class="setup-item-desc">${step.desc}</div>
+                    </div>
+                    <a href="${step.link}" class="setup-item-action">${step.action}</a>
+                </div>
+            `).join('');
+        }
+
+        // ========================================================================
+        // PRIORITY ACTIONS (Command Center Intelligence on Dashboard)
+        // ========================================================================
+        function renderPriorityActions(apps) {
+            const section = document.getElementById('priorityActionsSection');
+            const card = document.getElementById('priorityActionsCard');
+
+            if (!section || !card) return;
+
+            // Only show if we have cached intelligence from a previous command center visit
+            // or if the user has enough apps to warrant fetching
+            const activeApps = getActiveApplications(apps);
+            if (activeApps.length < 1) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Try to use cached intelligence if available
+            if (window.CommandCenter && CommandCenter.cache.intelligence) {
+                displayPriorityActions(section, card, apps, CommandCenter.cache.intelligence);
+                return;
+            }
+
+            // Fetch intelligence in background (non-blocking)
+            if (window.CommandCenter && activeApps.length >= 1) {
+                const userId = localStorage.getItem('userId') || 'anonymous';
+                CommandCenter.fetchIntelligence(userId, activeApps).then(intelligence => {
+                    if (intelligence && intelligence.priority_actions?.length > 0) {
+                        displayPriorityActions(section, card, apps, intelligence);
+                    }
+                }).catch(err => {
+                    console.log('[Dashboard] Could not fetch intelligence:', err.message);
+                });
+            }
+        }
+
+        function displayPriorityActions(section, card, apps, intelligence) {
+            const actions = intelligence.priority_actions || [];
+            if (actions.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Show up to 5 priority actions
+            const topActions = actions.slice(0, 5);
+            let html = topActions.map(action => {
+                const app = apps.find(a => String(a.id) === String(action.application_id));
+                const company = app?.company || 'Unknown';
+                const icon = action.one_click_action?.type === 'draft_email' ? '&#9993;'
+                    : action.one_click_action?.type === 'open_prep' ? '&#128203;'
+                    : action.one_click_action?.type === 'archive' ? '&#128230;'
+                    : '&#9889;';
+
+                const btnConfig = window.CommandCenter ? CommandCenter.getOneClickButtonConfig(action.one_click_action) : null;
+                const btnHtml = btnConfig
+                    ? `<button class="priority-action-btn" onclick="handleDashboardAction('${action.application_id}', '${action.one_click_action?.type}')">${btnConfig.label}</button>`
+                    : '';
+
+                return `
+                    <div class="priority-action-item">
+                        <div class="priority-action-icon">${icon}</div>
+                        <div class="priority-action-info">
+                            <div class="priority-action-company">${company}</div>
+                            <div class="priority-action-text">${action.action}</div>
+                        </div>
+                        ${btnHtml}
+                    </div>
+                `;
+            }).join('');
+
+            html += `
+                <div class="priority-actions-footer">
+                    <a href="/tracker">View full pipeline in Command Center &rarr;</a>
+                </div>
+            `;
+
+            card.innerHTML = html;
+            section.style.display = 'block';
+        }
+
+        // Handle one-click actions from priority actions on dashboard
+        function handleDashboardAction(appId, actionType) {
+            const apps = getApplications();
+            const app = apps.find(a => String(a.id) === String(appId));
+
+            if (actionType === 'draft_email' && app) {
+                // Navigate to outreach with app context
+                navigateWithAppContext(appId, 'outreach');
+            } else if (actionType === 'open_prep') {
+                window.location.href = '/interview-intelligence';
+            } else if (actionType === 'archive') {
+                // Navigate to tracker to handle archive
+                window.location.href = `/tracker?highlight=${appId}`;
+            } else {
+                // Default: go to tracker
+                window.location.href = `/tracker?highlight=${appId}`;
+            }
         }
 
         function renderRealityCheck(profile, apps, activeApps) {
@@ -2842,6 +3281,8 @@
     <!-- Auth scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
+    <!-- Command Center Intelligence (for priority actions) -->
+    <script src="js/command-center.js"></script>
     <script>
         // D1: Auth check MUST complete before any rendering
         (async function() {

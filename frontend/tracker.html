@@ -3189,12 +3189,8 @@
         .app-card-v2.confidence-medium { border-color: var(--color-confidence-medium); }
         .app-card-v2.confidence-low { border-color: var(--color-confidence-low); }
 
-        .app-card-v2.dimmed {
-            opacity: 0.3;
-            pointer-events: none;
-        }
 
-        .app-card-v2.priority-high:not(.dimmed) {
+        .app-card-v2.priority-high {
             box-shadow: 0 4px 20px rgba(34, 211, 238, 0.2);
         }
 
@@ -3442,30 +3438,6 @@
         }
 
         /* Focus Mode */
-        .focus-mode-toggle {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            padding: var(--space-sm) var(--space-lg);
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 0.9rem;
-            color: var(--color-text-secondary);
-            transition: all var(--transition-base);
-        }
-
-        .focus-mode-toggle:hover {
-            border-color: var(--color-accent);
-            color: var(--color-accent);
-        }
-
-        .focus-mode-toggle.active {
-            background: var(--color-accent-muted);
-            border-color: var(--color-accent);
-            color: var(--color-accent);
-        }
 
         .view-all-btn {
             background: transparent;
@@ -3526,82 +3498,6 @@
         }
 
         /* Timeline View */
-        .timeline-container {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: var(--space-xl);
-            min-height: 400px;
-        }
-
-        .timeline-chart-wrapper {
-            height: 300px;
-            margin-bottom: var(--space-xl);
-        }
-
-        .timeline-insights {
-            display: flex;
-            gap: var(--space-lg);
-            justify-content: center;
-            margin-bottom: var(--space-lg);
-            flex-wrap: wrap;
-        }
-
-        .timeline-insight {
-            background: var(--color-surface-elevated);
-            border: 1px solid var(--color-border);
-            padding: var(--space-lg) var(--space-xl);
-            border-radius: var(--radius-md);
-            text-align: center;
-            min-width: 120px;
-        }
-
-        .timeline-insight .insight-value {
-            display: block;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--color-accent);
-            margin-bottom: var(--space-xs);
-        }
-
-        .timeline-insight .insight-label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--color-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .timeline-insight-highlight {
-            color: var(--color-accent);
-            font-weight: 600;
-        }
-
-        .timeline-legend {
-            display: flex;
-            gap: var(--space-xl);
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-
-        .legend-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .legend-dot.applied { background: #60a5fa; }
-        .legend-dot.interview { background: #f59e0b; }
-        .legend-dot.offer { background: #10b981; }
-        .legend-dot.rejection { background: #ef4444; }
 
         /* Empty State */
         .empty-state {
@@ -4002,10 +3898,6 @@
         .pulse-action-btn:focus-visible,
         .one-click-btn:focus-visible,
         .view-selector-btn:focus-visible,
-        .focus-mode-toggle:focus-visible {
-            outline: 2px solid var(--color-accent);
-            outline-offset: 2px;
-        }
 
         /* Skip to content link for accessibility */
         .skip-link {
@@ -4223,8 +4115,6 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <!-- Chart.js for Timeline View -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- Command Center Intelligence Module -->
     <script src="js/command-center.js"></script>
     <!-- Beta Access Gate -->
@@ -4330,12 +4220,7 @@
             <div class="view-selector" id="commandCenterViewSelector">
                 <button class="view-selector-btn active" data-view="board" onclick="setCommandCenterView('board')">Board</button>
                 <button class="view-selector-btn" data-view="list" onclick="setCommandCenterView('list')">List</button>
-                <button class="view-selector-btn" data-view="timeline" onclick="setCommandCenterView('timeline')">Timeline</button>
             </div>
-
-            <button class="focus-mode-toggle" id="focusModeToggle" onclick="toggleFocusMode()">
-                <span>🎯</span> Focus Mode
-            </button>
         </div>
 
         <!-- COMMAND CENTER: BOARD VIEW -->
@@ -4378,21 +4263,6 @@
             </div>
         </div>
 
-        <!-- COMMAND CENTER: TIMELINE VIEW -->
-        <div class="timeline-container" id="timelineViewContainer" style="display: none;">
-            <div class="timeline-chart-wrapper">
-                <canvas id="timelineChart"></canvas>
-            </div>
-            <div class="timeline-insights" id="timelineInsights">
-                <!-- Dynamically populated with insights -->
-            </div>
-            <div class="timeline-legend">
-                <span class="legend-item"><span class="legend-dot applied"></span> Applied</span>
-                <span class="legend-item"><span class="legend-dot interview"></span> Interview</span>
-                <span class="legend-item"><span class="legend-dot offer"></span> Offer</span>
-                <span class="legend-item"><span class="legend-dot rejection"></span> Rejection</span>
-            </div>
-        </div>
 
         <!-- COMMAND CENTER: EMPTY STATE -->
         <div class="empty-state" id="emptyState" style="display: none;">
@@ -10562,7 +10432,6 @@ Thanks so much!
 
         // State
         let commandCenterIntelligence = null;
-        let focusModeEnabled = false;
         let currentCommandCenterView = 'board';
 
         /**
@@ -10638,7 +10507,7 @@ Thanks so much!
             const actionsRow = document.getElementById('pulseActionsRow');
             actionsRow.innerHTML = '';
 
-            const topActions = intelligence.priority_actions?.slice(0, 3) || [];
+            const topActions = intelligence.priority_actions?.slice(0, 5) || [];
 
             if (topActions.length === 0) {
                 actionsRow.innerHTML = `
@@ -10861,7 +10730,6 @@ Thanks so much!
 
             const confidenceClass = `confidence-${ui.confidence}`;
             const priorityClass = `priority-${ui.priority}`;
-            const dimmedClass = focusModeEnabled && ui.dimmed ? 'dimmed' : '';
             const urgentClass = ui.urgency === 'immediate' ? 'urgent' : '';
 
             const fitScore = app.fitScore || app.fit_score || '--';
@@ -10885,7 +10753,7 @@ Thanks so much!
             const cleanRole = getCleanRole(app);
 
             return `
-                <div class="app-card-v2 ${confidenceClass} ${priorityClass} ${dimmedClass}"
+                <div class="app-card-v2 ${confidenceClass} ${priorityClass}"
                      data-id="${app.id}"
                      draggable="true"
                      tabindex="0"
@@ -11223,31 +11091,8 @@ Thanks so much!
             document.getElementById('boardViewContainer').style.display = view === 'board' ? 'grid' : 'none';
             document.getElementById('prioritiesView').style.display = view === 'list' ? 'block' : 'none';
             document.getElementById('detailsView').style.display = view === 'list' ? 'block' : 'none';
-            document.getElementById('timelineViewContainer').style.display = view === 'timeline' ? 'block' : 'none';
-
-            // Initialize timeline view if selected
-            if (view === 'timeline') {
-                const apps = getApplications();
-                renderTimelineView(apps, commandCenterIntelligence);
-            }
         }
 
-        /**
-         * Toggle Focus Mode
-         */
-        function toggleFocusMode() {
-            focusModeEnabled = !focusModeEnabled;
-
-            const toggle = document.getElementById('focusModeToggle');
-            toggle.classList.toggle('active', focusModeEnabled);
-
-            // Re-render board with focus mode
-            if (commandCenterIntelligence) {
-                renderBoardView(getApplications(), commandCenterIntelligence);
-            }
-
-            console.log('[CommandCenter] Focus mode:', focusModeEnabled ? 'ON' : 'OFF');
-        }
 
         /**
          * Check and show Strategic Stop warning
@@ -11301,188 +11146,6 @@ Thanks so much!
             }
         }
 
-        // ========================================================================
-        // COMMAND CENTER: TIMELINE VIEW
-        // ========================================================================
-
-        let timelineChartInstance = null;
-
-        /**
-         * Render Timeline View with Chart.js
-         */
-        function renderTimelineView(apps, intelligence) {
-            const container = document.getElementById('timelineViewContainer');
-            const canvas = document.getElementById('timelineChart');
-            if (!container || !canvas) return;
-
-            // Destroy existing chart instance
-            if (timelineChartInstance) {
-                timelineChartInstance.destroy();
-            }
-
-            // Process data for timeline
-            const timelineData = processTimelineData(apps);
-
-            // Create chart
-            const ctx = canvas.getContext('2d');
-            timelineChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: timelineData.labels,
-                    datasets: [
-                        {
-                            label: 'Applications',
-                            data: timelineData.applications,
-                            borderColor: '#22d3ee',
-                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Interviews',
-                            data: timelineData.interviews,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Rejections',
-                            data: timelineData.rejections,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: '#1c1c1f',
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1,
-                            titleColor: '#fafafa',
-                            bodyColor: '#a1a1aa',
-                            padding: 12
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            },
-                            ticks: {
-                                color: '#71717a'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.05)'
-                            },
-                            ticks: {
-                                color: '#71717a',
-                                stepSize: 1
-                            }
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    }
-                }
-            });
-
-            // Render insights
-            renderTimelineInsights(apps, intelligence);
-        }
-
-        /**
-         * Process application data for timeline chart
-         */
-        function processTimelineData(apps) {
-            // Get last 8 weeks
-            const weeks = [];
-            const today = new Date();
-            for (let i = 7; i >= 0; i--) {
-                const weekStart = new Date(today);
-                weekStart.setDate(today.getDate() - (i * 7));
-                weeks.push({
-                    start: new Date(weekStart),
-                    label: `Week ${8 - i}`,
-                    applications: 0,
-                    interviews: 0,
-                    rejections: 0
-                });
-            }
-
-            // Count events per week
-            apps.forEach(app => {
-                const appDate = new Date(app.dateApplied || app.dateAdded || app.createdAt);
-                const status = app.status?.toLowerCase() || '';
-
-                weeks.forEach(week => {
-                    const weekEnd = new Date(week.start);
-                    weekEnd.setDate(week.start.getDate() + 7);
-
-                    if (appDate >= week.start && appDate < weekEnd) {
-                        week.applications++;
-                    }
-                });
-
-                // Track status changes (simplified)
-                if (status.includes('interview') || status.includes('screen') || status.includes('recruiter')) {
-                    weeks[weeks.length - 1].interviews++;
-                }
-                if (status === 'rejected') {
-                    weeks[weeks.length - 1].rejections++;
-                }
-            });
-
-            return {
-                labels: weeks.map(w => w.label),
-                applications: weeks.map(w => w.applications),
-                interviews: weeks.map(w => w.interviews),
-                rejections: weeks.map(w => w.rejections)
-            };
-        }
-
-        /**
-         * Render timeline insights
-         */
-        function renderTimelineInsights(apps, intelligence) {
-            const container = document.getElementById('timelineInsights');
-            if (!container) return;
-
-            const totalApps = apps.length;
-            const activeApps = apps.filter(a => STATUSES[a.status]?.active).length;
-            const interviewRate = totalApps > 0 ?
-                Math.round((apps.filter(a => a.status?.toLowerCase().includes('interview')).length / totalApps) * 100) : 0;
-
-            container.innerHTML = `
-                <div class="timeline-insight">
-                    <span class="insight-value">${totalApps}</span>
-                    <span class="insight-label">Total Applications</span>
-                </div>
-                <div class="timeline-insight">
-                    <span class="insight-value">${activeApps}</span>
-                    <span class="insight-label">Active Pipeline</span>
-                </div>
-                <div class="timeline-insight">
-                    <span class="insight-value">${interviewRate}%</span>
-                    <span class="insight-label">Interview Rate</span>
-                </div>
-            `;
-        }
 
         // ========================================================================
         // COMMAND CENTER: EMPTY, ERROR, LOADING, OFFLINE STATES
@@ -11706,24 +11369,12 @@ Thanks so much!
             if (e.target.matches('input, textarea, select')) return;
 
             switch (e.key) {
-                case 'f':
-                case 'F':
-                    // Toggle focus mode
-                    if (!e.ctrlKey && !e.metaKey) {
-                        toggleFocusMode();
-                        e.preventDefault();
-                    }
-                    break;
                 case '1':
                     setCommandCenterView('board');
                     e.preventDefault();
                     break;
                 case '2':
                     setCommandCenterView('list');
-                    e.preventDefault();
-                    break;
-                case '3':
-                    setCommandCenterView('timeline');
                     e.preventDefault();
                     break;
                 case 'Escape':
@@ -11748,7 +11399,7 @@ Thanks so much!
          * Navigate between application cards
          */
         function navigateCards(direction) {
-            const cards = Array.from(document.querySelectorAll('.app-card-v2:not(.dimmed)'));
+            const cards = Array.from(document.querySelectorAll('.app-card-v2'));
             if (cards.length === 0) return;
 
             const currentFocus = document.activeElement;
