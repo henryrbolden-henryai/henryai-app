@@ -999,6 +999,180 @@
         .nav-link:hover {
             color: var(--color-accent);
         }
+
+        /* LinkedIn Connections Section */
+        .section-badge-optional {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            background: var(--color-surface-elevated);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .linkedin-benefits {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .linkedin-benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            font-size: 0.88rem;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .linkedin-benefit-item strong {
+            color: var(--color-text);
+        }
+
+        .linkedin-benefit-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .linkedin-upload-dropzone {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 28px 24px;
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .linkedin-upload-dropzone:hover {
+            border-color: var(--color-accent);
+            background: rgba(34, 211, 238, 0.03);
+        }
+
+        .linkedin-dropzone-icon {
+            font-size: 1.8rem;
+        }
+
+        .linkedin-dropzone-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            cursor: pointer;
+        }
+
+        .linkedin-dropzone-hint {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-top: 4px;
+        }
+
+        .linkedin-loaded-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--color-bg);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+        }
+
+        .linkedin-loaded-icon {
+            font-size: 1.3rem;
+            color: #10b981;
+            flex-shrink: 0;
+        }
+
+        .linkedin-loaded-info {
+            flex: 1;
+        }
+
+        .linkedin-loaded-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        .linkedin-loaded-meta {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .linkedin-loaded-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-secondary-sm {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary-sm:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .btn-danger-sm:hover {
+            border-color: #f87171 !important;
+            color: #f87171 !important;
+        }
+
+        .linkedin-top-companies {
+            margin-top: 12px;
+        }
+
+        .linkedin-top-companies-label {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-bottom: 8px;
+        }
+
+        .linkedin-company-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .linkedin-company-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 14px;
+            font-size: 0.78rem;
+            color: var(--color-accent);
+        }
+
+        .linkedin-company-tag .tag-count {
+            font-weight: 600;
+        }
+
+        .linkedin-privacy-note {
+            font-size: 0.78rem !important;
+            color: var(--color-text-muted) !important;
+            font-style: italic;
+            margin-top: 12px !important;
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Beta Access Gate -->
@@ -1265,7 +1439,77 @@
             </div>
         </div>
 
-        <!-- SECTION 3: LOCATION & WORK ARRANGEMENT -->
+        <!-- SECTION 3: LINKEDIN CONNECTIONS (for network-aware job discovery) -->
+        <div class="form-section" id="linkedinConnectionsSection">
+            <div class="section-title">
+                <span class="icon">🔗</span>
+                LinkedIn Connections
+                <span class="section-badge-optional">Optional</span>
+            </div>
+            <p class="section-hint">
+                Upload your LinkedIn connections and we'll use them in two ways:
+            </p>
+            <div class="linkedin-benefits">
+                <div class="linkedin-benefit-item">
+                    <span class="linkedin-benefit-icon">🎯</span>
+                    <div>
+                        <strong>Job Discovery</strong> — Jobs at companies where you have connections get highlighted on your dashboard so you know where you have a warm path in.
+                    </div>
+                </div>
+                <div class="linkedin-benefit-item">
+                    <span class="linkedin-benefit-icon">🤝</span>
+                    <div>
+                        <strong>Network & Outreach</strong> — When you analyze a role, we'll identify connections at that company and suggest who to reach out to and what to say.
+                    </div>
+                </div>
+            </div>
+
+            <div class="linkedin-upload-area" id="linkedinConnectionsUploadArea">
+                <!-- Default state: no connections uploaded -->
+                <div id="linkedinUploadPrompt">
+                    <div class="linkedin-upload-dropzone" id="linkedinDropzone">
+                        <div class="linkedin-dropzone-icon">📁</div>
+                        <div class="linkedin-dropzone-text">
+                            <label for="linkedinConnectionsFile" class="linkedin-dropzone-label">
+                                Click to upload your LinkedIn connections CSV
+                            </label>
+                            <input type="file" id="linkedinConnectionsFile" accept=".csv" style="display: none;">
+                            <p class="linkedin-dropzone-hint">
+                                Export from LinkedIn: Settings &gt; Data Privacy &gt; Get a copy of your data &gt; Connections
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loaded state: connections uploaded -->
+                <div id="linkedinLoadedState" style="display: none;">
+                    <div class="linkedin-loaded-card">
+                        <div class="linkedin-loaded-icon">✓</div>
+                        <div class="linkedin-loaded-info">
+                            <div class="linkedin-loaded-title" id="linkedinLoadedTitle">0 connections loaded</div>
+                            <div class="linkedin-loaded-meta" id="linkedinLoadedMeta">—</div>
+                        </div>
+                        <div class="linkedin-loaded-actions">
+                            <label for="linkedinConnectionsFileReplace" class="btn-secondary-sm">
+                                Replace
+                                <input type="file" id="linkedinConnectionsFileReplace" accept=".csv" style="display: none;">
+                            </label>
+                            <button type="button" class="btn-secondary-sm btn-danger-sm" onclick="removeLinkedInConnections()">Remove</button>
+                        </div>
+                    </div>
+                    <div class="linkedin-top-companies" id="linkedinTopCompanies" style="display: none;">
+                        <p class="linkedin-top-companies-label">Top companies in your network:</p>
+                        <div class="linkedin-company-tags" id="linkedinCompanyTags"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="section-hint linkedin-privacy-note">
+                We only extract company names from your connections to match against job listings. We don't store individual contact details or share your data.
+            </p>
+        </div>
+
+        <!-- SECTION 4: LOCATION & WORK ARRANGEMENT -->
         <div class="form-section">
             <div class="section-title">
                 <span class="icon">📍</span>
@@ -1510,13 +1754,231 @@
         </div>
     </div>
 
+    <!-- PapaParse for LinkedIn CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
-        
+
         // State
         let profile = null;
         let relocateLocations = [];
         let workArrangements = [];
+
+        // ========================================================================
+        // LINKEDIN CONNECTIONS UPLOAD
+        // Uses the same localStorage key as outreach.html (henryhq_linkedin_connections)
+        // so both pages share the same data without duplication.
+        // ========================================================================
+        const CONNECTIONS_STORAGE_KEY = 'henryhq_linkedin_connections';
+
+        function initLinkedInConnections() {
+            // File upload handlers
+            const fileInput = document.getElementById('linkedinConnectionsFile');
+            const replaceInput = document.getElementById('linkedinConnectionsFileReplace');
+            const dropzone = document.getElementById('linkedinDropzone');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', handleLinkedInUpload);
+            }
+            if (replaceInput) {
+                replaceInput.addEventListener('change', handleLinkedInUpload);
+            }
+            if (dropzone) {
+                dropzone.addEventListener('click', () => fileInput?.click());
+            }
+
+            // Check for existing connections
+            const stored = loadLinkedInConnections();
+            if (stored) {
+                showLinkedInLoadedState(stored);
+            }
+        }
+
+        async function handleLinkedInUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csv = e.target.result;
+
+                // Parse CSV with PapaParse
+                const result = Papa.parse(csv, {
+                    header: true,
+                    skipEmptyLines: true,
+                    transformHeader: h => h.trim()
+                });
+
+                const connections = result.data.filter(row =>
+                    (row['First Name'] && row['First Name'].trim()) ||
+                    (row['Last Name'] && row['Last Name'].trim())
+                );
+
+                if (connections.length === 0) {
+                    alert('No connections found in this CSV. Make sure you exported your Connections from LinkedIn (Settings > Data Privacy > Get a copy of your data).');
+                    return;
+                }
+
+                // Save to localStorage (shared with outreach.html)
+                const data = {
+                    version: 1,
+                    uploadedAt: new Date().toISOString(),
+                    fileName: file.name,
+                    connectionCount: connections.length,
+                    connections: connections.map(c => ({
+                        firstName: c['First Name'] || '',
+                        lastName: c['Last Name'] || '',
+                        url: c['URL'] || '',
+                        email: c['Email Address'] || '',
+                        company: c['Company'] || '',
+                        position: c['Position'] || '',
+                        connectedOn: c['Connected On'] || ''
+                    }))
+                };
+
+                try {
+                    localStorage.setItem(CONNECTIONS_STORAGE_KEY, JSON.stringify(data));
+                    // Backward compatibility key
+                    localStorage.setItem('linkedinConnections', JSON.stringify(connections));
+                } catch (e) {
+                    console.error('Failed to save connections:', e);
+                }
+
+                // Persist to Supabase (non-blocking)
+                persistLinkedInToSupabase(data);
+
+                // Update UI
+                showLinkedInLoadedState(data);
+            };
+            reader.readAsText(file);
+        }
+
+        async function persistLinkedInToSupabase(data) {
+            try {
+                if (typeof HenryAuth === 'undefined') return;
+                const user = await HenryAuth.getUser();
+                if (!user?.id) return;
+
+                const response = await fetch(`${API_BASE}/api/linkedin/connections/persist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        connections_data: {
+                            connections: data.connections
+                        },
+                    }),
+                });
+
+                if (response.ok) {
+                    console.log('LinkedIn connections synced to Supabase');
+                }
+            } catch (e) {
+                console.warn('Could not sync connections to Supabase:', e);
+            }
+        }
+
+        function loadLinkedInConnections() {
+            try {
+                const stored = localStorage.getItem(CONNECTIONS_STORAGE_KEY);
+                if (!stored) return null;
+                const data = JSON.parse(stored);
+                if (data.version !== 1) return null;
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function showLinkedInLoadedState(stored) {
+            const promptEl = document.getElementById('linkedinUploadPrompt');
+            const loadedEl = document.getElementById('linkedinLoadedState');
+            const titleEl = document.getElementById('linkedinLoadedTitle');
+            const metaEl = document.getElementById('linkedinLoadedMeta');
+
+            if (promptEl) promptEl.style.display = 'none';
+            if (loadedEl) loadedEl.style.display = 'block';
+
+            if (titleEl) {
+                titleEl.textContent = `${stored.connectionCount.toLocaleString()} connections loaded`;
+            }
+            if (metaEl) {
+                const uploadDate = stored.uploadedAt ? new Date(stored.uploadedAt).toLocaleDateString() : '';
+                metaEl.textContent = `From ${stored.fileName || 'Connections.csv'} · Uploaded ${uploadDate}`;
+            }
+
+            // Show top companies
+            showTopCompanies(stored.connections);
+        }
+
+        function showTopCompanies(connections) {
+            if (!connections || connections.length === 0) return;
+
+            const companyCounts = {};
+            connections.forEach(c => {
+                const company = (c.company || c['Company'] || '').trim();
+                if (company) {
+                    companyCounts[company] = (companyCounts[company] || 0) + 1;
+                }
+            });
+
+            const sorted = Object.entries(companyCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (sorted.length === 0) return;
+
+            const container = document.getElementById('linkedinTopCompanies');
+            const tagsEl = document.getElementById('linkedinCompanyTags');
+            if (!container || !tagsEl) return;
+
+            container.style.display = 'block';
+            tagsEl.innerHTML = sorted.map(([company, count]) =>
+                `<span class="linkedin-company-tag">${escapeHtml(company)} <span class="tag-count">(${count})</span></span>`
+            ).join('');
+        }
+
+        function removeLinkedInConnections() {
+            if (!confirm('Remove your LinkedIn connections? You can upload again anytime.')) return;
+
+            localStorage.removeItem(CONNECTIONS_STORAGE_KEY);
+            localStorage.removeItem('linkedinConnections');
+
+            // Clear from Supabase too
+            (async () => {
+                try {
+                    if (typeof HenryAuth === 'undefined') return;
+                    const user = await HenryAuth.getUser();
+                    if (!user?.id) return;
+
+                    await fetch(`${API_BASE}/api/linkedin/connections/persist`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: user.id,
+                            connections_data: { connections: [] },
+                        }),
+                    });
+                } catch (e) {
+                    // Non-blocking
+                }
+            })();
+
+            // Reset UI
+            const promptEl = document.getElementById('linkedinUploadPrompt');
+            const loadedEl = document.getElementById('linkedinLoadedState');
+            const topCompanies = document.getElementById('linkedinTopCompanies');
+            if (promptEl) promptEl.style.display = 'block';
+            if (loadedEl) loadedEl.style.display = 'none';
+            if (topCompanies) topCompanies.style.display = 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
 
         // Elements
         const resumeInfo = document.getElementById('resumeInfo');
@@ -3204,6 +3666,9 @@
 
             // Load multi-resume list
             await loadResumes();
+
+            // Initialize LinkedIn connections upload
+            initLinkedInConnections();
         })();
     </script>
     <script src="components/analytics.js"></script>

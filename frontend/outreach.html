@@ -713,16 +713,14 @@
         <div id="linkedinPrompt" class="linkedin-prompt">
             <div class="linkedin-prompt-icon">🤝</div>
             <div class="linkedin-prompt-content">
-                <div class="linkedin-prompt-title">Hey, I can check your LinkedIn network for you</div>
+                <div class="linkedin-prompt-title">I can check your LinkedIn network for this company</div>
                 <div class="linkedin-prompt-text">
-                    Upload your LinkedIn connections (CSV) and I'll show you who you know at this company. Warm intros get 3x higher response rates than cold outreach.
+                    Upload your LinkedIn connections in your profile and I'll show you who you know at this company. Warm intros get 3x higher response rates than cold outreach.
                 </div>
                 <div class="linkedin-prompt-buttons">
-                    <label for="linkedinUpload" class="linkedin-btn linkedin-btn-primary">
-                        📁 Upload LinkedIn CSV
-                    </label>
-                    <input type="file" id="linkedinUpload" accept=".csv" style="display: none;">
-                    <button class="linkedin-btn linkedin-btn-secondary" onclick="showLinkedInHelp()">📖 How to Export</button>
+                    <a href="/profile-edit#linkedinConnectionsSection" class="linkedin-btn linkedin-btn-primary">
+                        📁 Upload in Profile
+                    </a>
                     <button class="linkedin-btn linkedin-btn-secondary" onclick="dismissLinkedInPrompt()">Maybe Later</button>
                 </div>
             </div>
@@ -1225,21 +1223,12 @@
                             From ${stored.fileName} · Uploaded ${formatRelativeTime(stored.uploadedAt)}
                         </div>
                         <div class="linkedin-prompt-buttons">
-                            <label class="linkedin-btn linkedin-btn-secondary" style="cursor: pointer;">
-                                📁 Upload New CSV
-                                <input type="file" id="linkedinUpload" accept=".csv" style="display: none;">
-                            </label>
-                            <button class="linkedin-btn linkedin-btn-secondary" onclick="clearAndReload()">
-                                Remove
-                            </button>
+                            <a href="/profile-edit#linkedinConnectionsSection" class="linkedin-btn linkedin-btn-secondary">
+                                Manage in Profile
+                            </a>
                         </div>
                     </div>
                 `;
-                // Re-attach upload listener to new input
-                const newUploadInput = uploadSection.querySelector('#linkedinUpload');
-                if (newUploadInput) {
-                    newUploadInput.addEventListener('change', handleFileUpload);
-                }
             }
 
             if (valueSection) {
