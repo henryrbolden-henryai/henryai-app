@@ -19124,6 +19124,8 @@ async def discover_jobs(request: JobDiscoverRequest):
         if location:
             params["query"] = f"{params['query']} in {location}"
 
+        logger.info(f"Job discovery query: '{params.get('query')}' | target_roles={target_roles} | location={location} | remote={remote_only}")
+
         # Search for jobs (with company exclusion)
         results = job_discovery_service.search_jobs(params, excluded_companies=excluded_companies)
 

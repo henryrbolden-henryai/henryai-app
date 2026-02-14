@@ -57,7 +57,10 @@
             // Determine search parameters from profile
             const searchParams = this.buildSearchFromProfile(profile, resumeData);
 
-            if (!searchParams.role_title) {
+            // If authenticated, the backend will enrich from Supabase profile.
+            // Only show "needs profile" if there's no user_id AND no local role data.
+            const userId = await this.getUserId();
+            if (!searchParams.role_title && !userId) {
                 this.renderNeedsProfile();
                 return;
             }
@@ -303,11 +306,15 @@
          */
         async fetchJobs(searchParams) {
             try {
-                // Include user_id so backend can fetch profile/resume/network from Supabase
+                // Send user_id so backend fetches profile/resume/network from Supabase.
+                // Only include frontend overrides if Supabase lookup won't be available.
                 const userId = await this.getUserId();
-                const requestBody = { ...searchParams };
+                const requestBody = {};
                 if (userId) {
                     requestBody.user_id = userId;
+                } else {
+                    // No authenticated user — fall back to frontend-derived params
+                    Object.assign(requestBody, searchParams);
                 }
 
                 const response = await fetch(`${API_BASE}/api/jobs/discover`, {
@@ -410,9 +417,7 @@
             let html = '';
             jobs.forEach(job => {
                 const salary = this.formatSalary(job);
-                const daysAgo = job.days_since_posted != null
-                    ? `${job.days_since_posted}d ago`
-                    : 'Recent';
+                const daysAgo = this.formatPostedDate(job);
 
                 // Build badges based on network source
                 let networkBadge = '';
@@ -450,8 +455,7 @@
                             </div>
                         </div>
                         <div class="job-card-actions">
-                            <a href="${this.escapeHtml(job.apply_url)}" target="_blank" rel="noopener noreferrer" class="job-btn-apply">Apply</a>
-                            <button class="job-btn-analyze" data-job-title="${this.escapeHtml(job.title)}" data-job-company="${this.escapeHtml(job.company)}" onclick="window.jobDiscovery.analyzeRole(this)">Analyze</button>
+                            <a href="${this.escapeHtml(job.apply_url)}" target="_blank" rel="noopener noreferrer" class="job-btn-apply">View Job Description</a>
                         </div>
                     </div>
                 `;
@@ -550,6 +554,38 @@
                 this.renderLoading();
                 await this.fetchJobs(searchParams);
             }
+        }
+
+        /**
+         * Format the posted date for display.
+         * Uses "Xd ago" for recent posts, actual date for older ones.
+         */
+        formatPostedDate(job) {
+            // If we have the actual posted_date string, calculate from that
+            if (job.posted_date) {
+                try {
+                    const posted = new Date(job.posted_date);
+                    const now = new Date();
+                    const diffMs = now - posted;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                    if (diffDays <= 0) return 'Today';
+                    if (diffDays === 1) return '1d ago';
+                    if (diffDays <= 14) return `${diffDays}d ago`;
+                    // Older than 2 weeks: show the actual date
+                    return posted.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                } catch (e) {
+                    // Fall through to days_since_posted
+                }
+            }
+
+            if (job.days_since_posted != null) {
+                if (job.days_since_posted <= 0) return 'Today';
+                if (job.days_since_posted <= 14) return `${job.days_since_posted}d ago`;
+                return `${job.days_since_posted}d ago`;
+            }
+
+            return 'Recent';
         }
 
         /**
