@@ -1581,6 +1581,11 @@
             font-weight: 500;
         }
 
+        .job-source {
+            font-style: italic;
+            opacity: 0.7;
+        }
+
         .job-network-badge {
             display: inline-flex;
             align-items: center;
@@ -1860,14 +1865,6 @@
             <p class="welcome-subtext" id="welcomeSubtext">Let's keep building momentum on your job search.</p>
         </div>
 
-        <!-- LinkedIn Reminder Banner Container -->
-        <div id="linkedin-reminder-container"></div>
-
-        <!-- DAILY PULSE BANNER -->
-        <div class="daily-pulse" id="dailyPulse">
-            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
-        </div>
-
         <!-- SETUP CHECKLIST (shown until all steps complete) -->
         <div class="setup-checklist-section" id="setupChecklistSection" style="display: none;">
             <h2>Get Set Up</h2>
@@ -1882,6 +1879,14 @@
                     <!-- Dynamically populated -->
                 </div>
             </div>
+        </div>
+
+        <!-- LinkedIn Reminder Banner Container -->
+        <div id="linkedin-reminder-container"></div>
+
+        <!-- DAILY PULSE BANNER -->
+        <div class="daily-pulse" id="dailyPulse">
+            <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
         </div>
 
         <!-- QUICK STATS CARDS -->
@@ -1913,6 +1918,16 @@
             <h2>Your Next Actions</h2>
             <div class="priority-actions-card" id="priorityActionsCard">
                 <!-- Dynamically populated with intelligence-driven actions -->
+            </div>
+        </div>
+
+        <!-- TODAY'S FOCUS -->
+        <div class="focus-section">
+            <h2>Today's Focus</h2>
+            <div class="focus-card">
+                <div class="focus-items" id="focusItems">
+                    <!-- Dynamically populated with 3+ action items -->
+                </div>
             </div>
         </div>
 
@@ -1958,16 +1973,6 @@
                             <!-- Populated by JS -->
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TODAY'S FOCUS -->
-        <div class="focus-section">
-            <h2>Today's Focus</h2>
-            <div class="focus-card">
-                <div class="focus-items" id="focusItems">
-                    <!-- Dynamically populated with 3+ action items -->
                 </div>
             </div>
         </div>
@@ -2673,14 +2678,40 @@
             // Get profile situation values
             const { holding_up, timeline, confidence } = profile?.situation || {};
 
-            // Determine urgency level
+            // Get function area for personalized messaging
+            const functionArea = profile?.function_area;
+            const functionLabel = {
+                'product_management': 'Product Management',
+                'engineering': 'Engineering',
+                'design': 'Design',
+                'data_analytics': 'Data & Analytics',
+                'sales': 'Sales',
+                'marketing': 'Marketing',
+                'customer_success': 'Customer Success',
+                'operations': 'Operations',
+                'finance': 'Finance',
+                'hr_people': 'HR & People',
+                'legal': 'Legal',
+            }[functionArea] || '';
+            const roleContext = functionLabel ? ` in ${functionLabel}` : '';
+
+            // Determine urgency and emotional levels
             const isUrgentTimeline = timeline === 'urgent' || timeline === 'soon';
             const isStrugglingEmotionally = holding_up === 'struggling' || holding_up === 'stressed_but_managing';
+            const isDesperate = holding_up === 'struggling' && timeline === 'urgent';
             const hasLowConfidence = confidence === 'low' || confidence === 'need_validation';
 
             // Calculate pipeline gaps
             const appCount = activeApps.length;
             const hasScheduledInterview = getNextUpcomingInterview() !== null;
+
+            // Count days without activity
+            const lastActivityDate = activeApps.reduce((latest, app) => {
+                const d = app.updated_at || app.last_activity_date || app.created_at;
+                return d && d > latest ? d : latest;
+            }, '');
+            const daysSinceActivity = lastActivityDate ? getDaysSince(lastActivityDate) : null;
+            const isStale = daysSinceActivity !== null && daysSinceActivity > 7;
 
             // Define reality check scenarios (only show if there's a real mismatch)
             let showRealityCheck = false;
@@ -2692,60 +2723,90 @@
                 secondaryBtn: null
             };
 
-            // Scenario 1: Urgent search + 0 applications
-            if (isUrgentTimeline && appCount === 0) {
+            // Scenario 1: Desperate — urgent + struggling + 0 applications
+            if (isDesperate && appCount === 0) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '🚨',
+                    headline: 'You need to move. Today.',
+                    detail: `You told me things are urgent and you're struggling. I hear you. But right now you have <strong>zero applications in play</strong>${roleContext}. Nothing is going to change until you put yourself out there. The fear of rejection is real, but <strong>the cost of inaction is higher</strong>. Pick one role. Analyze it. Apply. That's it. One step today.`,
+                    primaryBtn: { text: 'Analyze Your First Role', link: '/analyze' },
+                    secondaryBtn: { text: 'I Need to Talk This Through', action: 'openHeyHenry' }
+                };
+            }
+            // Scenario 2: Urgent + 0 applications (not emotionally struggling)
+            else if (isUrgentTimeline && appCount === 0) {
                 showRealityCheck = true;
                 realityContent = {
                     icon: '🚨',
                     headline: 'Urgent search, zero pipeline',
-                    detail: `You said your job search is <strong>${timeline === 'urgent' ? 'urgent' : 'happening soon'}</strong>, but you have no active applications. Every day without applications in play is a day lost. The average successful job search takes 3-6 months. Start now.`,
+                    detail: `You said your search is <strong>${timeline === 'urgent' ? 'urgent' : 'happening soon'}</strong>, but you have no active applications${roleContext}. Every day without applications in play is a day lost. The ${functionLabel || 'job'} market moves fast — roles you see today may close this week. The average successful search takes 3-6 months. <strong>Start today, not tomorrow.</strong>`,
                     primaryBtn: { text: 'Analyze Your First Role', link: '/analyze' },
                     secondaryBtn: null
                 };
             }
-            // Scenario 2: Urgent search + only 1 application
+            // Scenario 3: Urgent + only 1 application
             else if (isUrgentTimeline && appCount === 1) {
                 showRealityCheck = true;
-
                 realityContent = {
                     icon: '⚠️',
                     headline: 'One application isn\'t a job search',
-                    detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application means you're betting everything on one outcome. That's not strategy, that's hope. <strong>Build to 5-10 active applications</strong> over the next few weeks. Quality over quantity, but you need options.`,
+                    detail: `You marked this search as <strong>${timeline}</strong>, but having just 1 application${roleContext} means you're betting everything on one outcome. That's not strategy — that's hope. <strong>Build to 5-10 active applications</strong> over the next few weeks.${isStrugglingEmotionally ? ' I know adding more feels overwhelming right now, but each one actually reduces your stress by giving you more options.' : ' Quality over quantity, but you need options.'}`,
                     primaryBtn: { text: 'Add Another Role', link: '/analyze' },
-                    secondaryBtn: { text: 'Why This Matters', prompt: 'Why does having only 1 application hurt my job search? Explain the math and psychology behind building a pipeline of 5-10 applications.' }
+                    secondaryBtn: { text: 'Why This Matters', prompt: `Why does having only 1 application hurt my job search${roleContext}? Explain the math and psychology behind building a pipeline of 5-10 applications.` }
                 };
             }
-            // Scenario 3: Urgent + struggling emotionally + thin pipeline
-            else if (isUrgentTimeline && isStrugglingEmotionally && appCount < 3) {
+            // Scenario 4: Urgent + struggling emotionally + thin pipeline (2-3 apps)
+            else if (isUrgentTimeline && isStrugglingEmotionally && appCount < 4) {
                 showRealityCheck = true;
-
                 realityContent = {
                     icon: '💪',
-                    headline: 'Let\'s get your pipeline working for you',
-                    detail: `I know this is hard. You're feeling ${holding_up === 'struggling' ? 'the pressure' : 'stressed'}, and that's completely valid. But here's the thing: <strong>more applications = more chances = less stress</strong>. Right now you have ${appCount} active. Build toward 5-10 quality applications. Take it one role at a time.`,
+                    headline: appCount < 2 ? 'Let\'s get your pipeline working for you' : 'You\'re building momentum — keep going',
+                    detail: `I know this is hard${holding_up === 'struggling' ? ' — really hard' : ''}. What you're feeling is completely valid, and <strong>most people in your shoes feel the same way</strong>. Here's what I know works: <strong>more applications = more chances = less anxiety</strong>. You have ${appCount} active${roleContext}. Each one you add takes some of the pressure off.${appCount < 3 ? ' Build toward 5-10 quality applications. Take it one role at a time.' : ' You\'re getting close to a healthy pipeline. Keep this momentum.'}`,
                     primaryBtn: { text: 'Add Another Role', link: '/analyze' },
                     secondaryBtn: { text: 'Talk Strategy', action: 'openHeyHenry' }
                 };
             }
-            // Scenario 4: Low confidence + no interviews scheduled
+            // Scenario 5: Low confidence + no interviews scheduled
             else if (hasLowConfidence && !hasScheduledInterview && appCount >= 1) {
                 showRealityCheck = true;
                 realityContent = {
                     icon: '🎯',
                     headline: 'Confidence comes from preparation',
-                    detail: `You mentioned feeling ${confidence === 'low' ? 'low confidence' : 'like you need validation'} about your search. Here's the truth: <strong>confidence is built, not found</strong>. Practice your story, research your targets, and prepare like the interviews are already scheduled. You've got this.`,
+                    detail: `You mentioned feeling ${confidence === 'low' ? 'low confidence' : 'like you need validation'}. Here's something most people don't realize: <strong>confidence isn't a feeling you wait for — it's a skill you build</strong>.${functionLabel ? ` In ${functionLabel}, interviewers are testing how clearly you articulate your impact.` : ''} Practice your story, research your targets, and prepare like the interviews are already scheduled. When the call comes, you'll be ready.`,
                     primaryBtn: { text: 'Practice Interview', link: '/interview-intelligence' },
                     secondaryBtn: { text: 'Review Positioning', modalDest: 'positioning' }
                 };
             }
-            // Scenario 5: Thin pipeline without urgency (gentler nudge)
-            // Note: No action button - user can use "Analyze New Role" in navigation
+            // Scenario 6: Low confidence + struggling + applications exist
+            else if (hasLowConfidence && isStrugglingEmotionally && appCount >= 1) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '💛',
+                    headline: 'You\'re further along than you think',
+                    detail: `Job searching can make even the most accomplished people doubt themselves. You have ${appCount} application${appCount !== 1 ? 's' : ''} in play${roleContext} — that's real progress. <strong>The person who gets the offer isn't always the most qualified. It's the one who prepared the best.</strong> Let's make sure that's you.`,
+                    primaryBtn: { text: 'Practice Interview', link: '/interview-intelligence' },
+                    secondaryBtn: { text: 'Talk to Henry', action: 'openHeyHenry' }
+                };
+            }
+            // Scenario 7: Stale pipeline — no activity in 7+ days
+            else if (isStale && appCount >= 1 && isUrgentTimeline) {
+                showRealityCheck = true;
+                realityContent = {
+                    icon: '⏰',
+                    headline: 'Your pipeline has gone quiet',
+                    detail: `It's been <strong>${daysSinceActivity} days</strong> since any activity on your ${appCount} application${appCount !== 1 ? 's' : ''}${roleContext}. When you marked this search as <strong>${timeline}</strong>, momentum was the plan. Silence doesn't mean rejection — but it does mean you need to <strong>follow up or add new roles</strong> to keep your pipeline alive.`,
+                    primaryBtn: { text: 'Add Another Role', link: '/analyze' },
+                    secondaryBtn: { text: 'Review Pipeline', link: '/tracker' }
+                };
+            }
+            // Scenario 8: Thin pipeline without urgency (gentler nudge)
             else if (appCount === 1 && !isUrgentTimeline) {
                 showRealityCheck = true;
                 realityContent = {
                     icon: '📊',
                     headline: 'Diversify your pipeline',
-                    detail: `Right now, your entire job search depends on one application. Even if you're not in a rush, <strong>spreading your bets across 5-10 roles</strong> dramatically increases your chances of landing the right opportunity. Don't put all your eggs in one basket.`,
+                    detail: `Right now, your entire job search${roleContext} depends on one application. Even if you're not in a rush, <strong>spreading your bets across 5-10 roles</strong> dramatically increases your chances of landing the right opportunity. Don't put all your eggs in one basket.`,
                     primaryBtn: null,
                     secondaryBtn: null
                 };
