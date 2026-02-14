@@ -1084,17 +1084,44 @@
 
         // Parse LinkedIn CSV - handles quoted fields with commas correctly
         function parseLinkedInCSV(csv) {
-            const result = Papa.parse(csv, {
+            // Strip BOM (Byte Order Mark) that LinkedIn CSV exports include
+            const cleanCsv = csv.replace(/^\uFEFF/, '');
+
+            const result = Papa.parse(cleanCsv, {
                 header: true,
                 skipEmptyLines: true,
                 transformHeader: h => h.trim()
             });
 
-            // Filter out empty rows (LinkedIn exports sometimes have blank lines)
-            return result.data.filter(row =>
-                (row['First Name'] && row['First Name'].trim()) ||
-                (row['Last Name'] && row['Last Name'].trim())
-            );
+            // Case-insensitive field lookup for LinkedIn format variations
+            function getField(row, ...names) {
+                for (const name of names) {
+                    if (row[name] !== undefined) return row[name];
+                }
+                const keys = Object.keys(row);
+                for (const name of names) {
+                    const lower = name.toLowerCase();
+                    const key = keys.find(k => k.toLowerCase() === lower);
+                    if (key && row[key] !== undefined) return row[key];
+                }
+                return '';
+            }
+
+            // Normalize each row's keys so downstream code can use standard names
+            return result.data
+                .filter(row =>
+                    (getField(row, 'First Name', 'FirstName') || '').trim() ||
+                    (getField(row, 'Last Name', 'LastName') || '').trim()
+                )
+                .map(row => ({
+                    'First Name': getField(row, 'First Name', 'FirstName'),
+                    'Last Name': getField(row, 'Last Name', 'LastName'),
+                    'URL': getField(row, 'URL', 'Url', 'Profile URL'),
+                    'Email Address': getField(row, 'Email Address', 'EmailAddress', 'Email'),
+                    'Company': getField(row, 'Company'),
+                    'Position': getField(row, 'Position', 'Title'),
+                    'Connected On': getField(row, 'Connected On', 'ConnectedOn'),
+                }));
         }
 
         // ========================================================================

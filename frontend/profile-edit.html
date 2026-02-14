@@ -1825,7 +1825,8 @@
 
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const csv = e.target.result;
+                // Strip BOM (Byte Order Mark) that LinkedIn CSV exports include
+                const csv = e.target.result.replace(/^\uFEFF/, '');
 
                 // Parse CSV with PapaParse
                 const result = Papa.parse(csv, {
@@ -1834,9 +1835,25 @@
                     transformHeader: h => h.trim()
                 });
 
+                // Build a case-insensitive header lookup so we handle
+                // variations in LinkedIn's export format
+                function getField(row, ...names) {
+                    for (const name of names) {
+                        if (row[name] !== undefined) return row[name];
+                    }
+                    // Fall back to case-insensitive search
+                    const keys = Object.keys(row);
+                    for (const name of names) {
+                        const lower = name.toLowerCase();
+                        const key = keys.find(k => k.toLowerCase() === lower);
+                        if (key && row[key] !== undefined) return row[key];
+                    }
+                    return '';
+                }
+
                 const connections = result.data.filter(row =>
-                    (row['First Name'] && row['First Name'].trim()) ||
-                    (row['Last Name'] && row['Last Name'].trim())
+                    (getField(row, 'First Name', 'FirstName') || '').trim() ||
+                    (getField(row, 'Last Name', 'LastName') || '').trim()
                 );
 
                 if (connections.length === 0) {
@@ -1851,13 +1868,13 @@
                     fileName: file.name,
                     connectionCount: connections.length,
                     connections: connections.map(c => ({
-                        firstName: c['First Name'] || '',
-                        lastName: c['Last Name'] || '',
-                        url: c['URL'] || '',
-                        email: c['Email Address'] || '',
-                        company: c['Company'] || '',
-                        position: c['Position'] || '',
-                        connectedOn: c['Connected On'] || ''
+                        firstName: getField(c, 'First Name', 'FirstName'),
+                        lastName: getField(c, 'Last Name', 'LastName'),
+                        url: getField(c, 'URL', 'Url', 'Profile URL'),
+                        email: getField(c, 'Email Address', 'EmailAddress', 'Email'),
+                        company: getField(c, 'Company'),
+                        position: getField(c, 'Position', 'Title'),
+                        connectedOn: getField(c, 'Connected On', 'ConnectedOn')
                     }))
                 };
 
