@@ -23,7 +23,7 @@ class JobDiscoveryService:
     JSEARCH_BASE_URL = "https://jsearch.p.rapidapi.com/search"
 
     def __init__(self):
-        self.api_key = os.getenv("RAPIDAPI_KEY")
+        self.api_key = os.getenv("RAPIDAPI_KEY_JSEARCH") or os.getenv("RAPIDAPI_KEY")
         self._cache: Dict[str, tuple] = {}  # {cache_key: (timestamp, results)}
 
     @property
@@ -141,13 +141,13 @@ class JobDiscoveryService:
         Returns normalized results with caching.
         """
         if not self.is_configured:
-            logger.warning("RAPIDAPI_KEY not configured - job discovery unavailable")
+            logger.warning("RAPIDAPI_KEY_JSEARCH not configured - job discovery unavailable")
             return {
                 "jobs": [],
                 "total_found": 0,
                 "search_query": params.get("query", ""),
                 "cached": False,
-                "error": "Job discovery API not configured. Set RAPIDAPI_KEY environment variable.",
+                "error": "Job discovery API not configured. Set RAPIDAPI_KEY_JSEARCH environment variable.",
             }
 
         cache_key = self._get_cache_key(params)
