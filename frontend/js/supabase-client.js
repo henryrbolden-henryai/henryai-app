@@ -239,15 +239,44 @@ const HenryData = {
         const user = await HenryAuth.getUser();
         if (!user) return { error: 'Not authenticated' };
 
+        // Map profileData to actual candidate_profiles table columns.
+        // The table uses 'id' as PK (auth.users UUID), not 'user_id'.
+        const row = {
+            id: user.id,
+            first_name: profileData.first_name || null,
+            last_name: profileData.last_name || null,
+            pronouns: profileData.pronouns || null,
+            function_area: profileData.function_area || null,
+            current_industry: profileData.current_industry || null,
+            secondary_industry: profileData.secondary_industry || null,
+            work_authorization: profileData.work_authorization || null,
+            requires_sponsorship: profileData.requires_sponsorship || false,
+            is_veteran: profileData.is_veteran || false,
+            // Flatten nested location to top-level columns
+            city: profileData.location?.city || null,
+            state: profileData.location?.state || null,
+            country: profileData.location?.country || null,
+            open_to_relocate: profileData.location?.open_to_relocate || null,
+            relocation_targets: profileData.location?.relocate_to || [],
+            // Work preferences
+            work_arrangement: profileData.work_arrangement || [],
+            // Compensation
+            comp_min: profileData.compensation?.min || null,
+            comp_target: profileData.compensation?.target || null,
+            comp_stretch: profileData.compensation?.stretch || null,
+            // Target industries
+            target_industry_primary: profileData.target_industry_primary || null,
+            target_industry_secondary: profileData.target_industry_secondary || null,
+            // Situation — flatten nested object
+            situation_holding_up: profileData.situation?.holding_up || null,
+            situation_timeline: profileData.situation?.timeline || null,
+            situation_confidence: profileData.situation?.confidence || null,
+            updated_at: new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from('candidate_profiles')
-            .upsert({
-                user_id: user.id,
-                profile_data: profileData,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'user_id'
-            });
+            .upsert(row, { onConflict: 'id' });
 
         if (error) console.error('Error saving profile:', error);
         return { data, error };
