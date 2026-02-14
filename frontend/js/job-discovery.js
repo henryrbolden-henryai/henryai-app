@@ -406,8 +406,8 @@
                 return;
             }
 
-            // Limit to 10 curated results while feature is in beta
-            const MAX_DISPLAY = 10;
+            // Limit to 5 curated results while feature is in beta
+            const MAX_DISPLAY = 5;
             const displayJobs = jobs.slice(0, MAX_DISPLAY);
 
             // Update search info
