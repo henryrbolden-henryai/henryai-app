@@ -96,6 +96,8 @@ TIER_LIMITS = {
             'priority_henry': False,
             'story_templates': False,
             'coach_view': False,
+            'job_discovery': 'limited',  # Preview: can see jobs but limited refreshes
+            'job_discovery_network': False,
         }
     },
     'recruiter': {
@@ -138,6 +140,8 @@ TIER_LIMITS = {
             'priority_henry': False,
             'story_templates': False,
             'coach_view': False,
+            'job_discovery': True,
+            'job_discovery_network': False,
         }
     },
     'principal': {
@@ -180,6 +184,8 @@ TIER_LIMITS = {
             'priority_henry': False,
             'story_templates': False,
             'coach_view': False,
+            'job_discovery': True,
+            'job_discovery_network': True,
         }
     },
     'partner': {
@@ -223,6 +229,8 @@ TIER_LIMITS = {
             'cross_interview_patterns': True,
             'story_templates': True,
             'coach_view': True,
+            'job_discovery': True,
+            'job_discovery_network': True,
         }
     },
     'coach': {
@@ -267,6 +275,8 @@ TIER_LIMITS = {
             'cross_interview_patterns': True,
             'story_templates': True,
             'coach_view': True,
+            'job_discovery': True,
+            'job_discovery_network': True,
         }
     },
 }

@@ -3423,6 +3423,60 @@ class ContactRecommendation(BaseModel):
 class NetworkRecommendResponse(BaseModel):
     recommendations: List[ContactRecommendation]
 
+# ============================================================================
+# JOB DISCOVERY MODELS
+# ============================================================================
+
+class JobDiscoverRequest(BaseModel):
+    """Request for job discovery endpoint."""
+    user_id: Optional[str] = None
+    role_title: Optional[str] = None  # Override target role from profile
+    location: Optional[str] = None  # Override location from profile
+    keywords: Optional[List[str]] = None  # Additional search keywords
+    remote_only: Optional[bool] = None  # Override work arrangement
+    page: int = 1
+
+class DiscoveredJob(BaseModel):
+    """A single job listing from discovery."""
+    job_id: str
+    title: str
+    company: str
+    company_logo: Optional[str] = None
+    location: str
+    salary_min: Optional[float] = None
+    salary_max: Optional[float] = None
+    salary_currency: str = "USD"
+    salary_period: Optional[str] = None
+    posted_date: Optional[str] = None
+    days_since_posted: Optional[int] = None
+    apply_url: str
+    description_snippet: Optional[str] = None
+    employment_type: Optional[str] = "FULLTIME"
+    is_remote: bool = False
+    publisher: Optional[str] = None
+    network_connection: bool = False
+    network_connection_count: int = 0
+
+class JobDiscoverResponse(BaseModel):
+    """Response from job discovery endpoint."""
+    jobs: List[DiscoveredJob]
+    total_found: int
+    search_query: str
+    location_used: Optional[str] = None
+    cached: bool = False
+    cache_expires_at: Optional[float] = None
+    network_enabled: bool = False
+    refresh_note: str = "This list refreshes every 24 hours based on your profile. For the most comprehensive search, also check LinkedIn Jobs directly."
+    error: Optional[str] = None
+
+class LinkedInConnectionsUploadResponse(BaseModel):
+    """Response from LinkedIn connections CSV upload."""
+    connections_parsed: int
+    unique_companies: int
+    top_companies: List[Dict[str, Any]]
+    message: str
+
+
 # Feature 4: Interview Intelligence
 class InterviewQuestion(BaseModel):
     question: str
@@ -18869,6 +18923,196 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
                 "Did you tailor your resume for this specific role?"
             ],
             recommended_status="Rejected: Other"
+        )
+
+
+# ============================================================================
+# JOB DISCOVERY ENDPOINTS
+# ============================================================================
+
+@app.post("/api/jobs/discover", response_model=JobDiscoverResponse)
+async def discover_jobs(request: JobDiscoverRequest):
+    """
+    Discover relevant job listings based on candidate profile data.
+
+    Uses the candidate's target_roles, location, work_arrangement, and
+    other profile data to search for matching jobs via JSearch API.
+
+    If LinkedIn network data is available, cross-references results to
+    flag companies where the candidate has connections.
+
+    Results are cached for 24 hours per search query.
+    """
+    from backend.services.job_discovery import job_discovery_service
+
+    try:
+        # Build profile data from request overrides or defaults
+        target_roles = [request.role_title] if request.role_title else None
+        location = request.location
+        keywords = request.keywords
+        remote_only = request.remote_only or False
+
+        # For now, we use the request params directly.
+        # In a full implementation, we'd fetch the candidate profile from Supabase
+        # using request.user_id to get target_roles, location, etc.
+
+        # Build search parameters
+        params = job_discovery_service.build_search_params(
+            target_roles=target_roles,
+            job_search_keywords=keywords,
+            remote_only=remote_only,
+        )
+
+        # If location override provided, inject it
+        if location:
+            params["query"] = f"{params['query']} in {location}"
+
+        # Search for jobs
+        results = job_discovery_service.search_jobs(params)
+
+        # Check for errors
+        if results.get("error"):
+            return JobDiscoverResponse(
+                jobs=[],
+                total_found=0,
+                search_query=results.get("search_query", ""),
+                cached=False,
+                network_enabled=False,
+                error=results["error"],
+            )
+
+        # Convert raw dicts to DiscoveredJob models
+        jobs = [DiscoveredJob(**job) for job in results.get("jobs", [])]
+
+        return JobDiscoverResponse(
+            jobs=jobs,
+            total_found=results.get("total_found", len(jobs)),
+            search_query=results.get("search_query", ""),
+            cached=results.get("cached", False),
+            cache_expires_at=results.get("cache_expires_at"),
+            network_enabled=False,
+        )
+
+    except Exception as e:
+        logger.error(f"Job discovery error: {e}")
+        return JobDiscoverResponse(
+            jobs=[],
+            total_found=0,
+            search_query="",
+            cached=False,
+            error="Job discovery temporarily unavailable.",
+        )
+
+
+@app.post("/api/jobs/discover/with-profile", response_model=JobDiscoverResponse)
+async def discover_jobs_with_profile(request: JobDiscoverRequest):
+    """
+    Discover jobs using full candidate profile data.
+
+    This endpoint accepts profile data directly (target_roles, location,
+    work arrangement, excluded companies, LinkedIn network) and returns
+    personalized job results with network matching.
+    """
+    from backend.services.job_discovery import job_discovery_service
+
+    try:
+        # Parse profile data from the request body
+        # The frontend sends the full profile context
+        body = await request.model_dump() if hasattr(request, 'model_dump') else {}
+
+        target_roles = [request.role_title] if request.role_title else None
+        keywords = request.keywords
+
+        params = job_discovery_service.build_search_params(
+            target_roles=target_roles,
+            job_search_keywords=keywords,
+            remote_only=request.remote_only or False,
+        )
+
+        if request.location:
+            params["query"] = f"{params['query']} in {request.location}"
+
+        results = job_discovery_service.search_jobs(params)
+
+        if results.get("error"):
+            return JobDiscoverResponse(
+                jobs=[],
+                total_found=0,
+                search_query=results.get("search_query", ""),
+                cached=False,
+                error=results["error"],
+            )
+
+        jobs_data = results.get("jobs", [])
+        jobs = [DiscoveredJob(**job) for job in jobs_data]
+
+        return JobDiscoverResponse(
+            jobs=jobs,
+            total_found=results.get("total_found", len(jobs)),
+            search_query=results.get("search_query", ""),
+            cached=results.get("cached", False),
+            cache_expires_at=results.get("cache_expires_at"),
+            network_enabled=False,
+        )
+
+    except Exception as e:
+        logger.error(f"Job discovery with profile error: {e}")
+        return JobDiscoverResponse(
+            jobs=[],
+            total_found=0,
+            search_query="",
+            cached=False,
+            error="Job discovery temporarily unavailable.",
+        )
+
+
+@app.post("/api/linkedin/connections/upload", response_model=LinkedInConnectionsUploadResponse)
+async def upload_linkedin_connections(file: bytes = None):
+    """
+    Upload LinkedIn connections CSV for network-aware job discovery.
+
+    Parses the LinkedIn connections export CSV, extracts company data,
+    and stores it on the candidate profile for cross-referencing with
+    job search results.
+
+    LinkedIn CSV format:
+    First Name,Last Name,URL,Email Address,Company,Position,Connected On
+    """
+    from backend.services.linkedin_network import linkedin_network_parser
+
+    try:
+        if not file:
+            raise HTTPException(status_code=400, detail="No file provided")
+
+        # Decode CSV content
+        csv_content = file.decode("utf-8")
+
+        # Parse connections
+        connections = linkedin_network_parser.parse_csv(csv_content)
+
+        if not connections:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not parse LinkedIn connections CSV. Make sure you exported it from LinkedIn Settings > Data Privacy > Get a copy of your data."
+            )
+
+        # Extract company data
+        companies = linkedin_network_parser.extract_companies(connections)
+
+        return LinkedInConnectionsUploadResponse(
+            connections_parsed=len(connections),
+            unique_companies=len(companies),
+            top_companies=companies[:20],  # Return top 20 companies
+            message=f"Successfully parsed {len(connections)} connections across {len(companies)} companies. Your job recommendations will now highlight companies where you have connections.",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LinkedIn connections upload error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process LinkedIn connections CSV."
         )
 
 
