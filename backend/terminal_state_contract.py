@@ -524,6 +524,29 @@ def build_canonical_profile(
         elif re.search(r'\b(?:finance|fp&a|controller|accounting)\b', target_lower):
             target_function = FunctionType.FINANCE
 
+    # Determine target level from role title
+    target_level = None
+    if target_role_title:
+        target_lower = target_role_title.lower()
+        if re.search(r'\b(?:chief|ceo|cto|cpo|coo)\b', target_lower):
+            target_level = CandidateLevel.EXECUTIVE
+        elif re.search(r'\b(?:svp|evp|vp|vice\s+president)\b', target_lower):
+            target_level = CandidateLevel.VP
+        elif re.search(r'\b(?:senior\s+director|director)\b', target_lower):
+            target_level = CandidateLevel.DIRECTOR
+        elif re.search(r'\bprincipal\b', target_lower):
+            target_level = CandidateLevel.PRINCIPAL
+        elif re.search(r'\bstaff\b', target_lower):
+            target_level = CandidateLevel.STAFF
+        elif re.search(r'\b(?:senior|sr\.?)\b', target_lower):
+            target_level = CandidateLevel.SENIOR
+        elif re.search(r'\b(?:associate|junior|jr\.?|apm)\b', target_lower):
+            target_level = CandidateLevel.ASSOCIATE
+        elif re.search(r'\bentry\b', target_lower):
+            target_level = CandidateLevel.ENTRY
+        elif re.search(r'\b(?:manager|lead)\b', target_lower):
+            target_level = CandidateLevel.MID
+
     # Determine function match
     function_match = True
     if target_function:
@@ -545,6 +568,21 @@ def build_canonical_profile(
         function_match
     )
 
+    level_gap = 0
+    if target_level:
+        level_rank = {
+            CandidateLevel.ENTRY: 1,
+            CandidateLevel.ASSOCIATE: 2,
+            CandidateLevel.MID: 3,
+            CandidateLevel.SENIOR: 4,
+            CandidateLevel.STAFF: 5,
+            CandidateLevel.PRINCIPAL: 6,
+            CandidateLevel.DIRECTOR: 7,
+            CandidateLevel.VP: 8,
+            CandidateLevel.EXECUTIVE: 9,
+        }
+        level_gap = level_rank.get(target_level, 3) - level_rank.get(detected_level, 3)
+
     return CanonicalCandidateProfile(
         detected_function=detected_function,
         detected_level=detected_level,
@@ -553,8 +591,9 @@ def build_canonical_profile(
         function_evidence=func_evidence,
         level_evidence=level_evidence,
         target_function=target_function,
+        target_level=target_level,
         function_match=function_match,
-        level_gap=0  # TODO: Calculate based on target level
+        level_gap=level_gap
     )
 
 
