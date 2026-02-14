@@ -1137,6 +1137,47 @@
         }
 
         /**
+         * Persist LinkedIn connections to Supabase for cross-device access
+         * and job discovery network matching. Runs in background after localStorage save.
+         */
+        async function persistConnectionsToSupabase(connections) {
+            try {
+                // Get current user
+                if (typeof HenryAuth === 'undefined') return;
+                const user = await HenryAuth.getUser();
+                if (!user?.id) return;
+
+                // Transform connections to the format the backend expects
+                const connectionsData = {
+                    connections: connections.map(c => ({
+                        company: c['Company'] || c.company || '',
+                        position: c['Position'] || c.position || '',
+                        firstName: c['First Name'] || c.firstName || '',
+                        lastName: c['Last Name'] || c.lastName || '',
+                    }))
+                };
+
+                const response = await fetch(`${API_BASE}/api/linkedin/connections/persist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        connections_data: connectionsData,
+                    }),
+                });
+
+                if (response.ok) {
+                    console.log('[Outreach] LinkedIn connections persisted to Supabase');
+                } else {
+                    console.warn('[Outreach] Failed to persist connections to Supabase:', response.status);
+                }
+            } catch (e) {
+                // Non-blocking -- localStorage is the primary store
+                console.warn('[Outreach] Could not persist connections to Supabase:', e);
+            }
+        }
+
+        /**
          * Load connections from localStorage
          */
         function loadConnectionsFromStorage() {
@@ -1271,6 +1312,9 @@
 
                 // Store with new format including metadata
                 saveConnectionsToStorage(connections, file.name);
+
+                // Persist to Supabase for cross-device access and job discovery matching
+                persistConnectionsToSupabase(connections);
 
                 // Hide value explanation after upload
                 const valueSection = document.getElementById('linkedinValueSection');

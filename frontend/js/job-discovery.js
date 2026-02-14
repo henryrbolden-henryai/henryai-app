@@ -1,7 +1,11 @@
 /**
  * Job Discovery Module
  * Fetches and displays personalized job recommendations on the dashboard.
- * Integrates with candidate profile data and LinkedIn network for matching.
+ *
+ * Network matching consolidation:
+ * - LinkedIn connections: Reads from henryhq_linkedin_connections (set by outreach.html)
+ * - Prior employers: Reads from parsedResume experience[].company (set by resume upload)
+ * - NO duplicate upload flows -- points users to Network & Outreach page for CSV upload
  */
 
 (function() {
@@ -15,6 +19,9 @@
     const CACHE_KEY = 'jobDiscoveryCache';
     const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
 
+    // Key used by outreach.html for LinkedIn connections
+    const LINKEDIN_CONNECTIONS_KEY = 'henryhq_linkedin_connections';
+
     /**
      * JobDiscovery Class
      * Manages job fetching, caching, and rendering on the dashboard
@@ -24,6 +31,8 @@
             this.container = document.getElementById('jobDiscoverySection');
             this.jobsList = document.getElementById('jobDiscoveryList');
             this.searchInfo = document.getElementById('jobSearchInfo');
+            this.networkCompanies = [];  // Companies from LinkedIn + resume
+            this.priorEmployers = [];    // Companies from resume experience
             if (this.container) {
                 this.init();
             }
@@ -37,6 +46,9 @@
             const profile = this.getUserProfile();
             const resumeData = this.getResumeData();
 
+            // Build network context from existing data sources
+            this.buildNetworkContext(resumeData);
+
             // Determine search parameters from profile
             const searchParams = this.buildSearchFromProfile(profile, resumeData);
 
@@ -48,7 +60,9 @@
             // Check local cache first
             const cached = this.getCachedResults(searchParams);
             if (cached) {
-                this.renderJobs(cached.jobs, cached.search_query, true);
+                // Re-apply network matching (connections may have been uploaded since cache)
+                const flaggedJobs = this.applyNetworkFlags(cached.jobs);
+                this.renderJobs(flaggedJobs, cached.search_query, true);
                 this.container.style.display = 'block';
                 return;
             }
@@ -57,6 +71,129 @@
             this.renderLoading();
             this.container.style.display = 'block';
             await this.fetchJobs(searchParams);
+        }
+
+        /**
+         * Build network context by consolidating data from:
+         * 1. LinkedIn connections CSV (uploaded via Network & Outreach page)
+         * 2. Prior employers from parsed resume
+         */
+        buildNetworkContext(resumeData) {
+            const companySet = new Map(); // company_lower -> { company, source, count }
+
+            // Source 1: LinkedIn connections (from outreach.html upload)
+            const linkedInData = this.getLinkedInConnections();
+            if (linkedInData?.connections) {
+                for (const conn of linkedInData.connections) {
+                    const company = (conn.company || '').trim();
+                    if (!company) continue;
+                    const key = company.toLowerCase();
+                    if (companySet.has(key)) {
+                        const existing = companySet.get(key);
+                        existing.count++;
+                        existing.source = 'linkedin';
+                    } else {
+                        companySet.set(key, {
+                            company: company,
+                            source: 'linkedin',
+                            count: 1,
+                        });
+                    }
+                }
+            }
+
+            // Source 2: Prior employers from resume
+            if (resumeData?.experience) {
+                for (const exp of resumeData.experience) {
+                    const company = (exp.company || '').trim();
+                    if (!company) continue;
+                    const key = company.toLowerCase();
+                    this.priorEmployers.push(company);
+                    if (!companySet.has(key)) {
+                        companySet.set(key, {
+                            company: company,
+                            source: 'resume',
+                            count: 0, // Not a "connection" -- it's a prior employer
+                        });
+                    }
+                }
+            }
+
+            this.networkCompanies = Array.from(companySet.values());
+            console.log(`[JobDiscovery] Network context: ${this.networkCompanies.length} companies (${linkedInData?.connectionCount || 0} LinkedIn connections, ${this.priorEmployers.length} prior employers)`);
+        }
+
+        /**
+         * Get LinkedIn connections from outreach.html's localStorage
+         * Format: { version, uploadedAt, connectionCount, connections: [{company, ...}] }
+         */
+        getLinkedInConnections() {
+            try {
+                const stored = localStorage.getItem(LINKEDIN_CONNECTIONS_KEY);
+                if (!stored) return null;
+                const data = JSON.parse(stored);
+                if (data.version !== 1) return null;
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /**
+         * Apply network flags to job results (client-side matching)
+         * This runs after API response so we can match against LinkedIn + resume data
+         */
+        applyNetworkFlags(jobs) {
+            if (!this.networkCompanies.length) return jobs;
+
+            const flagged = jobs.map(job => {
+                const jobCompany = (job.company || '').toLowerCase().trim();
+                let matched = null;
+
+                for (const net of this.networkCompanies) {
+                    const netCompany = net.company.toLowerCase().trim();
+                    // Fuzzy match: exact, contains, or contained-by
+                    if (netCompany === jobCompany ||
+                        netCompany.includes(jobCompany) ||
+                        jobCompany.includes(netCompany)) {
+                        matched = net;
+                        break;
+                    }
+                }
+
+                if (matched) {
+                    return {
+                        ...job,
+                        network_connection: true,
+                        network_connection_count: matched.count,
+                        network_source: matched.source, // 'linkedin' or 'resume'
+                    };
+                }
+                return job;
+            });
+
+            // Sort: network connections first (LinkedIn > resume), then by recency
+            flagged.sort((a, b) => {
+                const aNet = a.network_connection ? (a.network_source === 'linkedin' ? 2 : 1) : 0;
+                const bNet = b.network_connection ? (b.network_source === 'linkedin' ? 2 : 1) : 0;
+                if (aNet !== bNet) return bNet - aNet;
+                return (a.days_since_posted || 999) - (b.days_since_posted || 999);
+            });
+
+            return flagged;
+        }
+
+        /**
+         * Get the current user's ID from HenryAuth (if available)
+         */
+        async getUserId() {
+            try {
+                if (typeof HenryAuth === 'undefined') return null;
+                const user = await HenryAuth.getUser();
+                return user?.id || null;
+            } catch (e) {
+                return null;
+            }
         }
 
         /**
@@ -126,10 +263,17 @@
          */
         async fetchJobs(searchParams) {
             try {
+                // Include user_id so backend can fetch profile/resume/network from Supabase
+                const userId = await this.getUserId();
+                const requestBody = { ...searchParams };
+                if (userId) {
+                    requestBody.user_id = userId;
+                }
+
                 const response = await fetch(`${API_BASE}/api/jobs/discover`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(searchParams),
+                    body: JSON.stringify(requestBody),
                 });
 
                 if (!response.ok) {
@@ -142,6 +286,9 @@
                     this.renderError(data.error);
                     return;
                 }
+
+                // Apply network flags client-side (LinkedIn + resume companies)
+                data.jobs = this.applyNetworkFlags(data.jobs || []);
 
                 // Cache results locally
                 this.setCachedResults(searchParams, data);
@@ -220,15 +367,26 @@
                 const daysAgo = job.days_since_posted != null
                     ? `${job.days_since_posted}d ago`
                     : 'Recent';
-                const networkBadge = job.network_connection
-                    ? `<span class="job-network-badge" title="You have ${job.network_connection_count || ''} connection${job.network_connection_count !== 1 ? 's' : ''} at this company">In Your Network</span>`
-                    : '';
+
+                // Build badges based on network source
+                let networkBadge = '';
+                if (job.network_connection) {
+                    if (job.network_source === 'linkedin') {
+                        const countText = job.network_connection_count > 0
+                            ? `${job.network_connection_count} connection${job.network_connection_count !== 1 ? 's' : ''}`
+                            : 'Connections';
+                        networkBadge = `<span class="job-network-badge" title="You have ${countText} at this company">${countText}</span>`;
+                    } else if (job.network_source === 'resume') {
+                        networkBadge = `<span class="job-former-employer-badge" title="You previously worked at this company">Former Employer</span>`;
+                    }
+                }
+
                 const remoteBadge = job.is_remote
                     ? '<span class="job-remote-badge">Remote</span>'
                     : '';
 
                 html += `
-                    <div class="job-card ${job.network_connection ? 'job-card-network' : ''}">
+                    <div class="job-card ${job.network_connection ? (job.network_source === 'linkedin' ? 'job-card-network' : 'job-card-former') : ''}">
                         <div class="job-card-main">
                             <div class="job-card-header">
                                 <div class="job-card-title-row">
@@ -330,6 +488,10 @@
             localStorage.removeItem(CACHE_KEY);
             const profile = this.getUserProfile();
             const resumeData = this.getResumeData();
+
+            // Rebuild network context (user may have uploaded connections since last load)
+            this.buildNetworkContext(resumeData);
+
             const searchParams = this.buildSearchFromProfile(profile, resumeData);
 
             if (searchParams.role_title) {

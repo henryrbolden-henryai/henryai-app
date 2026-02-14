@@ -18935,26 +18935,118 @@ async def discover_jobs(request: JobDiscoverRequest):
     """
     Discover relevant job listings based on candidate profile data.
 
-    Uses the candidate's target_roles, location, work_arrangement, and
-    other profile data to search for matching jobs via JSearch API.
-
-    If LinkedIn network data is available, cross-references results to
-    flag companies where the candidate has connections.
-
-    Results are cached for 24 hours per search query.
+    Data flow:
+    1. If user_id provided, fetch candidate profile + resume from Supabase
+       to get target_roles, location, work_arrangement, excluded_companies,
+       and linkedin_network_companies
+    2. Request overrides (role_title, location, etc.) take priority
+    3. Search JSearch API with built params
+    4. Cross-reference results with network companies (LinkedIn + prior employers)
+    5. Return flagged, sorted results (cached 24 hours)
     """
     from backend.services.job_discovery import job_discovery_service
 
     try:
-        # Build profile data from request overrides or defaults
+        # Start with request overrides
         target_roles = [request.role_title] if request.role_title else None
         location = request.location
         keywords = request.keywords
         remote_only = request.remote_only or False
+        excluded_companies = None
+        network_companies = []
+        network_enabled = False
 
-        # For now, we use the request params directly.
-        # In a full implementation, we'd fetch the candidate profile from Supabase
-        # using request.user_id to get target_roles, location, etc.
+        # If user_id provided and Supabase available, enrich from profile
+        if request.user_id and supabase_client:
+            try:
+                # Fetch candidate profile
+                profile_result = supabase_client.table('candidate_profiles') \
+                    .select('function_area, city, state, country, work_arrangement, '
+                            'job_search_keywords, excluded_companies, '
+                            'linkedin_network_companies, target_industry_primary') \
+                    .eq('id', request.user_id) \
+                    .single() \
+                    .execute()
+
+                profile = profile_result.data if profile_result.data else {}
+
+                # Fill in missing params from profile (request overrides take priority)
+                if not target_roles and profile.get('function_area'):
+                    function_map = {
+                        'product_management': 'Product Manager',
+                        'engineering': 'Software Engineer',
+                        'design': 'UX Designer',
+                        'data_analytics': 'Data Analyst',
+                        'sales': 'Sales Manager',
+                        'marketing': 'Marketing Manager',
+                        'customer_success': 'Customer Success Manager',
+                        'operations': 'Operations Manager',
+                        'finance': 'Finance Manager',
+                        'hr_people': 'HR Manager',
+                        'legal': 'Legal Counsel',
+                    }
+                    mapped = function_map.get(profile['function_area'], profile['function_area'])
+                    target_roles = [mapped]
+
+                if not location:
+                    loc_parts = []
+                    if profile.get('city'):
+                        loc_parts.append(profile['city'])
+                    if profile.get('state'):
+                        loc_parts.append(profile['state'])
+                    if loc_parts:
+                        location = ', '.join(loc_parts)
+
+                if not keywords and profile.get('job_search_keywords'):
+                    keywords = profile['job_search_keywords']
+
+                excluded_companies = profile.get('excluded_companies') or []
+
+                # Work arrangement from profile
+                work_arr = profile.get('work_arrangement') or []
+                if isinstance(work_arr, list) and len(work_arr) == 1 and 'remote' in work_arr:
+                    remote_only = True
+
+                # LinkedIn network companies from Supabase
+                linkedin_companies = profile.get('linkedin_network_companies') or []
+                if linkedin_companies:
+                    for item in linkedin_companies:
+                        company_name = item.get('company', '') if isinstance(item, dict) else str(item)
+                        if company_name:
+                            network_companies.append(company_name)
+                    network_enabled = True
+
+                # Fetch primary resume for target_roles and prior employers
+                if not target_roles:
+                    resume_result = supabase_client.table('user_resumes') \
+                        .select('resume_json') \
+                        .eq('user_id', request.user_id) \
+                        .eq('is_default', True) \
+                        .limit(1) \
+                        .execute()
+
+                    if resume_result.data:
+                        resume_json = resume_result.data[0].get('resume_json', {})
+                        if resume_json.get('target_roles'):
+                            target_roles = resume_json['target_roles']
+                        elif resume_json.get('current_title'):
+                            target_roles = [resume_json['current_title']]
+
+                # Fetch prior employers from candidate_companies
+                companies_result = supabase_client.table('candidate_companies') \
+                    .select('company_name') \
+                    .eq('user_id', request.user_id) \
+                    .execute()
+
+                if companies_result.data:
+                    for row in companies_result.data:
+                        company_name = row.get('company_name', '')
+                        if company_name and company_name not in network_companies:
+                            network_companies.append(company_name)
+
+            except Exception as e:
+                logger.warning(f"Could not fetch profile from Supabase: {e}")
+                # Continue with request params only
 
         # Build search parameters
         params = job_discovery_service.build_search_params(
@@ -18963,34 +19055,37 @@ async def discover_jobs(request: JobDiscoverRequest):
             remote_only=remote_only,
         )
 
-        # If location override provided, inject it
         if location:
             params["query"] = f"{params['query']} in {location}"
 
-        # Search for jobs
-        results = job_discovery_service.search_jobs(params)
+        # Search for jobs (with company exclusion)
+        results = job_discovery_service.search_jobs(params, excluded_companies=excluded_companies)
 
-        # Check for errors
         if results.get("error"):
             return JobDiscoverResponse(
                 jobs=[],
                 total_found=0,
                 search_query=results.get("search_query", ""),
                 cached=False,
-                network_enabled=False,
+                network_enabled=network_enabled,
                 error=results["error"],
             )
 
-        # Convert raw dicts to DiscoveredJob models
-        jobs = [DiscoveredJob(**job) for job in results.get("jobs", [])]
+        # Apply network matching (LinkedIn + prior employers)
+        jobs_data = results.get("jobs", [])
+        if network_companies:
+            jobs_data = job_discovery_service.flag_network_companies(jobs_data, network_companies)
+
+        jobs = [DiscoveredJob(**job) for job in jobs_data]
 
         return JobDiscoverResponse(
             jobs=jobs,
             total_found=results.get("total_found", len(jobs)),
             search_query=results.get("search_query", ""),
+            location_used=location,
             cached=results.get("cached", False),
             cache_expires_at=results.get("cache_expires_at"),
-            network_enabled=False,
+            network_enabled=network_enabled or len(network_companies) > 0,
         )
 
     except Exception as e:
@@ -19004,115 +19099,55 @@ async def discover_jobs(request: JobDiscoverRequest):
         )
 
 
-@app.post("/api/jobs/discover/with-profile", response_model=JobDiscoverResponse)
-async def discover_jobs_with_profile(request: JobDiscoverRequest):
+@app.post("/api/linkedin/connections/persist", response_model=LinkedInConnectionsUploadResponse)
+async def persist_linkedin_connections(user_id: str = None, connections_data: Dict[str, Any] = None):
     """
-    Discover jobs using full candidate profile data.
+    Persist LinkedIn connections network data to Supabase.
 
-    This endpoint accepts profile data directly (target_roles, location,
-    work arrangement, excluded companies, LinkedIn network) and returns
-    personalized job results with network matching.
-    """
-    from backend.services.job_discovery import job_discovery_service
-
-    try:
-        # Parse profile data from the request body
-        # The frontend sends the full profile context
-        body = await request.model_dump() if hasattr(request, 'model_dump') else {}
-
-        target_roles = [request.role_title] if request.role_title else None
-        keywords = request.keywords
-
-        params = job_discovery_service.build_search_params(
-            target_roles=target_roles,
-            job_search_keywords=keywords,
-            remote_only=request.remote_only or False,
-        )
-
-        if request.location:
-            params["query"] = f"{params['query']} in {request.location}"
-
-        results = job_discovery_service.search_jobs(params)
-
-        if results.get("error"):
-            return JobDiscoverResponse(
-                jobs=[],
-                total_found=0,
-                search_query=results.get("search_query", ""),
-                cached=False,
-                error=results["error"],
-            )
-
-        jobs_data = results.get("jobs", [])
-        jobs = [DiscoveredJob(**job) for job in jobs_data]
-
-        return JobDiscoverResponse(
-            jobs=jobs,
-            total_found=results.get("total_found", len(jobs)),
-            search_query=results.get("search_query", ""),
-            cached=results.get("cached", False),
-            cache_expires_at=results.get("cache_expires_at"),
-            network_enabled=False,
-        )
-
-    except Exception as e:
-        logger.error(f"Job discovery with profile error: {e}")
-        return JobDiscoverResponse(
-            jobs=[],
-            total_found=0,
-            search_query="",
-            cached=False,
-            error="Job discovery temporarily unavailable.",
-        )
-
-
-@app.post("/api/linkedin/connections/upload", response_model=LinkedInConnectionsUploadResponse)
-async def upload_linkedin_connections(file: bytes = None):
-    """
-    Upload LinkedIn connections CSV for network-aware job discovery.
-
-    Parses the LinkedIn connections export CSV, extracts company data,
-    and stores it on the candidate profile for cross-referencing with
-    job search results.
-
-    LinkedIn CSV format:
-    First Name,Last Name,URL,Email Address,Company,Position,Connected On
+    Called by the outreach.html page after CSV parsing to sync
+    company data to the candidate profile for cross-device persistence.
+    The CSV parsing itself happens client-side (via PapaParse on outreach.html).
+    This endpoint stores the extracted company data in Supabase.
     """
     from backend.services.linkedin_network import linkedin_network_parser
 
     try:
-        if not file:
-            raise HTTPException(status_code=400, detail="No file provided")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
 
-        # Decode CSV content
-        csv_content = file.decode("utf-8")
+        if not connections_data:
+            raise HTTPException(status_code=400, detail="connections_data is required")
 
-        # Parse connections
-        connections = linkedin_network_parser.parse_csv(csv_content)
+        if not supabase_client:
+            raise HTTPException(status_code=503, detail="Database not configured")
 
-        if not connections:
-            raise HTTPException(
-                status_code=400,
-                detail="Could not parse LinkedIn connections CSV. Make sure you exported it from LinkedIn Settings > Data Privacy > Get a copy of your data."
-            )
-
-        # Extract company data
+        # Extract company summaries from the connection data
+        connections = connections_data.get('connections', [])
         companies = linkedin_network_parser.extract_companies(connections)
+        company_names = linkedin_network_parser.get_company_names(connections)
+
+        # Persist to candidate_profiles
+        import datetime
+        supabase_client.table('candidate_profiles').update({
+            'linkedin_network_companies': companies[:200],  # Top 200 companies
+            'linkedin_connections_count': len(connections),
+            'linkedin_connections_uploaded_at': datetime.datetime.utcnow().isoformat(),
+        }).eq('id', user_id).execute()
 
         return LinkedInConnectionsUploadResponse(
             connections_parsed=len(connections),
             unique_companies=len(companies),
-            top_companies=companies[:20],  # Return top 20 companies
-            message=f"Successfully parsed {len(connections)} connections across {len(companies)} companies. Your job recommendations will now highlight companies where you have connections.",
+            top_companies=companies[:20],
+            message=f"Saved {len(companies)} companies from {len(connections)} connections to your profile. Job recommendations will now highlight companies in your network.",
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"LinkedIn connections upload error: {e}")
+        logger.error(f"LinkedIn connections persist error: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Failed to process LinkedIn connections CSV."
+            detail="Failed to save LinkedIn connections data."
         )
 
 
