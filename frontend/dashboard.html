@@ -1551,11 +1551,20 @@
         .job-title {
             font-size: 1rem;
             font-weight: 600;
-            color: var(--color-text);
             margin: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        .job-title a {
+            color: var(--color-accent);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .job-title a:hover {
+            text-decoration: underline;
         }
 
         .job-company {
@@ -1579,6 +1588,11 @@
         .job-salary {
             color: var(--color-active) !important;
             font-weight: 500;
+        }
+
+        .job-salary-na {
+            color: var(--color-text-muted) !important;
+            font-style: italic;
         }
 
         .job-source {
@@ -1635,31 +1649,6 @@
             background: linear-gradient(135deg, var(--color-surface) 0%, rgba(251, 191, 36, 0.03) 100%);
         }
 
-        .job-card-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
-            margin-left: 16px;
-        }
-
-        .job-btn-apply {
-            padding: 8px 18px;
-            background: var(--color-accent);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .job-btn-apply:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
-        }
 
         .job-btn-analyze {
             padding: 8px 14px;
@@ -1779,18 +1768,6 @@
             .job-card {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-
-            .job-card-actions {
-                margin-left: 0;
-                margin-top: 12px;
-                width: 100%;
-            }
-
-            .job-btn-apply,
-            .job-btn-analyze {
-                flex: 1;
-                text-align: center;
             }
 
             .job-discovery-header {

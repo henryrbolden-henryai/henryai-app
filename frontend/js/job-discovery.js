@@ -438,12 +438,14 @@
                     ? '<span class="job-remote-badge">Remote</span>'
                     : '';
 
+                const salaryDisplay = salary || 'Compensation not listed';
+
                 html += `
                     <div class="job-card ${job.network_connection ? (job.network_source === 'linkedin' ? 'job-card-network' : 'job-card-former') : ''}">
                         <div class="job-card-main">
                             <div class="job-card-header">
                                 <div class="job-card-title-row">
-                                    <h4 class="job-title">${this.escapeHtml(job.title)}</h4>
+                                    <h4 class="job-title"><a href="${this.escapeHtml(job.apply_url)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(job.title)}</a></h4>
                                     ${networkBadge}
                                     ${remoteBadge}
                                 </div>
@@ -451,13 +453,10 @@
                             </div>
                             <div class="job-card-meta">
                                 <span class="job-location">${this.escapeHtml(job.location)}</span>
-                                ${salary ? `<span class="job-salary">${salary}</span>` : ''}
+                                <span class="${salary ? 'job-salary' : 'job-salary-na'}">${salaryDisplay}</span>
                                 <span class="job-posted">${daysAgo}</span>
                                 ${job.publisher ? `<span class="job-source">via ${this.escapeHtml(job.publisher)}</span>` : ''}
                             </div>
-                        </div>
-                        <div class="job-card-actions">
-                            <a href="${this.escapeHtml(job.apply_url)}" target="_blank" rel="noopener noreferrer" class="job-btn-apply">View Job Description</a>
                         </div>
                     </div>
                 `;
