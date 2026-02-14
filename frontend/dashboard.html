@@ -2731,7 +2731,7 @@
                     headline: 'You need to move. Today.',
                     detail: `You told me things are urgent and you're struggling. I hear you. But right now you have <strong>zero applications in play</strong>${roleContext}. Nothing is going to change until you put yourself out there. The fear of rejection is real, but <strong>the cost of inaction is higher</strong>. Pick one role. Analyze it. Apply. That's it. One step today.`,
                     primaryBtn: { text: 'Analyze Your First Role', link: '/analyze' },
-                    secondaryBtn: { text: 'I Need to Talk This Through', action: 'openHeyHenry' }
+                    secondaryBtn: null
                 };
             }
             // Scenario 2: Urgent + 0 applications (not emotionally struggling)
@@ -2786,7 +2786,7 @@
                     headline: 'You\'re further along than you think',
                     detail: `Job searching can make even the most accomplished people doubt themselves. You have ${appCount} application${appCount !== 1 ? 's' : ''} in play${roleContext} — that's real progress. <strong>The person who gets the offer isn't always the most qualified. It's the one who prepared the best.</strong> Let's make sure that's you.`,
                     primaryBtn: { text: 'Practice Interview', link: '/interview-intelligence' },
-                    secondaryBtn: { text: 'Talk to Henry', action: 'openHeyHenry' }
+                    secondaryBtn: null
                 };
             }
             // Scenario 7: Stale pipeline — no activity in 7+ days
