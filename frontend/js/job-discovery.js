@@ -406,14 +406,18 @@
                 return;
             }
 
+            // Limit to 5 curated results while feature is in beta
+            const MAX_DISPLAY = 5;
+            const displayJobs = jobs.slice(0, MAX_DISPLAY);
+
             // Update search info
             if (this.searchInfo) {
                 const cacheNote = isCached ? ' (cached)' : '';
-                this.searchInfo.textContent = `Showing results for "${searchQuery}"${cacheNote}`;
+                this.searchInfo.textContent = `Showing ${displayJobs.length} results for "${searchQuery}"${cacheNote}`;
             }
 
             let html = '';
-            jobs.forEach(job => {
+            displayJobs.forEach(job => {
                 const salary = this.formatSalary(job);
                 const daysAgo = this.formatPostedDate(job);
 

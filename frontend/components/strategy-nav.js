@@ -126,7 +126,7 @@
         // Don't show context on general/operational pages
         // Interview Intelligence is accessible both with and without job context
         const currentPage = getCurrentPage();
-        const generalPages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'profile'];
+        const generalPages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'profile', 'profile-edit'];
         if (generalPages.includes(currentPage)) {
             return null;
         }
