@@ -306,15 +306,13 @@
          */
         async fetchJobs(searchParams) {
             try {
-                // Send user_id so backend fetches profile/resume/network from Supabase.
-                // Only include frontend overrides if Supabase lookup won't be available.
+                // Send user_id + frontend params as fallback.
+                // Backend prioritizes Supabase profile data (what the user explicitly set),
+                // then falls back to these params (from resume parsing).
                 const userId = await this.getUserId();
-                const requestBody = {};
+                const requestBody = { ...searchParams };
                 if (userId) {
                     requestBody.user_id = userId;
-                } else {
-                    // No authenticated user — fall back to frontend-derived params
-                    Object.assign(requestBody, searchParams);
                 }
 
                 const response = await fetch(`${API_BASE}/api/jobs/discover`, {
@@ -549,8 +547,11 @@
             this.buildNetworkContext(resumeData);
 
             const searchParams = this.buildSearchFromProfile(profile, resumeData);
+            const userId = await this.getUserId();
 
-            if (searchParams.role_title) {
+            // Proceed if we have a role from local data OR an authenticated user
+            // (backend will enrich from Supabase profile)
+            if (searchParams.role_title || userId) {
                 this.renderLoading();
                 await this.fetchJobs(searchParams);
             }

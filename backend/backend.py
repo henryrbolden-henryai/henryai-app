@@ -19013,7 +19013,7 @@ async def discover_jobs(request: JobDiscoverRequest):
     from backend.services.job_discovery import job_discovery_service
 
     try:
-        # Start with request overrides
+        # Start with request params as fallback (from frontend resume parsing)
         target_roles = [request.role_title] if request.role_title else None
         location = request.location
         keywords = request.keywords
@@ -19022,7 +19022,9 @@ async def discover_jobs(request: JobDiscoverRequest):
         network_companies = []
         network_enabled = False
 
-        # If user_id provided and Supabase available, enrich from profile
+        # If user_id provided and Supabase available, use profile as PRIMARY source.
+        # Profile preferences (function_area, city, state) are what the user explicitly
+        # set — they should take priority over auto-parsed resume data from the frontend.
         if request.user_id and supabase_client:
             try:
                 # Fetch candidate profile
@@ -19036,8 +19038,8 @@ async def discover_jobs(request: JobDiscoverRequest):
 
                 profile = profile_result.data if profile_result.data else {}
 
-                # Fill in missing params from profile (request overrides take priority)
-                if not target_roles and profile.get('function_area'):
+                # Profile function_area OVERRIDES request role_title (user explicitly chose this)
+                if profile.get('function_area'):
                     function_map = {
                         'product_management': 'Product Manager',
                         'engineering': 'Software Engineer',
@@ -19054,16 +19056,16 @@ async def discover_jobs(request: JobDiscoverRequest):
                     mapped = function_map.get(profile['function_area'], profile['function_area'])
                     target_roles = [mapped]
 
-                if not location:
-                    loc_parts = []
-                    if profile.get('city'):
-                        loc_parts.append(profile['city'])
-                    if profile.get('state'):
-                        loc_parts.append(profile['state'])
-                    if loc_parts:
-                        location = ', '.join(loc_parts)
+                # Profile location OVERRIDES request location (user explicitly set this)
+                loc_parts = []
+                if profile.get('city'):
+                    loc_parts.append(profile['city'])
+                if profile.get('state'):
+                    loc_parts.append(profile['state'])
+                if loc_parts:
+                    location = ', '.join(loc_parts)
 
-                if not keywords and profile.get('job_search_keywords'):
+                if profile.get('job_search_keywords'):
                     keywords = profile['job_search_keywords']
 
                 excluded_companies = profile.get('excluded_companies') or []
@@ -19082,7 +19084,8 @@ async def discover_jobs(request: JobDiscoverRequest):
                             network_companies.append(company_name)
                     network_enabled = True
 
-                # Fetch primary resume for target_roles and prior employers
+                # If still no target_roles (profile has no function_area),
+                # try the default resume as fallback
                 if not target_roles:
                     resume_result = supabase_client.table('user_resumes') \
                         .select('resume_json') \
