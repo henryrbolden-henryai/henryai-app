@@ -3424,6 +3424,60 @@ class ContactRecommendation(BaseModel):
 class NetworkRecommendResponse(BaseModel):
     recommendations: List[ContactRecommendation]
 
+# ============================================================================
+# JOB DISCOVERY MODELS
+# ============================================================================
+
+class JobDiscoverRequest(BaseModel):
+    """Request for job discovery endpoint."""
+    user_id: Optional[str] = None
+    role_title: Optional[str] = None  # Override target role from profile
+    location: Optional[str] = None  # Override location from profile
+    keywords: Optional[List[str]] = None  # Additional search keywords
+    remote_only: Optional[bool] = None  # Override work arrangement
+    page: int = 1
+
+class DiscoveredJob(BaseModel):
+    """A single job listing from discovery."""
+    job_id: str
+    title: str
+    company: str
+    company_logo: Optional[str] = None
+    location: str
+    salary_min: Optional[float] = None
+    salary_max: Optional[float] = None
+    salary_currency: str = "USD"
+    salary_period: Optional[str] = None
+    posted_date: Optional[str] = None
+    days_since_posted: Optional[int] = None
+    apply_url: str
+    description_snippet: Optional[str] = None
+    employment_type: Optional[str] = "FULLTIME"
+    is_remote: bool = False
+    publisher: Optional[str] = None
+    network_connection: bool = False
+    network_connection_count: int = 0
+
+class JobDiscoverResponse(BaseModel):
+    """Response from job discovery endpoint."""
+    jobs: List[DiscoveredJob]
+    total_found: int
+    search_query: str
+    location_used: Optional[str] = None
+    cached: bool = False
+    cache_expires_at: Optional[float] = None
+    network_enabled: bool = False
+    refresh_note: str = "This list refreshes every 24 hours based on your profile. For the most comprehensive search, also check LinkedIn Jobs directly."
+    error: Optional[str] = None
+
+class LinkedInConnectionsUploadResponse(BaseModel):
+    """Response from LinkedIn connections CSV upload."""
+    connections_parsed: int
+    unique_companies: int
+    top_companies: List[Dict[str, Any]]
+    message: str
+
+
 # Feature 4: Interview Intelligence
 class InterviewQuestion(BaseModel):
     question: str
@@ -18935,6 +18989,231 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
                 "Did you tailor your resume for this specific role?"
             ],
             recommended_status="Rejected: Other"
+        )
+
+
+# ============================================================================
+# JOB DISCOVERY ENDPOINTS
+# ============================================================================
+
+@app.post("/api/jobs/discover", response_model=JobDiscoverResponse)
+async def discover_jobs(request: JobDiscoverRequest):
+    """
+    Discover relevant job listings based on candidate profile data.
+
+    Data flow:
+    1. If user_id provided, fetch candidate profile + resume from Supabase
+       to get target_roles, location, work_arrangement, excluded_companies,
+       and linkedin_network_companies
+    2. Request overrides (role_title, location, etc.) take priority
+    3. Search JSearch API with built params
+    4. Cross-reference results with network companies (LinkedIn + prior employers)
+    5. Return flagged, sorted results (cached 24 hours)
+    """
+    from backend.services.job_discovery import job_discovery_service
+
+    try:
+        # Start with request overrides
+        target_roles = [request.role_title] if request.role_title else None
+        location = request.location
+        keywords = request.keywords
+        remote_only = request.remote_only or False
+        excluded_companies = None
+        network_companies = []
+        network_enabled = False
+
+        # If user_id provided and Supabase available, enrich from profile
+        if request.user_id and supabase_client:
+            try:
+                # Fetch candidate profile
+                profile_result = supabase_client.table('candidate_profiles') \
+                    .select('function_area, city, state, country, work_arrangement, '
+                            'job_search_keywords, excluded_companies, '
+                            'linkedin_network_companies, target_industry_primary') \
+                    .eq('id', request.user_id) \
+                    .single() \
+                    .execute()
+
+                profile = profile_result.data if profile_result.data else {}
+
+                # Fill in missing params from profile (request overrides take priority)
+                if not target_roles and profile.get('function_area'):
+                    function_map = {
+                        'product_management': 'Product Manager',
+                        'engineering': 'Software Engineer',
+                        'design': 'UX Designer',
+                        'data_analytics': 'Data Analyst',
+                        'sales': 'Sales Manager',
+                        'marketing': 'Marketing Manager',
+                        'customer_success': 'Customer Success Manager',
+                        'operations': 'Operations Manager',
+                        'finance': 'Finance Manager',
+                        'hr_people': 'HR Manager',
+                        'legal': 'Legal Counsel',
+                    }
+                    mapped = function_map.get(profile['function_area'], profile['function_area'])
+                    target_roles = [mapped]
+
+                if not location:
+                    loc_parts = []
+                    if profile.get('city'):
+                        loc_parts.append(profile['city'])
+                    if profile.get('state'):
+                        loc_parts.append(profile['state'])
+                    if loc_parts:
+                        location = ', '.join(loc_parts)
+
+                if not keywords and profile.get('job_search_keywords'):
+                    keywords = profile['job_search_keywords']
+
+                excluded_companies = profile.get('excluded_companies') or []
+
+                # Work arrangement from profile
+                work_arr = profile.get('work_arrangement') or []
+                if isinstance(work_arr, list) and len(work_arr) == 1 and 'remote' in work_arr:
+                    remote_only = True
+
+                # LinkedIn network companies from Supabase
+                linkedin_companies = profile.get('linkedin_network_companies') or []
+                if linkedin_companies:
+                    for item in linkedin_companies:
+                        company_name = item.get('company', '') if isinstance(item, dict) else str(item)
+                        if company_name:
+                            network_companies.append(company_name)
+                    network_enabled = True
+
+                # Fetch primary resume for target_roles and prior employers
+                if not target_roles:
+                    resume_result = supabase_client.table('user_resumes') \
+                        .select('resume_json') \
+                        .eq('user_id', request.user_id) \
+                        .eq('is_default', True) \
+                        .limit(1) \
+                        .execute()
+
+                    if resume_result.data:
+                        resume_json = resume_result.data[0].get('resume_json', {})
+                        if resume_json.get('target_roles'):
+                            target_roles = resume_json['target_roles']
+                        elif resume_json.get('current_title'):
+                            target_roles = [resume_json['current_title']]
+
+                # Fetch prior employers from candidate_companies
+                companies_result = supabase_client.table('candidate_companies') \
+                    .select('company_name') \
+                    .eq('user_id', request.user_id) \
+                    .execute()
+
+                if companies_result.data:
+                    for row in companies_result.data:
+                        company_name = row.get('company_name', '')
+                        if company_name and company_name not in network_companies:
+                            network_companies.append(company_name)
+
+            except Exception as e:
+                logger.warning(f"Could not fetch profile from Supabase: {e}")
+                # Continue with request params only
+
+        # Build search parameters
+        params = job_discovery_service.build_search_params(
+            target_roles=target_roles,
+            job_search_keywords=keywords,
+            remote_only=remote_only,
+        )
+
+        if location:
+            params["query"] = f"{params['query']} in {location}"
+
+        # Search for jobs (with company exclusion)
+        results = job_discovery_service.search_jobs(params, excluded_companies=excluded_companies)
+
+        if results.get("error"):
+            return JobDiscoverResponse(
+                jobs=[],
+                total_found=0,
+                search_query=results.get("search_query", ""),
+                cached=False,
+                network_enabled=network_enabled,
+                error=results["error"],
+            )
+
+        # Apply network matching (LinkedIn + prior employers)
+        jobs_data = results.get("jobs", [])
+        if network_companies:
+            jobs_data = job_discovery_service.flag_network_companies(jobs_data, network_companies)
+
+        jobs = [DiscoveredJob(**job) for job in jobs_data]
+
+        return JobDiscoverResponse(
+            jobs=jobs,
+            total_found=results.get("total_found", len(jobs)),
+            search_query=results.get("search_query", ""),
+            location_used=location,
+            cached=results.get("cached", False),
+            cache_expires_at=results.get("cache_expires_at"),
+            network_enabled=network_enabled or len(network_companies) > 0,
+        )
+
+    except Exception as e:
+        logger.error(f"Job discovery error: {e}")
+        return JobDiscoverResponse(
+            jobs=[],
+            total_found=0,
+            search_query="",
+            cached=False,
+            error="Job discovery temporarily unavailable.",
+        )
+
+
+@app.post("/api/linkedin/connections/persist", response_model=LinkedInConnectionsUploadResponse)
+async def persist_linkedin_connections(user_id: str = None, connections_data: Dict[str, Any] = None):
+    """
+    Persist LinkedIn connections network data to Supabase.
+
+    Called by the outreach.html page after CSV parsing to sync
+    company data to the candidate profile for cross-device persistence.
+    The CSV parsing itself happens client-side (via PapaParse on outreach.html).
+    This endpoint stores the extracted company data in Supabase.
+    """
+    from backend.services.linkedin_network import linkedin_network_parser
+
+    try:
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+
+        if not connections_data:
+            raise HTTPException(status_code=400, detail="connections_data is required")
+
+        if not supabase_client:
+            raise HTTPException(status_code=503, detail="Database not configured")
+
+        # Extract company summaries from the connection data
+        connections = connections_data.get('connections', [])
+        companies = linkedin_network_parser.extract_companies(connections)
+        company_names = linkedin_network_parser.get_company_names(connections)
+
+        # Persist to candidate_profiles
+        import datetime
+        supabase_client.table('candidate_profiles').update({
+            'linkedin_network_companies': companies[:200],  # Top 200 companies
+            'linkedin_connections_count': len(connections),
+            'linkedin_connections_uploaded_at': datetime.datetime.utcnow().isoformat(),
+        }).eq('id', user_id).execute()
+
+        return LinkedInConnectionsUploadResponse(
+            connections_parsed=len(connections),
+            unique_companies=len(companies),
+            top_companies=companies[:20],
+            message=f"Saved {len(companies)} companies from {len(connections)} connections to your profile. Job recommendations will now highlight companies in your network.",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"LinkedIn connections persist error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save LinkedIn connections data."
         )
 
 

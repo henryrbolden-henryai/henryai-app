@@ -1111,6 +1111,248 @@
             color: var(--color-text);
         }
 
+        /* SETUP CHECKLIST */
+        .setup-checklist-section {
+            margin-bottom: 32px;
+        }
+
+        .setup-checklist-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .setup-checklist-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .setup-progress {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .setup-progress-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .setup-progress-fill {
+            height: 100%;
+            background: var(--color-accent);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .setup-progress-text {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .setup-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .setup-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s;
+        }
+
+        .setup-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .setup-item.completed {
+            opacity: 0.6;
+        }
+
+        .setup-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--color-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            color: transparent;
+            transition: all 0.2s;
+        }
+
+        .setup-item.completed .setup-check {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            color: #000;
+        }
+
+        .setup-item-content {
+            flex: 1;
+        }
+
+        .setup-item-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .setup-item.completed .setup-item-title {
+            text-decoration: line-through;
+            color: var(--color-text-secondary);
+        }
+
+        .setup-item-desc {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-top: 2px;
+        }
+
+        .setup-item-action {
+            padding: 8px 16px;
+            background: var(--color-surface-elevated);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .setup-item-action:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .setup-item.completed .setup-item-action {
+            display: none;
+        }
+
+        /* PRIORITY ACTIONS (from Command Center intelligence) */
+        .priority-actions-section {
+            margin-bottom: 32px;
+        }
+
+        .priority-actions-section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .priority-actions-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .priority-action-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            gap: 14px;
+            transition: background 0.15s;
+        }
+
+        .priority-action-item:last-child {
+            border-bottom: none;
+        }
+
+        .priority-action-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .priority-action-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-surface-elevated);
+            border-radius: 8px;
+        }
+
+        .priority-action-info {
+            flex: 1;
+        }
+
+        .priority-action-company {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .priority-action-text {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .priority-action-btn {
+            padding: 8px 16px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .priority-action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .priority-actions-footer {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid var(--color-border);
+            text-align: center;
+        }
+
+        .priority-actions-footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .priority-actions-footer a:hover {
+            text-decoration: underline;
+        }
+
         /* RESPONSIVE */
         @media (max-width: 768px) {
             .quick-stats {
@@ -1213,6 +1455,350 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
+        /* ============================================ */
+        /* JOB DISCOVERY SECTION                        */
+        /* ============================================ */
+        .job-discovery-section {
+            margin-bottom: 32px;
+        }
+
+        .job-discovery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .job-discovery-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        .job-discovery-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .job-search-info {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .job-refresh-btn {
+            padding: 6px 14px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .job-refresh-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .job-discovery-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .job-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 18px 20px;
+            transition: all 0.2s;
+        }
+
+        .job-card:hover {
+            border-color: var(--color-border-hover);
+            transform: translateY(-1px);
+        }
+
+        .job-card-network {
+            border-color: rgba(34, 211, 238, 0.3);
+            background: linear-gradient(135deg, var(--color-surface) 0%, rgba(34, 211, 238, 0.03) 100%);
+        }
+
+        .job-card-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .job-card-header {
+            margin-bottom: 8px;
+        }
+
+        .job-card-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .job-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .job-company {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin-top: 2px;
+        }
+
+        .job-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .job-card-meta span {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .job-salary {
+            color: var(--color-active) !important;
+            font-weight: 500;
+        }
+
+        .job-network-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .job-remote-badge {
+            display: inline-flex;
+            padding: 2px 8px;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-active);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .job-former-employer-badge {
+            display: inline-flex;
+            padding: 2px 8px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #f59e0b;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+
+        .job-card-former {
+            border-color: rgba(251, 191, 36, 0.3);
+            background: linear-gradient(135deg, var(--color-surface) 0%, rgba(251, 191, 36, 0.03) 100%);
+        }
+
+        .job-card-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            margin-left: 16px;
+        }
+
+        .job-btn-apply {
+            padding: 8px 18px;
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .job-btn-apply:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        .job-btn-analyze {
+            padding: 8px 14px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .job-btn-analyze:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        /* Job discovery footer notes */
+        .job-discovery-footer {
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+        }
+
+        .job-refresh-note {
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .job-refresh-note a,
+        .job-network-note a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .job-refresh-note a:hover,
+        .job-network-note a:hover {
+            text-decoration: underline;
+        }
+
+        .job-network-note {
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+            line-height: 1.5;
+            margin: 10px 0 0 0;
+            padding-top: 10px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        /* Loading / Empty / Error states */
+        .job-discovery-loading,
+        .job-discovery-empty,
+        .job-discovery-error,
+        .job-discovery-needs-profile {
+            padding: 32px 24px;
+            text-align: center;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+        }
+
+        .job-discovery-loading p,
+        .job-discovery-empty p,
+        .job-discovery-error p,
+        .job-discovery-needs-profile p {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .job-empty-hint {
+            color: var(--color-text-muted) !important;
+            font-size: 0.82rem !important;
+            margin-top: 8px !important;
+        }
+
+        .job-loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--color-border);
+            border-top: 3px solid var(--color-accent);
+            border-radius: 50%;
+            animation: jobSpin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes jobSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .job-btn-upload-resume {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: var(--color-accent);
+            color: #000;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .job-btn-upload-resume:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .job-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .job-card-actions {
+                margin-left: 0;
+                margin-top: 12px;
+                width: 100%;
+            }
+
+            .job-btn-apply,
+            .job-btn-analyze {
+                flex: 1;
+                text-align: center;
+            }
+
+            .job-discovery-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .job-card-title-row {
+                flex-wrap: wrap;
+            }
+        }
+
     </style>
     <!-- D5: Beta Access Gate moved to auth initialization for server-side validation -->
 </head>
@@ -1282,6 +1868,22 @@
             <div class="pulse-greeting" id="pulseGreeting">Loading...</div>
         </div>
 
+        <!-- SETUP CHECKLIST (shown until all steps complete) -->
+        <div class="setup-checklist-section" id="setupChecklistSection" style="display: none;">
+            <h2>Get Set Up</h2>
+            <div class="setup-checklist-card">
+                <div class="setup-progress">
+                    <div class="setup-progress-bar">
+                        <div class="setup-progress-fill" id="setupProgressFill" style="width: 0%"></div>
+                    </div>
+                    <span class="setup-progress-text" id="setupProgressText">0 of 4 complete</span>
+                </div>
+                <div class="setup-items" id="setupItems">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
         <!-- QUICK STATS CARDS -->
         <div class="quick-stats">
             <div class="stat-card" id="cardActive">
@@ -1303,6 +1905,41 @@
                 <div class="stat-icon">⏱️</div>
                 <div class="stat-value" id="statResponseTime">—</div>
                 <div class="stat-label">Avg Response Time</div>
+            </div>
+        </div>
+
+        <!-- PRIORITY ACTIONS (from Command Center intelligence) -->
+        <div class="priority-actions-section" id="priorityActionsSection" style="display: none;">
+            <h2>Your Next Actions</h2>
+            <div class="priority-actions-card" id="priorityActionsCard">
+                <!-- Dynamically populated with intelligence-driven actions -->
+            </div>
+        </div>
+
+        <!-- JOBS FOR YOU (job discovery) -->
+        <div class="job-discovery-section" id="jobDiscoverySection" style="display: none;">
+            <div class="job-discovery-header">
+                <h2>Jobs for You</h2>
+                <div class="job-discovery-controls">
+                    <span class="job-search-info" id="jobSearchInfo"></span>
+                    <button class="job-refresh-btn" onclick="window.jobDiscovery && window.jobDiscovery.refresh()" title="Refresh job listings">Refresh</button>
+                </div>
+            </div>
+            <div class="job-discovery-list" id="jobDiscoveryList">
+                <!-- Populated by job-discovery.js -->
+            </div>
+            <div class="job-discovery-footer">
+                <p class="job-refresh-note">
+                    This list refreshes every 24 hours based on your target role and location.
+                    For the most comprehensive search, also check
+                    <a href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer">LinkedIn Jobs</a>
+                    directly — especially for roles posted in the last 24 hours.
+                </p>
+                <p class="job-network-note" id="jobNetworkNote" style="display: none;">
+                    Want to see which companies you have connections at?
+                    <a href="/profile-edit#linkedinConnectionsSection">Upload your LinkedIn connections CSV</a>
+                    in your profile and we'll highlight jobs at companies in your network.
+                </p>
             </div>
         </div>
 
@@ -1732,7 +2369,10 @@
 
                 renderWelcome(profile);
                 renderDailyPulse(profile, apps);
+                renderSetupChecklist(profile, apps);
                 renderQuickStats(apps, activeApps);
+                renderPriorityActions(apps);
+                renderJobDiscoveryNetworkNote(profile);
                 renderRealityCheck(profile, apps, activeApps);
                 renderTodaysFocus(profile, apps, activeApps);
                 renderStrategicOptions(profile);
@@ -1831,6 +2471,196 @@
 
             const avgResponseTime = getAvgResponseTime(apps);
             statResponseTime.textContent = avgResponseTime ? `${avgResponseTime}d` : '—';
+        }
+
+        // ========================================================================
+        // SETUP CHECKLIST
+        // ========================================================================
+        function renderSetupChecklist(profile, apps) {
+            const section = document.getElementById('setupChecklistSection');
+            const itemsContainer = document.getElementById('setupItems');
+            const progressFill = document.getElementById('setupProgressFill');
+            const progressText = document.getElementById('setupProgressText');
+
+            if (!section || !itemsContainer) return;
+
+            // Define the 4 setup steps and check completion
+            const steps = [
+                {
+                    id: 'resume',
+                    title: 'Upload your resume',
+                    desc: 'Your resume powers everything — fit scores, positioning, interview prep',
+                    done: !!(profile?.resume || profile?.work_history?.length > 0),
+                    action: 'Upload',
+                    link: '/linkedin-upload'
+                },
+                {
+                    id: 'profile',
+                    title: 'Complete your profile',
+                    desc: 'Tell us your situation so we can tailor guidance to you',
+                    done: !!(profile?.situation?.holding_up && profile?.situation?.timeline),
+                    action: 'Set Up',
+                    link: '/profile-edit'
+                },
+                {
+                    id: 'analyze',
+                    title: 'Analyze your first role',
+                    desc: 'Paste a job description to get a fit score and strategy',
+                    done: apps.some(a => a.analysisData || a.analysis_data || a.analysisKey),
+                    action: 'Analyze',
+                    link: '/analyze'
+                },
+                {
+                    id: 'track',
+                    title: 'Track your first application',
+                    desc: 'Start building your pipeline to unlock intelligence',
+                    done: apps.length > 0,
+                    action: 'Add',
+                    link: '/tracker'
+                }
+            ];
+
+            const completedCount = steps.filter(s => s.done).length;
+            const totalSteps = steps.length;
+
+            // If all steps done, hide the checklist entirely
+            if (completedCount === totalSteps) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            progressFill.style.width = `${(completedCount / totalSteps) * 100}%`;
+            progressText.textContent = `${completedCount} of ${totalSteps} complete`;
+
+            itemsContainer.innerHTML = steps.map(step => `
+                <div class="setup-item ${step.done ? 'completed' : ''}">
+                    <div class="setup-check">${step.done ? '&#10003;' : ''}</div>
+                    <div class="setup-item-content">
+                        <div class="setup-item-title">${step.title}</div>
+                        <div class="setup-item-desc">${step.desc}</div>
+                    </div>
+                    <a href="${step.link}" class="setup-item-action">${step.action}</a>
+                </div>
+            `).join('');
+        }
+
+        // ========================================================================
+        // PRIORITY ACTIONS (Command Center Intelligence on Dashboard)
+        // ========================================================================
+        function renderPriorityActions(apps) {
+            const section = document.getElementById('priorityActionsSection');
+            const card = document.getElementById('priorityActionsCard');
+
+            if (!section || !card) return;
+
+            // Only show if we have cached intelligence from a previous command center visit
+            // or if the user has enough apps to warrant fetching
+            const activeApps = getActiveApplications(apps);
+            if (activeApps.length < 1) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Try to use cached intelligence if available
+            if (window.CommandCenter && CommandCenter.cache.intelligence) {
+                displayPriorityActions(section, card, apps, CommandCenter.cache.intelligence);
+                return;
+            }
+
+            // Fetch intelligence in background (non-blocking)
+            if (window.CommandCenter && activeApps.length >= 1) {
+                const userId = localStorage.getItem('userId') || 'anonymous';
+                CommandCenter.fetchIntelligence(userId, activeApps).then(intelligence => {
+                    if (intelligence && intelligence.priority_actions?.length > 0) {
+                        displayPriorityActions(section, card, apps, intelligence);
+                    }
+                }).catch(err => {
+                    console.log('[Dashboard] Could not fetch intelligence:', err.message);
+                });
+            }
+        }
+
+        function displayPriorityActions(section, card, apps, intelligence) {
+            const actions = intelligence.priority_actions || [];
+            if (actions.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Show up to 5 priority actions
+            const topActions = actions.slice(0, 5);
+            let html = topActions.map(action => {
+                const app = apps.find(a => String(a.id) === String(action.application_id));
+                const company = app?.company || 'Unknown';
+                const icon = action.one_click_action?.type === 'draft_email' ? '&#9993;'
+                    : action.one_click_action?.type === 'open_prep' ? '&#128203;'
+                    : action.one_click_action?.type === 'archive' ? '&#128230;'
+                    : '&#9889;';
+
+                const btnConfig = window.CommandCenter ? CommandCenter.getOneClickButtonConfig(action.one_click_action) : null;
+                const btnHtml = btnConfig
+                    ? `<button class="priority-action-btn" onclick="handleDashboardAction('${action.application_id}', '${action.one_click_action?.type}')">${btnConfig.label}</button>`
+                    : '';
+
+                return `
+                    <div class="priority-action-item">
+                        <div class="priority-action-icon">${icon}</div>
+                        <div class="priority-action-info">
+                            <div class="priority-action-company">${company}</div>
+                            <div class="priority-action-text">${action.action}</div>
+                        </div>
+                        ${btnHtml}
+                    </div>
+                `;
+            }).join('');
+
+            html += `
+                <div class="priority-actions-footer">
+                    <a href="/tracker">View full pipeline in Command Center &rarr;</a>
+                </div>
+            `;
+
+            card.innerHTML = html;
+            section.style.display = 'block';
+        }
+
+        // Handle one-click actions from priority actions on dashboard
+        function handleDashboardAction(appId, actionType) {
+            const apps = getApplications();
+            const app = apps.find(a => String(a.id) === String(appId));
+
+            if (actionType === 'draft_email' && app) {
+                // Navigate to outreach with app context
+                navigateWithAppContext(appId, 'outreach');
+            } else if (actionType === 'open_prep') {
+                window.location.href = '/interview-intelligence';
+            } else if (actionType === 'archive') {
+                // Navigate to tracker to handle archive
+                window.location.href = `/tracker?highlight=${appId}`;
+            } else {
+                // Default: go to tracker
+                window.location.href = `/tracker?highlight=${appId}`;
+            }
+        }
+
+        /**
+         * Show the LinkedIn network note in the job discovery footer
+         * if the user hasn't uploaded their LinkedIn connections CSV.
+         */
+        function renderJobDiscoveryNetworkNote(profile) {
+            const networkNote = document.getElementById('jobNetworkNote');
+            if (!networkNote) return;
+
+            // Show note if user hasn't uploaded LinkedIn connections
+            const hasNetworkData = profile?.linkedin_connections_uploaded_at ||
+                                   (profile?.linkedin_network_companies?.length > 0);
+
+            if (!hasNetworkData) {
+                networkNote.style.display = 'block';
+            } else {
+                networkNote.style.display = 'none';
+            }
         }
 
         function renderRealityCheck(profile, apps, activeApps) {
@@ -2842,6 +3672,8 @@
     <!-- Auth scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
+    <!-- Command Center Intelligence (for priority actions) -->
+    <script src="js/command-center.js"></script>
     <script>
         // D1: Auth check MUST complete before any rendering
         (async function() {
@@ -2976,6 +3808,7 @@
     <!-- LinkedIn Upload Feature -->
     <link rel="stylesheet" href="css/linkedin.css">
     <script src="js/linkedin-upload.js"></script>
+    <script src="js/job-discovery.js"></script>
 
     <!-- Welcome Flow for New and Returning Users -->
     <script>
