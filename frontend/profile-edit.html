@@ -1207,20 +1207,17 @@
                 About You
             </div>
             <div class="form-row">
-                <div class="form-group form-group-half">
+                <div class="form-group" style="flex: 1;">
                     <label>First Name *</label>
-                    <input type="text" id="firstName" placeholder="Jane" disabled>
+                    <input type="text" id="firstName" placeholder="Jane">
                 </div>
-                <div class="form-group form-group-half">
-                    <label>Last Name *</label>
-                    <input type="text" id="lastName" placeholder="Smith" disabled>
-                </div>
-            </div>
-            <span class="field-hint" style="margin-top: -12px; margin-bottom: 16px; display: block;">Need to update your name? Contact <a href="mailto:support@henryhq.com" style="color: var(--color-accent);">support@henryhq.com</a></span>
-            <div class="form-row">
                 <div class="form-group" style="flex: 0 0 100px;">
                     <label>Middle Initial <span style="color: #888; font-weight: 400;">(opt)</span></label>
                     <input type="text" id="middleInitial" placeholder="R" maxlength="2" style="text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Last Name *</label>
+                    <input type="text" id="lastName" placeholder="Smith">
                 </div>
                 <div class="form-group" style="flex: 0 0 120px;">
                     <label>Suffix <span style="color: #888; font-weight: 400;">(opt)</span></label>
@@ -1237,7 +1234,9 @@
                         <option value="MD">MD</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex: 1;">
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex: 0 0 250px;">
                     <label>Nickname <span style="color: #888; font-weight: 400;">(opt)</span></label>
                     <input type="text" id="nickname" placeholder="e.g., Mike, Liz, AJ">
                 </div>
