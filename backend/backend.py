@@ -19249,7 +19249,7 @@ async def discover_jobs(request: JobDiscoverRequest):
             comp_min=comp_min,
             comp_max=comp_max,
             target_industry=target_industry,
-            min_score=25,
+            min_score=40,
         )
 
         # Apply network matching (LinkedIn + prior employers)
