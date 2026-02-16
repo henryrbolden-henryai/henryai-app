@@ -144,7 +144,11 @@ const HenryAuth = {
             'interventionState',
             'henryai_current_user_id',
             'henryai_needs_onboarding',
-            'henryai_migrated_to_supabase'
+            'henryai_migrated_to_supabase',
+            'henryhq_linkedin_connections',
+            'strategicStopProgress',
+            'strategicStopOverride_v2',
+            'applications'
             // Note: beta_verified intentionally NOT cleared - it's an access gate, not user data
         ];
 
