@@ -16,6 +16,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <!-- PapaParse for LinkedIn CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         :root {
             /* Core Colors */
@@ -4434,6 +4436,165 @@
             }
         }
 
+        /* LinkedIn Upload Modal */
+        .linkedin-upload-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .linkedin-upload-overlay.show {
+            display: flex;
+        }
+        .linkedin-upload-modal {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 560px;
+            width: 100%;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .linkedin-upload-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+        .linkedin-upload-modal-close:hover {
+            color: var(--color-text);
+        }
+        .linkedin-upload-modal h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+            color: var(--color-text);
+        }
+        .linkedin-upload-modal .modal-subtitle {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        .linkedin-upload-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+        }
+        .linkedin-upload-steps li {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 8px 0;
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .linkedin-upload-steps .step-num {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--color-surface-elevated);
+            color: var(--color-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .linkedin-upload-dropzone {
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .linkedin-upload-dropzone:hover {
+            border-color: var(--color-accent);
+            background: rgba(34, 211, 238, 0.05);
+        }
+        .linkedin-upload-dropzone.dragover {
+            border-color: var(--color-accent);
+            background: rgba(34, 211, 238, 0.1);
+        }
+        .linkedin-upload-dropzone-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .linkedin-upload-dropzone-text {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+        .linkedin-upload-dropzone-text strong {
+            color: var(--color-accent);
+        }
+        .linkedin-upload-dropzone-hint {
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .linkedin-upload-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .linkedin-upload-success {
+            text-align: center;
+            padding: 24px 0;
+            display: none;
+        }
+        .linkedin-upload-success-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+        .linkedin-upload-success-count {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+        .linkedin-upload-success-meta {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+        .linkedin-upload-done-btn {
+            background: var(--color-accent);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 32px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .linkedin-upload-done-btn:hover {
+            opacity: 0.9;
+        }
+
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase -->
@@ -4524,7 +4685,7 @@
                 <div class="progress-bar">
                     <div class="progress-fill" id="strategyProgressFill" style="width: 0%"></div>
                 </div>
-                <div class="progress-text" id="strategyProgressText">0 of 6 steps completed</div>
+                <div class="progress-text" id="strategyProgressText">0 of 5 steps completed</div>
             </div>
 
             <!-- Action Buttons -->
@@ -4569,21 +4730,10 @@
                     <div class="strategy-step-content" id="strategyContent-outreach_status" style="display: none;"></div>
                 </div>
 
-                <!-- Step 4: Positioning Review -->
-                <div class="strategy-step" id="strategyStep-positioning_review">
-                    <div class="strategy-step-header" onclick="toggleStrategyStep('positioning_review')">
-                        <div class="strategy-step-check" id="strategyCheck-positioning_review"><span class="step-number">4</span></div>
-                        <div class="strategy-step-title">Positioning Review</div>
-                        <div class="strategy-step-subtitle">Is your story compelling for these roles?</div>
-                        <div class="strategy-step-chevron">&#9662;</div>
-                    </div>
-                    <div class="strategy-step-content" id="strategyContent-positioning_review" style="display: none;"></div>
-                </div>
-
-                <!-- Step 5: Document Check -->
+                <!-- Step 4: Document Check -->
                 <div class="strategy-step" id="strategyStep-document_check">
                     <div class="strategy-step-header" onclick="toggleStrategyStep('document_check')">
-                        <div class="strategy-step-check" id="strategyCheck-document_check"><span class="step-number">5</span></div>
+                        <div class="strategy-step-check" id="strategyCheck-document_check"><span class="step-number">4</span></div>
                         <div class="strategy-step-title">Document Check</div>
                         <div class="strategy-step-subtitle">Are your resumes tailored for each role?</div>
                         <div class="strategy-step-chevron">&#9662;</div>
@@ -4591,15 +4741,46 @@
                     <div class="strategy-step-content" id="strategyContent-document_check" style="display: none;"></div>
                 </div>
 
-                <!-- Step 6: Alternative Paths -->
+                <!-- Step 5: Alternative Paths -->
                 <div class="strategy-step" id="strategyStep-alternative_paths">
                     <div class="strategy-step-header" onclick="toggleStrategyStep('alternative_paths')">
-                        <div class="strategy-step-check" id="strategyCheck-alternative_paths"><span class="step-number">6</span></div>
+                        <div class="strategy-step-check" id="strategyCheck-alternative_paths"><span class="step-number">5</span></div>
                         <div class="strategy-step-title">Alternative Paths</div>
                         <div class="strategy-step-subtitle">Should you consider different roles or industries?</div>
                         <div class="strategy-step-chevron">&#9662;</div>
                     </div>
                     <div class="strategy-step-content" id="strategyContent-alternative_paths" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LinkedIn Upload Modal -->
+        <div class="linkedin-upload-overlay" id="linkedinUploadOverlay" onclick="if(event.target===this)closeLinkedInUploadModal()">
+            <div class="linkedin-upload-modal">
+                <button class="linkedin-upload-modal-close" onclick="closeLinkedInUploadModal()">&times;</button>
+                <div id="linkedinUploadInstructions">
+                    <h3>Upload LinkedIn Connections</h3>
+                    <p class="modal-subtitle">Import your connections to see who you know at your target companies. Candidates with a referral are 4-5x more likely to get hired.</p>
+                    <ol class="linkedin-upload-steps">
+                        <li><span class="step-num">1</span><span>Go to <strong>linkedin.com/mynetwork/invite-connect/connections</strong></span></li>
+                        <li><span class="step-num">2</span><span>Click "Manage synced and imported contacts" (top right)</span></li>
+                        <li><span class="step-num">3</span><span>Click "Export contacts" then select "Connections"</span></li>
+                        <li><span class="step-num">4</span><span>Click "Request archive" and wait for the email from LinkedIn (usually about 10 minutes)</span></li>
+                        <li><span class="step-num">5</span><span>Download the CSV file and upload it below</span></li>
+                    </ol>
+                    <div class="linkedin-upload-error" id="linkedinUploadError"></div>
+                    <div class="linkedin-upload-dropzone" id="linkedinUploadDropzone">
+                        <div class="linkedin-upload-dropzone-icon">📁</div>
+                        <div class="linkedin-upload-dropzone-text"><strong>Click to browse</strong> or drag and drop</div>
+                        <div class="linkedin-upload-dropzone-hint">LinkedIn Connections CSV file</div>
+                    </div>
+                    <input type="file" id="linkedinUploadFileInput" accept=".csv" style="display: none;">
+                </div>
+                <div class="linkedin-upload-success" id="linkedinUploadSuccess">
+                    <div class="linkedin-upload-success-icon">&#10003;</div>
+                    <div class="linkedin-upload-success-count" id="linkedinUploadSuccessCount"></div>
+                    <div class="linkedin-upload-success-meta" id="linkedinUploadSuccessMeta"></div>
+                    <button class="linkedin-upload-done-btn" onclick="closeLinkedInUploadModal()">Done</button>
                 </div>
             </div>
         </div>
@@ -10861,7 +11042,6 @@ Thanks so much!
             populatePipelineAudit(activeApps);
             populateNetworkCheck(activeApps);
             populateOutreachStatus(activeApps);
-            populatePositioningReview(activeApps);
             populateDocumentCheck(activeApps);
             populateAlternativePaths(activeApps);
 
@@ -10989,7 +11169,7 @@ Thanks so much!
                         Candidates with a referral are 4-5x more likely to get hired.
                     </div>
                     <div class="strategy-step-actions-row">
-                        <a href="/outreach" class="strategy-step-action">Upload LinkedIn Connections</a>
+                        <button class="strategy-step-action" onclick="openLinkedInUploadModal()">Upload LinkedIn Connections</button>
                         <button class="strategy-step-complete-btn" onclick="completeStrategyStep('network_check')">Mark as reviewed</button>
                     </div>
                 `;
@@ -11128,72 +11308,7 @@ Thanks so much!
         }
 
         /**
-         * Step 4: Positioning Review
-         */
-        function populatePositioningReview(activeApps) {
-            const container = document.getElementById('strategyContent-positioning_review');
-            if (!container) return;
-
-            // Try to find positioning data from recent analysis
-            let positioningData = null;
-            let sourceApp = null;
-            for (const app of activeApps) {
-                if (app.analysisKey) {
-                    try {
-                        const data = JSON.parse(localStorage.getItem(app.analysisKey) || '{}');
-                        const sp = data.intelligence_layer?.strategic_positioning;
-                        if (sp) {
-                            positioningData = sp;
-                            sourceApp = app;
-                            break;
-                        }
-                    } catch (e) { /* skip */ }
-                }
-            }
-
-            let html = '';
-
-            if (positioningData) {
-                html += `<div class="strategy-substep-label">Your positioning strategy (from ${sourceApp?.company || 'recent'} analysis):</div>`;
-                if (positioningData.positioning_strategy) {
-                    html += `<div class="strategy-quote">${positioningData.positioning_strategy}</div>`;
-                }
-                if (positioningData.emphasis_points?.length) {
-                    html += `<div class="strategy-substep-label">Lead with:</div><ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.8;">`;
-                    positioningData.emphasis_points.forEach(p => {
-                        html += `<li>${typeof p === 'string' ? p : p.point || JSON.stringify(p)}</li>`;
-                    });
-                    html += `</ul>`;
-                }
-                if (positioningData.gaps_and_mitigation?.length) {
-                    html += `<div class="strategy-substep-label">Gaps to address:</div><ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.8;">`;
-                    positioningData.gaps_and_mitigation.slice(0, 3).forEach(g => {
-                        const text = typeof g === 'string' ? g : g.gap || g.description || JSON.stringify(g);
-                        html += `<li>${text}</li>`;
-                    });
-                    html += `</ul>`;
-                }
-            } else {
-                html += `
-                    <div class="strategy-tip">
-                        No positioning data available yet. Analyze a role to generate your strategic positioning: what to emphasize, what to de-emphasize, and how to frame your story.
-                    </div>
-                `;
-            }
-
-            html += `
-                <div class="strategy-step-actions-row">
-                    <a href="/positioning" class="strategy-step-action">View Full Positioning</a>
-                    <a href="/analyze" class="strategy-step-action">Analyze a Role</a>
-                    <button class="strategy-step-complete-btn" onclick="completeStrategyStep('positioning_review')">Mark as reviewed</button>
-                </div>
-            `;
-
-            container.innerHTML = html;
-        }
-
-        /**
-         * Step 5: Document Check
+         * Step 4: Document Check
          */
         function populateDocumentCheck(activeApps) {
             const container = document.getElementById('strategyContent-document_check');
@@ -11256,7 +11371,7 @@ Thanks so much!
             html += `
                 <div class="strategy-tip">Applications with ATS-optimized resumes are significantly more likely to pass initial screening. Tailor your resume for each role.</div>
                 <div class="strategy-step-actions-row">
-                    <a href="/documents" class="strategy-step-action">Go to Documents</a>
+                    <a href="/document-library" class="strategy-step-action">Document Library</a>
                     <button class="strategy-step-complete-btn" onclick="completeStrategyStep('document_check')">Mark as reviewed</button>
                 </div>
             `;
@@ -11276,7 +11391,7 @@ Thanks so much!
         }
 
         /**
-         * Step 6: Alternative Paths
+         * Step 5: Alternative Paths
          */
         function populateAlternativePaths(activeApps) {
             const container = document.getElementById('strategyContent-alternative_paths');
@@ -11361,7 +11476,7 @@ Thanks so much!
         // ========================================================================
 
         const STRATEGY_STEPS = ['pipeline_audit', 'network_check', 'outreach_status',
-                                'positioning_review', 'document_check', 'alternative_paths'];
+                                'document_check', 'alternative_paths'];
 
         /**
          * Mark a strategy step as completed
@@ -11435,6 +11550,184 @@ Thanks so much!
 
             // Re-render Daily Pulse without the contradiction
             renderDailyPulseV2(commandCenterIntelligence);
+        }
+
+        // ========================================================================
+        // LINKEDIN UPLOAD MODAL
+        // ========================================================================
+
+        const LINKEDIN_CONNECTIONS_KEY = 'henryhq_linkedin_connections';
+        const LINKEDIN_CONNECTIONS_LEGACY_KEY = 'linkedinConnections';
+
+        function openLinkedInUploadModal() {
+            const overlay = document.getElementById('linkedinUploadOverlay');
+            if (!overlay) return;
+            document.getElementById('linkedinUploadInstructions').style.display = 'block';
+            document.getElementById('linkedinUploadSuccess').style.display = 'none';
+            const errorEl = document.getElementById('linkedinUploadError');
+            if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+            const fileInput = document.getElementById('linkedinUploadFileInput');
+            if (fileInput) fileInput.value = '';
+            overlay.classList.add('show');
+        }
+
+        function closeLinkedInUploadModal() {
+            const overlay = document.getElementById('linkedinUploadOverlay');
+            if (overlay) overlay.classList.remove('show');
+        }
+
+        function initLinkedInUploadModal() {
+            const dropzone = document.getElementById('linkedinUploadDropzone');
+            const fileInput = document.getElementById('linkedinUploadFileInput');
+            if (!dropzone || !fileInput) return;
+
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleLinkedInModalUpload(file);
+            });
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.toLowerCase().endsWith('.csv')) {
+                    handleLinkedInModalUpload(file);
+                } else if (file) {
+                    showLinkedInUploadError('Please upload a .csv file.');
+                }
+            });
+
+            // Close on ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeLinkedInUploadModal();
+            });
+        }
+
+        function showLinkedInUploadError(msg) {
+            const el = document.getElementById('linkedinUploadError');
+            if (el) { el.textContent = msg; el.style.display = 'block'; }
+        }
+
+        function parseLinkedInCSV(csv) {
+            const cleanCsv = csv.replace(/^\uFEFF/, '');
+            const result = Papa.parse(cleanCsv, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: h => h.trim()
+            });
+
+            function getField(row, ...names) {
+                for (const name of names) {
+                    if (row[name] !== undefined) return row[name];
+                }
+                const keys = Object.keys(row);
+                for (const name of names) {
+                    const lower = name.toLowerCase();
+                    const key = keys.find(k => k.toLowerCase() === lower);
+                    if (key && row[key] !== undefined) return row[key];
+                }
+                return '';
+            }
+
+            return result.data
+                .filter(row =>
+                    (getField(row, 'First Name', 'FirstName') || '').trim() ||
+                    (getField(row, 'Last Name', 'LastName') || '').trim()
+                )
+                .map(row => ({
+                    first_name: getField(row, 'First Name', 'FirstName'),
+                    last_name: getField(row, 'Last Name', 'LastName'),
+                    url: getField(row, 'URL', 'Url', 'Profile URL'),
+                    email: getField(row, 'Email Address', 'EmailAddress', 'Email'),
+                    company: getField(row, 'Company'),
+                    position: getField(row, 'Position', 'Title'),
+                    connected_on: getField(row, 'Connected On', 'ConnectedOn'),
+                }));
+        }
+
+        function saveLinkedInConnections(connections, fileName) {
+            const data = {
+                version: 1,
+                uploadedAt: new Date().toISOString(),
+                fileName: fileName || 'Connections.csv',
+                connectionCount: connections.length,
+                connections: connections
+            };
+
+            try {
+                localStorage.setItem(LINKEDIN_CONNECTIONS_KEY, JSON.stringify(data));
+                // Legacy key for backward compatibility
+                localStorage.setItem(LINKEDIN_CONNECTIONS_LEGACY_KEY, JSON.stringify(connections));
+                return data;
+            } catch (e) {
+                console.error('Failed to save connections:', e);
+                return null;
+            }
+        }
+
+        async function persistLinkedInToSupabase(connections) {
+            try {
+                if (typeof HenryAuth === 'undefined') return;
+                const user = await HenryAuth.getUser();
+                if (!user?.id) return;
+
+                await fetch(`${API_BASE_URL}/api/linkedin/connections/persist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        connections_data: { connections: connections },
+                    }),
+                });
+                console.log('LinkedIn connections synced to Supabase');
+            } catch (e) {
+                console.warn('Could not sync connections to Supabase:', e);
+            }
+        }
+
+        function handleLinkedInModalUpload(file) {
+            const errorEl = document.getElementById('linkedinUploadError');
+            if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csv = e.target.result;
+                const connections = parseLinkedInCSV(csv);
+
+                if (connections.length === 0) {
+                    showLinkedInUploadError('No connections found in this file. Make sure you are uploading a LinkedIn Connections CSV.');
+                    return;
+                }
+
+                // Save to localStorage
+                const savedData = saveLinkedInConnections(connections, file.name);
+
+                // Persist to Supabase
+                persistLinkedInToSupabase(connections);
+
+                // Show success state
+                document.getElementById('linkedinUploadInstructions').style.display = 'none';
+                document.getElementById('linkedinUploadSuccess').style.display = 'block';
+                document.getElementById('linkedinUploadSuccessCount').textContent =
+                    `${connections.length.toLocaleString()} connections loaded`;
+                document.getElementById('linkedinUploadSuccessMeta').textContent =
+                    `From ${file.name}`;
+
+                // Refresh the Network Check step with new data
+                try {
+                    const apps = getApplications();
+                    const activeApps = apps.filter(a => STATUSES[a.status]?.active);
+                    populateNetworkCheck(activeApps);
+                } catch (err) {
+                    console.warn('Could not refresh Network Check:', err);
+                }
+            };
+            reader.readAsText(file);
         }
 
         // ========================================================================
@@ -11544,6 +11837,9 @@ Thanks so much!
                 hideStateOverlays();
 
                 // Render Command Center components
+                // Init LinkedIn upload modal
+                initLinkedInUploadModal();
+
                 // Check strategic stop FIRST so Daily Pulse can react to it
                 checkAndShowStrategicStop(commandCenterIntelligence);
                 renderDailyPulseV2(commandCenterIntelligence);
