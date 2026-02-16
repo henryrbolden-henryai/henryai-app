@@ -10777,7 +10777,7 @@ Thanks so much!
             // Adapt based on actual stored holding_up values
             if (holdingUp === 'struggling') {
                 headline = "This is hard. And your numbers are telling you something.";
-                body = `You've put in the work — ${activeCount} applications — and it's not converting. That's not a character flaw. It's a signal that something in your approach needs to change. Let's figure out what.`;
+                body = `You've put in the work: ${activeCount} applications, and it's not converting. That's not a character flaw. It's a signal that something in your approach needs to change. Let's figure out what.`;
             } else if (holdingUp === 'stressed_but_managing') {
                 headline = "Your pipeline needs a strategy check.";
                 body = `You've got ${activeCount} applications out there with a ${interviewRate.toFixed(0)}% interview rate. That's below where it needs to be. The good news: this is fixable. Let's walk through what to change.`;
@@ -10792,7 +10792,7 @@ Thanks so much!
 
             // Layer confidence
             if (confidence === 'low' || confidence === 'need_validation') {
-                body += " And for what it's worth — the fact that you're here reviewing your strategy means you're already doing more than most candidates.";
+                body += " And for what it's worth, the fact that you're here reviewing your strategy means you're already doing more than most candidates.";
             } else if (confidence === 'shaky') {
                 body += " Rejections sting. But this review is about finding what's actionable, not what's wrong with you.";
             }
@@ -10910,7 +10910,7 @@ Thanks so much!
             `;
 
             if (unanalyzed.length > 0) {
-                html += `<div class="strategy-substep-label">Not yet analyzed — you're flying blind on fit:</div>`;
+                html += `<div class="strategy-substep-label">Not yet analyzed. You're flying blind on fit:</div>`;
                 unanalyzed.slice(0, 5).forEach(app => {
                     html += `
                         <div class="strategy-app-row">
@@ -10941,7 +10941,7 @@ Thanks so much!
             }
 
             if (stalled.length > 0) {
-                html += `<div class="strategy-substep-label">Stalled — no movement in 14+ days:</div>`;
+                html += `<div class="strategy-substep-label">Stalled: no movement in 14+ days:</div>`;
                 stalled.slice(0, 5).forEach(app => {
                     const days = getDaysSince(app.lastUpdated || app.dateApplied || app.dateAdded);
                     html += `
@@ -11176,7 +11176,7 @@ Thanks so much!
             } else {
                 html += `
                     <div class="strategy-tip">
-                        No positioning data available yet. Analyze a role to generate your strategic positioning — what to emphasize, what to de-emphasize, and how to frame your story.
+                        No positioning data available yet. Analyze a role to generate your strategic positioning: what to emphasize, what to de-emphasize, and how to frame your story.
                     </div>
                 `;
             }
@@ -11316,7 +11316,7 @@ Thanks so much!
                 if (redirectData.adjacent_titles?.length) {
                     html += `<div class="strategy-substep-label">Adjacent roles to consider:</div><ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.8;">`;
                     redirectData.adjacent_titles.forEach(r => {
-                        html += `<li><strong>${r.role_title || r}</strong>${r.fit_rationale ? ' — ' + r.fit_rationale : ''}</li>`;
+                        html += `<li><strong>${r.role_title || r}</strong>${r.fit_rationale ? ': ' + r.fit_rationale : ''}</li>`;
                     });
                     html += `</ul>`;
                 }
@@ -11324,7 +11324,7 @@ Thanks so much!
                 if (redirectData.bridge_roles?.length) {
                     html += `<div class="strategy-substep-label">Bridge roles (build toward your target):</div><ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.8;">`;
                     redirectData.bridge_roles.forEach(r => {
-                        html += `<li><strong>${r.role_title || r}</strong>${r.fit_rationale ? ' — ' + r.fit_rationale : ''}</li>`;
+                        html += `<li><strong>${r.role_title || r}</strong>${r.fit_rationale ? ': ' + r.fit_rationale : ''}</li>`;
                     });
                     html += `</ul>`;
                 }
@@ -11332,7 +11332,7 @@ Thanks so much!
                 if (redirectData.context_shifts?.length) {
                     html += `<div class="strategy-substep-label">Same role, different context:</div><ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.8;">`;
                     redirectData.context_shifts.forEach(r => {
-                        html += `<li><strong>${r.role_title || r}</strong>${r.company_type ? ' at ' + r.company_type : ''}${r.fit_rationale ? ' — ' + r.fit_rationale : ''}</li>`;
+                        html += `<li><strong>${r.role_title || r}</strong>${r.company_type ? ' at ' + r.company_type : ''}${r.fit_rationale ? ': ' + r.fit_rationale : ''}</li>`;
                     });
                     html += `</ul>`;
                 }
@@ -11418,7 +11418,7 @@ Thanks so much!
             if (completed === total) {
                 const btn = document.getElementById('strategyReviewBtn');
                 if (btn) {
-                    btn.textContent = 'Strategy Reviewed — Lift Stop';
+                    btn.textContent = 'Strategy Reviewed - Lift Stop';
                     btn.onclick = function() { liftStrategicStop(); };
                 }
             }

@@ -199,7 +199,7 @@ const CommandCenter = {
             reason = "You're spreading thin. Convert what you have.";
         } else {
             status = 'healthy'; color = 'green'; icon = '✅'; tone = 'steady';
-            recommendation = 'None—maintain pace, focus on interviews';
+            recommendation = 'Maintain pace, focus on interviews';
             reason = 'Good volume. Shift energy to conversion.';
         }
 
