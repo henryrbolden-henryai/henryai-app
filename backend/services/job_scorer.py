@@ -229,6 +229,8 @@ def score_job(
     comp_min: Optional[int] = None,
     comp_max: Optional[int] = None,
     target_industry: Optional[str] = None,
+    years_experience: Optional[int] = None,
+    candidate_skills: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Score a single job listing against candidate profile.
@@ -337,12 +339,18 @@ def score_job(
 
     # =================================================================
     # FACTOR 5: Industry Match (0-10 points)
+    # Uses job_highlights (Qualifications + Responsibilities) for richer matching
     # =================================================================
     if target_industry and job_description:
         industry_kws = INDUSTRY_KEYWORDS.get(target_industry, [])
         desc_lower = job_description.lower()
         company_lower = job.get("company", "").lower()
-        combined = f"{desc_lower} {company_lower} {job_title.lower()}"
+
+        # Include highlights for richer text matching
+        highlights = job.get("job_highlights") or {}
+        quals = " ".join(highlights.get("Qualifications", []))
+        resps = " ".join(highlights.get("Responsibilities", []))
+        combined = f"{desc_lower} {company_lower} {job_title.lower()} {quals.lower()} {resps.lower()}"
 
         matches = sum(1 for kw in industry_kws if kw in combined)
         if matches >= 2:
@@ -367,6 +375,39 @@ def score_job(
         elif days_since_posted <= 30:
             score += 2
 
+    # =================================================================
+    # FACTOR 7: Years of Experience Cross-Check (-5 to 0 points)
+    # Uses job_required_experience.required_experience_in_months from JSearch
+    # =================================================================
+    if years_experience is not None:
+        job_req_exp = job.get("job_required_experience") or {}
+        required_months = job_req_exp.get("required_experience_in_months")
+        if required_months and isinstance(required_months, (int, float)) and required_months > 0:
+            candidate_months = years_experience * 12
+            if candidate_months < required_months * 0.5:
+                score -= 5
+                reasons.append("May be under-experienced")
+            elif required_months > 0 and candidate_months > required_months * 2.5:
+                score -= 3
+                reasons.append("May be over-experienced")
+
+    # =================================================================
+    # FACTOR 8: Skills Overlap Bonus (0-5 points)
+    # Cross-reference candidate skills with job_required_skills from JSearch
+    # =================================================================
+    if candidate_skills:
+        job_skills = job.get("job_required_skills") or []
+        if job_skills:
+            candidate_skills_lower = {s.lower().strip() for s in candidate_skills if s}
+            job_skills_lower = {s.lower().strip() for s in job_skills if s}
+            overlap_count = len(candidate_skills_lower & job_skills_lower)
+            if overlap_count >= 3:
+                score += 5
+                reasons.append("Skills match")
+            elif overlap_count >= 1:
+                score += 2
+                reasons.append("Some skills match")
+
     # Floor score at 0 (function penalty could push negative)
     job["relevance_score"] = max(min(score, 100), 0)
     job["relevance_reasons"] = reasons
@@ -384,6 +425,8 @@ def score_and_rank_jobs(
     comp_max: Optional[int] = None,
     target_industry: Optional[str] = None,
     min_score: int = 40,
+    years_experience: Optional[int] = None,
+    candidate_skills: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
     Score all jobs and return sorted by relevance_score descending.
@@ -408,6 +451,8 @@ def score_and_rank_jobs(
             comp_min=comp_min,
             comp_max=comp_max,
             target_industry=target_industry,
+            years_experience=years_experience,
+            candidate_skills=candidate_skills,
         )
         if scored_job["relevance_score"] >= min_score:
             scored.append(scored_job)

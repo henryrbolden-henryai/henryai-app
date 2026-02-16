@@ -271,6 +271,10 @@ const HenryData = {
             target_roles: profileData.target_roles || [],
             employment_type_preferences: profileData.employment_type_preferences || ['FULLTIME'],
             seniority_preference: profileData.seniority_preference || null,
+            // Job search preferences (auto-populated from resume, user-editable)
+            years_experience: profileData.years_experience || null,
+            excluded_companies: profileData.excluded_companies || [],
+            job_search_keywords: profileData.job_search_keywords || [],
             // Situation — flatten nested object
             situation_holding_up: profileData.situation?.holding_up || null,
             situation_timeline: profileData.situation?.timeline || null,
