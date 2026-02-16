@@ -321,6 +321,22 @@
                     requestBody.user_id = userId;
                 }
 
+                // Send profile data as fallback (used when Supabase unavailable)
+                try {
+                    const profileStr = localStorage.getItem('userProfile');
+                    if (profileStr) {
+                        const profile = JSON.parse(profileStr);
+                        requestBody.seniority = profile.seniority_preference || null;
+                        requestBody.comp_min = profile.compensation?.min || null;
+                        requestBody.target_industry = profile.target_industry_primary || null;
+                        requestBody.excluded_companies = profile.excluded_companies || null;
+                        requestBody.function_area = profile.function_area || null;
+                        requestBody.employment_types = profile.employment_type_preferences || null;
+                    }
+                } catch (e) {
+                    // Non-critical — fallback data is optional
+                }
+
                 const response = await fetch(`${API_BASE}/api/jobs/discover`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

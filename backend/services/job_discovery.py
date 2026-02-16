@@ -126,6 +126,45 @@ class JobDiscoveryService:
 
         return params
 
+    @staticmethod
+    def _prepend_seniority(role: str, seniority: str) -> str:
+        """
+        Prepend a seniority prefix to a role title if it doesn't already contain one.
+
+        Examples:
+          ("Product Manager", "senior") -> "Senior Product Manager"
+          ("Senior Product Manager", "senior") -> "Senior Product Manager"  (unchanged)
+          ("Engineering Manager", "director") -> "Director of Engineering Manager"
+        """
+        if not seniority or not role:
+            return role
+
+        # Common seniority indicators already in the title
+        SENIORITY_INDICATORS = [
+            "senior", "sr.", "sr ", "staff", "principal", "lead",
+            "director", "vp", "vice president", "chief", "head of",
+            "junior", "jr.", "entry", "intern", "executive", "c-suite",
+        ]
+
+        role_lower = role.lower()
+        if any(indicator in role_lower for indicator in SENIORITY_INDICATORS):
+            return role  # Already has seniority indicator
+
+        PREFIX_MAP = {
+            "senior": "Senior",
+            "staff": "Staff",
+            "director": "Director of",
+            "vp": "VP of",
+            "executive": "Chief",
+            "entry": "Junior",
+            "mid": "",  # No prefix for mid-level
+        }
+
+        prefix = PREFIX_MAP.get(seniority, "")
+        if prefix:
+            return f"{prefix} {role}"
+        return role
+
     def build_multi_query_params(
         self,
         target_roles: List[str] = None,
@@ -136,12 +175,13 @@ class JobDiscoveryService:
         remote_only: bool = False,
         employment_types: List[str] = None,
         years_experience: int = None,
+        seniority: str = None,
     ) -> List[Dict[str, Any]]:
         """
         Build multiple search query parameter sets for better coverage.
 
         Returns 2-3 query param dicts that together capture:
-        1. Primary role match (most specific)
+        1. Primary role match (most specific, with seniority prefix)
         2. Secondary role variant (if available)
         3. Industry + function broadening query
         """
@@ -166,9 +206,10 @@ class JobDiscoveryService:
 
         loc_suffix = f" in {location}" if location else ""
 
-        # Query 1: Primary target role (most specific)
+        # Query 1: Primary target role with seniority prefix (most specific)
         if target_roles and len(target_roles) > 0:
-            q1 = {**base_params, "query": f"{target_roles[0]}{loc_suffix}"}
+            primary_role = self._prepend_seniority(target_roles[0], seniority)
+            q1 = {**base_params, "query": f"{primary_role}{loc_suffix}"}
             queries.append(q1)
 
         # Query 2: Secondary target role (if different from primary)
@@ -399,13 +440,18 @@ class JobDiscoveryService:
                 ),
                 "apply_url": item.get("job_apply_link", ""),
                 "description_snippet": self._truncate(
-                    item.get("job_description", ""), 200
+                    item.get("job_description", ""), 500
                 ),
                 "employment_type": item.get("job_employment_type", "FULLTIME"),
                 "is_remote": item.get("job_is_remote", False),
                 "publisher": item.get("job_publisher", ""),
+                "source": "jsearch",
                 "network_connection": False,
                 "network_connection_count": 0,
+                # Rich data fields from JSearch (used by scorer)
+                "job_required_experience": item.get("job_required_experience") or {},
+                "job_required_skills": item.get("job_required_skills") or [],
+                "job_highlights": item.get("job_highlights") or {},
             }
             jobs.append(job)
 

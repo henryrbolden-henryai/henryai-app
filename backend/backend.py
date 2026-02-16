@@ -3436,6 +3436,13 @@ class JobDiscoverRequest(BaseModel):
     keywords: Optional[List[str]] = None  # Additional search keywords
     remote_only: Optional[bool] = None  # Override work arrangement
     page: int = 1
+    # Frontend fallback fields (used when Supabase is unavailable)
+    seniority: Optional[str] = None
+    employment_types: Optional[List[str]] = None
+    excluded_companies: Optional[List[str]] = None
+    comp_min: Optional[int] = None
+    target_industry: Optional[str] = None
+    function_area: Optional[str] = None
 
 class DiscoveredJob(BaseModel):
     """A single job listing from discovery."""
@@ -3455,6 +3462,7 @@ class DiscoveredJob(BaseModel):
     employment_type: Optional[str] = "FULLTIME"
     is_remote: bool = False
     publisher: Optional[str] = None
+    source: Optional[str] = None  # "jsearch" or "indeed"
     network_connection: bool = False
     network_connection_count: int = 0
     relevance_score: Optional[int] = None
@@ -19202,8 +19210,51 @@ async def discover_jobs(request: JobDiscoverRequest):
 
             except Exception as e:
                 logger.warning(f"Could not fetch profile from Supabase: {e}")
+                # Use frontend fallback fields if Supabase failed
+                if request.seniority and not seniority_preference:
+                    seniority_preference = request.seniority
+                if request.function_area and not function_area:
+                    function_area = request.function_area
+                if request.target_industry and not target_industry:
+                    target_industry = request.target_industry
+                if request.comp_min and not comp_min:
+                    comp_min = request.comp_min
+                if request.employment_types and not employment_types:
+                    employment_types = request.employment_types
+                if request.excluded_companies and not excluded_companies:
+                    excluded_companies = request.excluded_companies
 
-        # Build multi-query parameters for better coverage
+        # Also apply request-level fallbacks when no user_id / Supabase
+        if not seniority_preference and request.seniority:
+            seniority_preference = request.seniority
+        if not function_area and request.function_area:
+            function_area = request.function_area
+        if not target_industry and request.target_industry:
+            target_industry = request.target_industry
+        if not comp_min and request.comp_min:
+            comp_min = request.comp_min
+        if not employment_types and request.employment_types:
+            employment_types = request.employment_types
+        if not excluded_companies and request.excluded_companies:
+            excluded_companies = request.excluded_companies
+
+        # Extract candidate skills from resume for scorer
+        candidate_skills = []
+        if request.user_id and supabase_client:
+            try:
+                resume_result = supabase_client.table('user_resumes') \
+                    .select('resume_json') \
+                    .eq('user_id', request.user_id) \
+                    .eq('is_default', True) \
+                    .limit(1) \
+                    .execute()
+                if resume_result.data:
+                    resume_json = resume_result.data[0].get('resume_json', {})
+                    candidate_skills = resume_json.get('skills', [])
+            except Exception as e:
+                logger.debug(f"Could not fetch resume skills: {e}")
+
+        # Build multi-query parameters with seniority prefix for better coverage
         query_params_list = job_discovery_service.build_multi_query_params(
             target_roles=target_roles,
             function_area=function_area,
@@ -19213,11 +19264,12 @@ async def discover_jobs(request: JobDiscoverRequest):
             remote_only=remote_only,
             employment_types=employment_types,
             years_experience=years_experience,
+            seniority=seniority_preference,
         )
 
         logger.info(f"Job discovery: {len(query_params_list)} queries | target_roles={target_roles} | seniority={seniority_preference} | industry={target_industry} | location={location}")
 
-        # Execute multi-query search with merge and dedup
+        # Execute JSearch multi-query search with merge and dedup
         results = job_discovery_service.search_multi_query(
             query_params_list,
             excluded_companies=excluded_companies,
@@ -19235,8 +19287,30 @@ async def discover_jobs(request: JobDiscoverRequest):
                 error=results["error"],
             )
 
-        # Apply relevance scoring
+        # Fetch Indeed results as supplementary source
         jobs_data = results.get("jobs", [])
+        try:
+            from backend.services.indeed_discovery import indeed_discovery_service, merge_and_deduplicate
+            primary_role = target_roles[0] if target_roles else (function_area or "jobs")
+            indeed_results = indeed_discovery_service.search_jobs(
+                query=primary_role,
+                location=location or "",
+                country_code="US",
+            )
+            indeed_jobs = indeed_results.get("jobs", [])
+
+            # Filter excluded companies from Indeed results
+            if excluded_companies and indeed_jobs:
+                excluded_lower = [c.lower() for c in excluded_companies]
+                indeed_jobs = [j for j in indeed_jobs if j.get("company", "").lower() not in excluded_lower]
+
+            if indeed_jobs:
+                jobs_data = merge_and_deduplicate(jobs_data, indeed_jobs, max_total=25)
+                logger.info(f"Merged {len(indeed_jobs)} Indeed jobs → {len(jobs_data)} total after dedup")
+        except Exception as e:
+            logger.debug(f"Indeed integration skipped: {e}")
+
+        # Apply relevance scoring
         candidate_seniority = seniority_preference or "mid"
         candidate_remote = remote_only or False
 
@@ -19250,13 +19324,17 @@ async def discover_jobs(request: JobDiscoverRequest):
             comp_max=comp_max,
             target_industry=target_industry,
             min_score=40,
+            years_experience=years_experience,
+            candidate_skills=candidate_skills,
         )
 
         # Apply network matching (LinkedIn + prior employers)
         if network_companies:
             jobs_data = job_discovery_service.flag_network_companies(jobs_data, network_companies)
 
-        jobs = [DiscoveredJob(**job) for job in jobs_data]
+        # Strip extra fields not in DiscoveredJob model (e.g., job_highlights, job_required_skills)
+        model_fields = set(DiscoveredJob.model_fields.keys())
+        jobs = [DiscoveredJob(**{k: v for k, v in job.items() if k in model_fields}) for job in jobs_data]
 
         return JobDiscoverResponse(
             jobs=jobs,
