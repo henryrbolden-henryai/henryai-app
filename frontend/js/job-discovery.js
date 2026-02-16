@@ -250,15 +250,19 @@
                 remote_only: false,
             };
 
-            // Priority 1: target_roles from resume
-            if (resumeData?.target_roles?.length > 0) {
+            // Priority 1: target_roles from profile (explicit user selection from onboarding)
+            if (profile?.target_roles?.length > 0) {
+                params.role_title = profile.target_roles[0];
+            }
+            // Priority 2: target_roles from resume
+            else if (resumeData?.target_roles?.length > 0) {
                 params.role_title = resumeData.target_roles[0];
             }
-            // Priority 2: current_title from resume (with level context)
+            // Priority 3: current_title from resume (with level context)
             else if (resumeData?.current_title) {
                 params.role_title = resumeData.current_title;
             }
-            // Priority 3: function_area from profile (generic fallback)
+            // Priority 4: function_area from profile (generic fallback)
             else if (profile?.function_area) {
                 const functionMap = {
                     'product_management': 'Product Manager',
@@ -276,8 +280,10 @@
                 params.role_title = functionMap[profile.function_area] || profile.function_area;
             }
 
-            // Location from profile
-            if (profile?.city && profile?.state) {
+            // Location: try profile structured fields first, then localStorage string
+            if (profile?.location?.current) {
+                params.location = profile.location.current;
+            } else if (profile?.city && profile?.state) {
                 params.location = `${profile.city}, ${profile.state}`;
             } else if (profile?.city) {
                 params.location = profile.city;
@@ -438,6 +444,19 @@
                     ? '<span class="job-remote-badge">Remote</span>'
                     : '';
 
+                // Relevance match indicator
+                let matchBadge = '';
+                if (job.relevance_score != null) {
+                    const reasons = (job.relevance_reasons || []).join(', ');
+                    if (job.relevance_score >= 70) {
+                        matchBadge = `<span class="job-match-badge job-match-strong" title="${this.escapeHtml(reasons)}">Strong Match</span>`;
+                    } else if (job.relevance_score >= 50) {
+                        matchBadge = `<span class="job-match-badge job-match-good" title="${this.escapeHtml(reasons)}">Good Match</span>`;
+                    } else if (job.relevance_score >= 35) {
+                        matchBadge = `<span class="job-match-badge job-match-fair" title="${this.escapeHtml(reasons)}">Fair Match</span>`;
+                    }
+                }
+
                 const salaryDisplay = salary || 'Compensation not listed';
 
                 html += `
@@ -446,6 +465,7 @@
                             <div class="job-card-header">
                                 <div class="job-card-title-row">
                                     <h4 class="job-title"><a href="${this.escapeHtml(job.apply_url)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(job.title)}</a></h4>
+                                    ${matchBadge}
                                     ${networkBadge}
                                     ${remoteBadge}
                                 </div>

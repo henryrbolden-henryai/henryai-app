@@ -1644,6 +1644,37 @@
             white-space: nowrap;
         }
 
+        /* Relevance match badges */
+        .job-match-badge {
+            display: inline-flex;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            cursor: help;
+        }
+
+        .job-match-strong {
+            background: rgba(34, 211, 238, 0.12);
+            border: 1px solid rgba(34, 211, 238, 0.35);
+            color: var(--color-accent);
+        }
+
+        .job-match-good {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: var(--color-active);
+        }
+
+        .job-match-fair {
+            background: rgba(156, 163, 175, 0.1);
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            color: var(--color-text-secondary);
+        }
+
         .job-card-former {
             border-color: rgba(251, 191, 36, 0.3);
             background: linear-gradient(135deg, var(--color-surface) 0%, rgba(251, 191, 36, 0.03) 100%);

@@ -353,6 +353,125 @@
       margin-bottom: 0;
     }
 
+    /* Tag Input (for target roles) */
+    .tag-input-container {
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      min-height: 44px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .tag-input-container:focus-within {
+      border-color: var(--color-accent);
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .role-tag {
+      background: var(--color-accent-muted);
+      color: var(--color-accent);
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .role-tag button {
+      background: none;
+      border: none;
+      color: var(--color-accent);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.7;
+    }
+
+    .role-tag button:hover {
+      opacity: 1;
+    }
+
+    .tag-input-container input {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--color-text);
+      font-size: 0.95rem;
+      flex: 1;
+      min-width: 120px;
+      padding: 4px 0;
+    }
+
+    .tag-input-container input::placeholder {
+      color: var(--color-text-secondary);
+      opacity: 0.5;
+    }
+
+    .field-hint {
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+      margin-top: 6px;
+      opacity: 0.7;
+    }
+
+    /* Select Input */
+    .select-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--color-surface-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      color: var(--color-text);
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+      transition: border-color 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2371717a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+
+    .select-input:focus {
+      border-color: var(--color-accent);
+      outline: none;
+    }
+
+    .select-input option {
+      background: var(--color-surface);
+      color: var(--color-text);
+    }
+
+    /* Inference card reveal animation */
+    #inferenceCard {
+      animation: fadeSlideIn 0.4s var(--ease-out) forwards;
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     .comp-grid label {
       font-size: 0.85rem;
       font-weight: 400;
@@ -506,6 +625,87 @@
         <div class="file-name" id="fileName"></div>
       </label>
       <div class="parsing-status" id="parsingStatus"></div>
+    </div>
+
+    <!-- Section 1.5: Resume Inference Confirmation (shown after successful resume parse) -->
+    <div class="section-card" id="inferenceCard" style="display: none;">
+      <div class="section-header">
+        <span class="section-icon">🎯</span>
+        <span class="section-title">Here's what I picked up</span>
+      </div>
+      <p class="section-subtitle">Quick check — does this look right? This helps me find jobs that actually match you.</p>
+
+      <div class="form-group">
+        <label>What roles are you targeting?</label>
+        <div class="tag-input-container" id="targetRolesContainer">
+          <div class="tag-list" id="targetRolesTags"></div>
+          <input type="text" id="targetRoleInput" placeholder="Add a role title..." maxlength="80">
+        </div>
+        <p class="field-hint">Up to 5 titles. Be specific — "Senior Product Manager" works better than "PM".</p>
+      </div>
+
+      <div class="form-group">
+        <label>Your function</label>
+        <select id="functionArea" class="select-input">
+          <option value="">Select...</option>
+          <option value="product_management">Product Management</option>
+          <option value="engineering">Engineering</option>
+          <option value="design">Design</option>
+          <option value="data_analytics">Data & Analytics</option>
+          <option value="sales">Sales</option>
+          <option value="marketing">Marketing</option>
+          <option value="customer_success">Customer Success</option>
+          <option value="operations">Operations</option>
+          <option value="finance">Finance</option>
+          <option value="hr_people">HR / People</option>
+          <option value="legal">Legal</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Target industry (optional)</label>
+        <select id="targetIndustry" class="select-input">
+          <option value="">Any industry</option>
+          <option value="technology">Technology</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="fintech">Fintech</option>
+          <option value="ecommerce">E-Commerce</option>
+          <option value="media">Media & Entertainment</option>
+          <option value="manufacturing">Manufacturing</option>
+          <option value="energy">Energy</option>
+          <option value="real_estate">Real Estate</option>
+          <option value="education">Education</option>
+          <option value="government">Government</option>
+          <option value="consulting">Consulting</option>
+          <option value="telecom">Telecommunications</option>
+          <option value="transportation">Transportation</option>
+          <option value="hospitality">Hospitality</option>
+          <option value="nonprofit">Nonprofit</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>What type of work?</label>
+        <div class="checkbox-group" id="employmentTypeGroup">
+          <label class="checkbox-option selected" data-value="FULLTIME">
+            <input type="checkbox" name="employmentType" value="FULLTIME" checked>
+            <span class="checkbox-box"></span>
+            <span>Full-time</span>
+          </label>
+          <label class="checkbox-option" data-value="CONTRACT">
+            <input type="checkbox" name="employmentType" value="CONTRACT">
+            <span class="checkbox-box"></span>
+            <span>Contract</span>
+          </label>
+          <label class="checkbox-option" data-value="PARTTIME">
+            <input type="checkbox" name="employmentType" value="PARTTIME">
+            <span class="checkbox-box"></span>
+            <span>Part-time</span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <!-- Section 2: Where You're At -->
@@ -737,6 +937,8 @@
     <p class="helper-text" id="helperText">Upload your resume and answer "What's your timeline?" to continue</p>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
   <script>
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
     
@@ -744,6 +946,8 @@
     let parsedResume = null;
     let relocateLocations = [];
     let workArrangements = [];
+    let targetRoles = [];
+    let employmentTypes = ['FULLTIME'];
 
     // Currency formatting helpers
     function formatCurrency(value) {
@@ -844,6 +1048,10 @@
         const firstName = name.split(' ')[0];
         parsingStatus.textContent = `✓ Got it, ${firstName}!`;
         parsingStatus.className = 'parsing-status show success';
+
+        // Populate inference confirmation card
+        populateInferenceCard(parsedResume);
+
         updateSaveButton();
 
       } catch (error) {
@@ -955,6 +1163,84 @@
     window.removeRelocateLocation = removeRelocateLocation;
 
     // ========================================================================
+    // INFERENCE CARD: Target Roles, Function Area, Industry, Employment Type
+    // ========================================================================
+    function populateInferenceCard(resume) {
+      const inferenceCard = document.getElementById('inferenceCard');
+      const inference = resume.job_search_inference || {};
+
+      // Populate target roles from inference or resume data
+      const suggestedRoles = inference.suggested_target_roles
+        || resume.target_roles
+        || (resume.current_title ? [resume.current_title] : []);
+      targetRoles = suggestedRoles.slice(0, 5);
+      renderTargetRoles();
+
+      // Populate function area dropdown
+      const functionSelect = document.getElementById('functionArea');
+      if (inference.suggested_function_area) {
+        functionSelect.value = inference.suggested_function_area;
+      }
+
+      // Populate target industry dropdown
+      const industrySelect = document.getElementById('targetIndustry');
+      if (inference.suggested_industry) {
+        industrySelect.value = inference.suggested_industry;
+      }
+
+      // Show the card
+      inferenceCard.style.display = '';
+    }
+
+    function renderTargetRoles() {
+      const container = document.getElementById('targetRolesTags');
+      container.innerHTML = targetRoles.map((role, idx) => `
+        <span class="role-tag">
+          ${escapeHtml(role)}
+          <button type="button" onclick="removeTargetRole(${idx})" aria-label="Remove">&times;</button>
+        </span>
+      `).join('');
+    }
+
+    function removeTargetRole(index) {
+      targetRoles.splice(index, 1);
+      renderTargetRoles();
+    }
+    window.removeTargetRole = removeTargetRole;
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Target role input: add on Enter
+    const targetRoleInput = document.getElementById('targetRoleInput');
+    if (targetRoleInput) {
+      targetRoleInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const value = targetRoleInput.value.trim();
+          if (value && targetRoles.length < 5 && !targetRoles.includes(value)) {
+            targetRoles.push(value);
+            renderTargetRoles();
+            targetRoleInput.value = '';
+          }
+        }
+      });
+    }
+
+    // Employment type checkboxes
+    document.querySelectorAll('#employmentTypeGroup .checkbox-option').forEach(option => {
+      option.addEventListener('click', () => {
+        option.classList.toggle('selected');
+        option.querySelector('input').checked = option.classList.contains('selected');
+        employmentTypes = Array.from(document.querySelectorAll('#employmentTypeGroup .checkbox-option.selected'))
+          .map(o => o.dataset.value);
+      });
+    });
+
+    // ========================================================================
     // SAVE BUTTON
     // ========================================================================
     function updateSaveButton() {
@@ -992,8 +1278,16 @@
       }
 
       // Build profile object with new schema
+      const functionArea = document.getElementById('functionArea')?.value || null;
+      const targetIndustry = document.getElementById('targetIndustry')?.value || null;
+
       const profile = {
         resume: parsedResume,
+        target_roles: targetRoles,
+        function_area: functionArea,
+        target_industry_primary: targetIndustry,
+        employment_type_preferences: employmentTypes,
+        seniority_preference: parsedResume?.job_search_inference?.suggested_seniority || null,
         situation: {
           holding_up: getSelectedRadioValue('holdingUpGroup'),
           timeline: getSelectedRadioValue('timelineGroup'),
@@ -1018,10 +1312,35 @@
 
       // Save to localStorage
       localStorage.setItem('userProfile', JSON.stringify(profile));
-      
+
+      // Also save parsed resume to localStorage for job discovery
+      if (parsedResume) {
+        localStorage.setItem('parsedResume', JSON.stringify(parsedResume));
+      }
+
       // Initialize empty tracked applications
       if (!localStorage.getItem('trackedApplications')) {
         localStorage.setItem('trackedApplications', JSON.stringify([]));
+      }
+
+      // Save to Supabase (non-blocking — don't delay redirect)
+      if (typeof HenryData !== 'undefined') {
+        const locationParts = profile.location.current.split(',').map(s => s.trim());
+        const supabaseProfile = {
+          ...profile,
+          first_name: parsedResume?.contact?.full_name?.split(' ')[0] || null,
+          last_name: parsedResume?.contact?.full_name?.split(' ').slice(1).join(' ') || null,
+          location: {
+            city: locationParts[0] || null,
+            state: locationParts[1] || null,
+            country: 'US',
+            open_to_relocate: profile.location.open_to_relocate,
+            relocate_to: profile.location.relocate_to,
+          },
+        };
+        HenryData.saveCandidateProfile(supabaseProfile).catch(e => {
+          console.warn('Non-blocking Supabase save failed:', e);
+        });
       }
 
       // Redirect to analyze page
