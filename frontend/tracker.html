@@ -11918,16 +11918,25 @@ Thanks so much!
                         </div>
                     `;
                 } else if (pipelineNeedsAttention) {
-                    const healthMsg = healthStatus === 'overloaded'
-                        ? "You're spreading thin. Focus on converting the applications you have."
-                        : intelligence.pipeline_health?.reason || 'Your pipeline needs attention.';
-                    actionsRow.innerHTML = `
-                        <div class="pulse-action-card">
-                            <div class="pulse-action-icon">⚠️</div>
-                            <div class="pulse-action-company">Pipeline needs attention</div>
-                            <div class="pulse-action-text">${healthMsg}</div>
-                        </div>
-                    `;
+                    if (healthStatus === 'stalled') {
+                        actionsRow.innerHTML = `
+                            <div class="pulse-action-card">
+                                <div class="pulse-action-icon">🚨</div>
+                                <div class="pulse-action-company">Pipeline is stalled</div>
+                                <div class="pulse-action-text">Your applications are not converting to interviews. Review your strategy to identify what to change.</div>
+                                <button class="pulse-action-btn" onclick="reactivateStrategyReview()">Review Strategy</button>
+                            </div>
+                        `;
+                    } else {
+                        actionsRow.innerHTML = `
+                            <div class="pulse-action-card">
+                                <div class="pulse-action-icon">⚠️</div>
+                                <div class="pulse-action-company">Pipeline is overloaded</div>
+                                <div class="pulse-action-text">You have too many active applications. Focus on moving your strongest candidates forward.</div>
+                                <button class="pulse-action-btn" onclick="setCommandCenterView('board')">View Pipeline</button>
+                            </div>
+                        `;
+                    }
                 } else {
                     actionsRow.innerHTML = `
                         <div class="pulse-action-card">
@@ -12597,6 +12606,28 @@ Thanks so much!
                 strategicStopActive = false;
                 // Re-render Daily Pulse without the contradiction
                 renderDailyPulseV2(commandCenterIntelligence);
+            }
+        }
+
+        /**
+         * Re-enable the strategy review after the user previously overrode it.
+         * Called from the Daily Pulse when pipeline is stalled and the user
+         * clicks "Review Strategy" to get back into the strategy review flow.
+         */
+        function reactivateStrategyReview() {
+            // Clear the override so the strategic stop can re-trigger
+            localStorage.removeItem('strategicStopOverride_v2');
+
+            // Re-run the strategic stop check (repopulates empathy header + diagnosis)
+            checkAndShowStrategicStop(commandCenterIntelligence);
+
+            // Re-render Daily Pulse with strategic stop active
+            renderDailyPulseV2(commandCenterIntelligence);
+
+            // Scroll to the strategic stop banner
+            const banner = document.getElementById('strategicStopBanner');
+            if (banner) {
+                banner.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
