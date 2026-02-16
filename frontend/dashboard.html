@@ -1478,11 +1478,11 @@
             padding: 20px;
         }
 
-        /* SEARCH READINESS */
-        .readiness-section {
+        /* THIS WEEK'S GOALS */
+        .goals-section {
             margin-bottom: 32px;
         }
-        .readiness-section > h2 {
+        .goals-section > h2 {
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--color-text-secondary);
@@ -1490,7 +1490,7 @@
             letter-spacing: 0.05em;
             margin: 0 0 16px 0;
         }
-        .readiness-card {
+        .goals-card {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
             border-radius: 12px;
@@ -1499,14 +1499,14 @@
             gap: 32px;
             align-items: flex-start;
         }
-        .readiness-ring-wrap {
+        .goals-ring-wrap {
             flex: 0 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 6px;
         }
-        .readiness-ring {
+        .goals-ring {
             width: 96px;
             height: 96px;
             border-radius: 50%;
@@ -1514,8 +1514,9 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: background 0.3s ease;
         }
-        .readiness-ring-inner {
+        .goals-ring-inner {
             width: 72px;
             height: 72px;
             border-radius: 50%;
@@ -1525,36 +1526,41 @@
             align-items: center;
             justify-content: center;
         }
-        .readiness-pct {
-            font-size: 1.4rem;
+        .goals-ring-count {
+            font-size: 1.3rem;
             font-weight: 700;
             color: var(--color-text);
             line-height: 1;
         }
-        .readiness-pct-label {
-            font-size: 0.65rem;
+        .goals-ring-label {
+            font-size: 0.6rem;
             color: var(--color-text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.05em;
             margin-top: 2px;
         }
-        .readiness-items {
+        .goals-week-label {
+            font-size: 0.7rem;
+            color: var(--color-text-muted);
+            text-align: center;
+        }
+        .goals-items {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 14px;
         }
-        .readiness-item {
+        .goal-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-size: 0.9rem;
             color: var(--color-text-secondary);
         }
-        .readiness-item.done {
+        .goal-item.done {
             color: var(--color-text);
         }
-        .readiness-check {
+        .goal-check {
             width: 20px;
             height: 20px;
             border-radius: 50%;
@@ -1566,12 +1572,38 @@
             font-size: 0.7rem;
             color: transparent;
         }
-        .readiness-item.done .readiness-check {
+        .goal-item.done .goal-check {
             background: var(--color-active);
             border-color: var(--color-active);
             color: #fff;
         }
-        .readiness-action {
+        .goal-progress {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .goal-progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .goal-progress-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+        }
+        .goal-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--color-accent);
+            transition: width 0.3s ease;
+        }
+        .goal-item.done .goal-progress-fill {
+            background: var(--color-active);
+        }
+        .goal-action {
             margin-left: auto;
             font-size: 0.78rem;
             color: var(--color-accent);
@@ -1582,24 +1614,26 @@
             opacity: 0.8;
             transition: opacity 0.15s;
             white-space: nowrap;
+            cursor: pointer;
+            background: transparent;
         }
-        .readiness-action:hover {
+        .goal-action:hover {
             opacity: 1;
             background: var(--color-accent-muted);
         }
-        .readiness-complete-msg {
+        .goals-complete-msg {
             font-size: 0.85rem;
             color: var(--color-active);
             margin-top: 4px;
             font-weight: 500;
         }
         @media (max-width: 600px) {
-            .readiness-card {
+            .goals-card {
                 flex-direction: column;
                 align-items: center;
                 gap: 20px;
             }
-            .readiness-items {
+            .goals-items {
                 width: 100%;
             }
         }
@@ -2063,19 +2097,20 @@
             </div>
         </div>
 
-        <!-- SEARCH READINESS -->
-        <div class="readiness-section" id="readinessSection" style="display: none;">
-            <h2>Search Readiness</h2>
-            <div class="readiness-card">
-                <div class="readiness-ring-wrap">
-                    <div class="readiness-ring" id="readinessRing">
-                        <div class="readiness-ring-inner">
-                            <span class="readiness-pct" id="readinessPct">0%</span>
-                            <span class="readiness-pct-label">Ready</span>
+        <!-- THIS WEEK'S GOALS -->
+        <div class="goals-section" id="weeklyGoalsSection" style="display: none;">
+            <h2>This Week's Goals</h2>
+            <div class="goals-card">
+                <div class="goals-ring-wrap">
+                    <div class="goals-ring" id="goalsRing">
+                        <div class="goals-ring-inner">
+                            <span class="goals-ring-count" id="goalsCount">0/0</span>
+                            <span class="goals-ring-label">Goals</span>
                         </div>
                     </div>
+                    <span class="goals-week-label" id="goalsWeekLabel"></span>
                 </div>
-                <div class="readiness-items" id="readinessItems">
+                <div class="goals-items" id="goalsItems">
                     <!-- Dynamically populated -->
                 </div>
             </div>
@@ -2550,18 +2585,24 @@
                 renderJobDiscoveryNetworkNote(profile);
                 renderRealityCheck(profile, apps, activeApps);
 
-                // Render Today's Focus immediately (without readiness data)
+                // Render Today's Focus immediately (without weekly goals data)
                 renderTodaysFocus(profile, apps, activeApps, null);
 
                 renderStrategicOptions(profile);
                 renderRecentActivity(apps);
 
-                // Fetch readiness data async, then re-render focus + readiness section
-                fetchReadinessData(profile, activeApps).then(readiness => {
-                    renderSearchReadiness(profile, readiness);
-                    renderTodaysFocus(profile, apps, activeApps, readiness);
+                // Fetch story count async, then generate & render weekly goals
+                fetchStoryCount().then(storyCount => {
+                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount);
+                    renderWeeklyGoals(weeklyGoals);
+                    // Re-render Today's Focus with goal data for Priority derivation
+                    renderTodaysFocus(profile, apps, activeApps, weeklyGoals);
                 }).catch(err => {
-                    console.warn('Could not load readiness data:', err);
+                    console.warn('Could not load story data for weekly goals:', err);
+                    // Fall back: generate goals without story data
+                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, 0);
+                    renderWeeklyGoals(weeklyGoals);
+                    renderTodaysFocus(profile, apps, activeApps, weeklyGoals);
                 });
             } catch (e) {
                 console.error('Error rendering dashboard:', e);
@@ -3376,93 +3417,253 @@
         }
 
         // ====================================================================
-        // SEARCH READINESS
+        // THIS WEEK'S GOALS
         // ====================================================================
-        async function fetchReadinessData(profile, activeApps) {
-            let storyCount = 0;
+        function getCurrentWeekMondayDate() {
+            const now = new Date();
+            const day = now.getDay(); // 0=Sun, 1=Mon, ...
+            const diff = day === 0 ? 6 : day - 1;
+            const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+            return monday;
+        }
+
+        function getWeekStartISO() {
+            return getCurrentWeekMondayDate().toISOString().split('T')[0];
+        }
+
+        async function fetchStoryCount() {
             if (typeof HenryData !== 'undefined' && HenryData.getStoryBank) {
                 try {
                     const stories = await HenryData.getStoryBank();
-                    storyCount = (stories || []).filter(s => s.status !== 'retired').length;
-                } catch(e) {
+                    return (stories || []).filter(s => s.status !== 'retired').length;
+                } catch (e) {
                     console.warn('Could not fetch story bank:', e);
+                    return 0;
                 }
             }
-            return {
-                hasResume: !!(profile?.resume),
-                hasStrengthened: !!(localStorage.getItem('strengthenedData_backup')),
-                storyCount: storyCount,
-                hasLinkedIn: !!(profile?.linkedin_profile_uploaded),
-                activeAppCount: activeApps.length,
-            };
+            return 0;
         }
 
-        function renderSearchReadiness(profile, readiness) {
-            const section = document.getElementById('readinessSection');
-            const ring = document.getElementById('readinessRing');
-            const pct = document.getElementById('readinessPct');
-            const itemsEl = document.getElementById('readinessItems');
-            if (!section || !ring || !pct || !itemsEl) return;
+        function generateGoalTargets(urgency, apps, storyCount) {
+            const targets = {
+                desperate: { applications: 5, followups: 3, stories: 3, research: 3 },
+                stressed:  { applications: 3, followups: 2, stories: 2, research: 2 },
+                standard:  { applications: 2, followups: 1, stories: 2, research: 1 },
+                none:      { applications: 1, followups: 1, stories: 1, research: 1 }
+            };
 
-            const dimensions = [
-                { key: 'hasResume',       label: 'Resume uploaded',           done: readiness.hasResume,            action: '/profile',         actionLabel: 'Upload' },
-                { key: 'hasStrengthened', label: 'Resume strengthened',       done: readiness.hasStrengthened,      action: '/strengthen',      actionLabel: 'Strengthen' },
-                { key: 'stories',         label: `Interview stories (${readiness.storyCount})`, done: readiness.storyCount >= 3, action: '/story-bank',      actionLabel: 'Build' },
-                { key: 'hasLinkedIn',     label: 'LinkedIn optimized',        done: readiness.hasLinkedIn,          action: '/linkedin-upload',  actionLabel: 'Optimize' },
-                { key: 'pipeline',        label: 'Active pipeline (3+ apps)', done: readiness.activeAppCount >= 3,  action: '/analyze',         actionLabel: 'Add Roles' },
-            ];
+            const t = targets[urgency] || targets.standard;
+            const goals = [];
 
-            const completedCount = dimensions.filter(d => d.done).length;
-            const percentage = Math.round((completedCount / dimensions.length) * 100);
+            // Always include applications
+            goals.push({
+                id: 'applications',
+                label: 'Apply to new roles',
+                target: t.applications,
+                action: '/analyze',
+                actionLabel: 'Analyze Role'
+            });
 
-            // Don't show if user hasn't done anything yet (0%) — the setup checklist covers onboarding
-            if (completedCount === 0) {
-                section.style.display = 'none';
-                return;
+            // Follow-ups only if there are apps to follow up on
+            const hasAppsToFollowUp = apps.some(a =>
+                ['Applied', 'Networking', 'Recruiter Screen', 'Hiring Manager'].includes(a.status)
+            );
+            if (hasAppsToFollowUp) {
+                goals.push({
+                    id: 'followups',
+                    label: 'Send follow-up messages',
+                    target: t.followups,
+                    manualProgress: 0,
+                    action: null,
+                    actionLabel: 'Draft Follow-up',
+                    actionModalDest: 'outreach'
+                });
             }
 
-            // Auto-hide after one session when 100%
-            if (percentage === 100) {
-                const dismissedKey = 'readiness_dismissed_100';
-                if (sessionStorage.getItem(dismissedKey)) {
-                    section.style.display = 'none';
-                    return;
+            // Stories only if under 5
+            if (storyCount < 5) {
+                goals.push({
+                    id: 'stories',
+                    label: 'Build interview stories',
+                    target: Math.min(t.stories, 5 - storyCount),
+                    action: '/story-bank',
+                    actionLabel: 'Build Stories'
+                });
+            }
+
+            // Always include research
+            goals.push({
+                id: 'research',
+                label: 'Analyze roles for fit',
+                target: t.research,
+                action: '/analyze',
+                actionLabel: 'Analyze'
+            });
+
+            return goals;
+        }
+
+        function updateGoalProgress(weeklyGoals, apps, storyCount) {
+            const weekStart = getCurrentWeekMondayDate();
+
+            weeklyGoals.goals.forEach(goal => {
+                switch (goal.id) {
+                    case 'applications':
+                        goal.current = apps.filter(app => {
+                            const d = app.dateApplied || app.dateAdded || app.created_at;
+                            return d && new Date(d) >= weekStart;
+                        }).length;
+                        break;
+
+                    case 'followups':
+                        // Manual tracking — persisted in localStorage
+                        goal.current = goal.manualProgress || 0;
+                        break;
+
+                    case 'stories':
+                        goal.current = Math.max(0, storyCount - (weeklyGoals.storyCountBaseline || 0));
+                        break;
+
+                    case 'research':
+                        goal.current = apps.filter(app => {
+                            const d = app.dateAdded || app.dateApplied || app.created_at;
+                            if (!d || new Date(d) < weekStart) return false;
+                            return !!(app.analysisData || app.analysis_data || app.analysisKey);
+                        }).length;
+                        break;
                 }
-                sessionStorage.setItem(dismissedKey, '1');
+            });
+
+            // Persist updated progress
+            try {
+                localStorage.setItem('weeklyGoals', JSON.stringify(weeklyGoals));
+            } catch (e) { /* ignore storage errors */ }
+            return weeklyGoals;
+        }
+
+        function getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount) {
+            const currentWeek = getWeekStartISO();
+            let stored = null;
+
+            try {
+                const raw = localStorage.getItem('weeklyGoals');
+                if (raw) stored = JSON.parse(raw);
+            } catch (e) {
+                console.warn('Could not parse weeklyGoals:', e);
             }
+
+            // If stored goals exist for this week, update progress and return
+            if (stored && stored.weekStartDate === currentWeek) {
+                return updateGoalProgress(stored, apps, storyCount);
+            }
+
+            // Generate new goals for this week
+            const urgency = calculateUrgency(profile);
+            const goals = generateGoalTargets(urgency, apps, storyCount);
+
+            const weeklyGoals = {
+                weekStartDate: currentWeek,
+                emotionalState: urgency,
+                storyCountBaseline: storyCount,
+                goals: goals
+            };
+
+            try {
+                localStorage.setItem('weeklyGoals', JSON.stringify(weeklyGoals));
+            } catch (e) { /* ignore */ }
+            return updateGoalProgress(weeklyGoals, apps, storyCount);
+        }
+
+        function renderWeeklyGoals(weeklyGoals) {
+            const section = document.getElementById('weeklyGoalsSection');
+            const ring = document.getElementById('goalsRing');
+            const countEl = document.getElementById('goalsCount');
+            const itemsEl = document.getElementById('goalsItems');
+            const weekLabel = document.getElementById('goalsWeekLabel');
+
+            if (!section || !ring || !countEl || !itemsEl) return;
+
+            const goals = weeklyGoals.goals;
+            const completedCount = goals.filter(g => (g.current || 0) >= g.target).length;
+            const totalCount = goals.length;
+            const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
             // Ring color
-            let ringColor = '#FF6B35'; // orange
-            if (percentage >= 80) ringColor = '#4CAF50'; // green
-            else if (percentage >= 40) ringColor = '#22d3ee'; // accent cyan
+            let ringColor = '#FF6B35'; // orange-red
+            if (percentage === 100) ringColor = '#4CAF50'; // green
+            else if (percentage >= 50) ringColor = '#22d3ee'; // accent cyan
 
             ring.style.background = `conic-gradient(${ringColor} ${percentage * 3.6}deg, rgba(255,255,255,0.06) ${percentage * 3.6}deg)`;
-            pct.textContent = percentage + '%';
+            countEl.textContent = `${completedCount}/${totalCount}`;
 
-            // Items
-            itemsEl.innerHTML = dimensions.map(d => {
-                const doneClass = d.done ? 'done' : '';
-                const checkIcon = d.done ? '✓' : '';
-                const actionHtml = !d.done ? `<a href="${d.action}" class="readiness-action">${d.actionLabel}</a>` : '';
+            // Week label: "Feb 16 – Feb 22"
+            if (weekLabel) {
+                const weekStart = getCurrentWeekMondayDate();
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                const fmt = { month: 'short', day: 'numeric' };
+                weekLabel.textContent = `${weekStart.toLocaleDateString('en-US', fmt)} – ${weekEnd.toLocaleDateString('en-US', fmt)}`;
+            }
+
+            // Render goal items
+            itemsEl.innerHTML = goals.map(goal => {
+                const current = goal.current || 0;
+                const done = current >= goal.target;
+                const doneClass = done ? 'done' : '';
+                const checkIcon = done ? '&#10003;' : '';
+                const progressPct = Math.min(100, Math.round((current / goal.target) * 100));
+
+                let actionHtml = '';
+                if (!done) {
+                    if (goal.actionModalDest) {
+                        actionHtml = `<button class="goal-action" onclick="showCoachingModal('${goal.actionModalDest}')">${goal.actionLabel}</button>`;
+                    } else if (goal.action) {
+                        actionHtml = `<a href="${goal.action}" class="goal-action">${goal.actionLabel}</a>`;
+                    }
+                }
+
                 return `
-                    <div class="readiness-item ${doneClass}">
-                        <span class="readiness-check">${checkIcon}</span>
-                        <span>${d.label}</span>
+                    <div class="goal-item ${doneClass}">
+                        <span class="goal-check">${checkIcon}</span>
+                        <div class="goal-progress">
+                            <div class="goal-progress-label">
+                                <span>${goal.label}</span>
+                                <span style="font-size: 0.8rem; font-weight: 600;">${current}/${goal.target}</span>
+                            </div>
+                            <div class="goal-progress-bar">
+                                <div class="goal-progress-fill" style="width: ${progressPct}%"></div>
+                            </div>
+                        </div>
                         ${actionHtml}
                     </div>
                 `;
             }).join('');
 
             if (percentage === 100) {
-                itemsEl.innerHTML += '<div class="readiness-complete-msg">✨ You\'re fully prepared — keep applying!</div>';
+                itemsEl.innerHTML += '<div class="goals-complete-msg">🎯 All goals hit this week — keep the momentum!</div>';
             }
 
             section.style.display = 'block';
         }
 
-        function renderTodaysFocus(profile, apps, activeApps, readiness) {
+        function incrementGoalProgress(goalId) {
+            try {
+                const raw = localStorage.getItem('weeklyGoals');
+                if (!raw) return;
+                const weeklyGoals = JSON.parse(raw);
+                const goal = weeklyGoals.goals.find(g => g.id === goalId);
+                if (goal && goal.manualProgress !== undefined) {
+                    goal.manualProgress = (goal.manualProgress || 0) + 1;
+                    localStorage.setItem('weeklyGoals', JSON.stringify(weeklyGoals));
+                }
+            } catch (e) {
+                console.warn('Could not increment goal progress:', e);
+            }
+        }
+
+        function renderTodaysFocus(profile, apps, activeApps, weeklyGoals) {
             const container = document.getElementById('focusItems');
-            const focusItems = generateFocusItems(profile, apps, activeApps, readiness);
+            const focusItems = generateFocusItems(profile, apps, activeApps, weeklyGoals);
 
             container.innerHTML = focusItems.map((item, i) => {
                 let buttonHtml = '';
@@ -3489,7 +3690,7 @@
             }).join('');
         }
 
-        function generateFocusItems(profile, apps, activeApps, readiness) {
+        function generateFocusItems(profile, apps, activeApps, weeklyGoals) {
             const items = [];
             const { holding_up, timeline } = profile?.situation || {};
 
@@ -3523,8 +3724,8 @@
 
             // ─────────────────────────────────────────────────────────────────
             // ITEM 1: Priority action
-            // Hierarchy: Scheduled interview → Upcoming interview → Foundation
-            //            gaps (stories, resume, LinkedIn) → Follow-ups → On Track
+            // Hierarchy: Scheduled interview → Upcoming interview → Weekly
+            //            goal gap → Follow-ups → On Track
             // ─────────────────────────────────────────────────────────────────
             const nextScheduledInterview = getNextUpcomingInterview();
             let item1Set = false;
@@ -3573,31 +3774,50 @@
                 item1Set = true;
             }
 
-            // 3. Foundation gaps — only when no interview is imminent
-            //    Check readiness data (may be null if async hasn't resolved yet)
-            if (!item1Set && readiness) {
-                if (readiness.storyCount === 0) {
+            // 3. Weekly goal gaps — surface the most-behind goal as Priority
+            if (!item1Set && weeklyGoals && weeklyGoals.goals) {
+                const behindGoals = weeklyGoals.goals
+                    .filter(g => (g.current || 0) < g.target)
+                    .sort((a, b) => ((a.current || 0) / a.target) - ((b.current || 0) / b.target));
+
+                if (behindGoals.length > 0) {
+                    const mostBehind = behindGoals[0];
+                    const remaining = mostBehind.target - (mostBehind.current || 0);
+
+                    let message = '';
+                    let buttonText = '';
+                    let buttonLink = null;
+                    let buttonModalDest = null;
+
+                    switch (mostBehind.id) {
+                        case 'applications':
+                            message = `<strong>Apply to ${remaining} more role${remaining > 1 ? 's' : ''} this week.</strong> ${remaining === mostBehind.target ? 'Start building momentum.' : 'Keep the pipeline growing.'}`;
+                            buttonText = 'Analyze Role';
+                            buttonLink = '/analyze';
+                            break;
+                        case 'followups':
+                            message = `<strong>Send ${remaining} follow-up${remaining > 1 ? 's' : ''}.</strong> Following up shows persistence and keeps you top of mind.`;
+                            buttonText = 'Draft Follow-up';
+                            buttonModalDest = 'outreach';
+                            break;
+                        case 'stories':
+                            message = `<strong>Build ${remaining} interview stor${remaining > 1 ? 'ies' : 'y'}.</strong> Strong stories are the #1 differentiator in interviews.`;
+                            buttonText = 'Build Stories';
+                            buttonLink = '/story-bank';
+                            break;
+                        case 'research':
+                            message = `<strong>Analyze ${remaining} more role${remaining > 1 ? 's' : ''} for fit.</strong> Understanding fit before applying saves time.`;
+                            buttonText = 'Analyze';
+                            buttonLink = '/analyze';
+                            break;
+                    }
+
                     items.push({
                         label: 'Priority',
-                        message: '<strong>Build your interview stories.</strong> You have 0 stories ready. Strong stories are the #1 differentiator in interviews.',
-                        buttonText: 'Build Stories',
-                        buttonLink: '/story-bank'
-                    });
-                    item1Set = true;
-                } else if (!readiness.hasStrengthened && readiness.hasResume) {
-                    items.push({
-                        label: 'Priority',
-                        message: '<strong>Strengthen your resume.</strong> Your resume hasn\'t been optimized yet. A stronger resume gets more callbacks.',
-                        buttonText: 'Strengthen Resume',
-                        buttonLink: '/strengthen'
-                    });
-                    item1Set = true;
-                } else if (!readiness.hasLinkedIn) {
-                    items.push({
-                        label: 'Priority',
-                        message: '<strong>Optimize your LinkedIn.</strong> Recruiters check LinkedIn before reaching out. Upload yours for personalized improvements.',
-                        buttonText: 'Optimize LinkedIn',
-                        buttonLink: '/linkedin-upload'
+                        message: message,
+                        buttonText: buttonText,
+                        buttonLink: buttonLink,
+                        buttonModalDest: buttonModalDest
                     });
                     item1Set = true;
                 }
