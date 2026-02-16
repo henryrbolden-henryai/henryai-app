@@ -11428,7 +11428,7 @@ Thanks so much!
          * Lift the strategic stop after completing all review steps
          */
         function liftStrategicStop() {
-            localStorage.setItem('strategicStopOverride', Date.now());
+            localStorage.setItem('strategicStopOverride_v2', Date.now());
             localStorage.setItem('strategicStopLiftedAt', Date.now());
             document.getElementById('strategicStopBanner').style.display = 'none';
             strategicStopActive = false;
@@ -11584,11 +11584,19 @@ Thanks so much!
 
             const priorityCount = intelligence.priority_actions?.length || 0;
             let greetingText;
+            const healthStatus = intelligence.pipeline_health?.status;
+            const pipelineNeedsAttention = strategicStopActive || healthStatus === 'stalled' || healthStatus === 'overloaded';
+
             if (strategicStopActive) {
                 // When strategic stop is active, DO NOT say "on track"
                 greetingText = priorityCount > 0
                     ? `${greeting}. You have ${priorityCount} action${priorityCount !== 1 ? 's' : ''} that need attention.`
                     : `${greeting}. Your strategy review is in progress.`;
+            } else if (pipelineNeedsAttention) {
+                // When pipeline is overloaded or stalled, DO NOT say "on track"
+                greetingText = priorityCount > 0
+                    ? `${greeting}. You have ${priorityCount} action${priorityCount !== 1 ? 's' : ''} that need attention.`
+                    : `${greeting}. Your pipeline needs attention.`;
             } else {
                 greetingText = priorityCount > 0
                     ? `${greeting}! Here's what matters today:`
@@ -11611,6 +11619,17 @@ Thanks so much!
                             <div class="pulse-action-company">Strategy review needed</div>
                             <div class="pulse-action-text">Complete your strategy review above to get your pipeline back on track.</div>
                             <button class="pulse-action-btn" onclick="toggleStrategyReview()">Start Review</button>
+                        </div>
+                    `;
+                } else if (pipelineNeedsAttention) {
+                    const healthMsg = healthStatus === 'overloaded'
+                        ? "You're spreading thin. Focus on converting the applications you have."
+                        : intelligence.pipeline_health?.reason || 'Your pipeline needs attention.';
+                    actionsRow.innerHTML = `
+                        <div class="pulse-action-card">
+                            <div class="pulse-action-icon">⚠️</div>
+                            <div class="pulse-action-company">Pipeline needs attention</div>
+                            <div class="pulse-action-text">${healthMsg}</div>
                         </div>
                     `;
                 } else {
@@ -12214,8 +12233,13 @@ Thanks so much!
             }).length;
             const interviewRate = totalApps > 0 ? (interviews / totalApps) * 100 : 0;
 
+            // Clear legacy override key from old code (no expiry, blocks new feature)
+            if (localStorage.getItem('strategicStopOverride') && !localStorage.getItem('strategicStopOverride_v2')) {
+                localStorage.removeItem('strategicStopOverride');
+            }
+
             // Check for existing override with 7-day expiry
-            const overrideTime = localStorage.getItem('strategicStopOverride');
+            const overrideTime = localStorage.getItem('strategicStopOverride_v2');
             if (overrideTime && (Date.now() - parseInt(overrideTime)) < 7 * 24 * 60 * 60 * 1000) {
                 strategicStopActive = false;
                 document.getElementById('strategicStopBanner').style.display = 'none';
@@ -12273,7 +12297,7 @@ Thanks so much!
         function overrideStrategicStop() {
             if (confirm('Are you sure? Overriding without reviewing your strategy may lead to more wasted applications.')) {
                 document.getElementById('strategicStopBanner').style.display = 'none';
-                localStorage.setItem('strategicStopOverride', Date.now());
+                localStorage.setItem('strategicStopOverride_v2', Date.now());
                 strategicStopActive = false;
                 // Re-render Daily Pulse without the contradiction
                 renderDailyPulseV2(commandCenterIntelligence);
