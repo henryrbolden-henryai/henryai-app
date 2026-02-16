@@ -173,16 +173,46 @@ const CommandCenter = {
             !['rejected', 'withdrawn', 'archived'].includes(a.status?.toLowerCase())
         );
 
+        // Calculate interview rate locally for proper pipeline health detection
+        const interviewStatuses = ['recruiter screen', 'hiring manager', 'technical round',
+            'panel interview', 'final round', 'executive interview', 'recruiter screen scheduled',
+            'awaiting screen result', 'awaiting decision'];
+        const interviews = activeApps.filter(a => {
+            const s = (a.status || '').toLowerCase();
+            return s.includes('interview') || s.includes('screen') || s.includes('recruiter');
+        }).length;
+        const interviewRate = activeApps.length > 0 ? (interviews / activeApps.length) * 100 : 0;
+
+        // Determine status — match backend logic from tracker_helpers.py
+        let status, color, icon, tone, recommendation, reason;
+        if (activeApps.length < 3) {
+            status = 'thin'; color = 'yellow'; icon = '📉'; tone = 'urgent';
+            recommendation = 'Apply to 3 new roles now';
+            reason = "Pipeline's too thin. You need momentum.";
+        } else if (interviewRate < 5 && activeApps.length >= 5) {
+            status = 'stalled'; color = 'red'; icon = '🚨'; tone = 'urgent';
+            recommendation = 'Stop applying. Fix your positioning.';
+            reason = "Something's broken. Diagnose before continuing.";
+        } else if (activeApps.length > 10) {
+            status = 'overloaded'; color = 'yellow'; icon = '📈'; tone = 'caution';
+            recommendation = 'Pause applications. Focus on interviews only.';
+            reason = "You're spreading thin. Convert what you have.";
+        } else {
+            status = 'healthy'; color = 'green'; icon = '✅'; tone = 'steady';
+            recommendation = 'None—maintain pace, focus on interviews';
+            reason = 'Good volume. Shift energy to conversion.';
+        }
+
         return {
             priority_actions: [],
             pipeline_health: {
                 active_count: activeApps.length,
-                status: activeApps.length < 3 ? 'thin' : activeApps.length > 10 ? 'overloaded' : 'healthy',
-                color: activeApps.length < 3 ? 'yellow' : 'green',
-                icon: activeApps.length < 3 ? '📉' : '✅',
-                tone: 'caution',
-                recommendation: 'Connect to backend for full intelligence',
-                reason: 'Running in offline mode',
+                status: status,
+                color: color,
+                icon: icon,
+                tone: tone,
+                recommendation: recommendation,
+                reason: reason + ' Running in offline mode.',
                 priority_count: 0
             },
             focus_mode: {
