@@ -212,16 +212,16 @@
         }
     }
 
-    // Sign out function
-    function signOut() {
-        // Clear all auth data
-        localStorage.removeItem('supabase_session');
-        localStorage.removeItem('beta_verified');
-        localStorage.removeItem('henryhq_user');
-        localStorage.removeItem('userProfile');
-        sessionStorage.clear();
-        // Redirect to login
-        window.location.href = '/login';
+    // Sign out function - uses Supabase auth to properly invalidate the session
+    async function signOut() {
+        if (typeof HenryAuth !== 'undefined') {
+            await HenryAuth.signOut();
+        } else {
+            // Fallback: clear all storage and redirect
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/login';
+        }
     }
 
     // Initialize
