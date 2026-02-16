@@ -1462,6 +1462,148 @@
             margin-bottom: 32px;
         }
 
+        .job-discovery-section > h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 16px 0;
+        }
+
+        .job-discovery-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        /* SEARCH READINESS */
+        .readiness-section {
+            margin-bottom: 32px;
+        }
+        .readiness-section > h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 16px 0;
+        }
+        .readiness-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            gap: 32px;
+            align-items: flex-start;
+        }
+        .readiness-ring-wrap {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .readiness-ring {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .readiness-ring-inner {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--color-surface);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .readiness-pct {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--color-text);
+            line-height: 1;
+        }
+        .readiness-pct-label {
+            font-size: 0.65rem;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 2px;
+        }
+        .readiness-items {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .readiness-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+        }
+        .readiness-item.done {
+            color: var(--color-text);
+        }
+        .readiness-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.7rem;
+            color: transparent;
+        }
+        .readiness-item.done .readiness-check {
+            background: var(--color-active);
+            border-color: var(--color-active);
+            color: #fff;
+        }
+        .readiness-action {
+            margin-left: auto;
+            font-size: 0.78rem;
+            color: var(--color-accent);
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--color-accent);
+            opacity: 0.8;
+            transition: opacity 0.15s;
+            white-space: nowrap;
+        }
+        .readiness-action:hover {
+            opacity: 1;
+            background: var(--color-accent-muted);
+        }
+        .readiness-complete-msg {
+            font-size: 0.85rem;
+            color: var(--color-active);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            .readiness-card {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            .readiness-items {
+                width: 100%;
+            }
+        }
+
         .job-discovery-header {
             display: flex;
             justify-content: space-between;
@@ -1921,6 +2063,24 @@
             </div>
         </div>
 
+        <!-- SEARCH READINESS -->
+        <div class="readiness-section" id="readinessSection" style="display: none;">
+            <h2>Search Readiness</h2>
+            <div class="readiness-card">
+                <div class="readiness-ring-wrap">
+                    <div class="readiness-ring" id="readinessRing">
+                        <div class="readiness-ring-inner">
+                            <span class="readiness-pct" id="readinessPct">0%</span>
+                            <span class="readiness-pct-label">Ready</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="readiness-items" id="readinessItems">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </div>
+
         <!-- PRIORITY ACTIONS (from Command Center intelligence) -->
         <div class="priority-actions-section" id="priorityActionsSection" style="display: none;">
             <h2>Your Next Actions</h2>
@@ -1941,28 +2101,30 @@
 
         <!-- JOBS FOR YOU (job discovery) -->
         <div class="job-discovery-section" id="jobDiscoverySection" style="display: none;">
-            <div class="job-discovery-header">
-                <h2>Opportunities for You <span style="font-size: 0.55em; font-weight: 600; color: #7c5cfc; background: rgba(124,92,252,0.1); padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 6px;">Beta</span></h2>
-                <div class="job-discovery-controls">
-                    <span class="job-search-info" id="jobSearchInfo"></span>
-                    <button class="job-refresh-btn" onclick="window.jobDiscovery && window.jobDiscovery.refresh()" title="Refresh job listings">Refresh</button>
+            <h2>Opportunities for You <span style="font-size: 0.55em; font-weight: 600; color: #7c5cfc; background: rgba(124,92,252,0.1); padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 6px;">Beta</span></h2>
+            <div class="job-discovery-card">
+                <div class="job-discovery-header">
+                    <div class="job-discovery-controls">
+                        <span class="job-search-info" id="jobSearchInfo"></span>
+                        <button class="job-refresh-btn" onclick="window.jobDiscovery && window.jobDiscovery.refresh()" title="Refresh job listings">Refresh</button>
+                    </div>
                 </div>
-            </div>
-            <div class="job-discovery-list" id="jobDiscoveryList">
-                <!-- Populated by job-discovery.js -->
-            </div>
-            <div class="job-discovery-footer">
-                <p class="job-refresh-note">
-                    This feature is in beta — results are curated from select sources and may not capture every open role.
-                    For the most comprehensive search, also check
-                    <a href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer">LinkedIn Jobs</a>
-                    directly.
-                </p>
-                <p class="job-network-note" id="jobNetworkNote" style="display: none;">
-                    Want to see which companies you have connections at?
-                    <a href="/profile-edit#linkedinConnectionsSection">Upload your LinkedIn connections CSV</a>
-                    in your profile and we'll highlight jobs at companies in your network.
-                </p>
+                <div class="job-discovery-list" id="jobDiscoveryList">
+                    <!-- Populated by job-discovery.js -->
+                </div>
+                <div class="job-discovery-footer">
+                    <p class="job-refresh-note">
+                        This feature is in beta — results are curated from select sources and may not capture every open role.
+                        For the most comprehensive search, also check
+                        <a href="https://www.linkedin.com/jobs/" target="_blank" rel="noopener noreferrer">LinkedIn Jobs</a>
+                        directly.
+                    </p>
+                    <p class="job-network-note" id="jobNetworkNote" style="display: none;">
+                        Want to see which companies you have connections at?
+                        <a href="/profile-edit#linkedinConnectionsSection">Upload your LinkedIn connections CSV</a>
+                        in your profile and we'll highlight jobs at companies in your network.
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -2387,9 +2549,20 @@
                 renderPriorityActions(apps);
                 renderJobDiscoveryNetworkNote(profile);
                 renderRealityCheck(profile, apps, activeApps);
-                renderTodaysFocus(profile, apps, activeApps);
+
+                // Render Today's Focus immediately (without readiness data)
+                renderTodaysFocus(profile, apps, activeApps, null);
+
                 renderStrategicOptions(profile);
                 renderRecentActivity(apps);
+
+                // Fetch readiness data async, then re-render focus + readiness section
+                fetchReadinessData(profile, activeApps).then(readiness => {
+                    renderSearchReadiness(profile, readiness);
+                    renderTodaysFocus(profile, apps, activeApps, readiness);
+                }).catch(err => {
+                    console.warn('Could not load readiness data:', err);
+                });
             } catch (e) {
                 console.error('Error rendering dashboard:', e);
                 // Don't throw - this would trigger auth redirect
@@ -3202,9 +3375,94 @@
             window.location.href = '/' + destination;
         }
 
-        function renderTodaysFocus(profile, apps, activeApps) {
+        // ====================================================================
+        // SEARCH READINESS
+        // ====================================================================
+        async function fetchReadinessData(profile, activeApps) {
+            let storyCount = 0;
+            if (typeof HenryData !== 'undefined' && HenryData.getStoryBank) {
+                try {
+                    const stories = await HenryData.getStoryBank();
+                    storyCount = (stories || []).filter(s => s.status !== 'retired').length;
+                } catch(e) {
+                    console.warn('Could not fetch story bank:', e);
+                }
+            }
+            return {
+                hasResume: !!(profile?.resume),
+                hasStrengthened: !!(localStorage.getItem('strengthenedData_backup')),
+                storyCount: storyCount,
+                hasLinkedIn: !!(profile?.linkedin_profile_uploaded),
+                activeAppCount: activeApps.length,
+            };
+        }
+
+        function renderSearchReadiness(profile, readiness) {
+            const section = document.getElementById('readinessSection');
+            const ring = document.getElementById('readinessRing');
+            const pct = document.getElementById('readinessPct');
+            const itemsEl = document.getElementById('readinessItems');
+            if (!section || !ring || !pct || !itemsEl) return;
+
+            const dimensions = [
+                { key: 'hasResume',       label: 'Resume uploaded',           done: readiness.hasResume,            action: '/profile',         actionLabel: 'Upload' },
+                { key: 'hasStrengthened', label: 'Resume strengthened',       done: readiness.hasStrengthened,      action: '/strengthen',      actionLabel: 'Strengthen' },
+                { key: 'stories',         label: `Interview stories (${readiness.storyCount})`, done: readiness.storyCount >= 3, action: '/story-bank',      actionLabel: 'Build' },
+                { key: 'hasLinkedIn',     label: 'LinkedIn optimized',        done: readiness.hasLinkedIn,          action: '/linkedin-upload',  actionLabel: 'Optimize' },
+                { key: 'pipeline',        label: 'Active pipeline (3+ apps)', done: readiness.activeAppCount >= 3,  action: '/analyze',         actionLabel: 'Add Roles' },
+            ];
+
+            const completedCount = dimensions.filter(d => d.done).length;
+            const percentage = Math.round((completedCount / dimensions.length) * 100);
+
+            // Don't show if user hasn't done anything yet (0%) — the setup checklist covers onboarding
+            if (completedCount === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Auto-hide after one session when 100%
+            if (percentage === 100) {
+                const dismissedKey = 'readiness_dismissed_100';
+                if (sessionStorage.getItem(dismissedKey)) {
+                    section.style.display = 'none';
+                    return;
+                }
+                sessionStorage.setItem(dismissedKey, '1');
+            }
+
+            // Ring color
+            let ringColor = '#FF6B35'; // orange
+            if (percentage >= 80) ringColor = '#4CAF50'; // green
+            else if (percentage >= 40) ringColor = '#22d3ee'; // accent cyan
+
+            ring.style.background = `conic-gradient(${ringColor} ${percentage * 3.6}deg, rgba(255,255,255,0.06) ${percentage * 3.6}deg)`;
+            pct.textContent = percentage + '%';
+
+            // Items
+            itemsEl.innerHTML = dimensions.map(d => {
+                const doneClass = d.done ? 'done' : '';
+                const checkIcon = d.done ? '✓' : '';
+                const actionHtml = !d.done ? `<a href="${d.action}" class="readiness-action">${d.actionLabel}</a>` : '';
+                return `
+                    <div class="readiness-item ${doneClass}">
+                        <span class="readiness-check">${checkIcon}</span>
+                        <span>${d.label}</span>
+                        ${actionHtml}
+                    </div>
+                `;
+            }).join('');
+
+            if (percentage === 100) {
+                itemsEl.innerHTML += '<div class="readiness-complete-msg">✨ You\'re fully prepared — keep applying!</div>';
+            }
+
+            section.style.display = 'block';
+        }
+
+        function renderTodaysFocus(profile, apps, activeApps, readiness) {
             const container = document.getElementById('focusItems');
-            const focusItems = generateFocusItems(profile, apps, activeApps);
+            const focusItems = generateFocusItems(profile, apps, activeApps, readiness);
 
             container.innerHTML = focusItems.map((item, i) => {
                 let buttonHtml = '';
@@ -3231,7 +3489,7 @@
             }).join('');
         }
 
-        function generateFocusItems(profile, apps, activeApps) {
+        function generateFocusItems(profile, apps, activeApps, readiness) {
             const items = [];
             const { holding_up, timeline } = profile?.situation || {};
 
@@ -3243,24 +3501,19 @@
             const now = new Date();
             const upcomingInterviews = apps.filter(a => {
                 if (!interviewStatuses.includes(a.status)) return false;
-                // If there's an interview date, check if it's in the future
                 if (a.interviewDate) {
                     return new Date(a.interviewDate) >= now;
                 }
-                // If no date but in interview status, it's "scheduled" but date unknown
                 return true;
             });
 
             // Check for COMPLETED interviews (have interview date in the past or dateInterviewed set)
             const completedInterviews = apps.filter(a => {
-                // Apps that are in post-interview stages
                 if (['Awaiting Decision', 'Awaiting Screen Result', 'Offer Received', 'Negotiating'].includes(a.status)) {
                     return true;
                 }
-                // Apps in interview stage but with past interview date
                 if (interviewStatuses.includes(a.status) && a.dateInterviewed) {
                     const interviewedDate = new Date(a.dateInterviewed);
-                    // Consider "completed" if interviewed more than 1 day ago
                     return (now - interviewedDate) > (24 * 60 * 60 * 1000);
                 }
                 return false;
@@ -3269,27 +3522,27 @@
             const followUpsDue = getFollowUpsDue(apps);
 
             // ─────────────────────────────────────────────────────────────────
-            // ITEM 1: Priority action (interview prep, follow-up, or apply)
+            // ITEM 1: Priority action
+            // Hierarchy: Scheduled interview → Upcoming interview → Foundation
+            //            gaps (stories, resume, LinkedIn) → Follow-ups → On Track
             // ─────────────────────────────────────────────────────────────────
-            // Check for scheduled interviews from dedicated storage first
             const nextScheduledInterview = getNextUpcomingInterview();
+            let item1Set = false;
 
+            // 1. Scheduled interview with date
             if (nextScheduledInterview) {
-                // Format the interview date nicely
                 const interviewDate = new Date(nextScheduledInterview.date);
                 const dateOptions = { weekday: 'short', month: 'short', day: 'numeric' };
                 const timeOptions = { hour: 'numeric', minute: '2-digit' };
                 const dateStr = interviewDate.toLocaleDateString('en-US', dateOptions);
                 const timeStr = interviewDate.toLocaleTimeString('en-US', timeOptions);
 
-                // Calculate days until interview
                 const daysUntil = Math.ceil((interviewDate - now) / (1000 * 60 * 60 * 24));
                 let urgency = '';
                 if (daysUntil === 0) urgency = '(Today!)';
                 else if (daysUntil === 1) urgency = '(Tomorrow)';
                 else if (daysUntil <= 3) urgency = `(in ${daysUntil} days)`;
 
-                // Build interview message with interviewer name if available
                 let interviewMsg = `<strong>${nextScheduledInterview.company}</strong>: ${nextScheduledInterview.type || 'Interview'}`;
                 if (nextScheduledInterview.interviewerName) {
                     interviewMsg += ` with ${nextScheduledInterview.interviewerName}`;
@@ -3306,6 +3559,9 @@
                     buttonLink: '/interview-intelligence',
                     type: 'urgent'
                 });
+                item1Set = true;
+
+            // 2. App in interview status (no specific date)
             } else if (upcomingInterviews.length > 0) {
                 const nextInterview = upcomingInterviews[0];
                 items.push({
@@ -3314,8 +3570,41 @@
                     buttonText: 'Interview Prep',
                     buttonLink: '/interview-intelligence'
                 });
-            } else if (completedInterviews.length > 0) {
-                // They have completed interviews - suggest follow-up or debrief
+                item1Set = true;
+            }
+
+            // 3. Foundation gaps — only when no interview is imminent
+            //    Check readiness data (may be null if async hasn't resolved yet)
+            if (!item1Set && readiness) {
+                if (readiness.storyCount === 0) {
+                    items.push({
+                        label: 'Priority',
+                        message: '<strong>Build your interview stories.</strong> You have 0 stories ready. Strong stories are the #1 differentiator in interviews.',
+                        buttonText: 'Build Stories',
+                        buttonLink: '/story-bank'
+                    });
+                    item1Set = true;
+                } else if (!readiness.hasStrengthened && readiness.hasResume) {
+                    items.push({
+                        label: 'Priority',
+                        message: '<strong>Strengthen your resume.</strong> Your resume hasn\'t been optimized yet. A stronger resume gets more callbacks.',
+                        buttonText: 'Strengthen Resume',
+                        buttonLink: '/strengthen'
+                    });
+                    item1Set = true;
+                } else if (!readiness.hasLinkedIn) {
+                    items.push({
+                        label: 'Priority',
+                        message: '<strong>Optimize your LinkedIn.</strong> Recruiters check LinkedIn before reaching out. Upload yours for personalized improvements.',
+                        buttonText: 'Optimize LinkedIn',
+                        buttonLink: '/linkedin-upload'
+                    });
+                    item1Set = true;
+                }
+            }
+
+            // 4. Follow-ups (demoted from "Priority" to "Follow-up Due")
+            if (!item1Set && completedInterviews.length > 0) {
                 const awaitingResponse = completedInterviews.filter(a =>
                     ['Awaiting Decision', 'Awaiting Screen Result'].includes(a.status)
                 );
@@ -3324,12 +3613,13 @@
                     const daysSince = getDaysSince(app.dateInterviewed || app.lastUpdated);
                     if (daysSince >= 3) {
                         items.push({
-                            label: 'Priority',
+                            label: 'Follow-up Due',
                             message: `<strong>Follow up with ${app.company}</strong>: ${daysSince} days since your interview`,
                             buttonText: 'Draft Follow-up',
                             buttonModalDest: 'outreach',
                             buttonAppId: app.id
                         });
+                        item1Set = true;
                     } else {
                         items.push({
                             label: 'Awaiting Response',
@@ -3338,22 +3628,28 @@
                             buttonLink: '/tracker',
                             buttonType: 'secondary'
                         });
+                        item1Set = true;
                     }
                 }
-            } else if (followUpsDue.length > 0) {
+            }
+
+            if (!item1Set && followUpsDue.length > 0) {
                 const oldestFollowUp = followUpsDue.sort((a, b) =>
                     new Date(a.dateApplied || a.dateAdded) - new Date(b.dateApplied || b.dateAdded)
                 )[0];
                 const daysSince = getDaysSince(oldestFollowUp.dateApplied || oldestFollowUp.dateAdded);
                 items.push({
-                    label: 'Priority',
+                    label: 'Follow-up Due',
                     message: `<strong>Follow up with ${oldestFollowUp.company}</strong>: ${daysSince} days since applying`,
                     buttonText: 'Draft Follow-up',
                     buttonModalDest: 'outreach',
                     buttonAppId: oldestFollowUp.id
                 });
-            } else if (activeApps.length > 0) {
-                // Has active apps but nothing urgent - suggest keeping momentum
+                item1Set = true;
+            }
+
+            // 5. All caught up
+            if (!item1Set && activeApps.length > 0) {
                 items.push({
                     label: 'On Track',
                     message: `<strong>${activeApps.length} active applications</strong> in your pipeline. Keep the momentum going.`,
