@@ -3457,17 +3457,21 @@ class DiscoveredJob(BaseModel):
     publisher: Optional[str] = None
     network_connection: bool = False
     network_connection_count: int = 0
+    relevance_score: Optional[int] = None
+    relevance_reasons: Optional[List[str]] = None
 
 class JobDiscoverResponse(BaseModel):
     """Response from job discovery endpoint."""
     jobs: List[DiscoveredJob]
     total_found: int
     search_query: str
+    search_queries: Optional[List[str]] = None
     location_used: Optional[str] = None
     cached: bool = False
     cache_expires_at: Optional[float] = None
     network_enabled: bool = False
-    refresh_note: str = "This list refreshes every 24 hours based on your profile. For the most comprehensive search, also check LinkedIn Jobs directly."
+    queries_executed: int = 1
+    refresh_note: str = "This list refreshes every 12 hours based on your profile. For the most comprehensive search, also check LinkedIn Jobs directly."
     error: Optional[str] = None
 
 class LinkedInConnectionsUploadResponse(BaseModel):
@@ -4786,6 +4790,80 @@ Your response must be ONLY valid JSON, no additional text."""
         if qa_validation_result.warnings:
             parsed_data = add_validation_warnings_to_response(parsed_data, qa_validation_result)
             print(f"  ⚠️ Resume parse warnings: {len(qa_validation_result.warnings)}")
+
+        # =================================================================
+        # JOB SEARCH INFERENCE: Derive search parameters from parsed resume
+        # No extra LLM call — uses existing utilities and parsed data
+        # =================================================================
+        try:
+            from backend.utils.role_detection import infer_seniority_from_title, detect_role_type
+
+            current_title = parsed_data.get("current_title", "") or ""
+            target_roles = parsed_data.get("target_roles", []) or []
+            industries = parsed_data.get("industries", []) or []
+            skills = parsed_data.get("skills", []) or []
+            core_competencies = parsed_data.get("core_competencies", []) or []
+            years_exp = parsed_data.get("years_experience", "") or ""
+
+            # Infer seniority from current title
+            inferred_seniority = infer_seniority_from_title(current_title) if current_title else "mid"
+
+            # Infer function area from current title
+            role_type = detect_role_type("", current_title) if current_title else "general_leadership"
+            function_area_map = {
+                "product_manager": "product_management",
+                "software_engineer": "engineering",
+                "ux_designer": "design",
+                "ui_designer": "design",
+                "talent_acquisition": "hr_people",
+                "general_leadership": "operations",
+            }
+            suggested_function_area = function_area_map.get(role_type, "other")
+
+            # Build suggested target roles if none were extracted
+            suggested_target_roles = target_roles[:5] if target_roles else []
+            if not suggested_target_roles and current_title:
+                suggested_target_roles = [current_title]
+
+            # Extract top search keywords from skills + competencies
+            all_keywords = skills[:5] + core_competencies[:3]
+            top_keywords = all_keywords[:5]
+
+            # Infer industry
+            suggested_industry = industries[0].lower() if industries else "technology"
+            # Map to DB enum values
+            industry_map = {
+                "technology": "technology", "tech": "technology", "software": "technology",
+                "healthcare": "healthcare", "health": "healthcare", "medical": "healthcare",
+                "fintech": "fintech", "financial technology": "fintech",
+                "finance": "fintech", "banking": "fintech",
+                "ecommerce": "ecommerce", "e-commerce": "ecommerce", "retail": "ecommerce",
+                "media": "media", "entertainment": "media",
+                "manufacturing": "manufacturing",
+                "energy": "energy",
+                "real estate": "real_estate",
+                "education": "education", "edtech": "education",
+                "government": "government",
+                "consulting": "consulting",
+                "telecom": "telecom", "telecommunications": "telecom",
+                "transportation": "transportation", "logistics": "transportation",
+                "hospitality": "hospitality",
+                "nonprofit": "nonprofit", "non-profit": "nonprofit",
+            }
+            suggested_industry = industry_map.get(suggested_industry, "technology")
+
+            parsed_data["job_search_inference"] = {
+                "suggested_function_area": suggested_function_area,
+                "suggested_target_roles": suggested_target_roles,
+                "suggested_seniority": inferred_seniority,
+                "top_search_keywords": top_keywords,
+                "suggested_industry": suggested_industry,
+            }
+            print(f"  🎯 Job search inference: function={suggested_function_area}, seniority={inferred_seniority}, roles={suggested_target_roles[:2]}")
+
+        except Exception as e:
+            print(f"  ⚠️ Job search inference failed (non-blocking): {e}")
+            parsed_data["job_search_inference"] = None
 
         return parsed_data
 
@@ -19004,13 +19082,17 @@ async def discover_jobs(request: JobDiscoverRequest):
     Data flow:
     1. If user_id provided, fetch candidate profile + resume from Supabase
        to get target_roles, location, work_arrangement, excluded_companies,
+       seniority_preference, target_industry, employment_type_preferences,
        and linkedin_network_companies
     2. Request overrides (role_title, location, etc.) take priority
-    3. Search JSearch API with built params
-    4. Cross-reference results with network companies (LinkedIn + prior employers)
-    5. Return flagged, sorted results (cached 24 hours)
+    3. Build multi-query params for better coverage
+    4. Search JSearch API with 2-3 queries, merge and deduplicate
+    5. Score each job for relevance (title, seniority, location, salary, industry, recency)
+    6. Cross-reference with network companies (LinkedIn + prior employers)
+    7. Return scored, sorted results (cached 12 hours)
     """
     from backend.services.job_discovery import job_discovery_service
+    from backend.services.job_scorer import score_and_rank_jobs
 
     try:
         # Start with request params as fallback (from frontend resume parsing)
@@ -19021,42 +19103,48 @@ async def discover_jobs(request: JobDiscoverRequest):
         excluded_companies = None
         network_companies = []
         network_enabled = False
+        function_area = None
+        target_industry = None
+        employment_types = None
+        seniority_preference = None
+        years_experience = None
+        comp_min = None
+        comp_max = None
 
         # If user_id provided and Supabase available, use profile as PRIMARY source.
-        # Profile preferences (function_area, city, state) are what the user explicitly
-        # set — they should take priority over auto-parsed resume data from the frontend.
         if request.user_id and supabase_client:
             try:
-                # Fetch candidate profile
+                # Fetch candidate profile with new alignment fields
                 profile_result = supabase_client.table('candidate_profiles') \
                     .select('function_area, city, state, country, work_arrangement, '
                             'job_search_keywords, excluded_companies, '
-                            'linkedin_network_companies, target_industry_primary') \
+                            'linkedin_network_companies, target_industry_primary, '
+                            'target_roles, employment_type_preferences, '
+                            'seniority_preference, years_experience, current_level_id, '
+                            'comp_min, comp_stretch') \
                     .eq('id', request.user_id) \
                     .single() \
                     .execute()
 
                 profile = profile_result.data if profile_result.data else {}
 
-                # Profile function_area OVERRIDES request role_title (user explicitly chose this)
-                if profile.get('function_area'):
-                    function_map = {
-                        'product_management': 'Product Manager',
-                        'engineering': 'Software Engineer',
-                        'design': 'UX Designer',
-                        'data_analytics': 'Data Analyst',
-                        'sales': 'Sales Manager',
-                        'marketing': 'Marketing Manager',
-                        'customer_success': 'Customer Success Manager',
-                        'operations': 'Operations Manager',
-                        'finance': 'Finance Manager',
-                        'hr_people': 'HR Manager',
-                        'legal': 'Legal Counsel',
-                    }
-                    mapped = function_map.get(profile['function_area'], profile['function_area'])
+                # target_roles from profile (explicit user selection) takes priority
+                if profile.get('target_roles') and len(profile['target_roles']) > 0:
+                    target_roles = profile['target_roles']
+                elif profile.get('function_area'):
+                    from backend.services.job_discovery import FUNCTION_AREA_MAP
+                    mapped = FUNCTION_AREA_MAP.get(profile['function_area'], profile['function_area'])
                     target_roles = [mapped]
 
-                # Profile location OVERRIDES request location (user explicitly set this)
+                function_area = profile.get('function_area')
+                target_industry = profile.get('target_industry_primary')
+                employment_types = profile.get('employment_type_preferences')
+                seniority_preference = profile.get('seniority_preference')
+                years_experience = profile.get('years_experience')
+                comp_min = profile.get('comp_min')
+                comp_max = profile.get('comp_stretch')
+
+                # Profile location
                 loc_parts = []
                 if profile.get('city'):
                     loc_parts.append(profile['city'])
@@ -19070,12 +19158,12 @@ async def discover_jobs(request: JobDiscoverRequest):
 
                 excluded_companies = profile.get('excluded_companies') or []
 
-                # Work arrangement from profile
+                # Work arrangement
                 work_arr = profile.get('work_arrangement') or []
                 if isinstance(work_arr, list) and len(work_arr) == 1 and 'remote' in work_arr:
                     remote_only = True
 
-                # LinkedIn network companies from Supabase
+                # LinkedIn network companies
                 linkedin_companies = profile.get('linkedin_network_companies') or []
                 if linkedin_companies:
                     for item in linkedin_companies:
@@ -19084,8 +19172,7 @@ async def discover_jobs(request: JobDiscoverRequest):
                             network_companies.append(company_name)
                     network_enabled = True
 
-                # If still no target_roles (profile has no function_area),
-                # try the default resume as fallback
+                # If still no target_roles, try the default resume as fallback
                 if not target_roles:
                     resume_result = supabase_client.table('user_resumes') \
                         .select('resume_json') \
@@ -19115,35 +19202,57 @@ async def discover_jobs(request: JobDiscoverRequest):
 
             except Exception as e:
                 logger.warning(f"Could not fetch profile from Supabase: {e}")
-                # Continue with request params only
 
-        # Build search parameters
-        params = job_discovery_service.build_search_params(
+        # Build multi-query parameters for better coverage
+        query_params_list = job_discovery_service.build_multi_query_params(
             target_roles=target_roles,
+            function_area=function_area,
+            target_industry=target_industry,
             job_search_keywords=keywords,
+            location=location,
             remote_only=remote_only,
+            employment_types=employment_types,
+            years_experience=years_experience,
         )
 
-        if location:
-            params["query"] = f"{params['query']} in {location}"
+        logger.info(f"Job discovery: {len(query_params_list)} queries | target_roles={target_roles} | seniority={seniority_preference} | industry={target_industry} | location={location}")
 
-        logger.info(f"Job discovery query: '{params.get('query')}' | target_roles={target_roles} | location={location} | remote={remote_only}")
-
-        # Search for jobs (with company exclusion)
-        results = job_discovery_service.search_jobs(params, excluded_companies=excluded_companies)
+        # Execute multi-query search with merge and dedup
+        results = job_discovery_service.search_multi_query(
+            query_params_list,
+            excluded_companies=excluded_companies,
+            max_results=20,
+        )
 
         if results.get("error"):
             return JobDiscoverResponse(
                 jobs=[],
                 total_found=0,
                 search_query=results.get("search_query", ""),
+                search_queries=results.get("search_queries"),
                 cached=False,
                 network_enabled=network_enabled,
                 error=results["error"],
             )
 
-        # Apply network matching (LinkedIn + prior employers)
+        # Apply relevance scoring
         jobs_data = results.get("jobs", [])
+        candidate_seniority = seniority_preference or "mid"
+        candidate_remote = remote_only or False
+
+        jobs_data = score_and_rank_jobs(
+            jobs=jobs_data,
+            target_roles=target_roles or [],
+            candidate_seniority=candidate_seniority,
+            candidate_location=location,
+            candidate_remote_preferred=candidate_remote,
+            comp_min=comp_min,
+            comp_max=comp_max,
+            target_industry=target_industry,
+            min_score=25,
+        )
+
+        # Apply network matching (LinkedIn + prior employers)
         if network_companies:
             jobs_data = job_discovery_service.flag_network_companies(jobs_data, network_companies)
 
@@ -19153,10 +19262,12 @@ async def discover_jobs(request: JobDiscoverRequest):
             jobs=jobs,
             total_found=results.get("total_found", len(jobs)),
             search_query=results.get("search_query", ""),
+            search_queries=results.get("search_queries"),
             location_used=location,
             cached=results.get("cached", False),
             cache_expires_at=results.get("cache_expires_at"),
             network_enabled=network_enabled or len(network_companies) > 0,
+            queries_executed=results.get("queries_executed", 1),
         )
 
     except Exception as e:

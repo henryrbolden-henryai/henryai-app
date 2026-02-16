@@ -2,6 +2,7 @@
 Job Discovery Service
 Fetches job listings from external APIs (JSearch/RapidAPI) with caching.
 Builds search queries from candidate profile data.
+Supports multi-query strategy for better alignment.
 """
 
 import os
@@ -10,11 +11,27 @@ import hashlib
 import logging
 import requests
 from typing import Optional, List, Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger("henryhq.job_discovery")
 
-# Cache TTL: 24 hours
-CACHE_TTL_SECONDS = 86400
+# Cache TTL: 12 hours (jobs go stale quickly)
+CACHE_TTL_SECONDS = 43200
+
+# Function area to readable search term mapping
+FUNCTION_AREA_MAP = {
+    'product_management': 'Product Manager',
+    'engineering': 'Software Engineer',
+    'design': 'UX Designer',
+    'data_analytics': 'Data Analyst',
+    'sales': 'Sales',
+    'marketing': 'Marketing Manager',
+    'customer_success': 'Customer Success Manager',
+    'operations': 'Operations Manager',
+    'finance': 'Finance Manager',
+    'hr_people': 'HR Manager',
+    'legal': 'Legal Counsel',
+}
 
 
 class JobDiscoveryService:
@@ -42,6 +59,8 @@ class JobDiscoveryService:
         work_arrangement: List[str] = None,
         remote_only: bool = False,
         excluded_companies: List[str] = None,
+        employment_types: List[str] = None,
+        years_experience: int = None,
     ) -> Dict[str, Any]:
         """
         Build JSearch API query parameters from candidate profile data.
@@ -58,21 +77,7 @@ class JobDiscoveryService:
             # Use the first target role as primary query
             query_parts.append(target_roles[0])
         elif function_area:
-            # Map function_area enum to readable search terms
-            function_map = {
-                'product_management': 'Product Manager',
-                'engineering': 'Software Engineer',
-                'design': 'UX Designer',
-                'data_analytics': 'Data Analyst',
-                'sales': 'Sales',
-                'marketing': 'Marketing Manager',
-                'customer_success': 'Customer Success Manager',
-                'operations': 'Operations Manager',
-                'finance': 'Finance Manager',
-                'hr_people': 'HR Manager',
-                'legal': 'Legal Counsel',
-            }
-            query_parts.append(function_map.get(function_area, function_area))
+            query_parts.append(FUNCTION_AREA_MAP.get(function_area, function_area))
 
         if job_search_keywords:
             query_parts.extend(job_search_keywords[:3])  # Limit to 3 extra keywords
@@ -103,13 +108,160 @@ class JobDiscoveryService:
         }
 
         if location_parts:
-            # Append location to query for better results
             params["query"] = f"{query} in {', '.join(location_parts)}"
 
         if is_remote:
             params["remote_jobs_only"] = "true"
 
+        # Employment type filter
+        if employment_types:
+            params["employment_types"] = ",".join(employment_types)
+
+        # Experience level filter
+        if years_experience is not None:
+            if years_experience < 3:
+                params["job_requirements"] = "under_3_years_experience"
+            elif years_experience >= 3:
+                params["job_requirements"] = "more_than_3_years_experience"
+
         return params
+
+    def build_multi_query_params(
+        self,
+        target_roles: List[str] = None,
+        function_area: str = None,
+        target_industry: str = None,
+        job_search_keywords: List[str] = None,
+        location: str = None,
+        remote_only: bool = False,
+        employment_types: List[str] = None,
+        years_experience: int = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Build multiple search query parameter sets for better coverage.
+
+        Returns 2-3 query param dicts that together capture:
+        1. Primary role match (most specific)
+        2. Secondary role variant (if available)
+        3. Industry + function broadening query
+        """
+        queries = []
+        base_params = {
+            "page": "1",
+            "num_pages": "1",
+            "date_posted": "month",
+        }
+
+        if remote_only:
+            base_params["remote_jobs_only"] = "true"
+
+        if employment_types:
+            base_params["employment_types"] = ",".join(employment_types)
+
+        if years_experience is not None:
+            if years_experience < 3:
+                base_params["job_requirements"] = "under_3_years_experience"
+            elif years_experience >= 3:
+                base_params["job_requirements"] = "more_than_3_years_experience"
+
+        loc_suffix = f" in {location}" if location else ""
+
+        # Query 1: Primary target role (most specific)
+        if target_roles and len(target_roles) > 0:
+            q1 = {**base_params, "query": f"{target_roles[0]}{loc_suffix}"}
+            queries.append(q1)
+
+        # Query 2: Secondary target role (if different from primary)
+        if target_roles and len(target_roles) > 1:
+            q2 = {**base_params, "query": f"{target_roles[1]}{loc_suffix}"}
+            queries.append(q2)
+
+        # Query 3: Industry + function broadening query
+        if target_industry or function_area:
+            industry_term = target_industry or ""
+            function_term = FUNCTION_AREA_MAP.get(function_area, "") if function_area else ""
+            broad_query = f"{function_term} {industry_term}".strip()
+            if broad_query and broad_query != (target_roles[0] if target_roles else ""):
+                q3 = {**base_params, "query": f"{broad_query}{loc_suffix}"}
+                queries.append(q3)
+
+        # Fallback: If no queries built, use function_area or keywords
+        if not queries:
+            fallback = function_area or "jobs"
+            if function_area:
+                fallback = FUNCTION_AREA_MAP.get(function_area, function_area)
+            if job_search_keywords:
+                fallback = f"{fallback} {' '.join(job_search_keywords[:2])}"
+            queries.append({**base_params, "query": f"{fallback}{loc_suffix}"})
+
+        logger.info(f"Built {len(queries)} search queries: {[q['query'] for q in queries]}")
+        return queries
+
+    def search_multi_query(
+        self,
+        query_params_list: List[Dict[str, Any]],
+        excluded_companies: List[str] = None,
+        max_results: int = 15,
+    ) -> Dict[str, Any]:
+        """
+        Execute multiple search queries and merge/deduplicate results.
+
+        Returns a single result dict with merged, deduplicated jobs.
+        """
+        if not self.is_configured:
+            return {
+                "jobs": [],
+                "total_found": 0,
+                "search_queries": [p.get("query", "") for p in query_params_list],
+                "cached": False,
+                "error": "Job discovery API not configured. Set RAPIDAPI_KEY_JSEARCH environment variable.",
+            }
+
+        # Check if we have a cached result for the combined query set
+        combined_key = self._get_cache_key({"queries": str(query_params_list)})
+        cached = self._get_cached(combined_key)
+        if cached:
+            logger.info(f"Multi-query cache hit for key {combined_key[:8]}")
+            cached["cached"] = True
+            return cached
+
+        all_jobs = []
+        seen_job_ids = set()
+        queries_executed = []
+        total_found = 0
+
+        # Execute queries sequentially (JSearch rate limits are tight)
+        for params in query_params_list:
+            result = self.search_jobs(params, excluded_companies)
+            queries_executed.append(params.get("query", ""))
+
+            if result.get("error"):
+                logger.warning(f"Query failed: {params.get('query')}: {result['error']}")
+                continue
+
+            total_found += result.get("total_found", 0)
+
+            for job in result.get("jobs", []):
+                job_id = job.get("job_id", "")
+                if job_id and job_id not in seen_job_ids:
+                    seen_job_ids.add(job_id)
+                    all_jobs.append(job)
+
+        # Limit total results
+        all_jobs = all_jobs[:max_results]
+
+        result = {
+            "jobs": all_jobs,
+            "total_found": total_found,
+            "search_queries": queries_executed,
+            "search_query": queries_executed[0] if queries_executed else "",
+            "cached": False,
+            "cache_expires_at": time.time() + CACHE_TTL_SECONDS,
+            "queries_executed": len(queries_executed),
+        }
+
+        self._set_cache(combined_key, result)
+        return result
 
     def _get_cache_key(self, params: Dict[str, Any]) -> str:
         """Generate a deterministic cache key from search params."""
@@ -257,7 +409,7 @@ class JobDiscoveryService:
             }
             jobs.append(job)
 
-        return jobs[:10]  # Return max 10 results
+        return jobs[:15]  # Return max 15 results per query
 
     def _build_location_string(self, item: Dict) -> str:
         """Build a readable location string from job data."""

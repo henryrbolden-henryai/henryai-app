@@ -267,6 +267,10 @@ const HenryData = {
             // Target industries
             target_industry_primary: profileData.target_industry_primary || null,
             target_industry_secondary: profileData.target_industry_secondary || null,
+            // Job discovery alignment fields
+            target_roles: profileData.target_roles || [],
+            employment_type_preferences: profileData.employment_type_preferences || ['FULLTIME'],
+            seniority_preference: profileData.seniority_preference || null,
             // Situation — flatten nested object
             situation_holding_up: profileData.situation?.holding_up || null,
             situation_timeline: profileData.situation?.timeline || null,
