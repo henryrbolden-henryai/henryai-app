@@ -2591,16 +2591,16 @@
                 renderStrategicOptions(profile);
                 renderRecentActivity(apps);
 
-                // Fetch story count async, then generate & render weekly goals
-                fetchStoryCount().then(storyCount => {
-                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount);
+                // Fetch story count and mock interview count async, then generate & render weekly goals
+                Promise.all([fetchStoryCount(), fetchWeeklyMockInterviewCount()]).then(([storyCount, mockInterviewCount]) => {
+                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount, mockInterviewCount);
                     renderWeeklyGoals(weeklyGoals);
                     // Re-render Today's Focus with goal data for Priority derivation
                     renderTodaysFocus(profile, apps, activeApps, weeklyGoals);
                 }).catch(err => {
-                    console.warn('Could not load story data for weekly goals:', err);
-                    // Fall back: generate goals without story data
-                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, 0);
+                    console.warn('Could not load data for weekly goals:', err);
+                    // Fall back: generate goals without async data
+                    const weeklyGoals = getOrGenerateWeeklyGoals(profile, apps, activeApps, 0, 0);
                     renderWeeklyGoals(weeklyGoals);
                     renderTodaysFocus(profile, apps, activeApps, weeklyGoals);
                 });
@@ -3444,12 +3444,31 @@
             return 0;
         }
 
+        async function fetchWeeklyMockInterviewCount() {
+            try {
+                const session = await HenryAuth.getSession();
+                if (!session) return 0;
+                const weekStart = getWeekStartISO();
+                const { count, error } = await supabase
+                    .from('mock_interview_sessions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', session.user.id)
+                    .not('completed_at', 'is', null)
+                    .gte('completed_at', weekStart + 'T00:00:00Z');
+                if (error) throw error;
+                return count || 0;
+            } catch (e) {
+                console.warn('Could not fetch mock interview count:', e);
+                return 0;
+            }
+        }
+
         function generateGoalTargets(urgency, apps, storyCount) {
             const targets = {
-                desperate: { applications: 5, followups: 3, stories: 3, research: 3 },
-                stressed:  { applications: 3, followups: 2, stories: 2, research: 2 },
-                standard:  { applications: 2, followups: 1, stories: 2, research: 1 },
-                none:      { applications: 1, followups: 1, stories: 1, research: 1 }
+                desperate: { applications: 5, followups: 3, stories: 3, mockInterviews: 2 },
+                stressed:  { applications: 3, followups: 2, stories: 2, mockInterviews: 2 },
+                standard:  { applications: 2, followups: 1, stories: 2, mockInterviews: 1 },
+                none:      { applications: 1, followups: 1, stories: 1, mockInterviews: 1 }
             };
 
             const t = targets[urgency] || targets.standard;
@@ -3491,19 +3510,19 @@
                 });
             }
 
-            // Always include research
+            // Always include mock interviews
             goals.push({
-                id: 'research',
-                label: 'Analyze roles for fit',
-                target: t.research,
-                action: '/analyze',
-                actionLabel: 'Analyze'
+                id: 'mockInterviews',
+                label: 'Complete mock interviews',
+                target: t.mockInterviews,
+                action: '/interview-intelligence',
+                actionLabel: 'Practice'
             });
 
             return goals;
         }
 
-        function updateGoalProgress(weeklyGoals, apps, storyCount) {
+        function updateGoalProgress(weeklyGoals, apps, storyCount, mockInterviewCount) {
             const weekStart = getCurrentWeekMondayDate();
 
             weeklyGoals.goals.forEach(goal => {
@@ -3524,12 +3543,8 @@
                         goal.current = Math.max(0, storyCount - (weeklyGoals.storyCountBaseline || 0));
                         break;
 
-                    case 'research':
-                        goal.current = apps.filter(app => {
-                            const d = app.dateAdded || app.dateApplied || app.created_at;
-                            if (!d || new Date(d) < weekStart) return false;
-                            return !!(app.analysisData || app.analysis_data || app.analysisKey);
-                        }).length;
+                    case 'mockInterviews':
+                        goal.current = mockInterviewCount || 0;
                         break;
                 }
             });
@@ -3541,7 +3556,7 @@
             return weeklyGoals;
         }
 
-        function getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount) {
+        function getOrGenerateWeeklyGoals(profile, apps, activeApps, storyCount, mockInterviewCount) {
             const currentWeek = getWeekStartISO();
             let stored = null;
 
@@ -3552,9 +3567,11 @@
                 console.warn('Could not parse weeklyGoals:', e);
             }
 
-            // If stored goals exist for this week, update progress and return
-            if (stored && stored.weekStartDate === currentWeek) {
-                return updateGoalProgress(stored, apps, storyCount);
+            // If stored goals exist for this week AND match current goal version, update progress and return
+            // Version bump forces regeneration when goal types change (e.g., research → mockInterviews)
+            const GOALS_VERSION = 2;
+            if (stored && stored.weekStartDate === currentWeek && stored.version === GOALS_VERSION) {
+                return updateGoalProgress(stored, apps, storyCount, mockInterviewCount);
             }
 
             // Generate new goals for this week
@@ -3563,6 +3580,7 @@
 
             const weeklyGoals = {
                 weekStartDate: currentWeek,
+                version: GOALS_VERSION,
                 emotionalState: urgency,
                 storyCountBaseline: storyCount,
                 goals: goals
@@ -3571,7 +3589,7 @@
             try {
                 localStorage.setItem('weeklyGoals', JSON.stringify(weeklyGoals));
             } catch (e) { /* ignore */ }
-            return updateGoalProgress(weeklyGoals, apps, storyCount);
+            return updateGoalProgress(weeklyGoals, apps, storyCount, mockInterviewCount);
         }
 
         function renderWeeklyGoals(weeklyGoals) {
@@ -3805,10 +3823,10 @@
                             buttonText = 'Build Stories';
                             buttonLink = '/story-bank';
                             break;
-                        case 'research':
-                            message = `<strong>Analyze ${remaining} more role${remaining > 1 ? 's' : ''} for fit.</strong> Understanding fit before applying saves time.`;
-                            buttonText = 'Analyze';
-                            buttonLink = '/analyze';
+                        case 'mockInterviews':
+                            message = `<strong>Complete ${remaining} mock interview${remaining > 1 ? 's' : ''}.</strong> Practice builds confidence and sharpens your delivery.`;
+                            buttonText = 'Practice';
+                            buttonLink = '/interview-intelligence';
                             break;
                     }
 
