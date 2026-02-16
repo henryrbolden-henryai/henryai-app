@@ -131,7 +131,7 @@
         // Don't show context on general/operational pages
         // Interview Intelligence is accessible both with and without job context
         const currentPage = getCurrentPage();
-        const generalPages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'profile', 'profile-edit'];
+        const generalPages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'profile', 'profile-edit', 'document-library'];
         if (generalPages.includes(currentPage)) {
             return null;
         }
@@ -507,7 +507,7 @@
         // Pages that don't need active job context (always accessible)
         // Command Center (tracker) and Interview Intelligence are operational tools
         // that must be immediately reachable without requiring job selection
-        const alwaysAccessiblePages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze'];
+        const alwaysAccessiblePages = ['dashboard', 'tracker', 'interview-intelligence', 'analyze', 'document-library'];
 
         // Create nav container
         const nav = document.createElement('nav');
