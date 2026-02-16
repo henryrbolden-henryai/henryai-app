@@ -32,6 +32,7 @@
   const strategyItems = [
     { label: 'Positioning Strategy', href: '/positioning' },
     { label: 'Tailored Documents', href: '/documents' },
+    { label: 'Document Library', href: '/document-library' },
     { label: 'LinkedIn Optimization', href: '/linkedin-optimization' },
     { label: 'Network & Outreach', href: '/outreach' },
     { label: 'Interview Intelligence', href: '/interview-prep' },

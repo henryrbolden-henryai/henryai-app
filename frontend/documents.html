@@ -1923,6 +1923,13 @@ COVER LETTER
                     }
                 }
             }
+
+            // Auto-switch tab if requested (e.g. from Document Library)
+            const requestedTab = sessionStorage.getItem('switchToTab');
+            if (requestedTab) {
+                sessionStorage.removeItem('switchToTab');
+                switchTab(requestedTab);
+            }
         });
     </script>
 <script src="components/analytics.js"></script>

@@ -627,6 +627,165 @@
                 font-size: 0.9rem;
             }
         }
+
+        /* LinkedIn Upload Modal */
+        .linkedin-upload-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .linkedin-upload-overlay.show {
+            display: flex;
+        }
+        .linkedin-upload-modal {
+            background: #141416;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 560px;
+            width: 100%;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .linkedin-upload-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #71717a;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+        .linkedin-upload-modal-close:hover {
+            color: #fafafa;
+        }
+        .linkedin-upload-modal h3 {
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+            color: #fafafa;
+        }
+        .linkedin-upload-modal .modal-subtitle {
+            color: #71717a;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+        .linkedin-upload-steps {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 24px 0;
+        }
+        .linkedin-upload-steps li {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 8px 0;
+            color: #71717a;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .linkedin-upload-steps .step-num {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #1c1c1f;
+            color: #22d3ee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .linkedin-upload-dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+        .linkedin-upload-dropzone:hover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
+        }
+        .linkedin-upload-dropzone.dragover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.1);
+        }
+        .linkedin-upload-dropzone-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .linkedin-upload-dropzone-text {
+            color: #71717a;
+            font-size: 0.9rem;
+        }
+        .linkedin-upload-dropzone-text strong {
+            color: #22d3ee;
+        }
+        .linkedin-upload-dropzone-hint {
+            color: #52525b;
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .linkedin-upload-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .linkedin-upload-success {
+            text-align: center;
+            padding: 24px 0;
+            display: none;
+        }
+        .linkedin-upload-success-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+        .linkedin-upload-success-count {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #fafafa;
+            margin-bottom: 4px;
+        }
+        .linkedin-upload-success-meta {
+            color: #71717a;
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+        .linkedin-upload-done-btn {
+            background: #22d3ee;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 32px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .linkedin-upload-done-btn:hover {
+            opacity: 0.9;
+        }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
     <!-- Supabase Auth -->
@@ -718,9 +877,9 @@
                     Upload your LinkedIn connections in your profile and I'll show you who you know at this company. Warm intros get 3x higher response rates than cold outreach.
                 </div>
                 <div class="linkedin-prompt-buttons">
-                    <a href="/profile-edit#linkedinConnectionsSection" class="linkedin-btn linkedin-btn-primary">
-                        📁 Upload in Profile
-                    </a>
+                    <button class="linkedin-btn linkedin-btn-primary" onclick="openLinkedInUploadModal()">
+                        📁 Upload Connections
+                    </button>
                     <button class="linkedin-btn linkedin-btn-secondary" onclick="dismissLinkedInPrompt()">Maybe Later</button>
                 </div>
             </div>
@@ -1961,21 +2120,103 @@
             resultsContainer.style.display = 'block';
         }
 
-        // Show help modal
+        // Show help modal - now opens upload modal
         function showLinkedInHelp() {
-            alert(`How to Export LinkedIn Connections:
-
-1. Go to linkedin.com/mynetwork/invite-connect/connections/
-2. Click "Manage synced and imported contacts" (top right)
-3. Click "Export contacts"
-4. Select "Connections" (not "Contacts")
-5. Click "Request archive"
-6. Wait for email from LinkedIn (usually 10 minutes)
-7. Download the CSV file
-8. Upload it here
-
-The CSV includes: Name, Company, Position, Connected Date`);
+            openLinkedInUploadModal();
         }
+
+        // ========================================================================
+        // LINKEDIN UPLOAD MODAL
+        // ========================================================================
+
+        function openLinkedInUploadModal() {
+            const overlay = document.getElementById('linkedinUploadOverlay');
+            if (!overlay) return;
+            document.getElementById('linkedinUploadInstructions').style.display = 'block';
+            document.getElementById('linkedinUploadSuccess').style.display = 'none';
+            const errorEl = document.getElementById('linkedinUploadError');
+            if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+            const fileInput = document.getElementById('linkedinUploadFileInput');
+            if (fileInput) fileInput.value = '';
+            overlay.classList.add('show');
+        }
+
+        function closeLinkedInUploadModal() {
+            const overlay = document.getElementById('linkedinUploadOverlay');
+            if (overlay) overlay.classList.remove('show');
+        }
+
+        function initLinkedInUploadModal() {
+            const dropzone = document.getElementById('linkedinUploadDropzone');
+            const fileInput = document.getElementById('linkedinUploadFileInput');
+            if (!dropzone || !fileInput) return;
+
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleLinkedInModalUpload(file);
+            });
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.toLowerCase().endsWith('.csv')) {
+                    handleLinkedInModalUpload(file);
+                } else if (file) {
+                    const el = document.getElementById('linkedinUploadError');
+                    if (el) { el.textContent = 'Please upload a .csv file.'; el.style.display = 'block'; }
+                }
+            });
+
+            // Close on ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeLinkedInUploadModal();
+            });
+        }
+
+        function handleLinkedInModalUpload(file) {
+            const errorEl = document.getElementById('linkedinUploadError');
+            if (errorEl) { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csv = e.target.result;
+                const connections = parseLinkedInCSV(csv);
+
+                if (connections.length === 0) {
+                    const el = document.getElementById('linkedinUploadError');
+                    if (el) { el.textContent = 'No connections found in this file. Make sure you are uploading a LinkedIn Connections CSV.'; el.style.display = 'block'; }
+                    return;
+                }
+
+                // Use existing save function
+                saveConnectionsToStorage(connections, file.name);
+
+                // Show success state
+                document.getElementById('linkedinUploadInstructions').style.display = 'none';
+                document.getElementById('linkedinUploadSuccess').style.display = 'block';
+                document.getElementById('linkedinUploadSuccessCount').textContent =
+                    `${connections.length.toLocaleString()} connections loaded`;
+                document.getElementById('linkedinUploadSuccessMeta').textContent =
+                    `From ${file.name}`;
+
+                // Update the main page UI
+                const stored = loadConnectionsFromStorage();
+                if (stored) updateUIForStoredConnections(stored);
+
+                // Check network with new data
+                checkLinkedInNetwork(connections);
+            };
+            reader.readAsText(file);
+        }
+
+        // Initialize modal on page load
+        document.addEventListener('DOMContentLoaded', initLinkedInUploadModal);
 
         // Dismiss prompt
         function dismissLinkedInPrompt() {
@@ -1987,6 +2228,38 @@ The CSV includes: Name, Company, Position, Connected Date`);
         }
 
     </script>
+
+    <!-- LinkedIn Upload Modal -->
+    <div class="linkedin-upload-overlay" id="linkedinUploadOverlay" onclick="if(event.target===this)closeLinkedInUploadModal()">
+        <div class="linkedin-upload-modal">
+            <button class="linkedin-upload-modal-close" onclick="closeLinkedInUploadModal()">&times;</button>
+            <div id="linkedinUploadInstructions">
+                <h3>Upload LinkedIn Connections</h3>
+                <p class="modal-subtitle">Import your connections to see who you know at your target companies. Candidates with a referral are 4-5x more likely to get hired.</p>
+                <ol class="linkedin-upload-steps">
+                    <li><span class="step-num">1</span><span>Go to <strong>linkedin.com/mynetwork/invite-connect/connections</strong></span></li>
+                    <li><span class="step-num">2</span><span>Click "Manage synced and imported contacts" (top right)</span></li>
+                    <li><span class="step-num">3</span><span>Click "Export contacts" then select "Connections"</span></li>
+                    <li><span class="step-num">4</span><span>Click "Request archive" and wait for the email from LinkedIn (usually about 10 minutes)</span></li>
+                    <li><span class="step-num">5</span><span>Download the CSV file and upload it below</span></li>
+                </ol>
+                <div class="linkedin-upload-error" id="linkedinUploadError"></div>
+                <div class="linkedin-upload-dropzone" id="linkedinUploadDropzone">
+                    <div class="linkedin-upload-dropzone-icon">📁</div>
+                    <div class="linkedin-upload-dropzone-text"><strong>Click to browse</strong> or drag and drop</div>
+                    <div class="linkedin-upload-dropzone-hint">LinkedIn Connections CSV file</div>
+                </div>
+                <input type="file" id="linkedinUploadFileInput" accept=".csv" style="display: none;">
+            </div>
+            <div class="linkedin-upload-success" id="linkedinUploadSuccess">
+                <div class="linkedin-upload-success-icon">&#10003;</div>
+                <div class="linkedin-upload-success-count" id="linkedinUploadSuccessCount"></div>
+                <div class="linkedin-upload-success-meta" id="linkedinUploadSuccessMeta"></div>
+                <button class="linkedin-upload-done-btn" onclick="closeLinkedInUploadModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
 <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>
 <script src="components/admin-alerts.js"></script>

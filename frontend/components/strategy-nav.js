@@ -73,6 +73,11 @@
                 href: '/documents'
             },
             {
+                id: 'document-library',
+                label: 'Document Library',
+                href: '/document-library'
+            },
+            {
                 id: 'linkedin-optimization',
                 label: 'LinkedIn Optimization',
                 href: '/linkedin-optimization'
