@@ -46,6 +46,7 @@
     { "source": "/resume-chat", "destination": "/resume-chat.html" },
     { "source": "/resume-discuss", "destination": "/resume-discuss.html" },
     { "source": "/resume-leveling", "destination": "/resume-leveling.html" },
+    { "source": "/settings", "destination": "/settings.html" },
     { "source": "/skills-analysis", "destination": "/skills-analysis.html" },
     { "source": "/story-bank", "destination": "/story-bank.html" },
     { "source": "/streaming_test", "destination": "/streaming_test.html" },
