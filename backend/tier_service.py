@@ -52,7 +52,14 @@ class TierService:
 
     def get_effective_tier(self, profile: Dict[str, Any]) -> str:
         """
-        Returns the user's effective tier, considering beta overrides.
+        Returns the user's effective tier, considering beta overrides and subscription status.
+
+        Priority:
+        1. Active beta override (not expired) → beta tier
+        2. Active/past_due subscription → subscription tier
+        3. Canceled subscription with time remaining → subscription tier until period ends
+        4. Canceled subscription with expired period → 'preview'
+        5. Default → 'preview'
         """
         # Check beta override first
         if profile.get('is_beta_user') and profile.get('beta_tier_override'):
@@ -65,8 +72,22 @@ class TierService:
             if beta_expires > datetime.utcnow().replace(tzinfo=beta_expires.tzinfo if beta_expires.tzinfo else None):
                 return profile['beta_tier_override']
 
-        # Fall back to subscription tier
-        return profile.get('tier') or 'sourcer'
+        # Check subscription status
+        subscription_status = profile.get('subscription_status')
+        tier = profile.get('tier') or 'sourcer'
+
+        if subscription_status == 'canceled':
+            # Allow access until current_period_end
+            period_end = profile.get('current_period_end')
+            if period_end:
+                if isinstance(period_end, str):
+                    period_end = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
+                if period_end > datetime.utcnow().replace(tzinfo=period_end.tzinfo if period_end.tzinfo else None):
+                    return tier  # Still within paid period
+            return 'sourcer'  # Period expired, downgrade to free tier
+
+        # active, past_due, trialing all keep current tier
+        return tier
 
     def check_feature_access(self, tier: str, feature_name: str) -> Dict[str, Any]:
         """

@@ -1695,6 +1695,17 @@
             </div>
         </div>
 
+        <!-- SECTION 7: SUBSCRIPTION -->
+        <div class="form-section" id="subscriptionSection">
+            <div class="section-title">
+                <span class="icon">💳</span>
+                Subscription
+            </div>
+            <div id="subscriptionContent" style="color: var(--color-text-secondary); font-size: 0.9rem;">
+                Loading subscription info...
+            </div>
+        </div>
+
         <div class="button-group">
             <button class="btn-primary" id="saveBtn">Save and Start My Job Search</button>
         </div>
@@ -3709,7 +3720,96 @@
 
             // Initialize LinkedIn connections upload
             initLinkedInConnections();
+
+            // Load subscription info
+            loadSubscriptionInfo();
         })();
+
+        async function loadSubscriptionInfo() {
+            const container = document.getElementById('subscriptionContent');
+            if (!container) return;
+
+            try {
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    container.textContent = 'Sign in to view subscription info.';
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/user/usage?user_id=${user.id}`);
+                if (!response.ok) throw new Error('Failed to load');
+
+                const data = await response.json();
+                const tier = data.tier || 'preview';
+                const tierDisplay = data.tier_display || 'Preview';
+                const isBeta = data.is_beta_user;
+                const betaExpires = data.beta_expires_at;
+
+                let html = '';
+
+                // Current plan display
+                html += `<div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 10px; margin-bottom: 12px;">`;
+                html += `<div>`;
+                html += `<div style="font-size: 1rem; font-weight: 500; color: var(--color-text);">${tierDisplay} Plan</div>`;
+
+                if (isBeta && betaExpires) {
+                    const expiryDate = new Date(betaExpires).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                    html += `<div style="font-size: 0.8rem; color: var(--color-accent); margin-top: 4px;">Beta access until ${expiryDate}</div>`;
+                } else if (tier === 'preview') {
+                    html += `<div style="font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 4px;">Free tier</div>`;
+                }
+
+                html += `</div>`;
+
+                // Action button
+                if (tier === 'preview' && !isBeta) {
+                    html += `<a href="/pricing" style="padding: 10px 20px; background: var(--color-accent); color: #0a0a0b; border-radius: 8px; text-decoration: none; font-size: 0.9rem; font-weight: 500;">Upgrade</a>`;
+                } else if (!isBeta) {
+                    html += `<button onclick="openBillingPortal()" style="padding: 10px 20px; background: var(--color-surface-elevated); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: 0.9rem; cursor: pointer; font-family: var(--font-body);">Manage Subscription</button>`;
+                }
+
+                html += `</div>`;
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading subscription:', error);
+                container.innerHTML = '<div style="color: var(--color-text-secondary);">Could not load subscription info. <a href="/pricing" style="color: var(--color-accent);">View plans</a></div>';
+            }
+        }
+
+        async function openBillingPortal() {
+            try {
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    alert('Please sign in first.');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/stripe/create-portal-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user.id }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    if (response.status === 503) {
+                        alert('Billing management is not yet available.');
+                    } else {
+                        alert(error.detail || 'Could not open billing portal.');
+                    }
+                    return;
+                }
+
+                const data = await response.json();
+                window.location.href = data.url;
+
+            } catch (error) {
+                console.error('Portal error:', error);
+                alert('Something went wrong. Please try again.');
+            }
+        }
     </script>
     <script src="components/analytics.js"></script>
 <script src="components/hey-henry.js"></script>

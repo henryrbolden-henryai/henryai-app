@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Checkout Canceled | HenryHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --color-bg: #000000;
+      --color-text: #fafafa;
+      --color-text-secondary: #a1a1aa;
+      --color-accent: #22d3ee;
+      --color-border: rgba(255, 255, 255, 0.08);
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'DM Sans', -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 480px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: var(--color-text-secondary);
+      font-size: 1rem;
+      margin-bottom: 24px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 14px 32px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s;
+    }
+
+    .btn-primary {
+      background: var(--color-text);
+      color: var(--color-bg);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-accent);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Checkout canceled</h1>
+    <p>No charges were made. You can try again anytime.</p>
+    <div class="buttons">
+      <a href="/pricing" class="btn btn-primary">View Plans</a>
+      <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+</body>
+</html>
