@@ -26,11 +26,7 @@
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: var(--font-body);
@@ -47,6 +43,7 @@
             margin: 0 auto;
         }
 
+        /* Back link */
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -57,32 +54,23 @@
             margin-bottom: 24px;
             transition: color 0.2s;
         }
+        .back-link:hover { color: var(--color-text); }
+        .back-link svg { width: 16px; height: 16px; }
 
-        .back-link:hover {
-            color: var(--color-text);
-        }
-
-        .back-link svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        .page-header {
-            margin-bottom: 32px;
-        }
-
+        /* Page header */
+        .page-header { margin-bottom: 32px; }
         .page-header h1 {
             font-family: var(--font-display);
             font-size: 2rem;
             font-weight: 400;
             margin-bottom: 8px;
         }
-
         .page-header p {
             color: var(--color-text-secondary);
             font-size: 0.95rem;
         }
 
+        /* Sections */
         .form-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -90,7 +78,6 @@
             padding: 24px;
             margin-bottom: 20px;
         }
-
         .section-title {
             display: flex;
             align-items: center;
@@ -100,17 +87,9 @@
             margin-bottom: 16px;
             color: var(--color-text);
         }
+        .section-title .icon { font-size: 1.2rem; }
 
-        .section-title .icon {
-            font-size: 1.2rem;
-        }
-
-        .section-description {
-            color: var(--color-text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-        }
-
+        /* Plan card */
         .plan-card {
             display: flex;
             justify-content: space-between;
@@ -119,25 +98,52 @@
             background: var(--color-bg);
             border: 1px solid var(--color-border);
             border-radius: 10px;
-            margin-bottom: 12px;
         }
-
         .plan-name {
             font-size: 1rem;
             font-weight: 500;
             color: var(--color-text);
         }
-
         .plan-meta {
             font-size: 0.8rem;
             color: var(--color-text-secondary);
             margin-top: 4px;
         }
-
-        .plan-meta.beta {
-            color: var(--color-accent);
+        .plan-meta.beta { color: var(--color-accent); }
+        .plan-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
         }
 
+        /* Status badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            margin-top: 6px;
+            color: var(--color-text-secondary);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.active { background: var(--color-success); }
+        .status-dot.past_due { background: var(--color-warning); }
+        .status-dot.canceled { background: var(--color-error); }
+        .status-dot.trialing { background: var(--color-accent); }
+
+        .billing-date {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 10px;
+        }
+
+        /* Buttons */
         .btn-primary {
             padding: 10px 20px;
             background: var(--color-accent);
@@ -151,11 +157,9 @@
             text-decoration: none;
             display: inline-block;
             transition: opacity 0.2s;
+            white-space: nowrap;
         }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
+        .btn-primary:hover { opacity: 0.9; }
 
         .btn-secondary {
             padding: 10px 20px;
@@ -167,10 +171,170 @@
             cursor: pointer;
             font-family: var(--font-body);
             transition: border-color 0.2s;
+            white-space: nowrap;
         }
+        .btn-secondary:hover { border-color: var(--color-border-hover); }
 
-        .btn-secondary:hover {
-            border-color: var(--color-border-hover);
+        .btn-text {
+            background: none;
+            border: none;
+            color: var(--color-accent);
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-family: var(--font-body);
+            text-decoration: none;
+            padding: 0;
+        }
+        .btn-text:hover { text-decoration: underline; }
+
+        /* Usage meters */
+        .usage-item { margin-bottom: 16px; }
+        .usage-item:last-child { margin-bottom: 0; }
+        .usage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .usage-label {
+            font-size: 0.88rem;
+            color: var(--color-text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .usage-label .usage-icon { font-size: 0.95rem; }
+        .usage-value {
+            font-size: 0.82rem;
+            color: var(--color-text-secondary);
+        }
+        .usage-bar {
+            height: 6px;
+            background: var(--color-surface-elevated);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .usage-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--color-accent);
+            transition: width 0.6s var(--ease-out);
+        }
+        .usage-fill.warning { background: var(--color-warning); }
+        .usage-fill.depleted { background: var(--color-error); }
+        .usage-warning {
+            font-size: 0.75rem;
+            color: var(--color-warning);
+            margin-top: 4px;
+        }
+        .usage-unlimited-badge {
+            display: inline-flex;
+            align-items: center;
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+        .usage-reset-info {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+        .usage-empty {
+            text-align: center;
+            padding: 20px 16px;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+        .usage-empty a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+        .usage-empty a:hover { text-decoration: underline; }
+
+        /* Feature grid */
+        .feature-category { margin-bottom: 20px; }
+        .feature-category:last-child { margin-bottom: 0; }
+        .feature-category-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--color-text);
+            margin-bottom: 10px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            background: var(--color-bg);
+        }
+        .feature-item.available { color: var(--color-text); }
+        .feature-item.limited { color: var(--color-text); }
+        .feature-item.locked {
+            color: var(--color-text-secondary);
+            opacity: 0.55;
+        }
+        .feature-icon { font-size: 0.85rem; flex-shrink: 0; }
+        .feature-icon.check { color: var(--color-success); }
+        .feature-icon.lock { color: var(--color-text-secondary); }
+        .limited-badge {
+            font-size: 0.65rem;
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--color-warning);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .upgrade-hint {
+            font-size: 0.65rem;
+            color: var(--color-text-secondary);
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .features-upgrade {
+            text-align: center;
+            padding: 12px 0 0;
+        }
+        .features-upgrade a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+        .features-upgrade a:hover { text-decoration: underline; }
+
+        /* Account section */
+        .account-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .account-row-label {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+        .account-row-value {
+            font-size: 0.9rem;
+            color: var(--color-text);
         }
 
         .account-link {
@@ -185,22 +349,23 @@
             color: var(--color-text);
             transition: border-color 0.2s;
             margin-bottom: 8px;
-        }
-
-        .account-link:hover {
-            border-color: var(--color-border-hover);
-        }
-
-        .account-link-label {
+            cursor: pointer;
+            width: 100%;
+            font-family: var(--font-body);
             font-size: 0.9rem;
         }
-
+        .account-link:hover { border-color: var(--color-border-hover); }
         .account-link svg {
             width: 16px;
             height: 16px;
             color: var(--color-text-secondary);
         }
+        .account-link-label { font-size: 0.9rem; }
 
+        .sign-out-link .account-link-label { color: var(--color-error); }
+        .delete-link .account-link-label { color: var(--color-text-secondary); font-size: 0.85rem; }
+
+        /* Loading skeleton */
         .loading-skeleton {
             background: linear-gradient(90deg, var(--color-surface-elevated) 25%, rgba(255,255,255,0.05) 50%, var(--color-surface-elevated) 75%);
             background-size: 200% 100%;
@@ -208,10 +373,25 @@
             border-radius: 8px;
             height: 60px;
         }
-
         @keyframes shimmer {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .plan-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .plan-actions { width: 100%; }
+            .plan-actions .btn-primary,
+            .plan-actions .btn-secondary {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -226,16 +406,38 @@
 
         <div class="page-header">
             <h1>Settings</h1>
-            <p>Manage your subscription and account preferences.</p>
+            <p>Manage your subscription, usage, and account preferences.</p>
         </div>
 
-        <!-- SUBSCRIPTION -->
+        <!-- SUBSCRIPTION & BILLING -->
         <div class="form-section">
             <div class="section-title">
                 <span class="icon">💳</span>
-                Subscription
+                Subscription & Billing
             </div>
             <div id="subscriptionContent">
+                <div class="loading-skeleton"></div>
+            </div>
+        </div>
+
+        <!-- USAGE THIS MONTH -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="icon">📊</span>
+                Usage This Month
+            </div>
+            <div id="usageContent">
+                <div class="loading-skeleton"></div>
+            </div>
+        </div>
+
+        <!-- YOUR FEATURES -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="icon">✨</span>
+                Your Features
+            </div>
+            <div id="featuresContent">
                 <div class="loading-skeleton"></div>
             </div>
         </div>
@@ -246,23 +448,105 @@
                 <span class="icon">👤</span>
                 Account
             </div>
-            <a href="/profile-edit" class="account-link">
-                <span class="account-link-label">Edit Profile</span>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
-                </svg>
-            </a>
+            <div id="accountContent">
+                <div class="loading-skeleton"></div>
+            </div>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
+    <script src="js/tier-service.js"></script>
 
     <script>
-        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : 'https://henryai-app-production.up.railway.app';
 
-        // Auth gate
+        // ── Constants ───────────────────────────────────────────
+
+        const USAGE_LABELS = {
+            applications: 'Applications',
+            resumes: 'Resumes',
+            cover_letters: 'Cover Letters',
+            henry_conversations: 'Henry Conversations',
+            mock_interviews: 'Mock Interviews',
+            coaching_sessions: 'Coaching Sessions',
+        };
+
+        const USAGE_ICONS = {
+            applications: '📋',
+            resumes: '📄',
+            cover_letters: '✉️',
+            henry_conversations: '💬',
+            mock_interviews: '🎤',
+            coaching_sessions: '🎯',
+        };
+
+        const FEATURE_GROUPS = {
+            'Analysis & Intelligence': {
+                icon: '🔍',
+                features: {
+                    job_fit_analysis: 'Job Fit Analysis',
+                    reality_check: 'Reality Check',
+                    linkedin_analysis: 'LinkedIn Analysis',
+                    linkedin_recommendations: 'LinkedIn Recommendations',
+                    linkedin_optimization: 'LinkedIn Optimization',
+                    company_intelligence: 'Company Intelligence',
+                    pattern_analysis: 'Pattern Analysis',
+                    career_level_assessment: 'Career Level Assessment',
+                },
+            },
+            'Documents & Applications': {
+                icon: '📝',
+                features: {
+                    ats_optimization: 'ATS Optimization',
+                    screening_questions: 'Screening Questions',
+                    outreach_templates: 'Outreach Templates',
+                    document_refinement: 'Document Refinement',
+                    application_tracker: 'Application Tracker',
+                    application_alerts: 'Application Alerts',
+                },
+            },
+            'Interview Preparation': {
+                icon: '🎤',
+                features: {
+                    interview_prep_limited: 'Interview Prep (Basic)',
+                    interview_prep_full: 'Interview Prep (Full)',
+                    interview_debrief: 'Interview Debrief',
+                    story_bank: 'Story Bank',
+                    story_templates: 'Story Templates',
+                    cross_interview_patterns: 'Cross-Interview Patterns',
+                },
+            },
+            'Career & Coaching': {
+                icon: '🚀',
+                features: {
+                    salary_benchmarking: 'Salary Benchmarking',
+                    negotiation_guidance: 'Negotiation Guidance',
+                    negotiation_full: 'Full Negotiation Support',
+                    live_coaching: 'Live Coaching',
+                    coach_view: 'Coach View',
+                    priority_henry: 'Priority Henry Access',
+                },
+            },
+            'Dashboard & Insights': {
+                icon: '📊',
+                features: {
+                    dashboard_core: 'Core Dashboard',
+                    dashboard_full: 'Full Dashboard',
+                    dashboard_insights: 'Dashboard Insights',
+                    dashboard_benchmarking: 'Dashboard Benchmarking',
+                    conversation_memory: 'Conversation Memory',
+                    rejection_forensics: 'Rejection Forensics',
+                    job_discovery: 'Job Discovery',
+                    job_discovery_network: 'Network Discovery',
+                },
+            },
+        };
+
+        // ── Initialization ──────────────────────────────────────
+
         (async function init() {
             try {
                 const user = await HenryAuth.getUser();
@@ -270,66 +554,290 @@
                     window.location.href = '/login?redirect=settings';
                     return;
                 }
-                loadSubscriptionInfo();
+                loadSettingsData(user);
             } catch (e) {
                 window.location.href = '/login?redirect=settings';
             }
         })();
 
-        async function loadSubscriptionInfo() {
-            const container = document.getElementById('subscriptionContent');
-            if (!container) return;
-
+        async function loadSettingsData(user) {
             try {
-                const user = await HenryAuth.getUser();
-                if (!user) {
-                    container.textContent = 'Sign in to view subscription info.';
-                    return;
-                }
+                const [usageData, subData] = await Promise.all([
+                    TierService.getUserUsage(),
+                    fetchSubscriptionDetails(user.id),
+                ]);
 
-                const response = await fetch(`${API_BASE}/api/user/usage?user_id=${user.id}`);
-                if (!response.ok) throw new Error('Failed to load');
-
-                const data = await response.json();
-                const tier = data.tier || 'preview';
-                const tierDisplay = data.tier_display || 'Preview';
-                const isBeta = data.is_beta_user;
-                const betaExpires = data.beta_expires_at;
-
-                let html = '';
-
-                // Current plan display
-                html += `<div class="plan-card">`;
-                html += `<div>`;
-                html += `<div class="plan-name">${tierDisplay} Plan</div>`;
-
-                if (isBeta && betaExpires) {
-                    const expiryDate = new Date(betaExpires).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                    html += `<div class="plan-meta beta">Beta access until ${expiryDate}</div>`;
-                } else if (tier === 'preview' || tier === 'sourcer') {
-                    html += `<div class="plan-meta">Free tier</div>`;
-                } else {
-                    html += `<div class="plan-meta">Active subscription</div>`;
-                }
-
-                html += `</div>`;
-
-                // Action button
-                if ((tier === 'preview' || tier === 'sourcer') && !isBeta) {
-                    html += `<a href="/pricing" class="btn-primary">Upgrade</a>`;
-                } else if (!isBeta) {
-                    html += `<button onclick="openBillingPortal()" class="btn-secondary">Manage Subscription</button>`;
-                }
-
-                html += `</div>`;
-
-                container.innerHTML = html;
-
+                renderSubscriptionSection(usageData, subData);
+                renderUsageSection(usageData);
+                renderFeaturesSection(usageData);
+                renderAccountSection(user);
             } catch (error) {
-                console.error('Error loading subscription:', error);
-                container.innerHTML = '<div style="color: var(--color-text-secondary);">Could not load subscription info. <a href="/pricing" style="color: var(--color-accent);">View plans</a></div>';
+                console.error('Settings load error:', error);
+                document.getElementById('subscriptionContent').innerHTML =
+                    '<div style="color: var(--color-text-secondary);">Could not load settings. <a href="/pricing" style="color: var(--color-accent);">View plans</a></div>';
+                document.getElementById('usageContent').innerHTML = '';
+                document.getElementById('featuresContent').innerHTML = '';
+                document.getElementById('accountContent').innerHTML = '';
             }
         }
+
+        async function fetchSubscriptionDetails(userId) {
+            try {
+                const { data, error } = await supabase
+                    .from('user_profiles')
+                    .select('subscription_status, current_period_end')
+                    .eq('id', userId)
+                    .single();
+                if (error) throw error;
+                return data || {};
+            } catch (e) {
+                console.error('Error fetching subscription details:', e);
+                return {};
+            }
+        }
+
+        // ── Section 1: Subscription & Billing ───────────────────
+
+        function renderSubscriptionSection(usageData, subData) {
+            const container = document.getElementById('subscriptionContent');
+            const { tier, tier_display, tier_price, is_beta_user, beta_expires_at } = usageData;
+            const { subscription_status, current_period_end } = subData;
+            const isFree = (tier === 'preview' || tier === 'sourcer');
+
+            let html = '<div class="plan-card">';
+            html += '<div>';
+            html += `<div class="plan-name">${tier_display || 'Preview'} Plan</div>`;
+
+            // Price / meta line
+            if (is_beta_user && beta_expires_at) {
+                const expiry = new Date(beta_expires_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                html += `<div class="plan-meta beta">Beta access until ${expiry}</div>`;
+            } else if (isFree) {
+                html += '<div class="plan-meta">Free</div>';
+            } else {
+                html += `<div class="plan-meta">$${tier_price}/month</div>`;
+            }
+
+            // Status badge
+            if (subscription_status && !isFree && !is_beta_user) {
+                html += renderStatusBadge(subscription_status, current_period_end);
+            }
+
+            html += '</div>';
+
+            // Action buttons
+            html += '<div class="plan-actions">';
+            if (isFree && !is_beta_user) {
+                html += '<a href="/pricing" class="btn-primary">Upgrade Plan</a>';
+            } else if (!is_beta_user && subscription_status) {
+                html += '<button onclick="openBillingPortal()" class="btn-secondary">Manage Billing</button>';
+            }
+            html += '</div>';
+            html += '</div>'; // close plan-card
+
+            // Next billing / access date
+            if (current_period_end && !isFree && !is_beta_user) {
+                const dateStr = new Date(current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                if (subscription_status === 'canceled') {
+                    html += `<div class="billing-date">Access through ${dateStr}</div>`;
+                } else if (subscription_status === 'active') {
+                    html += `<div class="billing-date">Next billing date: ${dateStr}</div>`;
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderStatusBadge(status, periodEnd) {
+            const labels = {
+                active: 'Active',
+                past_due: 'Past Due',
+                canceled: 'Canceled',
+                trialing: 'Trial',
+            };
+            const label = labels[status] || status;
+            const dotClass = status.replace('-', '_');
+            return `<div class="status-badge"><span class="status-dot ${dotClass}"></span> ${label}</div>`;
+        }
+
+        // ── Section 2: Usage This Month ─────────────────────────
+
+        function renderUsageSection(usageData) {
+            const container = document.getElementById('usageContent');
+            const usage = usageData.usage || {};
+            const usageTypes = Object.keys(USAGE_LABELS);
+
+            let metersHtml = '';
+            let meterCount = 0;
+
+            for (const type of usageTypes) {
+                const data = usage[type];
+                if (!data) continue;
+
+                // Skip if limit is 0 and not unlimited (feature not available at this tier)
+                if (data.limit === 0 && !data.is_unlimited) continue;
+
+                meterCount++;
+
+                if (data.is_unlimited) {
+                    metersHtml += `
+                        <div class="usage-item">
+                            <div class="usage-header">
+                                <span class="usage-label">
+                                    <span class="usage-icon">${USAGE_ICONS[type] || ''}</span>
+                                    ${USAGE_LABELS[type]}
+                                </span>
+                                <span class="usage-unlimited-badge">Unlimited</span>
+                            </div>
+                        </div>`;
+                } else {
+                    const { used, limit, remaining } = data;
+                    const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+                    const isLow = remaining <= Math.ceil(limit * 0.2) && remaining > 0;
+                    const isDepleted = remaining === 0;
+                    const fillClass = isDepleted ? 'depleted' : isLow ? 'warning' : '';
+
+                    metersHtml += `
+                        <div class="usage-item">
+                            <div class="usage-header">
+                                <span class="usage-label">
+                                    <span class="usage-icon">${USAGE_ICONS[type] || ''}</span>
+                                    ${USAGE_LABELS[type]}
+                                </span>
+                                <span class="usage-value">${used} / ${limit}</span>
+                            </div>
+                            <div class="usage-bar">
+                                <div class="usage-fill ${fillClass}" style="width: ${percentage}%"></div>
+                            </div>
+                            ${isLow ? `<div class="usage-warning">${remaining} remaining</div>` : ''}
+                            ${isDepleted ? `<div class="usage-warning" style="color: var(--color-error);">Limit reached</div>` : ''}
+                        </div>`;
+                }
+            }
+
+            if (meterCount === 0) {
+                container.innerHTML = `
+                    <div class="usage-empty">
+                        No usage tracking available on your current plan.<br>
+                        <a href="/pricing">Upgrade to unlock more features</a>
+                    </div>`;
+                return;
+            }
+
+            // Reset date
+            const now = new Date();
+            const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            const resetStr = resetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+            container.innerHTML = metersHtml + `
+                <div class="usage-reset-info">Usage resets ${resetStr}</div>`;
+
+            // If very few meters (free tier), add upgrade hint
+            if (meterCount <= 2) {
+                container.innerHTML += `
+                    <div class="usage-empty" style="padding-top: 8px; padding-bottom: 0;">
+                        <a href="/pricing">Upgrade for more usage and features</a>
+                    </div>`;
+            }
+        }
+
+        // ── Section 3: Your Features ────────────────────────────
+
+        function renderFeaturesSection(usageData) {
+            const container = document.getElementById('featuresContent');
+            const features = usageData.features || {};
+            const tier = usageData.tier || 'preview';
+            const isFree = (tier === 'preview' || tier === 'sourcer');
+
+            let html = '';
+            let totalAvailable = 0;
+            let totalLocked = 0;
+
+            for (const [groupName, groupData] of Object.entries(FEATURE_GROUPS)) {
+                let itemsHtml = '';
+
+                for (const [featureKey, featureLabel] of Object.entries(groupData.features)) {
+                    const value = features[featureKey];
+
+                    if (value === true) {
+                        totalAvailable++;
+                        itemsHtml += `
+                            <div class="feature-item available">
+                                <span class="feature-icon check">&#10003;</span>
+                                ${featureLabel}
+                            </div>`;
+                    } else if (value === 'limited') {
+                        totalAvailable++;
+                        itemsHtml += `
+                            <div class="feature-item limited">
+                                <span class="feature-icon check" style="color: var(--color-warning);">&#9889;</span>
+                                ${featureLabel}
+                                <span class="limited-badge">Limited</span>
+                            </div>`;
+                    } else {
+                        totalLocked++;
+                        itemsHtml += `
+                            <div class="feature-item locked">
+                                <span class="feature-icon lock">&#128274;</span>
+                                ${featureLabel}
+                                <span class="upgrade-hint">Upgrade</span>
+                            </div>`;
+                    }
+                }
+
+                html += `
+                    <div class="feature-category">
+                        <div class="feature-category-header">
+                            <span>${groupData.icon}</span>
+                            ${groupName}
+                        </div>
+                        <div class="feature-grid">
+                            ${itemsHtml}
+                        </div>
+                    </div>`;
+            }
+
+            // Upgrade hint at bottom if there are locked features
+            if (totalLocked > 0) {
+                html += `
+                    <div class="features-upgrade">
+                        <a href="/pricing">View plans to unlock all ${totalAvailable + totalLocked} features &rarr;</a>
+                    </div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // ── Section 4: Account ──────────────────────────────────
+
+        function renderAccountSection(user) {
+            const container = document.getElementById('accountContent');
+            const chevronSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>';
+
+            container.innerHTML = `
+                <div class="account-row">
+                    <span class="account-row-label">Email</span>
+                    <span class="account-row-value">${user.email || 'Not set'}</span>
+                </div>
+
+                <a href="/profile-edit" class="account-link">
+                    <span class="account-link-label">Edit Profile</span>
+                    ${chevronSvg}
+                </a>
+
+                <button onclick="handleSignOut()" class="account-link sign-out-link">
+                    <span class="account-link-label">Sign Out</span>
+                    ${chevronSvg}
+                </button>
+
+                <a href="/contact?subject=delete-account" class="account-link delete-link">
+                    <span class="account-link-label">Delete Account</span>
+                    ${chevronSvg}
+                </a>
+            `;
+        }
+
+        // ── Action handlers ─────────────────────────────────────
 
         async function openBillingPortal() {
             try {
@@ -357,10 +865,19 @@
 
                 const data = await response.json();
                 window.location.href = data.url;
-
             } catch (error) {
                 console.error('Portal error:', error);
                 alert('Something went wrong. Please try again.');
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                await HenryAuth.signOut();
+                window.location.href = '/login';
+            } catch (e) {
+                console.error('Sign out error:', e);
+                window.location.href = '/login';
             }
         }
     </script>
