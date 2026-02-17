@@ -72,13 +72,12 @@ class StripeService:
         user_email: str,
         tier: str,
         billing_period: str,
-        success_url: str,
-        cancel_url: str,
+        return_url: str,
     ) -> str:
         """
-        Create a Stripe Checkout Session for subscribing to a tier.
+        Create a Stripe Checkout Session in embedded mode.
 
-        Returns the Checkout Session URL to redirect the user to.
+        Returns the client_secret needed to mount the embedded checkout form.
         """
         price_id = get_price_id(tier, billing_period)
         if not price_id:
@@ -90,13 +89,13 @@ class StripeService:
         session = stripe.checkout.Session.create(
             customer=customer_id,
             mode='subscription',
+            ui_mode='embedded',
             payment_method_types=['card'],
             line_items=[{
                 'price': price_id,
                 'quantity': 1,
             }],
-            success_url=success_url,
-            cancel_url=cancel_url,
+            return_url=return_url,
             metadata={
                 'user_id': user_id,
                 'tier': tier,
@@ -109,7 +108,16 @@ class StripeService:
             },
         )
 
-        return session.url
+        return session.client_secret
+
+    def get_checkout_session_status(self, session_id: str) -> dict:
+        """Retrieve a Checkout Session's status for the return page."""
+        session = stripe.checkout.Session.retrieve(session_id)
+        return {
+            'status': session.status,
+            'payment_status': session.payment_status,
+            'customer_email': session.customer_details.email if session.customer_details else None,
+        }
 
     async def create_portal_session(self, user_id: str, return_url: str) -> str:
         """
