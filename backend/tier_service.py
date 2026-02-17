@@ -21,6 +21,7 @@ from tier_config import (
     LAUNCH_DATE,
     get_unlock_tier,
     get_tier_index,
+    normalize_tier,
 )
 
 
@@ -45,9 +46,9 @@ class TierService:
             # Create profile with default tier
             response = self.supabase.table('user_profiles').insert({
                 'id': user_id,
-                'tier': 'sourcer',
+                'tier': 'preview',
             }).execute()
-            profile = response.data[0] if response.data else {'id': user_id, 'tier': 'sourcer'}
+            profile = response.data[0] if response.data else {'id': user_id, 'tier': 'preview'}
         return profile
 
     def get_effective_tier(self, profile: Dict[str, Any]) -> str:
@@ -74,7 +75,7 @@ class TierService:
 
         # Check subscription status
         subscription_status = profile.get('subscription_status')
-        tier = profile.get('tier') or 'sourcer'
+        tier = normalize_tier(profile.get('tier') or 'preview')
 
         if subscription_status == 'canceled':
             # Allow access until current_period_end
@@ -84,7 +85,7 @@ class TierService:
                     period_end = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
                 if period_end > datetime.utcnow().replace(tzinfo=period_end.tzinfo if period_end.tzinfo else None):
                     return tier  # Still within paid period
-            return 'sourcer'  # Period expired, downgrade to free tier
+            return 'preview'  # Period expired, downgrade to free tier
 
         # active, past_due, trialing all keep current tier
         return tier
@@ -100,7 +101,7 @@ class TierService:
         }
         """
         if tier not in TIER_LIMITS:
-            tier = 'sourcer'
+            tier = normalize_tier(tier)
 
         feature_value = TIER_LIMITS[tier]['features'].get(feature_name, False)
 
@@ -173,7 +174,7 @@ class TierService:
         }
         """
         limit_key = f'{usage_type}_per_month'
-        limit = TIER_LIMITS.get(tier, TIER_LIMITS['sourcer']).get(limit_key, 0)
+        limit = TIER_LIMITS.get(tier, TIER_LIMITS['preview']).get(limit_key, 0)
 
         # Get current period usage
         usage = await self.get_or_create_current_usage(user_id)
@@ -245,7 +246,7 @@ class TierService:
         """Get complete usage summary for a user."""
         profile = await self.ensure_user_profile(user_id)
         tier = self.get_effective_tier(profile)
-        limits = TIER_LIMITS.get(tier, TIER_LIMITS['sourcer'])
+        limits = TIER_LIMITS.get(tier, TIER_LIMITS['preview'])
 
         usage_types = [
             'applications',
@@ -262,7 +263,7 @@ class TierService:
 
         return {
             'tier': tier,
-            'tier_display': TIER_NAMES.get(tier, 'Sourcer'),
+            'tier_display': TIER_NAMES.get(tier, 'Preview'),
             'tier_price': TIER_PRICES.get(tier, 0),
             'is_beta_user': profile.get('is_beta_user', False),
             'beta_expires_at': profile.get('beta_expires_at'),
