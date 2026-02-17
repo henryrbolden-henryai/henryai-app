@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | HenryHQ</title>
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#000000">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .checkout-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        /* Order Summary */
+        .order-summary {
+            padding-top: 16px;
+        }
+
+        .order-summary h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 32px;
+        }
+
+        .order-summary h1 em {
+            font-style: italic;
+            color: var(--color-accent);
+        }
+
+        .plan-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 28px;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 12px;
+            border-radius: 100px;
+            margin-bottom: 16px;
+        }
+
+        .plan-name {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .plan-tagline {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .plan-price {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .plan-price .amount {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .plan-price .period {
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+        }
+
+        .plan-billing-note {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+
+        .plan-divider {
+            border: none;
+            border-top: 1px solid var(--color-border);
+            margin: 20px 0;
+        }
+
+        .plan-features {
+            list-style: none;
+        }
+
+        .plan-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: var(--color-text-secondary);
+            font-size: 0.88rem;
+            margin-bottom: 10px;
+        }
+
+        .plan-features li .check {
+            color: var(--color-accent);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .trust-badges {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 28px;
+            color: var(--color-text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .trust-badge svg {
+            width: 14px;
+            height: 14px;
+            color: var(--color-success);
+        }
+
+        /* Stripe Checkout Form Container */
+        .checkout-form-wrapper {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            overflow: hidden;
+            min-height: 450px;
+        }
+
+        #checkout {
+            min-height: 450px;
+        }
+
+        .checkout-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 450px;
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .checkout-loading .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-border);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .checkout-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 450px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .checkout-error p {
+            color: var(--color-error);
+            margin-bottom: 20px;
+        }
+
+        .checkout-error .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--color-accent);
+            color: var(--color-bg);
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            font-family: var(--font-body);
+            transition: opacity 0.2s;
+        }
+
+        .checkout-error .btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .checkout-layout {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .order-summary h1 {
+                font-size: 1.6rem;
+                margin-bottom: 20px;
+            }
+
+            .plan-price .amount {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <a href="/pricing" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+            </svg>
+            Change plan
+        </a>
+
+        <div class="checkout-layout">
+            <!-- Left: Order Summary -->
+            <div class="order-summary">
+                <h1>Complete your <em>subscription</em></h1>
+
+                <div class="plan-card">
+                    <div class="plan-badge" id="planBadge"></div>
+                    <div class="plan-name" id="planName"></div>
+                    <div class="plan-tagline" id="planTagline"></div>
+
+                    <div class="plan-price">
+                        <span class="amount" id="planAmount"></span>
+                        <span class="period">/mo</span>
+                    </div>
+                    <div class="plan-billing-note" id="planBillingNote"></div>
+
+                    <hr class="plan-divider">
+
+                    <ul class="plan-features" id="planFeatures"></ul>
+                </div>
+
+                <div class="trust-badges">
+                    <div class="trust-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                        </svg>
+                        Secure checkout
+                    </div>
+                    <div class="trust-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                        </svg>
+                        Cancel anytime
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Stripe Embedded Checkout -->
+            <div class="checkout-form-wrapper">
+                <div id="checkout">
+                    <div class="checkout-loading">
+                        <div class="spinner"></div>
+                        Loading secure checkout...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : 'https://henryai-app-production.up.railway.app';
+
+        const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SnRuR0IQbLbGC5cyk559rkRwqZhJ0ZvlF0OyVGAKJDII6Feq2LSOKuAIeScqk9bFiKDIliS4hYWBi7OY5FZMoqy00N2vpcwn4';
+
+        // Tier display data
+        const TIER_INFO = {
+            recruiter: {
+                name: 'Recruiter',
+                tagline: 'Apply smarter, not harder',
+                monthly: 25,
+                annual: 199,
+                badge: 'Recruiter',
+                features: [
+                    '10 fit analyses/month',
+                    'Full fit analysis with Reality Check',
+                    'Screening question guidance',
+                    '3 tailored resumes/month',
+                    '3 tailored cover letters/month',
+                    '10 Hey Henry coaching chats/month',
+                ],
+            },
+            principal: {
+                name: 'Principal',
+                tagline: 'Your full search toolkit',
+                monthly: 49,
+                annual: 399,
+                badge: 'Most Popular',
+                features: [
+                    'Everything in Recruiter, plus:',
+                    '30 applications/month',
+                    '15 resumes and cover letters/month',
+                    '30 Hey Henry conversations/month',
+                    'Interview prep guides',
+                    '5 mock interviews/month',
+                    'Pipeline Command Center',
+                ],
+            },
+            partner: {
+                name: 'Partner',
+                tagline: 'Learn from every interview',
+                monthly: 99,
+                annual: 799,
+                badge: 'Partner',
+                features: [
+                    'Everything in Principal, plus:',
+                    '50 applications/month',
+                    'Unlimited fit analyses',
+                    'Unlimited document generation',
+                    'Unlimited Hey Henry access',
+                    '15 mock interviews/month',
+                    'Story Bank with effectiveness tracking',
+                ],
+            },
+            coach: {
+                name: 'Coach',
+                tagline: 'Close with confidence',
+                monthly: 199,
+                annual: 1599,
+                badge: 'Limited Seats',
+                features: [
+                    'Everything in Partner, plus:',
+                    'Unlimited mock interviews',
+                    'Two 45-minute live coaching sessions/month',
+                    'Full negotiation support',
+                    'Counter-offer strategy and drafts',
+                    'Priority Hey Henry responses',
+                ],
+            },
+        };
+
+        // Read URL params
+        const params = new URLSearchParams(window.location.search);
+        const tier = params.get('tier');
+        const billingPeriod = params.get('billing_period') || 'monthly';
+
+        // Validate tier
+        if (!tier || !TIER_INFO[tier]) {
+            window.location.href = '/pricing';
+        }
+
+        // Populate order summary
+        const info = TIER_INFO[tier];
+        if (info) {
+            document.getElementById('planBadge').textContent = info.badge;
+            document.getElementById('planName').textContent = info.name;
+            document.getElementById('planTagline').textContent = info.tagline;
+
+            if (billingPeriod === 'annual') {
+                const monthlyEquiv = Math.round(info.annual / 12);
+                document.getElementById('planAmount').textContent = `$${monthlyEquiv}`;
+                document.getElementById('planBillingNote').textContent = `$${info.annual}/year, billed annually`;
+            } else {
+                document.getElementById('planAmount').textContent = `$${info.monthly}`;
+                document.getElementById('planBillingNote').textContent = 'Billed monthly';
+            }
+
+            const featuresEl = document.getElementById('planFeatures');
+            info.features.forEach(feat => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="check">&#10003;</span> ${feat}`;
+                featuresEl.appendChild(li);
+            });
+        }
+
+        // Initialize embedded checkout
+        async function initCheckout() {
+            try {
+                // Auth check
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    window.location.href = `/login?plan=${tier}&redirect=pricing`;
+                    return;
+                }
+
+                // Create checkout session via backend
+                const response = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: user.id,
+                        tier: tier,
+                        billing_period: billingPeriod,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    document.getElementById('checkout').innerHTML = `
+                        <div class="checkout-error">
+                            <p>${error.detail || 'Something went wrong. Please try again.'}</p>
+                            <a href="/pricing" class="btn">Back to Plans</a>
+                        </div>`;
+                    return;
+                }
+
+                const { client_secret } = await response.json();
+
+                // Initialize Stripe Embedded Checkout
+                const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                const checkout = await stripe.initEmbeddedCheckout({
+                    clientSecret: client_secret,
+                });
+
+                // Clear loading state and mount
+                document.getElementById('checkout').innerHTML = '';
+                checkout.mount('#checkout');
+
+            } catch (error) {
+                console.error('Checkout initialization error:', error);
+                document.getElementById('checkout').innerHTML = `
+                    <div class="checkout-error">
+                        <p>Something went wrong loading checkout. Please try again.</p>
+                        <a href="/pricing" class="btn">Back to Plans</a>
+                    </div>`;
+            }
+        }
+
+        initCheckout();
+    </script>
+</body>
+</html>

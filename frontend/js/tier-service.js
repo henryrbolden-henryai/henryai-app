@@ -410,28 +410,8 @@ const TierService = {
                 return;
             }
 
-            const response = await fetch(`${this.API_BASE}/api/stripe/create-checkout-session`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    tier: tier,
-                    billing_period: 'monthly',
-                }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                if (response.status === 503) {
-                    alert('Payments are not yet available. Please check back soon.');
-                } else {
-                    alert(error.detail || 'Something went wrong. Please try again.');
-                }
-                return;
-            }
-
-            const data = await response.json();
-            window.location.href = data.url;
+            // Navigate to embedded checkout page
+            window.location.href = `/checkout?tier=${tier}&billing_period=monthly`;
 
         } catch (error) {
             console.error('Checkout error:', error);
