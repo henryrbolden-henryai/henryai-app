@@ -27457,7 +27457,7 @@ async def create_portal_session(request: PortalSessionRequest):
     try:
         stripe_service = StripeService(supabase)
         frontend_base = os.getenv('FRONTEND_URL', 'https://henryhq.ai')
-        return_url = f"{frontend_base}/profile-edit"
+        return_url = f"{frontend_base}/settings"
 
         url = await stripe_service.create_portal_session(
             user_id=user_id,

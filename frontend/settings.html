@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | HenryHQ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0b;
+            --color-surface: #141416;
+            --color-surface-elevated: #1c1c1f;
+            --color-border: rgba(255, 255, 255, 0.08);
+            --color-border-hover: rgba(255, 255, 255, 0.15);
+            --color-text: #fafafa;
+            --color-text-secondary: #a1a1aa;
+            --color-accent: #22d3ee;
+            --color-accent-muted: rgba(34, 211, 238, 0.15);
+            --color-success: #4ade80;
+            --color-warning: #fbbf24;
+            --color-error: #f87171;
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'DM Sans', -apple-system, sans-serif;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--color-text);
+        }
+
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header h1 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--color-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .form-section {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--color-text);
+        }
+
+        .section-title .icon {
+            font-size: 1.2rem;
+        }
+
+        .section-description {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+        }
+
+        .plan-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .plan-name {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .plan-meta {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .plan-meta.beta {
+            color: var(--color-accent);
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: var(--color-accent);
+            color: #0a0a0b;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: var(--font-body);
+            text-decoration: none;
+            display: inline-block;
+            transition: opacity 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: var(--color-surface-elevated);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: border-color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .account-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--color-text);
+            transition: border-color 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .account-link:hover {
+            border-color: var(--color-border-hover);
+        }
+
+        .account-link-label {
+            font-size: 0.9rem;
+        }
+
+        .account-link svg {
+            width: 16px;
+            height: 16px;
+            color: var(--color-text-secondary);
+        }
+
+        .loading-skeleton {
+            background: linear-gradient(90deg, var(--color-surface-elevated) 25%, rgba(255,255,255,0.05) 50%, var(--color-surface-elevated) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+            height: 60px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/dashboard" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <div class="page-header">
+            <h1>Settings</h1>
+            <p>Manage your subscription and account preferences.</p>
+        </div>
+
+        <!-- SUBSCRIPTION -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="icon">💳</span>
+                Subscription
+            </div>
+            <div id="subscriptionContent">
+                <div class="loading-skeleton"></div>
+            </div>
+        </div>
+
+        <!-- ACCOUNT -->
+        <div class="form-section">
+            <div class="section-title">
+                <span class="icon">👤</span>
+                Account
+            </div>
+            <a href="/profile-edit" class="account-link">
+                <span class="account-link-label">Edit Profile</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://henryai-app-production.up.railway.app';
+
+        // Auth gate
+        (async function init() {
+            try {
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    window.location.href = '/login?redirect=settings';
+                    return;
+                }
+                loadSubscriptionInfo();
+            } catch (e) {
+                window.location.href = '/login?redirect=settings';
+            }
+        })();
+
+        async function loadSubscriptionInfo() {
+            const container = document.getElementById('subscriptionContent');
+            if (!container) return;
+
+            try {
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    container.textContent = 'Sign in to view subscription info.';
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/user/usage?user_id=${user.id}`);
+                if (!response.ok) throw new Error('Failed to load');
+
+                const data = await response.json();
+                const tier = data.tier || 'preview';
+                const tierDisplay = data.tier_display || 'Preview';
+                const isBeta = data.is_beta_user;
+                const betaExpires = data.beta_expires_at;
+
+                let html = '';
+
+                // Current plan display
+                html += `<div class="plan-card">`;
+                html += `<div>`;
+                html += `<div class="plan-name">${tierDisplay} Plan</div>`;
+
+                if (isBeta && betaExpires) {
+                    const expiryDate = new Date(betaExpires).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                    html += `<div class="plan-meta beta">Beta access until ${expiryDate}</div>`;
+                } else if (tier === 'preview' || tier === 'sourcer') {
+                    html += `<div class="plan-meta">Free tier</div>`;
+                } else {
+                    html += `<div class="plan-meta">Active subscription</div>`;
+                }
+
+                html += `</div>`;
+
+                // Action button
+                if ((tier === 'preview' || tier === 'sourcer') && !isBeta) {
+                    html += `<a href="/pricing" class="btn-primary">Upgrade</a>`;
+                } else if (!isBeta) {
+                    html += `<button onclick="openBillingPortal()" class="btn-secondary">Manage Subscription</button>`;
+                }
+
+                html += `</div>`;
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading subscription:', error);
+                container.innerHTML = '<div style="color: var(--color-text-secondary);">Could not load subscription info. <a href="/pricing" style="color: var(--color-accent);">View plans</a></div>';
+            }
+        }
+
+        async function openBillingPortal() {
+            try {
+                const user = await HenryAuth.getUser();
+                if (!user) {
+                    alert('Please sign in first.');
+                    return;
+                }
+
+                const response = await fetch(`${API_BASE}/api/stripe/create-portal-session`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user.id }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    if (response.status === 503) {
+                        alert('Billing management is not yet available.');
+                    } else {
+                        alert(error.detail || 'Could not open billing portal.');
+                    }
+                    return;
+                }
+
+                const data = await response.json();
+                window.location.href = data.url;
+
+            } catch (error) {
+                console.error('Portal error:', error);
+                alert('Something went wrong. Please try again.');
+            }
+        }
+    </script>
+    <script src="components/analytics.js"></script>
+    <script src="components/hey-henry.js"></script>
+    <script src="components/admin-alerts.js"></script>
+</body>
+</html>
