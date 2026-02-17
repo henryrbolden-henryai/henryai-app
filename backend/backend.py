@@ -931,6 +931,16 @@ except ImportError:
     TIER_SERVICE_AVAILABLE = False
     print("⚠️ Tier service not available - tier features disabled")
 
+# Stripe billing integration
+try:
+    from stripe_service import StripeService
+    STRIPE_SERVICE_AVAILABLE = bool(os.getenv('STRIPE_SECRET_KEY'))
+    if not STRIPE_SERVICE_AVAILABLE:
+        print("⚠️ Stripe not configured - payment features disabled (no STRIPE_SECRET_KEY)")
+except ImportError:
+    STRIPE_SERVICE_AVAILABLE = False
+    print("⚠️ Stripe service not available - payment features disabled")
+
 # Recruiter Calibration module for gap classification and red flag detection
 # Per Calibration Spec v1.0 (REVISED): Recruiter-grade judgment framework
 # CRITICAL: Calibration explains gaps, does NOT override Job Fit recommendation
@@ -27351,6 +27361,150 @@ async def get_user_tier(user_id: str = None):
     except Exception as e:
         logger.error(f"Error getting user tier: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting user tier: {str(e)}")
+
+
+# ============================================================================
+# STRIPE BILLING API
+# ============================================================================
+
+class CheckoutSessionRequest(BaseModel):
+    user_id: str
+    tier: str
+    billing_period: str = 'monthly'
+
+class PortalSessionRequest(BaseModel):
+    user_id: str
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(request: CheckoutSessionRequest):
+    """
+    Create a Stripe Checkout Session for subscribing to a tier.
+
+    Returns a URL to redirect the user to Stripe's hosted checkout page.
+    """
+    user_id = request.user_id
+    tier = request.tier
+    billing_period = request.billing_period
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not tier or tier == 'preview':
+        raise HTTPException(status_code=400, detail="tier is required and cannot be 'preview'")
+    if billing_period not in ('monthly', 'annual'):
+        raise HTTPException(status_code=400, detail="billing_period must be 'monthly' or 'annual'")
+
+    if not STRIPE_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Stripe payments are not configured")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        stripe_service = StripeService(supabase)
+
+        # Get user email from profile or auth
+        profile = stripe_service._get_user_profile(user_id)
+        if not profile:
+            raise HTTPException(status_code=404, detail="User profile not found")
+
+        # Try to get email from Supabase auth
+        try:
+            user_response = supabase.auth.admin.get_user_by_id(user_id)
+            user_email = user_response.user.email
+        except Exception:
+            user_email = f"{user_id}@unknown.com"
+
+        # Build success/cancel URLs
+        frontend_base = os.getenv('FRONTEND_URL', 'https://henryhq.ai')
+        success_url = f"{frontend_base}/checkout-success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{frontend_base}/checkout-cancel"
+
+        url = await stripe_service.create_checkout_session(
+            user_id=user_id,
+            user_email=user_email,
+            tier=tier,
+            billing_period=billing_period,
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+
+        return {"url": url}
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating checkout session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating checkout session: {str(e)}")
+
+
+@app.post("/api/stripe/create-portal-session")
+async def create_portal_session(request: PortalSessionRequest):
+    """
+    Create a Stripe Customer Portal session for managing a subscription.
+
+    Returns a URL to redirect the user to Stripe's hosted billing portal.
+    """
+    user_id = request.user_id
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not STRIPE_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Stripe payments are not configured")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        stripe_service = StripeService(supabase)
+        frontend_base = os.getenv('FRONTEND_URL', 'https://henryhq.ai')
+        return_url = f"{frontend_base}/profile-edit"
+
+        url = await stripe_service.create_portal_session(
+            user_id=user_id,
+            return_url=return_url,
+        )
+
+        return {"url": url}
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating portal session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating portal session: {str(e)}")
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """
+    Handle Stripe webhook events.
+
+    Verifies the webhook signature and processes subscription lifecycle events.
+    Uses raw request body for signature verification (not Pydantic model).
+    """
+    if not STRIPE_SERVICE_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Stripe payments are not configured")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    # Get raw body for signature verification
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+
+    if not sig_header:
+        raise HTTPException(status_code=400, detail="Missing Stripe-Signature header")
+
+    try:
+        stripe_service = StripeService(supabase)
+        result = await stripe_service.handle_webhook_event(payload, sig_header)
+        return result
+
+    except ValueError as e:
+        logger.error(f"Stripe webhook error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Stripe webhook processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Webhook processing error: {str(e)}")
 
 
 # ============================================================================

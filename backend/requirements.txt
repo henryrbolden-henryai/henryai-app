@@ -32,5 +32,8 @@ python-dateutil>=2.8.0
 # Supabase (database)
 supabase>=2.0.0
 
+# Payments
+stripe>=8.0.0
+
 # Optional: Email (for future implementation)
 # aiosmtplib>=2.0.0

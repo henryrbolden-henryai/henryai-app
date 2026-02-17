@@ -163,10 +163,11 @@ const TierService = {
                     </p>
                 ` : ''}
                 <div class="upgrade-modal-cta">
-                    <a href="/pricing" class="btn btn-primary upgrade-modal-btn">View Plans</a>
-                    <button class="btn btn-secondary upgrade-modal-dismiss" onclick="TierService.closeUpgradeModal()">
-                        Maybe Later
-                    </button>
+                    ${upgradeTo && upgradeTo !== 'preview'
+                        ? `<button class="btn btn-primary upgrade-modal-btn" onclick="TierService.startCheckout('${upgradeTo}')">Upgrade to ${this._getTierDisplay(upgradeTo)}</button>`
+                        : `<a href="/pricing" class="btn btn-primary upgrade-modal-btn">View Plans</a>`
+                    }
+                    <a href="/pricing" class="btn btn-secondary upgrade-modal-dismiss" style="text-align: center; text-decoration: none;">Compare Plans</a>
                 </div>
             </div>
         `;
@@ -392,6 +393,49 @@ const TierService = {
                     ${isLow ? `<span class="usage-warning">${remaining} remaining</span>` : ''}
                 </div>
             `;
+        }
+    },
+
+    /**
+     * Start Stripe Checkout for a given tier
+     * @param {string} tier - Tier to subscribe to
+     */
+    async startCheckout(tier) {
+        this.closeUpgradeModal();
+
+        try {
+            const user = await HenryAuth.getUser();
+            if (!user) {
+                window.location.href = `/login?plan=${tier}&redirect=pricing`;
+                return;
+            }
+
+            const response = await fetch(`${this.API_BASE}/api/stripe/create-checkout-session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    tier: tier,
+                    billing_period: 'monthly',
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                if (response.status === 503) {
+                    alert('Payments are not yet available. Please check back soon.');
+                } else {
+                    alert(error.detail || 'Something went wrong. Please try again.');
+                }
+                return;
+            }
+
+            const data = await response.json();
+            window.location.href = data.url;
+
+        } catch (error) {
+            console.error('Checkout error:', error);
+            alert('Something went wrong. Please try again.');
         }
     },
 

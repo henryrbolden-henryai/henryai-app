@@ -10,6 +10,8 @@
     { "source": "/analyzing", "destination": "/analyzing.html" },
     { "source": "/beta-access", "destination": "/beta-access.html" },
     { "source": "/coach-view", "destination": "/coach-view.html" },
+    { "source": "/checkout-cancel", "destination": "/checkout-cancel.html" },
+    { "source": "/checkout-success", "destination": "/checkout-success.html" },
     { "source": "/contact", "destination": "/contact.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/diagnostic", "destination": "/diagnostic.html" },

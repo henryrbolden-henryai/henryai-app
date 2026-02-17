@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
     -- Tier subscription fields
-    tier TEXT DEFAULT 'sourcer' CHECK (tier IN ('sourcer', 'recruiter', 'principal', 'partner', 'coach')),
+    tier TEXT DEFAULT 'sourcer' CHECK (tier IN ('preview', 'sourcer', 'recruiter', 'principal', 'partner', 'coach')),
     tier_started_at TIMESTAMPTZ DEFAULT NULL,
 
     -- Stripe integration fields
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
     -- Beta user fields
     is_beta_user BOOLEAN DEFAULT false,
-    beta_tier_override TEXT DEFAULT NULL CHECK (beta_tier_override IS NULL OR beta_tier_override IN ('sourcer', 'recruiter', 'principal', 'partner', 'coach')),
+    beta_tier_override TEXT DEFAULT NULL CHECK (beta_tier_override IS NULL OR beta_tier_override IN ('preview', 'sourcer', 'recruiter', 'principal', 'partner', 'coach')),
     beta_expires_at TIMESTAMPTZ DEFAULT NULL,
     beta_discount_percent INTEGER DEFAULT 0 CHECK (beta_discount_percent >= 0 AND beta_discount_percent <= 100),
 
