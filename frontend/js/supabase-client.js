@@ -226,14 +226,14 @@ const HenryData = {
 
         const { data, error } = await supabase
             .from('candidate_profiles')
-            .select('profile_data')
-            .eq('user_id', user.id)
+            .select('*')
+            .eq('id', user.id)
             .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
             console.error('Error fetching profile:', error);
         }
-        return data?.profile_data || null;
+        return data || null;
     },
 
     /**
