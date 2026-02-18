@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings | HenryHQ</title>
+    <title>Strategic Control | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
@@ -35,15 +35,16 @@
             min-height: 100vh;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
-            padding: 40px 20px;
+            padding-top: 20px;
         }
 
-        .container {
-            max-width: 600px;
+        /* ── Layout ─────────────────────────────── */
+        .page-container {
+            max-width: 1000px;
             margin: 0 auto;
+            padding: 0 24px 60px;
         }
 
-        /* Back link */
         .back-link {
             display: inline-flex;
             align-items: center;
@@ -51,26 +52,94 @@
             color: var(--color-text-secondary);
             text-decoration: none;
             font-size: 0.9rem;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             transition: color 0.2s;
         }
         .back-link:hover { color: var(--color-text); }
         .back-link svg { width: 16px; height: 16px; }
 
-        /* Page header */
-        .page-header { margin-bottom: 32px; }
+        .page-header { margin-bottom: 28px; }
         .page-header h1 {
             font-family: var(--font-display);
             font-size: 2rem;
             font-weight: 400;
-            margin-bottom: 8px;
         }
+        .page-header h1 em { font-style: italic; color: var(--color-accent); }
         .page-header p {
             color: var(--color-text-secondary);
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            margin-top: 4px;
         }
 
-        /* Sections */
+        .settings-layout {
+            display: flex;
+            gap: 0;
+            min-height: 60vh;
+        }
+
+        /* ── Left Nav ───────────────────────────── */
+        .settings-nav {
+            width: 220px;
+            flex-shrink: 0;
+            padding: 8px 0;
+            border-right: 1px solid var(--color-border);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .settings-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            font-size: 0.88rem;
+            border-radius: 0 8px 8px 0;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-body);
+        }
+        .settings-nav-item:hover {
+            color: var(--color-text);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .settings-nav-item.active {
+            color: var(--color-accent);
+            background: var(--color-accent-muted);
+            font-weight: 500;
+        }
+        .settings-nav-item.locked {
+            opacity: 0.5;
+        }
+        .settings-nav-item.locked:hover {
+            opacity: 0.7;
+        }
+        .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+        .nav-lock { margin-left: auto; font-size: 0.7rem; opacity: 0.6; }
+
+        /* ── Content Area ───────────────────────── */
+        .settings-content {
+            flex: 1;
+            padding: 8px 0 8px 32px;
+            min-width: 0;
+        }
+
+        .settings-panel { display: none; }
+        .settings-panel.active { display: block; }
+
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 400;
+            margin-bottom: 24px;
+        }
+
+        /* ── Form Sections ──────────────────────── */
         .form-section {
             background: var(--color-surface);
             border: 1px solid var(--color-border);
@@ -82,75 +151,27 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 500;
             margin-bottom: 16px;
             color: var(--color-text);
         }
-        .section-title .icon { font-size: 1.2rem; }
-
-        /* Plan card */
-        .plan-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            background: var(--color-bg);
-            border: 1px solid var(--color-border);
-            border-radius: 10px;
-        }
-        .plan-name {
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--color-text);
-        }
-        .plan-meta {
-            font-size: 0.8rem;
+        .section-title .icon { font-size: 1.1rem; }
+        .section-desc {
+            font-size: 0.82rem;
             color: var(--color-text-secondary);
-            margin-top: 4px;
-        }
-        .plan-meta.beta { color: var(--color-accent); }
-        .plan-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            flex-shrink: 0;
+            margin-top: -10px;
+            margin-bottom: 16px;
         }
 
-        /* Status badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.78rem;
-            margin-top: 6px;
-            color: var(--color-text-secondary);
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        .status-dot.active { background: var(--color-success); }
-        .status-dot.past_due { background: var(--color-warning); }
-        .status-dot.canceled { background: var(--color-error); }
-        .status-dot.trialing { background: var(--color-accent); }
-
-        .billing-date {
-            font-size: 0.8rem;
-            color: var(--color-text-secondary);
-            margin-top: 10px;
-        }
-
-        /* Buttons */
+        /* ── Buttons ────────────────────────────── */
         .btn-primary {
             padding: 10px 20px;
             background: var(--color-accent);
             color: #0a0a0b;
             border: none;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 500;
             cursor: pointer;
             font-family: var(--font-body);
@@ -167,7 +188,7 @@
             border: 1px solid var(--color-border);
             border-radius: 8px;
             color: var(--color-text);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             cursor: pointer;
             font-family: var(--font-body);
             transition: border-color 0.2s;
@@ -187,7 +208,55 @@
         }
         .btn-text:hover { text-decoration: underline; }
 
-        /* Usage meters */
+        .btn-danger {
+            background: none;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: var(--color-error);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+        .btn-danger:hover { background: rgba(248, 113, 113, 0.1); border-color: var(--color-error); }
+
+        /* ── Plan Card ──────────────────────────── */
+        .plan-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+        }
+        .plan-name { font-size: 1rem; font-weight: 500; }
+        .plan-meta { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 4px; }
+        .plan-meta.beta { color: var(--color-accent); }
+        .plan-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            margin-top: 6px;
+            color: var(--color-text-secondary);
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.active { background: var(--color-success); }
+        .status-dot.past_due { background: var(--color-warning); }
+        .status-dot.canceled { background: var(--color-error); }
+        .status-dot.trialing { background: var(--color-accent); }
+        .billing-date { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 10px; }
+
+        /* ── Usage Meters ───────────────────────── */
         .usage-item { margin-bottom: 16px; }
         .usage-item:last-child { margin-bottom: 0; }
         .usage-header {
@@ -204,10 +273,7 @@
             gap: 8px;
         }
         .usage-label .usage-icon { font-size: 0.95rem; }
-        .usage-value {
-            font-size: 0.82rem;
-            color: var(--color-text-secondary);
-        }
+        .usage-value { font-size: 0.82rem; color: var(--color-text-secondary); }
         .usage-bar {
             height: 6px;
             background: var(--color-surface-elevated);
@@ -222,11 +288,7 @@
         }
         .usage-fill.warning { background: var(--color-warning); }
         .usage-fill.depleted { background: var(--color-error); }
-        .usage-warning {
-            font-size: 0.75rem;
-            color: var(--color-warning);
-            margin-top: 4px;
-        }
+        .usage-warning { font-size: 0.75rem; color: var(--color-warning); margin-top: 4px; }
         .usage-unlimited-badge {
             display: inline-flex;
             align-items: center;
@@ -250,74 +312,10 @@
             color: var(--color-text-secondary);
             font-size: 0.9rem;
         }
-        .usage-empty a {
-            color: var(--color-accent);
-            text-decoration: none;
-        }
+        .usage-empty a { color: var(--color-accent); text-decoration: none; }
         .usage-empty a:hover { text-decoration: underline; }
 
-        /* Feature grid */
-        .feature-category { margin-bottom: 20px; }
-        .feature-category:last-child { margin-bottom: 0; }
-        .feature-category-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.88rem;
-            font-weight: 500;
-            color: var(--color-text);
-            margin-bottom: 10px;
-        }
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-        }
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            background: var(--color-bg);
-        }
-        .feature-item.available { color: var(--color-text); }
-        .feature-item.limited { color: var(--color-text); }
-        .feature-item.locked {
-            color: var(--color-text-secondary);
-            opacity: 0.55;
-        }
-        .feature-icon { font-size: 0.85rem; flex-shrink: 0; }
-        .feature-icon.check { color: var(--color-success); }
-        .feature-icon.lock { color: var(--color-text-secondary); }
-        .limited-badge {
-            font-size: 0.65rem;
-            background: rgba(251, 191, 36, 0.15);
-            color: var(--color-warning);
-            padding: 1px 6px;
-            border-radius: 4px;
-            margin-left: auto;
-            flex-shrink: 0;
-        }
-        .upgrade-hint {
-            font-size: 0.65rem;
-            color: var(--color-text-secondary);
-            margin-left: auto;
-            flex-shrink: 0;
-        }
-        .features-upgrade {
-            text-align: center;
-            padding: 12px 0 0;
-        }
-        .features-upgrade a {
-            color: var(--color-accent);
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-        .features-upgrade a:hover { text-decoration: underline; }
-
-        /* Account section */
+        /* ── Account Rows ───────────────────────── */
         .account-row {
             display: flex;
             justify-content: space-between;
@@ -328,14 +326,8 @@
             border-radius: 10px;
             margin-bottom: 8px;
         }
-        .account-row-label {
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
-        }
-        .account-row-value {
-            font-size: 0.9rem;
-            color: var(--color-text);
-        }
+        .account-row-label { font-size: 0.85rem; color: var(--color-text-secondary); }
+        .account-row-value { font-size: 0.9rem; color: var(--color-text); }
 
         .account-link {
             display: flex;
@@ -355,17 +347,366 @@
             font-size: 0.9rem;
         }
         .account-link:hover { border-color: var(--color-border-hover); }
-        .account-link svg {
-            width: 16px;
-            height: 16px;
-            color: var(--color-text-secondary);
-        }
-        .account-link-label { font-size: 0.9rem; }
-
-        .sign-out-link .account-link-label { color: var(--color-error); }
+        .account-link svg { width: 16px; height: 16px; color: var(--color-text-secondary); }
         .delete-link .account-link-label { color: var(--color-text-secondary); font-size: 0.85rem; }
 
-        /* Loading skeleton */
+        /* ── Strategy Health Ring ────────────────── */
+        .strategy-health {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .health-ring {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            flex-shrink: 0;
+        }
+        .health-ring svg { transform: rotate(-90deg); }
+        .health-ring-bg { fill: none; stroke: var(--color-surface-elevated); stroke-width: 8; }
+        .health-ring-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s var(--ease-out), stroke 0.5s;
+        }
+        .health-ring-fill.red { stroke: var(--color-error); }
+        .health-ring-fill.yellow { stroke: var(--color-warning); }
+        .health-ring-fill.green { stroke: var(--color-success); }
+        .health-score {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 400;
+        }
+        .health-details { flex: 1; min-width: 0; }
+        .health-label { font-size: 1rem; font-weight: 500; margin-bottom: 10px; }
+        .health-component {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+        }
+        .health-component-name { flex: 1; }
+        .health-component-score { width: 36px; text-align: right; font-weight: 500; margin-left: 8px; }
+        .health-component-bar {
+            width: 60px;
+            height: 4px;
+            background: var(--color-surface-elevated);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-left: 12px;
+        }
+        .health-component-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s var(--ease-out);
+        }
+        .health-recommendations {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--color-border);
+        }
+        .health-rec {
+            font-size: 0.78rem;
+            color: var(--color-text-secondary);
+            padding: 2px 0;
+        }
+        .health-rec::before { content: '→ '; color: var(--color-accent); }
+
+        /* ── Optimal Defaults Bar ───────────────── */
+        .optimal-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--color-accent-muted);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .optimal-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+        }
+        .optimal-date { color: var(--color-text-secondary); font-size: 0.75rem; margin-left: 4px; }
+
+        /* ── Strategy Mode Cards ────────────────── */
+        .strategy-mode-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .strategy-mode-card {
+            padding: 14px 12px;
+            background: var(--color-bg);
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .strategy-mode-card:hover { border-color: var(--color-border-hover); }
+        .strategy-mode-card.selected {
+            border-color: var(--color-accent);
+            background: var(--color-accent-muted);
+        }
+        .mode-icon { font-size: 1.3rem; margin-bottom: 6px; }
+        .mode-name { font-weight: 500; font-size: 0.85rem; }
+        .mode-desc { font-size: 0.72rem; color: var(--color-text-secondary); margin-top: 3px; }
+
+        /* ── Range Slider ───────────────────────── */
+        .range-control { margin: 8px 0 4px; }
+        .range-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .range-label { font-size: 0.88rem; }
+        .range-value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--color-accent);
+            min-width: 40px;
+            text-align: right;
+        }
+        .range-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--color-surface-elevated);
+            border-radius: 3px;
+            outline: none;
+        }
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            border: 2px solid var(--color-bg);
+            box-shadow: 0 0 0 2px var(--color-accent);
+        }
+        .range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            border: 2px solid var(--color-bg);
+            box-shadow: 0 0 0 2px var(--color-accent);
+        }
+        .range-desc { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 6px; }
+
+        /* ── Toggle Switch ──────────────────────── */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: var(--color-surface-elevated);
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            transition: background 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-text-secondary);
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s var(--ease-out), background 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-track {
+            background: var(--color-accent-muted);
+            border-color: var(--color-accent);
+        }
+        .toggle-switch input:checked + .toggle-track::after {
+            transform: translateX(20px);
+            background: var(--color-accent);
+        }
+
+        /* ── Setting Row ────────────────────────── */
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--color-border);
+            gap: 16px;
+        }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-row-info { flex: 1; min-width: 0; }
+        .setting-row-label { font-size: 0.88rem; }
+        .setting-row-desc { font-size: 0.75rem; color: var(--color-text-secondary); margin-top: 2px; }
+        .setting-row.disabled { opacity: 0.4; pointer-events: none; }
+
+        /* ── Number Stepper ─────────────────────── */
+        .number-stepper {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .stepper-btn {
+            width: 32px;
+            height: 32px;
+            background: var(--color-surface-elevated);
+            border: none;
+            color: var(--color-text);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .stepper-btn:hover { background: var(--color-border-hover); }
+        .stepper-value {
+            width: 42px;
+            text-align: center;
+            font-size: 0.88rem;
+            font-weight: 500;
+            background: var(--color-bg);
+            color: var(--color-text);
+            border: none;
+            padding: 0;
+            height: 32px;
+            line-height: 32px;
+            font-family: var(--font-body);
+        }
+
+        /* ── Drag Reorder List ──────────────────── */
+        .reorder-list { list-style: none; }
+        .reorder-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: grab;
+            transition: all 0.2s;
+            font-size: 0.88rem;
+        }
+        .reorder-item:active { cursor: grabbing; }
+        .reorder-item.dragging { opacity: 0.4; border-color: var(--color-accent); }
+        .reorder-grip { color: var(--color-text-secondary); font-size: 0.9rem; user-select: none; }
+        .reorder-label { flex: 1; }
+        .reorder-rank {
+            font-size: 0.72rem;
+            color: var(--color-text-secondary);
+            background: var(--color-surface-elevated);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* ── Locked Overlay ─────────────────────── */
+        .locked-section {
+            position: relative;
+            pointer-events: none;
+        }
+        .locked-section::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(10, 10, 11, 0.8) 100%);
+            border-radius: 12px;
+            z-index: 2;
+        }
+        .locked-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            text-align: center;
+            pointer-events: auto;
+        }
+        .locked-overlay p {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 10px;
+        }
+
+        /* ── Save Toast ─────────────────────────── */
+        .save-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-success);
+            color: var(--color-success);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s var(--ease-out);
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .save-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Confirm Modal ──────────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal-box {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .modal-box h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; margin-bottom: 10px; }
+        .modal-box p { font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+        /* ── Loading ────────────────────────────── */
         .loading-skeleton {
             background: linear-gradient(90deg, var(--color-surface-elevated) 25%, rgba(255,255,255,0.05) 50%, var(--color-surface-elevated) 75%);
             background-size: 200% 100%;
@@ -378,9 +719,37 @@
             100% { background-position: -200% 0; }
         }
 
-        /* Responsive */
-        @media (max-width: 480px) {
-            .feature-grid { grid-template-columns: 1fr; }
+        /* ── Responsive ─────────────────────────── */
+        @media (max-width: 768px) {
+            .settings-layout { flex-direction: column; }
+            .settings-nav {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--color-border);
+                display: flex;
+                overflow-x: auto;
+                position: static;
+                padding: 0;
+                gap: 0;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .settings-nav::-webkit-scrollbar { display: none; }
+            .settings-nav-item {
+                border-radius: 0;
+                white-space: nowrap;
+                padding: 12px 14px;
+                border-bottom: 2px solid transparent;
+                flex-shrink: 0;
+            }
+            .settings-nav-item.active {
+                border-bottom-color: var(--color-accent);
+                background: transparent;
+            }
+            .settings-content { padding: 20px 0; }
+            .strategy-mode-group { grid-template-columns: 1fr; }
+            .strategy-health { flex-direction: column; text-align: center; }
+            .health-details { width: 100%; }
             .plan-card {
                 flex-direction: column;
                 align-items: flex-start;
@@ -388,15 +757,13 @@
             }
             .plan-actions { width: 100%; }
             .plan-actions .btn-primary,
-            .plan-actions .btn-secondary {
-                width: 100%;
-                text-align: center;
-            }
+            .plan-actions .btn-secondary { width: 100%; text-align: center; }
+            .optimal-bar { flex-direction: column; gap: 10px; text-align: center; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="page-container">
         <a href="/dashboard" class="back-link">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
@@ -405,54 +772,97 @@
         </a>
 
         <div class="page-header">
-            <h1>Settings</h1>
-            <p>Manage your subscription, usage, and account preferences.</p>
+            <h1>Strategic <em>Control</em></h1>
+            <p>Manage your strategy, preferences, and account settings.</p>
         </div>
 
-        <!-- SUBSCRIPTION & BILLING -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">💳</span>
-                Subscription & Billing
-            </div>
-            <div id="subscriptionContent">
-                <div class="loading-skeleton"></div>
-            </div>
-        </div>
+        <div class="settings-layout">
+            <!-- Left Nav -->
+            <nav class="settings-nav" id="settingsNav">
+                <button class="settings-nav-item active" data-panel="account">
+                    <span class="nav-icon">👤</span> Account
+                    <span class="nav-lock"></span>
+                </button>
+                <button class="settings-nav-item" data-panel="career-strategy">
+                    <span class="nav-icon">🎯</span> Career Strategy
+                    <span class="nav-lock"></span>
+                </button>
+                <button class="settings-nav-item" data-panel="application-engine">
+                    <span class="nav-icon">⚡</span> Application Engine
+                    <span class="nav-lock"></span>
+                </button>
+                <button class="settings-nav-item" data-panel="notifications">
+                    <span class="nav-icon">🔔</span> Notifications
+                    <span class="nav-lock"></span>
+                </button>
+                <button class="settings-nav-item" data-panel="privacy">
+                    <span class="nav-icon">🔒</span> Privacy & Data
+                    <span class="nav-lock"></span>
+                </button>
+                <button class="settings-nav-item" data-panel="billing">
+                    <span class="nav-icon">💳</span> Billing & Plan
+                    <span class="nav-lock"></span>
+                </button>
+            </nav>
 
-        <!-- USAGE THIS MONTH -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">📊</span>
-                Usage This Month
-            </div>
-            <div id="usageContent">
-                <div class="loading-skeleton"></div>
-            </div>
-        </div>
+            <!-- Content Panels -->
+            <div class="settings-content">
+                <!-- Account Panel -->
+                <div class="settings-panel active" id="panel-account">
+                    <div class="panel-title">Account</div>
+                    <div id="accountContent"><div class="loading-skeleton"></div></div>
+                </div>
 
-        <!-- ACCOUNT -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">👤</span>
-                Account
-            </div>
-            <div id="accountContent">
-                <div class="loading-skeleton"></div>
-            </div>
-        </div>
+                <!-- Career Strategy Panel -->
+                <div class="settings-panel" id="panel-career-strategy">
+                    <div class="panel-title">Career Strategy</div>
+                    <div id="strategyHealthContainer"></div>
+                    <div id="optimalDefaultsBar"></div>
+                    <div id="strategyContent"><div class="loading-skeleton"></div></div>
+                </div>
 
-        <!-- YOUR FEATURES -->
-        <div class="form-section">
-            <div class="section-title">
-                <span class="icon">✨</span>
-                Your Features
-            </div>
-            <div id="featuresContent">
-                <div class="loading-skeleton"></div>
+                <!-- Application Engine Panel -->
+                <div class="settings-panel" id="panel-application-engine">
+                    <div class="panel-title">Application Engine</div>
+                    <div id="engineContent"><div class="loading-skeleton"></div></div>
+                </div>
+
+                <!-- Notifications Panel -->
+                <div class="settings-panel" id="panel-notifications">
+                    <div class="panel-title">Notifications & Signals</div>
+                    <div id="notificationsContent"><div class="loading-skeleton"></div></div>
+                </div>
+
+                <!-- Privacy & Data Panel -->
+                <div class="settings-panel" id="panel-privacy">
+                    <div class="panel-title">Privacy & Data</div>
+                    <div id="privacyContent"><div class="loading-skeleton"></div></div>
+                </div>
+
+                <!-- Billing & Plan Panel -->
+                <div class="settings-panel" id="panel-billing">
+                    <div class="panel-title">Billing & Plan</div>
+                    <div id="subscriptionContent"><div class="loading-skeleton"></div></div>
+                    <div id="usageContent" style="margin-top: 20px;"><div class="loading-skeleton"></div></div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Confirm Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <h3 id="modalTitle">Are you sure?</h3>
+            <p id="modalMessage">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-danger" id="modalConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Toast -->
+    <div class="save-toast" id="saveToast">&#10003; Saved</div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
@@ -463,8 +873,26 @@
             ? 'http://localhost:8000'
             : 'https://henryai-app-production.up.railway.app';
 
-        // ── Constants ───────────────────────────────────────────
+        // ── State ──────────────────────────────────────────
+        let currentUser = null;
+        let currentTier = 'preview';
+        let currentSettings = {};
+        let usageData = {};
 
+        // ── Tier Visibility ────────────────────────────────
+        const TIER_VISIBILITY = {
+            'preview':   ['account', 'privacy', 'billing'],
+            'sourcer':   ['account', 'privacy', 'billing'],
+            'recruiter': ['account', 'career-strategy', 'privacy', 'billing'],
+            'principal': ['account', 'career-strategy', 'application-engine', 'privacy', 'billing'],
+            'partner':   ['account', 'career-strategy', 'application-engine', 'notifications', 'privacy', 'billing'],
+            'coach':     ['account', 'career-strategy', 'application-engine', 'notifications', 'privacy', 'billing'],
+        };
+
+        // Recruiter: only basic career strategy controls
+        const RECRUITER_STRATEGY_FIELDS = ['strategy_mode', 'fit_score_threshold'];
+
+        // ── Usage Constants ────────────────────────────────
         const USAGE_LABELS = {
             applications: 'Applications',
             resumes: 'Resumes',
@@ -473,111 +901,152 @@
             mock_interviews: 'Mock Interviews',
             coaching_sessions: 'Coaching Sessions',
         };
-
         const USAGE_ICONS = {
-            applications: '📋',
-            resumes: '📄',
-            cover_letters: '✉️',
-            henry_conversations: '💬',
-            mock_interviews: '🎤',
-            coaching_sessions: '🎯',
+            applications: '📋', resumes: '📄', cover_letters: '✉️',
+            henry_conversations: '💬', mock_interviews: '🎤', coaching_sessions: '🎯',
         };
 
-        const FEATURE_GROUPS = {
-            'Analysis & Intelligence': {
-                icon: '🔍',
-                features: {
-                    job_fit_analysis: 'Job Fit Analysis',
-                    reality_check: 'Reality Check',
-                    linkedin_analysis: 'LinkedIn Analysis',
-                    linkedin_recommendations: 'LinkedIn Recommendations',
-                    linkedin_optimization: 'LinkedIn Optimization',
-                    company_intelligence: 'Company Intelligence',
-                    pattern_analysis: 'Pattern Analysis',
-                    career_level_assessment: 'Career Level Assessment',
-                },
+        // ── Navigation Controller ──────────────────────────
+        const SettingsNav = {
+            init() {
+                document.querySelectorAll('.settings-nav-item').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const panel = btn.dataset.panel;
+                        if (btn.classList.contains('locked')) {
+                            if (typeof TierService !== 'undefined' && TierService.showUpgradeModal) {
+                                TierService.showUpgradeModal({
+                                    type: 'feature_locked',
+                                    feature: panel,
+                                    message: 'Upgrade your plan to access this section.',
+                                });
+                            }
+                            return;
+                        }
+                        this.switchPanel(panel);
+                    });
+                });
+                // Handle URL hash
+                const hash = window.location.hash.replace('#', '');
+                if (hash) this.switchPanel(hash);
             },
-            'Documents & Applications': {
-                icon: '📝',
-                features: {
-                    ats_optimization: 'ATS Optimization',
-                    screening_questions: 'Screening Questions',
-                    outreach_templates: 'Outreach Templates',
-                    document_refinement: 'Document Refinement',
-                    application_tracker: 'Application Tracker',
-                    application_alerts: 'Application Alerts',
-                },
-            },
-            'Interview Preparation': {
-                icon: '🎤',
-                features: {
-                    interview_prep_limited: 'Interview Prep (Basic)',
-                    interview_prep_full: 'Interview Prep (Full)',
-                    interview_debrief: 'Interview Debrief',
-                    story_bank: 'Story Bank',
-                    story_templates: 'Story Templates',
-                    cross_interview_patterns: 'Cross-Interview Patterns',
-                },
-            },
-            'Career & Coaching': {
-                icon: '🚀',
-                features: {
-                    salary_benchmarking: 'Salary Benchmarking',
-                    negotiation_guidance: 'Negotiation Guidance',
-                    negotiation_full: 'Full Negotiation Support',
-                    live_coaching: 'Live Coaching',
-                    coach_view: 'Coach View',
-                    priority_henry: 'Priority Henry Access',
-                },
-            },
-            'Dashboard & Insights': {
-                icon: '📊',
-                features: {
-                    dashboard_core: 'Core Dashboard',
-                    dashboard_full: 'Full Dashboard',
-                    dashboard_insights: 'Dashboard Insights',
-                    dashboard_benchmarking: 'Dashboard Benchmarking',
-                    conversation_memory: 'Conversation Memory',
-                    rejection_forensics: 'Rejection Forensics',
-                    job_discovery: 'Job Discovery',
-                    job_discovery_network: 'Network Discovery',
-                },
+
+            switchPanel(panelId) {
+                document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+                const navBtn = document.querySelector(`[data-panel="${panelId}"]`);
+                const panel = document.getElementById(`panel-${panelId}`);
+                if (navBtn && !navBtn.classList.contains('locked')) navBtn.classList.add('active');
+                if (panel) panel.classList.add('active');
+                window.location.hash = panelId;
             },
         };
 
-        // ── Initialization ──────────────────────────────────────
+        function applyTierVisibility(tier) {
+            const visiblePanels = TIER_VISIBILITY[tier] || TIER_VISIBILITY['preview'];
+            document.querySelectorAll('.settings-nav-item').forEach(btn => {
+                const panel = btn.dataset.panel;
+                const lockEl = btn.querySelector('.nav-lock');
+                if (visiblePanels.includes(panel)) {
+                    btn.classList.remove('locked');
+                    if (lockEl) lockEl.textContent = '';
+                } else {
+                    btn.classList.add('locked');
+                    if (lockEl) lockEl.textContent = '🔒';
+                }
+            });
 
+            // If current active panel is locked, switch to account
+            const activeBtn = document.querySelector('.settings-nav-item.active');
+            if (activeBtn && activeBtn.classList.contains('locked')) {
+                SettingsNav.switchPanel('account');
+            }
+        }
+
+        // ── Auto-Save System ───────────────────────────────
+        const SettingsAutoSave = {
+            _timeout: null,
+            _toastTimeout: null,
+
+            scheduleSave(configType, configData) {
+                clearTimeout(this._timeout);
+                this._timeout = setTimeout(async () => {
+                    try {
+                        const body = { user_id: currentUser.id };
+                        body[configType] = configData;
+                        await fetch(`${API_BASE}/api/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(body),
+                        });
+                        this.showToast();
+                    } catch (e) {
+                        console.error('Auto-save error:', e);
+                    }
+                }, 800);
+            },
+
+            showToast() {
+                const toast = document.getElementById('saveToast');
+                toast.classList.add('visible');
+                clearTimeout(this._toastTimeout);
+                this._toastTimeout = setTimeout(() => toast.classList.remove('visible'), 2000);
+            },
+        };
+
+        // ── Modal ──────────────────────────────────────────
+        let modalCallback = null;
+        function showModal(title, message, onConfirm) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = message;
+            modalCallback = onConfirm;
+            document.getElementById('confirmModal').classList.add('open');
+        }
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('open');
+            modalCallback = null;
+        }
+        document.getElementById('modalConfirmBtn').addEventListener('click', () => {
+            if (modalCallback) modalCallback();
+            closeModal();
+        });
+
+        // ── Initialization ─────────────────────────────────
         (async function init() {
             try {
-                const user = await HenryAuth.getUser();
-                if (!user) {
+                currentUser = await HenryAuth.getUser();
+                if (!currentUser) {
                     window.location.href = '/login?redirect=settings';
                     return;
                 }
-                loadSettingsData(user);
+                SettingsNav.init();
+                await loadAllData();
             } catch (e) {
+                console.error('Init error:', e);
                 window.location.href = '/login?redirect=settings';
             }
         })();
 
-        async function loadSettingsData(user) {
+        async function loadAllData() {
             try {
-                const [usageData, subData] = await Promise.all([
+                const [tierData, subData, settingsData] = await Promise.all([
                     TierService.getUserUsage(),
-                    fetchSubscriptionDetails(user.id),
+                    fetchSubscriptionDetails(currentUser.id),
+                    fetchUserSettings(currentUser.id),
                 ]);
 
-                renderSubscriptionSection(usageData, subData);
-                renderUsageSection(usageData);
-                renderFeaturesSection(usageData);
-                renderAccountSection(user);
+                usageData = tierData;
+                currentTier = tierData.tier || 'preview';
+                currentSettings = settingsData;
+
+                applyTierVisibility(currentTier);
+                renderAccountPanel(currentUser);
+                renderBillingPanel(tierData, subData);
+                renderCareerStrategyPanel(settingsData);
+                renderApplicationEnginePanel(settingsData);
+                renderNotificationsPanel(settingsData);
+                renderPrivacyPanel(settingsData);
             } catch (error) {
                 console.error('Settings load error:', error);
-                document.getElementById('subscriptionContent').innerHTML =
-                    '<div style="color: var(--color-text-secondary);">Could not load settings. <a href="/pricing" style="color: var(--color-accent);">View plans</a></div>';
-                document.getElementById('usageContent').innerHTML = '';
-                document.getElementById('featuresContent').innerHTML = '';
-                document.getElementById('accountContent').innerHTML = '';
             }
         }
 
@@ -591,24 +1060,61 @@
                 if (error) throw error;
                 return data || {};
             } catch (e) {
-                console.error('Error fetching subscription details:', e);
                 return {};
             }
         }
 
-        // ── Section 1: Subscription & Billing ───────────────────
+        async function fetchUserSettings(userId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/settings?user_id=${userId}`);
+                if (!response.ok) throw new Error('Settings fetch failed');
+                return await response.json();
+            } catch (e) {
+                console.error('Settings fetch error:', e);
+                return {
+                    strategy_config: { strategy_mode: 'targeted', fit_score_threshold: 65, target_roles: [], industry_focus: {} },
+                    automation_config: { application_velocity: 'moderate', document_generation: 'always_review', follow_up_timing_days: 7, max_applications_per_week: 10 },
+                    notification_config: { email_notifications: true, dashboard_alerts: true, weekly_digest: true, interview_prep_reminders: true, alert_types: {} },
+                    privacy_config: { data_sharing: false, analytics_opt_in: true },
+                };
+            }
+        }
 
-        function renderSubscriptionSection(usageData, subData) {
+        // ── Account Panel ──────────────────────────────────
+        function renderAccountPanel(user) {
+            const chevron = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>';
+            document.getElementById('accountContent').innerHTML = `
+                <div class="account-row">
+                    <span class="account-row-label">Email</span>
+                    <span class="account-row-value">${user.email || 'Not set'}</span>
+                </div>
+                <div class="account-row">
+                    <span class="account-row-label">Member since</span>
+                    <span class="account-row-value">${new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                </div>
+                <a href="/contact?subject=delete-account" class="account-link delete-link">
+                    <span class="account-link-label">Delete Account</span>
+                    ${chevron}
+                </a>
+            `;
+        }
+
+        // ── Billing & Plan Panel ───────────────────────────
+        function renderBillingPanel(tierData, subData) {
+            renderSubscriptionSection(tierData, subData);
+            renderUsageSection(tierData);
+        }
+
+        function renderSubscriptionSection(tierData, subData) {
             const container = document.getElementById('subscriptionContent');
-            const { tier, tier_display, tier_price, is_beta_user, beta_expires_at } = usageData;
+            const { tier, tier_display, tier_price, is_beta_user, beta_expires_at } = tierData;
             const { subscription_status, current_period_end } = subData;
             const isFree = (tier === 'preview' || tier === 'sourcer');
 
-            let html = '<div class="plan-card">';
-            html += '<div>';
+            let html = '<div class="form-section"><div class="section-title"><span class="icon">💳</span> Current Plan</div>';
+            html += '<div class="plan-card"><div>';
             html += `<div class="plan-name">${tier_display || 'Preview'} Plan</div>`;
 
-            // Price / meta line
             if (is_beta_user && beta_expires_at) {
                 const expiry = new Date(beta_expires_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                 html += `<div class="plan-meta beta">Beta access until ${expiry}</div>`;
@@ -618,24 +1124,21 @@
                 html += `<div class="plan-meta">$${tier_price}/month</div>`;
             }
 
-            // Status badge
             if (subscription_status && !isFree && !is_beta_user) {
-                html += renderStatusBadge(subscription_status, current_period_end);
+                const labels = { active: 'Active', past_due: 'Past Due', canceled: 'Canceled', trialing: 'Trial' };
+                const label = labels[subscription_status] || subscription_status;
+                const dotClass = subscription_status.replace('-', '_');
+                html += `<div class="status-badge"><span class="status-dot ${dotClass}"></span> ${label}</div>`;
             }
 
-            html += '</div>';
-
-            // Action buttons
-            html += '<div class="plan-actions">';
+            html += '</div><div class="plan-actions">';
             if (isFree && !is_beta_user) {
                 html += '<a href="/pricing" class="btn-primary">Upgrade Plan</a>';
             } else if (!is_beta_user && subscription_status) {
                 html += '<button onclick="openBillingPortal()" class="btn-secondary">Manage Billing</button>';
             }
-            html += '</div>';
-            html += '</div>'; // close plan-card
+            html += '</div></div>';
 
-            // Next billing / access date
             if (current_period_end && !isFree && !is_beta_user) {
                 const dateStr = new Date(current_period_end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                 if (subscription_status === 'canceled') {
@@ -645,224 +1148,642 @@
                 }
             }
 
+            html += '</div>';
             container.innerHTML = html;
         }
 
-        function renderStatusBadge(status, periodEnd) {
-            const labels = {
-                active: 'Active',
-                past_due: 'Past Due',
-                canceled: 'Canceled',
-                trialing: 'Trial',
-            };
-            const label = labels[status] || status;
-            const dotClass = status.replace('-', '_');
-            return `<div class="status-badge"><span class="status-dot ${dotClass}"></span> ${label}</div>`;
-        }
-
-        // ── Section 2: Usage This Month ─────────────────────────
-
-        function renderUsageSection(usageData) {
+        function renderUsageSection(tierData) {
             const container = document.getElementById('usageContent');
-            const usage = usageData.usage || {};
-            const usageTypes = Object.keys(USAGE_LABELS);
-
+            const usage = tierData.usage || {};
             let metersHtml = '';
             let meterCount = 0;
 
-            for (const type of usageTypes) {
+            for (const type of Object.keys(USAGE_LABELS)) {
                 const data = usage[type];
                 if (!data) continue;
-
-                // Skip if limit is 0 and not unlimited (feature not available at this tier)
                 if (data.limit === 0 && !data.is_unlimited) continue;
-
                 meterCount++;
 
                 if (data.is_unlimited) {
-                    metersHtml += `
-                        <div class="usage-item">
-                            <div class="usage-header">
-                                <span class="usage-label">
-                                    <span class="usage-icon">${USAGE_ICONS[type] || ''}</span>
-                                    ${USAGE_LABELS[type]}
-                                </span>
-                                <span class="usage-unlimited-badge">Unlimited</span>
-                            </div>
-                        </div>`;
+                    metersHtml += `<div class="usage-item"><div class="usage-header">
+                        <span class="usage-label"><span class="usage-icon">${USAGE_ICONS[type]}</span>${USAGE_LABELS[type]}</span>
+                        <span class="usage-unlimited-badge">Unlimited</span>
+                    </div></div>`;
                 } else {
                     const { used, limit, remaining } = data;
-                    const percentage = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+                    const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
                     const isLow = remaining <= Math.ceil(limit * 0.2) && remaining > 0;
                     const isDepleted = remaining === 0;
                     const fillClass = isDepleted ? 'depleted' : isLow ? 'warning' : '';
-
-                    metersHtml += `
-                        <div class="usage-item">
-                            <div class="usage-header">
-                                <span class="usage-label">
-                                    <span class="usage-icon">${USAGE_ICONS[type] || ''}</span>
-                                    ${USAGE_LABELS[type]}
-                                </span>
-                                <span class="usage-value">${used} / ${limit}</span>
-                            </div>
-                            <div class="usage-bar">
-                                <div class="usage-fill ${fillClass}" style="width: ${percentage}%"></div>
-                            </div>
-                            ${isLow ? `<div class="usage-warning">${remaining} remaining</div>` : ''}
-                            ${isDepleted ? `<div class="usage-warning" style="color: var(--color-error);">Limit reached</div>` : ''}
-                        </div>`;
+                    metersHtml += `<div class="usage-item"><div class="usage-header">
+                        <span class="usage-label"><span class="usage-icon">${USAGE_ICONS[type]}</span>${USAGE_LABELS[type]}</span>
+                        <span class="usage-value">${used} / ${limit}</span>
+                    </div><div class="usage-bar"><div class="usage-fill ${fillClass}" style="width: ${pct}%"></div></div>
+                    ${isLow ? `<div class="usage-warning">${remaining} remaining</div>` : ''}
+                    ${isDepleted ? `<div class="usage-warning" style="color:var(--color-error);">Limit reached</div>` : ''}
+                    </div>`;
                 }
             }
 
             if (meterCount === 0) {
-                container.innerHTML = `
-                    <div class="usage-empty">
-                        No usage tracking available on your current plan.<br>
-                        <a href="/pricing">Upgrade to unlock more features</a>
-                    </div>`;
+                container.innerHTML = '<div class="form-section"><div class="section-title"><span class="icon">📊</span> Usage This Month</div><div class="usage-empty">No usage tracking on your current plan.<br><a href="/pricing">Upgrade to unlock more features</a></div></div>';
                 return;
             }
 
-            // Reset date
             const now = new Date();
             const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
             const resetStr = resetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            container.innerHTML = `<div class="form-section"><div class="section-title"><span class="icon">📊</span> Usage This Month</div>
+                ${metersHtml}<div class="usage-reset-info">Usage resets ${resetStr}</div></div>`;
+        }
 
-            container.innerHTML = metersHtml + `
-                <div class="usage-reset-info">Usage resets ${resetStr}</div>`;
+        // ── Career Strategy Panel ──────────────────────────
+        async function renderCareerStrategyPanel(settings) {
+            const container = document.getElementById('strategyContent');
+            const sc = settings.strategy_config || {};
+            const isRecruiter = currentTier === 'recruiter';
+            const isPartnerPlus = ['partner', 'coach'].includes(currentTier);
+            const isCoach = currentTier === 'coach';
 
-            // If very few meters (free tier), add upgrade hint
-            if (meterCount <= 2) {
-                container.innerHTML += `
-                    <div class="usage-empty" style="padding-top: 8px; padding-bottom: 0;">
-                        <a href="/pricing">Upgrade for more usage and features</a>
+            // Strategy Health (coach tier sees live)
+            const healthContainer = document.getElementById('strategyHealthContainer');
+            if (['recruiter', 'principal', 'partner', 'coach'].includes(currentTier)) {
+                try {
+                    const resp = await fetch(`${API_BASE}/api/settings/strategy-health?user_id=${currentUser.id}`);
+                    if (resp.ok) {
+                        const health = await resp.json();
+                        renderStrategyHealth(healthContainer, health);
+                    } else {
+                        healthContainer.innerHTML = '';
+                    }
+                } catch (e) { healthContainer.innerHTML = ''; }
+            } else {
+                healthContainer.innerHTML = '';
+            }
+
+            // Optimal Defaults Bar (partner+)
+            const optBar = document.getElementById('optimalDefaultsBar');
+            if (isPartnerPlus && settings.last_optimal_calculation) {
+                const calcDate = new Date(settings.last_optimal_calculation).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                optBar.innerHTML = `<div class="optimal-bar">
+                    <div class="optimal-info">✨ Optimal defaults based on your data <span class="optimal-date">(${calcDate})</span></div>
+                    <button class="btn-secondary" onclick="resetToOptimal()" style="padding:8px 16px;font-size:0.82rem;">Reset to Optimal</button>
+                </div>`;
+            } else if (isPartnerPlus) {
+                optBar.innerHTML = `<div class="optimal-bar">
+                    <div class="optimal-info">✨ Calculate optimal settings from your data</div>
+                    <button class="btn-secondary" onclick="resetToOptimal()" style="padding:8px 16px;font-size:0.82rem;">Calculate Optimal</button>
+                </div>`;
+            } else {
+                optBar.innerHTML = '';
+            }
+
+            // Strategy Mode
+            let html = '<div class="form-section"><div class="section-title"><span class="icon">🎯</span> Strategy Mode</div>';
+            html += '<p class="section-desc">How aggressively should HenryHQ approach your search?</p>';
+            html += '<div class="strategy-mode-group">';
+            const modes = [
+                { id: 'conservative', icon: '🛡️', name: 'Conservative', desc: 'Quality over quantity' },
+                { id: 'targeted', icon: '🎯', name: 'Targeted', desc: 'Balanced approach' },
+                { id: 'aggressive', icon: '🚀', name: 'Aggressive', desc: 'Maximum volume' },
+            ];
+            for (const m of modes) {
+                const sel = (sc.strategy_mode === m.id) ? 'selected' : '';
+                html += `<div class="strategy-mode-card ${sel}" data-mode="${m.id}" onclick="selectStrategyMode('${m.id}')">
+                    <div class="mode-icon">${m.icon}</div>
+                    <div class="mode-name">${m.name}</div>
+                    <div class="mode-desc">${m.desc}</div>
+                </div>`;
+            }
+            html += '</div></div>';
+
+            // Fit Score Threshold
+            html += '<div class="form-section"><div class="section-title"><span class="icon">📊</span> Fit Score Threshold</div>';
+            html += '<p class="section-desc">Minimum fit score for recommended roles</p>';
+            const fitVal = sc.fit_score_threshold || 65;
+            html += `<div class="range-control">
+                <div class="range-header">
+                    <span class="range-label">Minimum Score</span>
+                    <span class="range-value" id="fitScoreValue">${fitVal}</span>
+                </div>
+                <input type="range" class="range-slider" id="fitScoreSlider" min="40" max="90" value="${fitVal}"
+                    oninput="updateFitScore(this.value)">
+                <div class="range-desc" id="fitScoreDesc">${getFitScoreDesc(fitVal)}</div>
+            </div></div>`;
+
+            // Advanced controls (locked for recruiter)
+            if (isRecruiter) {
+                html += '<div class="form-section locked-section" style="position:relative;min-height:120px;">';
+                html += '<div class="section-title"><span class="icon">🏢</span> Industry Focus & Location</div>';
+                html += '<p style="color:var(--color-text-secondary);font-size:0.85rem;">Configure target industries and location preferences...</p>';
+                html += '<div class="locked-overlay"><p>Upgrade to Principal for full strategy controls</p><a href="/pricing" class="btn-primary" style="pointer-events:auto;">View Plans</a></div>';
+                html += '</div>';
+            } else {
+                // Target Role Priority
+                const roles = sc.target_roles || [];
+                if (roles.length > 0) {
+                    html += '<div class="form-section"><div class="section-title"><span class="icon">🎪</span> Target Role Priority</div>';
+                    html += '<p class="section-desc">Drag to reorder by priority</p>';
+                    html += '<ul class="reorder-list" id="roleReorderList">';
+                    roles.forEach((role, i) => {
+                        html += `<li class="reorder-item" draggable="true" data-role="${role}">
+                            <span class="reorder-grip">⋮⋮</span>
+                            <span class="reorder-label">${role}</span>
+                            <span class="reorder-rank">#${i + 1}</span>
+                        </li>`;
+                    });
+                    html += '</ul></div>';
+                }
+
+                // Industry Focus
+                html += '<div class="form-section"><div class="section-title"><span class="icon">🏢</span> Industry Focus</div>';
+                html += '<p class="section-desc">Toggle industries you want to target</p>';
+                const industries = ['Technology', 'Healthcare', 'Finance', 'E-Commerce', 'Media', 'Education', 'Manufacturing', 'Consulting', 'Real Estate', 'Energy'];
+                const focus = sc.industry_focus || {};
+                for (const ind of industries) {
+                    const key = ind.toLowerCase().replace(/[- ]/g, '_');
+                    const checked = focus[key] ? 'checked' : '';
+                    html += `<div class="setting-row">
+                        <div class="setting-row-info"><div class="setting-row-label">${ind}</div></div>
+                        <label class="toggle-switch"><input type="checkbox" ${checked} onchange="updateIndustryFocus('${key}', this.checked)"><span class="toggle-track"></span></label>
                     </div>`;
+                }
+                html += '</div>';
+
+                // Location Strategy
+                const loc = sc.location_strategy || {};
+                html += '<div class="form-section"><div class="section-title"><span class="icon">📍</span> Location Strategy</div>';
+                const remotePref = loc.remote_preference || 'flexible';
+                html += '<p class="section-desc">Remote work preference</p>';
+                html += '<div class="strategy-mode-group" style="margin-bottom:16px;">';
+                const locOptions = [
+                    { id: 'remote_only', name: 'Remote Only' },
+                    { id: 'flexible', name: 'Flexible' },
+                    { id: 'onsite_ok', name: 'On-site OK' },
+                ];
+                for (const l of locOptions) {
+                    const sel = (remotePref === l.id) ? 'selected' : '';
+                    html += `<div class="strategy-mode-card ${sel}" data-loc="${l.id}" onclick="selectLocationPref('${l.id}')"
+                        style="padding:10px;"><div class="mode-name" style="font-size:0.82rem;">${l.name}</div></div>`;
+                }
+                html += '</div>';
+                html += `<div class="setting-row" style="border-bottom:none;">
+                    <div class="setting-row-info"><div class="setting-row-label">Open to relocation</div></div>
+                    <label class="toggle-switch"><input type="checkbox" ${loc.willing_to_relocate ? 'checked' : ''} onchange="updateRelocateToggle(this.checked)"><span class="toggle-track"></span></label>
+                </div></div>`;
+            }
+
+            container.innerHTML = html;
+
+            // Init drag reorder if roles exist
+            if (!isRecruiter && (sc.target_roles || []).length > 0) {
+                initDragReorder('roleReorderList');
             }
         }
 
-        // ── Section 3: Your Features ────────────────────────────
+        function renderStrategyHealth(container, health) {
+            const { score, components, color, recommendations } = health;
+            const radius = 45;
+            const circumference = 2 * Math.PI * radius;
+            const offset = circumference - (score / 100) * circumference;
 
-        function renderFeaturesSection(usageData) {
-            const container = document.getElementById('featuresContent');
-            const features = usageData.features || {};
-            const tier = usageData.tier || 'preview';
-            const isFree = (tier === 'preview' || tier === 'sourcer');
+            const compNames = {
+                fit_alignment: 'Fit Alignment',
+                application_velocity: 'App Velocity',
+                interview_yield: 'Interview Yield',
+                outreach_consistency: 'Outreach',
+                profile_strength: 'Profile',
+            };
+
+            let compHtml = '';
+            for (const [key, label] of Object.entries(compNames)) {
+                const val = components[key] || 0;
+                const barColor = val >= 70 ? 'var(--color-success)' : val >= 40 ? 'var(--color-warning)' : 'var(--color-error)';
+                compHtml += `<div class="health-component">
+                    <span class="health-component-name">${label}</span>
+                    <span class="health-component-score">${Math.round(val)}</span>
+                    <div class="health-component-bar"><div class="health-component-fill" style="width:${val}%;background:${barColor}"></div></div>
+                </div>`;
+            }
+
+            let recHtml = '';
+            if (recommendations && recommendations.length > 0) {
+                recHtml = '<div class="health-recommendations">';
+                for (const r of recommendations) {
+                    recHtml += `<div class="health-rec">${r}</div>`;
+                }
+                recHtml += '</div>';
+            }
+
+            container.innerHTML = `<div class="strategy-health">
+                <div class="health-ring">
+                    <svg width="110" height="110" viewBox="0 0 110 110">
+                        <circle class="health-ring-bg" cx="55" cy="55" r="${radius}"/>
+                        <circle class="health-ring-fill ${color}" cx="55" cy="55" r="${radius}"
+                            stroke-dasharray="${circumference}"
+                            stroke-dashoffset="${offset}"/>
+                    </svg>
+                    <div class="health-score">${Math.round(score)}</div>
+                </div>
+                <div class="health-details">
+                    <div class="health-label">Strategy Health</div>
+                    ${compHtml}
+                    ${recHtml}
+                </div>
+            </div>`;
+        }
+
+        function getFitScoreDesc(val) {
+            if (val >= 80) return 'Very selective — only high-confidence matches';
+            if (val >= 65) return 'Balanced — good mix of quality and volume';
+            if (val >= 50) return 'Broader reach — casting a wider net';
+            return 'Maximum reach — exploring all options';
+        }
+
+        function selectStrategyMode(mode) {
+            document.querySelectorAll('.strategy-mode-card[data-mode]').forEach(c => c.classList.remove('selected'));
+            const card = document.querySelector(`.strategy-mode-card[data-mode="${mode}"]`);
+            if (card) card.classList.add('selected');
+            currentSettings.strategy_config = currentSettings.strategy_config || {};
+            currentSettings.strategy_config.strategy_mode = mode;
+            SettingsAutoSave.scheduleSave('strategy_config', { strategy_mode: mode });
+        }
+
+        function updateFitScore(val) {
+            document.getElementById('fitScoreValue').textContent = val;
+            document.getElementById('fitScoreDesc').textContent = getFitScoreDesc(parseInt(val));
+            currentSettings.strategy_config = currentSettings.strategy_config || {};
+            currentSettings.strategy_config.fit_score_threshold = parseInt(val);
+            SettingsAutoSave.scheduleSave('strategy_config', { fit_score_threshold: parseInt(val) });
+        }
+
+        function updateIndustryFocus(key, checked) {
+            currentSettings.strategy_config = currentSettings.strategy_config || {};
+            currentSettings.strategy_config.industry_focus = currentSettings.strategy_config.industry_focus || {};
+            currentSettings.strategy_config.industry_focus[key] = checked;
+            SettingsAutoSave.scheduleSave('strategy_config', { industry_focus: currentSettings.strategy_config.industry_focus });
+        }
+
+        function selectLocationPref(pref) {
+            document.querySelectorAll('.strategy-mode-card[data-loc]').forEach(c => c.classList.remove('selected'));
+            const card = document.querySelector(`.strategy-mode-card[data-loc="${pref}"]`);
+            if (card) card.classList.add('selected');
+            currentSettings.strategy_config = currentSettings.strategy_config || {};
+            currentSettings.strategy_config.location_strategy = currentSettings.strategy_config.location_strategy || {};
+            currentSettings.strategy_config.location_strategy.remote_preference = pref;
+            SettingsAutoSave.scheduleSave('strategy_config', { location_strategy: { remote_preference: pref } });
+        }
+
+        function updateRelocateToggle(checked) {
+            currentSettings.strategy_config = currentSettings.strategy_config || {};
+            currentSettings.strategy_config.location_strategy = currentSettings.strategy_config.location_strategy || {};
+            currentSettings.strategy_config.location_strategy.willing_to_relocate = checked;
+            SettingsAutoSave.scheduleSave('strategy_config', { location_strategy: { willing_to_relocate: checked } });
+        }
+
+        function initDragReorder(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            let draggedItem = null;
+
+            container.addEventListener('dragstart', (e) => {
+                draggedItem = e.target.closest('.reorder-item');
+                if (draggedItem) draggedItem.classList.add('dragging');
+            });
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const items = [...container.querySelectorAll('.reorder-item:not(.dragging)')];
+                const afterEl = items.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = e.clientY - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+                    return closest;
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+                if (afterEl) container.insertBefore(draggedItem, afterEl);
+                else container.appendChild(draggedItem);
+            });
+
+            container.addEventListener('dragend', () => {
+                if (draggedItem) draggedItem.classList.remove('dragging');
+                // Update rank labels and save
+                const items = container.querySelectorAll('.reorder-item');
+                const newOrder = [];
+                items.forEach((item, i) => {
+                    const rank = item.querySelector('.reorder-rank');
+                    if (rank) rank.textContent = `#${i + 1}`;
+                    newOrder.push(item.dataset.role);
+                });
+                currentSettings.strategy_config = currentSettings.strategy_config || {};
+                currentSettings.strategy_config.target_roles = newOrder;
+                SettingsAutoSave.scheduleSave('strategy_config', { target_roles: newOrder });
+            });
+        }
+
+        async function resetToOptimal() {
+            try {
+                const resp = await fetch(`${API_BASE}/api/settings/reset-optimal?user_id=${currentUser.id}`, { method: 'POST' });
+                if (!resp.ok) throw new Error('Reset failed');
+                const optimal = await resp.json();
+
+                // Apply optimal values to current settings and re-render
+                currentSettings.strategy_config = { ...currentSettings.strategy_config, ...optimal.strategy_config };
+                currentSettings.automation_config = { ...currentSettings.automation_config, ...optimal.automation_config };
+
+                // Save both configs
+                await fetch(`${API_BASE}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        strategy_config: currentSettings.strategy_config,
+                        automation_config: currentSettings.automation_config,
+                    }),
+                });
+
+                // Re-fetch and re-render
+                currentSettings = await fetchUserSettings(currentUser.id);
+                renderCareerStrategyPanel(currentSettings);
+                renderApplicationEnginePanel(currentSettings);
+                SettingsAutoSave.showToast();
+            } catch (e) {
+                console.error('Optimal reset error:', e);
+            }
+        }
+
+        // ── Application Engine Panel ───────────────────────
+        function renderApplicationEnginePanel(settings) {
+            const container = document.getElementById('engineContent');
+            const ac = settings.automation_config || {};
 
             let html = '';
-            let totalAvailable = 0;
-            let totalLocked = 0;
 
-            for (const [groupName, groupData] of Object.entries(FEATURE_GROUPS)) {
-                let itemsHtml = '';
-
-                for (const [featureKey, featureLabel] of Object.entries(groupData.features)) {
-                    const value = features[featureKey];
-
-                    if (value === true) {
-                        totalAvailable++;
-                        itemsHtml += `
-                            <div class="feature-item available">
-                                <span class="feature-icon check">&#10003;</span>
-                                ${featureLabel}
-                            </div>`;
-                    } else if (value === 'limited') {
-                        totalAvailable++;
-                        itemsHtml += `
-                            <div class="feature-item limited">
-                                <span class="feature-icon check" style="color: var(--color-warning);">&#9889;</span>
-                                ${featureLabel}
-                                <span class="limited-badge">Limited</span>
-                            </div>`;
-                    } else {
-                        totalLocked++;
-                        itemsHtml += `
-                            <div class="feature-item locked">
-                                <span class="feature-icon lock">&#128274;</span>
-                                ${featureLabel}
-                                <span class="upgrade-hint">Upgrade</span>
-                            </div>`;
-                    }
-                }
-
-                html += `
-                    <div class="feature-category">
-                        <div class="feature-category-header">
-                            <span>${groupData.icon}</span>
-                            ${groupName}
-                        </div>
-                        <div class="feature-grid">
-                            ${itemsHtml}
-                        </div>
-                    </div>`;
+            // Application Velocity
+            html += '<div class="form-section"><div class="section-title"><span class="icon">🏃</span> Application Velocity</div>';
+            html += '<p class="section-desc">How many applications per week?</p>';
+            html += '<div class="strategy-mode-group">';
+            const velocities = [
+                { id: 'conservative', name: 'Conservative', desc: '~5/week' },
+                { id: 'moderate', name: 'Moderate', desc: '~10/week' },
+                { id: 'aggressive', name: 'Aggressive', desc: '~20/week' },
+            ];
+            for (const v of velocities) {
+                const sel = (ac.application_velocity === v.id) ? 'selected' : '';
+                html += `<div class="strategy-mode-card ${sel}" data-velocity="${v.id}" onclick="selectVelocity('${v.id}')">
+                    <div class="mode-name" style="font-size:0.85rem;">${v.name}</div>
+                    <div class="mode-desc">${v.desc}</div>
+                </div>`;
             }
+            html += '</div></div>';
 
-            // Upgrade hint at bottom if there are locked features
-            if (totalLocked > 0) {
-                html += `
-                    <div class="features-upgrade">
-                        <a href="/pricing">View plans to unlock all ${totalAvailable + totalLocked} features &rarr;</a>
-                    </div>`;
+            // Document Generation
+            html += '<div class="form-section"><div class="section-title"><span class="icon">📝</span> Document Generation</div>';
+            html += '<p class="section-desc">How should resumes and cover letters be handled?</p>';
+            html += '<div class="strategy-mode-group">';
+            const docModes = [
+                { id: 'auto', name: 'Auto-Generate', desc: 'Quick & hands-off' },
+                { id: 'always_review', name: 'Always Review', desc: 'Review before use' },
+                { id: 'manual', name: 'Manual Only', desc: 'Full control' },
+            ];
+            for (const d of docModes) {
+                const sel = (ac.document_generation === d.id) ? 'selected' : '';
+                html += `<div class="strategy-mode-card ${sel}" data-docmode="${d.id}" onclick="selectDocMode('${d.id}')">
+                    <div class="mode-name" style="font-size:0.85rem;">${d.name}</div>
+                    <div class="mode-desc">${d.desc}</div>
+                </div>`;
             }
+            html += '</div></div>';
+
+            // Follow-up Timing
+            const followUp = ac.follow_up_timing_days || 7;
+            html += '<div class="form-section"><div class="section-title"><span class="icon">⏰</span> Follow-up Timing</div>';
+            html += `<div class="range-control">
+                <div class="range-header">
+                    <span class="range-label">Days after applying</span>
+                    <span class="range-value" id="followUpValue">${followUp} days</span>
+                </div>
+                <input type="range" class="range-slider" id="followUpSlider" min="3" max="14" value="${followUp}"
+                    oninput="updateFollowUp(this.value)">
+                <div class="range-desc">Recommended: 5-7 days for most industries</div>
+            </div></div>`;
+
+            // Max Applications Per Week
+            const maxApps = ac.max_applications_per_week || 10;
+            html += '<div class="form-section"><div class="section-title"><span class="icon">📈</span> Weekly Application Cap</div>';
+            html += '<p class="section-desc">Maximum applications per week</p>';
+            html += `<div style="display:flex;align-items:center;gap:12px;">
+                <div class="number-stepper">
+                    <button class="stepper-btn" onclick="stepMaxApps(-1)">−</button>
+                    <span class="stepper-value" id="maxAppsValue">${maxApps}</span>
+                    <button class="stepper-btn" onclick="stepMaxApps(1)">+</button>
+                </div>
+                <span style="font-size:0.82rem;color:var(--color-text-secondary);">per week</span>
+            </div></div>`;
 
             container.innerHTML = html;
         }
 
-        // ── Section 4: Account ──────────────────────────────────
-
-        function renderAccountSection(user) {
-            const container = document.getElementById('accountContent');
-            const chevronSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>';
-
-            container.innerHTML = `
-                <div class="account-row">
-                    <span class="account-row-label">Email</span>
-                    <span class="account-row-value">${user.email || 'Not set'}</span>
-                </div>
-
-                <a href="/profile-edit" class="account-link">
-                    <span class="account-link-label">Edit Profile</span>
-                    ${chevronSvg}
-                </a>
-
-                <button onclick="handleSignOut()" class="account-link sign-out-link">
-                    <span class="account-link-label">Sign Out</span>
-                    ${chevronSvg}
-                </button>
-
-                <a href="/contact?subject=delete-account" class="account-link delete-link">
-                    <span class="account-link-label">Delete Account</span>
-                    ${chevronSvg}
-                </a>
-            `;
+        function selectVelocity(vel) {
+            document.querySelectorAll('.strategy-mode-card[data-velocity]').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.strategy-mode-card[data-velocity="${vel}"]`)?.classList.add('selected');
+            currentSettings.automation_config = currentSettings.automation_config || {};
+            currentSettings.automation_config.application_velocity = vel;
+            SettingsAutoSave.scheduleSave('automation_config', { application_velocity: vel });
         }
 
-        // ── Action handlers ─────────────────────────────────────
+        function selectDocMode(mode) {
+            document.querySelectorAll('.strategy-mode-card[data-docmode]').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.strategy-mode-card[data-docmode="${mode}"]`)?.classList.add('selected');
+            currentSettings.automation_config = currentSettings.automation_config || {};
+            currentSettings.automation_config.document_generation = mode;
+            SettingsAutoSave.scheduleSave('automation_config', { document_generation: mode });
+        }
 
+        function updateFollowUp(val) {
+            document.getElementById('followUpValue').textContent = `${val} days`;
+            currentSettings.automation_config = currentSettings.automation_config || {};
+            currentSettings.automation_config.follow_up_timing_days = parseInt(val);
+            SettingsAutoSave.scheduleSave('automation_config', { follow_up_timing_days: parseInt(val) });
+        }
+
+        function stepMaxApps(delta) {
+            const el = document.getElementById('maxAppsValue');
+            let val = parseInt(el.textContent) + delta;
+            val = Math.max(1, Math.min(30, val));
+            el.textContent = val;
+            currentSettings.automation_config = currentSettings.automation_config || {};
+            currentSettings.automation_config.max_applications_per_week = val;
+            SettingsAutoSave.scheduleSave('automation_config', { max_applications_per_week: val });
+        }
+
+        // ── Notifications Panel ────────────────────────────
+        function renderNotificationsPanel(settings) {
+            const container = document.getElementById('notificationsContent');
+            const nc = settings.notification_config || {};
+            const alerts = nc.alert_types || {};
+
+            const emailOn = nc.email_notifications !== false;
+
+            let html = '<div class="form-section"><div class="section-title"><span class="icon">📧</span> Email Notifications</div>';
+
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Email notifications</div><div class="setting-row-desc">Master toggle for all email alerts</div></div>
+                <label class="toggle-switch"><input type="checkbox" id="emailMasterToggle" ${emailOn ? 'checked' : ''} onchange="toggleEmailMaster(this.checked)"><span class="toggle-track"></span></label>
+            </div>`;
+
+            const alertTypes = [
+                { key: 'new_matches', label: 'New job matches', desc: 'When new roles match your criteria' },
+                { key: 'application_updates', label: 'Application updates', desc: 'Status changes on your applications' },
+                { key: 'interview_reminders', label: 'Interview reminders', desc: '24 hours before scheduled interviews' },
+                { key: 'strategy_insights', label: 'Strategy insights', desc: 'Weekly strategy recommendations' },
+            ];
+
+            for (const at of alertTypes) {
+                const checked = alerts[at.key] !== false;
+                const disabled = !emailOn ? 'disabled' : '';
+                html += `<div class="setting-row ${!emailOn ? 'disabled' : ''}" id="alert-row-${at.key}">
+                    <div class="setting-row-info"><div class="setting-row-label">${at.label}</div><div class="setting-row-desc">${at.desc}</div></div>
+                    <label class="toggle-switch"><input type="checkbox" ${checked ? 'checked' : ''} ${disabled} onchange="updateAlertType('${at.key}', this.checked)"><span class="toggle-track"></span></label>
+                </div>`;
+            }
+            html += '</div>';
+
+            // Digest & Reminders
+            html += '<div class="form-section"><div class="section-title"><span class="icon">📅</span> Digest & Reminders</div>';
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Weekly digest</div><div class="setting-row-desc">Summary of your search activity and progress</div></div>
+                <label class="toggle-switch"><input type="checkbox" ${nc.weekly_digest !== false ? 'checked' : ''} onchange="updateNotifSetting('weekly_digest', this.checked)"><span class="toggle-track"></span></label>
+            </div>`;
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Interview prep reminders</div><div class="setting-row-desc">Get reminded 24 hours before scheduled interviews</div></div>
+                <label class="toggle-switch"><input type="checkbox" ${nc.interview_prep_reminders !== false ? 'checked' : ''} onchange="updateNotifSetting('interview_prep_reminders', this.checked)"><span class="toggle-track"></span></label>
+            </div></div>`;
+
+            container.innerHTML = html;
+        }
+
+        function toggleEmailMaster(checked) {
+            const alertRows = document.querySelectorAll('[id^="alert-row-"]');
+            alertRows.forEach(row => {
+                if (checked) row.classList.remove('disabled');
+                else row.classList.add('disabled');
+                const input = row.querySelector('input[type="checkbox"]');
+                if (input) input.disabled = !checked;
+            });
+            currentSettings.notification_config = currentSettings.notification_config || {};
+            currentSettings.notification_config.email_notifications = checked;
+            SettingsAutoSave.scheduleSave('notification_config', { email_notifications: checked });
+        }
+
+        function updateAlertType(key, checked) {
+            currentSettings.notification_config = currentSettings.notification_config || {};
+            currentSettings.notification_config.alert_types = currentSettings.notification_config.alert_types || {};
+            currentSettings.notification_config.alert_types[key] = checked;
+            SettingsAutoSave.scheduleSave('notification_config', { alert_types: { [key]: checked } });
+        }
+
+        function updateNotifSetting(key, checked) {
+            currentSettings.notification_config = currentSettings.notification_config || {};
+            currentSettings.notification_config[key] = checked;
+            SettingsAutoSave.scheduleSave('notification_config', { [key]: checked });
+        }
+
+        // ── Privacy & Data Panel ───────────────────────────
+        function renderPrivacyPanel(settings) {
+            const container = document.getElementById('privacyContent');
+            const pc = settings.privacy_config || {};
+
+            let html = '<div class="form-section"><div class="section-title"><span class="icon">🛡️</span> Privacy Preferences</div>';
+
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Data sharing</div><div class="setting-row-desc">Allow anonymized data to improve AI recommendations</div></div>
+                <label class="toggle-switch"><input type="checkbox" ${pc.data_sharing ? 'checked' : ''} onchange="updatePrivacy('data_sharing', this.checked)"><span class="toggle-track"></span></label>
+            </div>`;
+
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Analytics</div><div class="setting-row-desc">Share anonymous usage analytics to improve the platform</div></div>
+                <label class="toggle-switch"><input type="checkbox" ${pc.analytics_opt_in !== false ? 'checked' : ''} onchange="updatePrivacy('analytics_opt_in', this.checked)"><span class="toggle-track"></span></label>
+            </div></div>`;
+
+            // Data actions
+            html += '<div class="form-section"><div class="section-title"><span class="icon">📦</span> Your Data</div>';
+            html += `<div class="setting-row">
+                <div class="setting-row-info"><div class="setting-row-label">Export your data</div><div class="setting-row-desc">Download all your data as a JSON file</div></div>
+                <button class="btn-secondary" onclick="exportUserData()" style="padding:8px 16px;font-size:0.82rem;">Export</button>
+            </div>`;
+            html += `<div class="setting-row" style="border-bottom:none;">
+                <div class="setting-row-info"><div class="setting-row-label">Clear conversation history</div><div class="setting-row-desc">Remove all Henry conversation data</div></div>
+                <button class="btn-danger" onclick="confirmClearHistory()" style="padding:8px 16px;font-size:0.82rem;">Clear</button>
+            </div></div>`;
+
+            container.innerHTML = html;
+        }
+
+        function updatePrivacy(key, checked) {
+            currentSettings.privacy_config = currentSettings.privacy_config || {};
+            currentSettings.privacy_config[key] = checked;
+            SettingsAutoSave.scheduleSave('privacy_config', { [key]: checked });
+        }
+
+        async function exportUserData() {
+            try {
+                const [profile, apps, settingsResp] = await Promise.all([
+                    supabase.from('candidate_profiles').select('*').eq('id', currentUser.id).single(),
+                    supabase.from('applications').select('*').eq('user_id', currentUser.id),
+                    fetch(`${API_BASE}/api/settings?user_id=${currentUser.id}`).then(r => r.json()),
+                ]);
+
+                const exportData = {
+                    exported_at: new Date().toISOString(),
+                    profile: profile.data || {},
+                    applications: apps.data || [],
+                    settings: settingsResp,
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `henryhq-export-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Export error:', e);
+                alert('Failed to export data. Please try again.');
+            }
+        }
+
+        function confirmClearHistory() {
+            showModal(
+                'Clear conversation history?',
+                'This will permanently remove all your Henry conversation data. This cannot be undone.',
+                async () => {
+                    try {
+                        await supabase.from('resume_conversations').delete().eq('user_id', currentUser.id);
+                        SettingsAutoSave.showToast();
+                    } catch (e) {
+                        console.error('Clear history error:', e);
+                        alert('Failed to clear history. Please try again.');
+                    }
+                }
+            );
+        }
+
+        // ── Action Handlers ────────────────────────────────
         async function openBillingPortal() {
             try {
-                const user = await HenryAuth.getUser();
-                if (!user) {
-                    alert('Please sign in first.');
-                    return;
-                }
-
                 const response = await fetch(`${API_BASE}/api/stripe/create-portal-session`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: user.id }),
+                    body: JSON.stringify({ user_id: currentUser.id }),
                 });
-
                 if (!response.ok) {
                     const error = await response.json();
-                    if (response.status === 503) {
-                        alert('Billing management is not yet available.');
-                    } else {
-                        alert(error.detail || 'Could not open billing portal.');
-                    }
+                    alert(error.detail || 'Could not open billing portal.');
                     return;
                 }
-
                 const data = await response.json();
                 window.location.href = data.url;
             } catch (error) {
@@ -871,15 +1792,6 @@
             }
         }
 
-        async function handleSignOut() {
-            try {
-                await HenryAuth.signOut();
-                window.location.href = '/login';
-            } catch (e) {
-                console.error('Sign out error:', e);
-                window.location.href = '/login';
-            }
-        }
     </script>
     <script src="components/analytics.js"></script>
     <script src="components/hey-henry.js"></script>
