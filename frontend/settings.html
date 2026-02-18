@@ -256,6 +256,52 @@
         .status-dot.trialing { background: var(--color-accent); }
         .billing-date { font-size: 0.8rem; color: var(--color-text-secondary); margin-top: 10px; }
 
+        /* ── Plan Details ──────────────────────── */
+        .plan-tagline {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+            font-style: italic;
+            margin-top: 14px;
+        }
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 20px;
+        }
+        .plan-features li {
+            font-size: 0.82rem;
+            color: var(--color-text-secondary);
+            padding-left: 18px;
+            position: relative;
+            line-height: 1.5;
+        }
+        .plan-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--color-success);
+            font-weight: 600;
+        }
+        .plan-features li.includes-prev {
+            grid-column: 1 / -1;
+            padding-left: 0;
+            color: var(--color-text-secondary);
+            font-style: italic;
+            font-size: 0.78rem;
+            margin-bottom: 2px;
+        }
+        .plan-features li.includes-prev::before { content: none; }
+        .plan-best-for {
+            font-size: 0.78rem;
+            color: var(--color-text-secondary);
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--color-border);
+        }
+
         /* ── Usage Meters ───────────────────────── */
         .usage-item { margin-bottom: 16px; }
         .usage-item:last-child { margin-bottom: 0; }
@@ -758,6 +804,7 @@
             .plan-actions { width: 100%; }
             .plan-actions .btn-primary,
             .plan-actions .btn-secondary { width: 100%; text-align: center; }
+            .plan-features { grid-template-columns: 1fr; }
             .optimal-bar { flex-direction: column; gap: 10px; text-align: center; }
         }
     </style>
@@ -1105,6 +1152,82 @@
             renderUsageSection(tierData);
         }
 
+        const PLAN_DETAILS = {
+            preview: {
+                tagline: 'See what HenryHQ can do',
+                features: [
+                    '1 fit analysis (preview mode)',
+                    'See how we evaluate your match',
+                    'No credit card required'
+                ],
+                bestFor: null
+            },
+            sourcer: {
+                tagline: 'See what HenryHQ can do',
+                features: [
+                    '1 fit analysis (preview mode)',
+                    'See how we evaluate your match',
+                    'No credit card required'
+                ],
+                bestFor: null
+            },
+            recruiter: {
+                tagline: 'Apply smarter, not harder',
+                features: [
+                    '10 applications/month',
+                    'Full fit analysis with Reality Check',
+                    'Screening question guidance',
+                    '3 tailored resumes/month',
+                    '3 tailored cover letters/month',
+                    '10 Hey Henry coaching chats/month'
+                ],
+                bestFor: 'Job seekers who want to stop wasting time on bad-fit applications.'
+            },
+            principal: {
+                tagline: 'Your full search toolkit',
+                includesPrev: 'Everything in Recruiter, plus:',
+                features: [
+                    '30 applications/month',
+                    '15 resumes and cover letters/month',
+                    '30 Hey Henry conversations/month',
+                    'Interview prep guides',
+                    '5 mock interviews/month',
+                    'Outreach templates',
+                    'Pipeline Command Center',
+                    'Pattern insights'
+                ],
+                bestFor: 'Serious searchers running an active job search.'
+            },
+            partner: {
+                tagline: 'Learn from every interview',
+                includesPrev: 'Everything in Principal, plus:',
+                features: [
+                    '50 applications/month',
+                    'Unlimited fit analyses',
+                    'Unlimited document generation',
+                    'Unlimited Hey Henry access',
+                    '15 mock interviews/month',
+                    'Cross-interview pattern analysis',
+                    'Story Bank with effectiveness tracking',
+                    'Rejection forensics',
+                    'Negotiation prep'
+                ],
+                bestFor: 'Candidates deep in interviews who need to improve their close rate.'
+            },
+            coach: {
+                tagline: 'Close with confidence',
+                includesPrev: 'Everything in Partner, plus:',
+                features: [
+                    'Unlimited mock interviews',
+                    'Two 45-min live coaching sessions/month',
+                    'Full negotiation support',
+                    'Counter-offer strategy and drafts',
+                    'Priority Hey Henry responses'
+                ],
+                bestFor: 'Candidates with offers who need human judgment to close.'
+            }
+        };
+
         function renderSubscriptionSection(tierData, subData) {
             const container = document.getElementById('subscriptionContent');
             const { tier, tier_display, tier_price, is_beta_user, beta_expires_at } = tierData;
@@ -1146,6 +1269,21 @@
                 } else if (subscription_status === 'active') {
                     html += `<div class="billing-date">Next billing date: ${dateStr}</div>`;
                 }
+            }
+
+            // Plan details — tagline, features, best for
+            const details = PLAN_DETAILS[tier] || PLAN_DETAILS.preview;
+            html += `<div class="plan-tagline">${details.tagline}</div>`;
+            html += '<ul class="plan-features">';
+            if (details.includesPrev) {
+                html += `<li class="includes-prev">${details.includesPrev}</li>`;
+            }
+            for (const feat of details.features) {
+                html += `<li>${feat}</li>`;
+            }
+            html += '</ul>';
+            if (details.bestFor) {
+                html += `<div class="plan-best-for">Best for: ${details.bestFor}</div>`;
             }
 
             html += '</div>';
