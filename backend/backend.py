@@ -15,7 +15,7 @@ import logging
 import hashlib
 import asyncio
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 # Configure structured logging
@@ -27523,6 +27523,709 @@ async def stripe_webhook(request: Request):
     except Exception as e:
         logger.error(f"Stripe webhook processing error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Webhook processing error: {str(e)}")
+
+
+# ============================================================================
+# STRATEGIC CONTROL / SETTINGS ENDPOINTS
+# ============================================================================
+
+# Pydantic models for Strategic Control
+class StrategyConfigModel(BaseModel):
+    """Career strategy configuration."""
+    strategy_mode: Optional[str] = None  # conservative, targeted, aggressive
+    fit_score_threshold: Optional[int] = None  # 40-90
+    target_roles: Optional[List[str]] = None
+    industry_focus: Optional[Dict[str, bool]] = None
+    location_strategy: Optional[Dict[str, Any]] = None
+
+class AutomationConfigModel(BaseModel):
+    """Application engine configuration."""
+    application_velocity: Optional[str] = None  # conservative, moderate, aggressive
+    document_generation: Optional[str] = None  # auto, always_review, manual
+    follow_up_timing_days: Optional[int] = None  # 3-14
+    max_applications_per_week: Optional[int] = None  # 5-30
+
+class NotificationConfigModel(BaseModel):
+    """Notification preferences."""
+    email_notifications: Optional[bool] = None
+    dashboard_alerts: Optional[bool] = None
+    weekly_digest: Optional[bool] = None
+    interview_prep_reminders: Optional[bool] = None
+    alert_types: Optional[Dict[str, bool]] = None
+
+class PrivacyConfigModel(BaseModel):
+    """Privacy and data settings."""
+    data_sharing: Optional[bool] = None
+    analytics_opt_in: Optional[bool] = None
+    visible_to_employers: Optional[bool] = None
+
+class UserSettingsUpdateRequest(BaseModel):
+    """Request to update user settings (partial updates supported)."""
+    user_id: str
+    strategy_config: Optional[Dict[str, Any]] = None
+    automation_config: Optional[Dict[str, Any]] = None
+    notification_config: Optional[Dict[str, Any]] = None
+    privacy_config: Optional[Dict[str, Any]] = None
+
+class UserSettingsResponse(BaseModel):
+    """Full user settings response."""
+    user_id: str
+    strategy_config: Dict[str, Any] = {}
+    automation_config: Dict[str, Any] = {}
+    notification_config: Dict[str, Any] = {}
+    privacy_config: Dict[str, Any] = {}
+    strategy_health_score: float = 0
+    strategy_health_components: Dict[str, float] = {}
+    optimal_defaults: Optional[Dict[str, Any]] = None
+    last_optimal_calculation: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+class StrategyHealthResponse(BaseModel):
+    """Strategy Health score with component breakdown."""
+    score: float
+    components: Dict[str, float]
+    color: str  # red, yellow, green
+    recommendations: List[str] = []
+
+class OptimalDefaultsResponse(BaseModel):
+    """Computed optimal defaults with reasoning."""
+    strategy_config: Dict[str, Any]
+    automation_config: Dict[str, Any]
+    reasoning: Dict[str, str] = {}
+
+
+# Default settings for new users (tier-aware)
+def _get_default_settings(tier: str = 'preview') -> Dict[str, Dict[str, Any]]:
+    """Generate tier-aware default settings for a new user."""
+    return {
+        'strategy_config': {
+            'strategy_mode': 'targeted',
+            'fit_score_threshold': 65,
+            'target_roles': [],
+            'industry_focus': {},
+            'location_strategy': {
+                'remote_preference': 'flexible',
+                'target_locations': [],
+                'willing_to_relocate': False,
+            },
+        },
+        'automation_config': {
+            'application_velocity': 'moderate',
+            'document_generation': 'always_review',
+            'follow_up_timing_days': 7,
+            'max_applications_per_week': 10,
+        },
+        'notification_config': {
+            'email_notifications': True,
+            'dashboard_alerts': True,
+            'weekly_digest': True,
+            'interview_prep_reminders': True,
+            'alert_types': {
+                'new_matches': True,
+                'application_updates': True,
+                'interview_reminders': True,
+                'strategy_insights': False,
+            },
+        },
+        'privacy_config': {
+            'data_sharing': False,
+            'analytics_opt_in': True,
+            'visible_to_employers': False,
+        },
+    }
+
+
+def _deep_merge(base: Dict, updates: Dict) -> Dict:
+    """Deep merge updates into base dict, preserving unmodified keys."""
+    result = base.copy()
+    for key, value in updates.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+async def _ensure_user_settings(user_id: str) -> Dict[str, Any]:
+    """Get or create user settings row. Returns the settings dict."""
+    try:
+        result = supabase.table('user_settings') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .single() \
+            .execute()
+        return result.data
+    except Exception:
+        # Row doesn't exist — create with defaults
+        try:
+            # Get user's tier for tier-aware defaults
+            tier = 'preview'
+            if TIER_SERVICE_AVAILABLE:
+                tier_service = TierService(supabase)
+                profile = await tier_service.get_user_profile(user_id)
+                if profile:
+                    tier = tier_service.get_effective_tier(profile)
+
+            defaults = _get_default_settings(tier)
+            insert_data = {
+                'user_id': user_id,
+                'strategy_config': defaults['strategy_config'],
+                'automation_config': defaults['automation_config'],
+                'notification_config': defaults['notification_config'],
+                'privacy_config': defaults['privacy_config'],
+                'strategy_health_score': 0,
+                'strategy_health_components': {
+                    'fit_alignment': 0,
+                    'application_velocity': 0,
+                    'interview_yield': 0,
+                    'outreach_consistency': 0,
+                    'profile_strength': 0,
+                },
+                'optimal_defaults': {},
+            }
+            result = supabase.table('user_settings') \
+                .upsert(insert_data, on_conflict='user_id') \
+                .execute()
+            if result.data:
+                return result.data[0]
+            return insert_data
+        except Exception as e:
+            logger.error(f"Error creating user settings: {e}")
+            # Return in-memory defaults so the page still renders
+            return {
+                'user_id': user_id,
+                **_get_default_settings('preview'),
+                'strategy_health_score': 0,
+                'strategy_health_components': {},
+                'optimal_defaults': {},
+                'last_optimal_calculation': None,
+                'created_at': None,
+                'updated_at': None,
+            }
+
+
+async def _calculate_strategy_health(user_id: str, settings: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Calculate Strategy Health score from real user data.
+
+    5 weighted components:
+      - Fit Alignment (30%): % of recent apps with fit_score >= threshold
+      - Application Velocity (20%): actual vs target pace
+      - Interview Yield (25%): interview conversion rate
+      - Outreach Consistency (15%): follow-up rate
+      - Profile Strength (10%): profile field completeness
+    """
+    components = {
+        'fit_alignment': 0.0,
+        'application_velocity': 0.0,
+        'interview_yield': 0.0,
+        'outreach_consistency': 0.0,
+        'profile_strength': 0.0,
+    }
+    recommendations = []
+
+    strategy_config = settings.get('strategy_config', {})
+    automation_config = settings.get('automation_config', {})
+    fit_threshold = strategy_config.get('fit_score_threshold', 65)
+    max_apps_week = automation_config.get('max_applications_per_week', 10)
+
+    now = datetime.utcnow()
+    thirty_days_ago = (now - timedelta(days=30)).isoformat()
+    sixty_days_ago = (now - timedelta(days=60)).isoformat()
+
+    try:
+        # ── Fit Alignment (30%) ──
+        # Check applications in last 30 days — what % have fit_score >= threshold
+        try:
+            apps_result = supabase.table('applications') \
+                .select('fit_score') \
+                .eq('user_id', user_id) \
+                .gte('created_at', thirty_days_ago) \
+                .execute()
+
+            apps_data = apps_result.data or []
+            if apps_data:
+                scores = [a.get('fit_score') or 0 for a in apps_data]
+                above_threshold = sum(1 for s in scores if s >= fit_threshold)
+                components['fit_alignment'] = min(100, (above_threshold / len(scores)) * 100)
+            else:
+                components['fit_alignment'] = 0
+                recommendations.append("Start applying to roles to build your fit alignment score")
+        except Exception as e:
+            logger.debug(f"Fit alignment calculation error: {e}")
+
+        # ── Application Velocity (20%) ──
+        # Compare actual applications to weekly target over 30 days
+        try:
+            total_apps = len(apps_data) if 'apps_data' in dir() else 0
+            monthly_target = max_apps_week * 4  # 4 weeks
+            if monthly_target > 0:
+                velocity_ratio = total_apps / monthly_target
+                components['application_velocity'] = min(100, velocity_ratio * 100)
+            else:
+                components['application_velocity'] = 50  # No target set = neutral
+
+            if components['application_velocity'] < 40:
+                recommendations.append("Increase your application pace to hit your weekly target")
+        except Exception as e:
+            logger.debug(f"Application velocity calculation error: {e}")
+
+        # ── Interview Yield (25%) ──
+        # Interviews in last 60 days / applications in same period
+        # Benchmark: 15% conversion = 100 score
+        try:
+            apps_60d_result = supabase.table('applications') \
+                .select('id', count='exact') \
+                .eq('user_id', user_id) \
+                .gte('created_at', sixty_days_ago) \
+                .execute()
+            total_apps_60d = apps_60d_result.count or 0
+
+            # Count applications that reached interview stage
+            interview_apps = supabase.table('applications') \
+                .select('id', count='exact') \
+                .eq('user_id', user_id) \
+                .gte('created_at', sixty_days_ago) \
+                .in_('status', ['Interviewing', 'Interview Scheduled', 'Offer', 'Accepted']) \
+                .execute()
+            interview_count = interview_apps.count or 0
+
+            if total_apps_60d > 0:
+                yield_rate = interview_count / total_apps_60d
+                # 15% = 100 score, scale linearly
+                components['interview_yield'] = min(100, (yield_rate / 0.15) * 100)
+            else:
+                components['interview_yield'] = 0
+
+            if components['interview_yield'] < 40 and total_apps_60d > 5:
+                recommendations.append("Your interview conversion rate is below benchmark — consider refining your targeting")
+        except Exception as e:
+            logger.debug(f"Interview yield calculation error: {e}")
+
+        # ── Outreach Consistency (15%) ──
+        # Check follow-up rate on applications
+        try:
+            # Count apps with status beyond 'Applied' (implies follow-through)
+            applied_result = supabase.table('applications') \
+                .select('id, status') \
+                .eq('user_id', user_id) \
+                .gte('created_at', thirty_days_ago) \
+                .execute()
+
+            applied_data = applied_result.data or []
+            if applied_data:
+                followed_up = sum(1 for a in applied_data
+                    if a.get('status') not in ['Preparing', 'Applied', None])
+                components['outreach_consistency'] = min(100, (followed_up / len(applied_data)) * 100)
+            else:
+                components['outreach_consistency'] = 0
+
+            if components['outreach_consistency'] < 30:
+                recommendations.append("Follow up on more of your applications to improve consistency")
+        except Exception as e:
+            logger.debug(f"Outreach consistency calculation error: {e}")
+
+        # ── Profile Strength (10%) ──
+        # Check completeness of candidate_profiles
+        try:
+            profile_result = supabase.table('candidate_profiles') \
+                .select('first_name, last_name, function_area, current_industry, '
+                        'city, state, work_arrangement, comp_min, comp_target, '
+                        'target_industry_primary, work_authorization') \
+                .eq('id', user_id) \
+                .single() \
+                .execute()
+
+            if profile_result.data:
+                profile_data = profile_result.data
+                key_fields = [
+                    'first_name', 'last_name', 'function_area', 'current_industry',
+                    'city', 'state', 'work_arrangement', 'comp_min', 'comp_target',
+                    'target_industry_primary', 'work_authorization',
+                ]
+                filled = sum(1 for f in key_fields if profile_data.get(f))
+                components['profile_strength'] = (filled / len(key_fields)) * 100
+            else:
+                components['profile_strength'] = 0
+                recommendations.append("Complete your profile to improve your Strategy Health")
+        except Exception as e:
+            logger.debug(f"Profile strength calculation error: {e}")
+
+    except Exception as e:
+        logger.error(f"Strategy health calculation error: {e}")
+
+    # Calculate weighted final score
+    score = (
+        components['fit_alignment'] * 0.30 +
+        components['application_velocity'] * 0.20 +
+        components['interview_yield'] * 0.25 +
+        components['outreach_consistency'] * 0.15 +
+        components['profile_strength'] * 0.10
+    )
+    score = round(score, 1)
+
+    # Determine color
+    if score >= 70:
+        color = 'green'
+    elif score >= 40:
+        color = 'yellow'
+    else:
+        color = 'red'
+
+    # Limit to top 3 recommendations
+    recommendations = recommendations[:3]
+
+    return {
+        'score': score,
+        'components': {k: round(v, 1) for k, v in components.items()},
+        'color': color,
+        'recommendations': recommendations,
+    }
+
+
+@app.get("/api/settings", response_model=UserSettingsResponse)
+async def get_user_settings(user_id: str = None):
+    """
+    Get user's Strategic Control settings.
+
+    Returns all settings configs, cached strategy health, and optimal defaults.
+    Creates default settings if none exist.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        settings = await _ensure_user_settings(user_id)
+
+        return UserSettingsResponse(
+            user_id=user_id,
+            strategy_config=settings.get('strategy_config', {}),
+            automation_config=settings.get('automation_config', {}),
+            notification_config=settings.get('notification_config', {}),
+            privacy_config=settings.get('privacy_config', {}),
+            strategy_health_score=settings.get('strategy_health_score', 0),
+            strategy_health_components=settings.get('strategy_health_components', {}),
+            optimal_defaults=settings.get('optimal_defaults'),
+            last_optimal_calculation=settings.get('last_optimal_calculation'),
+            created_at=settings.get('created_at'),
+            updated_at=settings.get('updated_at'),
+        )
+    except Exception as e:
+        logger.error(f"Error getting user settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting user settings: {str(e)}")
+
+
+@app.post("/api/settings", response_model=UserSettingsResponse)
+async def update_user_settings(request: UserSettingsUpdateRequest):
+    """
+    Update user's Strategic Control settings (partial updates via deep merge).
+
+    Only the configs provided in the request body are updated.
+    Existing values in other configs are preserved.
+    """
+    user_id = request.user_id
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        # Ensure settings exist
+        current = await _ensure_user_settings(user_id)
+
+        # Deep merge each provided config
+        update_data = {}
+        if request.strategy_config is not None:
+            merged = _deep_merge(current.get('strategy_config', {}), request.strategy_config)
+            update_data['strategy_config'] = merged
+        if request.automation_config is not None:
+            merged = _deep_merge(current.get('automation_config', {}), request.automation_config)
+            update_data['automation_config'] = merged
+        if request.notification_config is not None:
+            merged = _deep_merge(current.get('notification_config', {}), request.notification_config)
+            update_data['notification_config'] = merged
+        if request.privacy_config is not None:
+            merged = _deep_merge(current.get('privacy_config', {}), request.privacy_config)
+            update_data['privacy_config'] = merged
+
+        if update_data:
+            supabase.table('user_settings') \
+                .update(update_data) \
+                .eq('user_id', user_id) \
+                .execute()
+
+        # Re-fetch updated settings
+        updated = await _ensure_user_settings(user_id)
+
+        return UserSettingsResponse(
+            user_id=user_id,
+            strategy_config=updated.get('strategy_config', {}),
+            automation_config=updated.get('automation_config', {}),
+            notification_config=updated.get('notification_config', {}),
+            privacy_config=updated.get('privacy_config', {}),
+            strategy_health_score=updated.get('strategy_health_score', 0),
+            strategy_health_components=updated.get('strategy_health_components', {}),
+            optimal_defaults=updated.get('optimal_defaults'),
+            last_optimal_calculation=updated.get('last_optimal_calculation'),
+            created_at=updated.get('created_at'),
+            updated_at=updated.get('updated_at'),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user settings: {e}")
+        raise HTTPException(status_code=500, detail=f"Error updating user settings: {str(e)}")
+
+
+@app.get("/api/settings/strategy-health", response_model=StrategyHealthResponse)
+async def get_strategy_health(user_id: str = None):
+    """
+    Calculate and return Strategy Health score from real user data.
+
+    5 weighted components (Fit Alignment 30%, Application Velocity 20%,
+    Interview Yield 25%, Outreach Consistency 15%, Profile Strength 10%).
+
+    Caches the result in user_settings for fast retrieval.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        settings = await _ensure_user_settings(user_id)
+        health = await _calculate_strategy_health(user_id, settings)
+
+        # Cache the calculated score
+        try:
+            supabase.table('user_settings') \
+                .update({
+                    'strategy_health_score': health['score'],
+                    'strategy_health_components': health['components'],
+                }) \
+                .eq('user_id', user_id) \
+                .execute()
+        except Exception as cache_err:
+            logger.debug(f"Failed to cache strategy health: {cache_err}")
+
+        return StrategyHealthResponse(**health)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating strategy health: {e}")
+        raise HTTPException(status_code=500, detail=f"Error calculating strategy health: {str(e)}")
+
+
+@app.post("/api/settings/reset-optimal", response_model=OptimalDefaultsResponse)
+async def reset_optimal_defaults(user_id: str = None):
+    """
+    Recalculate optimal default settings based on user's history.
+
+    Analyzes 90 days of application/interview data and profile to
+    recommend optimal strategy_config and automation_config values.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        ninety_days_ago = (datetime.utcnow() - timedelta(days=90)).isoformat()
+        reasoning = {}
+
+        # Gather data
+        # 1. Application history
+        apps_result = supabase.table('applications') \
+            .select('id, fit_score, status, created_at') \
+            .eq('user_id', user_id) \
+            .gte('created_at', ninety_days_ago) \
+            .execute()
+        apps_data = apps_result.data or []
+        total_apps = len(apps_data)
+
+        # 2. Interview count (apps that reached interview stage)
+        interview_count = sum(1 for a in apps_data
+            if a.get('status') in ['Interviewing', 'Interview Scheduled', 'Offer', 'Accepted'])
+
+        # 3. Profile data for seniority
+        profile_result = supabase.table('candidate_profiles') \
+            .select('current_level_id, function_area, target_industry_primary, seniority_preference') \
+            .eq('id', user_id) \
+            .single() \
+            .execute()
+        profile = profile_result.data or {} if profile_result.data else {}
+
+        # Calculate rates
+        interview_rate = (interview_count / total_apps) if total_apps > 0 else 0
+        response_count = sum(1 for a in apps_data
+            if a.get('status') not in ['Preparing', 'Applied', None])
+        response_rate = (response_count / total_apps) if total_apps > 0 else 0
+
+        # Seniority modifier — senior roles have lower expected rates
+        seniority = profile.get('seniority_preference', '').lower()
+        is_senior = any(s in seniority for s in ['senior', 'director', 'vp', 'lead', 'principal', 'staff'])
+
+        # ── Compute optimal strategy_config ──
+        # Strategy mode
+        if total_apps < 5:
+            optimal_mode = 'aggressive'
+            reasoning['strategy_mode'] = 'Aggressive mode recommended — not enough data yet, cast a wide net'
+        elif interview_rate > 0.12:
+            optimal_mode = 'targeted'
+            reasoning['strategy_mode'] = f'Targeted mode — your {interview_rate:.0%} interview rate is above benchmark'
+        else:
+            optimal_mode = 'aggressive'
+            reasoning['strategy_mode'] = f'Aggressive mode — your {interview_rate:.0%} interview rate is below the 12% benchmark'
+
+        # Fit score threshold
+        if total_apps < 5:
+            optimal_threshold = 55
+            reasoning['fit_score_threshold'] = 'Lower threshold recommended while building data — expand your targeting'
+        elif interview_rate > 0.15:
+            optimal_threshold = min(85, 65 + int((interview_rate - 0.12) * 200))
+            reasoning['fit_score_threshold'] = f'Higher threshold — strong conversion rate allows pickier targeting'
+        elif interview_rate < 0.08 and not is_senior:
+            optimal_threshold = max(50, 65 - 10)
+            reasoning['fit_score_threshold'] = 'Lower threshold to increase volume — current conversion is below target'
+        else:
+            optimal_threshold = 65
+            reasoning['fit_score_threshold'] = 'Standard threshold — balanced approach'
+
+        if is_senior:
+            optimal_threshold = max(50, optimal_threshold - 5)
+            reasoning['fit_score_threshold'] += ' (adjusted down for senior-level search)'
+
+        optimal_strategy = {
+            'strategy_mode': optimal_mode,
+            'fit_score_threshold': optimal_threshold,
+        }
+
+        # ── Compute optimal automation_config ──
+        if total_apps < 5:
+            optimal_velocity = 'aggressive'
+            optimal_max_apps = 15
+            reasoning['application_velocity'] = 'High velocity to build pipeline quickly'
+        elif interview_rate > 0.15:
+            optimal_velocity = 'moderate'
+            optimal_max_apps = 10
+            reasoning['application_velocity'] = 'Moderate pace — quality over quantity with strong conversion'
+        else:
+            optimal_velocity = 'aggressive'
+            optimal_max_apps = int(10 * (1 + max(0, (0.15 - interview_rate)) * 5))
+            optimal_max_apps = min(30, max(10, optimal_max_apps))
+            reasoning['application_velocity'] = f'Higher volume recommended to compensate for {interview_rate:.0%} conversion'
+
+        optimal_followup = 5 if response_rate < 0.3 else 7
+        reasoning['follow_up_timing_days'] = (
+            'Faster follow-up recommended — low response rate' if response_rate < 0.3
+            else 'Standard follow-up timing'
+        )
+
+        optimal_automation = {
+            'application_velocity': optimal_velocity,
+            'follow_up_timing_days': optimal_followup,
+            'max_applications_per_week': optimal_max_apps,
+            'document_generation': 'always_review',
+        }
+
+        # Store the computed optimal defaults
+        input_hash = hashlib.md5(
+            json.dumps({
+                'total_apps': total_apps,
+                'interview_rate': round(interview_rate, 4),
+                'response_rate': round(response_rate, 4),
+                'seniority': seniority,
+            }, sort_keys=True).encode()
+        ).hexdigest()
+
+        try:
+            supabase.table('user_settings') \
+                .update({
+                    'optimal_defaults': {
+                        'strategy_config': optimal_strategy,
+                        'automation_config': optimal_automation,
+                        'reasoning': reasoning,
+                    },
+                    'optimal_profile_hash': input_hash,
+                    'last_optimal_calculation': datetime.utcnow().isoformat(),
+                }) \
+                .eq('user_id', user_id) \
+                .execute()
+        except Exception as store_err:
+            logger.debug(f"Failed to store optimal defaults: {store_err}")
+
+        return OptimalDefaultsResponse(
+            strategy_config=optimal_strategy,
+            automation_config=optimal_automation,
+            reasoning=reasoning,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error calculating optimal defaults: {e}")
+        raise HTTPException(status_code=500, detail=f"Error calculating optimal defaults: {str(e)}")
+
+
+@app.post("/api/internal/recalculate-strategy-health")
+async def recalculate_all_strategy_health(api_key: str = None):
+    """
+    Nightly job: Recalculate strategy health for all active users.
+
+    Protected by INTERNAL_API_KEY environment variable.
+    Processes users who updated settings in the last 7 days.
+    """
+    expected_key = os.getenv('INTERNAL_API_KEY')
+    if not expected_key or api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+
+        # Get all active users with settings
+        active_users = supabase.table('user_settings') \
+            .select('user_id') \
+            .gte('updated_at', seven_days_ago) \
+            .execute()
+
+        results = {"processed": 0, "errors": 0, "total": len(active_users.data or [])}
+
+        for row in (active_users.data or []):
+            try:
+                user_id = row['user_id']
+                settings = await _ensure_user_settings(user_id)
+                health = await _calculate_strategy_health(user_id, settings)
+
+                # Cache the score
+                supabase.table('user_settings') \
+                    .update({
+                        'strategy_health_score': health['score'],
+                        'strategy_health_components': health['components'],
+                    }) \
+                    .eq('user_id', user_id) \
+                    .execute()
+
+                results["processed"] += 1
+            except Exception as e:
+                logger.error(f"Strategy health recalc error for {row.get('user_id')}: {e}")
+                results["errors"] += 1
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Nightly recalculation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Recalculation error: {str(e)}")
 
 
 # ============================================================================
