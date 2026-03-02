@@ -1060,6 +1060,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configure CORS - explicit origins for production
 ALLOWED_ORIGINS = [
     "https://henryai-app.vercel.app",
+    "https://app.henryhq.ai",
     "https://www.henryhq.ai",
     "https://henryhq.ai",
     "http://localhost:3000",
