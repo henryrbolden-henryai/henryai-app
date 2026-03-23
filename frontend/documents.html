@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Tailored Documents - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -831,7 +832,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -971,7 +972,7 @@
                 Direct outreach to the hiring team could significantly improve your chances of landing an interview.
             </p>
             <div class="modal-actions">
-                <a href="/outreach" class="modal-btn-primary">View Outreach Strategy</a>
+                <a href="outreach" class="modal-btn-primary">View Outreach Strategy</a>
                 <button class="modal-btn-secondary" onclick="closePostDownloadModal()">Maybe Later</button>
             </div>
         </div>
@@ -1488,7 +1489,7 @@
             el.innerHTML = `
                 <div class="error-state">
                     <p>${message}</p>
-                    <a href="/results">&larr; Go back and try again</a>
+                    <a href="results">&larr; Go back and try again</a>
                 </div>
             `;
         }
@@ -1549,7 +1550,7 @@
             }
 
             if (!analysisDataStr) {
-                window.location.href = '/index';
+                window.location.href = 'index';
                 return;
             }
             analysisData = JSON.parse(analysisDataStr);
@@ -1605,8 +1606,8 @@
 
             if (!documentsDataStr) {
                 console.error('No documents data found in sessionStorage or localStorage');
-                showError('resumeLoading', 'Documents not generated yet. Please go back to <a href="/results">Results</a> and click "Build my application" to generate your tailored documents.');
-                showError('coverLetterLoading', 'Documents not generated yet. Please go back to <a href="/results">Results</a> and click "Build my application" to generate your tailored documents.');
+                showError('resumeLoading', 'Documents not generated yet. Please go back to <a href="results">Results</a> and click "Build my application" to generate your tailored documents.');
+                showError('coverLetterLoading', 'Documents not generated yet. Please go back to <a href="results">Results</a> and click "Build my application" to generate your tailored documents.');
                 document.getElementById('downloadResumeBtn').disabled = true;
                 document.getElementById('downloadCoverLetterBtn').disabled = true;
                 return;

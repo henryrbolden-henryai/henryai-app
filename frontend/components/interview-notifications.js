@@ -287,7 +287,7 @@
                             {
                                 label: 'Review Prep',
                                 primary: true,
-                                onclick: `window.location.href='/prep-guide?id=${interview.id}'`
+                                onclick: `window.location.href='prep-guide?id=${interview.id}'`
                             },
                             {
                                 label: 'Dismiss',
@@ -317,7 +317,7 @@
                             {
                                 label: 'Quick Prep',
                                 primary: true,
-                                onclick: `window.location.href='/prep-guide?id=${interview.id}'`
+                                onclick: `window.location.href='prep-guide?id=${interview.id}'`
                             },
                             {
                                 label: 'Got It',
@@ -362,7 +362,7 @@
                         {
                             label: 'Start Debrief',
                             primary: true,
-                            onclick: `window.location.href='/interview-debrief?id=${interview.id}'`
+                            onclick: `window.location.href='interview-debrief?id=${interview.id}'`
                         },
                         {
                             label: 'Later',
@@ -402,7 +402,7 @@
                         {
                             label: 'Start Debrief',
                             primary: true,
-                            onclick: `window.location.href='/interview-debrief?id=app-${app.id}'`
+                            onclick: `window.location.href='interview-debrief?id=app-${app.id}'`
                         },
                         {
                             label: 'Later',
@@ -439,8 +439,8 @@
     function showBrowserNotification(title, options) {
         if (Notification.permission === 'granted') {
             const notif = new Notification(title, {
-                icon: '/favicon.ico',
-                badge: '/favicon.ico',
+                icon: '/assets/icons/icon-192x192.svg',
+                badge: '/assets/icons/icon-192x192.svg',
                 ...options
             });
 

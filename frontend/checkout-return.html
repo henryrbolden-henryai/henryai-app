@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout | HenryHQ</title>
 
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -183,7 +184,7 @@
                 <div class="icon success">&#10003;</div>
                 <h1>You're <em>in</em>.</h1>
                 <p>Your subscription is active. Time to search smarter.</p>
-                <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                <a href="dashboard" class="btn btn-primary">Go to Dashboard</a>
                 <p class="redirect-note">Redirecting in <span id="countdown">5</span> seconds...</p>
             `;
 
@@ -194,7 +195,7 @@
                 if (el) el.textContent = seconds;
                 if (seconds <= 0) {
                     clearInterval(timer);
-                    window.location.href = '/dashboard';
+                    window.location.href = 'dashboard';
                 }
             }, 1000);
         }
@@ -206,8 +207,8 @@
                 <h1>Checkout not completed</h1>
                 <p>It looks like you left before completing payment. No charges were made.</p>
                 <div class="buttons">
-                    <a href="/pricing" class="btn btn-primary">View Plans</a>
-                    <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+                    <a href="pricing" class="btn btn-primary">View Plans</a>
+                    <a href="dashboard" class="btn btn-secondary">Back to Dashboard</a>
                 </div>
             `;
         }
@@ -218,8 +219,8 @@
                 <h1>Checkout canceled</h1>
                 <p>No charges were made. You can try again anytime.</p>
                 <div class="buttons">
-                    <a href="/pricing" class="btn btn-primary">View Plans</a>
-                    <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+                    <a href="pricing" class="btn btn-primary">View Plans</a>
+                    <a href="dashboard" class="btn btn-secondary">Back to Dashboard</a>
                 </div>
             `;
         }

@@ -120,7 +120,7 @@ const HenryAuth = {
         if (!error) {
             // Clear all user-specific localStorage data
             this.clearUserData();
-            window.location.href = '/login';
+            window.location.href = 'login';
         }
         return { error };
     },
@@ -149,7 +149,6 @@ const HenryAuth = {
             'strategicStopProgress',
             'strategicStopOverride_v2',
             'applications'
-            // Note: beta_verified intentionally NOT cleared - it's an access gate, not user data
         ];
 
         userDataKeys.forEach(key => localStorage.removeItem(key));
@@ -184,7 +183,7 @@ const HenryAuth = {
      */
     async resetPassword(email) {
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`
+            redirectTo: `${window.location.origin}/professionals/reset-password`
         });
         return { data, error };
     },
@@ -197,7 +196,7 @@ const HenryAuth = {
         if (!session) {
             // Save current URL to redirect back after login
             sessionStorage.setItem('redirectAfterLogin', window.location.href);
-            window.location.href = '/login';
+            window.location.href = 'login';
             return null;
         }
         return session;

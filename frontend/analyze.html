@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
   <title>Analyze a Role | HenryHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- PWA Meta Tags -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HenryHQ">
-  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -762,12 +763,6 @@
   <!-- Supabase Auth -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-client.js"></script>
-  <!-- Beta Access Gate -->
-  <script>
-      if (localStorage.getItem('beta_verified') !== 'true') {
-          window.location.href = '/beta-access';
-      }
-  </script>
 </head>
 
 <body>
@@ -775,7 +770,7 @@
   <!-- ========== HEADER ========== -->
   <header>
     <div class="container">
-      <a href="/index" class="logo"><em>Henry</em>HQ</a>
+      <a href="index" class="logo"><em>Henry</em>HQ</a>
     </div>
   </header>
 
@@ -1222,7 +1217,7 @@
       sessionStorage.setItem('pendingAnalysis', JSON.stringify(pendingData));
 
       // Navigate to the analyzing page
-      window.location.href = '/analyzing';
+      window.location.href = 'analyzing';
     });
 
     // ========================================================================
@@ -1353,7 +1348,7 @@
       if (fullData) {
         sessionStorage.setItem('analysisData', JSON.stringify(fullData));
       }
-      window.location.href = '/results';
+      window.location.href = 'results';
     }
 
     // Submit clarifying answers
@@ -1427,7 +1422,7 @@
         };
 
         sessionStorage.setItem('analysisData', JSON.stringify(updatedData));
-        window.location.href = '/results';
+        window.location.href = 'results';
 
       } catch (error) {
         console.error('Error during reanalysis:', error);
@@ -1779,7 +1774,7 @@
     if (goToProfileBtn) {
       goToProfileBtn.addEventListener('click', function() {
         console.log('Button clicked, redirecting to /profile-edit');
-        window.location.href = '/profile-edit';
+        window.location.href = 'profile-edit';
       });
     }
   </script>

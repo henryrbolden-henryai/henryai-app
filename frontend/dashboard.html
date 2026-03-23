@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | HenryHQ</title>
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HenryHQ">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1860,7 +1861,7 @@
     <!-- TOP NAVIGATION -->
     <nav class="top-nav">
         <div class="top-nav-container">
-            <a href="/dashboard" class="top-nav-logo"><em>Henry</em>HQ</a>
+            <a href="dashboard" class="top-nav-logo"><em>Henry</em>HQ</a>
             <div class="account-dropdown" id="accountDropdown">
                 <button class="account-btn" onclick="toggleAccountMenu()">
                     My Account
@@ -1869,13 +1870,13 @@
                     </svg>
                 </button>
                 <div class="account-menu">
-                    <a href="/profile-edit" class="account-menu-item">
+                    <a href="profile-edit" class="account-menu-item">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
                         </svg>
                         Edit Profile
                     </a>
-                    <a href="/settings" class="account-menu-item">
+                    <a href="settings" class="account-menu-item">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M7.84 1.804A1 1 0 018.82 1h2.36a1 1 0 01.98.804l.331 1.652a6.993 6.993 0 011.929 1.115l1.598-.54a1 1 0 011.186.447l1.18 2.044a1 1 0 01-.205 1.251l-1.267 1.113a7.047 7.047 0 010 2.228l1.267 1.113a1 1 0 01.206 1.25l-1.18 2.045a1 1 0 01-1.187.447l-1.598-.54a6.993 6.993 0 01-1.929 1.115l-.33 1.652a1 1 0 01-.98.804H8.82a1 1 0 01-.98-.804l-.331-1.652a6.993 6.993 0 01-1.929-1.115l-1.598.54a1 1 0 01-1.186-.447l-1.18-2.044a1 1 0 01.205-1.251l1.267-1.114a7.05 7.05 0 010-2.227L1.821 7.773a1 1 0 01-.206-1.25l1.18-2.045a1 1 0 011.187-.447l1.598.54A6.993 6.993 0 017.51 3.456l.33-1.652zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
                         </svg>
@@ -2002,7 +2003,7 @@
                     </p>
                     <p class="job-network-note" id="jobNetworkNote" style="display: none;">
                         Want to see which companies you have connections at?
-                        <a href="/profile-edit#linkedinConnectionsSection">Upload your LinkedIn connections CSV</a>
+                        <a href="profile-edit#linkedinConnectionsSection">Upload your LinkedIn connections CSV</a>
                         in your profile and we'll highlight jobs at companies in your network.
                     </p>
                 </div>
@@ -2137,7 +2138,7 @@
                 // Fallback: clear all storage and redirect
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = '/login';
+                window.location.href = 'login';
             }
         }
 
@@ -2618,7 +2619,7 @@
 
             html += `
                 <div class="priority-actions-footer">
-                    <a href="/tracker">View full pipeline in Command Center &rarr;</a>
+                    <a href="tracker">View full pipeline in Command Center &rarr;</a>
                 </div>
             `;
 
@@ -2635,13 +2636,13 @@
                 // Navigate to outreach with app context
                 navigateWithAppContext(appId, 'outreach');
             } else if (actionType === 'open_prep') {
-                window.location.href = '/interview-intelligence';
+                window.location.href = 'interview-intelligence';
             } else if (actionType === 'archive') {
                 // Navigate to tracker to handle archive
-                window.location.href = `/tracker?highlight=${appId}`;
+                window.location.href = `tracker?highlight=${appId}`;
             } else {
                 // Default: go to tracker
-                window.location.href = `/tracker?highlight=${appId}`;
+                window.location.href = `tracker?highlight=${appId}`;
             }
         }
 
@@ -3023,7 +3024,7 @@
                 listContainer.innerHTML = `
                     <div class="coaching-empty-state">
                         <p>You don't have any active applications yet. Analyze a new role to get personalized ${destination} strategies.</p>
-                        <a href="/index" class="coaching-empty-cta">Analyze New Role</a>
+                        <a href="index" class="coaching-empty-cta">Analyze New Role</a>
                     </div>
                 `;
             } else {
@@ -3113,7 +3114,7 @@
                     'Would you like to view this application in the Strategy Overview instead?'
                 );
                 if (viewStrategy) {
-                    window.location.href = `/tracker?highlight=${appId}`;
+                    window.location.href = `tracker?highlight=${appId}`;
                 }
                 return;
             }
@@ -3834,7 +3835,7 @@
             // If we have analysis data, store it in sessionStorage and navigate to overview
             if (analysisData) {
                 sessionStorage.setItem('analysisData', JSON.stringify(analysisData));
-                window.location.href = '/overview';
+                window.location.href = 'overview';
             } else {
                 // D4: Show explicit message instead of silent fallback
                 const goToTracker = confirm(
@@ -3843,7 +3844,7 @@
                     'Would you like to view this application in the tracker instead?'
                 );
                 if (goToTracker) {
-                    window.location.href = `/tracker?highlight=${appId}`;
+                    window.location.href = `tracker?highlight=${appId}`;
                 }
             }
         }
@@ -4023,7 +4024,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #f87171; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Authentication Required</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="/login" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
+                    <a href="login" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Return to Login</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -4034,7 +4035,7 @@
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0a0a0b; color: #fbbf24; font-family: system-ui; padding: 40px; text-align: center;">
                     <h2 style="margin-bottom: 16px;">Data Error</h2>
                     <p style="margin-bottom: 24px; color: #a1a1aa;">${message}</p>
-                    <a href="/dashboard" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Refresh</a>
+                    <a href="dashboard" style="background: #22d3ee; color: #000; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Refresh</a>
                 </div>
             `;
             document.body.style.visibility = 'visible';
@@ -4064,14 +4065,7 @@
                 const session = await HenryAuth.getSession();
                 if (!session) {
                     // Not logged in, redirect to login
-                    window.location.href = '/login';
-                    return;
-                }
-
-                // Beta gate - check localStorage (standard flow for private beta)
-                // Note: Server-side beta verification deferred to v1.1
-                if (localStorage.getItem('beta_verified') !== 'true') {
-                    window.location.href = '/beta-access';
+                    window.location.href = 'login';
                     return;
                 }
 
@@ -4102,7 +4096,7 @@
                     localStorage.removeItem('henryai_needs_onboarding');
 
                     if (!hasExistingData) {
-                        window.location.href = '/profile-edit';
+                        window.location.href = 'profile-edit';
                         return;
                     }
                     console.log('Skipping onboarding - user has existing profile data');
@@ -4171,7 +4165,7 @@
                 console.error('Auth check failed:', authErr);
                 // Only redirect if not already redirecting (prevent loops)
                 if (!window.location.href.includes('login')) {
-                    window.location.href = '/login';
+                    window.location.href = 'login';
                 }
             }
         })();
@@ -4326,7 +4320,7 @@ I'm always here. If you're unsure about a role or how to position yourself, just
             }
 
             // Redirect to profile setup
-            window.location.href = '/profile-edit';
+            window.location.href = 'profile-edit';
         }
 
         // ==========================================
@@ -4559,7 +4553,7 @@ ${dynamicClosing}`;
             analyzeBtn.className = 'btn-welcome';
             analyzeBtn.style.cssText = 'flex: 1; min-width: 140px;';
             analyzeBtn.onclick = () => {
-                window.location.href = '/analyze';
+                window.location.href = 'analyze';
             };
 
             const exploreBtn = document.createElement('button');

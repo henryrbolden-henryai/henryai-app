@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
   <title>Get Started | HenryHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -812,7 +813,7 @@
   <div class="container">
     <!-- Header -->
     <div class="page-header">
-      <a href="/index" class="logo"><em>Henry</em>HQ</a>
+      <a href="index" class="logo"><em>Henry</em>HQ</a>
       <h1>Let's get to know each other</h1>
       <p>Tell me about yourself and where you're at. The more I understand your situation, the better I can help you figure out which roles are actually worth your time.</p>
     </div>
@@ -1343,7 +1344,7 @@
     // Check if profile already exists
     const existingProfile = localStorage.getItem('userProfile');
     if (existingProfile) {
-      window.location.href = '/analyze';
+      window.location.href = 'analyze';
     }
 
     // Elements
@@ -2104,7 +2105,7 @@
       }
 
       // Redirect to analyze page
-      window.location.href = '/analyze';
+      window.location.href = 'analyze';
     });
 
     function showError(message) {

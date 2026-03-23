@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Intelligence - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -670,12 +671,6 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
-    <!-- Beta Access Gate -->
-    <script>
-        if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = '/beta-access';
-        }
-    </script>
     <!-- Supabase for data persistence -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js"></script>
@@ -684,7 +679,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -786,7 +781,7 @@
         <div id="storybankTab" class="tab-content">
             <iframe
                 id="storyBankFrame"
-                src="/story-bank?embedded=true"
+                src="story-bank?embedded=true"
                 style="width: 100%; height: calc(100vh - 200px); border: none; border-radius: 12px;"
                 title="Story Bank"
             ></iframe>
@@ -806,7 +801,7 @@
                         <!-- Options populated dynamically -->
                     </select>
                     <div style="margin-top: 8px; font-size: 0.8rem; color: #6b7280;">
-                        Don't see it? <a href="/analyze" style="color: #22d3ee;">Analyze a role</a> first, or
+                        Don't see it? <a href="analyze" style="color: #22d3ee;">Analyze a role</a> first, or
                         <span style="color: #22d3ee; cursor: pointer;" onclick="showManualEntry()">enter manually</span>
                     </div>
                 </div>
@@ -1116,19 +1111,19 @@
         // ============================================================================
         function startMockInterview() {
             // Navigate to mock interview page
-            window.location.href = '/mock-interview';
+            window.location.href = 'mock-interview';
         }
 
         function openPractice(type) {
             // Navigate to specific practice page
             if (type === 'intro-sell') {
-                window.location.href = '/practice-intro';
+                window.location.href = 'practice-intro';
             } else if (type === 'behavioral') {
-                window.location.href = '/practice-drills?type=behavioral';
+                window.location.href = 'practice-drills?type=behavioral';
             } else if (type === 'strategy') {
-                window.location.href = '/practice-drills?type=strategy';
+                window.location.href = 'practice-drills?type=strategy';
             } else if (type === 'role-based') {
-                window.location.href = '/practice-drills?type=role';
+                window.location.href = 'practice-drills?type=role';
             }
         }
 
@@ -1888,19 +1883,19 @@
         function viewDebrief(interviewId) {
             // Store the interview ID and navigate to debrief page (which will load saved conversation)
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = '/interview-debrief';
+            window.location.href = 'interview-debrief';
         }
 
         function openPrepGuide(interviewId) {
             // Store the interview ID and navigate to prep guide page
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = '/prep-guide';
+            window.location.href = 'prep-guide';
         }
 
         function openDebrief(interviewId) {
             // Store the interview ID and navigate to debrief page
             sessionStorage.setItem('currentInterviewId', interviewId);
-            window.location.href = '/interview-debrief';
+            window.location.href = 'interview-debrief';
         }
 
         function deleteInterview(interviewId) {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Coach View | HenryHQ</title>
-    <link rel="icon" type="image/png" href="images/h-mark.png">
+    <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <style>
         * {
             box-sizing: border-box;
@@ -680,7 +680,7 @@
         // Switch to different story
         function switchToStory(storyId) {
             clearInterval(timerInterval);
-            window.location.href = `/coach-view?story=${storyId}&stage=${interviewStage}`;
+            window.location.href = `coach-view?story=${storyId}&stage=${interviewStage}`;
         }
 
         // Show empty state
@@ -689,7 +689,7 @@
                 <div class="empty-state">
                     <h2>${title}</h2>
                     <p>${message}</p>
-                    <a href="/story-bank" class="btn-primary">Go to Story Bank</a>
+                    <a href="story-bank" class="btn-primary">Go to Story Bank</a>
                 </div>
             `;
         }

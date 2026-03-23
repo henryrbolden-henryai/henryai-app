@@ -38,6 +38,7 @@
     { "source": "/practice-drills", "destination": "/practice-drills.html" },
     { "source": "/practice-intro", "destination": "/practice-intro.html" },
     { "source": "/prep-guide", "destination": "/prep-guide.html" },
+    { "source": "/professionals", "destination": "/index.html" },
     { "source": "/pricing", "destination": "/pricing.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/profile-edit", "destination": "/profile-edit.html" },

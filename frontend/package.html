@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Application Package | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -821,12 +822,12 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
     <div class="container">
-        <a href="/results" class="back-link">← Back to Analysis</a>
+        <a href="results" class="back-link">← Back to Analysis</a>
 
         <h1>Your application package is ready</h1>
         <p class="subtitle">Everything you need to apply for this role, tailored to stand out.</p>
@@ -966,7 +967,7 @@
         <div class="button-group">
             <button class="btn-primary" id="downloadBtn">Download All</button>
             <button class="btn-secondary" id="trackBtn">Track This Application</button>
-            <button class="btn-secondary" onclick="window.location.href='/tracker'">View My Tracker</button>
+            <button class="btn-secondary" onclick="window.location.href='tracker'">View My Tracker</button>
         </div>
 
         <div class="success-message" id="successMessage">
@@ -974,7 +975,7 @@
         </div>
         
         <div class="success-message" id="trackSuccessMessage" style="display: none;">
-            ✓ Added to your application tracker | <a href="/tracker" style="color: var(--color-accent);">View Tracker</a>
+            ✓ Added to your application tracker | <a href="tracker" style="color: var(--color-accent);">View Tracker</a>
         </div>
 
         <!-- SCREENING QUESTIONS SECTION -->
@@ -1026,7 +1027,7 @@
         </div>
 
         <div class="start-over">
-            <a href="/analyze">← Analyze Another Role</a>
+            <a href="analyze">← Analyze Another Role</a>
         </div>
     </div>
 
@@ -1045,7 +1046,7 @@
 
         // Redirect if no data
         if (!analysisData) {
-            window.location.href = '/index';
+            window.location.href = 'index';
         }
 
         console.log('Package page data:', analysisData);

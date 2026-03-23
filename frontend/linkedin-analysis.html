@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LinkedIn Analysis | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -474,7 +475,7 @@
     <!-- Top nav injected by components/top-nav.js -->
 
     <div class="container">
-        <a href="/strengthen" class="back-link">← Back</a>
+        <a href="strengthen" class="back-link">← Back</a>
 
         <div class="header">
             <div class="linkedin-badge">
@@ -526,7 +527,7 @@
             <div id="fixesList">
                 <!-- Populated dynamically -->
             </div>
-            <a href="/linkedin-scoring" class="view-all-link">View Full Analysis & All Fixes →</a>
+            <a href="linkedin-scoring" class="view-all-link">View Full Analysis & All Fixes →</a>
         </div>
 
         <!-- All Good State -->
@@ -541,7 +542,7 @@
             <button class="btn btn-primary" onclick="continueToStrategy()">
                 Continue to Strategy Overview
             </button>
-            <a href="/linkedin-scoring" class="btn btn-linkedin">
+            <a href="linkedin-scoring" class="btn btn-linkedin">
                 View Detailed Breakdown
             </a>
             <button class="btn btn-secondary" onclick="uploadDifferentProfile()">
@@ -601,7 +602,7 @@
                         console.log('Cleared stale linkedin_profile_uploaded flag');
                     }
                 }
-                window.location.href = '/linkedin-upload';
+                window.location.href = 'linkedin-upload';
                 return;
             }
 
@@ -840,13 +841,13 @@
         function continueToStrategy() {
             // Route through generating.html to generate tailored documents
             // Documents must be generated before overview/documents pages can display them
-            window.location.href = '/generating';
+            window.location.href = 'generating';
         }
 
         function uploadDifferentProfile() {
             sessionStorage.removeItem('linkedinData');
             sessionStorage.removeItem('linkedinScoringResults');
-            window.location.href = '/linkedin-upload';
+            window.location.href = 'linkedin-upload';
         }
     </script>
 

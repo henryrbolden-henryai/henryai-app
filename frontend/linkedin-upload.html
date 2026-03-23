@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LinkedIn Profile | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -280,7 +281,7 @@
     <!-- Top nav will be injected by top-nav.js component -->
 
     <div class="container">
-        <a href="/strengthen" class="back-link">← Back to Strengthen</a>
+        <a href="strengthen" class="back-link">← Back to Strengthen</a>
 
         <div class="content">
             <div class="linkedin-icon">in</div>
@@ -345,7 +346,7 @@
                     // Check linkedin_profile_uploaded (used by linkedin-upload.js) or legacy fields
                     if (userProfile.linkedin_profile_uploaded || userProfile.linkedin_pdf_url || userProfile.linkedin_uploaded) {
                         // Auto-redirect to analysis if profile exists
-                        window.location.href = '/linkedin-analysis';
+                        window.location.href = 'linkedin-analysis';
                         return;
                     }
                 }
@@ -362,7 +363,7 @@
                             localProfile.linkedin_parsed = supabaseProfile.linkedin_parsed;
                             localStorage.setItem('userProfile', JSON.stringify(localProfile));
 
-                            window.location.href = '/linkedin-analysis';
+                            window.location.href = 'linkedin-analysis';
                             return;
                         }
                     } catch (e) {
@@ -376,7 +377,7 @@
                     const data = JSON.parse(linkedinData);
                     if (data.uploaded) {
                         // Auto-redirect to analysis if profile exists
-                        window.location.href = '/linkedin-analysis';
+                        window.location.href = 'linkedin-analysis';
                         return;
                     }
                 }
@@ -452,7 +453,7 @@
                         We recommend updating your LinkedIn profile every 90 days to stay visible to recruiters.
                     </div>
                 </div>
-                <a href="/linkedin-analysis" class="btn btn-primary" style="margin-bottom: 16px;">
+                <a href="linkedin-analysis" class="btn btn-primary" style="margin-bottom: 16px;">
                     Continue to Analysis →
                 </a>
             `;
@@ -616,7 +617,7 @@
                 uploadArea.style.display = 'none';
 
                 setTimeout(() => {
-                    window.location.href = '/linkedin-analysis';
+                    window.location.href = 'linkedin-analysis';
                 }, 1500);
 
             } catch (error) {
@@ -645,7 +646,7 @@
 
             // Route through generating.html to generate tailored documents
             // Documents must be generated before overview/documents pages can display them
-            window.location.href = '/generating';
+            window.location.href = 'generating';
         }
     </script>
 

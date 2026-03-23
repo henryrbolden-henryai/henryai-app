@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resume Level Analysis | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1425,7 +1426,7 @@
             </div>
         </div>
 
-        <a href="/results" class="back-link">← Back to Results</a>
+        <a href="results" class="back-link">← Back to Results</a>
 
         <h1>Resume Level Analysis</h1>
         <p class="subtitle" id="subtitle">Analyzing your career level against the target role...</p>
@@ -1774,7 +1775,7 @@
             }
 
             if (!analysisDataStr) {
-                window.location.href = '/analyze';
+                window.location.href = 'analyze';
                 return;
             }
             analysisData = JSON.parse(analysisDataStr);
@@ -2097,11 +2098,11 @@
 
             if (shouldStrengthen) {
                 // Proceed to strengthen phase
-                window.location.href = '/strengthen';
+                window.location.href = 'strengthen';
             } else {
                 // Skip straight to generating or results
                 // For skip/do not apply, go directly to results
-                window.location.href = '/results';
+                window.location.href = 'results';
             }
         }
 
@@ -3094,7 +3095,7 @@
                 sessionStorage.setItem('levelingData', JSON.stringify(levelingData));
                 localStorage.setItem('levelingData_backup', JSON.stringify(levelingData));
             }
-            window.location.href = '/strengthen';
+            window.location.href = 'strengthen';
         });
 
         document.getElementById('skipBtn').addEventListener('click', () => {
@@ -3120,7 +3121,7 @@
                 localStorage.setItem('strengthenedData_backup', JSON.stringify(skipData));
             }
             // Go directly to generating/application strategy
-            window.location.href = '/generating';
+            window.location.href = 'generating';
         });
     </script>
     <script src="components/flow-state.js"></script>

@@ -108,7 +108,7 @@
 
     function init() {
         // Don't show on public pages
-        const publicPages = ['index', 'login', 'beta-access', 'henryhq-landing'];
+        const publicPages = ['index', 'login', 'henryhq-landing'];
         const currentPage = window.location.pathname.split('/').pop()?.replace('.html', '') || '';
         if (publicPages.includes(currentPage)) return;
 

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Debrief - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1213,7 +1214,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -1565,7 +1566,7 @@ Examples of helpful info:
             if (!currentInterview) {
                 console.error('Interview not found for ID:', interviewId);
                 alert('Interview not found. Returning to Interview Intelligence.');
-                window.location.href = '/interview-intelligence';
+                window.location.href = 'interview-intelligence';
                 return;
             }
 
@@ -1659,7 +1660,7 @@ Examples of helpful info:
             } else {
                 console.error('No currentInterview found to sync');
             }
-            window.location.href = '/tracker';
+            window.location.href = 'tracker';
         }
 
         function updateCompletedInterviewsWithOutcome() {
@@ -1771,7 +1772,7 @@ Examples of helpful info:
             toast.innerHTML = `
                 <span class="toast-icon">📚</span>
                 <span class="toast-message">${count} ${count === 1 ? 'story' : 'stories'} saved to your Story Bank</span>
-                <a href="/story-bank" class="toast-link">View Stories →</a>
+                <a href="story-bank" class="toast-link">View Stories →</a>
             `;
             document.body.appendChild(toast);
 
@@ -2006,7 +2007,7 @@ The best thing you can do while waiting is keep other opportunities moving. Pipe
 
         function showPracticeRecommendation() {
             // Navigate to practice drills with a suggested skill
-            window.location.href = '/practice-drills';
+            window.location.href = 'practice-drills';
         }
 
         // ============================================================================
@@ -2180,9 +2181,9 @@ The best thing you can do while waiting is keep other opportunities moving. Pipe
 
             // Navigate to prep guide if date is set, otherwise command center
             if (dateValue) {
-                window.location.href = `/prep-guide?id=${nextInterview.id}`;
+                window.location.href = `prep-guide?id=${nextInterview.id}`;
             } else {
-                window.location.href = '/tracker';
+                window.location.href = 'tracker';
             }
         }
 

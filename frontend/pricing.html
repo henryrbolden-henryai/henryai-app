@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
   <title>Plans & Pricing | HenryHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="HenryHQ is strategic job search intelligence that tells you where you stand before you apply. Fit scoring, interview prep, and coaching from someone who's been on the other side of the hiring table. Plans from $25/month.">
 
   <!-- PWA Meta Tags -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="HenryHQ">
-  <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -743,13 +744,13 @@
   <!-- Top Navigation -->
   <nav class="top-nav">
     <div class="top-nav-container">
-      <a href="/" class="top-nav-logo"><em>Henry</em>HQ</a>
+      <a href="./" class="top-nav-logo"><em>Henry</em>HQ</a>
       <div class="top-nav-links">
-        <a href="/#about-henry" class="top-nav-link">About</a>
-        <a href="/#how-it-works" class="top-nav-link">How it works</a>
-        <a href="/#capabilities" class="top-nav-link">Features</a>
-        <a href="/pricing" class="top-nav-link active">Pricing</a>
-        <a href="/login" class="top-nav-link" id="loginLink">Sign In</a>
+        <a href="./#about-henry" class="top-nav-link">About</a>
+        <a href="./#how-it-works" class="top-nav-link">How it works</a>
+        <a href="./#capabilities" class="top-nav-link">Features</a>
+        <a href="pricing" class="top-nav-link active">Pricing</a>
+        <a href="login" class="top-nav-link" id="loginLink">Sign In</a>
       </div>
     </div>
   </nav>
@@ -787,7 +788,7 @@
               <li>No credit card required</li>
             </ul>
             <p class="pricing-best-for"></p>
-            <button class="btn btn-primary pricing-cta" onclick="window.location.href='/login'">Try It Free</button>
+            <button class="btn btn-primary pricing-cta" onclick="window.location.href='login'">Try It Free</button>
           </div>
 
           <!-- Recruiter - $25/mo -->
@@ -1192,7 +1193,7 @@
         <h2>Ready to search smarter?</h2>
         <p>Most job seekers apply to 100+ roles hoping something sticks. HenryHQ tells you which 10 are worth your time.</p>
         <div class="button-group">
-          <button class="btn btn-primary" onclick="window.location.href='/login'">Start Free Preview</button>
+          <button class="btn btn-primary" onclick="window.location.href='login'">Start Free Preview</button>
           <button class="btn btn-secondary" onclick="startCheckout('principal')">Get Principal - $49/mo</button>
         </div>
       </div>
@@ -1204,11 +1205,11 @@
     <div class="container">
       <p>&copy; 2026 HenryHQ</p>
       <div class="footer-links">
-        <a href="/privacy">Privacy Policy</a>
+        <a href="privacy">Privacy Policy</a>
         <span>&middot;</span>
-        <a href="/terms">Terms of Service</a>
+        <a href="terms">Terms of Service</a>
         <span>&middot;</span>
-        <a href="/contact">Contact</a>
+        <a href="contact">Contact</a>
       </div>
     </div>
   </footer>
@@ -1280,25 +1281,25 @@
       try {
         // Check if user is logged in
         if (typeof HenryAuth === 'undefined') {
-          window.location.href = `/login?plan=${tier}&redirect=pricing`;
+          window.location.href = `login?plan=${tier}&redirect=pricing`;
           return;
         }
 
         const session = await HenryAuth.getSession();
         if (!session) {
-          window.location.href = `/login?plan=${tier}&redirect=pricing`;
+          window.location.href = `login?plan=${tier}&redirect=pricing`;
           return;
         }
 
         const user = await HenryAuth.getUser();
         if (!user) {
-          window.location.href = `/login?plan=${tier}&redirect=pricing`;
+          window.location.href = `login?plan=${tier}&redirect=pricing`;
           return;
         }
 
         // Navigate to embedded checkout page
         const billingPeriod = isAnnual ? 'annual' : 'monthly';
-        window.location.href = `/checkout?tier=${tier}&billing_period=${billingPeriod}`;
+        window.location.href = `checkout?tier=${tier}&billing_period=${billingPeriod}`;
 
       } catch (error) {
         console.error('Checkout error:', error);

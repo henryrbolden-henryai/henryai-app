@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyzing | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -253,7 +254,7 @@
         }
 
         function goBack() {
-            window.location.href = '/analyze';
+            window.location.href = 'analyze';
         }
 
         async function runAnalysis() {
@@ -380,7 +381,7 @@
                             sessionStorage.removeItem('pendingAnalysis');
 
                             // Redirect to results page
-                            window.location.href = '/results';
+                            window.location.href = 'results';
                             return;
                         }
                         else if (type === 'error') {

@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Library | HenryHQ</title>
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HenryHQ">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -292,12 +293,6 @@
         }
     </style>
     <link rel="stylesheet" href="css/mobile.css">
-    <!-- Beta Access Gate -->
-    <script>
-        if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = '/beta-access';
-        }
-    </script>
 </head>
 <body>
     <div class="page-container">
@@ -364,7 +359,7 @@
                         <div class="empty-state-text">
                             Analyze a role to create tailored resumes and cover letters. Each analysis generates ATS-optimized documents specific to the role.
                         </div>
-                        <a href="/analyze" class="empty-state-btn">Analyze a Role</a>
+                        <a href="analyze" class="empty-state-btn">Analyze a Role</a>
                     </div>
                 `;
                 return;
@@ -474,7 +469,7 @@
                 sessionStorage.removeItem('switchToTab');
             }
 
-            window.location.href = '/documents';
+            window.location.href = 'documents';
         }
 
         function escapeHtml(str) {

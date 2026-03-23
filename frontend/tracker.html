@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipeline Command Center | HenryHQ</title>
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HenryHQ">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -4602,18 +4603,12 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <!-- Command Center Intelligence Module -->
     <script src="js/command-center.js"></script>
-    <!-- Beta Access Gate -->
-    <script>
-        if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = '/beta-access';
-        }
-    </script>
 </head>
 <body>
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -4854,7 +4849,7 @@
             <div class="empty-state-icon">📋</div>
             <h3 class="empty-state-title">No applications yet</h3>
             <p class="empty-state-text">Start tracking your job applications to see your pipeline intelligence here.</p>
-            <a href="/analyze" class="empty-state-btn">Analyze a Job</a>
+            <a href="analyze" class="empty-state-btn">Analyze a Job</a>
         </div>
 
         <!-- COMMAND CENTER: ERROR STATE -->
@@ -5072,7 +5067,7 @@
 
         <!-- ANALYZE NEW ROLE BUTTON -->
         <div class="bottom-cta">
-            <a href="/analyze" class="analyze-btn">Analyze New Role</a>
+            <a href="analyze" class="analyze-btn">Analyze New Role</a>
         </div>
         </div>
 
@@ -5486,7 +5481,7 @@
 
                 <div id="manualInterviewLink" style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--color-border);">
                     <span style="color: var(--color-text-muted); font-size: 0.85rem;">
-                        Don't see your application? <a href="/interview-intelligence" style="color: var(--color-accent);">Add manually in Interview Intelligence</a>
+                        Don't see your application? <a href="interview-intelligence" style="color: var(--color-accent);">Add manually in Interview Intelligence</a>
                     </span>
                 </div>
             </div>
@@ -7610,7 +7605,7 @@
                     <div class="empty-state">
                         <h2>Your command center is ready.</h2>
                         <p>Analyze your first role to start building your strategic pipeline.</p>
-                        <a href="/analyze">Analyze First Role</a>
+                        <a href="analyze">Analyze First Role</a>
                     </div>
                 `;
                 cardContainer.innerHTML = emptyHTML;
@@ -10174,7 +10169,7 @@ Thanks so much!
             // Set the interview ID and navigate to debrief
             sessionStorage.setItem('currentInterviewId', interview.id);
             closeDebriefSelectModal();
-            window.location.href = '/interview-debrief';
+            window.location.href = 'interview-debrief';
         }
 
         // SCHEDULE INTERVIEW MODAL
@@ -10336,7 +10331,7 @@ Thanks so much!
         // Legacy function - redirect to Interview Intelligence for manual entry
         function createNewInterview() {
             closeScheduleInterviewModal();
-            window.location.href = '/interview-intelligence';
+            window.location.href = 'interview-intelligence';
         }
 
         // Navigate directly to Interview Intelligence with app context
@@ -10364,7 +10359,7 @@ Thanks so much!
                 appId: app.id
             }));
 
-            window.location.href = '/interview-intelligence';
+            window.location.href = 'interview-intelligence';
         }
 
         // Add "Schedule Interview" to contextual actions for interview stages
@@ -10776,7 +10771,7 @@ Thanks so much!
                     <span class="pulse-action-text">
                         <strong>Priority:</strong> Prepare for your ${nextInterview.status.toLowerCase()} at ${nextInterview.company}
                     </span>
-                    <a href="/interview-intelligence" class="pulse-action-btn">Prep Now</a>
+                    <a href="interview-intelligence" class="pulse-action-btn">Prep Now</a>
                 `;
             }
 
@@ -10818,7 +10813,7 @@ Thanks so much!
 
                 return `
                     <span class="pulse-action-text">${suggestionText}</span>
-                    <a href="/analyze" class="pulse-action-btn">${buttonText}</a>
+                    <a href="analyze" class="pulse-action-btn">${buttonText}</a>
                 `;
             }
 
@@ -10834,7 +10829,7 @@ Thanks so much!
 
             return `
                 <span class="pulse-action-text">${encouragementText}</span>
-                <a href="/analyze" class="pulse-action-btn">Add Another</a>
+                <a href="analyze" class="pulse-action-btn">Add Another</a>
             `;
         }
 
@@ -11097,7 +11092,7 @@ Thanks so much!
                             <div class="company">${app.company || 'Unknown'}</div>
                             <div class="role">${app.role || app.roleTitle || ''}</div>
                             <span class="fit-badge gray">Not Analyzed</span>
-                            <a href="/analyze?company=${encodeURIComponent(app.company || '')}&role=${encodeURIComponent(app.role || app.roleTitle || '')}" class="strategy-step-action" style="margin-top: 0;">Analyze</a>
+                            <a href="analyze?company=${encodeURIComponent(app.company || '')}&role=${encodeURIComponent(app.role || app.roleTitle || '')}" class="strategy-step-action" style="margin-top: 0;">Analyze</a>
                         </div>
                     `;
                 });
@@ -11239,7 +11234,7 @@ Thanks so much!
                                     <div class="company">${app.company || 'Unknown'}</div>
                                     <div class="role">${app.role || app.roleTitle || ''}</div>
                                     <span class="fit-badge ${app.fitScore >= 75 ? 'high' : 'medium'}">${app.fitScore}%</span>
-                                    <a href="/outreach?company=${encodeURIComponent(app.company || '')}" class="strategy-step-action" style="margin-top: 0;">Find Contacts</a>
+                                    <a href="outreach?company=${encodeURIComponent(app.company || '')}" class="strategy-step-action" style="margin-top: 0;">Find Contacts</a>
                                 </div>
                             `;
                         });
@@ -11249,7 +11244,7 @@ Thanks so much!
                 html += `
                     <div class="strategy-tip">Candidates with a referral are 4-5x more likely to get hired. Reach out to your connections at target companies.</div>
                     <div class="strategy-step-actions-row">
-                        <a href="/outreach" class="strategy-step-action">Go to Network & Outreach</a>
+                        <a href="outreach" class="strategy-step-action">Go to Network & Outreach</a>
                         <button class="strategy-step-complete-btn" onclick="completeStrategyStep('network_check')">Mark as reviewed</button>
                     </div>
                 `;
@@ -11299,7 +11294,7 @@ Thanks so much!
                 </div>
 
                 <div class="strategy-step-actions-row">
-                    <a href="/outreach" class="strategy-step-action">Draft Outreach Messages</a>
+                    <a href="outreach" class="strategy-step-action">Draft Outreach Messages</a>
                     <button class="strategy-step-complete-btn" onclick="completeStrategyStep('outreach_status')">Mark as reviewed</button>
                 </div>
             `;
@@ -11343,7 +11338,7 @@ Thanks so much!
                         <div class="strategy-app-row">
                             <div class="company">${app.company || 'Unknown'}</div>
                             <div class="role">${app.role || app.roleTitle || ''}</div>
-                            <a href="/documents" class="strategy-step-action" style="margin-top: 0;"
+                            <a href="documents" class="strategy-step-action" style="margin-top: 0;"
                                onclick="event.preventDefault(); openDocumentsForApp('${app.analysisKey.replace(/'/g, "\\'")}');">
                                 View Documents
                             </a>
@@ -11359,7 +11354,7 @@ Thanks so much!
                         <div class="strategy-app-row">
                             <div class="company">${app.company || 'Unknown'}</div>
                             <div class="role">${app.role || app.roleTitle || ''}</div>
-                            <a href="/analyze?company=${encodeURIComponent(app.company || '')}&role=${encodeURIComponent(app.role || app.roleTitle || '')}" class="strategy-step-action" style="margin-top: 0;">Create Documents</a>
+                            <a href="analyze?company=${encodeURIComponent(app.company || '')}&role=${encodeURIComponent(app.role || app.roleTitle || '')}" class="strategy-step-action" style="margin-top: 0;">Create Documents</a>
                         </div>
                     `;
                 });
@@ -11371,7 +11366,7 @@ Thanks so much!
             html += `
                 <div class="strategy-tip">Applications with ATS-optimized resumes are significantly more likely to pass initial screening. Tailor your resume for each role.</div>
                 <div class="strategy-step-actions-row">
-                    <a href="/document-library" class="strategy-step-action">Document Library</a>
+                    <a href="document-library" class="strategy-step-action">Document Library</a>
                     <button class="strategy-step-complete-btn" onclick="completeStrategyStep('document_check')">Mark as reviewed</button>
                 </div>
             `;
@@ -11387,7 +11382,7 @@ Thanks so much!
             if (data) {
                 sessionStorage.setItem('analysisData', data);
             }
-            window.location.href = '/documents';
+            window.location.href = 'documents';
         }
 
         /**
@@ -11463,7 +11458,7 @@ Thanks so much!
 
             html += `
                 <div class="strategy-step-actions-row">
-                    <a href="/analyze" class="strategy-step-action">Analyze a New Role</a>
+                    <a href="analyze" class="strategy-step-action">Analyze a New Role</a>
                     <button class="strategy-step-complete-btn" onclick="completeStrategyStep('alternative_paths')">Mark as reviewed</button>
                 </div>
             `;
@@ -12047,49 +12042,49 @@ Thanks so much!
             if (status.includes('applied') || status === 'networking') {
                 return {
                     action: `Know anyone at ${company}?`,
-                    reason: `<a href="/outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Network & Outreach →</a>`
+                    reason: `<a href="outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Network & Outreach →</a>`
                 };
             } else if (status.includes('recruiter') || status.includes('screen')) {
                 return {
                     action: 'Nail your intro sell',
-                    reason: `<a href="/practice-intro?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Practice 60-sec opener →</a>`
+                    reason: `<a href="practice-intro?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Practice 60-sec opener →</a>`
                 };
             } else if (status.includes('hiring manager')) {
                 return {
                     action: 'Prep for Hiring Manager',
-                    reason: `<a href="/prep-guide?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Prep Guide →</a>`
+                    reason: `<a href="prep-guide?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review Prep Guide →</a>`
                 };
             } else if (status.includes('technical')) {
                 return {
                     action: 'Technical prep time',
-                    reason: `<a href="/practice-drills?type=strategy&appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Run Strategy Drills →</a>`
+                    reason: `<a href="practice-drills?type=strategy&appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Run Strategy Drills →</a>`
                 };
             } else if (status.includes('panel')) {
                 return {
                     action: 'Panel interview prep',
-                    reason: `<a href="/interview-intelligence" class="next-action-link" onclick="event.stopPropagation()">Add interviewers for intel →</a>`
+                    reason: `<a href="interview-intelligence" class="next-action-link" onclick="event.stopPropagation()">Add interviewers for intel →</a>`
                 };
             } else if (status.includes('final') || status.includes('executive')) {
                 return {
                     action: 'Final round prep',
-                    reason: `<a href="/story-bank" class="next-action-link" onclick="event.stopPropagation()">Review your best stories →</a>`
+                    reason: `<a href="story-bank" class="next-action-link" onclick="event.stopPropagation()">Review your best stories →</a>`
                 };
             } else if (status.includes('offer') || status.includes('negotiat')) {
                 return {
                     action: 'Negotiation time',
-                    reason: `<a href="/positioning?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review your leverage →</a>`
+                    reason: `<a href="positioning?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Review your leverage →</a>`
                 };
             } else if (status.includes('awaiting')) {
                 return {
                     action: 'Time to follow up',
-                    reason: `<a href="/outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Draft follow-up message →</a>`
+                    reason: `<a href="outreach?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">Draft follow-up message →</a>`
                 };
             }
 
             // Default fallback
             return {
                 action: 'Review your strategy',
-                reason: `<a href="/overview?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">View full analysis →</a>`
+                reason: `<a href="overview?appId=${app.id}" class="next-action-link" onclick="event.stopPropagation()">View full analysis →</a>`
             };
         }
 
@@ -13969,7 +13964,7 @@ Thanks so much!
             }
 
             closeReconsiderModal();
-            window.location.href = '/results';
+            window.location.href = 'results';
         }
 
         /**
@@ -13994,7 +13989,7 @@ Thanks so much!
             }
 
             closeReconsiderModal();
-            window.location.href = '/analyze?reconsider=true';
+            window.location.href = 'analyze?reconsider=true';
         }
 
         // Set up reconsider modal event listeners

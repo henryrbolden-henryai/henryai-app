@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interview Prep Guide - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1098,7 +1099,7 @@
     <!-- HEADER -->
     <header>
         <div class="header-container">
-            <a href="/index" class="logo"><em>Henry</em>HQ</a>
+            <a href="index" class="logo"><em>Henry</em>HQ</a>
         </div>
     </header>
 
@@ -1144,7 +1145,7 @@
         <div id="errorState" class="error-state" style="display: none;">
             <div class="icon">⚠️</div>
             <h3>Interview not found</h3>
-            <p>Please <a href="/interview-intelligence">go back</a> and select an interview.</p>
+            <p>Please <a href="interview-intelligence">go back</a> and select an interview.</p>
         </div>
 
         <!-- Prep Guide Content -->
@@ -2130,9 +2131,9 @@
             if (type === 'mock') {
                 startStageMockInterview();
             } else if (type === 'intro') {
-                window.location.href = '/practice-intro';
+                window.location.href = 'practice-intro';
             } else {
-                window.location.href = `/practice-drills?type=${type}`;
+                window.location.href = `practice-drills?type=${type}`;
             }
         }
 
@@ -2145,7 +2146,7 @@
                 type: currentInterview.type,
                 jobDescription: currentInterview.jobDescription
             }));
-            window.location.href = '/mock-interview';
+            window.location.href = 'mock-interview';
         }
 
         // Render past takeaway from a previous interview (if relevant)

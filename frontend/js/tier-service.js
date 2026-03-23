@@ -165,9 +165,9 @@ const TierService = {
                 <div class="upgrade-modal-cta">
                     ${upgradeTo && upgradeTo !== 'preview'
                         ? `<button class="btn btn-primary upgrade-modal-btn" onclick="TierService.startCheckout('${upgradeTo}')">Upgrade to ${this._getTierDisplay(upgradeTo)}</button>`
-                        : `<a href="/pricing" class="btn btn-primary upgrade-modal-btn">View Plans</a>`
+                        : `<a href="pricing" class="btn btn-primary upgrade-modal-btn">View Plans</a>`
                     }
-                    <a href="/pricing" class="btn btn-secondary upgrade-modal-dismiss" style="text-align: center; text-decoration: none;">Compare Plans</a>
+                    <a href="pricing" class="btn btn-secondary upgrade-modal-dismiss" style="text-align: center; text-decoration: none;">Compare Plans</a>
                 </div>
             </div>
         `;
@@ -406,12 +406,12 @@ const TierService = {
         try {
             const user = await HenryAuth.getUser();
             if (!user) {
-                window.location.href = `/login?plan=${tier}&redirect=pricing`;
+                window.location.href = `login?plan=${tier}&redirect=pricing`;
                 return;
             }
 
             // Navigate to embedded checkout page
-            window.location.href = `/checkout?tier=${tier}&billing_period=monthly`;
+            window.location.href = `checkout?tier=${tier}&billing_period=monthly`;
 
         } catch (error) {
             console.error('Checkout error:', error);

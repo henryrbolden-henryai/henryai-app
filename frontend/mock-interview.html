@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mock Interview - HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -432,7 +433,7 @@
 <body>
     <!-- HEADER -->
     <header>
-        <a href="/interview-intelligence" class="logo"><em>Henry</em>HQ</a>
+        <a href="interview-intelligence" class="logo"><em>Henry</em>HQ</a>
         <button class="exit-btn" onclick="exitInterview()">Exit Interview</button>
     </header>
 
@@ -740,7 +741,7 @@
 
                 // Store debrief data and redirect
                 sessionStorage.setItem('debriefData', JSON.stringify(data));
-                window.location.href = '/mock-debrief';
+                window.location.href = 'mock-debrief';
 
             } catch (error) {
                 console.error('Error ending interview:', error);
@@ -916,7 +917,7 @@
                     return;
                 }
             }
-            window.location.href = '/interview-intelligence';
+            window.location.href = 'interview-intelligence';
         }
     </script>
 <script src="components/analytics.js"></script>

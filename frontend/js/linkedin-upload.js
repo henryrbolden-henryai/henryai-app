@@ -813,7 +813,7 @@
                     <p>Your LinkedIn profile was uploaded on ${lastUpdated}.</p>
                     <p style="margin-top: 12px; color: var(--color-text-secondary); font-size: 0.9rem;">
                         Tip: Make sure your LinkedIn headline and summary reflect the role you're applying for.
-                        Visit your <a href="/documents" style="color: var(--color-accent);">Tailored Documents</a> to see optimized LinkedIn sections.
+                        Visit your <a href="documents" style="color: var(--color-accent);">Tailored Documents</a> to see optimized LinkedIn sections.
                     </p>
                 </div>
             `;

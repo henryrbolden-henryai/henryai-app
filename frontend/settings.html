@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Strategic Control | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -811,7 +812,7 @@
 </head>
 <body>
     <div class="page-container">
-        <a href="/dashboard" class="back-link">
+        <a href="dashboard" class="back-link">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
             </svg>
@@ -1062,14 +1063,14 @@
             try {
                 currentUser = await HenryAuth.getUser();
                 if (!currentUser) {
-                    window.location.href = '/login?redirect=settings';
+                    window.location.href = 'login?redirect=settings';
                     return;
                 }
                 SettingsNav.init();
                 await loadAllData();
             } catch (e) {
                 console.error('Init error:', e);
-                window.location.href = '/login?redirect=settings';
+                window.location.href = 'login?redirect=settings';
             }
         })();
 
@@ -1139,7 +1140,7 @@
                     <span class="account-row-label">Member since</span>
                     <span class="account-row-value">${new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
                 </div>
-                <a href="/contact?subject=delete-account" class="account-link delete-link">
+                <a href="contact?subject=delete-account" class="account-link delete-link">
                     <span class="account-link-label">Delete Account</span>
                     ${chevron}
                 </a>
@@ -1256,7 +1257,7 @@
 
             html += '</div><div class="plan-actions">';
             if (isFree && !is_beta_user) {
-                html += '<a href="/pricing" class="btn-primary">Upgrade Plan</a>';
+                html += '<a href="pricing" class="btn-primary">Upgrade Plan</a>';
             } else if (!is_beta_user && subscription_status) {
                 html += '<button onclick="openBillingPortal()" class="btn-secondary">Manage Billing</button>';
             }
@@ -1324,7 +1325,7 @@
             }
 
             if (meterCount === 0) {
-                container.innerHTML = '<div class="form-section"><div class="section-title"><span class="icon">📊</span> Usage This Month</div><div class="usage-empty">No usage tracking on your current plan.<br><a href="/pricing">Upgrade to unlock more features</a></div></div>';
+                container.innerHTML = '<div class="form-section"><div class="section-title"><span class="icon">📊</span> Usage This Month</div><div class="usage-empty">No usage tracking on your current plan.<br><a href="pricing">Upgrade to unlock more features</a></div></div>';
                 return;
             }
 
@@ -1414,7 +1415,7 @@
                 html += '<div class="form-section locked-section" style="position:relative;min-height:120px;">';
                 html += '<div class="section-title"><span class="icon">🏢</span> Industry Focus & Location</div>';
                 html += '<p style="color:var(--color-text-secondary);font-size:0.85rem;">Configure target industries and location preferences...</p>';
-                html += '<div class="locked-overlay"><p>Upgrade to Principal for full strategy controls</p><a href="/pricing" class="btn-primary" style="pointer-events:auto;">View Plans</a></div>';
+                html += '<div class="locked-overlay"><p>Upgrade to Principal for full strategy controls</p><a href="pricing" class="btn-primary" style="pointer-events:auto;">View Plans</a></div>';
                 html += '</div>';
             } else {
                 // Target Role Priority

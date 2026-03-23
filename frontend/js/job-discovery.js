@@ -549,7 +549,7 @@
                 <div class="job-discovery-needs-profile">
                     <p>Upload your resume to see personalized job recommendations.</p>
                     <p class="job-empty-hint">We use your target role, location, and work preferences to find matching jobs.</p>
-                    <a href="/resume" class="job-btn-upload-resume">Upload Resume</a>
+                    <a href="resume" class="job-btn-upload-resume">Upload Resume</a>
                 </div>
             `;
         }
@@ -566,7 +566,7 @@
                 role: title,
                 source: 'job_discovery',
             });
-            window.location.href = `/analyze?${params.toString()}`;
+            window.location.href = `analyze?${params.toString()}`;
         }
 
         /**

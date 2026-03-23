@@ -24,75 +24,75 @@
             {
                 id: 'dashboard',
                 label: 'Dashboard',
-                href: '/dashboard'
+                href: 'dashboard'
             },
             {
                 id: 'tracker',
                 label: 'Command Center',
-                href: '/tracker'
+                href: 'tracker'
             },
             {
                 id: 'interview-intelligence',
                 label: 'Interview Intelligence',
-                href: '/interview-intelligence'
+                href: 'interview-intelligence'
             }
         ],
         // Analysis section - job-specific insights (above Strategy)
         analysisParent: {
             id: 'results',
             label: 'Analysis',
-            href: '/results'
+            href: 'results'
         },
         analysisChildren: [
             {
                 id: 'results',
                 label: 'Job Fit Score',
-                href: '/results'
+                href: 'results'
             },
             {
                 id: 'resume-leveling',
                 label: 'Resume Level Analysis',
-                href: '/resume-leveling'
+                href: 'resume-leveling'
             }
         ],
         // Strategy section - job-specific planning
         parent: {
             id: 'overview',
             label: 'Strategy Overview',
-            href: '/overview'
+            href: 'overview'
         },
         children: [
             {
                 id: 'positioning',
                 label: 'Positioning Strategy',
-                href: '/positioning'
+                href: 'positioning'
             },
             {
                 id: 'documents',
                 label: 'Tailored Documents',
-                href: '/documents'
+                href: 'documents'
             },
             {
                 id: 'document-library',
                 label: 'Document Library',
-                href: '/document-library'
+                href: 'document-library'
             },
             {
                 id: 'linkedin-optimization',
                 label: 'LinkedIn Optimization',
-                href: '/linkedin-optimization'
+                href: 'linkedin-optimization'
             },
             {
                 id: 'outreach',
                 label: 'Network & Outreach',
-                href: '/outreach'
+                href: 'outreach'
             }
         ],
         bottomLevel: [
             {
                 id: 'analyze',
                 label: 'Analyze New Role',
-                href: '/analyze'
+                href: 'analyze'
             }
         ]
     };
@@ -100,7 +100,7 @@
     // Determine current page from URL
     function getCurrentPage() {
         const path = window.location.pathname;
-        const filename = path.split('/').pop() || '/overview';
+        const filename = path.split('/').pop() || 'overview';
         const page = filename.replace('.html', '');
 
         // Map sub-pages to their parent nav item
@@ -724,7 +724,7 @@
                 } else {
                     // Fallback: clear local storage and redirect
                     localStorage.removeItem('userProfile');
-                    window.location.href = '/index';
+                    window.location.href = './';
                 }
             });
         }

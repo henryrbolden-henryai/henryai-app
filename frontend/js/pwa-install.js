@@ -229,7 +229,7 @@
   async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       try {
-        const registration = await navigator.serviceWorker.register('/sw.js');
+        const registration = await navigator.serviceWorker.register('sw.js');
         console.log('[PWA] Service worker registered:', registration.scope);
 
         // Check for updates

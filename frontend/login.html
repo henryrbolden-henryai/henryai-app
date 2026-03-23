@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - HenryHQ</title>
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="HenryHQ">
-    <link rel="apple-touch-icon" href="/assets/icons/icon-192x192.svg">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192x192.svg">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,6 +64,7 @@
             right: 0;
             padding: 16px 24px;
             z-index: 100;
+            background: var(--color-bg);
         }
 
         .top-logo {
@@ -301,17 +303,11 @@
             }
         }
     </style>
-    <!-- Beta Access Gate -->
-    <script>
-        if (localStorage.getItem('beta_verified') !== 'true') {
-            window.location.href = '/beta-access';
-        }
-    </script>
 </head>
 <body>
     <!-- Top left logo -->
     <header class="top-header">
-        <a href="/" class="top-logo"><em>Henry</em>HQ</a>
+        <a href="./" class="top-logo"><em>Henry</em>HQ</a>
     </header>
 
     <div class="login-container">
@@ -417,7 +413,7 @@
             const session = await HenryAuth.getSession();
             if (session) {
                 // Already logged in, redirect
-                const redirect = sessionStorage.getItem('redirectAfterLogin') || '/dashboard';
+                const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard';
                 sessionStorage.removeItem('redirectAfterLogin');
                 window.location.href = redirect;
             }
@@ -487,10 +483,19 @@
             const email = document.getElementById('signinEmail').value;
             const password = document.getElementById('signinPassword').value;
 
-            const { data, error } = await HenryAuth.signIn(email, password);
+            let data, error;
+            try {
+                ({ data, error } = await HenryAuth.signIn(email, password));
+            } catch {
+                showError('Unable to connect. Please check your internet connection and try again.');
+                setLoading('signinBtn', false);
+                return;
+            }
 
             if (error) {
-                showError(error.message);
+                showError(error.message === 'Failed to fetch'
+                    ? 'Unable to connect. Please check your internet connection and try again.'
+                    : error.message);
                 setLoading('signinBtn', false);
                 return;
             }
@@ -502,7 +507,7 @@
             await HenryData.migrateFromLocalStorage();
 
             // Redirect
-            const redirect = sessionStorage.getItem('redirectAfterLogin') || '/dashboard';
+            const redirect = sessionStorage.getItem('redirectAfterLogin') || 'dashboard';
             sessionStorage.removeItem('redirectAfterLogin');
             window.location.href = redirect;
         }
@@ -517,10 +522,19 @@
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
 
-            const { data, error } = await HenryAuth.signUp(email, password, firstName, lastName);
+            let data, error;
+            try {
+                ({ data, error } = await HenryAuth.signUp(email, password, firstName, lastName));
+            } catch {
+                showError('Unable to connect. Please check your internet connection and try again.');
+                setLoading('signupBtn', false);
+                return;
+            }
 
             if (error) {
-                showError(error.message);
+                showError(error.message === 'Failed to fetch'
+                    ? 'Unable to connect. Please check your internet connection and try again.'
+                    : error.message);
                 setLoading('signupBtn', false);
                 return;
             }
@@ -540,7 +554,7 @@
                 localStorage.setItem('signupTimestamp', Date.now().toString());
                 localStorage.setItem('hasSeenWelcome', 'false');
                 localStorage.setItem('hasSeenWelcomeBack', 'false');
-                window.location.href = '/profile-edit';
+                window.location.href = 'profile-edit';
             }
         }
 
@@ -551,12 +565,21 @@
 
             const email = document.getElementById('forgotEmail').value;
 
-            const { data, error } = await HenryAuth.resetPassword(email);
+            let data, error;
+            try {
+                ({ data, error } = await HenryAuth.resetPassword(email));
+            } catch {
+                showError('Unable to connect. Please check your internet connection and try again.');
+                setLoading('forgotBtn', false);
+                return;
+            }
 
             setLoading('forgotBtn', false);
 
             if (error) {
-                showError(error.message);
+                showError(error.message === 'Failed to fetch'
+                    ? 'Unable to connect. Please check your internet connection and try again.'
+                    : error.message);
                 return;
             }
 

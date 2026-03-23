@@ -9,8 +9,14 @@
 
   // Check if on landing page
   function isLandingPage() {
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    return path === '/' || path === '/index.html' || path.endsWith('/index.html') || path === '/professionals' || path === '/professionals/';
+  }
+
+  // Check if on login page (has its own header, skip mobile nav)
+  function isLoginPage() {
     const path = window.location.pathname;
-    return path === '/' || path === '/index.html' || path.endsWith('/index.html');
+    return path === '/login' || path === '/login.html' || path === '/professionals/login' || path === '/professionals/login.html';
   }
 
   // Landing page navigation (matches desktop nav)
@@ -23,23 +29,26 @@
 
   // App navigation (for logged-in users) - matches platform sidebar
   const appNavItems = [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Job Fit Score', href: '/results' },
-    { label: 'Resume Level Analysis', href: '/resume-leveling' }
+    { label: 'Dashboard', href: 'dashboard' },
+    { label: 'Job Fit Score', href: 'results' },
+    { label: 'Resume Level Analysis', href: 'resume-leveling' }
   ];
 
   // Strategy Overview section
   const strategyItems = [
-    { label: 'Positioning Strategy', href: '/positioning' },
-    { label: 'Tailored Documents', href: '/documents' },
-    { label: 'Document Library', href: '/document-library' },
-    { label: 'LinkedIn Optimization', href: '/linkedin-optimization' },
-    { label: 'Network & Outreach', href: '/outreach' },
-    { label: 'Interview Intelligence', href: '/interview-prep' },
-    { label: 'Command Center', href: '/tracker' }
+    { label: 'Positioning Strategy', href: 'positioning' },
+    { label: 'Tailored Documents', href: 'documents' },
+    { label: 'Document Library', href: 'document-library' },
+    { label: 'LinkedIn Optimization', href: 'linkedin-optimization' },
+    { label: 'Network & Outreach', href: 'outreach' },
+    { label: 'Interview Intelligence', href: 'interview-prep' },
+    { label: 'Command Center', href: 'tracker' }
   ];
 
   function createMobileNav() {
+    // Login page has its own header — don't add mobile nav
+    if (isLoginPage()) return;
+
     // Create hamburger button
     const hamburger = document.createElement('button');
     hamburger.id = 'mobile-nav-hamburger';
@@ -63,7 +72,7 @@
 
     drawer.innerHTML = onLanding ? `
       <div class="mobile-nav-header">
-        <a href="/" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
+        <a href="./" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
         <button class="mobile-nav-close" aria-label="Close navigation">&times;</button>
       </div>
       <ul class="mobile-nav-links">
@@ -74,11 +83,11 @@
         `).join('')}
       </ul>
       <div class="mobile-nav-footer">
-        <a href="/login" class="mobile-nav-signin">Sign In</a>
+        <a href="login" class="mobile-nav-signin">Sign In</a>
       </div>
     ` : `
       <div class="mobile-nav-header">
-        <a href="/" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
+        <a href="./" class="mobile-nav-logo-text"><em>Henry</em>HQ</a>
         <button class="mobile-nav-close" aria-label="Close navigation">&times;</button>
       </div>
       <div class="mobile-nav-content">
@@ -101,7 +110,7 @@
         </div>
       </div>
       <div class="mobile-nav-footer">
-        <a href="/analyze" class="mobile-nav-cta">Analyze New Role</a>
+        <a href="analyze" class="mobile-nav-cta">Analyze New Role</a>
       </div>
     `;
 

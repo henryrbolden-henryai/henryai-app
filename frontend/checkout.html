@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout | HenryHQ</title>
 
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -283,7 +284,7 @@
 </head>
 <body>
     <div class="page-container">
-        <a href="/pricing" class="back-link">
+        <a href="pricing" class="back-link">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clip-rule="evenodd" />
             </svg>
@@ -422,7 +423,7 @@
 
         // Validate tier
         if (!tier || !TIER_INFO[tier]) {
-            window.location.href = '/pricing';
+            window.location.href = 'pricing';
         }
 
         // Populate order summary
@@ -455,7 +456,7 @@
                 // Auth check
                 const user = await HenryAuth.getUser();
                 if (!user) {
-                    window.location.href = `/login?plan=${tier}&redirect=pricing`;
+                    window.location.href = `login?plan=${tier}&redirect=pricing`;
                     return;
                 }
 
@@ -475,7 +476,7 @@
                     document.getElementById('checkout').innerHTML = `
                         <div class="checkout-error">
                             <p>${error.detail || 'Something went wrong. Please try again.'}</p>
-                            <a href="/pricing" class="btn">Back to Plans</a>
+                            <a href="pricing" class="btn">Back to Plans</a>
                         </div>`;
                     return;
                 }
@@ -497,7 +498,7 @@
                 document.getElementById('checkout').innerHTML = `
                     <div class="checkout-error">
                         <p>Something went wrong loading checkout. Please try again.</p>
-                        <a href="/pricing" class="btn">Back to Plans</a>
+                        <a href="pricing" class="btn">Back to Plans</a>
                     </div>`;
             }
         }

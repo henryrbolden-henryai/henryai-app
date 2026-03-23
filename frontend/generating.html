@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon-192x192.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generating Documents | HenryHQ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -293,7 +294,7 @@
 
         function goBack() {
             // Go back to resume-leveling (user may have skipped strengthen)
-            window.location.href = '/resume-leveling';
+            window.location.href = 'resume-leveling';
         }
 
         function retryGeneration() {
@@ -552,7 +553,7 @@
                 sessionStorage.removeItem('levelingData');
 
                 // Go to Application Strategy Overview
-                window.location.href = '/overview';
+                window.location.href = 'overview';
 
             } catch (error) {
                 clearTimeout(timeoutId);
