@@ -174,7 +174,7 @@ async function generateQuestions() {
 
     } catch (error) {
         console.error('Error generating questions:', error);
-        showError('Failed to generate questions. ' + error.message);
+        showError(error.message);
     }
 }
 
@@ -360,7 +360,7 @@ async function submitAnswers() {
         console.error('Error applying enhancements:', error);
         submitBtn.disabled = false;
         submitBtn.textContent = 'Try Again';
-        showError('Failed to apply enhancements. ' + error.message);
+        showError(error.message);
     }
 }
 
@@ -474,6 +474,12 @@ function showNoIssuesState() {
  * Show error state
  */
 function showError(message) {
+    // Normalize API errors to friendly messages
+    if (message.includes('overloaded') || message.includes('Claude API') || message.includes('500') || message.includes('502') || message.includes('503') || message.includes('529')) {
+        message = "We're having trouble generating results right now. Please try again in a moment.";
+    } else if (message.includes('Failed to fetch')) {
+        message = 'Unable to connect to the server. Please check your connection and try again.';
+    }
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').classList.add('show');
     document.getElementById('errorText').textContent = message;
@@ -483,7 +489,9 @@ function showError(message) {
  * Retry loading
  */
 function retryLoad() {
-    window.location.reload();
+    document.getElementById('errorState').classList.remove('show');
+    document.getElementById('loadingState').style.display = '';
+    init();
 }
 
 /**

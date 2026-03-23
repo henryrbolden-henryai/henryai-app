@@ -215,7 +215,10 @@
 
     <div class="error-message" id="errorMessage">
         <p id="errorText">Something went wrong. Please try again.</p>
-        <button onclick="goBack()">Go Back</button>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="retryAnalysis()" id="retryBtn" style="background: var(--color-accent); color: #000; border: none; font-weight: 600;">Try Again</button>
+            <button onclick="goBack()">Go Back</button>
+        </div>
     </div>
 
     <script>
@@ -251,6 +254,14 @@
             errorMessage.classList.add('show');
             statusText.textContent = 'Analysis failed';
             statusSubtext.textContent = '';
+        }
+
+        function retryAnalysis() {
+            // Reset UI state without reloading
+            errorMessage.classList.remove('show');
+            currentDot = 0;
+            document.querySelectorAll('.progress-dot').forEach(d => d.classList.remove('active'));
+            runAnalysis();
         }
 
         function goBack() {
@@ -399,15 +410,15 @@
                 console.error('Analysis error:', error);
                 fallbackTimers.forEach(t => clearTimeout(t));
 
-                let errorMsg = 'Something went wrong. Please try again.';
+                let errorMsg = "We're having trouble generating results right now. Please try again in a moment.";
                 if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                     errorMsg = 'Unable to connect to the server. Please check your connection and try again.';
-                } else if (error.message && error.message.includes('temporarily busy')) {
-                    errorMsg = error.message;
+                } else if (error.message && (error.message.includes('overloaded') || error.message.includes('temporarily busy') || error.message.includes('529') || error.message.includes('503'))) {
+                    errorMsg = "We're having trouble generating results right now. Please try again in a moment.";
                 } else if (error.message && error.message.includes('Claude API')) {
-                    errorMsg = 'Our AI is temporarily unavailable. Please try again in a moment.';
-                } else if (error.message) {
-                    errorMsg = error.message;
+                    errorMsg = "We're having trouble generating results right now. Please try again in a moment.";
+                } else if (error.message && (error.message.includes('500') || error.message.includes('502') || error.message.includes('504'))) {
+                    errorMsg = "We're having trouble generating results right now. Please try again in a moment.";
                 }
 
                 showError(errorMsg);

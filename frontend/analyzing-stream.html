@@ -500,6 +500,12 @@
         }
 
         function showError(message) {
+            // Normalize API error messages to user-friendly text
+            if (message.includes('overloaded') || message.includes('Claude API') || message.includes('500') || message.includes('502') || message.includes('503') || message.includes('529')) {
+                message = "We're having trouble generating results right now. Please try again in a moment.";
+            } else if (message.includes('Failed to fetch')) {
+                message = 'Unable to connect to the server. Please check your connection and try again.';
+            }
             document.getElementById('errorMessage').textContent = message;
             document.getElementById('errorContainer').classList.add('show');
             document.querySelector('.progress-section').style.display = 'none';
@@ -507,7 +513,11 @@
         }
 
         function retryAnalysis() {
-            location.reload();
+            // Reset UI without reloading — keeps session data intact
+            document.getElementById('errorContainer').classList.remove('show');
+            document.querySelector('.progress-section').style.display = '';
+            document.querySelector('.preview-cards').style.display = '';
+            startAnalysis();
         }
     </script>
 </body>
