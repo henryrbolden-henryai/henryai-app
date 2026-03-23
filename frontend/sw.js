@@ -1,18 +1,18 @@
 // HenryHQ Service Worker
 const CACHE_NAME = 'henryhq-v8';
-const OFFLINE_URL = '/offline';
+const OFFLINE_URL = 'offline';
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
-  '/',
-  '/dashboard',
-  '/tracker',
-  '/login',
-  '/offline',
-  '/results',
-  '/resume-leveling',
-  '/assets/henryhq-logo.png',
-  '/css/mobile.css'
+  './',
+  'dashboard',
+  'tracker',
+  'login',
+  'offline',
+  'results',
+  'resume-leveling',
+  'assets/henryhq-logo.png',
+  'css/mobile.css'
 ];
 
 // Install event - precache core assets
