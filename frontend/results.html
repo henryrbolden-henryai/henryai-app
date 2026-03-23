@@ -2141,7 +2141,22 @@
             // R4: CANONICAL DOCUMENT PRESENCE CHECK
             // Block rendering if critical canonical fields are missing
             // =====================================================================
-            const hasRecommendation = data.final_recommendation || data.recommendation;
+            // Derive recommendation from available fields
+            let hasRecommendation = data.final_recommendation || data.recommendation;
+            if (!hasRecommendation && data.intelligence_layer?.apply_decision?.verdict) {
+                hasRecommendation = data.intelligence_layer.apply_decision.verdict;
+                data.recommendation = hasRecommendation;
+            }
+            if (!hasRecommendation && data.apply_decision) {
+                hasRecommendation = typeof data.apply_decision === 'string' ? data.apply_decision : 'Apply';
+                data.recommendation = hasRecommendation;
+            }
+            // Last resort: derive from fit score
+            if (!hasRecommendation && data.fit_score) {
+                hasRecommendation = data.fit_score >= 60 ? 'Apply' : 'Do Not Apply';
+                data.recommendation = hasRecommendation;
+                console.warn('⚠️ Recommendation derived from fit_score:', data.fit_score, '->', hasRecommendation);
+            }
             const hasStrengths = Array.isArray(data.strengths) && data.strengths.length > 0;
             const hasGaps = Array.isArray(data.gaps); // Can be empty but must exist
 
