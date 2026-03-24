@@ -1502,6 +1502,9 @@
 
     // Show page in preview mode
     showPage();
+  } else if (window.location.pathname === '/professionals' || window.location.pathname === '/professionals/') {
+    // /professionals rewrites to index.html but should always show the landing page
+    showPage();
   } else {
     // Normal auth check - redirect logged-in users
     (async function() {
