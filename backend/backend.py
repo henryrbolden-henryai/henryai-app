@@ -21727,152 +21727,23 @@ async def generate_resume_pdf(request: PDFGenerationRequest):
     try:
         import weasyprint
 
-        # Wrap the HTML content with proper document structure and styling
-        full_html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-@page {{
-    size: letter;
-    margin: 0;
-}}
-body {{
-    margin: 0;
-    padding: 0;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 10.5pt;
-    line-height: 1.3;
-    color: #1a1a1a;
-    background: white;
-}}
-/* Page container */
-[class*="document"], .document {{
-    padding: 0.5in 0.75in;
-    box-sizing: border-box;
-}}
-/* Name header */
-h1 {{
-    font-size: 16pt;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-align: center;
-    margin: 0 0 4px;
-    color: #111;
-}}
-/* Subtitles */
-p[class*="subtitle"] {{
-    text-align: center;
-    font-size: 9.5pt;
-    color: #444;
-    margin: 0 0 2px;
-}}
-/* Section titles */
-h2 {{
-    font-size: 10.5pt;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    border-bottom: 1px solid #333;
-    padding-bottom: 3px;
-    margin: 14px 0 6px;
-    color: #111;
-}}
-/* Company names */
-h3 {{
-    font-size: 10.5pt;
-    font-weight: 700;
-    margin: 10px 0 2px;
-    color: #111;
-}}
-/* Paragraphs */
-p {{
-    margin: 0 0 2px;
-    font-size: 10pt;
-    color: #333;
-    line-height: 1.3;
-}}
-/* Bullets */
-ul {{
-    margin: 3px 0 0;
-    padding-left: 16px;
-    list-style-type: disc;
-}}
-ul li {{
-    margin-bottom: 2px;
-    font-size: 10pt;
-    line-height: 1.3;
-    color: #333;
-}}
-/* Competencies grid */
-[class*="competencies"] {{
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px 16px;
-    margin: 4px 0 0;
-}}
-[class*="competencyItem"] {{
-    font-size: 9.5pt;
-    color: #333;
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-}}
-[class*="compBullet"] {{
-    color: #555;
-    font-size: 8pt;
-    flex-shrink: 0;
-}}
-/* Bullet list items: keep together, no orphaned bullets */
-ul li {{
-    break-inside: avoid;
-    page-break-inside: avoid;
-}}
-/* Job blocks: keep company + bullets together */
-h3 {{
-    break-after: avoid;
-    page-break-after: avoid;
-}}
-/* Hide edit controls in PDF */
-[class*="bulletControls"] {{
-    display: none !important;
-}}
-[class*="editable"]:hover,
-[class*="editable"]:focus {{
-    outline: none;
-    background: none;
-}}
-/* Hide page labels and page count */
-[class*="pageLabel"], [class*="pageCount"], [class*="pageCountWarning"] {{
-    display: none !important;
-}}
-/* Page breaks between page cards */
-[class*="pageWrapper"] + [class*="pageWrapper"] [class*="document"] {{
-    page-break-before: always;
-}}
-/* Hide page labels and counts */
-[class*="pageLabel"],
-[class*="pageCount"] {{
-    display: none;
-}}
-</style>
-</head>
-<body>
-{request.html}
-</body>
-</html>"""
+        # WYSIWYG: The frontend sends the exact preview HTML with all styles.
+        # We pass it directly to WeasyPrint. No rebuilding, no templating.
+        html_content = request.html
 
-        # Generate PDF
-        pdf_doc = weasyprint.HTML(string=full_html).write_pdf()
+        # Fix encoding issues (corrupted characters like Bar-Raising)
+        html_content = html_content.encode("utf-8", "ignore").decode("utf-8")
+        html_content = html_content.replace('\ufffd', '-')  # replacement character
+        html_content = html_content.replace('\u00ad', '-')  # soft hyphen
 
-        filename = request.filename or "Resume"
-        safe_filename = filename.replace(" ", "_")
+        # Generate PDF from the exact preview HTML
+        pdf_doc = weasyprint.HTML(string=html_content).write_pdf()
 
         return StreamingResponse(
             io.BytesIO(pdf_doc),
             media_type="application/pdf",
             headers={
-                "Content-Disposition": f'attachment; filename="{safe_filename}.pdf"'
+                "Content-Disposition": 'attachment; filename="resume.pdf"'
             }
         )
 
