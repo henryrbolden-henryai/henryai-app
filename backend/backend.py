@@ -5596,19 +5596,33 @@ Example: "Overhauled candidate experience program using data-driven NPS tracking
 
 **BULLET LENGTH:** Each bullet should be 1-2 lines max (~15-25 words). Cut filler ruthlessly.
 
-=== 8. SELF-VERIFICATION CHECKLIST ===
+=== 8. PAGE LENGTH CONSTRAINT (MANDATORY) ===
+
+The final resume MUST NOT exceed 2 pages. This is a hard limit. To stay within 2 pages:
+- Summary: 3 sentences max (50-70 words)
+- Core Competencies: 6-9 terms in 3-column format (3 rows max)
+- Experience: Include only the 4 most relevant roles. For roles older than 10 years or not relevant to the JD, use 1-2 bullets max or omit entirely.
+- Recent roles (last 5 years): 4-5 bullets max
+- Older roles (5-10 years): 2-3 bullets max
+- Roles older than 10 years: 1-2 bullets or title/company/dates only
+- Skills: single line, pipe-separated
+- Education: single line
+- Total resume text should be approximately 500-650 words. If your draft exceeds this, cut the least JD-relevant bullets from older roles first.
+
+=== 9. SELF-VERIFICATION CHECKLIST ===
 
 Before returning your response, verify ALL of these:
-1. Every Tier 1 keyword appears at least twice across the resume
-2. No bullet starts with "Responsible for", "Helped", "Assisted", "Participated", "Worked on", or "Managed day-to-day"
-3. Summary contains at least one specific metric AND one scope indicator (team size, budget, revenue, geography)
-4. First bullet of each role is the single strongest JD-aligned accomplishment
-5. Every bullet contains at least one metric (number, percentage, dollar amount, or timeframe)
-6. Core Competencies section has 6-9 terms using exact JD phrasing
-7. No bullet exceeds ~25 words
-8. Summary passes the 10-second test: a stranger reading only the summary would know exactly what this person does and why they're qualified for THIS role
+1. The resume fits within 2 pages (approximately 500-650 words of content)
+2. Every Tier 1 keyword appears at least twice across the resume
+3. No bullet starts with "Responsible for", "Helped", "Assisted", "Participated", "Worked on", or "Managed day-to-day"
+4. Summary contains at least one specific metric AND one scope indicator (team size, budget, revenue, geography)
+5. First bullet of each role is the single strongest JD-aligned accomplishment
+6. Every bullet contains at least one metric (number, percentage, dollar amount, or timeframe)
+7. Core Competencies section has 6-9 terms using exact JD phrasing
+8. No bullet exceeds ~25 words
+9. Summary passes the 10-second test: a stranger reading only the summary would know exactly what this person does and why they're qualified for THIS role
 
-=== 9. OUTPUT FORMAT ===
+=== 10. OUTPUT FORMAT ===
 
 Return a JSON object with this EXACT structure:
 
@@ -6041,6 +6055,9 @@ def detect_career_gap(resume_data: Dict) -> Optional[Dict]:
     Calculate career gap from resume dates (post-processing, not prompt-based).
     Returns gap details if gap >= 3 months, None otherwise.
     """
+    if not resume_data:
+        return None
+
     from dateutil import parser as date_parser
 
     # Get most recent role end date
@@ -6132,6 +6149,10 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
     Returns:
         Modified response_data with corrected fit_score and recommendation
     """
+    # Null guard: if no resume data, skip all experience penalties
+    if not resume_data:
+        return response_data
+
     import uuid
 
     # =========================================================================
@@ -21686,6 +21707,166 @@ class CanonicalDownloadRequest(BaseModel):
     canonical_document: Dict[str, Any]
     document_type: str = "resume"  # "resume" or "cover_letter"
     expected_hash: Optional[str] = None  # For integrity verification
+
+
+class PDFGenerationRequest(BaseModel):
+    html: str
+    filename: Optional[str] = "Resume"
+    candidate_name: Optional[str] = ""
+    company_name: Optional[str] = ""
+    role_title: Optional[str] = ""
+
+
+@app.post("/api/resume/pdf")
+async def generate_resume_pdf(request: PDFGenerationRequest):
+    """
+    Generate a PDF from HTML content using WeasyPrint.
+    The HTML should be the exact resume preview content from the frontend.
+    This ensures WYSIWYG: what the candidate sees in the preview is what they download.
+    """
+    try:
+        import weasyprint
+
+        # Wrap the HTML content with proper document structure and styling
+        full_html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@page {{
+    size: letter;
+    margin: 0;
+}}
+body {{
+    margin: 0;
+    padding: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 10.5pt;
+    line-height: 1.3;
+    color: #1a1a1a;
+    background: white;
+}}
+/* Page container */
+[class*="document"], .document {{
+    padding: 0.5in 0.75in;
+    box-sizing: border-box;
+}}
+/* Name header */
+h1 {{
+    font-size: 16pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: center;
+    margin: 0 0 4px;
+    color: #111;
+}}
+/* Subtitles */
+p[class*="subtitle"] {{
+    text-align: center;
+    font-size: 9.5pt;
+    color: #444;
+    margin: 0 0 2px;
+}}
+/* Section titles */
+h2 {{
+    font-size: 10.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid #333;
+    padding-bottom: 3px;
+    margin: 14px 0 6px;
+    color: #111;
+}}
+/* Company names */
+h3 {{
+    font-size: 10.5pt;
+    font-weight: 700;
+    margin: 10px 0 2px;
+    color: #111;
+}}
+/* Paragraphs */
+p {{
+    margin: 0 0 2px;
+    font-size: 10pt;
+    color: #333;
+    line-height: 1.3;
+}}
+/* Bullets */
+ul {{
+    margin: 3px 0 0;
+    padding-left: 16px;
+    list-style-type: disc;
+}}
+ul li {{
+    margin-bottom: 2px;
+    font-size: 10pt;
+    line-height: 1.3;
+    color: #333;
+}}
+/* Competencies grid */
+[class*="competencies"] {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px 12px;
+    margin: 3px 0 0;
+}}
+[class*="competencyItem"] {{
+    font-size: 9.5pt;
+    color: #333;
+}}
+[class*="compBullet"] {{
+    color: #555;
+    font-size: 8pt;
+    margin-right: 4px;
+}}
+/* Hide edit controls in PDF */
+[class*="bulletControls"] {{
+    display: none !important;
+}}
+[class*="editable"]:hover,
+[class*="editable"]:focus {{
+    outline: none;
+    background: none;
+}}
+/* Page breaks between page cards */
+[class*="pageWrapper"] + [class*="pageWrapper"] [class*="document"] {{
+    page-break-before: always;
+}}
+/* Hide page labels and counts */
+[class*="pageLabel"],
+[class*="pageCount"] {{
+    display: none;
+}}
+</style>
+</head>
+<body>
+{request.html}
+</body>
+</html>"""
+
+        # Generate PDF
+        pdf_doc = weasyprint.HTML(string=full_html).write_pdf()
+
+        filename = request.filename or "Resume"
+        safe_filename = filename.replace(" ", "_")
+
+        return StreamingResponse(
+            io.BytesIO(pdf_doc),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_filename}.pdf"'
+            }
+        )
+
+    except ImportError:
+        raise HTTPException(
+            status_code=501,
+            detail="PDF generation is not available. WeasyPrint is not installed."
+        )
+    except Exception as e:
+        logger.error(f"PDF generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
 
 @app.post("/api/download/canonical")

@@ -35,5 +35,8 @@ supabase>=2.0.0
 # Payments
 stripe>=8.0.0
 
+# PDF Generation
+weasyprint>=62.0
+
 # Optional: Email (for future implementation)
 # aiosmtplib>=2.0.0
