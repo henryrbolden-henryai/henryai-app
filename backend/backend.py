@@ -21808,17 +21808,30 @@ ul li {{
 [class*="competencies"] {{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 3px 12px;
-    margin: 3px 0 0;
+    gap: 4px 16px;
+    margin: 4px 0 0;
 }}
 [class*="competencyItem"] {{
     font-size: 9.5pt;
     color: #333;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
 }}
 [class*="compBullet"] {{
     color: #555;
     font-size: 8pt;
-    margin-right: 4px;
+    flex-shrink: 0;
+}}
+/* Bullet list items: keep together, no orphaned bullets */
+ul li {{
+    break-inside: avoid;
+    page-break-inside: avoid;
+}}
+/* Job blocks: keep company + bullets together */
+h3 {{
+    break-after: avoid;
+    page-break-after: avoid;
 }}
 /* Hide edit controls in PDF */
 [class*="bulletControls"] {{
@@ -21828,6 +21841,10 @@ ul li {{
 [class*="editable"]:focus {{
     outline: none;
     background: none;
+}}
+/* Hide page labels and page count */
+[class*="pageLabel"], [class*="pageCount"], [class*="pageCountWarning"] {{
+    display: none !important;
 }}
 /* Page breaks between page cards */
 [class*="pageWrapper"] + [class*="pageWrapper"] [class*="document"] {{
