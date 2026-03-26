@@ -379,6 +379,33 @@ def score_to_decision(fit_score: int) -> dict:
     return {"decision": decision, "color": color, "risk_level": risk_level}
 
 
+def is_valid_company_name(name: str) -> bool:
+    """Reject obviously invalid company names that waste company intel lookups."""
+    if not name or not name.strip():
+        return False
+    name_lower = name.strip().lower()
+    # Known bad values
+    skip_list = [
+        "unknown", "unknown company", "company", "the company",
+        "our company", "the organization", "organization",
+    ]
+    if name_lower in skip_list:
+        return False
+    # Too short (single char) or too long (sentence fragment)
+    if len(name.strip()) < 2 or len(name.strip()) > 60:
+        return False
+    # Sentence fragments: contains common sentence words that real company names don't
+    sentence_words = ["this ", "that ", "these ", "those ", "will ", "would ", "should ",
+                      "could ", "must ", "shall ", "is responsible", "we are", "you will",
+                      "the role", "the position", "looking for", "seeking a"]
+    if any(w in name_lower for w in sentence_words):
+        return False
+    # Must start with a capital letter or number (real company names do)
+    if not name.strip()[0].isupper() and not name.strip()[0].isdigit():
+        return False
+    return True
+
+
 # =============================================================================
 # RESUME ANALYSIS CACHE
 # Per P0 spec: Prevent repeated LLM calls for the same resume
@@ -15139,7 +15166,7 @@ Role: {body.role_title}
     # ========================================================================
     company_intel_task = None
     company_name_for_intel = body.company or ""
-    if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED and company_name_for_intel and company_name_for_intel.lower() not in ("unknown", "unknown company", "company"):
+    if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED and is_valid_company_name(company_name_for_intel):
         print(f"🚀 [{analysis_id}] Starting company intel fetch in parallel for: {company_name_for_intel}")
         company_intel_task = asyncio.create_task(
             asyncio.to_thread(get_company_intelligence, company_name_for_intel)
@@ -15260,11 +15287,14 @@ Role: {body.role_title}
         if "job_description" not in parsed_data and body.job_description:
             parsed_data["job_description"] = body.job_description
 
-        # Company: User input takes precedence over Claude's extraction
-        if body.company:
+        # Company: User input takes precedence over Claude's extraction, but only if valid
+        if body.company and is_valid_company_name(body.company):
             if parsed_data.get("company") != body.company:
                 print(f"📋 [{analysis_id}] Overriding company: '{parsed_data.get('company')}' → '{body.company}' (user provided)")
             parsed_data["company"] = body.company
+        elif body.company:
+            print(f"📋 [{analysis_id}] Ignoring invalid company from frontend: '{body.company}' - keeping Claude's extraction: '{parsed_data.get('company', 'None')}'")
+
 
         # Role title: User input takes precedence over Claude's extraction
         # But ONLY if the user input is not a placeholder value like "Role"
@@ -15613,7 +15643,7 @@ Role: {body.role_title}
             elif COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 # Fallback: company name wasn't available upfront but was extracted by Claude
                 company_name = parsed_data.get("company", "")
-                if company_name and company_name.lower() not in ("unknown", "unknown company", "company"):
+                if is_valid_company_name(company_name):
                     try:
                         print(f"🔍 Fetching company intelligence (fallback): {company_name}")
                         intel_result = await asyncio.to_thread(get_company_intelligence, company_name)
@@ -15916,8 +15946,10 @@ Role: {body.role_title}
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and body.job_description:
                 parsed_data["job_description"] = body.job_description
-            if body.company:
+            if body.company and is_valid_company_name(body.company):
                 parsed_data["company"] = body.company
+            elif body.company:
+                print(f"⚠️ Ignoring invalid company from frontend: '{body.company}' - keeping Claude's extraction: '{parsed_data.get('company', 'None')}'")
             # Role title: prefer backend extraction over frontend-supplied value
             extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
             if extracted_title and extracted_title != "Unknown Role":
@@ -16432,8 +16464,10 @@ Role: {body.role_title}
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
             if "job_description" not in parsed_data and body.job_description:
                 parsed_data["job_description"] = body.job_description
-            if body.company:
+            if body.company and is_valid_company_name(body.company):
                 parsed_data["company"] = body.company
+            elif body.company:
+                print(f"⚠️ [Stream] Ignoring invalid company from frontend: '{body.company}' - keeping Claude's extraction: '{parsed_data.get('company', 'None')}'")
             # Role title: prefer backend extraction over frontend-supplied value
             extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
             if extracted_title and extracted_title != "Unknown Role":
@@ -16464,7 +16498,7 @@ Role: {body.role_title}
             print(f"   body.company='{body.company}', parsed_data.company='{parsed_data.get('company', '')}'")
             if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 company_name = body.company or parsed_data.get("company", "")
-                if company_name and company_name.lower() not in ("unknown", "unknown company", "company", ""):
+                if is_valid_company_name(company_name):
                     try:
                         print(f"🔍 [Stream] Fetching company intelligence for: {company_name}")
                         intel_result = get_company_intelligence(company_name)
