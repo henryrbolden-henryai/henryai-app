@@ -15918,11 +15918,14 @@ Role: {body.role_title}
                 parsed_data["job_description"] = body.job_description
             if body.company:
                 parsed_data["company"] = body.company
-            # Role title: only override with non-placeholder values
-            if body.role_title:
+            # Role title: prefer backend extraction over frontend-supplied value
+            extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
+            if extracted_title and extracted_title != "Unknown Role":
+                parsed_data["role_title"] = extracted_title
+            elif body.role_title:
                 user_role = body.role_title.strip()
-                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
-                if not is_placeholder:
+                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', 'about', '']
+                if not is_placeholder and not user_role.lower().startswith('about '):
                     parsed_data["role_title"] = user_role
 
             # Continue with penalty enforcement
@@ -16431,11 +16434,14 @@ Role: {body.role_title}
                 parsed_data["job_description"] = body.job_description
             if body.company:
                 parsed_data["company"] = body.company
-            # Role title: only override with non-placeholder values
-            if body.role_title:
+            # Role title: prefer backend extraction over frontend-supplied value
+            extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
+            if extracted_title and extracted_title != "Unknown Role":
+                parsed_data["role_title"] = extracted_title
+            elif body.role_title:
                 user_role = body.role_title.strip()
-                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', '']
-                if not is_placeholder:
+                is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', 'about', '']
+                if not is_placeholder and not user_role.lower().startswith('about '):
                     parsed_data["role_title"] = user_role
 
             # Apply experience penalties
