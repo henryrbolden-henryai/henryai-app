@@ -11366,6 +11366,8 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 # Pattern: "The [Role Title] will..." or "[Role Title] is responsible..."
                 # Note: We strip "The " prefix after extraction if present
                 role_extraction_patterns = [
+                    # "The Senior Director, Talent Acquisition will set the vision..."
+                    r'^(?:The\s+)?([A-Z][A-Za-z\s,&/]+?)(?:\s+will\s|\s+is\s+responsible|\s+leads\s|\s+manages\s|\s+reports\s+to)',
                     r'^(?:The\s+)?([A-Z][A-Za-z\s,]+?(?:Director|Manager|Lead|Head|VP|Vice President|Engineer|Recruiter|Analyst|Specialist|Coordinator|Chief|Officer)(?:\s+of\s+[A-Za-z\s]+)?)(?:\s+will|\s+is\s+responsible|\s+leads|\s+manages|\s+at\s+|\s+reports)',
                     r'^(?:The\s+)?([A-Z][A-Za-z\s,]+?(?:of\s+)?(?:Recruiting|Engineering|Product|Sales|Marketing|Operations|HR|Finance|Data|Analytics)[A-Za-z\s,]*?)(?:\s+will|\s+is\s+responsible|\s+leads|\s+manages)',
                     r'^(?:The\s+)?([A-Z][A-Za-z\s]+?)(?:\s+will\s+lead|\s+will\s+be\s+responsible)',
@@ -11377,7 +11379,8 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                         # Clean up leading "The" if captured (shouldn't be, but just in case)
                         if extracted_role.lower().startswith('the '):
                             extracted_role = extracted_role[4:].strip()
-                        # Clean up trailing articles/prepositions
+                        # Clean up trailing commas, articles, prepositions
+                        extracted_role = extracted_role.rstrip(',').strip()
                         extracted_role = re.sub(r'\s+(a|an|the|and|or|for|to|with)$', '', extracted_role, flags=re.IGNORECASE).strip()
                         if 5 < len(extracted_role) < 60:
                             print(f"  ✅ Extracted role from sentence: '{extracted_role}' (from line: '{line[:60]}...')")
