@@ -15143,7 +15143,7 @@ Role: {body.role_title}
     # ========================================================================
     company_intel_task = None
     company_name_for_intel = body.company or ""
-    if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED and company_name_for_intel:
+    if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED and company_name_for_intel and company_name_for_intel.lower() not in ("unknown", "unknown company", "company"):
         print(f"🚀 [{analysis_id}] Starting company intel fetch in parallel for: {company_name_for_intel}")
         company_intel_task = asyncio.create_task(
             asyncio.to_thread(get_company_intelligence, company_name_for_intel)
@@ -15617,7 +15617,7 @@ Role: {body.role_title}
             elif COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 # Fallback: company name wasn't available upfront but was extracted by Claude
                 company_name = parsed_data.get("company", "")
-                if company_name:
+                if company_name and company_name.lower() not in ("unknown", "unknown company", "company"):
                     try:
                         print(f"🔍 Fetching company intelligence (fallback): {company_name}")
                         intel_result = await asyncio.to_thread(get_company_intelligence, company_name)
@@ -16453,7 +16453,7 @@ Role: {body.role_title}
             print(f"   body.company='{body.company}', parsed_data.company='{parsed_data.get('company', '')}'")
             if COMPANY_INTEL_AVAILABLE and COMPANY_INTEL_ENABLED:
                 company_name = body.company or parsed_data.get("company", "")
-                if company_name:
+                if company_name and company_name.lower() not in ("unknown", "unknown company", "company", ""):
                     try:
                         print(f"🔍 [Stream] Fetching company intelligence for: {company_name}")
                         intel_result = get_company_intelligence(company_name)
