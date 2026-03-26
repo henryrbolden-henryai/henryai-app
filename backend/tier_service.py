@@ -28,6 +28,8 @@ from tier_config import (
 class TierService:
     """Service for managing user tiers and usage limits."""
 
+    _usage_table_missing = False  # Cache: stop hitting Supabase if table doesn't exist
+
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client
 
@@ -112,8 +114,21 @@ class TierService:
         else:
             return {'allowed': False, 'limited': False, 'upgrade_to': get_unlock_tier(feature_name)}
 
+    _DEFAULT_USAGE = {
+        'applications_used': 0,
+        'resumes_generated': 0,
+        'cover_letters_generated': 0,
+        'henry_conversations_used': 0,
+        'mock_interviews_used': 0,
+        'coaching_sessions_used': 0,
+    }
+
     async def get_or_create_current_usage(self, user_id: str) -> Dict[str, Any]:
         """Get or create usage tracking for current billing period."""
+        # If we already know the table doesn't exist, return defaults immediately
+        if TierService._usage_table_missing:
+            return {'user_id': user_id, **self._DEFAULT_USAGE}
+
         now = datetime.utcnow()
         period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -131,8 +146,12 @@ class TierService:
                 'period_start', period_start.isoformat()
             ).single().execute()
             return response.data
-        except Exception:
-            pass
+        except Exception as e:
+            # Detect table-not-found (404) and cache it
+            if '404' in str(e) or 'Not Found' in str(e):
+                TierService._usage_table_missing = True
+                print("⚠️ usage_tracking table not found in Supabase - returning defaults (run migration to fix)")
+                return {'user_id': user_id, **self._DEFAULT_USAGE}
 
         # Create new record
         try:
@@ -142,24 +161,13 @@ class TierService:
                 'period_end': period_end.isoformat(),
             }).execute()
             return response.data[0] if response.data else {
-                'user_id': user_id,
-                'applications_used': 0,
-                'resumes_generated': 0,
-                'cover_letters_generated': 0,
-                'henry_conversations_used': 0,
-                'mock_interviews_used': 0,
-                'coaching_sessions_used': 0,
+                'user_id': user_id, **self._DEFAULT_USAGE
             }
-        except Exception:
-            return {
-                'user_id': user_id,
-                'applications_used': 0,
-                'resumes_generated': 0,
-                'cover_letters_generated': 0,
-                'henry_conversations_used': 0,
-                'mock_interviews_used': 0,
-                'coaching_sessions_used': 0,
-            }
+        except Exception as e:
+            if '404' in str(e) or 'Not Found' in str(e):
+                TierService._usage_table_missing = True
+                print("⚠️ usage_tracking table not found in Supabase - returning defaults (run migration to fix)")
+            return {'user_id': user_id, **self._DEFAULT_USAGE}
 
     async def check_usage_limit(self, user_id: str, tier: str, usage_type: str) -> Dict[str, Any]:
         """
@@ -203,6 +211,8 @@ class TierService:
 
     async def increment_usage(self, user_id: str, usage_type: str) -> None:
         """Increment usage counter for the current billing period."""
+        if TierService._usage_table_missing:
+            return
         usage = await self.get_or_create_current_usage(user_id)
 
         # Map usage type to field name

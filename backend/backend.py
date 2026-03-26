@@ -16298,7 +16298,48 @@ Examples:
 
 Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
 
-[REST OF SYSTEM PROMPT - SAME AS REGULAR ENDPOINT]
+=== REALITY_CHECK JSON SCHEMA ===
+
+The reality_check object in your JSON response MUST include these fields:
+
+"reality_check": {
+    "brutal_truth": "One sentence that lands. The hard truth that changes behavior.",
+    "referral_requirement": "REQUIRED|HELPS|OPTIONAL",
+    "candidate_position": "Where candidate sits in the pile relative to competition.",
+    "expected_applicants": "300-500+",
+    "response_rate": "3-5%",
+    "what_this_means": "The consequence of the numbers. What the candidate should expect.",
+    "why_still_viable": "OPTIONAL. Only if fit >= 55%. Ties back to specific credential. Max 80 chars.",
+    "strategic_action": "",
+    "function_context": "Market context for this function/industry.",
+    "applicant_calculation": "Show your work: base * multipliers."
+}
+
+REALITY_CHECK RULES (MANDATORY):
+
+Reality Check is where Henry grabs the candidate by the shoulders and says "Here's the truth."
+It must CHANGE BEHAVIOR, not just display stats.
+
+1. brutal_truth (REQUIRED, max 100 chars): One sentence that lands. No hedging.
+   GOOD: "Without a referral, this application is statistically noise."
+   GOOD: "You're competing against internal transfers who already have the job."
+   BAD: "This is a competitive role." (obvious, no punch)
+
+2. referral_requirement (REQUIRED, enum):
+   REQUIRED = Cold apply is noise. Must have internal connection.
+   HELPS = Cold apply possible but referral significantly improves odds.
+   OPTIONAL = Company processes cold applications fairly.
+
+3. candidate_position (REQUIRED, max 120 chars): Where they sit in the pile. Be specific.
+   GOOD: "Top 10% on paper. But 40% of hires come from internal mobility."
+   GOOD: "Strong on skills, weak on pedigree. Referral would move you to top 20%."
+   BAD: "You have relevant experience." (doesn't position)
+
+4. what_this_means (REQUIRED, max 150 chars): The consequence without action.
+   GOOD: "At 3% response rate, you need 30+ applications to get one screen. A referral changes that to 1."
+   BAD: "You should apply." (not a consequence)
+
+=== END REALITY_CHECK RULES ===
 
 ABSOLUTE REQUIREMENTS:
 1. Intelligence Layer MUST be complete - NO empty strings, NO empty required arrays
@@ -16311,7 +16352,7 @@ ABSOLUTE REQUIREMENTS:
 8. MUST include complete interview_prep and outreach objects
 9. MUST include changes_summary with specific rationale for resume and cover letter tailoring
 10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
-11. MUST include reality_check with calculated applicant estimates, function context, and strategic action
+11. MUST include reality_check with brutal_truth, candidate_position, what_this_means, applicant estimates, and function context
 12. reality_check.applicant_calculation must show your work (all multipliers used)
 13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
 
