@@ -350,6 +350,36 @@ def calculate_fit_score_llm(
 
 
 # =============================================================================
+# DETERMINISTIC DECISION MODEL
+# Score is the single source of truth. No AI-generated verdicts.
+# =============================================================================
+
+def score_to_decision(fit_score: int) -> dict:
+    """Map fit score to deterministic decision, color, and risk level."""
+    if fit_score >= 85:
+        decision, color = "STRONG APPLY", "green"
+    elif fit_score >= 75:
+        decision, color = "APPLY", "green"
+    elif fit_score >= 65:
+        decision, color = "SELECTIVE APPLY", "amber_green"
+    elif fit_score >= 55:
+        decision, color = "APPLY WITH CAUTION", "amber"
+    elif fit_score >= 40:
+        decision, color = "LOW PROBABILITY", "amber_red"
+    else:
+        decision, color = "DO NOT APPLY", "red"
+
+    if fit_score >= 85:
+        risk_level = "Low Risk"
+    elif fit_score >= 65:
+        risk_level = "Moderate Risk"
+    else:
+        risk_level = "High Risk"
+
+    return {"decision": decision, "color": color, "risk_level": risk_level}
+
+
+# =============================================================================
 # RESUME ANALYSIS CACHE
 # Per P0 spec: Prevent repeated LLM calls for the same resume
 # Cache lives for 7 days, refreshes last_used_at on hit
@@ -8075,110 +8105,56 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
 def validate_recommendation_consistency(analysis_data: dict, fit_score: int) -> dict:
     """
-    Ensure recommendation and strategic_action match the fit_score tone.
-    Fixes contradictions like "Skip" recommendation but "strong fit" language.
-
-    RESPECTS LOCKED RECOMMENDATIONS - if recommendation is locked, this function
-    will NOT soften the messaging.
-
-    Args:
-        analysis_data: Parsed response data
-        fit_score: The final capped fit score
-
-    Returns:
-        Modified analysis_data with consistent messaging
+    Set recommendation deterministically from score and fix contradictory language.
+    Uses score_to_decision() as the single source of truth.
     """
-    # Check if recommendation is locked (from hard requirement gate)
-    experience_analysis = analysis_data.get("experience_analysis", {})
-    is_locked = experience_analysis.get("recommendation_locked", False)
-    intelligence_layer = analysis_data.get("intelligence_layer", {})
-    apply_decision = intelligence_layer.get("apply_decision", {})
-    is_locked = is_locked or apply_decision.get("locked", False)
+    deterministic = score_to_decision(fit_score)
+    is_locked = analysis_data.get("recommendation_locked", False)
 
-    recommendation = (analysis_data.get("recommendation") or "").lower()
+    # Set recommendation from score (unless hard-gated)
+    if not is_locked:
+        analysis_data["recommendation"] = deterministic["decision"]
+
+    # Fix strategic_action tone to match score
     reality_check = analysis_data.get("reality_check", {})
-    strategic_action = (reality_check.get("strategic_action") or "").lower() if reality_check else ""
+    if reality_check:
+        strategic_action = (reality_check.get("strategic_action") or "").lower()
+        apply_signals = ["strong fit", "strong match", "excellent match", "prioritize this", "apply immediately"]
+        skip_signals = ["do not apply", "skip", "not recommended", "pass on this"]
 
-    # Check for skip-type recommendations
-    skip_signals = ["skip", "do not apply", "not recommended", "pass on this"]
-    is_skip_recommendation = any(signal in recommendation for signal in skip_signals)
+        decision_lower = deterministic["decision"].lower()
+        is_negative_decision = decision_lower in ("do not apply", "low probability")
+        has_apply_language = any(s in strategic_action for s in apply_signals)
+        has_skip_language = any(s in strategic_action for s in skip_signals)
 
-    # Check for apply-type language that shouldn't appear in skip scenarios
-    apply_signals = ["strong fit", "strong match", "excellent match", "good fit", "great fit",
-                     "well-positioned", "competitive", "prioritize this", "apply immediately"]
-    has_apply_language = any(signal in strategic_action for signal in apply_signals)
+        # Fix contradiction: negative decision but positive language
+        if is_negative_decision and has_apply_language:
+            gaps = analysis_data.get("gaps", [])
+            gap_texts = []
+            for g in gaps[:2]:
+                if isinstance(g, dict):
+                    gap_texts.append(g.get("gap_description") or g.get("description", ""))
+                elif isinstance(g, str):
+                    gap_texts.append(g)
+            gaps_summary = " ".join(gap_texts) if gap_texts else "significant experience gaps exist"
 
-    # Detect contradiction: skip recommendation but apply language
-    if is_skip_recommendation and has_apply_language:
-        print(f"⚠️ CONTRADICTION DETECTED: recommendation={recommendation}, but strategic_action has apply language")
-
-        # Get top gaps for explanation
-        # CRITICAL: Do NOT use candidate names - use second-person voice only
-        gaps = analysis_data.get("gaps", [])
-        gap_descriptions = []
-        for gap in gaps[:2]:
-            if isinstance(gap, dict):
-                gap_descriptions.append(gap.get("gap_description") or gap.get("description", ""))
-            elif isinstance(gap, str):
-                gap_descriptions.append(gap)
-
-        gaps_summary = " ".join(gap_descriptions[:2]) if gap_descriptions else "significant experience gaps exist"
-
-        # Generate a consistent skip message - SECOND PERSON ONLY, no names
-        # LOCKED recommendations get STRONGER messaging - no hedging
-        if is_locked:
-            new_strategic_action = (
-                f"This role is not a fit. {gaps_summary}. "
-                f"Do not apply. Redirect your energy to roles where you meet the core requirements."
-            )
-            print(f"   🔒 Using LOCKED messaging for strategic_action")
-        elif fit_score < 45:
-            new_strategic_action = (
-                f"This role is a significant stretch. {gaps_summary}. "
-                f"Do not apply. Focus on roles aligned with your background where you are competitive."
-            )
-        elif fit_score < 55:
-            new_strategic_action = (
-                f"This is a stretch role. {gaps_summary}. "
-                f"Be strategic about positioning if you decide to pursue it. Consider targeting similar roles at earlier-stage companies."
-            )
-        else:
-            new_strategic_action = (
-                f"This role has addressable gaps. {gaps_summary}. "
-                f"Focus on roles where you're a stronger fit, or network your way in before applying through the ATS."
-            )
-
-        # Update the strategic_action
-        if reality_check:
-            reality_check["strategic_action"] = new_strategic_action
-            analysis_data["reality_check"] = reality_check
-            print(f"✅ Rewrote strategic_action to match {recommendation} recommendation")
-
-    # Also check recommendation_rationale for contradictions
-    rationale = (analysis_data.get("recommendation_rationale") or "").lower()
-    if is_skip_recommendation and any(signal in rationale for signal in apply_signals):
-        print(f"⚠️ Rationale has contradictory apply language for skip recommendation")
-        # The rationale is usually already updated by force_apply_experience_penalties, but double-check
-        if "adjusted" not in rationale.lower():
-            fit_score_int = int(fit_score)
-
-            # LOCKED recommendations get DIRECT messaging - no hedging, no softening
-            if is_locked:
-                tone = "This role is not a fit. You do not meet the core requirements. Do not apply."
-                print(f"   🔒 Using LOCKED messaging for rationale")
-            elif fit_score_int < 45:
-                tone = "This is a significant stretch. Only pursue if you have an inside connection."
-            elif fit_score_int < 55:
-                tone = "This is a stretch role. Be strategic about positioning if you pursue it."
-            elif fit_score_int < 70:
-                tone = "This is a moderate fit with addressable gaps."
-            elif fit_score_int < 85:
-                tone = "This is a good fit worth pursuing."
+            if fit_score < 45:
+                reality_check["strategic_action"] = f"This role is a significant stretch. {gaps_summary}. Focus on roles aligned with your background."
             else:
-                tone = "This is a strong match. Prioritize this application."
+                reality_check["strategic_action"] = f"This is a stretch role. {gaps_summary}. Be strategic about positioning if you pursue it."
+            analysis_data["reality_check"] = reality_check
+            print(f"✅ Fixed contradictory strategic_action for {deterministic['decision']}")
 
-            analysis_data["recommendation_rationale"] = tone
-            print(f"✅ Updated recommendation_rationale to: {tone}")
+        # Fix contradiction: positive decision but skip language
+        elif not is_negative_decision and has_skip_language and not is_locked:
+            if fit_score >= 85:
+                reality_check["strategic_action"] = "This is a strong match. Prioritize this application."
+            elif fit_score >= 75:
+                reality_check["strategic_action"] = "This is a good fit worth pursuing aggressively."
+            elif fit_score >= 65:
+                reality_check["strategic_action"] = "This role has addressable gaps but is worth pursuing with the right positioning."
+            analysis_data["reality_check"] = reality_check
+            print(f"✅ Fixed contradictory strategic_action for {deterministic['decision']}")
 
     return analysis_data
 
@@ -16088,7 +16064,16 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
             "gaps": [{"gap_type": "leadership_experience", "gap_description": gate_reason, "severity": "critical"}],
             "reality_check": {"strategic_action": f"Do not apply. {gate_reason}", "hard_truth": "This role requires people leadership experience you do not have."},
             "experience_analysis": {"eligibility_gate_passed": False, "recommendation_locked": True, "hard_requirement_failure": True, "leadership_hard_gate_failed": True},
-            "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM"
+            "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM",
+            "apply_decision": {
+                "verdict": "DO NOT APPLY",
+                "color": "red",
+                "risk_level": "High Risk",
+                "risk_factors": [gate_reason],
+                "reasoning": f"Do not apply. {gate_reason}",
+                "timing_guidance": "",
+                "source": "deterministic",
+            }
         }
 
         # Wrap in SSE format so the frontend can parse it correctly
@@ -16484,6 +16469,56 @@ Role: {body.role_title}
 
             # Final sanitization: Remove em/en dashes and markdown from text fields
             parsed_data = _final_sanitize_text(parsed_data, analysis_id)
+
+            # =============================================================
+            # DETERMINISTIC DECISION OVERRIDE
+            # Score is the single source of truth. AI reasoning preserved.
+            # =============================================================
+            final_score = parsed_data.get("fit_score", 0)
+            deterministic = score_to_decision(final_score)
+
+            # Preserve AI reasoning
+            ai_reasoning = ""
+            ai_timing = ""
+            existing_ad = parsed_data.get("apply_decision", {})
+            if isinstance(existing_ad, dict):
+                ai_reasoning = existing_ad.get("reasoning", "")
+                ai_timing = existing_ad.get("timing_guidance", "")
+
+            # Extract top risk factors from gaps
+            raw_gaps = parsed_data.get("gaps", [])
+            risk_factors = []
+            for g in raw_gaps[:3]:
+                if isinstance(g, dict):
+                    txt = g.get("gap_text") or g.get("gap") or g.get("description") or g.get("text", "")
+                    if txt:
+                        risk_factors.append(txt)
+                elif isinstance(g, str) and g.strip():
+                    risk_factors.append(g.strip())
+
+            # Hard gate override: locked "Do Not Apply" takes precedence
+            is_locked = parsed_data.get("recommendation_locked", False)
+            if is_locked and str(parsed_data.get("recommendation", "")).lower() in ("do not apply", "skip"):
+                deterministic["decision"] = "DO NOT APPLY"
+                deterministic["color"] = "red"
+                deterministic["risk_level"] = "High Risk"
+
+            # Set canonical apply_decision
+            parsed_data["apply_decision"] = {
+                "verdict": deterministic["decision"],
+                "color": deterministic["color"],
+                "risk_level": deterministic["risk_level"],
+                "risk_factors": risk_factors,
+                "reasoning": ai_reasoning,
+                "timing_guidance": ai_timing,
+                "source": "deterministic",
+            }
+
+            # Update top-level recommendation for backward compat
+            if not is_locked:
+                parsed_data["recommendation"] = deterministic["decision"]
+
+            print(f"🎯 [Stream] Decision: {deterministic['decision']} (score={final_score}, risk={deterministic['risk_level']})")
 
             # Debug: log critical fields before sending complete event
             print(f"✅ [Stream] COMPLETE EVENT - fit_score: {parsed_data.get('fit_score')}, recommendation: {parsed_data.get('recommendation')}, keys: {list(parsed_data.keys())[:15]}")
