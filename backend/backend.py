@@ -6009,7 +6009,7 @@ Remember: NO fabrication, NO generic filler, NO clichés."""
         # =================================================================
         from qa_validation import OutputValidator, ResumeGroundingValidator
 
-        grounding_validator = ResumeGroundingValidator(request.resume)
+        grounding_validator = ResumeGroundingValidator(request.resume_json or {})
         output_validator = OutputValidator(grounding_validator)
         qa_validation_result = output_validator.validate_cover_letter({"content": result.get("cover_letter_text", "")})
 
@@ -11305,6 +11305,16 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
             return True
         return False
 
+    def is_metadata_line(text: str) -> bool:
+        """Check if text is a metadata line (Reports to, Location, etc.) not a role title."""
+        text_lower = text.lower().strip()
+        metadata_prefixes = [
+            'reports to', 'reporting to', 'location:', 'department:',
+            'team:', 'date:', 'posted:', 'salary:', 'compensation:',
+            'type:', 'employment type:', 'experience:', 'seniority:',
+        ]
+        return any(text_lower.startswith(prefix) for prefix in metadata_prefixes)
+
     # Strategy 1: Look for explicit markers (must be at start of line to avoid matching mid-sentence)
     patterns = [
         r'^(?:job title|position title):\s*([^\n]+)',  # Only match "Job Title:" or "Position Title:" at line start
@@ -11367,6 +11377,9 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
             continue
         if is_non_semantic_header(line):
             print(f"  ⏭️  Skipping non-semantic header: '{line}'")
+            continue
+        if is_metadata_line(line):
+            print(f"  ⏭️  Skipping metadata line: '{line}'")
             continue
 
         # If the line is too long (>100 chars), it's likely a sentence - try to extract role from it
