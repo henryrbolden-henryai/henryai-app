@@ -308,14 +308,8 @@ def calculate_fit_score_llm(
             model="claude-3-5-haiku-20241022"  # Cheapest, fastest model
         )
 
-        # Parse JSON response
-        response = response.strip()
-        if response.startswith("```"):
-            response = response.split("```")[1]
-            if response.startswith("json"):
-                response = response[4:]
-            response = response.strip()
-
+        # Parse JSON response - use clean_claude_json to handle text before/after JSON
+        response = clean_claude_json(response)
         parsed = json.loads(response)
 
         # Validate required fields
@@ -5025,13 +5019,8 @@ Your response must be ONLY valid JSON, no additional text."""
         # Call Claude
         response = call_claude(system_prompt, user_message)
         
-        # Parse JSON response
-        if response.strip().startswith("```"):
-            response = response.strip().split("```")[1]
-            if response.startswith("json"):
-                response = response[4:]
-            response = response.strip()
-        
+        # Parse JSON response - use clean_claude_json to handle text before/after JSON
+        response = clean_claude_json(response)
         parsed_data = json.loads(response)
         return parsed_data
         
