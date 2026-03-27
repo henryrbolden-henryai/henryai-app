@@ -16300,6 +16300,8 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
 
     pre_llm_leadership_gate = None
     isolated_role_detection = None
+    extracted_title = ""
+    role_level_info = {}
 
     if jd_text:
         extracted_title = extract_role_title_from_jd(jd_text, analysis_id)
@@ -16653,12 +16655,16 @@ Role: {body.role_title}
 
         try:
             # PHASE 0: Emit early_insight immediately (no LLM needed)
-            early_company = body.company or ""
-            early_role = extracted_title or body.role_title or ""
-            early_seniority = role_level_info.get("role_level", "IC") if isolated_role_detection else "IC"
-            early_function = isolated_role_detection.get("role_type", "") if isolated_role_detection else ""
-            yield f"data: {json.dumps({'type': 'early_insight', 'data': {'role_title': early_role, 'company': early_company, 'seniority': early_seniority, 'function': early_function}})}\n\n"
-            await asyncio.sleep(0)
+            # Wrapped in its own try/except — early_insight is optional, must never crash the stream
+            try:
+                early_company = body.company or ""
+                early_role = extracted_title or body.role_title or ""
+                early_seniority = role_level_info.get("role_level", "IC") if isolated_role_detection else "IC"
+                early_function = isolated_role_detection.get("role_type", "") if isolated_role_detection else ""
+                yield f"data: {json.dumps({'type': 'early_insight', 'data': {'role_title': early_role, 'company': early_company, 'seniority': early_seniority, 'function': early_function}})}\n\n"
+                await asyncio.sleep(0)
+            except Exception as e:
+                print(f"[STREAM] early_insight failed (non-fatal): {e}")
 
             # Stream Claude's response
             for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096, model="claude-opus-4-6"):
