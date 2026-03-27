@@ -15097,52 +15097,69 @@ BANNED PHRASES in your_move:
 Reality Check is where Henry grabs the candidate by the shoulders and says "Here's the truth."
 It must CHANGE BEHAVIOR, not just display stats.
 
-THE THREE REQUIRED FIELDS:
+=== CURRENT MARKET REALITY (2024-2026) - FACTOR THIS INTO ALL REALITY CHECKS ===
 
-1. brutal_truth (REQUIRED - max 100 chars):
-   One sentence that lands. The hard truth. No hedging.
+The job market has fundamentally shifted. You MUST factor these realities into brutal_truth, candidate_position, and what_this_means:
+
+1. MASS LAYOFFS: 400,000+ tech workers laid off in 2023-2024. Every open role now attracts displaced talent from top companies. The candidate is not just competing against active seekers, they are competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
+
+2. EMPLOYER'S MARKET: Companies have leverage. They can be selective, slow, and demanding. Hiring timelines have stretched 2-3x. Ghosting is common even after final rounds. Candidates should expect silence, not responses.
+
+3. AI SCREENING: Most companies now use AI/ATS to filter applications before a human sees them. A strong resume that is not keyword-optimized for the specific role will be filtered out regardless of actual fit. Cold applications go through automated screening that rejects 80-90% before human review.
+
+4. FUNCTION-SPECIFIC IMPACT: Use the layoff data provided to contextualize how hard the candidate's specific function was hit. HR/Recruiting lost 50% of workforce. Engineering lost 10%. This changes the competitive landscape dramatically by function.
+
+5. REFERRAL PREMIUM: In this market, referrals are not just "nice to have." Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
+
+Do NOT sugarcoat the market. The candidate needs to understand what they are walking into so they can strategize accordingly.
+
+=== END MARKET REALITY ===
+
+THE REQUIRED FIELDS:
+
+1. brutal_truth (REQUIRED - max 120 chars):
+   One sentence that lands. The hard truth. No hedging. Factor in the current market.
 
    GOOD EXAMPLES:
-   - "Without a referral, this application is statistically noise."
-   - "You're competing against internal transfers who already have the job."
-   - "Cold applications to Google Growth PM have a 0.3% screen rate."
+   - "In this market, 500+ people with your exact profile will apply. Without a referral, you are noise."
+   - "Post-layoff market: every Head of TA from a top-tier company in your city is competing for this same role."
+   - "AI screening will filter your resume before a human sees it. Keyword optimization is not optional."
    - "This company has a hiring freeze. The posting is aspirational."
 
    BAD EXAMPLES:
-   - "This is a competitive role." (obvious, no punch)
+   - "This is a competitive role." (obvious, no punch, ignores market reality)
+   - "You are a strong candidate on paper." (flattery, not reality)
    - "Many candidates will apply." (vague)
-   - "You should consider your options." (advice, not truth)
 
 2. referral_requirement (REQUIRED - enum):
-   REQUIRED = Cold apply is noise. Must have internal connection.
-   HELPS = Cold apply possible but referral significantly improves odds.
-   OPTIONAL = Company processes cold applications fairly.
+   REQUIRED = Cold apply is noise in this market. Must have internal connection.
+   HELPS = Cold apply possible but AI screening and volume mean referral significantly improves odds.
+   OPTIONAL = Company processes cold applications fairly (rare in current market).
 
    DECISION LOGIC:
-   - FAANG/Big Tech at senior+ levels = REQUIRED
-   - High-growth startups with public postings = HELPS
-   - SMB/Mid-market with active hiring = OPTIONAL
-   - Any role with 500+ expected applicants = REQUIRED or HELPS
+   - FAANG/Big Tech at any level = REQUIRED
+   - High-growth startups with public postings = HELPS (minimum)
+   - Any role with 300+ expected applicants = REQUIRED or HELPS
+   - In current market, OPTIONAL should be rare
 
-3. candidate_position (REQUIRED - max 120 chars):
-   Where the candidate sits in the pile. Be specific.
+3. candidate_position (REQUIRED - max 150 chars):
+   Where the candidate sits in the pile. Be specific about the market.
 
    GOOD EXAMPLES:
-   - "Top 10% on paper. But 40% of hires come from internal mobility."
-   - "Mid-pack. Your consumer experience doesn't transfer to enterprise."
-   - "Strong on skills, weak on pedigree. Referral would move you to top 20%."
+   - "Top 15% on paper, but post-layoff talent flooding means 50+ candidates at your level applied in the first 48 hours."
+   - "Strong pedigree, but in this market every Director-level recruiter from a FAANG is also applying."
    - "Overqualified. They'll assume you'll leave in 6 months."
 
    BAD EXAMPLES:
-   - "You have relevant experience." (doesn't position)
+   - "You have relevant experience." (doesn't position, ignores market)
    - "Good fit for this role." (that's Score Summary's job)
 
-4. what_this_means (REQUIRED - max 150 chars):
-   The consequence. What happens next without action.
+4. what_this_means (REQUIRED - max 180 chars):
+   The consequence. What happens in this market without action.
 
    GOOD EXAMPLES:
-   - "ATS will auto-reject. Recruiter screens are reserved for referrals."
-   - "Your resume will sit in a queue of 800. Response in 3-4 weeks if at all."
+   - "At 2-3% response rate with AI screening, you need a referral or targeted outreach. Spray-and-pray will not work."
+   - "Your resume will pass AI screening, but so will 100 others. The hiring manager will see you for 6 seconds."
    - "Without the keyword match, you won't pass initial screening."
 
    BAD EXAMPLES:
@@ -15150,30 +15167,20 @@ THE THREE REQUIRED FIELDS:
    - "Consider reaching out." (that's Your Move's job)
 
 5. why_still_viable (OPTIONAL - max 80 chars):
-   Tie back to WHY they're still in the fight despite the friction.
-   Reinforces agency without lying. Only include if fit_score >= 55%.
-
-   GOOD EXAMPLES:
-   - "But your platform scale and Stripe credibility can cut through."
-   - "Your 0-to-1 track record is the differentiator ATS can't see."
-   - "Network leverage is your edge here."
-
-   BAD EXAMPLES:
-   - "You can do this!" (motivational fluff)
-   - "You're qualified." (that's Score Summary)
-   - "Consider applying anyway." (advice)
+   Only include if fit_score >= 55%. Must be grounded in specific credential.
 
 REALITY CHECK MUST NOT:
 - Give advice (that's Your Move)
 - Assess fit (that's Score Summary)
 - Be encouraging or optimistic without grounding it in specific credential
 - Use phrases like "you can compete" or "you have a chance"
+- Ignore the current market conditions
 
 REALITY CHECK MUST:
-- State uncomfortable truths
-- Quantify the competition
-- Position the candidate relative to the field
-- Explain what the numbers actually mean
+- State uncomfortable truths about the current market
+- Quantify the competition factoring in layoff-displaced talent
+- Position the candidate relative to the field in THIS market
+- Explain what the numbers actually mean when AI screens 80% out
 - (If viable) Tie back to the specific asset that gives them agency
 
 🚨 STRATEGIC_ACTION COACHING FRAMEWORK (DEPRECATED) 🚨
@@ -16615,23 +16622,44 @@ REALITY_CHECK RULES (MANDATORY):
 Reality Check is where Henry grabs the candidate by the shoulders and says "Here's the truth."
 It must CHANGE BEHAVIOR, not just display stats.
 
-1. brutal_truth (REQUIRED, max 100 chars): One sentence that lands. No hedging.
-   GOOD: "Without a referral, this application is statistically noise."
-   GOOD: "You're competing against internal transfers who already have the job."
-   BAD: "This is a competitive role." (obvious, no punch)
+=== CURRENT MARKET REALITY (2024-2026) - FACTOR THIS INTO ALL REALITY CHECKS ===
+
+The job market has fundamentally shifted. You MUST factor these realities into brutal_truth, candidate_position, and what_this_means:
+
+1. MASS LAYOFFS: 400,000+ tech workers laid off in 2023-2024. Every open role now attracts displaced talent from top companies. The candidate is not just competing against active seekers, they are competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
+
+2. EMPLOYER'S MARKET: Companies have leverage. They can be selective, slow, and demanding. Hiring timelines have stretched 2-3x. Ghosting is common even after final rounds. Candidates should expect silence, not responses.
+
+3. AI SCREENING: Most companies now use AI/ATS to filter applications before a human sees them. A strong resume that is not keyword-optimized for the specific role will be filtered out regardless of actual fit. Cold applications go through automated screening that rejects 80-90% before human review.
+
+4. FUNCTION-SPECIFIC IMPACT: Use the layoff data provided to contextualize how hard the candidate's specific function was hit. HR/Recruiting lost 50% of workforce. Engineering lost 10%. This changes the competitive landscape dramatically by function.
+
+5. REFERRAL PREMIUM: In this market, referrals are not just "nice to have." Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
+
+Do NOT sugarcoat the market. The candidate needs to understand what they are walking into so they can strategize accordingly.
+
+=== END MARKET REALITY ===
+
+1. brutal_truth (REQUIRED, max 120 chars): One sentence that lands. No hedging. Factor in the current market.
+   GOOD: "In this market, 500+ people with your exact profile will apply. Without a referral, you are noise."
+   GOOD: "Post-layoff market: every Head of TA from a top-tier company in your city is competing for this same role."
+   GOOD: "AI screening will filter your resume before a human sees it. Keyword optimization is not optional."
+   BAD: "This is a competitive role." (obvious, no punch, ignores market reality)
+   BAD: "You are a strong candidate on paper." (flattery, not reality)
 
 2. referral_requirement (REQUIRED, enum):
-   REQUIRED = Cold apply is noise. Must have internal connection.
-   HELPS = Cold apply possible but referral significantly improves odds.
-   OPTIONAL = Company processes cold applications fairly.
+   REQUIRED = Cold apply is noise in this market. Must have internal connection.
+   HELPS = Cold apply possible but AI screening and volume mean referral significantly improves odds.
+   OPTIONAL = Company processes cold applications fairly (rare in current market).
 
-3. candidate_position (REQUIRED, max 120 chars): Where they sit in the pile. Be specific.
-   GOOD: "Top 10% on paper. But 40% of hires come from internal mobility."
-   GOOD: "Strong on skills, weak on pedigree. Referral would move you to top 20%."
-   BAD: "You have relevant experience." (doesn't position)
+3. candidate_position (REQUIRED, max 150 chars): Where they sit in the pile. Be specific about the market.
+   GOOD: "Top 15% on paper, but post-layoff talent flooding means 50+ candidates at your level applied in the first 48 hours."
+   GOOD: "Strong pedigree, but in this market every Director-level recruiter from a FAANG is also applying. Differentiation is everything."
+   BAD: "You have relevant experience." (doesn't position, ignores market)
 
-4. what_this_means (REQUIRED, max 150 chars): The consequence without action.
-   GOOD: "At 3% response rate, you need 30+ applications to get one screen. A referral changes that to 1."
+4. what_this_means (REQUIRED, max 180 chars): The consequence. Be specific about what happens in this market.
+   GOOD: "At 2-3% response rate with AI screening, you need a referral or a targeted outreach strategy. Spray-and-pray will not work."
+   GOOD: "Your resume will pass AI screening, but so will 100 others. The hiring manager will see you for 6 seconds. Your positioning must be surgical."
    BAD: "You should apply." (not a consequence)
 
 === END REALITY_CHECK RULES ===
