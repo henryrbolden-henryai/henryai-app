@@ -466,17 +466,17 @@ def _build_decision_engine(parsed_data: dict, score: int, deterministic: dict) -
 
     gap_count = len([g for g in gaps if isinstance(g, str) and g.strip()])
     if score >= 85:
-        risk_summary = "Strong alignment across all dimensions. No significant blockers identified."
+        risk_summary = "Strong alignment. No significant blockers identified."
     elif score >= 75:
-        risk_summary = f"Strong match with {gap_count} minor gap{'s' if gap_count != 1 else ''} that can be addressed through positioning."
+        risk_summary = f"Strong match. {gap_count} minor gap{'s' if gap_count != 1 else ''} fixable through positioning."
     elif score >= 65:
-        risk_summary = f"Competitive candidate, but {gap_count} gap{'s' if gap_count != 1 else ''} could block you at recruiter screen without strategic positioning."
+        risk_summary = f"{gap_count} gap{'s' if gap_count != 1 else ''} will block you at screen without positioning."
     elif score >= 55:
-        risk_summary = f"Viable but {gap_count} gap{'s' if gap_count != 1 else ''} make this a stretch. Requires targeted outreach and strong cover letter."
+        risk_summary = f"{gap_count} gap{'s' if gap_count != 1 else ''} make this a stretch. Outreach required."
     elif score >= 40:
-        risk_summary = "Significant gaps between your profile and this role's requirements. Success unlikely without internal advocacy."
+        risk_summary = "Significant gaps. Success unlikely without internal advocacy."
     else:
-        risk_summary = "Fundamental mismatch between your background and this role's core requirements."
+        risk_summary = "Fundamental mismatch with this role's core requirements."
 
     # Build key risks from actual gaps
     key_risks = []
@@ -531,138 +531,114 @@ def _build_decision_engine(parsed_data: dict, score: int, deterministic: dict) -
 
 
 def _build_your_move_plan(parsed_data: dict, score: int, company: str, deterministic: dict) -> dict:
-    """
-    Build structured Your Move action plan from existing analysis data.
-    Deterministic: win probability, execution window, and action steps
-    are derived from the score and analysis, not from LLM output.
-    """
-    # Win probability from score
-    if score >= 75:
-        win_prob = "HIGH"
-    elif score >= 55:
-        win_prob = "MEDIUM"
-    else:
-        win_prob = "LOW"
-
-    # Execution window from score
-    if score >= 75:
-        exec_window = "Apply within 48 hours"
-    elif score >= 55:
-        exec_window = "Apply within 1 week"
-    else:
-        exec_window = "Evaluate before investing time"
-
-    # Extract existing Your Move data from Claude
-    your_move_data = parsed_data.get("your_move", {})
-    if not isinstance(your_move_data, dict):
-        your_move_data = {}
-    reality_check = parsed_data.get("reality_check", {})
-    referral_req = reality_check.get("referral_requirement", "")
-
-    positioning = your_move_data.get("positioning", "")
-    contact_strategy = your_move_data.get("contact_strategy", "")
-    network_leverage = your_move_data.get("network_leverage", "")
-    apply_window = your_move_data.get("apply_window", "") or your_move_data.get("timing", "")
-    strategic_action = reality_check.get("strategic_action", "")
-
-    # Primary strategy: use Claude's positioning or build from score
-    primary = positioning or strategic_action
-    if not primary:
-        if score >= 75:
-            primary = "You are a strong match. Apply quickly and position your direct experience."
-        elif score >= 55:
-            primary = "You can compete, but you need to close specific gaps in your application."
-        else:
-            primary = "This is a stretch. Consider whether this role is worth the investment."
-
-    # Build action plan steps
-    action_plan = []
-
-    # Step 1: Timing
-    if score >= 65:
-        timing_action = apply_window or "Submit your application within 48 hours of the posting going live."
-        timing_why = "Early applicants get prioritized in recruiter queues. Waiting reduces visibility."
-    else:
-        timing_action = apply_window or "Review the requirements carefully before applying."
-        timing_why = "Investing time in a tailored application matters more than speed at this fit level."
-    action_plan.append({
-        "step": 1,
-        "title": "Apply Timing",
-        "action": timing_action,
-        "why": timing_why
-    })
-
-    # Step 2: Outreach strategy
-    if contact_strategy:
-        outreach_action = contact_strategy
-    elif referral_req == "REQUIRED":
-        outreach_action = f"Identify 2-3 employees at {company or 'this company'} in this function via LinkedIn and send a targeted message referencing your relevant experience."
-    elif referral_req == "HELPS":
-        outreach_action = f"Reach out to the hiring manager or a team member at {company or 'this company'} before or right after applying."
-    else:
-        outreach_action = f"Connect with the recruiter or hiring manager on LinkedIn with a brief note about why this role fits your background."
-    action_plan.append({
-        "step": 2,
-        "title": "Outreach Strategy",
-        "action": outreach_action,
-        "why": "Candidates with a human connection are 4-10x more likely to get a response than cold applicants."
-    })
-
-    # Step 3: Positioning
+    """Build a 3-step action plan like a top 1% executive recruiter would give."""
+    decision = deterministic["decision"]
     gaps = parsed_data.get("gaps", [])
-    top_gap = ""
-    for g in gaps[:1]:
-        if isinstance(g, str):
-            top_gap = g
-        elif isinstance(g, dict):
-            top_gap = g.get("description", g.get("gap", ""))
+    strengths = parsed_data.get("strengths", [])
+    role_title = parsed_data.get("role_title", "this role")
 
-    if network_leverage:
-        pos_action = network_leverage
-    elif top_gap:
-        pos_action = f"Address '{top_gap}' directly in your cover letter. Show how your experience compensates."
+    # Count fixable vs hard gaps
+    gap_count = len(gaps) if isinstance(gaps, list) else 0
+    strength_count = len(strengths) if isinstance(strengths, list) else 0
+
+    # Primary strategy based on score band
+    if score >= 85:
+        primary_strategy = f"Move fast. You're a strong fit — speed is your advantage."
+    elif score >= 75:
+        primary_strategy = f"Apply and position around your {gap_count} gap{'s' if gap_count != 1 else ''} before they screen you out."
+    elif score >= 65:
+        primary_strategy = f"Apply selectively. Lead with strengths, pre-address gaps directly."
+    elif score >= 55:
+        primary_strategy = f"Only apply if you can get a warm introduction. Cold applications won't land."
     else:
-        pos_action = "Lead with your most relevant achievement and tie it directly to the job's primary responsibility."
-    action_plan.append({
-        "step": 3,
-        "title": "Positioning",
-        "action": pos_action,
-        "why": "Hiring managers scan for direct relevance in the first 10 seconds. Lead with your strongest signal."
-    })
+        primary_strategy = f"Skip this one. Your time is better spent on roles where you're above 65%."
 
-    # Fallback strategy (always included when referral is mentioned)
-    fallback = []
-    if referral_req in ("REQUIRED", "HELPS"):
-        fallback = [
-            f"Identify 2-3 employees at {company or 'this company'} in relevant teams and send targeted outreach via LinkedIn.",
-            f"Engage with {company or 'the company'}'s content or the hiring manager's posts before reaching out. Comment with substance.",
-            "Apply early and include a cover letter that demonstrates domain insight specific to this role."
+    # Build steps based on decision
+    steps = []
+
+    if score >= 55:
+        # Step 1: Always about timing
+        if score >= 75:
+            steps.append({
+                "step": 1,
+                "action": "Apply within 48 hours",
+                "details": f"Submit your application today. Roles at this level fill fast — waiting drops your odds significantly."
+            })
+        else:
+            steps.append({
+                "step": 1,
+                "action": "Get a warm intro before applying",
+                "details": f"Find 2-3 people at {company or 'the company'} on LinkedIn. Message them with a specific reason you're interested — not a generic ask."
+            })
+
+        # Step 2: About positioning
+        top_gap = ""
+        if gap_count > 0:
+            g = gaps[0]
+            top_gap = g if isinstance(g, str) else (g.get("description", "") if isinstance(g, dict) else "")
+
+        if top_gap:
+            steps.append({
+                "step": 2,
+                "action": f"Address your top gap head-on",
+                "details": f"Your biggest gap: {top_gap[:80]}. Name it in your cover letter first paragraph and explain how your experience compensates."
+            })
+        else:
+            steps.append({
+                "step": 2,
+                "action": "Lead with your strongest match",
+                "details": f"Open your cover letter with the skill that matches their #1 requirement. Be specific — name the result, not the responsibility."
+            })
+
+        # Step 3: About networking/follow-up
+        if company:
+            steps.append({
+                "step": 3,
+                "action": f"Message the hiring manager directly",
+                "details": f"Find the hiring manager or team lead for this role at {company}. Send a 3-sentence message: why this role, what you bring, one specific question about the team."
+            })
+        else:
+            steps.append({
+                "step": 3,
+                "action": "Follow up within 5 business days",
+                "details": "If you don't hear back in 5 days, send a brief follow-up to the recruiter. Reference something specific from the job description to show you've done the work."
+            })
+    else:
+        # Score < 55: Don't apply steps
+        steps = [
+            {"step": 1, "action": "Skip this role", "details": "Your fit score is below the threshold where cold applications convert. Focus on roles where you're 65%+."},
+            {"step": 2, "action": "Find 3 better-fit roles this week", "details": "Search for roles that match your strongest skills. Look for job descriptions where you meet 80%+ of requirements."},
+            {"step": 3, "action": "Strengthen your weakest area", "details": f"Your gaps suggest you need more depth in specific areas. Take one concrete step this week — a project, certification, or conversation with someone in the field."},
         ]
+
+    # Fallback
+    if score >= 55:
+        fallback = f"No connections at {company or 'the company'}? Apply cold but customize every line of your cover letter to this specific role. Generic applications get filtered out."
+    else:
+        fallback = "If you're set on this company, build relationships first. Follow their team on LinkedIn, engage with their content, and revisit when a better-fit role opens."
 
     # Success signal
     if score >= 75:
-        success = "A recruiter screen within 1-2 weeks. If no response after 10 business days, follow up once."
+        success_signal = "You should hear back within 1-2 weeks if your application lands. A recruiter screen is the first milestone."
     elif score >= 55:
-        success = "An acknowledgment or recruiter screen within 2-3 weeks. Silence after 2 weeks means move to your next target."
+        success_signal = "A response within 2 weeks means your positioning worked. No response after 3 weeks means move on."
     else:
-        success = "Any response is a positive signal. If no reply within 2 weeks, redirect your energy to better-fit roles."
+        success_signal = "Success here means finding a role where your score is 70+. That's where your energy converts."
 
     # Risk if ignored
     if score >= 75:
-        risk = "Delaying past 72 hours significantly reduces your odds. Top roles fill fast."
+        risk_if_ignored = "Waiting more than 72 hours significantly drops your odds. Roles at this level get 200+ applications in the first week."
     elif score >= 55:
-        risk = "Without targeted outreach, your application will compete in a pool of hundreds. The odds drop to single digits."
+        risk_if_ignored = "Without positioning your gaps, you'll be screened out before a human reads your application."
     else:
-        risk = "Applying without a strategy wastes time you could spend on higher-probability opportunities."
+        risk_if_ignored = "Applying to roles below 55% fit wastes time you could spend on better matches."
 
     return {
-        "win_probability": win_prob,
-        "execution_window": exec_window,
-        "primary_strategy": primary,
-        "action_plan": action_plan,
-        "fallback_strategy": fallback,
-        "success_signal": success,
-        "risk_if_ignored": risk,
+        "primary_strategy": primary_strategy,
+        "steps": steps,
+        "fallback": fallback,
+        "success_signal": success_signal,
+        "risk_if_ignored": risk_if_ignored,
     }
 
 
@@ -16399,6 +16375,7 @@ async def analyze_jd_stream(request: Request, body: JDAnalyzeRequest):
             "claude_skipped": True, "claude_skipped_reason": "Hard gate failed pre-LLM",
             "apply_decision": {
                 "verdict": "DO NOT APPLY",
+                "one_line_verdict": "Not eligible. Leadership requirement not met.",
                 "color": "red",
                 "risk_level": "High Risk",
                 "risk_factors": [gate_reason],
@@ -16905,9 +16882,26 @@ Role: {body.role_title}
                 deterministic["color"] = "red"
                 deterministic["risk_level"] = "High Risk"
 
+            # Generate one-line verdict (max 12 words)
+            gap_count = len(parsed_data.get("gaps", []))
+            strength_count = len(parsed_data.get("strengths", []))
+            if final_score >= 85:
+                one_line_verdict = f"Strong match. {gap_count} minor gap{'s' if gap_count != 1 else ''}, none disqualifying."
+            elif final_score >= 75:
+                one_line_verdict = f"Good fit. {gap_count} gap{'s' if gap_count != 1 else ''}, all fixable with positioning."
+            elif final_score >= 65:
+                one_line_verdict = f"Selective fit. {gap_count} gap{'s' if gap_count != 1 else ''} need direct addressing."
+            elif final_score >= 55:
+                one_line_verdict = f"Stretch role. {gap_count} gap{'s' if gap_count != 1 else ''} make this high-risk without referral."
+            elif final_score >= 40:
+                one_line_verdict = f"Low probability. {gap_count} significant gap{'s' if gap_count != 1 else ''} against you."
+            else:
+                one_line_verdict = f"Not a fit. {gap_count} critical gap{'s' if gap_count != 1 else ''}, skip this one."
+
             # Set canonical apply_decision
             parsed_data["apply_decision"] = {
                 "verdict": deterministic["decision"],
+                "one_line_verdict": one_line_verdict,
                 "color": deterministic["color"],
                 "risk_level": deterministic["risk_level"],
                 "risk_factors": risk_factors,
