@@ -395,6 +395,28 @@ def _normalize_items(items: list) -> list:
     return normalized
 
 
+def _humanize_gap_type(gap_type: str) -> str:
+    """Convert raw gap_type keys to human-readable labels."""
+    mapping = {
+        "experience_years_mismatch": "Experience level mismatch",
+        "required_experience_missing": "Required experience not demonstrated",
+        "career_level_mismatch": "Career level mismatch",
+        "career_gap": "Career gap",
+        "scope_level_mismatch": "Scope level mismatch",
+        "missing_experience": "Missing required experience",
+        "missing_evidence": "Missing evidence of skills",
+        "leadership_experience": "Leadership experience gap",
+        "business_recruiting": "Business recruiting experience",
+        "standard_gap": "Skills gap",
+        "presentation": "Resume presentation gap",
+        "experience": "Experience gap",
+    }
+    if gap_type in mapping:
+        return mapping[gap_type]
+    # Fallback: convert snake_case to Title Case
+    return gap_type.replace("_", " ").replace("  ", " ").strip().capitalize()
+
+
 def _normalize_gap_items(items: list) -> list:
     """Normalize gaps to consistent format. Keeps dicts for career_gap type, normalizes rest to strings."""
     normalized = []
@@ -406,7 +428,7 @@ def _normalize_gap_items(items: list) -> list:
                     if parsed.get("gap_type") == "career_gap":
                         normalized.append(parsed)
                         continue
-                    text = parsed.get("description") or parsed.get("gap") or parsed.get("gap_type") or item
+                    text = parsed.get("description") or parsed.get("gap") or _humanize_gap_type(parsed.get("gap_type", "")) or item
                     normalized.append(text)
                     continue
                 except (json.JSONDecodeError, AttributeError):
@@ -416,7 +438,7 @@ def _normalize_gap_items(items: list) -> list:
             if item.get("gap_type") == "career_gap":
                 normalized.append(item)
             else:
-                text = item.get("description") or item.get("gap") or item.get("gap_type") or ""
+                text = item.get("description") or item.get("gap") or _humanize_gap_type(item.get("gap_type", "")) or ""
                 if text:
                     normalized.append(text)
     return normalized
@@ -11597,8 +11619,8 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                             's ', 't ', 're ', 'll ', 've ']  # Truncated contractions
         if any(text_lower.startswith(starter) for starter in fragment_starters):
             return True
-        # Too many words suggests a sentence, not a title (titles rarely exceed 8 words)
-        if len(text.split()) > 8:
+        # Too many words suggests a sentence, not a title (titles rarely exceed 12 words)
+        if len(text.split()) > 12:
             return True
         # Em dashes or en dashes in text suggest recommendation/advice text, not titles
         if '—' in text or '–' in text:
@@ -11623,6 +11645,14 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 title,
                 flags=re.IGNORECASE
             )
+            # Reject results that look like sentence continuations from "hiring" pattern
+            sentence_starters = ['a senior', 'an experienced', 'someone who', 'a seasoned',
+                                 'a talented', 'an innovative', 'a dedicated', 'a motivated',
+                                 'a skilled', 'an accomplished']
+            title_lower_check = title.lower().strip()
+            if any(title_lower_check.startswith(starter) for starter in sentence_starters):
+                print(f"  ⏭️  Rejected sentence fragment from hiring pattern: '{title}'")
+                continue
             if 5 < len(title) < 100 and not is_navigation_text(title) and not is_sentence_fragment(title) and not is_non_semantic_header(title):
                 print(f"  ✅ Extracted: '{title}'")
                 return title
@@ -11691,10 +11721,14 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 return line
 
     # Strategy 3: First substantial non-nav, non-header line as fallback
+    # Only accept if it contains a job title indicator keyword OR is short enough to be a title
     for line in lines[:15]:
         if not is_navigation_text(line) and not is_non_semantic_header(line) and 5 < len(line) < 100:
-            print(f"  ✅ Extracted from first valid line: '{line}'")
-            return line
+            line_lower_s3 = line.lower()
+            has_title_keyword = any(indicator in line_lower_s3 for indicator in job_title_indicators)
+            if has_title_keyword or len(line) < 60:
+                print(f"  ✅ Extracted from first valid line: '{line}'")
+                return line
 
     # Fallback
     print(f"  ⚠️ Could not extract role title - using placeholder")
@@ -12091,11 +12125,20 @@ def detect_role_type_isolated(jd_text: str, role_title: str, analysis_id: str) -
         "recruiter", "recruiting", "talent acquisition",
         "sourcer", "sourcing", "talent partner",
         "recruitment", "headhunter", "technical recruiter",
-        "ta director", "ta manager", "talent lead", "head of talent"
+        "ta director", "ta manager", "talent lead", "head of talent",
+        "hiring", "talent management", "talent operations"
     ]
 
     if any(pattern in title_lower for pattern in recruiting_title_patterns):
         print(f"  ✅ RECRUITING detected from title")
+        return "recruiting"
+
+    # Check JD content for strong recruiting signals (immediate match)
+    if "talent acquisition" in jd_lower:
+        print(f"  ✅ RECRUITING detected from JD (strong signal: talent acquisition)")
+        return "recruiting"
+    if "full-cycle recruiting" in jd_lower:
+        print(f"  ✅ RECRUITING detected from JD (strong signal: full-cycle recruiting)")
         return "recruiting"
 
     # Check JD content for recruiting signals
@@ -16652,6 +16695,7 @@ Role: {body.role_title}
         recommendation_sent = False
         strengths_sent = False
         applicants_sent = False
+        early_insight_success = False
 
         try:
             # PHASE 0: Emit early_insight immediately (no LLM needed)
@@ -16663,6 +16707,7 @@ Role: {body.role_title}
                 early_function = isolated_role_detection.get("role_type", "") if isolated_role_detection else ""
                 yield f"data: {json.dumps({'type': 'early_insight', 'data': {'role_title': early_role, 'company': early_company, 'seniority': early_seniority, 'function': early_function}})}\n\n"
                 await asyncio.sleep(0)
+                early_insight_success = True
             except Exception as e:
                 print(f"[STREAM] early_insight failed (non-fatal): {e}")
 
@@ -16705,8 +16750,8 @@ Role: {body.role_title}
                         except (json.JSONDecodeError, ValueError):
                             pass  # Not complete yet, keep buffering
 
-                # PHASE 1: Emit mid_insight when we have score + strengths
-                if fit_score_sent and strengths_sent and not applicants_sent:
+                # PHASE 1: Emit mid_insight when we have score + strengths (only if early_insight succeeded)
+                if fit_score_sent and strengths_sent and not applicants_sent and early_insight_success:
                     # Extract gaps preview if available
                     gaps_preview = []
                     gaps_match = re.search(r'"gaps"\s*:\s*\[((?:[^][]|\[[^\]]*\])*)\]', buffer)
@@ -16717,7 +16762,9 @@ Role: {body.role_title}
                                 if isinstance(g, str):
                                     gaps_preview.append(g)
                                 elif isinstance(g, dict):
-                                    gaps_preview.append(g.get("description", g.get("gap", "")))
+                                    gap_text = g.get("description") or g.get("gap") or _humanize_gap_type(g.get("gap_type", "")) or ""
+                                    if gap_text:
+                                        gaps_preview.append(gap_text)
                         except (json.JSONDecodeError, ValueError):
                             pass
                     if gaps_preview:
@@ -16788,14 +16835,20 @@ Role: {body.role_title}
             elif body.company:
                 print(f"⚠️ [Stream] Ignoring invalid company from frontend: '{body.company}' - keeping Claude's extraction: '{parsed_data.get('company', 'None')}'")
             # Role title: prefer backend extraction over frontend-supplied value
-            extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
-            if extracted_title and extracted_title != "Unknown Role":
-                parsed_data["role_title"] = extracted_title
+            final_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
+            if final_title and final_title != "Unknown Role":
+                parsed_data["role_title"] = final_title
             elif body.role_title:
                 user_role = body.role_title.strip()
                 is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', 'about', '']
                 if not is_placeholder and not user_role.lower().startswith('about '):
                     parsed_data["role_title"] = user_role
+
+            # HARD FALLBACKS: title and company must always be safe
+            parsed_data["role_title"] = parsed_data.get("role_title") or "This role"
+            company_val = parsed_data.get("company", "")
+            if isinstance(company_val, str) and company_val.strip().lower() in ("this", "this company", "this team", ""):
+                parsed_data["company"] = ""
 
             # Apply experience penalties
             # P0 FIX: Streaming endpoint doesn't have LeadershipContext, pass None
@@ -16896,7 +16949,8 @@ Role: {body.role_title}
             print(f"🔥 Streaming error: {e}")
             import traceback
             traceback.print_exc()
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            # Always send an error event so frontend knows what happened
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Analysis failed. Please try again.'})}\n\n"
 
     return StreamingResponse(
         event_generator(),
