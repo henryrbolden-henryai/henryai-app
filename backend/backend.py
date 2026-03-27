@@ -422,6 +422,92 @@ def _normalize_gap_items(items: list) -> list:
     return normalized
 
 
+def _build_decision_engine(parsed_data: dict, score: int, deterministic: dict) -> dict:
+    """
+    Build decision engine with specific risk explanations, key risks with
+    impact/mitigation, and upside signals. Replaces vague "Moderate Risk".
+    """
+    decision = deterministic["decision"]
+    risk_level = deterministic["risk_level"]
+
+    # Confidence from score bands
+    if score >= 80:
+        confidence = "HIGH"
+    elif score >= 60:
+        confidence = "MEDIUM"
+    else:
+        confidence = "LOW"
+
+    # Build risk summary - specific, not generic
+    gaps = parsed_data.get("gaps", [])
+    strengths = parsed_data.get("strengths", [])
+
+    gap_count = len([g for g in gaps if isinstance(g, str) and g.strip()])
+    if score >= 85:
+        risk_summary = "Strong alignment across all dimensions. No significant blockers identified."
+    elif score >= 75:
+        risk_summary = f"Strong match with {gap_count} minor gap{'s' if gap_count != 1 else ''} that can be addressed through positioning."
+    elif score >= 65:
+        risk_summary = f"Competitive candidate, but {gap_count} gap{'s' if gap_count != 1 else ''} could block you at recruiter screen without strategic positioning."
+    elif score >= 55:
+        risk_summary = f"Viable but {gap_count} gap{'s' if gap_count != 1 else ''} make this a stretch. Requires targeted outreach and strong cover letter."
+    elif score >= 40:
+        risk_summary = "Significant gaps between your profile and this role's requirements. Success unlikely without internal advocacy."
+    else:
+        risk_summary = "Fundamental mismatch between your background and this role's core requirements."
+
+    # Build key risks from actual gaps
+    key_risks = []
+    for g in gaps[:3]:
+        gap_text = ""
+        severity = "medium"
+        if isinstance(g, str):
+            gap_text = g
+        elif isinstance(g, dict):
+            gap_text = g.get("description", g.get("gap", ""))
+            severity = g.get("severity", "medium")
+
+        if gap_text:
+            # Determine impact based on severity
+            if severity == "high" or "dealbreaker" in gap_text.lower():
+                impact = "May disqualify at initial screen"
+            elif severity == "low" or "nice" in gap_text.lower():
+                impact = "Unlikely to block, but weakens overall profile"
+            else:
+                impact = "Could block at recruiter screen without mitigation"
+
+            # Build mitigation from the gap
+            mitigation = f"Address directly in cover letter. Show how your experience compensates."
+            key_risks.append({
+                "issue": gap_text,
+                "impact": impact,
+                "mitigation": mitigation,
+            })
+
+    # Build upside signals from strengths
+    upside_signals = []
+    for s in strengths[:3]:
+        if isinstance(s, str) and s.strip():
+            upside_signals.append(s)
+
+    # Verdict explanation
+    reasoning = parsed_data.get("recommendation_rationale", "")
+    if not reasoning:
+        ad = parsed_data.get("apply_decision", {})
+        if isinstance(ad, dict):
+            reasoning = ad.get("reasoning", "")
+
+    return {
+        "decision": decision,
+        "confidence": confidence,
+        "risk_level": risk_level.replace(" Risk", "").upper(),
+        "risk_summary": risk_summary,
+        "key_risks": key_risks,
+        "upside_signals": upside_signals,
+        "verdict_explanation": reasoning,
+    }
+
+
 def _build_your_move_plan(parsed_data: dict, score: int, company: str, deterministic: dict) -> dict:
     """
     Build structured Your Move action plan from existing analysis data.
@@ -567,6 +653,8 @@ def is_valid_company_name(name: str) -> bool:
     skip_list = [
         "unknown", "unknown company", "company", "the company",
         "our company", "the organization", "organization",
+        "this", "this company", "this team", "this role",
+        "this organization", "n/a", "na", "none", "tbd",
     ]
     if name_lower in skip_list:
         return False
@@ -16564,6 +16652,14 @@ Role: {body.role_title}
         applicants_sent = False
 
         try:
+            # PHASE 0: Emit early_insight immediately (no LLM needed)
+            early_company = body.company or ""
+            early_role = extracted_title or body.role_title or ""
+            early_seniority = role_level_info.get("role_level", "IC") if isolated_role_detection else "IC"
+            early_function = isolated_role_detection.get("role_type", "") if isolated_role_detection else ""
+            yield f"data: {json.dumps({'type': 'early_insight', 'data': {'role_title': early_role, 'company': early_company, 'seniority': early_seniority, 'function': early_function}})}\n\n"
+            await asyncio.sleep(0)
+
             # Stream Claude's response
             for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096, model="claude-opus-4-6"):
                 buffer += chunk
@@ -16602,6 +16698,25 @@ Role: {body.role_title}
                                 await asyncio.sleep(0)
                         except (json.JSONDecodeError, ValueError):
                             pass  # Not complete yet, keep buffering
+
+                # PHASE 1: Emit mid_insight when we have score + strengths
+                if fit_score_sent and strengths_sent and not applicants_sent:
+                    # Extract gaps preview if available
+                    gaps_preview = []
+                    gaps_match = re.search(r'"gaps"\s*:\s*\[((?:[^][]|\[[^\]]*\])*)\]', buffer)
+                    if gaps_match:
+                        try:
+                            raw_gaps = json.loads('[' + gaps_match.group(1) + ']')
+                            for g in raw_gaps[:2]:
+                                if isinstance(g, str):
+                                    gaps_preview.append(g)
+                                elif isinstance(g, dict):
+                                    gaps_preview.append(g.get("description", g.get("gap", "")))
+                        except (json.JSONDecodeError, ValueError):
+                            pass
+                    if gaps_preview:
+                        yield f"data: {json.dumps({'type': 'mid_insight', 'data': {'gaps_preview': gaps_preview}})}\n\n"
+                        await asyncio.sleep(0)
 
                 # Extract expected_applicants from reality_check
                 if not applicants_sent and '"expected_applicants"' in buffer:
@@ -16752,6 +16867,11 @@ Role: {body.role_title}
             # Frontend should receive string[] only - no objects, no JSON strings
             parsed_data["strengths"] = _normalize_items(parsed_data.get("strengths", []))
             parsed_data["gaps"] = _normalize_gap_items(parsed_data.get("gaps", []))
+
+            # BUILD DECISION ENGINE (replaces vague risk labels)
+            parsed_data["decision_engine"] = _build_decision_engine(
+                parsed_data, final_score, deterministic
+            )
 
             # BUILD STRUCTURED YOUR MOVE from existing data
             move_company = body.company or parsed_data.get("company", "") or ""
