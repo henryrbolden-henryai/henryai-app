@@ -216,7 +216,7 @@ def create_fit_score_error(reason: str) -> Dict[str, Any]:
 ENABLE_FIT_SCORE_LLM = os.getenv("ENABLE_FIT_SCORE_LLM", "true").lower() == "true"
 
 # Minimal prompt for fit scoring - no narrative, no explanation, just numbers
-FIT_SCORE_MINIMAL_PROMPT = """You are a scoring engine.
+FIT_SCORE_MINIMAL_PROMPT = """You are a scoring engine for job fit assessment.
 
 Given the structured inputs below, calculate a fit score.
 
@@ -226,11 +226,21 @@ Rules:
 - Do not include prose, commentary, or advice
 - Do not restate inputs
 
-Scoring:
-- experience_match: 0-25
-- scope_match: 0-25
-- domain_match: 0-25
-- seniority_match: 0-25
+Score Calibration (use this rubric):
+- 90-100: Near-perfect match. Candidate exceeds requirements in experience, scope, and domain. Gaps are trivial.
+- 80-89: Strong match. Candidate meets or exceeds most requirements. Gaps are minor and learnable (e.g., specific tool, adjacent domain).
+- 70-79: Good match with notable gaps. Candidate meets core requirements but has 1-2 meaningful gaps (e.g., missing domain expertise, scope mismatch).
+- 60-69: Moderate match. Candidate has relevant transferable experience but significant gaps in 2+ areas.
+- 50-59: Weak match. Major gaps in experience, scope, or domain. Would need strong positioning to compete.
+- Below 50: Poor match. Fundamental misalignment in experience level, domain, or scope.
+
+Key principle: A candidate who exceeds the years requirement, has relevant company-scale experience, and whose gaps are learnable (not structural) should score 85+. Do not penalize for adjacent domain gaps that are clearly learnable.
+
+Scoring dimensions (each 0-25):
+- experience_match: Years and depth of relevant experience vs requirement
+- scope_match: Scale of teams/orgs managed, budget, complexity
+- domain_match: Industry/function alignment (weight transferable skills)
+- seniority_match: Career level alignment with role level
 
 Return this exact schema:
 
@@ -6805,12 +6815,13 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
         hard_cap = 60
         hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years}), preferred not hard requirement"
         print(f"   📝 SOFT CAP (experience preferred, not hard requirement): 60%")
-    elif years_percentage < 80:
-        # Moderate gap - light cap at 70
-        hard_cap = 70
+    elif years_percentage < 70:
+        # Moderate gap (30-40% short) - light cap at 75
+        hard_cap = 75
         hard_cap_reason = f"Candidate has {years_percentage:.1f}% of required years ({candidate_years:.1f}/{required_years})"
+        print(f"   📉 Light cap at 75% (moderate years gap)")
     else:
-        hard_cap = 100  # No cap for candidates with 80%+ of required years
+        hard_cap = 100  # No cap for candidates with 70%+ of required years
         hard_cap_reason = None
 
     # Apply hard cap if necessary
@@ -11697,14 +11708,22 @@ def extract_role_title_from_jd(jd_text: str, analysis_id: str) -> str:
                 return line
 
     # Strategy 3: First substantial non-nav, non-header line as fallback
-    # Only accept if it contains a job title indicator keyword OR is short enough to be a title
+    # MUST contain a job title keyword - short lines without keywords are usually section headers like "About Vibe"
     for line in lines[:15]:
-        if not is_navigation_text(line) and not is_non_semantic_header(line) and 5 < len(line) < 100:
-            line_lower_s3 = line.lower()
+        # Strip markdown formatting artifacts
+        clean_line = line.strip().strip("*").strip("#").strip()
+        if not clean_line or len(clean_line) < 5 or len(clean_line) > 100:
+            continue
+        if not is_navigation_text(clean_line) and not is_non_semantic_header(clean_line):
+            line_lower_s3 = clean_line.lower()
+            # Skip "About X" lines - these are section headers, not job titles
+            if line_lower_s3.startswith("about "):
+                print(f"  ⏭️  Skipping 'About' section header: '{clean_line}'")
+                continue
             has_title_keyword = any(indicator in line_lower_s3 for indicator in job_title_indicators)
-            if has_title_keyword or len(line) < 60:
-                print(f"  ✅ Extracted from first valid line: '{line}'")
-                return line
+            if has_title_keyword:
+                print(f"  ✅ Extracted from first valid line: '{clean_line}'")
+                return clean_line
 
     # Fallback
     print(f"  ⚠️ Could not extract role title - using placeholder")
@@ -13864,15 +13883,9 @@ The difference: "addresses core requirements" is system-speak. "solves the exact
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.
 
-🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
-Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
-Before counting years of experience, adjust for company credibility (seed-stage startups count as 0.3x years).
-If a candidate has only 33% of required years (after credibility adjustment), the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
-These rules exist to prevent false hope. Apply them strictly.
+=== FIT SCORE CALIBRATION (MANDATORY) ===
 
-=== CRITICAL: FIT SCORING WITH EXPERIENCE PENALTIES (READ THIS FIRST) ===
-
-When calculating fit_score, you MUST apply these penalties BEFORE returning your analysis:
+Calculate fit_score using this rubric:
 
 **STEP 1: Calculate Base Fit Score**
 - 50% responsibilities alignment
@@ -13880,23 +13893,29 @@ When calculating fit_score, you MUST apply these penalties BEFORE returning your
 - 20% industry/domain alignment
 Score range: 0-100. If no resume: provide fit score of 0 or null.
 
-**STEP 2: Apply MANDATORY Experience Penalties**
+**STEP 2: Apply Experience Adjustment**
 
-CRITICAL OVERRIDE RULES - HARD CAPS (APPLY THESE FIRST):
-These are ABSOLUTE MAXIMUMS that cannot be exceeded regardless of transferable skills, domain expertise, or other factors:
+If candidate MEETS or EXCEEDS required years: NO penalty. Score based on quality of match.
+If candidate has 70-99% of required years: Minor penalty (subtract 5-10 points max).
+If candidate has 50-69% of required years: Moderate penalty (cap at 65%).
+If candidate has <50% of required years: Hard cap at 50%.
 
-1. If candidate has <50% of required years → fit_score CANNOT EXCEED 45%
-2. If candidate has 50-69% of required years → fit_score CANNOT EXCEED 55%
-3. If candidate has 70-89% of required years → fit_score CANNOT EXCEED 70%
-4. Only candidates with 90%+ of required years can score above 70%
+Key principle: A candidate who exceeds the years requirement with relevant company-scale experience and only learnable gaps (specific tools, adjacent domains) should score 85-95. Do not over-penalize for gaps that are clearly learnable or non-structural.
 
-Examples:
-- JD requires 8 years, candidate has 3 years (37.5%) → MAX 45% fit score
-- JD requires 5 years, candidate has 3 years (60%) → MAX 55% fit score
-- JD requires 3 years, candidate has 1 year (33%) → MAX 45% fit score
-- JD requires 4 years, candidate has 3.5 years (87.5%) → MAX 70% fit score
+**Score Calibration Guide:**
+- 90-100: Near-perfect. Exceeds requirements, gaps are trivial.
+- 80-89: Strong match. Meets or exceeds most requirements. Minor learnable gaps.
+- 70-79: Good match with notable gaps. Meets core requirements but 1-2 meaningful gaps.
+- 60-69: Moderate. Transferable experience but significant gaps in 2+ areas.
+- 50-59: Weak. Major gaps. Would need strong positioning.
+- Below 50: Poor match. Fundamental misalignment.
 
-Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
+IMPORTANT: The summary (recommendation_rationale) and fit_score MUST be consistent.
+If you describe someone as a "strong match" the score must be 85+.
+If you describe gaps as "manageable" or "learnable" the score should be 75+.
+Do NOT write "strong match" in the summary and then return a score of 70-82. That is a contradiction.
+
+Note any adjustment in penalty_explanation.
 
 COMPANY SCALE & CREDIBILITY ADJUSTMENT (APPLY BEFORE COUNTING YEARS):
 
@@ -16214,15 +16233,24 @@ Role: {body.role_title}
                 parsed_data["company"] = body.company
             elif body.company:
                 print(f"⚠️ Ignoring invalid company from frontend: '{body.company}' - keeping Claude's extraction: '{parsed_data.get('company', 'None')}'")
-            # Role title: prefer backend extraction over frontend-supplied value
+            # Role title: prefer backend extraction, but fall back to frontend if backend got garbage
             extracted_title = isolated_role_detection.get("extracted_title", "") if isolated_role_detection else ""
-            if extracted_title and extracted_title != "Unknown Role":
-                parsed_data["role_title"] = extracted_title
+            # Validate extracted title - reject section headers, markdown artifacts, "About X" patterns
+            extracted_title_clean = (extracted_title or "").strip().strip("*").strip("#").strip()
+            extracted_is_valid = (
+                extracted_title_clean
+                and extracted_title_clean != "Unknown Role"
+                and not extracted_title_clean.lower().startswith("about ")
+                and len(extracted_title_clean) > 3
+            )
+            if extracted_is_valid:
+                parsed_data["role_title"] = extracted_title_clean
             elif body.role_title:
                 user_role = body.role_title.strip()
                 is_placeholder = user_role.lower() in ['role', 'the role', 'position', 'job', 'about', '']
                 if not is_placeholder and not user_role.lower().startswith('about '):
                     parsed_data["role_title"] = user_role
+                    print(f"  ✅ Using frontend-provided role title: '{user_role}' (backend extraction was invalid: '{extracted_title}')")
 
             # Continue with penalty enforcement
             # P0 FIX: Use leadership_context directly (it's always a LeadershipContext object)
@@ -16531,15 +16559,9 @@ The difference: "addresses core requirements" is system-speak. "solves the exact
 NEVER say "excellent match" or "strong fit" when fit_score is below 70%.
 NEVER say "this is a stretch" when fit_score is above 70%.
 
-🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
-Experience penalties, company credibility adjustments, and hard caps are MANDATORY. You CANNOT skip them.
-Before counting years of experience, adjust for company credibility (seed-stage startups count as 0.3x years).
-If a candidate has only 33% of required years (after credibility adjustment), the fit score CANNOT exceed 45% - even if they have amazing transferable skills.
-These rules exist to prevent false hope. Apply them strictly.
+=== FIT SCORE CALIBRATION (MANDATORY) ===
 
-=== CRITICAL: FIT SCORING WITH EXPERIENCE PENALTIES (READ THIS FIRST) ===
-
-When calculating fit_score, you MUST apply these penalties BEFORE returning your analysis:
+Calculate fit_score using this rubric:
 
 **STEP 1: Calculate Base Fit Score**
 - 50% responsibilities alignment
@@ -16547,23 +16569,29 @@ When calculating fit_score, you MUST apply these penalties BEFORE returning your
 - 20% industry/domain alignment
 Score range: 0-100. If no resume: provide fit score of 0 or null.
 
-**STEP 2: Apply MANDATORY Experience Penalties**
+**STEP 2: Apply Experience Adjustment**
 
-CRITICAL OVERRIDE RULES - HARD CAPS (APPLY THESE FIRST):
-These are ABSOLUTE MAXIMUMS that cannot be exceeded regardless of transferable skills, domain expertise, or other factors:
+If candidate MEETS or EXCEEDS required years: NO penalty. Score based on quality of match.
+If candidate has 70-99% of required years: Minor penalty (subtract 5-10 points max).
+If candidate has 50-69% of required years: Moderate penalty (cap at 65%).
+If candidate has <50% of required years: Hard cap at 50%.
 
-1. If candidate has <50% of required years → fit_score CANNOT EXCEED 45%
-2. If candidate has 50-69% of required years → fit_score CANNOT EXCEED 55%
-3. If candidate has 70-89% of required years → fit_score CANNOT EXCEED 70%
-4. Only candidates with 90%+ of required years can score above 70%
+Key principle: A candidate who exceeds the years requirement with relevant company-scale experience and only learnable gaps (specific tools, adjacent domains) should score 85-95. Do not over-penalize for gaps that are clearly learnable or non-structural.
 
-Examples:
-- JD requires 8 years, candidate has 3 years (37.5%) → MAX 45% fit score
-- JD requires 5 years, candidate has 3 years (60%) → MAX 55% fit score
-- JD requires 3 years, candidate has 1 year (33%) → MAX 45% fit score
-- JD requires 4 years, candidate has 3.5 years (87.5%) → MAX 70% fit score
+**Score Calibration Guide:**
+- 90-100: Near-perfect. Exceeds requirements, gaps are trivial.
+- 80-89: Strong match. Meets or exceeds most requirements. Minor learnable gaps.
+- 70-79: Good match with notable gaps. Meets core requirements but 1-2 meaningful gaps.
+- 60-69: Moderate. Transferable experience but significant gaps in 2+ areas.
+- 50-59: Weak. Major gaps. Would need strong positioning.
+- Below 50: Poor match. Fundamental misalignment.
 
-Apply these hard caps AFTER calculating the base score. If your calculated fit_score exceeds the cap, reduce it to the cap and note this in penalty_explanation.
+IMPORTANT: The summary (recommendation_rationale) and fit_score MUST be consistent.
+If you describe someone as a "strong match" the score must be 85+.
+If you describe gaps as "manageable" or "learnable" the score should be 75+.
+Do NOT write "strong match" in the summary and then return a score of 70-82. That is a contradiction.
+
+Note any adjustment in penalty_explanation.
 
 === REALITY_CHECK JSON SCHEMA ===
 
