@@ -12842,6 +12842,25 @@ def _final_sanitize_text(data: dict, analysis_id: str = None) -> dict:
         # Remove underscore emphasis (_text_) - keep the text, remove the markers
         text = re.sub(r'_([^_]+)_', r'\1', text)
 
+        # =====================================================================
+        # PART 4: Fix common casing inconsistencies from LLM output
+        # "aI-enabled" → "AI-enabled", "c-suite" → "C-suite", etc.
+        # =====================================================================
+        text = re.sub(r'\bai-', 'AI-', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bai\b', 'AI', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bc-suite\b', 'C-suite', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bfaang\b', 'FAANG', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bgtm\b', 'GTM', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bkpi\b', 'KPI', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bkpis\b', 'KPIs', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bats\b', 'ATS', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bhr\b', 'HR', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bde&i\b', 'DE&I', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bdei\b', 'DEI', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bsaas\b', 'SaaS', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bsec\b', 'SEC', text, flags=re.IGNORECASE)
+        text = re.sub(r'\bipo\b', 'IPO', text, flags=re.IGNORECASE)
+
         return text.strip()
 
     def recurse(obj):
