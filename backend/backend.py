@@ -16874,15 +16874,47 @@ Role: {body.role_title}
                 print(f"⚠️ First JSON parse failed at pos {first_error.pos if hasattr(first_error, 'pos') else '?'}: {first_error}")
                 print(f"⚠️ Response near error: ...{response[max(0,first_error.pos-50):first_error.pos+50]}...")
                 error_pos = first_error.pos if hasattr(first_error, 'pos') else len(response)
-                truncated = response[:error_pos]
-                last_comma = truncated.rfind(',')
-                if last_comma > 0:
-                    truncated = truncated[:last_comma]
-                open_braces = truncated.count('{') - truncated.count('}')
-                open_brackets = truncated.count('[') - truncated.count(']')
-                truncated += ']' * open_brackets + '}' * open_braces
-                parsed_data = json.loads(truncated)
-                print(f"✅ Salvaged JSON by truncating, {len(parsed_data)} keys")
+
+                parsed_data = None
+
+                # Strategy 1: "Extra data" means valid JSON + trailing text — just take up to error_pos
+                if "Extra data" in str(first_error):
+                    try:
+                        parsed_data = json.loads(response[:error_pos])
+                        print(f"✅ Salvaged JSON by trimming extra data at pos {error_pos}, {len(parsed_data)} keys")
+                    except json.JSONDecodeError:
+                        pass
+
+                # Strategy 2: Truncate at error, remove trailing comma, close braces
+                if parsed_data is None:
+                    truncated = response[:error_pos]
+                    last_comma = truncated.rfind(',')
+                    if last_comma > 0:
+                        truncated = truncated[:last_comma]
+                    open_braces = truncated.count('{') - truncated.count('}')
+                    open_brackets = truncated.count('[') - truncated.count(']')
+                    truncated += ']' * open_brackets + '}' * open_braces
+                    try:
+                        parsed_data = json.loads(truncated)
+                        print(f"✅ Salvaged JSON by truncating + closing braces, {len(parsed_data)} keys")
+                    except json.JSONDecodeError as second_error:
+                        # Strategy 3: Find the last complete top-level JSON object
+                        # Find matching closing brace for the opening brace
+                        depth = 0
+                        last_valid_end = 0
+                        for i, c in enumerate(response):
+                            if c == '{':
+                                depth += 1
+                            elif c == '}':
+                                depth -= 1
+                                if depth == 0:
+                                    last_valid_end = i + 1
+                                    break
+                        if last_valid_end > 0:
+                            parsed_data = json.loads(response[:last_valid_end])
+                            print(f"✅ Salvaged JSON by finding matching brace at pos {last_valid_end}, {len(parsed_data)} keys")
+                        else:
+                            raise second_error
 
             # Ensure job_description, company, and role_title are in parsed_data
             # USER INPUT TAKES PRECEDENCE over Claude's extraction
