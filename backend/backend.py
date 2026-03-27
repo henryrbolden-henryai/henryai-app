@@ -422,6 +422,142 @@ def _normalize_gap_items(items: list) -> list:
     return normalized
 
 
+def _build_your_move_plan(parsed_data: dict, score: int, company: str, deterministic: dict) -> dict:
+    """
+    Build structured Your Move action plan from existing analysis data.
+    Deterministic: win probability, execution window, and action steps
+    are derived from the score and analysis, not from LLM output.
+    """
+    # Win probability from score
+    if score >= 75:
+        win_prob = "HIGH"
+    elif score >= 55:
+        win_prob = "MEDIUM"
+    else:
+        win_prob = "LOW"
+
+    # Execution window from score
+    if score >= 75:
+        exec_window = "Apply within 48 hours"
+    elif score >= 55:
+        exec_window = "Apply within 1 week"
+    else:
+        exec_window = "Evaluate before investing time"
+
+    # Extract existing Your Move data from Claude
+    your_move_data = parsed_data.get("your_move", {})
+    if not isinstance(your_move_data, dict):
+        your_move_data = {}
+    reality_check = parsed_data.get("reality_check", {})
+    referral_req = reality_check.get("referral_requirement", "")
+
+    positioning = your_move_data.get("positioning", "")
+    contact_strategy = your_move_data.get("contact_strategy", "")
+    network_leverage = your_move_data.get("network_leverage", "")
+    apply_window = your_move_data.get("apply_window", "") or your_move_data.get("timing", "")
+    strategic_action = reality_check.get("strategic_action", "")
+
+    # Primary strategy: use Claude's positioning or build from score
+    primary = positioning or strategic_action
+    if not primary:
+        if score >= 75:
+            primary = "You are a strong match. Apply quickly and position your direct experience."
+        elif score >= 55:
+            primary = "You can compete, but you need to close specific gaps in your application."
+        else:
+            primary = "This is a stretch. Consider whether this role is worth the investment."
+
+    # Build action plan steps
+    action_plan = []
+
+    # Step 1: Timing
+    if score >= 65:
+        timing_action = apply_window or "Submit your application within 48 hours of the posting going live."
+        timing_why = "Early applicants get prioritized in recruiter queues. Waiting reduces visibility."
+    else:
+        timing_action = apply_window or "Review the requirements carefully before applying."
+        timing_why = "Investing time in a tailored application matters more than speed at this fit level."
+    action_plan.append({
+        "step": 1,
+        "title": "Apply Timing",
+        "action": timing_action,
+        "why": timing_why
+    })
+
+    # Step 2: Outreach strategy
+    if contact_strategy:
+        outreach_action = contact_strategy
+    elif referral_req == "REQUIRED":
+        outreach_action = f"Identify 2-3 employees at {company or 'this company'} in this function via LinkedIn and send a targeted message referencing your relevant experience."
+    elif referral_req == "HELPS":
+        outreach_action = f"Reach out to the hiring manager or a team member at {company or 'this company'} before or right after applying."
+    else:
+        outreach_action = f"Connect with the recruiter or hiring manager on LinkedIn with a brief note about why this role fits your background."
+    action_plan.append({
+        "step": 2,
+        "title": "Outreach Strategy",
+        "action": outreach_action,
+        "why": "Candidates with a human connection are 4-10x more likely to get a response than cold applicants."
+    })
+
+    # Step 3: Positioning
+    gaps = parsed_data.get("gaps", [])
+    top_gap = ""
+    for g in gaps[:1]:
+        if isinstance(g, str):
+            top_gap = g
+        elif isinstance(g, dict):
+            top_gap = g.get("description", g.get("gap", ""))
+
+    if network_leverage:
+        pos_action = network_leverage
+    elif top_gap:
+        pos_action = f"Address '{top_gap}' directly in your cover letter. Show how your experience compensates."
+    else:
+        pos_action = "Lead with your most relevant achievement and tie it directly to the job's primary responsibility."
+    action_plan.append({
+        "step": 3,
+        "title": "Positioning",
+        "action": pos_action,
+        "why": "Hiring managers scan for direct relevance in the first 10 seconds. Lead with your strongest signal."
+    })
+
+    # Fallback strategy (always included when referral is mentioned)
+    fallback = []
+    if referral_req in ("REQUIRED", "HELPS"):
+        fallback = [
+            f"Identify 2-3 employees at {company or 'this company'} in relevant teams and send targeted outreach via LinkedIn.",
+            f"Engage with {company or 'the company'}'s content or the hiring manager's posts before reaching out. Comment with substance.",
+            "Apply early and include a cover letter that demonstrates domain insight specific to this role."
+        ]
+
+    # Success signal
+    if score >= 75:
+        success = "A recruiter screen within 1-2 weeks. If no response after 10 business days, follow up once."
+    elif score >= 55:
+        success = "An acknowledgment or recruiter screen within 2-3 weeks. Silence after 2 weeks means move to your next target."
+    else:
+        success = "Any response is a positive signal. If no reply within 2 weeks, redirect your energy to better-fit roles."
+
+    # Risk if ignored
+    if score >= 75:
+        risk = "Delaying past 72 hours significantly reduces your odds. Top roles fill fast."
+    elif score >= 55:
+        risk = "Without targeted outreach, your application will compete in a pool of hundreds. The odds drop to single digits."
+    else:
+        risk = "Applying without a strategy wastes time you could spend on higher-probability opportunities."
+
+    return {
+        "win_probability": win_prob,
+        "execution_window": exec_window,
+        "primary_strategy": primary,
+        "action_plan": action_plan,
+        "fallback_strategy": fallback,
+        "success_signal": success,
+        "risk_if_ignored": risk,
+    }
+
+
 def is_valid_company_name(name: str) -> bool:
     """Reject obviously invalid company names that waste company intel lookups."""
     if not name or not name.strip():
@@ -16616,6 +16752,12 @@ Role: {body.role_title}
             # Frontend should receive string[] only - no objects, no JSON strings
             parsed_data["strengths"] = _normalize_items(parsed_data.get("strengths", []))
             parsed_data["gaps"] = _normalize_gap_items(parsed_data.get("gaps", []))
+
+            # BUILD STRUCTURED YOUR MOVE from existing data
+            move_company = body.company or parsed_data.get("company", "") or ""
+            parsed_data["your_move_plan"] = _build_your_move_plan(
+                parsed_data, final_score, move_company, deterministic
+            )
 
             # Debug: log critical fields before sending complete event
             print(f"✅ [Stream] COMPLETE EVENT - fit_score: {parsed_data.get('fit_score')}, recommendation: {parsed_data.get('recommendation')}, keys: {list(parsed_data.keys())[:15]}")
