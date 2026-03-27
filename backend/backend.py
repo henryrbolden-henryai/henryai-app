@@ -14329,23 +14329,42 @@ You MUST provide ALL of these:
 
 ## 5. REALITY CHECK (REQUIRED - Data-Driven Market Context)
 
-Calculate expected competition and provide market context using this data:
+Calculate expected competition and provide market context using this data.
+
+DATA LAST UPDATED: March 2026. Source: layoffs.fyi, BLS JOLTS, Indeed Hiring Lab, Crunchbase.
+
+MARKET SNAPSHOT (2023-2026):
+- 2023: ~265,000 tech workers laid off (peak year)
+- 2024: ~153,000 tech workers laid off across 551 companies
+- 2025: ~124,000 tech workers laid off across 269 companies (20% fewer than 2024, but AI-driven restructuring accelerated)
+- 2026 YTD (through March): ~40,000+ already laid off across 60+ companies, on pace to match or exceed 2025
+- Total displaced since 2022: 700,000+ tech workers now competing for fewer open roles
+
+KEY MARKET FACTS (2026):
+- Job openings per unemployed person fell below 1.0 (lowest since 2017 outside pandemic). This is definitively an employer's market.
+- Average time-to-hire: 44-70 days (up from ~30 days pre-pandemic). Companies are in no rush.
+- Cold application to offer rate: 0.1-2%. Candidates submit 32-200+ applications before receiving an offer.
+- Referral-sourced candidates are 8X more likely to be hired than cold applicants.
+- Job boards account for 49% of applications but only 24.6% of hires. Direct sourcing is 2.5% of apps but 9.94% of hires.
+- 75%+ of large employers use AI-powered resume screening. 80-90% of cold applications are filtered before human review.
+- Monthly payroll growth averaged only 50,000 jobs in 2025, dropping to 29,000/month mid-year.
+- Unemployment expected to peak at 4.5% in 2026.
 
 ### Step 1: Identify Candidate's Primary Function
 Match resume to one of: HR/Recruiting, Engineering, Product Management, Marketing, Sales, Customer Support, Design, Data Science, Finance, Operations/Admin
 
-### Step 2: Apply Saturation Multipliers (base: 200 applicants)
-SATURATION_MULTIPLIER by function:
-- HR/Recruiting: 3.5 (50% workforce cut, highest saturation)
-- Operations/Admin: 2.8 (34% of layoffs)
-- Sales: 2.2 (20% of layoffs)
-- Engineering: 2.0 (22% of layoffs but only 10% workforce cut)
-- Product Management: 2.0 (7% of layoffs, specialized)
-- Marketing: 1.9 (7-8% of layoffs)
-- Finance: 1.8 (professional services hit hard)
-- Design: 1.7 (2.3x more likely cut than engineers)
-- Data Science: 1.6 (3% of layoffs)
-- Customer Support: 1.5 (lower % but AI threat)
+### Step 2: Apply Saturation Multipliers (base: 250 applicants, updated for 2026 market)
+SATURATION_MULTIPLIER by function (updated with 2025 layoff distribution):
+- Engineering: 3.0 (35% of 2025 layoffs, largest share. AI coding tools reducing headcount needs)
+- Product Management: 2.8 (20% of 2025 layoffs, companies eliminated entire PM layers)
+- HR/Recruiting: 2.5 (15% of 2025 layoffs, continued AI automation of recruiting workflows)
+- Operations/Admin: 2.5 (back-office automation accelerated)
+- Sales: 2.2 (SDR/BDR roles heavily cut, shift to PLG and inside sales)
+- Marketing: 2.0 (content roles replaced by AI, but demand for performance marketing)
+- Finance: 1.8 (moderate impact)
+- Design: 1.8 (AI design tools reducing team sizes, 2.3x more likely cut than engineers)
+- Data Science: 1.7 (merging with ML engineering, traditional DS roles declining)
+- Customer Support: 1.6 (AI chatbot adoption reduced teams 20-40% at many companies)
 
 SENIORITY_MULTIPLIER:
 - Entry/Junior: 0.7
@@ -14356,11 +14375,11 @@ SENIORITY_MULTIPLIER:
 - VP/Executive: 1.3
 
 GEOGRAPHY_MULTIPLIER:
-- SF Bay Area: 1.3
+- SF Bay Area: 1.4
 - NYC: 1.3
 - Seattle: 1.2
 - Austin: 1.2
-- Remote: 1.1
+- Remote: 1.3 (remote roles attract national applicant pools)
 - Boston: 1.1
 - LA: 1.1
 - Denver/Boulder: 1.0
@@ -14368,7 +14387,7 @@ GEOGRAPHY_MULTIPLIER:
 - Secondary Markets: 0.8
 
 INDUSTRY_MULTIPLIER:
-- AI/ML: 1.3
+- AI/ML: 1.4 (highest demand but also highest competition for roles)
 - Fintech: 1.2
 - Cybersecurity: 1.2
 - Enterprise SaaS: 1.0
@@ -14377,33 +14396,39 @@ INDUSTRY_MULTIPLIER:
 - Crypto/Web3: 0.7
 
 ### Step 3: Calculate
-expected_applicants = 200 * function_mult * seniority_mult * geography_mult * industry_mult
+expected_applicants = 250 * function_mult * seniority_mult * geography_mult * industry_mult
 Round to range (e.g., 347 → "300-400+")
 
-### Step 4: Response Rate by Function
-- HR/Recruiting: 2-3%
-- Operations/Admin: 3-4%
-- Sales: 4-6%
-- Engineering: 4-5%
-- Product Management: 3-5%
+### Step 4: Response Rate by Method (use these for response_rate field)
+Cold application (job board, no referral): 2-5% callback rate, 0.1-2% offer rate
+With employee referral: 15-25% callback rate
+Tailored/targeted application: 8-12% callback rate
+
+Response rate by function (cold apply):
+- HR/Recruiting: 1-3% (most saturated function)
+- Operations/Admin: 2-4%
+- Sales: 3-5%
+- Engineering: 3-5%
+- Product Management: 2-4%
 - Marketing: 3-5%
 - Finance: 3-4%
-- Customer Support: 5-7%
-- Design: 3-4%
-- Data Science: 4-5%
+- Customer Support: 4-6%
+- Design: 2-4%
+- Data Science: 3-5%
 
-### Step 5: Function Context (use these exact stats)
+### Step 5: Function Context (use these updated stats)
 IMPORTANT: Use proper punctuation. NO em dashes (—). Use commas, periods, or colons instead.
 
-- HR/Recruiting: "HR/Recruiting roles were hit hardest: 27.8% of all tech layoffs, with nearly 50% of the HR workforce eliminated (highest of any function)."
-- Engineering: "Engineering roles represent 22% of tech layoffs, but only 10% of the engineering workforce was cut, far lower than most functions. However, AI automation is increasing pressure."
-- Product Management: "Product Management roles represent 7% of tech layoffs (about 16,700 PMs cut in 2024-2025). Some companies eliminated entire PM layers."
-- Marketing: "Marketing roles represent 7-8% of tech layoffs. Generative AI has enabled automation of content creation."
-- Sales: "Sales roles represent 20% of tech layoffs. Field sales positions have been significantly reduced as companies shift to inside sales and PLG models."
-- Design: "Design roles represent 2-3% of tech layoffs, but designers were 2.3 times more likely to be cut than engineers. Many companies view design as non-essential during downturns."
-- Operations/Admin: "Operations and administrative roles represent 34% of all tech layoffs. Companies aggressively streamlined back-office functions."
-- Data Science: "Data Science roles represent 3% of tech layoffs. Demand remains relatively strong but companies are consolidating duplicate analytics functions."
-- Customer Support: "Customer Support roles are under pressure from AI automation, with chatbots and self-service tools replacing human support representatives."
+- Engineering: "Engineering was the most impacted function in 2025, representing 35% of all tech layoffs. AI coding assistants have enabled 20-30% productivity gains, leading companies to reduce team sizes. Junior and mid-level roles are most at risk."
+- Product Management: "Product Management represented 20% of 2025 tech layoffs. Some companies eliminated entire PM layers. The function is being squeezed between AI-augmented engineering teams and data-driven decision making."
+- HR/Recruiting: "HR/Recruiting represented 15% of 2025 tech layoffs, on top of the 50% workforce cut in 2023. AI recruiting tools continue to reduce headcount needs. Meta, Google, and others specifically targeted People Operations for cuts."
+- Marketing: "Marketing roles continue to be cut as generative AI automates content creation, copywriting, and campaign management. Performance marketing and growth roles show more resilience than brand or content roles."
+- Sales: "Sales roles, especially SDR/BDR positions, have been significantly reduced as companies shift to product-led growth and inside sales models. Enterprise AE roles remain more stable."
+- Design: "Design roles are 2.3 times more likely to be cut than engineering roles. AI design tools are reducing team sizes, and many companies view design as non-essential during restructuring."
+- Operations/Admin: "Operations and admin roles continue to be automated. Companies are aggressively streamlining back-office functions with AI workflow tools."
+- Data Science: "Traditional data science roles are declining as they merge with ML engineering. Companies are consolidating analytics functions and expecting engineers to handle data work with AI assistance."
+- Customer Support: "Customer support teams have been reduced 20-40% at many companies due to AI chatbot adoption. Remaining roles require more technical and escalation skills."
+- Finance: "Finance roles have seen moderate impact. AI is automating routine accounting, reporting, and compliance tasks, but strategic finance and FP&A roles remain in demand."
 
 === ACCURACY & INFERENCE RULES ===
 
@@ -15101,15 +15126,15 @@ It must CHANGE BEHAVIOR, not just display stats.
 
 The job market has fundamentally shifted. You MUST factor these realities into brutal_truth, candidate_position, and what_this_means:
 
-1. MASS LAYOFFS: 400,000+ tech workers laid off in 2023-2024. Every open role now attracts displaced talent from top companies. The candidate is not just competing against active seekers, they are competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
+1. MASS LAYOFFS: 700,000+ tech workers laid off since 2022 (265K in 2023, 153K in 2024, 124K in 2025, 40K+ already in 2026). Every open role attracts displaced talent from top companies. The candidate is competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
 
-2. EMPLOYER'S MARKET: Companies have leverage. They can be selective, slow, and demanding. Hiring timelines have stretched 2-3x. Ghosting is common even after final rounds. Candidates should expect silence, not responses.
+2. EMPLOYER'S MARKET: Job openings per unemployed person fell below 1.0 in late 2025, the lowest since 2017. Companies are selective, slow, and demanding. Average time-to-hire is 44-70 days. Ghosting is common even after final rounds. Monthly payroll growth averaged only 50K jobs in 2025. Candidates should expect silence, not responses.
 
-3. AI SCREENING: Most companies now use AI/ATS to filter applications before a human sees them. A strong resume that is not keyword-optimized for the specific role will be filtered out regardless of actual fit. Cold applications go through automated screening that rejects 80-90% before human review.
+3. AI SCREENING: 75%+ of large employers now use AI-powered resume screening. 80-90% of cold applications are filtered before human review. Cold application to offer rate is 0.1-2%. Candidates submit 32-200+ applications before receiving an offer. Job boards account for 49% of applications but only 24.6% of actual hires.
 
 4. FUNCTION-SPECIFIC IMPACT: Use the layoff data provided to contextualize how hard the candidate's specific function was hit. HR/Recruiting lost 50% of workforce. Engineering lost 10%. This changes the competitive landscape dramatically by function.
 
-5. REFERRAL PREMIUM: In this market, referrals are not just "nice to have." Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
+5. REFERRAL PREMIUM: Referral-sourced candidates are 8X more likely to be hired than cold applicants. Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
 
 Do NOT sugarcoat the market. The candidate needs to understand what they are walking into so they can strategize accordingly.
 
@@ -16626,15 +16651,15 @@ It must CHANGE BEHAVIOR, not just display stats.
 
 The job market has fundamentally shifted. You MUST factor these realities into brutal_truth, candidate_position, and what_this_means:
 
-1. MASS LAYOFFS: 400,000+ tech workers laid off in 2023-2024. Every open role now attracts displaced talent from top companies. The candidate is not just competing against active seekers, they are competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
+1. MASS LAYOFFS: 700,000+ tech workers laid off since 2022 (265K in 2023, 153K in 2024, 124K in 2025, 40K+ already in 2026). Every open role attracts displaced talent from top companies. The candidate is competing against recently laid-off professionals from FAANG, unicorns, and Series B+ startups who are also strong on paper.
 
-2. EMPLOYER'S MARKET: Companies have leverage. They can be selective, slow, and demanding. Hiring timelines have stretched 2-3x. Ghosting is common even after final rounds. Candidates should expect silence, not responses.
+2. EMPLOYER'S MARKET: Job openings per unemployed person fell below 1.0 in late 2025, the lowest since 2017. Companies are selective, slow, and demanding. Average time-to-hire is 44-70 days. Ghosting is common even after final rounds. Monthly payroll growth averaged only 50K jobs in 2025. Candidates should expect silence, not responses.
 
-3. AI SCREENING: Most companies now use AI/ATS to filter applications before a human sees them. A strong resume that is not keyword-optimized for the specific role will be filtered out regardless of actual fit. Cold applications go through automated screening that rejects 80-90% before human review.
+3. AI SCREENING: 75%+ of large employers now use AI-powered resume screening. 80-90% of cold applications are filtered before human review. Cold application to offer rate is 0.1-2%. Candidates submit 32-200+ applications before receiving an offer. Job boards account for 49% of applications but only 24.6% of actual hires.
 
 4. FUNCTION-SPECIFIC IMPACT: Use the layoff data provided to contextualize how hard the candidate's specific function was hit. HR/Recruiting lost 50% of workforce. Engineering lost 10%. This changes the competitive landscape dramatically by function.
 
-5. REFERRAL PREMIUM: In this market, referrals are not just "nice to have." Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
+5. REFERRAL PREMIUM: Referral-sourced candidates are 8X more likely to be hired than cold applicants. Without a referral, the candidate's application is statistically likely to be filtered by AI or buried under hundreds of qualified applicants. Be direct about this.
 
 Do NOT sugarcoat the market. The candidate needs to understand what they are walking into so they can strategize accordingly.
 
