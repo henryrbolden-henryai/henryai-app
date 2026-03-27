@@ -12,6 +12,7 @@ Per company-intelligence-implementation-brief.md:
 """
 
 import os
+import re
 import json
 import logging
 import hashlib
@@ -217,7 +218,14 @@ For YELLOW/RED companies, focus on stability and protection:
 - "What is the runway, and how is leadership thinking about growth versus efficiency?"
 - "Is this a new headcount or backfill?"
 
-IMPORTANT: Always populate interview_questions and negotiation_guidance, even for GREEN companies."""
+IMPORTANT: Always populate interview_questions and negotiation_guidance, even for GREEN companies.
+
+STRICT OUTPUT REQUIREMENTS:
+- Return ONLY valid JSON
+- Do NOT include any text before or after the JSON object
+- Do NOT include markdown formatting (no ```json, no ```)
+- Your response must start with { and end with }
+- If you violate this format, the response will be discarded"""
 
 
 def get_company_intelligence(
@@ -379,20 +387,48 @@ After completing your searches, provide your findings as structured JSON matchin
         return _create_error_intel(company_name, "An error occurred while researching this company.")
 
 
+def _extract_json(response_text: str) -> dict:
+    """Robustly extract JSON from Claude's response, handling text before/after."""
+    text = response_text.strip()
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # Strip markdown code fences
+    if "```" in text:
+        parts = text.split("```")
+        for part in parts:
+            cleaned = part.strip()
+            if cleaned.startswith("json"):
+                cleaned = cleaned[4:].strip()
+            if cleaned.startswith("{"):
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    pass
+    # Regex fallback: find first { to last }
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+    raise ValueError(f"No valid JSON found in response ({len(text)} chars)")
+
+
 def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntelligence:
     """Parse Claude's JSON response into CompanyIntelligence."""
     try:
-        # Clean the response text (remove markdown code blocks if present)
-        text = response_text.strip()
-        if text.startswith("```json"):
-            text = text[7:]
-        elif text.startswith("```"):
-            text = text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
+        data = _extract_json(response_text)
 
-        data = json.loads(text)
+        # Enforce required schema fields with safe defaults
+        if "company_health_signal" not in data:
+            data["company_health_signal"] = "GREEN"
+        if "confidence" not in data:
+            data["confidence"] = "LOW"
+        if "findings" not in data:
+            data["findings"] = []
 
         # Parse findings
         findings = []
@@ -470,7 +506,7 @@ def _parse_intel_response(company_name: str, response_text: str) -> CompanyIntel
             sources_checked=data.get("sources_checked", []),
         )
 
-    except json.JSONDecodeError as e:
+    except (json.JSONDecodeError, ValueError) as e:
         logger.error(f"Failed to parse company intel JSON: {e}")
         logger.error(f"Response text: {response_text[:500]}")
         return _create_error_intel(company_name, "Unable to process company data.")

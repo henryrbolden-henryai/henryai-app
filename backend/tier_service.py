@@ -218,6 +218,7 @@ class TierService:
         # Map usage type to field name
         field_map = {
             'applications': 'applications_used',
+            'analyses': 'applications_used',
             'resumes': 'resumes_generated',
             'cover_letters': 'cover_letters_generated',
             'henry_conversations': 'henry_conversations_used',

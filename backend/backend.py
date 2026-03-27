@@ -373,6 +373,55 @@ def score_to_decision(fit_score: int) -> dict:
     return {"decision": decision, "color": color, "risk_level": risk_level}
 
 
+def _normalize_items(items: list) -> list:
+    """Normalize strengths to plain strings. Handles str, dict, and JSON-encoded strings."""
+    normalized = []
+    for item in items:
+        if isinstance(item, str):
+            # Handle JSON-encoded strings
+            if item.strip().startswith("{"):
+                try:
+                    parsed = json.loads(item)
+                    text = parsed.get("point") or parsed.get("description") or parsed.get("strength") or parsed.get("text") or item
+                    normalized.append(text)
+                    continue
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+            normalized.append(item)
+        elif isinstance(item, dict):
+            text = item.get("point") or item.get("description") or item.get("strength") or item.get("text") or item.get("summary") or ""
+            if text:
+                normalized.append(text)
+    return normalized
+
+
+def _normalize_gap_items(items: list) -> list:
+    """Normalize gaps to consistent format. Keeps dicts for career_gap type, normalizes rest to strings."""
+    normalized = []
+    for item in items:
+        if isinstance(item, str):
+            if item.strip().startswith("{"):
+                try:
+                    parsed = json.loads(item)
+                    if parsed.get("gap_type") == "career_gap":
+                        normalized.append(parsed)
+                        continue
+                    text = parsed.get("description") or parsed.get("gap") or parsed.get("gap_type") or item
+                    normalized.append(text)
+                    continue
+                except (json.JSONDecodeError, AttributeError):
+                    pass
+            normalized.append(item)
+        elif isinstance(item, dict):
+            if item.get("gap_type") == "career_gap":
+                normalized.append(item)
+            else:
+                text = item.get("description") or item.get("gap") or item.get("gap_type") or ""
+                if text:
+                    normalized.append(text)
+    return normalized
+
+
 def is_valid_company_name(name: str) -> bool:
     """Reject obviously invalid company names that waste company intel lookups."""
     if not name or not name.strip():
@@ -11625,8 +11674,8 @@ def apply_pre_llm_leadership_gate(
         result["hard_requirement"] = True
         print(f"  🎖️  Leadership role detected ({role_level}) - people leadership is HARD REQUIREMENT")
 
-        # Check candidate's leadership years
-        print(f"  📊 Candidate leadership years: {candidate_leadership_years}")
+        # Check candidate's leadership years (weighted, single source of truth)
+        print(f"  📊 Leadership years (weighted): {candidate_leadership_years}")
 
         if candidate_leadership_years == 0:
             # HARD FAIL - zero leadership years for leadership role
@@ -12210,24 +12259,10 @@ def check_people_leadership_requirement_isolated(
     print(f"🔍 [{analysis_id}] Checking leadership requirement...")
     print(f"   Required: {required_years} years (hard={hard_requirement})")
 
-    # Calculate people leadership years
-    leadership_patterns = [
-        "manager", "director", "head of", "vp ", "lead",
-        "chief", "team lead", "group lead"
-    ]
+    # Use weighted leadership years (single source of truth)
+    candidate_years = extract_people_leadership_years(resume_data)
 
-    candidate_years = 0.0
-    for exp in resume_data.get("experience", []):
-        if not isinstance(exp, dict):
-            continue
-        title = (exp.get("title", "") or "").lower()
-
-        if any(pattern in title for pattern in leadership_patterns):
-            dates = exp.get("dates", "")
-            years = parse_duration_to_years_isolated(dates)
-            candidate_years += years
-
-    print(f"   Candidate: {candidate_years:.1f} years")
+    print(f"   Candidate: {candidate_years:.1f} years (weighted)")
 
     if candidate_years >= required_years:
         return {
@@ -15397,48 +15432,25 @@ Role: {body.role_title}
             parsed_data["fit_score_source"] = "main_prompt"
 
         # ========================================================================
-        # CRITICAL: ENFORCE PRE-LLM LEADERSHIP GATE BEFORE FURTHER PROCESSING
-        # Per fix spec: Lock Score Caps to Deterministic Gates
-        # If hard_requirement fails: Cap fit score at ≤30%, Force decision to DO_NOT_APPLY
-        # Claude may explain the decision but CANNOT change it.
+        # LEADERSHIP GATE: Signal, not blocker
+        # Eligibility influences score and reasoning but never hard-stops.
+        # Score is ALWAYS computed. Decision is ALWAYS based on score.
         # ========================================================================
         if isolated_role_detection and isolated_role_detection.get("pre_llm_leadership_gate"):
             gate = isolated_role_detection["pre_llm_leadership_gate"]
             if gate.get("gate_status") == "FAIL":
-                print(f"\n🚨🚨🚨 PRE-LLM LEADERSHIP GATE ENFORCEMENT 🚨🚨🚨")
-                print(f"   Gate Status: FAIL")
+                print(f"\n⚠️ LEADERSHIP GATE WARNING ⚠️")
+                print(f"   Gate Status: FAIL (advisory, not blocking)")
                 print(f"   Reason: {gate.get('gate_reason', 'Leadership requirement not met')}")
 
-                # CAP FIT SCORE AT 30%
-                fit_cap = gate.get("fit_cap", 30)
-                current_score = parsed_data.get("fit_score", 0)
-                if current_score > fit_cap:
-                    print(f"   🔒 Capping fit_score from {current_score}% to {fit_cap}%")
-                    parsed_data["fit_score"] = fit_cap
-                    parsed_data["fit_score_capped_by_leadership_gate"] = True
-                    parsed_data["fit_score_original_before_gate"] = current_score
-
-                # FORCE DECISION TO DO_NOT_APPLY
-                forced_decision = gate.get("apply_decision", "DO_NOT_APPLY")
-                print(f"   🔒 Forcing recommendation to: {forced_decision}")
-                parsed_data["recommendation"] = "Do Not Apply"
-                parsed_data["recommendation_locked"] = True
-                parsed_data["recommendation_locked_by_leadership_gate"] = True
-                parsed_data["leadership_gate_reason"] = gate.get("gate_reason", "Leadership requirement not met")
-
-                # Ensure experience_analysis reflects the gate
+                # Eligibility warning metadata - score still computed normally
                 if "experience_analysis" not in parsed_data:
                     parsed_data["experience_analysis"] = {}
-                parsed_data["experience_analysis"]["eligibility_gate_passed"] = False
-                parsed_data["experience_analysis"]["recommendation_locked"] = True
-                parsed_data["experience_analysis"]["hard_requirement_failure"] = True
-                parsed_data["experience_analysis"]["leadership_hard_gate_failed"] = True
+                parsed_data["experience_analysis"]["eligibility_warning"] = True
+                parsed_data["experience_analysis"]["eligibility_message"] = gate.get("gate_reason", "Leadership requirement not met")
+                parsed_data["leadership_gate_reason"] = gate.get("gate_reason", "Leadership requirement not met")
 
-                # Set apply_disabled for UI
-                parsed_data["apply_disabled"] = True
-                parsed_data["apply_disabled_reason"] = "Leadership requirement not met"
-
-                print(f"🚨🚨🚨 PRE-LLM GATE ENFORCED - Score capped, Decision locked 🚨🚨🚨\n")
+                print(f"⚠️ LEADERSHIP GATE: Warning applied, score computed normally ⚠️\n")
 
         # ========================================================================
         # CRITICAL: ENFORCE PRE-LLM OVERQUALIFICATION GATE
@@ -16597,6 +16609,11 @@ Role: {body.role_title}
                 parsed_data["recommendation"] = deterministic["decision"]
 
             print(f"🎯 [Stream] Decision: {deterministic['decision']} (score={final_score}, risk={deterministic['risk_level']})")
+
+            # NORMALIZE strengths/gaps to plain strings at the boundary
+            # Frontend should receive string[] only - no objects, no JSON strings
+            parsed_data["strengths"] = _normalize_items(parsed_data.get("strengths", []))
+            parsed_data["gaps"] = _normalize_gap_items(parsed_data.get("gaps", []))
 
             # Debug: log critical fields before sending complete event
             print(f"✅ [Stream] COMPLETE EVENT - fit_score: {parsed_data.get('fit_score')}, recommendation: {parsed_data.get('recommendation')}, keys: {list(parsed_data.keys())[:15]}")
@@ -27500,18 +27517,16 @@ async def increment_usage(usage_type: str, user_id: str = None):
     Increment usage counter for a specific type.
 
     This is typically called after a successful action (resume generated, etc.)
+    Non-blocking: always returns 200 to avoid disrupting the UI.
     """
     if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
+        return {"success": False, "message": "user_id is required"}
 
-    if not supabase:
-        raise HTTPException(status_code=503, detail="Database not available")
-
-    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions']
+    valid_usage_types = ['applications', 'resumes', 'cover_letters', 'henry_conversations', 'mock_interviews', 'coaching_sessions', 'analyses']
     if usage_type not in valid_usage_types:
-        raise HTTPException(status_code=400, detail=f"Invalid usage_type. Must be one of: {', '.join(valid_usage_types)}")
+        return {"success": False, "message": f"Invalid usage_type: {usage_type}"}
 
-    if not TIER_SERVICE_AVAILABLE:
+    if not supabase or not TIER_SERVICE_AVAILABLE:
         return {"success": True, "message": "Usage tracking not available"}
 
     try:
@@ -27519,8 +27534,8 @@ async def increment_usage(usage_type: str, user_id: str = None):
         await tier_service.increment_usage(user_id, usage_type)
         return {"success": True, "usage_type": usage_type}
     except Exception as e:
-        logger.error(f"Error incrementing usage: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error incrementing usage: {str(e)}")
+        logger.warning(f"Usage tracking failed (non-blocking): {str(e)}")
+        return {"success": True, "message": "Usage tracking failed - non-blocking"}
 
 
 @app.get("/api/user/tier")
