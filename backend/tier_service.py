@@ -28,7 +28,7 @@ from tier_config import (
 class TierService:
     """Service for managing user tiers and usage limits."""
 
-    _usage_table_missing = False  # Cache: stop hitting Supabase if table doesn't exist
+    _usage_table_missing = True  # Default True until usage_tracking table is created in Supabase
 
     def __init__(self, supabase_client: Client):
         self.supabase = supabase_client

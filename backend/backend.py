@@ -397,7 +397,8 @@ def is_valid_company_name(name: str) -> bool:
     # Sentence fragments: contains common sentence words that real company names don't
     sentence_words = ["this ", "that ", "these ", "those ", "will ", "would ", "should ",
                       "could ", "must ", "shall ", "is responsible", "we are", "you will",
-                      "the role", "the position", "looking for", "seeking a"]
+                      "the role", "the position", "looking for", "seeking a",
+                      "team and", "and role", "our team", "your team", "this team"]
     if any(w in name_lower for w in sentence_words):
         return False
     # Must start with a capital letter or number (real company names do)
