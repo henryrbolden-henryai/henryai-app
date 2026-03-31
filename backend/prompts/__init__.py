@@ -32,3 +32,9 @@ from .resume_chat import (
     RESUME_CHAT_SYSTEM_PROMPT,
     RESUME_GENERATION_PROMPT,
 )
+
+from .drills import (
+    DRILL_START_PROMPT,
+    DRILL_RESPOND_PROMPT,
+    DRILL_SUMMARY_PROMPT,
+)

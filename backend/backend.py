@@ -1221,6 +1221,9 @@ from prompts import (
     ASK_HENRY_SYSTEM_PROMPT,
     RESUME_CHAT_SYSTEM_PROMPT,
     RESUME_GENERATION_PROMPT,
+    DRILL_START_PROMPT,
+    DRILL_RESPOND_PROMPT,
+    DRILL_SUMMARY_PROMPT,
 )
 
 # Rate limiting
@@ -29805,6 +29808,179 @@ async def clear_company_intel_cache_endpoint():
 
     clear_company_intel_cache()
     return {"status": "success", "message": "Company intelligence cache cleared"}
+
+
+# ============================================================================
+# PRACTICE DRILLS
+# ============================================================================
+
+# In-memory drill session store (keyed by a simple session token)
+drill_sessions: dict = {}
+
+@app.post("/api/drills/start")
+async def start_drill(request: Request):
+    """Start a new practice drill session and return the first question."""
+    try:
+        body = await request.json()
+        drill_type = body.get("drillType", "behavioral")
+        mode = body.get("mode", "conversational")
+        role = body.get("role", "")
+
+        role_context = f"Candidate's role: {role}" if role else ""
+
+        prompt = DRILL_START_PROMPT.format(
+            drill_type=drill_type,
+            mode=mode,
+            role_context=role_context,
+        )
+
+        response = call_claude(prompt, f"Generate a {drill_type} drill question.")
+        cleaned = clean_claude_json(response)
+        data = json.loads(cleaned) if isinstance(cleaned, str) else cleaned
+
+        question = data.get("question", "Tell me about a time you faced a significant challenge at work.")
+
+        # Create session
+        import uuid
+        session_id = str(uuid.uuid4())
+        drill_sessions[session_id] = {
+            "drill_type": drill_type,
+            "mode": mode,
+            "role": role,
+            "current_question": question,
+            "history": [],
+            "question_count": 1,
+        }
+
+        return JSONResponse(content={
+            "question": question,
+            "sessionId": session_id,
+        })
+
+    except Exception as e:
+        logger.error(f"Error starting drill: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/drills/respond")
+async def respond_drill(request: Request):
+    """Submit an answer to a drill question and get feedback + next question."""
+    try:
+        body = await request.json()
+        drill_type = body.get("drillType", "behavioral")
+        answer = body.get("answer", "")
+        mode = body.get("mode", "conversational")
+        session_id = body.get("sessionId", "")
+
+        # Find or create session
+        session = drill_sessions.get(session_id)
+        if not session:
+            # Fallback: create a minimal session
+            session = {
+                "drill_type": drill_type,
+                "mode": mode,
+                "role": "",
+                "current_question": "Tell me about a recent challenge.",
+                "history": [],
+                "question_count": 1,
+            }
+
+        current_question = session.get("current_question", "")
+        history = session.get("history", [])
+        question_count = session.get("question_count", 1)
+
+        # Check if we should end the session (after 5 questions)
+        max_questions = 5
+        is_last = question_count >= max_questions
+
+        if is_last:
+            # Get feedback for the final answer, then generate summary
+            respond_prompt = DRILL_RESPOND_PROMPT.format(
+                drill_type=drill_type,
+                question=current_question,
+                answer=answer,
+            )
+            response = call_claude(respond_prompt, f"Evaluate this {drill_type} drill answer.")
+            cleaned = clean_claude_json(response)
+            data = json.loads(cleaned) if isinstance(cleaned, str) else cleaned
+
+            fb = data.get("feedback", {})
+            feedback = {
+                "score": fb.get("score", 5),
+                "strengths": fb.get("strengths", []),
+                "improvements": fb.get("improvements", []),
+                "coachingTip": fb.get("coachingTip", "Keep practicing with specific examples."),
+            }
+
+            # Add to history for summary
+            history.append({"question": current_question, "score": feedback["score"]})
+
+            # Generate summary
+            qa_lines = "\n".join([f"Q{i+1}: {h['question']} → Score: {h['score']}/10" for i, h in enumerate(history)])
+            summary_prompt = DRILL_SUMMARY_PROMPT.format(
+                drill_type=drill_type,
+                qa_summary=qa_lines,
+                total_questions=len(history),
+            )
+            summary_response = call_claude(summary_prompt, "Summarize this drill session.")
+            summary_cleaned = clean_claude_json(summary_response)
+            summary_data = json.loads(summary_cleaned) if isinstance(summary_cleaned, str) else summary_cleaned
+
+            summary = {
+                "totalQuestions": summary_data.get("totalQuestions", len(history)),
+                "averageScore": summary_data.get("averageScore", round(sum(h["score"] for h in history) / len(history), 1)),
+                "topStrength": summary_data.get("topStrength", "Consistent effort"),
+                "topImprovement": summary_data.get("topImprovement", "Add more specific metrics"),
+            }
+
+            # Clean up session
+            if session_id in drill_sessions:
+                del drill_sessions[session_id]
+
+            return JSONResponse(content={
+                "feedback": feedback,
+                "done": True,
+                "summary": summary,
+            })
+
+        else:
+            # Normal response: feedback + next question
+            respond_prompt = DRILL_RESPOND_PROMPT.format(
+                drill_type=drill_type,
+                question=current_question,
+                answer=answer,
+            )
+            response = call_claude(respond_prompt, f"Evaluate this {drill_type} drill answer and generate next question.")
+            cleaned = clean_claude_json(response)
+            data = json.loads(cleaned) if isinstance(cleaned, str) else cleaned
+
+            fb = data.get("feedback", {})
+            feedback = {
+                "score": fb.get("score", 5),
+                "strengths": fb.get("strengths", []),
+                "improvements": fb.get("improvements", []),
+                "coachingTip": fb.get("coachingTip", "Keep practicing with specific examples."),
+            }
+
+            next_question = data.get("nextQuestion", "Tell me about another challenging situation.")
+
+            # Update session
+            history.append({"question": current_question, "score": feedback["score"]})
+            session["current_question"] = next_question
+            session["history"] = history
+            session["question_count"] = question_count + 1
+            if session_id:
+                drill_sessions[session_id] = session
+
+            return JSONResponse(content={
+                "feedback": feedback,
+                "nextQuestion": next_question,
+                "done": False,
+            })
+
+    except Exception as e:
+        logger.error(f"Error responding to drill: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================
