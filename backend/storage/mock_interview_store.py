@@ -63,9 +63,9 @@ def get_mock_session(session_id: str) -> Optional[Dict[str, Any]]:
     return mock_interview_sessions.get(session_id)
 
 
-def save_mock_question(question_id: str, question_data: Dict[str, Any]) -> bool:
+def save_mock_question(question_id: str, question_data: Dict[str, Any], user_id: str = None) -> bool:
     """Save mock interview question to Supabase or fallback."""
-    if _supabase_client:
+    if _supabase_client and user_id:
         try:
             data = {
                 "id": question_id,
@@ -97,9 +97,9 @@ def get_mock_question(question_id: str) -> Optional[Dict[str, Any]]:
     return mock_interview_questions.get(question_id)
 
 
-def save_mock_response(question_id: str, response_data: Dict[str, Any]) -> bool:
+def save_mock_response(question_id: str, response_data: Dict[str, Any], user_id: str = None) -> bool:
     """Save mock interview response to Supabase or fallback."""
-    if _supabase_client:
+    if _supabase_client and user_id:
         try:
             data = {
                 "question_id": question_id,

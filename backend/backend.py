@@ -1500,6 +1500,39 @@ OPERATIONAL_ONLY_PATTERNS = [
 # Initialize Anthropic client via services module
 client = initialize_claude_client()
 
+
+def call_claude_api(retries: int = 2, **kwargs):
+    """Call Claude API directly with automatic retry on overloaded/rate-limit errors.
+
+    Wraps client.messages.create() with retry logic for transient errors.
+    Pass the same kwargs you would to client.messages.create().
+    """
+    import time as _time
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            return client.messages.create(**kwargs)
+        except anthropic.APIStatusError as e:
+            last_error = e
+            status = getattr(e, 'status_code', None)
+            # Retry on 429 (rate limit) or 529 (overloaded)
+            if status in (429, 529) and attempt < retries:
+                wait = 2 ** attempt  # 1s, 2s backoff
+                logger.warning(f"Claude API {status} error (attempt {attempt + 1}/{retries + 1}), retrying in {wait}s...")
+                _time.sleep(wait)
+                continue
+            raise
+        except anthropic.APIConnectionError as e:
+            last_error = e
+            if attempt < retries:
+                wait = 2 ** attempt
+                logger.warning(f"Claude API connection error (attempt {attempt + 1}/{retries + 1}), retrying in {wait}s...")
+                _time.sleep(wait)
+                continue
+            raise
+    raise last_error
+
+
 # OpenAI API key for TTS (optional - for natural AI voice)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -1566,9 +1599,9 @@ def get_mock_session(session_id: str) -> Optional[Dict[str, Any]]:
     # Fallback to in-memory
     return mock_interview_sessions.get(session_id)
 
-def save_mock_question(question_id: str, question_data: Dict[str, Any]) -> bool:
+def save_mock_question(question_id: str, question_data: Dict[str, Any], user_id: str = None) -> bool:
     """Save mock interview question to Supabase or fallback."""
-    if supabase_client:
+    if supabase_client and user_id:
         try:
             data = {
                 "id": question_id,
@@ -1598,9 +1631,9 @@ def get_mock_question(question_id: str) -> Optional[Dict[str, Any]]:
     # Fallback to in-memory
     return mock_interview_questions.get(question_id)
 
-def save_mock_response(question_id: str, response_data: Dict[str, Any]) -> bool:
+def save_mock_response(question_id: str, response_data: Dict[str, Any], user_id: str = None) -> bool:
     """Save mock interview response to Supabase or fallback."""
-    if supabase_client:
+    if supabase_client and user_id:
         try:
             data = {
                 "question_id": question_id,
@@ -5729,7 +5762,7 @@ HTML CONTENT:
 
 Return ONLY valid JSON, no markdown code blocks."""
 
-        extraction_response = client.messages.create(
+        extraction_response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=4000,
             messages=[{"role": "user", "content": extraction_prompt}]
@@ -21369,7 +21402,7 @@ async def debrief_chat(request: DebriefChatRequest):
             })
 
     try:
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=4000,
             system=system_prompt,
@@ -21444,6 +21477,7 @@ async def start_mock_interview(request: Request, body: StartMockInterviewRequest
     }
     # Get user_id from body if provided (for Supabase storage)
     user_id = getattr(body, 'user_id', None)
+    session_data["user_id"] = user_id  # Store on session for later retrieval
     save_mock_session(session_id, session_data, user_id)
 
     # Store question
@@ -21456,7 +21490,7 @@ async def start_mock_interview(request: Request, body: StartMockInterviewRequest
         "difficulty": question_data["difficulty"],
         "asked_at": datetime.now().isoformat()
     }
-    save_mock_question(question_id, question_record)
+    save_mock_question(question_id, question_record, user_id)
 
     print(f"✅ Mock interview session started: {session_id}")
 
@@ -21502,7 +21536,8 @@ async def submit_mock_response(request: SubmitMockResponseRequest):
         "responded_at": datetime.now().isoformat(),
         "session_id": request.session_id
     }
-    save_mock_response(request.question_id, response_entry)
+    user_id = session.get("user_id") or getattr(request, 'user_id', None)
+    save_mock_response(request.question_id, response_entry, user_id)
 
     # Format resume for prompt
     resume_json = session.get("resume_json") or session.get("resume_json", {})
@@ -21779,7 +21814,8 @@ async def get_next_mock_question(request: NextQuestionRequest):
         "difficulty": question_data["difficulty"],
         "asked_at": datetime.now().isoformat()
     }
-    save_mock_question(question_id, question_record)
+    user_id = session.get("user_id") or getattr(request, 'user_id', None)
+    save_mock_question(question_id, question_record, user_id)
 
     # Update session with new question
     question_ids = session.get("question_ids", [])
@@ -23408,7 +23444,7 @@ Return valid JSON matching this structure:
     {"'strategy_scenarios': [{'scenario': 'Scenario description', 'approach': 'How to approach it'}, ...]" if request.interview_type in ["hiring_manager", "technical"] else "'strategy_scenarios': null"}
 }}"""
 
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
@@ -23527,7 +23563,7 @@ QUALITY CHECK before output:
 
 OUTPUT ONLY THE INTRO SCRIPT. No quotes, no labels, no formatting, no explanations."""
 
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=600,
             messages=[{"role": "user", "content": prompt}]
@@ -23628,7 +23664,7 @@ The rewritten version MUST be a spoken intro (short sentences, natural flow, 120
 Return ONLY valid JSON:
 {{"score": <1-10>, "strengths": ["max 3 items"], "improvements": ["max 3 items"], "rewrittenIntro": "improved intro text"}}"""
 
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
             messages=[{"role": "user", "content": prompt}]
@@ -24443,7 +24479,7 @@ TONE: Calm, direct, coach-like, senior-to-senior. No hype, no pressure language.
 
 Return ONLY the JSON object, no additional text."""
 
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=3000,
             messages=[{"role": "user", "content": prompt}]
@@ -24509,7 +24545,7 @@ async def extract_linkedin_text(file: UploadFile = File(...)):
                 media_type = "image/jpeg"
 
             # Use Claude to extract text from image
-            response = client.messages.create(
+            response = call_claude_api(
                 model="claude-sonnet-4-20250514",
                 max_tokens=4000,
                 messages=[{
@@ -25370,7 +25406,7 @@ The user is asking about rejections, but they only have {rejected_count} rejecti
         })
 
     try:
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=1000,
             system=system_prompt,
@@ -25512,7 +25548,7 @@ async def resume_chat(request: ResumeChatRequest):
         })
 
     try:
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-3-5-haiku-20241022",
             max_tokens=1000,
             system=system_prompt,
@@ -25588,7 +25624,7 @@ async def generate_resume_from_chat(request: GenerateResumeFromChatRequest):
     )
 
     try:
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=3000,
             messages=[{
@@ -25898,7 +25934,7 @@ Important:
 - Return ONLY valid JSON, no markdown code blocks or extra text"""
 
         # Call Claude Vision API
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
             messages=[
@@ -26611,7 +26647,7 @@ async def generate_stories(request: GenerateStoriesRequest):
         )
 
     try:
-        response = client.messages.create(
+        response = call_claude_api(
             model="claude-sonnet-4-20250514",
             max_tokens=4000,
             temperature=0.7,
@@ -26645,7 +26681,7 @@ async def generate_stories(request: GenerateStoriesRequest):
                 interview_stage=request.interview_stage or "hiring_manager"
             )
 
-            cues_response = client.messages.create(
+            cues_response = call_claude_api(
                 model="claude-sonnet-4-20250514",
                 max_tokens=500,
                 temperature=0.5,
