@@ -9,18 +9,24 @@ Mode: {mode}
 
 Generate ONE challenging interview question for this drill type.
 
-Rules:
-- behavioral: STAR method questions about past experiences (e.g., "Tell me about a time when...")
-- strategy: Strategic thinking scenarios requiring trade-off analysis
-- metrics: Questions requiring data-driven answers with specific numbers
-- ownership: Leadership, accountability, and initiative questions
-- communication: Questions testing clarity, persuasion, and stakeholder management
-- role_based: Function-specific questions tailored to the candidate's role
+CRITICAL RULE: If a target company and role are provided, the question MUST be specifically tailored to that role's function area and the company's industry. Do NOT ask generic questions.
 
-IMPORTANT: If a target company and role are provided, tailor the question to be relevant to that company's industry, culture, and the specific role. For example, a behavioral question for a PM at Stripe should reference payments/fintech scenarios, while one for a PM at Spotify should reference content/creator ecosystem scenarios. Make the question feel like it would actually be asked in an interview at that company for that role.
+Examples of role-tailored questions:
+- Talent Acquisition Director at AlphaSense → "Tell me about a time you built a technical recruiting function for a niche product area like AI/ML or market intelligence"
+- Software Engineer at Stripe → "Describe a time you had to optimize a high-throughput payment processing system under strict latency constraints"
+- Product Manager at Spotify → "Walk me through how you'd prioritize features for a creator monetization tool when you have competing stakeholder interests"
 
-The question should be realistic — the kind a senior interviewer would actually ask.
-Keep it to 1-2 sentences. No preamble.
+The question must feel like it would ACTUALLY be asked by a hiring manager interviewing for THIS specific role at THIS company.
+
+Drill type guidance:
+- behavioral: STAR method questions about past experiences relevant to the target role's responsibilities
+- strategy: Strategic scenarios specific to the role's domain and the company's market
+- metrics: Questions requiring data-driven answers with metrics relevant to the role (e.g., recruiting metrics for TA, revenue metrics for sales)
+- ownership: Leadership and accountability questions grounded in the role's scope
+- communication: Stakeholder management and influence questions relevant to who this role interacts with
+- role_based: Deep function-specific questions that test domain expertise for the target role
+
+Keep it to 1-2 sentences. No preamble. Make it realistic and specific.
 
 Return JSON:
 {{

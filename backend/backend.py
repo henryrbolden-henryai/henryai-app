@@ -23469,9 +23469,10 @@ async def regenerate_intro(request: RegenerateIntroRequest):
         if request.job_description:
             jd_section = f"\nJob description:\n{request.job_description[:1500]}\n"
 
-        prompt = f"""You are a top-tier executive recruiter and interview coach.
+        prompt = f"""You are generating a 60-90 second SPOKEN interview introduction.
 
-Your task is to write a high-impact, conversational "Tell me about yourself" interview intro.
+This is NOT a cover letter. This is NOT a written summary.
+This must sound natural when spoken out loud.
 
 INPUTS:
 - Target role: {role}
@@ -23479,31 +23480,52 @@ INPUTS:
 - Seniority: {request.seniority}
 - Interview type: {request.interview_type or 'General'}
 
-Candidate's resume:
+Candidate's resume (PRIMARY source of truth):
 {resume_text or 'Not provided'}
 {jd_section}
-INSTRUCTIONS:
 
-1. Write a 60-90 second spoken intro (120-180 words).
-2. Start with VALUE, not title. Do NOT begin with "I am a..." or "My name is..."
-3. Highlight 2-3 strongest, most relevant accomplishments with metrics.
-4. Align experience directly to the target role.
-5. Show progression or growth.
-6. End with a forward-looking statement tied to the opportunity.
+STRICT RULES:
+1. Every claim MUST map back to the resume. DO NOT generate generic statements.
+2. If the resume lacks metrics, infer impact carefully but DO NOT fabricate.
 
-STYLE:
-- Natural, confident, conversational tone
-- No buzzwords or fluff
-- No long sentences
-- No generic phrases like "passionate about" or "results-driven"
+REQUIRED STRUCTURE (follow this exactly):
 
-STRUCTURE:
-- Opening: impact + specialization
-- Middle: 2-3 relevant achievements (with metrics)
-- Bridge: connect to role/company
-- Close: why this opportunity
+1. OPENING — Who you are now
+   - Current or most recent role
+   - Years of experience
+   - Core focus (function + domain)
 
-OUTPUT ONLY THE INTRO TEXT. No quotes, no labels, no formatting."""
+2. CAREER HIGHLIGHTS — 2-3 specific examples
+   Each MUST include:
+   - Company or environment (if available in resume)
+   - What you built, led, or improved
+   - Measurable outcomes (metrics REQUIRED where resume provides them)
+
+3. ROLE ALIGNMENT
+   - Why your background fits THIS specific role
+   - Pull directly from overlapping experience in the resume
+
+4. CLOSING
+   - Forward-looking statement
+   - Why you're interested in this opportunity
+
+STYLE RULES (CRITICAL):
+- Write for SPOKEN delivery, not reading
+- Use short, natural sentences
+- Confident, conversational, direct tone
+- AVOID: "I am excited to apply", "Additionally", "Furthermore", "passionate about", "results-driven"
+- AVOID long paragraphs — break into short spoken phrases
+- NO buzzwords or corporate filler
+
+LENGTH: 120-180 words (60-90 seconds spoken). If longer, shorten automatically.
+
+QUALITY CHECK before output:
+- Does this sound like something someone would actually SAY out loud?
+- Is it clearly grounded in the resume?
+- Are there at least 2 concrete examples with specifics?
+- Is it under 180 words?
+
+OUTPUT ONLY THE INTRO SCRIPT. No quotes, no labels, no formatting, no explanations."""
 
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -23523,6 +23545,108 @@ OUTPUT ONLY THE INTRO TEXT. No quotes, no labels, no formatting."""
     except Exception as e:
         print(f"🔥 Regenerate intro error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to regenerate intro: {str(e)}")
+
+
+# ============================================================================
+# INTRO FEEDBACK + REFINEMENT
+# ============================================================================
+
+class IntroFeedbackRequest(BaseModel):
+    intro: str
+    targetRole: str = ""
+    seniority: str = "mid"
+    company: str = ""
+    refinement_instruction: Optional[str] = None
+
+class IntroFeedbackResponse(BaseModel):
+    score: int
+    strengths: list = []
+    improvements: list = []
+    rewrittenIntro: str = ""
+
+@app.post("/api/intro-feedback", response_model=IntroFeedbackResponse)
+async def intro_feedback(request: IntroFeedbackRequest):
+    """Evaluate and optionally refine a spoken interview intro."""
+    try:
+        is_refinement = bool(request.refinement_instruction)
+        print(f"📝 Intro feedback: {'refinement' if is_refinement else 'evaluation'} for {request.company} - {request.targetRole}")
+
+        if is_refinement:
+            prompt = f"""You are refining a spoken interview introduction.
+
+CURRENT INTRO:
+{request.intro}
+
+REFINEMENT INSTRUCTION:
+{request.refinement_instruction}
+
+CONTEXT:
+- Target role: {request.targetRole or 'Not specified'}
+- Company: {request.company or 'Not specified'}
+- Seniority: {request.seniority}
+
+RULES:
+- This is a SPOKEN intro (60-90 seconds, 120-180 words)
+- Tighten language, add metrics if missing, improve flow
+- DO NOT rewrite from scratch unless the instruction requires it
+- Keep existing strong points intact
+- Every claim must be grounded in real experience (preserve specifics)
+- Use short, natural, conversational sentences
+- AVOID: "I am excited to apply", "Additionally", "Furthermore", corporate filler
+
+Return ONLY valid JSON:
+{{"score": <1-10>, "strengths": ["..."], "improvements": ["..."], "rewrittenIntro": "the refined intro text"}}"""
+        else:
+            prompt = f"""You are evaluating a spoken interview introduction.
+
+INTRO TO EVALUATE:
+{request.intro}
+
+CONTEXT:
+- Target role: {request.targetRole or 'Not specified'}
+- Company: {request.company or 'Not specified'}
+- Seniority: {request.seniority}
+
+EVALUATE AGAINST THESE CRITERIA:
+1. Does it sound natural when spoken out loud? (not like a cover letter)
+2. Does it follow the structure: Opening (who you are) → Highlights (2-3 specific examples) → Role alignment → Closing?
+3. Are there concrete examples with metrics or measurable outcomes?
+4. Is it 120-180 words (60-90 seconds)?
+5. Is the tone confident, conversational, and direct?
+6. Does it avoid corporate filler ("passionate about", "results-driven", "I am excited")?
+
+SCORING:
+- 9-10: Ready to deliver. Natural, specific, well-structured.
+- 7-8: Strong but needs minor tightening.
+- 5-6: Missing specifics or sounds too written/formal.
+- 3-4: Generic, no concrete examples, or way too long/short.
+- 1-2: Not usable as a spoken intro.
+
+Also provide a stronger rewritten version that fixes the issues you found.
+The rewritten version MUST be a spoken intro (short sentences, natural flow, 120-180 words).
+
+Return ONLY valid JSON:
+{{"score": <1-10>, "strengths": ["max 3 items"], "improvements": ["max 3 items"], "rewrittenIntro": "improved intro text"}}"""
+
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        raw = response.content[0].text.strip()
+        parsed = clean_claude_json(raw)
+
+        return IntroFeedbackResponse(
+            score=parsed.get("score", 5),
+            strengths=parsed.get("strengths", []),
+            improvements=parsed.get("improvements", []),
+            rewrittenIntro=parsed.get("rewrittenIntro", ""),
+        )
+
+    except Exception as e:
+        print(f"🔥 Intro feedback error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get intro feedback: {str(e)}")
 
 
 # ============================================================================
