@@ -27,6 +27,7 @@ Output format (JSON array):
 * STAR (Situation, Task, Action, Result)
 * Best used for these questions
 * Confidence level: Low (AI draft)
+* capabilities: structured capabilities with name, type (execution|leadership|strategy|communication), and level (IC|Manager|Director|VP|Executive)
 
 These are drafts. The candidate will edit and finalize.
 
@@ -84,6 +85,10 @@ Return an array of exactly 3 stories:
     "core_category": "Leadership / Influence",
     "opening_line": "One sentence that hooks - e.g., 'I had to ship a product in 3 weeks that was supposed to take 3 months.'",
     "demonstrates": ["Leadership", "Influence", "Strategic Thinking"],
+    "capabilities": [
+      {{"name": "Led cross-functional alignment under pressure", "type": "leadership", "level": "Director"}},
+      {{"name": "Drove strategic decision with incomplete data", "type": "strategy", "level": "Director"}}
+    ],
     "situation": "2-3 sentences setting the scene with stakes",
     "task": "What YOU were specifically responsible for",
     "action": "3-5 specific steps YOU took (first person, not 'we')",

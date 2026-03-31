@@ -6150,9 +6150,9 @@ async def generate_cover_letter(request: CoverLetterGenerateRequest) -> Dict[str
 - Show you understand the role deeply, not just your own resume"""
 
     system_prompt = f"""You are the document generation engine for HenryAI.
-You generate targeted positioning briefs disguised as cover letters.
+You generate high-impact executive outreach messages — NOT traditional cover letters.
 
-The top 0.01% of candidates don't write "cover letters." They write strategic positioning documents where every line earns its spot. That's what you produce.
+This is a strategic introduction that reads like a message from a peer, not an applicant. Every line earns its spot. No filler, no formality, no cover-letter energy.
 
 === 1. GLOBAL RULES ===
 
@@ -6166,84 +6166,85 @@ BANNED phrases (using any of these = failure):
 - "I believe," "I think," "I feel"
 - "I am writing to express my interest..."
 - "I would be honored..."
+- "Dear Hiring Manager" / "To Whom It May Concern"
 - "passionate," "hardworking," "dedicated," "enthusiastic"
-- "To Whom It May Concern"
-- Any apologizing
+- "I am confident that..." / "I am a strong candidate"
+- "Sincerely," / "Respectfully,"
+- Any apologizing or hedging
 
 REQUIRED tone:
-- Business conversation, not job application
+- Direct, confident, conversational — like messaging a future colleague
 - Every sentence = signal, never filler
-- Proof over claims
-- Shows thinking, not just experience
+- Proof over claims. Numbers over adjectives.
+- Shows strategic thinking about the business, not just experience
 - Reads like it was written for ONE company, not 20
+- Recruiter-friendly: scannable, concise, immediately compelling
 
 {level_instruction}
 
-=== 2. HEADER FORMAT (MANDATORY - MUST MATCH RESUME) ===
+=== 2. DO NOT INCLUDE A HEADER BLOCK ===
 
-Use the EXACT same header format as the candidate's resume:
+Do NOT include candidate name, contact info, phone, email, or LinkedIn in the message body.
+The header is rendered separately by the frontend. Starting the message with a name/contact block creates duplicates.
 
-{{FULL NAME IN ALL CAPS}}
-{{TARGET ROLE}} | {{STRENGTH 1}} | {{STRENGTH 2}}
-{{PHONE}} * {{EMAIL}} * {{LINKEDIN}} * {{CITY, STATE}}
+Start directly with the greeting line.
 
-This header MUST be identical in format to the resume header. Same name, same contact info layout.
+=== 3. OUTREACH MESSAGE STRUCTURE ===
 
-=== 3. POSITIONING BRIEF STRUCTURE ===
+## Greeting (1 line)
+Light, direct. Use the company name.
+GOOD: "{{Company Name}} Hiring Team,"
+GOOD: "{{Company Name}} Talent Team,"
+BAD: "Dear Hiring Manager,"
+BAD: "To Whom It May Concern,"
 
-After the header, include a blank line, then:
+## Opening: Impact Statement (2-3 sentences)
+Start with immediate impact — who you are and why you matter for THIS role.
+Lead with your strongest credibility signal: a metric, a scope, a result.
+Then connect to the specific role.
 
-Hiring Team
-{{Company Name}}
+GOOD: "I've built and scaled talent acquisition functions across 3 continents, most recently cutting agency spend by $1M while improving time-to-fill by 30%. The Director of TA role at [Company] caught my attention because it mirrors the exact inflection point I navigated at [Previous Company]."
+BAD: "I am writing to apply for the Director of Talent Acquisition role. I have extensive experience in recruiting."
 
-Then the body sections:
+## Role Connection (2-3 sentences)
+Why THIS role at THIS company. Show you've done your homework.
+What they need (from the JD) and why your background is the answer.
+Then provide 2-3 quantified proof points as bullets:
 
-## Section 1: Opening (2-3 sentences max)
-Skip "I'm excited to apply." Instead:
-- State the role directly
-- Drop a credible hook: who you are + why you matter
-- One metric or credential that immediately establishes authority
+GOOD: "You need someone who can scale hiring without sacrificing quality — that's been my operating thesis for the last decade:"
+• Built a 12-person TA team that filled 200+ roles/year with 94% hiring manager satisfaction
+• Reduced cost-per-hire by 40% by shifting from agency-dependent to direct sourcing
+• Designed structured interview frameworks adopted across 4 business units
 
-GOOD: "I lead global talent acquisition functions at scale, most recently reducing agency spend by $1M while improving offer acceptance and time-to-fill. I'm reaching out regarding the Director of Talent Acquisition role at [Company]."
-BAD: "I am excited to apply for the Director of Talent Acquisition role at [Company]. I believe my experience makes me a strong candidate."
+## Strategic Insight (1-2 sentences)
+Show you understand the BUSINESS challenge, not just the job posting.
+Identify what you'd focus on first. This positions you as a peer, not a candidate.
 
-## Section 2: Value Thesis (the real meat)
-You are NOT summarizing the resume. You are answering: Why you, for this role, right now?
+GOOD: "Based on where [Company] is in its growth trajectory, I'd expect the immediate priorities to include tightening intake discipline with hiring managers, building a sourcing engine that reduces inbound dependency, and establishing the TA team as a strategic partner rather than an order-taker."
 
-Structure:
-- 1 sentence: What they need (based on the JD/company)
-- 2-3 bullet points: Proof you've already done it (with metrics from the resume)
+## Close (1-2 sentences)
+Short, confident, forward-looking. No begging. No "I would love the opportunity."
 
-GOOD: "You're building a TA function that needs to scale without sacrificing quality. That's where I've consistently delivered:"
-Then bullets with specific, quantified proof.
-
-## Section 3: Strategic Insight (separates top 0.01% from everyone else)
-1-2 sentences showing you understand the BUSINESS, not just the job.
-Identify likely immediate focus areas, challenges, or strategic priorities.
-This makes you look like a peer, not a candidate.
-
-GOOD: "I'd expect immediate focus areas to include aligning hiring managers on intake discipline, tightening role calibration, and building a sourcing engine that reduces dependency on inbound volume."
-
-## Section 4: Close (confident, not thirsty)
-1-2 sentences. No begging. No "I would love the opportunity."
-
-GOOD: "Happy to share a more detailed perspective on how I'd approach this in your environment. Looking forward to connecting."
-BAD: "I would love the opportunity to discuss how my skills and experience align with your needs."
+GOOD: "Happy to share how I'd approach this in your environment. Let's connect."
+GOOD: "Worth a conversation — I have a clear point of view on how to build this."
+BAD: "I would love the opportunity to discuss how my skills align with your needs."
+BAD: "Thank you for your time and consideration."
 
 === 4. QUALITY CHECK ===
 Before returning, verify:
-- Could this letter be sent to 20 companies? If yes, rewrite it. It must be specific to THIS role.
-- Is every sentence signal, not filler? Remove any sentence that doesn't earn its spot.
-- Does it show thinking about the business, or just experience listing?
-- Are there real metrics from the resume, not vague claims?
-- Does it read like a business conversation between peers?
+- Does this read like a strategic introduction or a traditional cover letter? If the latter, rewrite.
+- Could this be sent to 20 companies? If yes, it's too generic. Rewrite.
+- Is every sentence signal? Remove any sentence that doesn't earn its spot.
+- Are there real metrics from the resume? No vague claims.
+- Does the close sound confident and forward-looking, not grateful and hopeful?
+- Is there a "Dear Hiring Manager" or "Sincerely" anywhere? Remove it.
 
 === OUTPUT FORMAT ===
 
 Return a JSON object with this EXACT structure:
 
 {{
-  "cover_letter_text": "FULL FORMATTED COVER LETTER TEXT - use \\n for line breaks and \\n\\n for paragraph breaks",
+  "cover_letter_text": "FULL MESSAGE TEXT - use \\n for line breaks and \\n\\n for paragraph breaks. Do NOT include candidate name/contact header.",
   "mode": "{mode_label}",
   "changes_summary": {{
     "opening_rationale": "1 sentence explaining why you led with this angle",
@@ -17370,7 +17371,7 @@ async def generate_documents(request: Request, body: DocumentsGenerateRequest) -
         role = body.jd_analysis.get("role_title", "this role")
 
         # Generate supporting documents using Claude with pre-approved resume context
-        cover_letter_prompt = f"""Based on this candidate's resume and the job, generate a cover letter.
+        cover_letter_prompt = f"""Based on this candidate's resume and the job, generate a high-impact outreach message (NOT a traditional cover letter).
 
 CANDIDATE RESUME:
 {full_text}
@@ -17380,12 +17381,16 @@ Company: {company}
 Role: {role}
 JD Analysis: {json.dumps(body.jd_analysis, indent=2)}
 
-Generate a professional cover letter with:
-- greeting: "Dear Hiring Manager,"
-- opening: 2-3 sentences leading with strongest relevant experience
-- body: 2-3 paragraphs connecting specific achievements to role requirements
-- closing: Confident close with specific ask
-- full_text: Complete cover letter
+Generate a strategic outreach message with:
+- greeting: Light, direct (e.g., "{company} Hiring Team,") — NOT "Dear Hiring Manager"
+- opening: 2-3 sentences starting with immediate impact (strongest metric or credential), then connect to this specific role
+- body: 2-3 quantified proof points as bullets showing you've already done what they need
+- insight: 1-2 sentences showing strategic understanding of the business challenge
+- closing: Short, confident, forward-looking — no "I would love the opportunity" or "Sincerely"
+- full_text: Complete message (do NOT include candidate name/contact header — that's rendered separately)
+
+TONE: Direct, conversational, recruiter-friendly. Like a message from a peer, not an applicant.
+BANNED: "Dear Hiring Manager", "I'm excited to apply", "I believe", "Sincerely", "passionate", "dedicated"
 
 Also generate:
 - interview_prep with narrative, talking_points, gap_mitigation
@@ -17400,7 +17405,7 @@ Return valid JSON only:
 
         try:
             supporting_response = call_claude(
-                "You are a career coach generating supporting application materials. Be concise and professional. No exclamation points in outreach.",
+                "You are a career strategist generating high-impact application materials. Write like a peer, not an applicant. Be concise, direct, and confident. No cover-letter formality. No exclamation points in outreach.",
                 cover_letter_prompt,
                 max_tokens=3000
             )
@@ -23512,6 +23517,590 @@ OUTPUT ONLY THE INTRO TEXT. No quotes, no labels, no formatting."""
 
 
 # ============================================================================
+# EVALUATION CRITERIA ENGINE + PROOF REQUIREMENTS
+# ============================================================================
+
+from models.interview import (
+    EvaluationCriteriaRequest, EvaluationCriteriaResponse,
+    EvaluationCriterion, ProofRequirement, Recommendations,
+    StorySelectionRequest, StorySelectionResponse, RecommendedStorySelection, StoryToAvoid,
+    PushbackRequest, PushbackResponse,
+    ConfidenceScoreRequest, ConfidenceScoreResponse, ConfidenceBreakdown,
+)
+from prompts.evaluation import (
+    EVALUATION_CRITERIA_PROMPT, INTERVIEW_STRATEGY_PROMPT,
+    STORY_SELECTION_PROMPT, PUSHBACK_SIMULATION_PROMPT, CONFIDENCE_SCORE_PROMPT,
+)
+
+
+@app.post("/api/prep-guide/evaluation-criteria", response_model=EvaluationCriteriaResponse)
+async def generate_evaluation_criteria(request: EvaluationCriteriaRequest):
+    """
+    Predict what the interviewer is actually evaluating and map to candidate's proof.
+    Returns structured criteria with proof requirements and gap analysis.
+    """
+    try:
+        print(f"🎯 Generating evaluation criteria for {request.company} - {request.role_title} ({request.interview_type})")
+
+        # Build resume summary (send capabilities, not full text — saves tokens)
+        resume_summary = ""
+        if request.resume_json:
+            name = request.resume_json.get("name", "")
+            summary = request.resume_json.get("summary", "")
+            resume_summary = f"Name: {name}\nSummary: {summary}\n\n"
+            for exp in (request.resume_json.get("experience", []) or [])[:5]:
+                title = exp.get("title", "")
+                company = exp.get("company", "")
+                highlights = exp.get("highlights", exp.get("description", []))
+                resume_summary += f"- {title} at {company}\n"
+                if isinstance(highlights, list):
+                    for h in highlights[:4]:
+                        resume_summary += f"  • {h}\n"
+
+        # Build story summaries (titles + capabilities only)
+        story_summaries = "No stories in bank yet."
+        if request.story_summaries:
+            lines = []
+            for s in request.story_summaries:
+                sid = s.get("id", "unknown")
+                title = s.get("title", "Untitled")
+                demonstrates = ", ".join(s.get("demonstrates", s.get("capabilities", [])))
+                lines.append(f"- [{sid}] {title} (demonstrates: {demonstrates})")
+            story_summaries = "\n".join(lines) if lines else "No stories in bank yet."
+
+        prompt = EVALUATION_CRITERIA_PROMPT.format(
+            job_description=request.job_description or "Not provided",
+            company=request.company or "Unknown",
+            role_title=request.role_title or "Unknown",
+            interview_type=request.interview_type or "hiring_manager",
+            role_level=request.role_level or "mid-senior",
+            resume_summary=resume_summary or "Not provided",
+            story_summaries=story_summaries,
+        )
+
+        response = call_claude(
+            "You are a hiring decision analyst. Predict what interviewers evaluate and map to candidate proof. No coaching language. Be direct.",
+            prompt,
+            max_tokens=3000,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        # Validate and build response
+        criteria = []
+        for c in result.get("criteria", []):
+            criteria.append(EvaluationCriterion(
+                capability=c.get("capability", ""),
+                description=c.get("description", ""),
+                priority=c.get("priority", "nice-to-have"),
+                evidence_required=c.get("evidence_required", ""),
+                interview_type_weight=float(c.get("interview_type_weight", 1.0)),
+            ))
+
+        proof_reqs = []
+        for p in result.get("proof_requirements", []):
+            proof_reqs.append(ProofRequirement(
+                capability=p.get("capability", ""),
+                required_story_count=int(p.get("required_story_count", 1)),
+                current_story_ids=p.get("current_story_ids", []),
+                gap_severity=p.get("gap_severity", "moderate"),
+                suggestion=p.get("suggestion", ""),
+            ))
+
+        coverage_score = int(result.get("coverage_score", 0))
+        critical_gaps = result.get("critical_gaps", [])
+        interview_strategy = result.get("interview_strategy", None)
+        next_actions = result.get("next_actions", [])[:3]
+        recs = result.get("recommendations", {})
+        recommendations = Recommendations(
+            use=recs.get("use", []),
+            avoid=recs.get("avoid", []),
+            fix=recs.get("fix", []),
+        ) if recs else None
+
+        print(f"✅ Generated {len(criteria)} criteria, {len(proof_reqs)} proof requirements, coverage: {coverage_score}%")
+
+        return EvaluationCriteriaResponse(
+            criteria=criteria,
+            proof_requirements=proof_reqs,
+            coverage_score=coverage_score,
+            critical_gaps=critical_gaps,
+            interview_strategy=interview_strategy,
+            recommendations=recommendations,
+            next_actions=next_actions,
+        )
+
+    except json.JSONDecodeError as e:
+        print(f"🔥 JSON parse error in evaluation criteria: {e}")
+        raise HTTPException(status_code=500, detail="Failed to parse evaluation criteria response")
+    except Exception as e:
+        print(f"🔥 Evaluation criteria error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate evaluation criteria: {str(e)}")
+
+
+@app.post("/api/prep-guide/interview-strategy")
+async def generate_interview_strategy(request: EvaluationCriteriaRequest):
+    """
+    Generate pre-interview game plan based on evaluation criteria and story bank.
+    Call AFTER evaluation-criteria to get a tactical briefing.
+    """
+    try:
+        # First get criteria
+        criteria_response = await generate_evaluation_criteria(request)
+
+        story_bank_json = "No stories available."
+        if request.story_summaries:
+            story_bank_json = json.dumps(request.story_summaries, indent=2)
+
+        prompt = INTERVIEW_STRATEGY_PROMPT.format(
+            criteria_json=json.dumps([c.dict() for c in criteria_response.criteria], indent=2),
+            story_bank_json=story_bank_json,
+            company=request.company or "Unknown",
+            role_title=request.role_title or "Unknown",
+            interview_type=request.interview_type or "hiring_manager",
+        )
+
+        response = call_claude(
+            "You are a senior recruiter giving a pre-interview briefing. Direct, tactical, no fluff.",
+            prompt,
+            max_tokens=2000,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        return {
+            "evaluation": criteria_response.dict(),
+            "strategy": result,
+        }
+
+    except Exception as e:
+        print(f"🔥 Interview strategy error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate interview strategy: {str(e)}")
+
+
+# ============================================================================
+# STORY SELECTION ENGINE
+# ============================================================================
+
+@app.post("/api/interview/select-stories", response_model=StorySelectionResponse)
+async def select_stories_for_interview(request: StorySelectionRequest):
+    """
+    Auto-select best stories for a specific interview.
+    Ranks by relevance, proof strength, and past performance.
+    """
+    try:
+        print(f"🎯 Selecting stories for interview (role_level={request.role_level})")
+
+        eval_criteria = json.dumps(request.evaluation_criteria or [], indent=2)
+        story_bank = json.dumps(request.story_bank, indent=2) if request.story_bank else "No stories available."
+
+        prompt = STORY_SELECTION_PROMPT.format(
+            job_description=request.job_description or "Not provided",
+            evaluation_criteria=eval_criteria,
+            story_bank=story_bank,
+            role_level=request.role_level or "mid-senior",
+        )
+
+        response = call_claude(
+            "You are a hiring decision system. Select proof, don't coach. Be decisive.",
+            prompt,
+            max_tokens=2500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        recommended = [
+            RecommendedStorySelection(
+                story_id=s.get("story_id", ""),
+                story_name=s.get("story_name", ""),
+                reason=s.get("reason", ""),
+                proof_strength=int(s.get("proof_strength", 0)),
+                relevance_score=int(s.get("relevance_score", 0)),
+                past_performance=s.get("past_performance", "unknown"),
+                final_score=int(s.get("final_score", 0)),
+            )
+            for s in result.get("recommended_stories", [])
+        ]
+
+        to_avoid = [
+            StoryToAvoid(
+                story_id=s.get("story_id", ""),
+                story_name=s.get("story_name", ""),
+                reason=s.get("reason", ""),
+            )
+            for s in result.get("stories_to_avoid", [])
+        ]
+
+        return StorySelectionResponse(
+            recommended_stories=recommended,
+            stories_to_avoid=to_avoid,
+            gaps=result.get("gaps", []),
+            next_actions=result.get("next_actions", [])[:3],
+        )
+
+    except Exception as e:
+        print(f"🔥 Story selection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to select stories: {str(e)}")
+
+
+# ============================================================================
+# PUSHBACK SIMULATION
+# ============================================================================
+
+@app.post("/api/interview/pushback", response_model=PushbackResponse)
+async def simulate_pushback(request: PushbackRequest):
+    """
+    Simulate real interviewer pushback on a candidate's answer.
+    Tests whether the candidate can defend their claims under pressure.
+    """
+    try:
+        print(f"💪 Simulating pushback at {request.role_level} level")
+
+        prompt = PUSHBACK_SIMULATION_PROMPT.format(
+            question=request.question,
+            user_answer=request.user_answer,
+            role_level=request.role_level or "senior",
+        )
+
+        response = call_claude(
+            "You are a skeptical hiring manager. Push hard. No softballs.",
+            prompt,
+            max_tokens=2000,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        return PushbackResponse(
+            pushbacks=result.get("pushbacks", []),
+            ideal_responses=result.get("ideal_responses", []),
+            next_actions=result.get("next_actions", [])[:3],
+        )
+
+    except Exception as e:
+        print(f"🔥 Pushback simulation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to simulate pushback: {str(e)}")
+
+
+# ============================================================================
+# CANDIDATE CONFIDENCE SCORE
+# ============================================================================
+
+@app.post("/api/interview/confidence-score", response_model=ConfidenceScoreResponse)
+async def calculate_confidence_score(request: ConfidenceScoreRequest):
+    """
+    Predict likely hiring outcome based on evaluation criteria, story bank, and performance data.
+    Answers: "Would a hiring committee advance this candidate?"
+    """
+    try:
+        print(f"📊 Calculating confidence score")
+
+        prompt = CONFIDENCE_SCORE_PROMPT.format(
+            evaluation_criteria=json.dumps(request.evaluation_criteria or [], indent=2),
+            story_bank=json.dumps(request.story_bank, indent=2) if request.story_bank else "No stories.",
+            performance_history=json.dumps(request.performance_history, indent=2) if request.performance_history else "No interview history.",
+        )
+
+        response = call_claude(
+            "You are a hiring committee making a go/no-go decision. Be honest, not encouraging.",
+            prompt,
+            max_tokens=1500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        breakdown = result.get("breakdown", {})
+
+        return ConfidenceScoreResponse(
+            score=int(result.get("score", 50)),
+            breakdown=ConfidenceBreakdown(
+                execution=int(breakdown.get("execution", 50)),
+                leadership=int(breakdown.get("leadership", 50)),
+                strategy=int(breakdown.get("strategy", 50)),
+            ),
+            risk_areas=result.get("risk_areas", []),
+            likely_outcome=result.get("likely_outcome", "mixed"),
+            outcome_rationale=result.get("outcome_rationale", ""),
+            next_actions=result.get("next_actions", [])[:3],
+        )
+
+    except Exception as e:
+        print(f"🔥 Confidence score error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate confidence score: {str(e)}")
+
+
+# ============================================================================
+# VOICE DELIVERY ANALYSIS ENGINE
+# ============================================================================
+
+from models.interview import (
+    DeliveryScores, ContentScores, CombinedScore,
+    DeliveryAnalysisRequest, DeliveryAnalysisResponse,
+    IntroDeliveryRequest, IntroDeliveryResponse,
+    PushbackVoiceRequest, PushbackVoiceResponse,
+    StoryDeliveryRequest, StoryDeliveryResponse,
+)
+from prompts.delivery import (
+    DELIVERY_ANALYSIS_PROMPT, INTRO_DELIVERY_PROMPT,
+    PUSHBACK_VOICE_PROMPT, STORY_DELIVERY_PROMPT,
+)
+from scoring import build_combined_score
+
+
+@app.post("/api/interview/evaluate-delivery", response_model=DeliveryAnalysisResponse)
+async def evaluate_delivery(request: DeliveryAnalysisRequest):
+    """
+    Analyze delivery quality from a voice transcript.
+    Evaluates: confidence, pace, clarity, energy, filler words, monotone risk.
+    """
+    try:
+        print(f"🎤 Evaluating delivery for role level: {request.role_level}")
+
+        # Calculate word count for pace analysis
+        word_count = len(request.transcript.split())
+        duration = request.duration_seconds or max(1, int(word_count / 2.3))  # Estimate if not provided
+
+        prompt = DELIVERY_ANALYSIS_PROMPT.format(
+            question=request.question or "General interview question",
+            transcript=request.transcript,
+            duration_seconds=duration,
+            role_level=request.role_level,
+        )
+
+        response = call_claude(
+            "You are a professional speech coach. Evaluate delivery, not content. Be direct.",
+            prompt,
+            max_tokens=1500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        ds = result.get("delivery_scores", {})
+        cs = result.get("content_scores", {})
+        red_flags = result.get("red_flags", [])
+
+        # Build combined score using deterministic model
+        combined = build_combined_score(
+            content_scores=cs,
+            delivery_scores=ds,
+            role_level=request.role_level,
+            red_flags=red_flags,
+        )
+
+        delivery_scores = DeliveryScores(
+            confidence=int(ds.get("confidence", 50)),
+            pace=int(ds.get("pace", 50)),
+            clarity=int(ds.get("clarity", 50)),
+            energy=int(ds.get("energy", 50)),
+            conciseness=int(ds.get("conciseness", 70)),
+            filler_word_count=int(ds.get("filler_word_count", 0)),
+            monotone_risk=bool(ds.get("monotone_risk", False)),
+        )
+
+        return DeliveryAnalysisResponse(
+            delivery_scores=delivery_scores,
+            combined=CombinedScore(
+                final_score=combined["final_score"],
+                content_score=combined["content_score"],
+                delivery_score=combined["delivery_score"],
+                content_breakdown=ContentScores(**cs) if cs else None,
+                delivery_breakdown=delivery_scores,
+                verdict=combined["verdict"],
+                recruiter_screen=combined["recruiter_screen"],
+                red_flags=combined["red_flags"],
+                top_issues=combined["top_issues"],
+                next_actions=combined["next_actions"],
+            ),
+            delivery_feedback=result.get("delivery_feedback", [])[:3],
+            risks=result.get("risks", []),
+            next_actions=combined["next_actions"],
+        )
+
+    except Exception as e:
+        print(f"🔥 Delivery analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to analyze delivery: {str(e)}")
+
+
+@app.post("/api/interview/evaluate-intro-delivery", response_model=IntroDeliveryResponse)
+async def evaluate_intro_delivery(request: IntroDeliveryRequest):
+    """
+    Evaluate a spoken intro (tell me about yourself) for both content and delivery.
+    Heavily weights the first 10-15 seconds.
+    """
+    try:
+        print(f"🎙️ Evaluating intro delivery for {request.company} - {request.target_role}")
+
+        word_count = len(request.transcript.split())
+        duration = request.duration_seconds or max(1, int(word_count / 2.3))
+
+        prompt = INTRO_DELIVERY_PROMPT.format(
+            target_role=request.target_role or "Not specified",
+            company=request.company or "Not specified",
+            transcript=request.transcript,
+            duration_seconds=duration,
+        )
+
+        response = call_claude(
+            "You are evaluating a spoken interview intro. Content + delivery. First impression matters most.",
+            prompt,
+            max_tokens=2000,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        ds = result.get("delivery_scores", {})
+        cs = result.get("content_scores", {})
+        red_flags = result.get("red_flags", [])
+
+        # Intro uses 50/50 weighting — build manually
+        from scoring import compute_content_score, compute_delivery_score, compute_intro_score, compute_verdict
+        content = compute_content_score(
+            cs.get("clarity", 50), cs.get("structure", 50),
+            cs.get("impact", 50), cs.get("credibility", 50),
+        )
+        delivery = compute_delivery_score(
+            ds.get("confidence", 50), ds.get("clarity", 50),
+            ds.get("pace", 50), ds.get("energy", 50),
+            ds.get("conciseness", 70), ds.get("filler_word_count", 0),
+        )
+        intro_score = compute_intro_score(content, delivery)
+        verdict_result = compute_verdict(content, delivery, red_flags)
+
+        delivery_obj = DeliveryScores(
+            confidence=int(ds.get("confidence", 50)),
+            pace=int(ds.get("pace", 50)),
+            clarity=int(ds.get("clarity", 50)),
+            energy=int(ds.get("energy", 50)),
+            conciseness=int(ds.get("conciseness", 70)),
+            filler_word_count=int(ds.get("filler_word_count", 0)),
+            monotone_risk=bool(ds.get("monotone_risk", False)),
+        )
+
+        return IntroDeliveryResponse(
+            intro_score=intro_score,
+            first_impression=result.get("first_impression", "average"),
+            combined=CombinedScore(
+                final_score=intro_score,
+                content_score=content,
+                delivery_score=delivery,
+                content_breakdown=ContentScores(**cs) if cs else None,
+                delivery_breakdown=delivery_obj,
+                verdict=verdict_result["verdict"],
+                recruiter_screen=verdict_result["recruiter_screen"],
+                red_flags=red_flags,
+                top_issues=[],
+                next_actions=result.get("next_actions", [])[:3],
+            ),
+            delivery_issues=result.get("delivery_issues", []),
+            content_issues=result.get("content_issues", []),
+            improved_intro=result.get("improved_intro", ""),
+            next_actions=result.get("next_actions", [])[:3],
+        )
+
+    except Exception as e:
+        print(f"🔥 Intro delivery error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to evaluate intro delivery: {str(e)}")
+
+
+@app.post("/api/interview/pushback-voice", response_model=PushbackVoiceResponse)
+async def pushback_voice(request: PushbackVoiceRequest):
+    """
+    Pushback simulation with voice delivery analysis.
+    User speaks their answer → system evaluates content + delivery → fires back pushback.
+    """
+    try:
+        print(f"🎤 Pushback voice drill for role level: {request.role_level}")
+
+        word_count = len(request.transcript.split())
+        duration = request.duration_seconds or max(1, int(word_count / 2.3))
+
+        prompt = PUSHBACK_VOICE_PROMPT.format(
+            question=request.question,
+            transcript=request.transcript,
+            duration_seconds=duration,
+            role_level=request.role_level,
+        )
+
+        response = call_claude(
+            "You are a skeptical interviewer evaluating both content and delivery. Be direct.",
+            prompt,
+            max_tokens=1500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        ds = result.get("delivery_scores", {})
+
+        return PushbackVoiceResponse(
+            pushback_question=result.get("pushback_question", ""),
+            previous_mistake=result.get("previous_mistake", ""),
+            improved_response_guidance=result.get("improved_response_guidance", ""),
+            delivery_scores=DeliveryScores(
+                confidence=int(ds.get("confidence", 50)),
+                pace=int(ds.get("pace", 50)),
+                clarity=int(ds.get("clarity", 50)),
+                energy=int(ds.get("energy", 50)),
+                conciseness=int(ds.get("conciseness", 70)),
+                filler_word_count=int(ds.get("filler_word_count", 0)),
+                monotone_risk=bool(ds.get("monotone_risk", False)),
+            ),
+            next_actions=result.get("next_actions", [])[:2],
+        )
+
+    except Exception as e:
+        print(f"🔥 Pushback voice error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process pushback voice: {str(e)}")
+
+
+@app.post("/api/story-bank/validate-delivery", response_model=StoryDeliveryResponse)
+async def validate_story_delivery(request: StoryDeliveryRequest):
+    """
+    Validate whether a candidate can effectively DELIVER a story via voice.
+    Answers: "Can they tell this story well in a real interview?"
+    """
+    try:
+        print(f"🎤 Validating story delivery: {request.title}")
+
+        word_count = len(request.transcript.split())
+        duration = request.duration_seconds or max(1, int(word_count / 2.3))
+
+        prompt = STORY_DELIVERY_PROMPT.format(
+            title=request.title or "Untitled story",
+            transcript=request.transcript,
+            duration_seconds=duration,
+        )
+
+        response = call_claude(
+            "You are evaluating story delivery quality. Not content — delivery. Can they TELL this story?",
+            prompt,
+            max_tokens=1000,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        return StoryDeliveryResponse(
+            delivery_strength=int(result.get("delivery_strength", 50)),
+            risk_flags=result.get("risk_flags", [])[:3],
+            recommendation=result.get("recommendation", "refine"),
+            next_actions=result.get("next_actions", [])[:2],
+        )
+
+    except Exception as e:
+        print(f"🔥 Story delivery validation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate story delivery: {str(e)}")
+
+
+# ============================================================================
 # INTERVIEWER INTELLIGENCE
 # ============================================================================
 
@@ -25877,6 +26466,250 @@ async def promote_story(story_id: str, request: Optional[PromoteStoryRequest] = 
         locked=True,
         message="Story promoted. It's now yours and ready for interviews."
     )
+
+
+# ============================================================================
+# STORY BANK: PROOF STRENGTH SCORING
+# ============================================================================
+
+from models.story_bank import (
+    StoryCapability, ProofStrength, ProofStrengthBreakdown,
+    StoryPerformanceRecord, CaseStudyRequest, CaseStudyResponse,
+)
+
+
+@app.post("/api/story-bank/score-proof-strength")
+async def score_proof_strength(request: Dict[str, Any]):
+    """
+    Score a story's proof strength on 4 dimensions: scope, complexity, impact, ownership.
+    Returns 0-100 score with breakdown and flags.
+    """
+    try:
+        situation = request.get("situation", "")
+        task = request.get("task", "")
+        action = request.get("action", "")
+        result = request.get("result", "")
+        title = request.get("title", "")
+
+        full_text = f"Situation: {situation}\nTask: {task}\nAction: {action}\nResult: {result}"
+
+        prompt = f"""Score this interview story's PROOF STRENGTH on 4 dimensions (0-100 each).
+
+You are a hiring manager evaluating whether this story proves the candidate can do the job.
+
+=== THE STORY ===
+Title: {title}
+{full_text}
+
+=== SCORING DIMENSIONS ===
+
+1. SCOPE (0-100): Scale of impact.
+   - 90+: company-wide or industry-level impact, large teams/orgs
+   - 60-89: department/team-level, meaningful scope
+   - 30-59: project-level, limited scope
+   - 0-29: individual task, narrow scope
+
+2. COMPLEXITY (0-100): Problem difficulty.
+   - 90+: ambiguous, multi-stakeholder, no clear playbook
+   - 60-89: challenging but solvable, some constraints
+   - 30-59: moderate difficulty, established patterns
+   - 0-29: routine, well-defined problem
+
+3. IMPACT (0-100): Measurable outcome.
+   - 90+: specific metrics, revenue/cost/time quantified, clear before/after
+   - 60-89: directional metrics or strong qualitative outcome
+   - 30-59: vague impact, "improved" without numbers
+   - 0-29: no outcome stated or outcome is trivial
+
+4. OWNERSHIP (0-100): Decision authority.
+   - 90+: "I decided", "I built", clear personal accountability
+   - 60-89: mix of "I" and "we", clear personal contribution
+   - 30-59: mostly "we", unclear individual role
+   - 0-29: passive observer, "the team did"
+
+=== OUTPUT FORMAT (JSON) ===
+
+{{
+  "score": 75,
+  "breakdown": {{
+    "scope": 80,
+    "complexity": 70,
+    "impact": 85,
+    "ownership": 65
+  }},
+  "flags": ["Missing specific revenue metric in result", "Strong ownership language"],
+  "recommendations": {{
+    "use": ["Lead with the ownership language — it's your strongest dimension"],
+    "avoid": ["Don't mention this story for strategy questions — scope is too narrow"],
+    "fix": ["Add a specific dollar or percentage metric to the result"]
+  }},
+  "next_actions": [
+    "Add a specific revenue or efficiency metric to the result before your next interview",
+    "Rewrite the action section with more 'I decided' language to boost ownership score"
+  ]
+}}
+
+Be honest. Most stories score 50-75. Only truly exceptional stories hit 85+.
+next_actions: Max 2. Specific. Tied to the weakest dimension. No generic advice.
+Return ONLY valid JSON."""
+
+        response = call_claude(
+            "You are a hiring manager scoring proof quality. Be calibrated — most stories are mediocre.",
+            prompt,
+            max_tokens=500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        return {
+            "score": result.get("score", 50),
+            "breakdown": result.get("breakdown", {"scope": 50, "complexity": 50, "impact": 50, "ownership": 50}),
+            "flags": result.get("flags", []),
+            "recommendations": result.get("recommendations", {"use": [], "avoid": [], "fix": []}),
+            "next_actions": result.get("next_actions", []),
+        }
+
+    except Exception as e:
+        print(f"🔥 Proof strength scoring error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to score proof strength: {str(e)}")
+
+
+# ============================================================================
+# STORY BANK: RECORD PERFORMANCE (Interview → Story → Outcome Loop)
+# ============================================================================
+
+@app.post("/api/story-bank/record-performance")
+async def record_story_performance(request: Dict[str, Any]):
+    """
+    Record how a story performed in an actual interview.
+    Called from debrief flow after interview completion.
+    Updates story performance history for future recommendation weighting.
+    """
+    try:
+        story_id = request.get("story_id", "")
+        record = StoryPerformanceRecord(
+            interview_id=request.get("interview_id", ""),
+            company=request.get("company", ""),
+            role=request.get("role", ""),
+            interview_type=request.get("interview_type", ""),
+            question_asked=request.get("question_asked", ""),
+            effectiveness=request.get("effectiveness", "adequate"),
+            outcome=request.get("outcome"),
+            date=request.get("date", ""),
+        )
+
+        print(f"📊 Recording performance for story {story_id}: {record.effectiveness}")
+
+        # In production, this would update Supabase.
+        # For now, return the record for client-side persistence.
+        return {
+            "story_id": story_id,
+            "recorded": True,
+            "performance_record": record.dict(),
+            "message": f"Performance recorded: {record.effectiveness}",
+        }
+
+    except Exception as e:
+        print(f"🔥 Record performance error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to record performance: {str(e)}")
+
+
+# ============================================================================
+# STORY BANK: CASE STUDY GENERATOR
+# ============================================================================
+
+@app.post("/api/story-bank/case-study", response_model=CaseStudyResponse)
+async def generate_case_study(request: CaseStudyRequest):
+    """
+    Convert a STAR story into a portfolio-ready case study.
+    """
+    try:
+        print(f"📋 Generating case study from story: {request.title}")
+
+        prompt = f"""Convert this interview story into a portfolio-ready case study.
+
+=== STORY ===
+Title: {request.title}
+Situation: {request.situation}
+Task: {request.task}
+Action: {request.action}
+Result: {request.result}
+
+Target Audience: {request.target_audience or "Hiring manager reviewing portfolio"}
+
+=== CASE STUDY FORMAT ===
+
+Transform the STAR story into a compelling case study. Rules:
+- "Problem" should set stakes and context (why this mattered to the business)
+- "Actions" should be 3-5 specific, concrete steps — not vague process descriptions
+- "Outcome" should lead with the metric, then the business meaning
+- "Business Impact" should connect to company-level value (revenue, efficiency, risk)
+- Write in third-person professional voice, not first-person
+- No fluff. Every sentence earns its spot.
+- If the original story lacks metrics, flag it but still write the best version possible.
+
+=== OUTPUT FORMAT (JSON) ===
+
+{{
+  "title": "Compelling title (not the STAR title)",
+  "problem": "2-3 sentences setting the business challenge",
+  "actions": ["Specific action 1", "Specific action 2", "Specific action 3"],
+  "outcome": "Quantified result + business meaning",
+  "business_impact": "Connection to company-level value",
+  "portfolio_ready": true,
+  "likely_questions": [
+    "Interview question this case study prepares you for 1",
+    "Interview question 2",
+    "Interview question 3"
+  ],
+  "weak_points": [
+    "Where an interviewer will probe 1",
+    "Where they'll challenge you 2"
+  ],
+  "defense_tips": [
+    "How to defend weak point 1 if challenged",
+    "How to defend weak point 2"
+  ],
+  "next_actions": [
+    "Specific action to strengthen this before the interview",
+    "Another specific action"
+  ]
+}}
+
+INTERVIEW BRIDGE RULES:
+- likely_questions: 2-3 questions a hiring manager would ask after reading this case study
+- weak_points: Where the story is thin — missing metrics, unclear ownership, etc.
+- defense_tips: Pre-built responses for each weak point. Not coaching — actual words to say.
+- next_actions: Max 3. Specific, time-bound. "Add the revenue number before Thursday" not "improve metrics."
+
+Return ONLY valid JSON."""
+
+        response = call_claude(
+            "You are a content strategist converting interview stories into portfolio case studies. Professional, concise, evidence-focused.",
+            prompt,
+            max_tokens=1500,
+        )
+
+        cleaned = clean_claude_json(response)
+        result = json.loads(cleaned)
+
+        return CaseStudyResponse(
+            title=result.get("title", request.title),
+            problem=result.get("problem", ""),
+            actions=result.get("actions", []),
+            outcome=result.get("outcome", ""),
+            business_impact=result.get("business_impact", ""),
+            portfolio_ready=result.get("portfolio_ready", True),
+            likely_questions=result.get("likely_questions", []),
+            weak_points=result.get("weak_points", []),
+            defense_tips=result.get("defense_tips", []),
+            next_actions=result.get("next_actions", []),
+        )
+
+    except Exception as e:
+        print(f"🔥 Case study error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate case study: {str(e)}")
 
 
 # ============================================================================

@@ -114,6 +114,16 @@ Return JSON:
         "metrics": ["specific metric or number mentioned"],
         "achievements": ["specific accomplishment they described"],
         "stories": ["brief summary of any STAR story they told"]
+    }},
+    "hiring_manager_verdict": {{
+        "clarity": integer (0-100, how clear and scannable the answer is),
+        "structure": integer (0-100, STAR adherence, logical flow),
+        "impact": integer (0-100, does this answer prove business value),
+        "credibility": integer (0-100, does this sound real and earned),
+        "verdict": "strong" | "borderline" | "weak",
+        "verdict_rationale": "1 sentence: would a hiring manager advance this candidate based on this answer?",
+        "rejection_reason": "string or null — if verdict is 'weak', explain WHY this answer fails. Be blunt. No coaching tone. Example: 'You did not demonstrate ownership. Your answer focused on team actions, not your individual impact.' Set to null if verdict is not 'weak'.",
+        "red_flags": ["only include if genuine red flag present — e.g., 'no ownership language', 'no clear outcome', 'incoherent answer'"]
     }}
 }}
 
@@ -122,6 +132,11 @@ RULES:
 - Be specific about gaps (not "needs more detail" but "didn't mention stakeholder alignment")
 - Only generate follow-ups if there's a clear trigger; otherwise set follow_up_trigger to null
 - Extract concrete numbers, percentages, or metrics for resume enhancement
+- The hiring_manager_verdict is NOT coaching — it's a pass/fail evaluation. Be direct:
+  - "strong": This answer would advance the candidate to the next round (content >= 75)
+  - "borderline": Depends on the competition — not disqualifying but not compelling (content 65-74)
+  - "weak": This answer would not pass a hiring manager screen (content < 65). MUST include rejection_reason.
+- red_flags: Only real red flags. Empty array is fine. These override scoring.
 
 No markdown, no preamble."""
 
@@ -237,6 +252,11 @@ Return JSON:
     "recommended_drills": ["drill1", "drill2", "drill3"],
     "readiness_score": "Ready" | "Almost Ready" | "Needs Practice",
     "level_estimate": "mid" | "senior" | "director" | "executive",
+    "hiring_manager_verdict": "advance" | "hold" | "reject",
+    "verdict_rationale": "1-2 sentences: would a hiring manager move this candidate forward?",
+    "rejection_reason": "string or null — if verdict is 'reject', explain WHY bluntly. No coaching tone. Set to null if verdict is not 'reject'.",
+    "recruiter_screen": "pass" | "fail",
+    "red_flags": ["only real red flags — empty array is fine"],
     "next_steps": "string (what to do next)"
 }}
 

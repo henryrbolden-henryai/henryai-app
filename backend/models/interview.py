@@ -377,6 +377,142 @@ class InterviewerIntelResponse(BaseModel):
     debrief_insights: Optional[str] = None
 
 
+# ============================================
+# EVALUATION CRITERIA ENGINE
+# ============================================
+
+class EvaluationCriterion(BaseModel):
+    """A single capability the interviewer is assessing"""
+    capability: str = Field(description="What they're evaluating, e.g. 'Scales hiring without quality loss'")
+    description: str = Field(description="Why this matters for the role")
+    priority: str = Field(description="must-have | differentiator | nice-to-have")
+    evidence_required: str = Field(description="What proof looks like for this capability")
+    interview_type_weight: float = Field(default=1.0, ge=0, le=2.0, description="How much this matters for the interview type")
+
+
+class ProofRequirement(BaseModel):
+    """Maps a capability to available proof in the story bank"""
+    capability: str
+    required_story_count: int = Field(default=1, ge=1, le=3)
+    current_story_ids: List[str] = Field(default_factory=list)
+    gap_severity: str = Field(default="moderate", description="critical | moderate | minor")
+    suggestion: str = Field(default="", description="How to fill the gap")
+
+
+class EvaluationCriteriaRequest(BaseModel):
+    """Request to generate evaluation criteria and proof requirements"""
+    job_description: str
+    interview_type: str = "hiring_manager"
+    company: str = ""
+    role_title: str = ""
+    role_level: str = ""
+    resume_json: Dict[str, Any] = {}
+    story_summaries: Optional[List[Dict[str, Any]]] = Field(None, description="Story bank summaries for proof mapping")
+
+
+class Recommendations(BaseModel):
+    """Actionable recommendations: what to use, avoid, and fix"""
+    use: List[str] = Field(default_factory=list)
+    avoid: List[str] = Field(default_factory=list)
+    fix: List[str] = Field(default_factory=list)
+
+
+class EvaluationCriteriaResponse(BaseModel):
+    """Response with evaluation criteria and proof requirements"""
+    criteria: List[EvaluationCriterion]
+    proof_requirements: List[ProofRequirement]
+    coverage_score: int = Field(ge=0, le=100, description="How well the candidate's stories cover the criteria")
+    critical_gaps: List[str] = Field(default_factory=list, description="Capabilities with no proof")
+    interview_strategy: Optional[str] = Field(None, description="1-2 sentence positioning strategy")
+    recommendations: Optional[Recommendations] = None
+    next_actions: List[str] = Field(default_factory=list, description="Max 3 specific, time-bound actions")
+
+
+# ============================================
+# STORY SELECTION ENGINE
+# ============================================
+
+class RecommendedStorySelection(BaseModel):
+    """A story recommended for a specific interview"""
+    story_id: str
+    story_name: str
+    reason: str
+    proof_strength: int = 0
+    relevance_score: int = 0
+    past_performance: str = "unknown"
+    final_score: int = 0
+
+
+class StoryToAvoid(BaseModel):
+    """A story the candidate should NOT use"""
+    story_id: str
+    story_name: str = ""
+    reason: str
+
+
+class StorySelectionRequest(BaseModel):
+    """Request for interview-specific story selection"""
+    job_description: str = ""
+    evaluation_criteria: Optional[List[Dict[str, Any]]] = None
+    story_bank: List[Dict[str, Any]] = []
+    role_level: str = ""
+
+
+class StorySelectionResponse(BaseModel):
+    """Response with ranked story recommendations"""
+    recommended_stories: List[RecommendedStorySelection]
+    stories_to_avoid: List[StoryToAvoid] = []
+    gaps: List[str] = []
+    next_actions: List[str] = []
+
+
+# ============================================
+# PUSHBACK SIMULATION
+# ============================================
+
+class PushbackRequest(BaseModel):
+    """Request for interview pushback simulation"""
+    question: str
+    user_answer: str
+    role_level: str = "senior"
+
+
+class PushbackResponse(BaseModel):
+    """Response with pushback questions and ideal responses"""
+    pushbacks: List[str]
+    ideal_responses: List[str]
+    next_actions: List[str] = []
+
+
+# ============================================
+# CANDIDATE CONFIDENCE SCORE
+# ============================================
+
+class ConfidenceBreakdown(BaseModel):
+    execution: int = Field(ge=0, le=100)
+    leadership: int = Field(ge=0, le=100)
+    strategy: int = Field(ge=0, le=100)
+
+
+class ConfidenceScoreRequest(BaseModel):
+    """Request for candidate confidence scoring"""
+    evaluation_criteria: Optional[List[Dict[str, Any]]] = None
+    story_bank: List[Dict[str, Any]] = []
+    performance_history: List[Dict[str, Any]] = []
+    job_description: str = ""
+    role_level: str = ""
+
+
+class ConfidenceScoreResponse(BaseModel):
+    """Response with hiring committee confidence assessment"""
+    score: int = Field(ge=0, le=100)
+    breakdown: ConfidenceBreakdown
+    risk_areas: List[str] = []
+    likely_outcome: str = Field(description="strong_hire | mixed | no_hire")
+    outcome_rationale: str = ""
+    next_actions: List[str] = []
+
+
 # Debrief Extraction models
 class DebriefExtractionRequest(BaseModel):
     """Request to extract structured data from debrief conversation."""
@@ -402,3 +538,109 @@ class PatternAnalysisResponse(BaseModel):
     confidence_trend: Optional[Dict[str, Any]] = None
     total_debriefs: int
     insights: List[str]
+
+
+# ============================================
+# VOICE DELIVERY ANALYSIS
+# ============================================
+
+class DeliveryScores(BaseModel):
+    """Delivery analysis scores from voice input"""
+    confidence: int = Field(ge=0, le=100, description="How confident the speaker sounds")
+    pace: int = Field(ge=0, le=100, description="Pacing quality — 50 is ideal, 0 too slow, 100 too fast")
+    clarity: int = Field(ge=0, le=100, description="How clear and articulate the speech is")
+    energy: int = Field(ge=0, le=100, description="Energy and engagement level")
+    conciseness: int = Field(default=70, ge=0, le=100, description="Time-to-value ratio — did they say it efficiently")
+    filler_word_count: int = Field(ge=0, description="Number of filler words detected")
+    monotone_risk: bool = Field(default=False, description="Whether delivery sounds monotone")
+
+
+class ContentScores(BaseModel):
+    """Content quality scores — what they said"""
+    clarity: int = Field(ge=0, le=100, description="How clear and scannable the answer is")
+    structure: int = Field(ge=0, le=100, description="STAR adherence, logical flow")
+    impact: int = Field(ge=0, le=100, description="Does the answer prove business value")
+    credibility: int = Field(ge=0, le=100, description="Does this sound real and earned")
+
+
+class CombinedScore(BaseModel):
+    """Master scoring model: content gets you in the door, delivery gets you the offer"""
+    final_score: int = Field(ge=0, le=100, description="Weighted combination of content + delivery")
+    content_score: int = Field(ge=0, le=100, description="What they said")
+    delivery_score: int = Field(ge=0, le=100, description="How they said it")
+    content_breakdown: Optional[ContentScores] = None
+    delivery_breakdown: Optional[DeliveryScores] = None
+    verdict: str = Field(description="advance | hold | reject")
+    recruiter_screen: str = Field(default="pass", description="pass | fail — would this pass a recruiter screen")
+    red_flags: List[str] = Field(default_factory=list, description="Issues that override scores")
+    top_issues: List[str] = Field(default_factory=list, description="Top 3 things to fix")
+    next_actions: List[str] = Field(default_factory=list, description="Max 3 specific actions")
+
+
+class DeliveryAnalysisRequest(BaseModel):
+    """Request for voice delivery analysis"""
+    transcript: str
+    question: Optional[str] = None
+    role_level: str = "senior"
+    duration_seconds: Optional[int] = None
+
+
+class DeliveryAnalysisResponse(BaseModel):
+    """Response from voice delivery analysis"""
+    delivery_scores: DeliveryScores
+    combined: Optional[CombinedScore] = None
+    delivery_feedback: List[str]
+    risks: List[str]
+    next_actions: List[str]
+
+
+class IntroDeliveryRequest(BaseModel):
+    """Request for intro delivery evaluation"""
+    transcript: str
+    target_role: str = ""
+    company: str = ""
+    duration_seconds: Optional[int] = None
+
+
+class IntroDeliveryResponse(BaseModel):
+    """Response from intro delivery evaluation"""
+    intro_score: int = Field(ge=0, le=100)
+    first_impression: str = Field(description="strong | average | weak")
+    combined: Optional[CombinedScore] = None
+    delivery_issues: List[str]
+    content_issues: List[str]
+    improved_intro: str
+    next_actions: List[str]
+
+
+class PushbackVoiceRequest(BaseModel):
+    """Request for pushback drill with voice input"""
+    question: str
+    transcript: str
+    role_level: str = "senior"
+    duration_seconds: Optional[int] = None
+
+
+class PushbackVoiceResponse(BaseModel):
+    """Response from pushback voice drill"""
+    pushback_question: str
+    previous_mistake: str
+    improved_response_guidance: str
+    delivery_scores: DeliveryScores
+    next_actions: List[str]
+
+
+class StoryDeliveryRequest(BaseModel):
+    """Request to validate story delivery via voice"""
+    story_id: str = ""
+    title: str = ""
+    transcript: str
+    duration_seconds: Optional[int] = None
+
+
+class StoryDeliveryResponse(BaseModel):
+    """Response from story delivery validation"""
+    delivery_strength: int = Field(ge=0, le=100)
+    risk_flags: List[str]
+    recommendation: str = Field(description="use | refine | avoid")
+    next_actions: List[str]

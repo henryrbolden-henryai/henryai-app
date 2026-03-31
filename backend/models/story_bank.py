@@ -62,6 +62,75 @@ class CoreCompetency(str, Enum):
 
 
 # ============================================
+# CAPABILITY MAPPING (replaces flat tags)
+# ============================================
+
+class StoryCapability(BaseModel):
+    """Structured capability a story demonstrates"""
+    name: str = Field(description="Specific capability, e.g. 'Led cross-functional org through ambiguity'")
+    type: str = Field(description="execution | leadership | strategy | communication")
+    level: str = Field(description="IC | Manager | Director | VP | Executive")
+    confidence: float = Field(default=0.8, ge=0, le=1.0)
+
+
+class ProofStrengthBreakdown(BaseModel):
+    """Dimensional breakdown of story proof strength"""
+    scope: int = Field(ge=0, le=100, description="Scale of impact — team size, revenue, org breadth")
+    complexity: int = Field(ge=0, le=100, description="Problem difficulty, ambiguity, constraints")
+    impact: int = Field(ge=0, le=100, description="Measurable outcome, metrics present")
+    ownership: int = Field(ge=0, le=100, description="Decision authority, 'I' vs 'we', accountability")
+
+
+class ProofStrength(BaseModel):
+    """Overall proof strength score for a story"""
+    score: int = Field(ge=0, le=100, description="Composite proof strength")
+    breakdown: ProofStrengthBreakdown
+    flags: List[str] = Field(default_factory=list, description="Issues: 'missing metrics', 'no scale reference'")
+
+
+class StoryPerformanceRecord(BaseModel):
+    """Record of how a story performed in an actual interview"""
+    interview_id: str
+    company: str = ""
+    role: str = ""
+    interview_type: str = ""
+    question_asked: str = ""
+    effectiveness: str = Field(default="adequate", description="strong | adequate | weak")
+    outcome: Optional[str] = Field(None, description="advanced | rejected | unknown")
+    date: str = ""
+
+
+# ============================================
+# CASE STUDY GENERATOR
+# ============================================
+
+class CaseStudyRequest(BaseModel):
+    """Request to generate a case study from a story"""
+    story_id: str = ""
+    title: str = ""
+    situation: str = ""
+    task: str = ""
+    action: str = ""
+    result: str = ""
+    target_audience: Optional[str] = Field(None, description="Who will read this — recruiter, hiring manager, portfolio")
+
+
+class CaseStudyResponse(BaseModel):
+    """Portfolio-ready case study generated from a story"""
+    title: str
+    problem: str
+    actions: List[str]
+    outcome: str
+    business_impact: str
+    portfolio_ready: bool = True
+    # Interview bridge fields
+    likely_questions: List[str] = Field(default_factory=list, description="Interview questions this case study prepares you for")
+    weak_points: List[str] = Field(default_factory=list, description="Where an interviewer will probe — anticipate these")
+    defense_tips: List[str] = Field(default_factory=list, description="How to defend weak points if challenged")
+    next_actions: List[str] = Field(default_factory=list, description="Max 3 specific actions to strengthen this case study")
+
+
+# ============================================
 # COACHING CUES
 # ============================================
 
@@ -95,6 +164,7 @@ class GeneratedStory(BaseModel):
     title: str
     opening_line: str = Field(description="One-sentence hook to start")
     demonstrates: List[str]
+    capabilities: List[StoryCapability] = Field(default_factory=list, description="Structured capabilities — replaces flat demonstrates for scoring")
     situation: str
     task: str
     action: str
@@ -108,6 +178,9 @@ class GeneratedStory(BaseModel):
     is_core: bool = False
     core_category: Optional[str] = Field(None, description="Leadership/Execution/Failure if core")
     coaching_cues: CoachingCues = Field(default_factory=CoachingCues)
+    proof_strength: Optional[ProofStrength] = Field(None, description="How strong is the evidence in this story")
+    performance_history: List[StoryPerformanceRecord] = Field(default_factory=list, description="How this story performed in real interviews")
+    is_validated: bool = Field(default=False, description="Has this story been used and validated in a real interview")
 
 
 class GenerateStoriesResponse(BaseModel):
