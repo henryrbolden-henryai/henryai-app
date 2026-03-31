@@ -26113,6 +26113,282 @@ def calculate_story_score(story: Dict[str, Any], context: Dict[str, Any]) -> tup
     return (round(score, 1), tier, round(overuse_penalty * 100, 1))
 
 
+# ============================================================================
+# STORY BANK CRUD (reads/writes to user_story_bank Supabase table)
+# ============================================================================
+
+@app.get("/api/story-bank")
+async def get_story_bank(user_id: str = None):
+    """Get all stories for a user from the user_story_bank Supabase table."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        return {"stories": [], "aiDrafts": [], "stats": {"total": 0, "core": 0, "drafts": 0, "retired": 0}}
+
+    try:
+        result = supabase_client.table("user_story_bank") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=True) \
+            .execute()
+
+        all_stories = result.data or []
+
+        # Separate user stories from AI drafts
+        stories = []
+        ai_drafts = []
+        core_count = 0
+        draft_count = 0
+        retired_count = 0
+
+        for s in all_stories:
+            mapped = {
+                "id": s.get("id"),
+                "title": s.get("story_name", ""),
+                "situation": "",
+                "task": "",
+                "action": "",
+                "result": "",
+                "status": "core" if s.get("is_core") else ("retired" if s.get("status") == "retired" else ("locked" if s.get("locked") else "draft")),
+                "demonstrates": s.get("demonstrates", []),
+                "best_for_questions": s.get("best_for_questions", []),
+                "times_used": s.get("times_used", 0),
+                "effectiveness_avg": s.get("effectiveness_avg"),
+                "is_validated": s.get("locked", False),
+                "is_core": s.get("is_core", False),
+                "source": s.get("source", "User"),
+                "created_at": s.get("created_at"),
+            }
+
+            # Parse STAR from story_summary if present
+            summary = s.get("story_summary", "") or ""
+            if "Situation:" in summary:
+                parts = {}
+                for section in ["Situation", "Task", "Action", "Result"]:
+                    start = summary.find(f"{section}:")
+                    if start >= 0:
+                        start += len(section) + 1
+                        # Find next section or end
+                        next_starts = [summary.find(f"{ns}:", start) for ns in ["Situation", "Task", "Action", "Result"] if summary.find(f"{ns}:", start) > start]
+                        end = min(next_starts) if next_starts else len(summary)
+                        parts[section.lower()] = summary[start:end].strip()
+                mapped["situation"] = parts.get("situation", "")
+                mapped["task"] = parts.get("task", "")
+                mapped["action"] = parts.get("action", "")
+                mapped["result"] = parts.get("result", "")
+            else:
+                mapped["situation"] = summary
+
+            if s.get("source") == "AI Draft" and not s.get("locked"):
+                ai_drafts.append(mapped)
+                draft_count += 1
+            else:
+                stories.append(mapped)
+
+            if s.get("is_core"):
+                core_count += 1
+            if s.get("status") == "retired":
+                retired_count += 1
+
+        stats = {
+            "total": len(all_stories),
+            "core": core_count,
+            "drafts": draft_count,
+            "retired": retired_count,
+        }
+
+        return {"stories": stories, "aiDrafts": ai_drafts, "stats": stats}
+
+    except Exception as e:
+        logger.error(f"Error fetching story bank: {e}")
+        return {"stories": [], "aiDrafts": [], "stats": {"total": 0, "core": 0, "drafts": 0, "retired": 0}}
+
+
+@app.post("/api/story-bank")
+async def create_story(request: Request):
+    """Create a new story in the user_story_bank Supabase table."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    # Build summary from STAR fields
+    situation = body.get("situation", "")
+    task = body.get("task", "")
+    action = body.get("action", "")
+    result_text = body.get("result", "")
+    summary = f"Situation: {situation}\n\nTask: {task}\n\nAction: {action}\n\nResult: {result_text}"
+
+    row = {
+        "user_id": user_id,
+        "story_name": body.get("title", "Untitled Story"),
+        "story_summary": summary.strip(),
+        "story_context": body.get("context", ""),
+        "demonstrates": body.get("demonstrates", []),
+        "best_for_questions": body.get("best_for_questions", []),
+        "source": body.get("source", "User"),
+        "is_core": body.get("is_core", False),
+        "locked": False,
+    }
+
+    try:
+        result = supabase_client.table("user_story_bank").insert(row).select().single().execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Error creating story: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/api/story-bank/{story_id}")
+async def update_story(story_id: str, request: Request):
+    """Update an existing story in user_story_bank."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    updates = {"updated_at": "now()"}
+    if "title" in body:
+        updates["story_name"] = body["title"]
+    if any(k in body for k in ["situation", "task", "action", "result"]):
+        updates["story_summary"] = f"Situation: {body.get('situation', '')}\n\nTask: {body.get('task', '')}\n\nAction: {body.get('action', '')}\n\nResult: {body.get('result', '')}"
+    if "demonstrates" in body:
+        updates["demonstrates"] = body["demonstrates"]
+    if "is_core" in body:
+        updates["is_core"] = body["is_core"]
+    if "status" in body:
+        updates["status"] = body["status"]
+
+    try:
+        result = supabase_client.table("user_story_bank") \
+            .update(updates) \
+            .eq("id", story_id) \
+            .eq("user_id", user_id) \
+            .select() \
+            .single() \
+            .execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Error updating story: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/story-bank/{story_id}")
+async def delete_story(story_id: str, user_id: str = None):
+    """Delete a story from user_story_bank."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        supabase_client.table("user_story_bank") \
+            .delete() \
+            .eq("id", story_id) \
+            .eq("user_id", user_id) \
+            .execute()
+        return {"status": "deleted"}
+    except Exception as e:
+        logger.error(f"Error deleting story: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# INTERVIEW DEBRIEFS CRUD
+# ============================================================================
+
+@app.get("/api/interview-debriefs")
+async def get_interview_debriefs(user_id: str = None, limit: int = 20):
+    """Get all interview debriefs for a user."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        return {"debriefs": []}
+
+    try:
+        result = supabase_client.table("interview_debriefs") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("interview_date", desc=True) \
+            .limit(limit) \
+            .execute()
+
+        return {"debriefs": result.data or []}
+    except Exception as e:
+        logger.error(f"Error fetching debriefs: {e}")
+        return {"debriefs": []}
+
+
+@app.get("/api/interview-debriefs/{debrief_id}")
+async def get_interview_debrief(debrief_id: str, user_id: str = None):
+    """Get a single interview debrief."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    try:
+        result = supabase_client.table("interview_debriefs") \
+            .select("*") \
+            .eq("id", debrief_id) \
+            .eq("user_id", user_id) \
+            .single() \
+            .execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Error fetching debrief: {e}")
+        raise HTTPException(status_code=404, detail="Debrief not found")
+
+
+@app.post("/api/interview-debriefs")
+async def create_interview_debrief(request: Request):
+    """Create a new interview debrief."""
+    body = await request.json()
+    user_id = body.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+
+    row = {
+        "user_id": user_id,
+        "company": body.get("company"),
+        "role": body.get("role"),
+        "interview_type": body.get("interview_type"),
+        "interview_date": body.get("interview_date"),
+        "interviewer_name": body.get("interviewer_name"),
+        "duration_minutes": body.get("duration_minutes"),
+        "rating_overall": body.get("rating_overall"),
+        "rating_confidence": body.get("rating_confidence"),
+        "rating_preparation": body.get("rating_preparation"),
+        "questions_asked": body.get("questions_asked", []),
+        "question_categories": body.get("question_categories", []),
+        "stumbles": body.get("stumbles", []),
+        "wins": body.get("wins", []),
+        "stories_used": body.get("stories_used", []),
+        "interviewer_signals": body.get("interviewer_signals", {}),
+        "key_insights": body.get("key_insights", []),
+        "improvement_areas": body.get("improvement_areas", []),
+        "raw_conversation": body.get("raw_conversation"),
+        "application_id": body.get("application_id"),
+    }
+
+    try:
+        result = supabase_client.table("interview_debriefs").insert(row).select().single().execute()
+        return result.data
+    except Exception as e:
+        logger.error(f"Error creating debrief: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# STORY BANK AI FEATURES
+# ============================================================================
+
 @app.post("/api/story-bank/generate", response_model=GenerateStoriesResponse)
 async def generate_stories(request: GenerateStoriesRequest):
     """
