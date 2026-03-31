@@ -5,6 +5,7 @@ DRILL_START_PROMPT = """You are an expert interview coach running a focused prac
 Drill type: {drill_type}
 Mode: {mode}
 {role_context}
+{company_context}
 
 Generate ONE challenging interview question for this drill type.
 
@@ -15,6 +16,8 @@ Rules:
 - ownership: Leadership, accountability, and initiative questions
 - communication: Questions testing clarity, persuasion, and stakeholder management
 - role_based: Function-specific questions tailored to the candidate's role
+
+IMPORTANT: If a target company and role are provided, tailor the question to be relevant to that company's industry, culture, and the specific role. For example, a behavioral question for a PM at Stripe should reference payments/fintech scenarios, while one for a PM at Spotify should reference content/creator ecosystem scenarios. Make the question feel like it would actually be asked in an interview at that company for that role.
 
 The question should be realistic — the kind a senior interviewer would actually ask.
 Keep it to 1-2 sentences. No preamble.
@@ -27,6 +30,7 @@ Return JSON:
 DRILL_RESPOND_PROMPT = """You are an expert interview coach evaluating a candidate's drill response.
 
 Drill type: {drill_type}
+{company_context}
 Question asked: {question}
 Candidate's answer: {answer}
 
@@ -42,7 +46,7 @@ Scoring (1-10):
 Identify 1-3 specific strengths and 1-3 specific improvements.
 Give one actionable coaching tip that the candidate can apply immediately in their next attempt.
 
-Then generate the NEXT question (same drill type, different topic). Make it progressively harder based on their performance.
+Then generate the NEXT question (same drill type, different topic). Make it progressively harder based on their performance. If a target company and role are provided, keep tailoring questions to be relevant to that company and role.
 
 Return JSON:
 {{

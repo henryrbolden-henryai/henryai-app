@@ -30225,13 +30225,22 @@ async def start_drill(request: Request):
         drill_type = body.get("drillType", "behavioral")
         mode = body.get("mode", "conversational")
         role = body.get("role", "")
+        company = body.get("company", "")
+        target_role = body.get("targetRole", "")
 
         role_context = f"Candidate's role: {role}" if role else ""
+        company_parts = []
+        if company:
+            company_parts.append(f"Target company: {company}")
+        if target_role:
+            company_parts.append(f"Target role: {target_role}")
+        company_context = "\n".join(company_parts) if company_parts else ""
 
         prompt = DRILL_START_PROMPT.format(
             drill_type=drill_type,
             mode=mode,
             role_context=role_context,
+            company_context=company_context,
         )
 
         response = call_claude(prompt, f"Generate a {drill_type} drill question.")
@@ -30247,6 +30256,8 @@ async def start_drill(request: Request):
             "drill_type": drill_type,
             "mode": mode,
             "role": role,
+            "company": company,
+            "target_role": target_role,
             "current_question": question,
             "history": [],
             "question_count": 1,
@@ -30289,6 +30300,16 @@ async def respond_drill(request: Request):
         history = session.get("history", [])
         question_count = session.get("question_count", 1)
 
+        # Build company context from session
+        sess_company = session.get("company", "")
+        sess_target_role = session.get("target_role", "")
+        ctx_parts = []
+        if sess_company:
+            ctx_parts.append(f"Target company: {sess_company}")
+        if sess_target_role:
+            ctx_parts.append(f"Target role: {sess_target_role}")
+        company_context = "\n".join(ctx_parts) if ctx_parts else ""
+
         # Check if we should end the session (after 5 questions)
         max_questions = 5
         is_last = question_count >= max_questions
@@ -30299,6 +30320,7 @@ async def respond_drill(request: Request):
                 drill_type=drill_type,
                 question=current_question,
                 answer=answer,
+                company_context=company_context,
             )
             response = call_claude(respond_prompt, f"Evaluate this {drill_type} drill answer.")
             cleaned = clean_claude_json(response)
@@ -30349,6 +30371,7 @@ async def respond_drill(request: Request):
                 drill_type=drill_type,
                 question=current_question,
                 answer=answer,
+                company_context=company_context,
             )
             response = call_claude(respond_prompt, f"Evaluate this {drill_type} drill answer and generate next question.")
             cleaned = clean_claude_json(response)
