@@ -1195,6 +1195,11 @@ from storage import (
     outcomes_store,
     SESSION_TTL_SECONDS,
     set_supabase_client,
+    save_interview_response,
+    save_story_performance,
+    update_user_performance_summary,
+    get_user_performance_summary,
+    set_performance_supabase_client,
 )
 
 # Services - Core business logic
@@ -1507,8 +1512,9 @@ if SUPABASE_KEY:
     try:
         from supabase import create_client, Client
         supabase_client: Client = create_client(SUPABASE_URL_STORAGE, SUPABASE_KEY)
-        # Connect storage module to Supabase
+        # Connect storage modules to Supabase
         set_supabase_client(supabase_client)
+        set_performance_supabase_client(supabase_client)
         logger.info("Supabase client initialized successfully")
     except Exception as e:
         logger.warning(f"Failed to initialize Supabase client: {e}. Falling back to in-memory storage.")
@@ -29808,6 +29814,124 @@ async def clear_company_intel_cache_endpoint():
 
     clear_company_intel_cache()
     return {"status": "success", "message": "Company intelligence cache cleared"}
+
+
+# ============================================================================
+# PERFORMANCE PERSISTENCE
+# ============================================================================
+
+@app.post("/api/interview/save-response")
+async def save_interview_response_endpoint(request: Request):
+    """
+    Persist an evaluated interview response.
+    Called after mock interview answer evaluation or voice drill evaluation.
+    Non-blocking: if save fails, returns success anyway.
+    """
+    try:
+        body = await request.json()
+        user_id = body.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+
+        # Extract delivery scores from nested object
+        delivery_scores = body.get("delivery_scores", {})
+
+        data = {
+            "user_id": user_id,
+            "interview_id": body.get("interview_id"),
+            "question": body.get("question"),
+            "transcript": body.get("transcript"),
+            "content_score": body.get("content_score"),
+            "delivery_score": body.get("delivery_score"),
+            "final_score": body.get("final_score"),
+            "verdict": body.get("verdict"),
+            "rejection_reason": body.get("rejection_reason"),
+            "filler_word_count": body.get("filler_word_count"),
+            "confidence_score": delivery_scores.get("confidence"),
+            "pace_score": delivery_scores.get("pace"),
+            "clarity_score": delivery_scores.get("clarity"),
+            "energy_score": delivery_scores.get("energy"),
+        }
+
+        saved = save_interview_response(data)
+
+        # Update aggregate summary (non-blocking)
+        if saved:
+            try:
+                update_user_performance_summary(user_id)
+            except Exception as e:
+                logger.error(f"Failed to update performance summary: {e}")
+
+        return {"status": "saved" if saved else "skipped"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in save-response endpoint: {e}")
+        # Don't block UX — return success even on failure
+        return {"status": "error", "detail": str(e)}
+
+
+@app.post("/api/story-bank/save-performance")
+async def save_story_performance_endpoint(request: Request):
+    """
+    Persist story usage performance.
+    Called when a story is used in a mock interview or explicitly logged.
+    """
+    try:
+        body = await request.json()
+        user_id = body.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        if not body.get("story_id"):
+            raise HTTPException(status_code=400, detail="story_id is required")
+
+        data = {
+            "user_id": user_id,
+            "story_id": body.get("story_id"),
+            "interview_id": body.get("interview_id"),
+            "effectiveness": body.get("effectiveness"),
+            "delivery_score": body.get("delivery_score"),
+            "final_score": body.get("final_score"),
+            "context": body.get("context", {}),
+        }
+
+        saved = save_story_performance(data)
+        return {"status": "saved" if saved else "skipped"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in save-performance endpoint: {e}")
+        return {"status": "error", "detail": str(e)}
+
+
+@app.get("/api/user/performance-summary")
+async def get_performance_summary_endpoint(user_id: str = None):
+    """
+    Get the user's aggregate performance summary.
+    Returns avg scores, pass rate, and top issues.
+    """
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    summary = get_user_performance_summary(user_id)
+    if not summary:
+        return {
+            "avg_confidence": None,
+            "avg_clarity": None,
+            "avg_delivery_score": None,
+            "pass_rate": None,
+            "top_issues": [],
+        }
+
+    return {
+        "avg_confidence": summary.get("avg_confidence"),
+        "avg_clarity": summary.get("avg_clarity"),
+        "avg_delivery_score": summary.get("avg_delivery_score"),
+        "pass_rate": summary.get("pass_rate"),
+        "top_issues": summary.get("top_issues", []),
+    }
 
 
 # ============================================================================
