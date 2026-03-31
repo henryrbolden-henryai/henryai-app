@@ -16747,7 +16747,7 @@ Role: {body.role_title}
                 print(f"[STREAM] early_insight failed (non-fatal): {e}")
 
             # Stream Claude's response
-            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=4096, model="claude-opus-4-6"):
+            for chunk in call_claude_streaming(system_prompt, user_message, max_tokens=8192, model="claude-opus-4-6"):
                 buffer += chunk
 
                 # Try to extract key fields as they become available
