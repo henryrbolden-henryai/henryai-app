@@ -577,6 +577,35 @@ class CombinedScore(BaseModel):
     next_actions: List[str] = Field(default_factory=list, description="Max 3 specific actions")
 
 
+class CommunicationStyle(BaseModel):
+    """Detected communication style"""
+    primary: str = Field(description="confident | unsure | rushed | rambling | flat | clear")
+    secondary: List[str] = Field(default_factory=list, description="Additional style traits")
+
+
+class RootCauseAnalysis(BaseModel):
+    """Identifies whether the primary issue is content, delivery, script, or transcription"""
+    primary_issue: str = Field(description="content | delivery | script | transcription | both")
+    explanation: str = Field(description="One-sentence explanation of the root cause")
+
+
+class TimingAnalysis(BaseModel):
+    """Timing and pacing assessment"""
+    duration_seconds: int = 0
+    target_min: int = 60
+    target_max: int = 90
+    status: str = Field(default="on_target", description="too_short | on_target | too_long")
+    pacing_assessment: str = Field(default="", description="Human-readable pacing note")
+
+
+class CoachingLayer(BaseModel):
+    """Structured coaching feedback — actionable, not advisory"""
+    immediate_fixes: List[str] = Field(default_factory=list, description="Fix in <5 min, tied to THIS answer")
+    practice_drills: List[str] = Field(default_factory=list, description="Repetition-based exercises")
+    delivery_adjustments: List[str] = Field(default_factory=list, description="Behavioral delivery changes")
+    timing_coaching: Optional[Dict[str, str]] = Field(default=None, description="adjustment + specific_action")
+
+
 class DeliveryAnalysisRequest(BaseModel):
     """Request for voice delivery analysis"""
     transcript: str
@@ -592,6 +621,13 @@ class DeliveryAnalysisResponse(BaseModel):
     delivery_feedback: List[str]
     risks: List[str]
     next_actions: List[str]
+    # New evaluation layers
+    communication_style: Optional[CommunicationStyle] = None
+    root_cause_analysis: Optional[RootCauseAnalysis] = None
+    timing: Optional[TimingAnalysis] = None
+    transcription_note: Optional[str] = None
+    issues: Optional[Dict[str, List[str]]] = None  # {"delivery": [...], "content": [...]}
+    coaching: Optional[CoachingLayer] = None
 
 
 class IntroDeliveryRequest(BaseModel):
@@ -611,6 +647,12 @@ class IntroDeliveryResponse(BaseModel):
     content_issues: List[str]
     improved_intro: str
     next_actions: List[str]
+    # New evaluation layers
+    communication_style: Optional[CommunicationStyle] = None
+    root_cause_analysis: Optional[RootCauseAnalysis] = None
+    timing: Optional[TimingAnalysis] = None
+    transcription_note: Optional[str] = None
+    coaching: Optional[CoachingLayer] = None
 
 
 class PushbackVoiceRequest(BaseModel):

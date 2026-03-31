@@ -23974,6 +23974,7 @@ async def calculate_confidence_score(request: ConfidenceScoreRequest):
 
 from models.interview import (
     DeliveryScores, ContentScores, CombinedScore,
+    CommunicationStyle, RootCauseAnalysis, TimingAnalysis, CoachingLayer,
     DeliveryAnalysisRequest, DeliveryAnalysisResponse,
     IntroDeliveryRequest, IntroDeliveryResponse,
     PushbackVoiceRequest, PushbackVoiceResponse,
@@ -24037,6 +24038,13 @@ async def evaluate_delivery(request: DeliveryAnalysisRequest):
             monotone_risk=bool(ds.get("monotone_risk", False)),
         )
 
+        # Extract new evaluation layers
+        comm_style = result.get("communication_style")
+        root_cause = result.get("root_cause_analysis")
+        timing_data = result.get("timing")
+        coaching_data = result.get("coaching")
+        issues_data = result.get("issues")
+
         return DeliveryAnalysisResponse(
             delivery_scores=delivery_scores,
             combined=CombinedScore(
@@ -24054,6 +24062,21 @@ async def evaluate_delivery(request: DeliveryAnalysisRequest):
             delivery_feedback=result.get("delivery_feedback", [])[:3],
             risks=result.get("risks", []),
             next_actions=combined["next_actions"],
+            communication_style=CommunicationStyle(**comm_style) if comm_style else None,
+            root_cause_analysis=RootCauseAnalysis(**root_cause) if root_cause else None,
+            timing=TimingAnalysis(
+                duration_seconds=duration,
+                status=timing_data.get("status", "on_target") if timing_data else "on_target",
+                pacing_assessment=timing_data.get("pacing_assessment", "") if timing_data else "",
+            ) if timing_data else None,
+            transcription_note=result.get("transcription_note"),
+            issues=issues_data,
+            coaching=CoachingLayer(
+                immediate_fixes=coaching_data.get("immediate_fixes", []),
+                practice_drills=coaching_data.get("practice_drills", []),
+                delivery_adjustments=coaching_data.get("delivery_adjustments", []),
+                timing_coaching=coaching_data.get("timing_coaching"),
+            ) if coaching_data else None,
         )
 
     except Exception as e:
@@ -24117,6 +24140,12 @@ async def evaluate_intro_delivery(request: IntroDeliveryRequest):
             monotone_risk=bool(ds.get("monotone_risk", False)),
         )
 
+        # Extract new evaluation layers
+        comm_style = result.get("communication_style")
+        root_cause = result.get("root_cause_analysis")
+        timing_data = result.get("timing")
+        coaching_data = result.get("coaching")
+
         return IntroDeliveryResponse(
             intro_score=intro_score,
             first_impression=result.get("first_impression", "average"),
@@ -24136,6 +24165,20 @@ async def evaluate_intro_delivery(request: IntroDeliveryRequest):
             content_issues=result.get("content_issues", []),
             improved_intro=result.get("improved_intro", ""),
             next_actions=result.get("next_actions", [])[:3],
+            communication_style=CommunicationStyle(**comm_style) if comm_style else None,
+            root_cause_analysis=RootCauseAnalysis(**root_cause) if root_cause else None,
+            timing=TimingAnalysis(
+                duration_seconds=duration,
+                status=timing_data.get("status", "on_target") if timing_data else "on_target",
+                pacing_assessment=timing_data.get("pacing_assessment", "") if timing_data else "",
+            ) if timing_data else None,
+            transcription_note=result.get("transcription_note"),
+            coaching=CoachingLayer(
+                immediate_fixes=coaching_data.get("immediate_fixes", []),
+                practice_drills=coaching_data.get("practice_drills", []),
+                delivery_adjustments=coaching_data.get("delivery_adjustments", []),
+                timing_coaching=coaching_data.get("timing_coaching"),
+            ) if coaching_data else None,
         )
 
     except Exception as e:
