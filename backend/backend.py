@@ -4307,9 +4307,12 @@ class PrepGuideResponse(BaseModel):
 
 class RegenerateIntroRequest(BaseModel):
     """Request to regenerate just the intro pitch"""
-    company: str
-    role_title: str
-    interview_type: str
+    company: str = ""
+    role_title: str = ""
+    target_role: str = ""
+    interview_type: str = ""
+    seniority: str = "mid"
+    job_description: str = ""
     resume_json: Dict[str, Any] = {}
 
 class RegenerateIntroResponse(BaseModel):
@@ -23424,40 +23427,81 @@ Return valid JSON matching this structure:
 async def regenerate_intro(request: RegenerateIntroRequest):
     """Regenerate just the intro pitch with a fresh take"""
     try:
-        print(f"🔄 Regenerating intro for {request.company} - {request.role_title}")
+        # Accept either target_role or role_title
+        role = request.target_role or request.role_title
+        print(f"🔄 Regenerating intro for {request.company} - {role} ({request.seniority})")
 
-        # Build resume context
+        # Build rich resume context
         resume_text = ""
         if request.resume_json:
             experiences = request.resume_json.get("experience", [])
-            for exp in experiences[:3]:  # Top 3 experiences
-                resume_text += f"- {exp.get('title', '')} at {exp.get('company', '')}\n"
+            for exp in experiences[:4]:
+                title = exp.get("title", "")
+                company = exp.get("company", "")
+                highlights = exp.get("highlights", exp.get("description", []))
+                resume_text += f"- {title} at {company}\n"
+                if isinstance(highlights, list):
+                    for h in highlights[:3]:
+                        resume_text += f"  • {h}\n"
+                elif isinstance(highlights, str) and highlights:
+                    resume_text += f"  • {highlights}\n"
 
-        prompt = f"""Generate a fresh 60-90 second "tell me about yourself" intro for an interview.
+            # Include skills if available
+            skills = request.resume_json.get("skills", [])
+            if skills:
+                resume_text += f"\nKey skills: {', '.join(skills[:10])}\n"
 
-Company: {request.company}
-Role: {request.role_title}
-Interview Type: {request.interview_type}
+        jd_section = ""
+        if request.job_description:
+            jd_section = f"\nJob description:\n{request.job_description[:1500]}\n"
 
-Candidate's recent experience:
+        prompt = f"""You are a top-tier executive recruiter and interview coach.
+
+Your task is to write a high-impact, conversational "Tell me about yourself" interview intro.
+
+INPUTS:
+- Target role: {role}
+- Company: {request.company or 'Not specified'}
+- Seniority: {request.seniority}
+- Interview type: {request.interview_type or 'General'}
+
+Candidate's resume:
 {resume_text or 'Not provided'}
+{jd_section}
+INSTRUCTIONS:
 
-Create a conversational, engaging intro (150-200 words) that:
-- Opens with their current role and a key accomplishment
-- Bridges to why their experience is relevant for this role
-- Closes with genuine enthusiasm for this opportunity
-- Sounds natural, not scripted
-- Is different from typical generic intros
+1. Write a 60-90 second spoken intro (120-180 words).
+2. Start with VALUE, not title. Do NOT begin with "I am a..." or "My name is..."
+3. Highlight 2-3 strongest, most relevant accomplishments with metrics.
+4. Align experience directly to the target role.
+5. Show progression or growth.
+6. End with a forward-looking statement tied to the opportunity.
 
-Return ONLY the intro text, no JSON or formatting."""
+STYLE:
+- Natural, confident, conversational tone
+- No buzzwords or fluff
+- No long sentences
+- No generic phrases like "passionate about" or "results-driven"
+
+STRUCTURE:
+- Opening: impact + specialization
+- Middle: 2-3 relevant achievements (with metrics)
+- Bridge: connect to role/company
+- Close: why this opportunity
+
+OUTPUT ONLY THE INTRO TEXT. No quotes, no labels, no formatting."""
 
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=500,
+            max_tokens=600,
             messages=[{"role": "user", "content": prompt}]
         )
 
         intro_pitch = response.content[0].text.strip()
+        # Remove surrounding quotes if present
+        if intro_pitch.startswith('"') and intro_pitch.endswith('"'):
+            intro_pitch = intro_pitch[1:-1]
+
         print(f"✅ Intro regenerated: {len(intro_pitch)} chars")
 
         return RegenerateIntroResponse(intro_pitch=intro_pitch)
