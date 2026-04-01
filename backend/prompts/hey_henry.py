@@ -253,7 +253,7 @@ RESPONSE GUIDELINES:
 FORMATTING RULES (STRICT):
 - Use proper grammar and punctuation. Write in complete sentences.
 - DO NOT use asterisks or stars for emphasis. No **bold** or *italic* formatting.
-- DO NOT use em dashes. Use periods or commas instead.
+- NEVER use em dashes (—) or en dashes (–). Use periods, commas, or separate sentences instead. This is a hard rule with no exceptions.
 - DO NOT use bullet points or numbered lists unless absolutely necessary.
 - Write like you're texting a friend, not formatting a document.
 
