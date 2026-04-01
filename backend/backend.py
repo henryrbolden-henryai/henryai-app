@@ -6474,6 +6474,14 @@ def detect_career_gap(resume_data: Dict) -> Optional[Dict]:
         return None
 
 
+def _safe_dict(val, default=None):
+    """Return val if it's a dict, otherwise return default or empty dict.
+    Prevents AttributeError when Claude returns a string instead of an object."""
+    if isinstance(val, dict):
+        return val
+    return default if default is not None else {}
+
+
 def force_apply_experience_penalties(response_data: dict, resume_data: dict = None, leadership_context: LeadershipContext = None) -> dict:
     """
     Force-apply experience penalties and hard caps to Claude's response.
@@ -8044,7 +8052,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             candidate_resume = {
                 'summary': resume_data.get('summary', '') if resume_data else '',
                 'experience': resume_data.get('experience', []) if resume_data else [],
-                'domain': response_data.get('experience_analysis', {}).get('domain', ''),
+                'domain': _safe_dict(response_data.get('experience_analysis')).get('domain', ''),
             }
 
             # Sanitize role_title before using in coaching
@@ -8057,7 +8065,7 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
             job_requirements = {
                 'role_title': sanitized_role_title,
                 'job_description': response_data.get('job_description', ''),
-                'domain': response_data.get('target_domain', '') or response_data.get('intelligence_layer', {}).get('target_domain', ''),
+                'domain': response_data.get('target_domain', '') or _safe_dict(response_data.get('intelligence_layer')).get('target_domain', ''),
             }
 
             # Extract strengths for role-specific "Your Move" binding
@@ -8066,15 +8074,16 @@ def force_apply_experience_penalties(response_data: dict, resume_data: dict = No
 
             # Also check intelligence_layer.strengths and experience_analysis.strengths
             if not raw_strengths:
-                raw_strengths = response_data.get('intelligence_layer', {}).get('strengths', [])
+                raw_strengths = _safe_dict(response_data.get('intelligence_layer')).get('strengths', [])
             if not raw_strengths:
-                raw_strengths = response_data.get('experience_analysis', {}).get('strengths', [])
+                raw_strengths = _safe_dict(response_data.get('experience_analysis')).get('strengths', [])
             if not raw_strengths:
-                raw_strengths = response_data.get('candidate_fit', {}).get('strengths', [])
+                raw_strengths = _safe_dict(response_data.get('candidate_fit')).get('strengths', [])
 
             # Also check intelligence_layer.strategic_positioning.lead_with_strengths
             if not raw_strengths:
-                raw_strengths = response_data.get('intelligence_layer', {}).get('strategic_positioning', {}).get('lead_with_strengths', [])
+                il = _safe_dict(response_data.get('intelligence_layer'))
+                raw_strengths = _safe_dict(il.get('strategic_positioning')).get('lead_with_strengths', [])
                 if raw_strengths:
                     print("   📋 Found strengths in intelligence_layer.strategic_positioning.lead_with_strengths")
 
@@ -16028,7 +16037,7 @@ Role: {body.role_title}
             print("✅ POST-PROCESSING PIPELINE - COMPLETED")
             print("=" * 60)
             print(f"   Strategic Action AFTER: {parsed_data.get('reality_check', {}).get('strategic_action', 'NOT SET')[:60]}...")
-            timing_after = parsed_data.get('timing_guidance') or parsed_data.get('intelligence_layer', {}).get('apply_decision', {}).get('timing_guidance', 'NOT SET')
+            timing_after = parsed_data.get('timing_guidance') or _safe_dict(_safe_dict(parsed_data.get('intelligence_layer')).get('apply_decision')).get('timing_guidance', 'NOT SET')
             print(f"   Timing Guidance AFTER: {timing_after}")
 
         except ImportError as e:
