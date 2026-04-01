@@ -556,7 +556,7 @@ def _build_your_move_plan(parsed_data: dict, score: int, company: str, determini
 
     # Primary strategy based on score band
     if score >= 85:
-        primary_strategy = f"Move fast. You're a strong fit — speed is your advantage."
+        primary_strategy = f"Move fast. You're a strong fit and speed is your advantage."
     elif score >= 75:
         primary_strategy = f"Apply and position around your {gap_count} gap{'s' if gap_count != 1 else ''} before they screen you out."
     elif score >= 65:
@@ -575,13 +575,13 @@ def _build_your_move_plan(parsed_data: dict, score: int, company: str, determini
             steps.append({
                 "step": 1,
                 "action": "Apply within 48 hours",
-                "details": f"Submit your application today. Roles at this level fill fast — waiting drops your odds significantly."
+                "details": f"Submit your application today. Roles at this level fill fast. Waiting drops your odds significantly."
             })
         else:
             steps.append({
                 "step": 1,
                 "action": "Get a warm intro before applying",
-                "details": f"Find 2-3 people at {company or 'the company'} on LinkedIn. Message them with a specific reason you're interested — not a generic ask."
+                "details": f"Find 2-3 people at {company or 'the company'} on LinkedIn. Message them with a specific reason you're interested, not a generic ask."
             })
 
         # Step 2: About positioning
@@ -600,7 +600,7 @@ def _build_your_move_plan(parsed_data: dict, score: int, company: str, determini
             steps.append({
                 "step": 2,
                 "action": "Lead with your strongest match",
-                "details": f"Open your cover letter with the skill that matches their #1 requirement. Be specific — name the result, not the responsibility."
+                "details": f"Open your cover letter with the skill that matches their #1 requirement. Be specific. Name the result, not the responsibility."
             })
 
         # Step 3: About networking/follow-up
@@ -617,11 +617,19 @@ def _build_your_move_plan(parsed_data: dict, score: int, company: str, determini
                 "details": "If you don't hear back in 5 days, send a brief follow-up to the recruiter. Reference something specific from the job description to show you've done the work."
             })
     else:
-        # Score < 55: Don't apply steps
+        # Score < 55: Don't apply steps - be specific about what TO do
+        # Build role-specific redirect from resume data
+        redirect_detail = "Search for roles that align with your core experience. Look for job descriptions where you meet 80%+ of requirements."
+        if strength_count > 0:
+            top_strengths = strengths[:2] if isinstance(strengths, list) else []
+            if top_strengths:
+                strength_text = " and ".join([s[:60] if isinstance(s, str) else str(s)[:60] for s in top_strengths])
+                redirect_detail = f"Search for roles that leverage your strengths in {strength_text}. Target job descriptions where you meet 80%+ of requirements."
+
         steps = [
             {"step": 1, "action": "Skip this role", "details": "Your fit score is below the threshold where cold applications convert. Focus on roles where you're 65%+."},
-            {"step": 2, "action": "Find 3 better-fit roles this week", "details": "Search for roles that match your strongest skills. Look for job descriptions where you meet 80%+ of requirements."},
-            {"step": 3, "action": "Strengthen your weakest area", "details": f"Your gaps suggest you need more depth in specific areas. Take one concrete step this week — a project, certification, or conversation with someone in the field."},
+            {"step": 2, "action": "Redirect your search", "details": redirect_detail},
+            {"step": 3, "action": "Sharpen your positioning", "details": "Review your resume against roles in your core function. Make sure your top 3 achievements are front and center for the roles where you're strongest."},
         ]
 
     # Fallback
@@ -15443,7 +15451,28 @@ ABSOLUTE REQUIREMENTS:
 10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
 11. MUST include reality_check with calculated applicant estimates, function context, and strategic action
 12. reality_check.applicant_calculation must show your work (all multipliers used)
-13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
+13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions
+
+=== COMPLETE FUNCTION MISMATCH COACHING (fit_score < 30%) ===
+
+When the candidate's background is in a completely different function, your job is STILL to make the candidate better.
+
+STRENGTHS: NEVER write "You have no relevant strengths" or similar. Instead, list 2-3 of their ACTUAL professional strengths from their resume and name the role types those strengths map to.
+Example: "Your enterprise-scale TA leadership positions you for Director/VP of Talent roles, not engineering roles."
+
+REALITY CHECK: Do NOT say "Bottom 0%." State the function mismatch clearly and redirect.
+GOOD: "This is a function mismatch. Your background is talent acquisition, not software engineering."
+BAD: "Bottom 0%. You have zero qualifying experience."
+
+Do NOT call a disqualifying mismatch a "risk." State it as fact and redirect to better-fit roles.
+GOOD: "This role requires hands-on coding. Your strength is TA leadership. Look for Director of TA, VP Recruiting, or People Operations roles."
+BAD: "Your primary risk: no software engineering experience."
+
+YOUR MOVE: Be SPECIFIC about what roles to search for. Name titles and functions.
+GOOD: "Do not apply. Look for: Director of Talent Acquisition, VP of Recruiting, Head of People Operations."
+BAD: "Find 3 better-fit roles this week." (Useless without specifics.)
+
+=== END COMPLETE FUNCTION MISMATCH COACHING ==="""
 
     # Inject candidate state calibration if available
     situation = None
@@ -16740,7 +16769,28 @@ ABSOLUTE REQUIREMENTS:
 10. changes_summary must reference ACTUAL companies/roles from the candidate's resume - no generic placeholders
 11. MUST include reality_check with brutal_truth, candidate_position, what_this_means, applicant estimates, and function context
 12. reality_check.applicant_calculation must show your work (all multipliers used)
-13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions"""
+13. NEVER fabricate statistics in reality_check - use ONLY the data provided in these instructions
+
+=== COMPLETE FUNCTION MISMATCH COACHING (fit_score < 30%) ===
+
+When the candidate's background is in a completely different function, your job is STILL to make the candidate better.
+
+STRENGTHS: NEVER write "You have no relevant strengths" or similar. Instead, list 2-3 of their ACTUAL professional strengths from their resume and name the role types those strengths map to.
+Example: "Your enterprise-scale TA leadership positions you for Director/VP of Talent roles, not engineering roles."
+
+REALITY CHECK: Do NOT say "Bottom 0%." State the function mismatch clearly and redirect.
+GOOD: "This is a function mismatch. Your background is talent acquisition, not software engineering."
+BAD: "Bottom 0%. You have zero qualifying experience."
+
+Do NOT call a disqualifying mismatch a "risk." State it as fact and redirect to better-fit roles.
+GOOD: "This role requires hands-on coding. Your strength is TA leadership. Look for Director of TA, VP Recruiting, or People Operations roles."
+BAD: "Your primary risk: no software engineering experience."
+
+YOUR MOVE: Be SPECIFIC about what roles to search for. Name titles and functions.
+GOOD: "Do not apply. Look for: Director of Talent Acquisition, VP of Recruiting, Head of People Operations."
+BAD: "Find 3 better-fit roles this week." (Useless without specifics.)
+
+=== END COMPLETE FUNCTION MISMATCH COACHING ==="""
 
     # Build user message
     user_message = f"""Job Description:
