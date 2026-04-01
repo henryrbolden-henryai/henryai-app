@@ -423,6 +423,9 @@ def _humanize_gap_type(gap_type: str) -> str:
     }
     if gap_type in mapping:
         return mapping[gap_type]
+    # Handle eligibility_failure:* patterns (e.g. "eligibility_failure:non_transferable_domain:executive_search")
+    if gap_type.startswith("eligibility_failure:"):
+        return "Experience gap"
     # Fallback: convert snake_case to Title Case
     return gap_type.replace("_", " ").replace("  ", " ").strip().capitalize()
 
@@ -2383,7 +2386,7 @@ def evaluate_candidate_against_role_requirements(resume_data: dict, role_require
                 keywords = domain_config["keywords"]
                 experience = resume_data.get("experience", [])
                 combined_resume = " ".join([
-                    f"{exp.get('title', '')} {exp.get('description', '')}"
+                    f"{exp.get('title', '')} {exp.get('company', '')} {exp.get('industry', '')} {exp.get('description', '')} {' '.join(exp.get('bullets', []) if isinstance(exp.get('bullets'), list) else [])} {' '.join(exp.get('highlights', []) if isinstance(exp.get('highlights'), list) else [])}"
                     for exp in experience if isinstance(exp, dict)
                 ]).lower()
 
@@ -3179,12 +3182,16 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
     for exp in experience:
         # No need to check isinstance(exp, dict) - normalize_experience guarantees it
         title = (exp.get("title", "") or "").lower()
+        company = (exp.get("company", "") or "").lower()
+        industry = (exp.get("industry", "") or "").lower()
         desc = (exp.get("description", "") or "").lower()
-        highlights = exp.get("highlights", [])
-        if highlights and isinstance(highlights, list):
-            desc += " " + " ".join([h.lower() for h in highlights if isinstance(h, str)])
+        # Include both highlights and bullets (resume parsing may use either field name)
+        for field in ["highlights", "bullets"]:
+            items = exp.get(field, [])
+            if items and isinstance(items, list):
+                desc += " " + " ".join([h.lower() for h in items if isinstance(h, str)])
         resume_titles.append(title)
-        resume_descriptions.append(desc)
+        resume_descriptions.append(f"{company} {industry} {desc}")
 
     combined_resume = " ".join(resume_titles) + " " + " ".join(resume_descriptions)
 
@@ -3220,7 +3227,9 @@ def check_eligibility_gate(resume_data: dict, response_data: dict) -> dict:
             # Check if JD EXPLICITLY requires this domain with ownership language
             # Must find FULL keyword phrase, not partial token matches
             jd_requires_domain = any(kw in combined_jd for kw in keywords)
-            jd_at_required_level = any(level in combined_jd for level in levels)
+            # Level check must match the ROLE TITLE, not the entire JD text
+            # "Reports to the VP" does not make THIS role VP-level
+            jd_at_required_level = any(level in role_title for level in levels)
 
             # ADDITIONAL CHECK: For require_ownership domains, must have explicit requirement language
             if require_ownership:
