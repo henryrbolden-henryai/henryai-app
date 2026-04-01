@@ -15468,16 +15468,32 @@ ABSOLUTE REQUIREMENTS:
 
 When the candidate's background is in a completely different function, your job is STILL to make the candidate better.
 
-STRENGTHS: NEVER write "You have no relevant strengths" or similar. Instead, list 2-3 of their ACTUAL professional strengths from their resume and name the role types those strengths map to.
-Example: "Your enterprise-scale TA leadership positions you for Director/VP of Talent roles, not engineering roles."
+STRENGTHS: Do NOT list strengths from the candidate's actual background that are irrelevant to this role.
+A TA leader's recruiting strengths are not strengths for a software engineering role.
+Instead, acknowledge the mismatch honestly and redirect:
+- "This is a function mismatch. Your background is in [their function], not [this role's function].
+  Your strengths map to [specific role titles where they'd score 85+]."
+- List 2-3 specific role titles/functions where their experience IS a strength.
+The strengths section should help them understand WHERE to look, not pretend their skills apply here.
 
-REALITY CHECK: Do NOT say "Bottom 0%." State the function mismatch clearly and redirect.
-GOOD: "This is a function mismatch. Your background is talent acquisition, not software engineering."
-BAD: "Bottom 0%. You have zero qualifying experience."
+GAPS: When a gap is a complete function mismatch (e.g., no engineering experience for an engineering
+role), the severity MUST be "high" (which displays as "Dealbreaker" in the UI), NOT "medium"
+(which displays as "Addressable"). You cannot "address" having zero experience in the core function.
+Also list the SPECIFIC skills required by this role that are missing, not just "no engineering experience."
+GOOD: "No proficiency in Go, Python, or Java. This role requires daily hands-on coding."
+GOOD: "No distributed systems experience. This role owns payment processing and real-time data pipelines."
+BAD: "No software engineering experience" (too vague, doesn't tell them what the role actually needs)
 
-Do NOT call a disqualifying mismatch a "risk." State it as fact and redirect to better-fit roles.
-GOOD: "This role requires hands-on coding. Your strength is TA leadership. Look for Director of TA, VP Recruiting, or People Operations roles."
-BAD: "Your primary risk: no software engineering experience."
+REALITY CHECK:
+- candidate_position: State the function mismatch directly. Do NOT say "Bottom 0%."
+  GOOD: "Function mismatch. Your background is talent acquisition, not software engineering."
+- primary_risk: Do NOT frame a disqualification as a "risk." A risk is something that might happen.
+  GOOD: "This role requires hands-on coding in Go and Python. No amount of positioning changes this."
+  BAD: "Your primary risk: no software engineering experience."
+- referral_signal: When there is a complete function mismatch, a referral will NOT help.
+  GOOD: "Referral is irrelevant here. No internal advocate can overcome a complete function mismatch."
+  BAD: "Cold apply = low visibility. Referral = strong advantage." (Generic, not true for mismatches)
+- response_rate: Set to "0%" for complete function mismatches. Be honest.
 
 YOUR MOVE: Be SPECIFIC about what roles to search for. Name titles and functions.
 GOOD: "Do not apply. Look for: Director of Talent Acquisition, VP of Recruiting, Head of People Operations."
@@ -16786,16 +16802,32 @@ ABSOLUTE REQUIREMENTS:
 
 When the candidate's background is in a completely different function, your job is STILL to make the candidate better.
 
-STRENGTHS: NEVER write "You have no relevant strengths" or similar. Instead, list 2-3 of their ACTUAL professional strengths from their resume and name the role types those strengths map to.
-Example: "Your enterprise-scale TA leadership positions you for Director/VP of Talent roles, not engineering roles."
+STRENGTHS: Do NOT list strengths from the candidate's actual background that are irrelevant to this role.
+A TA leader's recruiting strengths are not strengths for a software engineering role.
+Instead, acknowledge the mismatch honestly and redirect:
+- "This is a function mismatch. Your background is in [their function], not [this role's function].
+  Your strengths map to [specific role titles where they'd score 85+]."
+- List 2-3 specific role titles/functions where their experience IS a strength.
+The strengths section should help them understand WHERE to look, not pretend their skills apply here.
 
-REALITY CHECK: Do NOT say "Bottom 0%." State the function mismatch clearly and redirect.
-GOOD: "This is a function mismatch. Your background is talent acquisition, not software engineering."
-BAD: "Bottom 0%. You have zero qualifying experience."
+GAPS: When a gap is a complete function mismatch (e.g., no engineering experience for an engineering
+role), the severity MUST be "high" (which displays as "Dealbreaker" in the UI), NOT "medium"
+(which displays as "Addressable"). You cannot "address" having zero experience in the core function.
+Also list the SPECIFIC skills required by this role that are missing, not just "no engineering experience."
+GOOD: "No proficiency in Go, Python, or Java. This role requires daily hands-on coding."
+GOOD: "No distributed systems experience. This role owns payment processing and real-time data pipelines."
+BAD: "No software engineering experience" (too vague, doesn't tell them what the role actually needs)
 
-Do NOT call a disqualifying mismatch a "risk." State it as fact and redirect to better-fit roles.
-GOOD: "This role requires hands-on coding. Your strength is TA leadership. Look for Director of TA, VP Recruiting, or People Operations roles."
-BAD: "Your primary risk: no software engineering experience."
+REALITY CHECK:
+- candidate_position: State the function mismatch directly. Do NOT say "Bottom 0%."
+  GOOD: "Function mismatch. Your background is talent acquisition, not software engineering."
+- primary_risk: Do NOT frame a disqualification as a "risk." A risk is something that might happen.
+  GOOD: "This role requires hands-on coding in Go and Python. No amount of positioning changes this."
+  BAD: "Your primary risk: no software engineering experience."
+- referral_signal: When there is a complete function mismatch, a referral will NOT help.
+  GOOD: "Referral is irrelevant here. No internal advocate can overcome a complete function mismatch."
+  BAD: "Cold apply = low visibility. Referral = strong advantage." (Generic, not true for mismatches)
+- response_rate: Set to "0%" for complete function mismatches. Be honest.
 
 YOUR MOVE: Be SPECIFIC about what roles to search for. Name titles and functions.
 GOOD: "Do not apply. Look for: Director of Talent Acquisition, VP of Recruiting, Head of People Operations."
