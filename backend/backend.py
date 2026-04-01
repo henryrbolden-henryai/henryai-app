@@ -623,8 +623,19 @@ def _build_your_move_plan(parsed_data: dict, score: int, company: str, determini
         if strength_count > 0:
             top_strengths = strengths[:2] if isinstance(strengths, list) else []
             if top_strengths:
-                strength_text = " and ".join([s[:60] if isinstance(s, str) else str(s)[:60] for s in top_strengths])
-                redirect_detail = f"Search for roles that leverage your strengths in {strength_text}. Target job descriptions where you meet 80%+ of requirements."
+                # Extract short phrases (first clause only) to keep the redirect concise
+                short_strengths = []
+                for s in top_strengths:
+                    text = s if isinstance(s, str) else str(s)
+                    # Take text up to first period, comma-clause, or 50 chars
+                    for sep in [". ", ", meaning", ", which", " demonstrates", " across"]:
+                        idx = text.find(sep)
+                        if idx > 10:
+                            text = text[:idx]
+                            break
+                    short_strengths.append(text[:50])
+                strength_text = " and ".join(short_strengths)
+                redirect_detail = f"Search for roles that leverage your {strength_text}. Target job descriptions where you meet 80%+ of requirements."
 
         steps = [
             {"step": 1, "action": "Skip this role", "details": "Your fit score is below the threshold where cold applications convert. Focus on roles where you're 65%+."},
