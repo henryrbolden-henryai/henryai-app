@@ -24911,10 +24911,21 @@ ANALYSIS DATA AVAILABLE:
 """
 
     if body.resume_data and body.context.has_resume:
+        experience = body.resume_data.get('experience', [])
+        exp_summary = []
+        for exp in experience[:5]:
+            if isinstance(exp, dict):
+                title = exp.get('title', 'Unknown')
+                company = exp.get('company', 'Unknown')
+                industry = exp.get('industry', '')
+                exp_summary.append(f"{title} @ {company}" + (f" ({industry})" if industry else ""))
+
         analysis_context += f"""
 RESUME DATA:
-- Candidate Name: {body.resume_data.get('name', 'Unknown')}
-- Current/Recent Role: {body.resume_data.get('experience', [{}])[0].get('title', 'Unknown') if body.resume_data.get('experience') else 'Unknown'}
+- Candidate Name: {body.resume_data.get('full_name', body.resume_data.get('name', 'Unknown'))}
+- Current/Recent Role: {exp_summary[0] if exp_summary else 'Unknown'}
+- Career History: {'; '.join(exp_summary) if exp_summary else 'Unknown'}
+- Core Skills: {', '.join(body.resume_data.get('skills', body.resume_data.get('core_competencies', []))[:8]) if body.resume_data.get('skills') or body.resume_data.get('core_competencies') else 'Not listed'}
 """
 
     # Add focused application context if available (from Command Center interactions)
