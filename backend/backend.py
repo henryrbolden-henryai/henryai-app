@@ -19741,11 +19741,11 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
                 system_prompt="You are an expert career coach analyzing rejection emails. Return only valid JSON.",
                 user_message=prompt,
                 max_tokens=2000,
-                max_retries=3,
+                max_retries=1,
                 temperature=0.3,
             )
-        except HTTPException as he:
-            raise RuntimeError(f"Claude API error (HTTP {he.status_code}): {he.detail}") from he
+        except (HTTPException, Exception) as he:
+            raise RuntimeError(f"Claude API error: {he}") from he
 
     try:
         response = await asyncio.to_thread(_call_claude_safe)
