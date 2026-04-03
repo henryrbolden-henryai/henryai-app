@@ -19733,11 +19733,13 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
     )
 
     try:
-        response = call_claude(
-            system_prompt="You are an expert career coach analyzing rejection emails. Return only valid JSON.",
-            user_message=prompt,
-            max_tokens=2000,
-            temperature=0.3
+        response = await asyncio.to_thread(
+            call_claude,
+            "You are an expert career coach analyzing rejection emails. Return only valid JSON.",
+            prompt,
+            2000,   # max_tokens
+            3,      # max_retries
+            0.3,    # temperature
         )
 
         # Parse JSON response
