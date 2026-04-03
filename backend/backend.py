@@ -19732,18 +19732,25 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
         pipeline_context=pipeline_str
     )
 
+    import re
+
+    def _call_claude_safe():
+        """Wrap call_claude to catch HTTPException so the fallback can run."""
+        try:
+            return call_claude(
+                system_prompt="You are an expert career coach analyzing rejection emails. Return only valid JSON.",
+                user_message=prompt,
+                max_tokens=2000,
+                max_retries=3,
+                temperature=0.3,
+            )
+        except HTTPException as he:
+            raise RuntimeError(f"Claude API error (HTTP {he.status_code}): {he.detail}") from he
+
     try:
-        response = await asyncio.to_thread(
-            call_claude,
-            "You are an expert career coach analyzing rejection emails. Return only valid JSON.",
-            prompt,
-            2000,   # max_tokens
-            3,      # max_retries
-            0.3,    # temperature
-        )
+        response = await asyncio.to_thread(_call_claude_safe)
 
         # Parse JSON response
-        import re
         json_match = re.search(r'\{[\s\S]*\}', response)
         if not json_match:
             raise ValueError("No JSON found in response")
@@ -19786,8 +19793,8 @@ async def analyze_rejection_email(request: RejectionAnalysisRequest):
             recommended_status=analysis.get("recommended_status", "Rejected: Other")
         )
 
-    except Exception as e:
-        logger.error(f"Rejection analysis failed: {e}")
+    except (Exception, HTTPException) as e:
+        logger.error(f"Rejection analysis failed: {type(e).__name__}: {e}")
         # Return a fallback response
         return RejectionAnalysisResponse(
             rejection_type="unknown",
