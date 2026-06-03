@@ -73,6 +73,7 @@ class StripeService:
         tier: str,
         billing_period: str,
         return_url: str,
+        promotion_code: str | None = None,
     ) -> str:
         """
         Create a Stripe Checkout Session in embedded mode.
@@ -86,12 +87,12 @@ class StripeService:
         # Look up or create Stripe Customer
         customer_id = await self._get_or_create_customer(user_id, user_email)
 
-        session = stripe.checkout.Session.create(
+        # Build session params
+        session_params = dict(
             customer=customer_id,
             mode='subscription',
             ui_mode='embedded_page',
             payment_method_types=['card'],
-            allow_promotion_codes=True,
             billing_address_collection='required',
             customer_update={'name': 'auto', 'address': 'auto'},
             line_items=[{
@@ -110,6 +111,19 @@ class StripeService:
                 },
             },
         )
+
+        # If a promotion code was provided, look it up and apply it
+        if promotion_code:
+            promo_codes = stripe.PromotionCode.list(code=promotion_code, active=True, limit=1)
+            if promo_codes.data:
+                session_params['discounts'] = [{'promotion_code': promo_codes.data[0].id}]
+            else:
+                raise ValueError(f"Invalid promotion code: {promotion_code}")
+        else:
+            # Allow manual entry in Stripe's UI
+            session_params['allow_promotion_codes'] = True
+
+        session = stripe.checkout.Session.create(**session_params)
 
         return session.client_secret
 

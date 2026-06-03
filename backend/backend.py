@@ -29484,6 +29484,7 @@ class CheckoutSessionRequest(BaseModel):
     user_id: str
     tier: str
     billing_period: str = 'monthly'
+    promotion_code: str | None = None
 
 class PortalSessionRequest(BaseModel):
     user_id: str
@@ -29537,6 +29538,7 @@ async def create_checkout_session(request: CheckoutSessionRequest):
             tier=tier,
             billing_period=billing_period,
             return_url=return_url,
+            promotion_code=request.promotion_code,
         )
 
         return {"client_secret": client_secret}
