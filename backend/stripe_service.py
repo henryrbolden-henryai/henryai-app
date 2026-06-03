@@ -193,13 +193,16 @@ class StripeService:
 
     async def _handle_checkout_completed(self, session: Dict[str, Any]) -> None:
         """Handle checkout.session.completed — activate the subscription."""
+        logger.info(f"Processing checkout completed. Session keys: {list(session.keys()) if isinstance(session, dict) else type(session)}")
+
         user_id = session.get('metadata', {}).get('user_id')
         if not user_id:
-            logger.error("checkout.session.completed missing user_id in metadata")
+            logger.error(f"checkout.session.completed missing user_id in metadata. Metadata: {session.get('metadata')}")
             return
 
         subscription_id = session.get('subscription')
         customer_id = session.get('customer')
+        logger.info(f"Checkout: user_id={user_id}, subscription_id={subscription_id}, customer_id={customer_id}")
 
         if not subscription_id:
             logger.error("checkout.session.completed missing subscription ID")
@@ -207,8 +210,10 @@ class StripeService:
 
         # Retrieve the subscription to get the price and period end
         subscription = stripe.Subscription.retrieve(subscription_id)
+        logger.info(f"Retrieved subscription: {subscription.id}")
         price_id = subscription['items']['data'][0]['price']['id']
         tier = tier_from_price_id(price_id)
+        logger.info(f"Price ID: {price_id}, Tier: {tier}")
 
         if not tier:
             logger.error(f"Unknown price_id from subscription: {price_id}")
