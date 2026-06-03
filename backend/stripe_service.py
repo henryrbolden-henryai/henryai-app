@@ -162,19 +162,19 @@ class StripeService:
 
         Returns a dict with the event type and processing result.
         """
+        import json
+
+        # Verify signature
         try:
-            event = stripe.Webhook.construct_event(
+            stripe.Webhook.construct_event(
                 payload, sig_header, WEBHOOK_SECRET
             )
-        except (stripe.error.SignatureVerificationError, Exception) as e:
-            if 'signature' in str(e).lower():
-                raise ValueError("Invalid webhook signature")
-            raise ValueError(f"Webhook construction error: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Invalid webhook signature: {str(e)}")
 
-        event_type = event.type if hasattr(event, 'type') else event['type']
-        # Use JSON round-trip to convert all nested Stripe objects to plain dicts
-        import json
-        event_json = json.loads(str(event))
+        # Parse the raw payload as plain JSON (no Stripe SDK objects)
+        event_json = json.loads(payload)
+        event_type = event_json['type']
         data = event_json['data']['object']
 
         logger.info(f"Stripe webhook received: {event_type}")
@@ -214,8 +214,9 @@ class StripeService:
             return
 
         # Retrieve the subscription to get the price and period end
+        import json
         sub_obj = stripe.Subscription.retrieve(subscription_id)
-        subscription = json.loads(str(sub_obj))
+        subscription = json.loads(sub_obj.to_json())
         logger.info(f"Retrieved subscription: {subscription['id']}")
         price_id = subscription['items']['data'][0]['price']['id']
         tier = tier_from_price_id(price_id)
