@@ -224,18 +224,31 @@ class StripeService:
             logger.error(f"Unknown price_id from subscription: {price_id}")
             return
 
-        current_period_end = datetime.fromtimestamp(
-            subscription['current_period_end'], tz=timezone.utc
-        ).isoformat()
+        # Get period end — field location varies by API version
+        period_end_ts = subscription.get('current_period_end')
+        if not period_end_ts:
+            # Try items-level period end
+            period_end_ts = subscription.get('items', {}).get('data', [{}])[0].get('current_period_end')
+
+        current_period_end = None
+        if period_end_ts:
+            current_period_end = datetime.fromtimestamp(
+                period_end_ts, tz=timezone.utc
+            ).isoformat()
+
+        logger.info(f"Updating user {user_id}: tier={tier}, period_end={current_period_end}")
 
         # Update user_profiles
-        self.supabase.table('user_profiles').update({
+        update_data = {
             'tier': tier,
             'stripe_customer_id': customer_id,
             'stripe_subscription_id': subscription_id,
             'subscription_status': 'active',
-            'current_period_end': current_period_end,
-        }).eq('id', user_id).execute()
+        }
+        if current_period_end:
+            update_data['current_period_end'] = current_period_end
+
+        self.supabase.table('user_profiles').update(update_data).eq('id', user_id).execute()
 
         logger.info(f"User {user_id} subscribed to {tier} (subscription={subscription_id})")
 
