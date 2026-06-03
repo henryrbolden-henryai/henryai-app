@@ -29530,7 +29530,7 @@ async def create_checkout_session(request: CheckoutSessionRequest):
 
         # Build return URL for embedded checkout
         frontend_base = os.getenv('FRONTEND_URL', 'https://henryhq.ai')
-        return_url = f"{frontend_base}/checkout-return?session_id={{CHECKOUT_SESSION_ID}}"
+        return_url = f"{frontend_base}/professionals/checkout/return?session_id={{CHECKOUT_SESSION_ID}}"
 
         client_secret = await stripe_service.create_checkout_session(
             user_id=user_id,
