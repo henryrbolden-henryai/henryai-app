@@ -92,6 +92,8 @@ class StripeService:
             ui_mode='embedded_page',
             payment_method_types=['card'],
             allow_promotion_codes=True,
+            billing_address_collection='required',
+            customer_update={'name': 'auto', 'address': 'auto'},
             line_items=[{
                 'price': price_id,
                 'quantity': 1,
