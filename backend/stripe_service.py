@@ -6,6 +6,7 @@ for subscription billing.
 """
 
 import os
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
@@ -162,8 +163,6 @@ class StripeService:
 
         Returns a dict with the event type and processing result.
         """
-        import json
-
         # Verify signature
         try:
             stripe.Webhook.construct_event(
@@ -214,7 +213,6 @@ class StripeService:
             return
 
         # Retrieve the subscription to get the price and period end
-        import json
         sub_obj = stripe.Subscription.retrieve(subscription_id)
         subscription = json.loads(sub_obj.to_json())
         logger.info(f"Retrieved subscription: {subscription['id']}")
