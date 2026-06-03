@@ -89,7 +89,7 @@ class StripeService:
         session = stripe.checkout.Session.create(
             customer=customer_id,
             mode='subscription',
-            ui_mode='embedded',
+            ui_mode='embedded_page',
             payment_method_types=['card'],
             line_items=[{
                 'price': price_id,
