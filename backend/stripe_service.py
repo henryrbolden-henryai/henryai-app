@@ -166,11 +166,15 @@ class StripeService:
             event = stripe.Webhook.construct_event(
                 payload, sig_header, WEBHOOK_SECRET
             )
-        except stripe.error.SignatureVerificationError:
-            raise ValueError("Invalid webhook signature")
+        except (stripe.error.SignatureVerificationError, Exception) as e:
+            if 'signature' in str(e).lower():
+                raise ValueError("Invalid webhook signature")
+            raise ValueError(f"Webhook construction error: {str(e)}")
 
-        event_type = event['type']
-        data = event['data']['object']
+        event_type = event.type if hasattr(event, 'type') else event['type']
+        data_obj = event.data.object if hasattr(event, 'data') and hasattr(event.data, 'object') else event['data']['object']
+        # Convert Stripe object to plain dict for consistent .get() access
+        data = dict(data_obj) if not isinstance(data_obj, dict) else data_obj
 
         logger.info(f"Stripe webhook received: {event_type}")
 
