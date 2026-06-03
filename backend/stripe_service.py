@@ -214,7 +214,7 @@ class StripeService:
 
         # Retrieve the subscription to get the price and period end
         sub_obj = stripe.Subscription.retrieve(subscription_id)
-        subscription = json.loads(sub_obj.to_json())
+        subscription = json.loads(str(sub_obj))
         logger.info(f"Retrieved subscription: {subscription['id']}")
         price_id = subscription['items']['data'][0]['price']['id']
         tier = tier_from_price_id(price_id)
