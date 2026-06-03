@@ -91,6 +91,7 @@ class StripeService:
             mode='subscription',
             ui_mode='embedded_page',
             payment_method_types=['card'],
+            allow_promotion_codes=True,
             line_items=[{
                 'price': price_id,
                 'quantity': 1,
