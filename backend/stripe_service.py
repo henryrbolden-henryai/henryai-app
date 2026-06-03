@@ -172,9 +172,10 @@ class StripeService:
             raise ValueError(f"Webhook construction error: {str(e)}")
 
         event_type = event.type if hasattr(event, 'type') else event['type']
-        data_obj = event.data.object if hasattr(event, 'data') and hasattr(event.data, 'object') else event['data']['object']
-        # Convert Stripe object to plain dict for consistent .get() access
-        data = dict(data_obj) if not isinstance(data_obj, dict) else data_obj
+        # Use JSON round-trip to convert all nested Stripe objects to plain dicts
+        import json
+        event_json = json.loads(str(event))
+        data = event_json['data']['object']
 
         logger.info(f"Stripe webhook received: {event_type}")
 
@@ -213,8 +214,9 @@ class StripeService:
             return
 
         # Retrieve the subscription to get the price and period end
-        subscription = stripe.Subscription.retrieve(subscription_id)
-        logger.info(f"Retrieved subscription: {subscription.id}")
+        sub_obj = stripe.Subscription.retrieve(subscription_id)
+        subscription = json.loads(str(sub_obj))
+        logger.info(f"Retrieved subscription: {subscription['id']}")
         price_id = subscription['items']['data'][0]['price']['id']
         tier = tier_from_price_id(price_id)
         logger.info(f"Price ID: {price_id}, Tier: {tier}")
