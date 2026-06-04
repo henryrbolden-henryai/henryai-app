@@ -340,6 +340,10 @@ class StripeService:
 
         logger.info(f"Updating user {user_id}: tier={tier}, period_end={current_period_end}")
 
+        # Check if this is a new user (no existing subscription) before updating
+        existing = self._get_user_profile(user_id)
+        is_new_subscriber = not existing or not existing.get('stripe_subscription_id')
+
         # Update user_profiles
         update_data = {
             'tier': tier,
@@ -354,14 +358,17 @@ class StripeService:
 
         logger.info(f"User {user_id} subscribed to {tier} (subscription={subscription_id})")
 
-        # Send welcome email
-        try:
-            user_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
-            user_name = session.get('customer_details', {}).get('name', '').split(' ')[0] or 'there'
-            if user_email:
-                self._send_welcome_email(user_email, user_name, tier)
-        except Exception as e:
-            logger.error(f"Welcome email failed (non-blocking): {str(e)}")
+        # Send welcome email only for new subscribers (not upgrades)
+        if is_new_subscriber:
+            try:
+                user_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
+                user_name = session.get('customer_details', {}).get('name', '').split(' ')[0] or 'there'
+                if user_email:
+                    self._send_welcome_email(user_email, user_name, tier)
+            except Exception as e:
+                logger.error(f"Welcome email failed (non-blocking): {str(e)}")
+        else:
+            logger.info(f"Skipping welcome email — user {user_id} is upgrading, not new")
 
     async def _handle_subscription_updated(self, subscription: Dict[str, Any]) -> None:
         """Handle customer.subscription.updated — upgrade, downgrade, or status change."""
