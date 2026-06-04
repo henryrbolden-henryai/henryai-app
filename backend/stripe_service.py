@@ -225,7 +225,7 @@ class StripeService:
             </p>
 
             <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
-                I built HenryHQ because I believe the hardest part of a job search isn't finding openings. It's knowing where to focus, how to position yourself, and when to push forward versus when to change direction. Most people don't need to apply to more jobs. They need to make better moves.
+                I built HenryHQ because I believe the hardest part of a job search isn't finding opportunities. It's knowing where to focus your energy, how to position yourself, and when to push forward versus when to change direction. Most people don't need to apply to more jobs. They need to make better moves.
             </p>
 
             <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px; font-style: italic; border-left: 3px solid #22d3ee; padding-left: 16px;">
