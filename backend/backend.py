@@ -28936,6 +28936,17 @@ async def send_test_notification(user_email: str = None):
     }
 
 
+@app.get("/api/test/welcome-email")
+async def test_welcome_email(email: str, name: str = "there"):
+    """Temporary test endpoint — sends the welcome email to verify formatting."""
+    try:
+        stripe_service = StripeService(supabase)
+        stripe_service._send_welcome_email(email, name, "principal")
+        return {"success": True, "sent_to": email}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 @app.get("/api/admin/notifications")
 async def get_admin_notifications(user_email: str = None):
     """
