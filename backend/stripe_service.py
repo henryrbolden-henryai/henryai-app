@@ -8,11 +8,15 @@ for subscription billing.
 import os
 import json
 import logging
+import requests
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 import stripe
 from supabase import Client
+
+RESEND_API_KEY = os.getenv('RESEND_API_KEY')
+RESEND_API_URL = "https://api.resend.com/emails"
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +196,104 @@ class StripeService:
         return {'event_type': event_type, 'status': 'processed'}
 
     # -------------------------------------------------------------------------
+    # Email
+    # -------------------------------------------------------------------------
+
+    def _send_welcome_email(self, email: str, first_name: str, tier: str) -> None:
+        """Send a welcome email after successful subscription."""
+        if not RESEND_API_KEY:
+            logger.warning("RESEND_API_KEY not configured — skipping welcome email")
+            return
+
+        tier_display = tier.replace('_', ' ').title()
+
+        html = f"""
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e;">
+            <div style="margin-bottom: 32px;">
+                <span style="font-size: 1.5rem; font-weight: 300; color: #1a1a2e;"><em style="color: #22d3ee;">Henry</em>HQ</span>
+            </div>
+
+            <h1 style="font-size: 1.75rem; font-weight: 400; margin-bottom: 16px;">
+                Welcome to HenryHQ, {first_name}.
+            </h1>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
+                You're now on the <strong>{tier_display}</strong> plan — and I'm glad you're here.
+            </p>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
+                I built HenryHQ because I've spent my career on the other side of the hiring table — at Heidrick & Struggles, Uber, Spotify, and National Grid. I know what gets people hired, and more importantly, what quietly gets them passed over. This platform is everything I wish candidates had when I was evaluating them.
+            </p>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
+                Here's what I hope you'll accomplish:
+            </p>
+
+            <ul style="font-size: 1rem; line-height: 1.9; color: #4a4a5a; padding-left: 20px; margin-bottom: 16px;">
+                <li><strong>Stop wasting time on bad-fit roles</strong> — let the fit analysis tell you where to focus</li>
+                <li><strong>Show up prepared</strong> — use interview prep and mock interviews to walk in with confidence</li>
+                <li><strong>Track your momentum</strong> — the Command Center keeps your search organized and strategic</li>
+                <li><strong>Get coached, not just coached at</strong> — Hey Henry is your AI strategy partner, available 24/7</li>
+            </ul>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
+                A few things to know:
+            </p>
+
+            <ul style="font-size: 1rem; line-height: 1.9; color: #4a4a5a; padding-left: 20px; margin-bottom: 24px;">
+                <li><strong>Hey Henry</strong> — your AI coaching assistant. Ask him anything about your search, your resume, or your next interview. He knows your profile and gives you real talk, not generic advice.</li>
+                <li><strong>Need human support?</strong> — Reach me at <a href="mailto:support@henryhq.ai" style="color: #22d3ee;">support@henryhq.ai</a>. I read every message.</li>
+                <li><strong>Want live coaching?</strong> — Book a 1-on-1 session with me anytime at <a href="https://calendly.com/hb-henryhq/45min" style="color: #22d3ee;">calendly.com/hb-henryhq</a>.</li>
+            </ul>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 24px;">
+                Your success matters to me — not as a metric, but because I know how hard this process is. I'm here to make sure you have every advantage.
+            </p>
+
+            <div style="margin-bottom: 32px;">
+                <a href="https://henryhq.ai/professionals/profile/edit" style="display: inline-block; padding: 14px 28px; background: #22d3ee; color: #000; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem;">
+                    Set Up Your Profile
+                </a>
+            </div>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a;">
+                Let's get to work.
+            </p>
+
+            <p style="font-size: 1rem; line-height: 1.7; color: #1a1a2e; margin-top: 8px;">
+                <strong>Henry Bolden</strong><br>
+                <span style="color: #4a4a5a;">Founder, HenryHQ</span>
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+
+            <p style="font-size: 0.8rem; color: #9a9aaa; line-height: 1.5;">
+                HenryHQ.ai — Strategy that gets you hired.<br>
+                <a href="mailto:support@henryhq.ai" style="color: #9a9aaa;">support@henryhq.ai</a>
+            </p>
+        </div>
+        """
+
+        payload = {
+            "from": "Henry Bolden <support@henryhq.ai>",
+            "to": email,
+            "subject": f"Welcome to HenryHQ, {first_name} — let's get you hired.",
+            "html": html,
+            "reply_to": "support@henryhq.ai",
+        }
+
+        headers = {
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json",
+        }
+
+        response = requests.post(RESEND_API_URL, json=payload, headers=headers, timeout=10)
+        if response.status_code == 200:
+            logger.info(f"Welcome email sent to {email}")
+        else:
+            logger.error(f"Welcome email failed: {response.status_code} - {response.text}")
+
+    # -------------------------------------------------------------------------
     # Webhook event handlers
     # -------------------------------------------------------------------------
 
@@ -251,6 +353,15 @@ class StripeService:
         self.supabase.table('user_profiles').update(update_data).eq('id', user_id).execute()
 
         logger.info(f"User {user_id} subscribed to {tier} (subscription={subscription_id})")
+
+        # Send welcome email
+        try:
+            user_email = session.get('customer_details', {}).get('email') or session.get('customer_email')
+            user_name = session.get('customer_details', {}).get('name', '').split(' ')[0] or 'there'
+            if user_email:
+                self._send_welcome_email(user_email, user_name, tier)
+        except Exception as e:
+            logger.error(f"Welcome email failed (non-blocking): {str(e)}")
 
     async def _handle_subscription_updated(self, subscription: Dict[str, Any]) -> None:
         """Handle customer.subscription.updated — upgrade, downgrade, or status change."""
