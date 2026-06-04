@@ -205,79 +205,79 @@ class StripeService:
             logger.warning("RESEND_API_KEY not configured — skipping welcome email")
             return
 
-        tier_display = tier.replace('_', ' ').title()
-
         html = f"""
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #1a1a2e;">
-            <div style="margin-bottom: 32px;">
-                <span style="font-size: 1.5rem; font-weight: 300; color: #1a1a2e;"><em style="color: #22d3ee;">Henry</em>HQ</span>
-            </div>
+        <div style="font-family: Georgia, 'Times New Roman', serif; max-width: 560px; margin: 0 auto; padding: 40px 20px; color: #2a2a2a;">
 
-            <h1 style="font-size: 1.75rem; font-weight: 400; margin-bottom: 16px;">
-                Welcome to HenryHQ, {first_name}.
-            </h1>
-
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
-                You're now on the <strong>{tier_display}</strong> plan — and I'm glad you're here.
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                Hi {first_name},
             </p>
 
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
-                I built HenryHQ because I've spent my career on the other side of the hiring table — at Heidrick & Struggles, Uber, Spotify, and National Grid. I know what gets people hired, and more importantly, what quietly gets them passed over. This platform is everything I wish candidates had when I was evaluating them.
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                I'm glad you're here.
             </p>
 
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
-                Here's what I hope you'll accomplish:
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                If you're searching for a job right now, you're doing it in a market that feels very different than it did just a few years ago. The hiring process is changing fast. AI is everywhere. New tools seem to appear every week. And for many job seekers, it feels like nobody stopped to explain the new rules.
             </p>
 
-            <ul style="font-size: 1rem; line-height: 1.9; color: #4a4a5a; padding-left: 20px; margin-bottom: 16px;">
-                <li><strong>Stop wasting time on bad-fit roles</strong> — let the fit analysis tell you where to focus</li>
-                <li><strong>Show up prepared</strong> — use interview prep and mock interviews to walk in with confidence</li>
-                <li><strong>Track your momentum</strong> — the Command Center keeps your search organized and strategic</li>
-                <li><strong>Get coached, not just coached at</strong> — Hey Henry is your AI strategy partner, available 24/7</li>
-            </ul>
-
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 16px;">
-                A few things to know:
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                The rejection emails that pile up. The interviews that go silent. The pressure to stay positive when you're not sure what next month looks like. I hear these things every day, and I want you to know: you're not crazy. You're not behind. And you're not alone in feeling this way.
             </p>
 
-            <ul style="font-size: 1rem; line-height: 1.9; color: #4a4a5a; padding-left: 20px; margin-bottom: 24px;">
-                <li><strong>Hey Henry</strong> — your AI coaching assistant. Ask him anything about your search, your resume, or your next interview. He knows your profile and gives you real talk, not generic advice.</li>
-                <li><strong>Need human support?</strong> — Reach me at <a href="mailto:support@henryhq.ai" style="color: #22d3ee;">support@henryhq.ai</a>. I read every message.</li>
-                <li><strong>Want live coaching?</strong> — Book a 1-on-1 session with me anytime at <a href="https://calendly.com/hb-henryhq/45min" style="color: #22d3ee;">calendly.com/hb-henryhq</a>.</li>
-            </ul>
-
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a; margin-bottom: 24px;">
-                Your success matters to me — not as a metric, but because I know how hard this process is. I'm here to make sure you have every advantage.
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                I built HenryHQ because I believe the hardest part of a job search isn't finding openings. It's knowing where to focus, how to position yourself, and when to push forward versus when to change direction. Most people don't need to apply to more jobs. They need to make better moves.
             </p>
 
-            <div style="margin-bottom: 32px;">
-                <a href="https://henryhq.ai/professionals/profile/edit" style="display: inline-block; padding: 14px 28px; background: #22d3ee; color: #000; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem;">
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px; font-style: italic; border-left: 3px solid #22d3ee; padding-left: 16px;">
+                The goal isn't to help you submit more applications. The goal is to help you make better moves.
+            </p>
+
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                That means knowing which roles are actually worth your time. Showing up to interviews with real preparation, not generic talking points. Keeping your search organized when everything feels chaotic. And having someone in your corner who'll give you honest feedback, not empty encouragement.
+            </p>
+
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                Some days you'll feel motivated. Some days you'll wonder if any of this is working. That's normal. A job search is one of the most emotionally demanding things a person can go through, and nobody talks about that enough.
+            </p>
+
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                On the hard days, don't try to solve everything at once. Come back. Talk to Hey Henry. Review your plan. Take one small step forward. That's enough for today.
+            </p>
+
+            <div style="margin: 32px 0;">
+                <a href="https://henryhq.ai/professionals/profile/edit" style="display: inline-block; padding: 14px 28px; background: #22d3ee; color: #000; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 0.95rem; font-family: -apple-system, sans-serif;">
                     Set Up Your Profile
                 </a>
             </div>
 
-            <p style="font-size: 1rem; line-height: 1.7; color: #4a4a5a;">
-                Let's get to work.
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 20px;">
+                If you need help, have feedback, or just want to talk through your search, reply to this email or reach me directly at <a href="mailto:support@henryhq.ai" style="color: #22d3ee; text-decoration: none;">support@henryhq.ai</a>. I read every message personally.
             </p>
 
-            <p style="font-size: 1rem; line-height: 1.7; color: #1a1a2e; margin-top: 8px;">
-                <strong>Henry Bolden</strong><br>
-                <span style="color: #4a4a5a;">Founder, HenryHQ</span>
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 28px;">
+                If you'd prefer dedicated coaching, you can book time with me here: <a href="https://calendly.com/hb-henryhq/45min" style="color: #22d3ee; text-decoration: none;">calendly.com/hb-henryhq</a>.
+            </p>
+
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #3a3a3a; margin-bottom: 4px;">
+                I'm rooting for you.
+            </p>
+
+            <p style="font-size: 1.05rem; line-height: 1.8; color: #2a2a2a; margin-top: 4px;">
+                Henry
             </p>
 
             <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
 
-            <p style="font-size: 0.8rem; color: #9a9aaa; line-height: 1.5;">
-                HenryHQ.ai — Strategy that gets you hired.<br>
-                <a href="mailto:support@henryhq.ai" style="color: #9a9aaa;">support@henryhq.ai</a>
+            <p style="font-size: 0.8rem; color: #9a9aaa; line-height: 1.5; font-family: -apple-system, sans-serif;">
+                HenryHQ.ai
             </p>
         </div>
         """
 
         payload = {
-            "from": "Henry Bolden <support@henryhq.ai>",
+            "from": "Henry <support@henryhq.ai>",
             "to": email,
-            "subject": f"Welcome to HenryHQ, {first_name} — let's get you hired.",
+            "subject": f"{first_name}, welcome.",
             "html": html,
             "reply_to": "support@henryhq.ai",
         }
